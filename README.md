@@ -1,3 +1,5 @@
+[](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar.png)
+
 ### SFWBar
 
 SFWBar (Sway Floating Window Bar) is a flexible taskbar application for 
