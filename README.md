@@ -1,4 +1,4 @@
-[](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar.png)
+![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar.png)
 
 ### SFWBar
 
