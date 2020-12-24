@@ -1,0 +1,224 @@
+.TH "SFWBar" 1
+.SH NAME
+SFWBar \- Sway Floating Window Bar
+.SH SYNOPSIS
+.B sfwbar
+.SH DESCRIPTION
+SFWBar is a taskbar for Sway wayland compositor. SFWBar facilitates
+handling of floating windows on a sway desktop. It provdes a taskbar,
+implements a window placement policy and facilitates monitoring of 
+system files via a set of widgets linked to regular expression parser.
+.SH CONFIGURATION
+SFWBar is configured via a json file sfwbar.config, the program checks
+users XDG config directory (usually ~/.config/sfwbar/), followed by 
+/usr/share/sfwbar for the config file. Widget presentation can be further
+adjusted via CSS properties in a file sfwbar.css. The program looks for this
+file in the same locations as the config file.
+
+The config file consists of three main sections:
+"layout" - defining the presentation of various gui components in the bar
+"scanner" - defining the files and patters used to extract system information
+"placement" - controlling the placement of the new floating windows
+.SH LAYOUT
+Specifies what items are displayed on the taskbar. The layout is defined as a
+json array of items. The top level items are placed into a grid with a style
+"layout" (for CSS theming purposes).
+
+"layout": [
+{
+  "type": "taskbar",
+  "rows": 2
+} ]
+.TP
+each item in the array is a widget. The following widget types are supported:
+.TP
+.B taskbar
+this is a special widget displaying a list of all floating windows.
+.TP
+.B grid
+a layout grid used to fine tune placement of widgets. You can use these to
+further subdivide each cell of the main grid and arrange items therein.
+.TP
+.B label
+display text (either static or sourced from scan variables).
+.TP
+.B scale
+display a progress bar with a progress value sourced from a scan variable
+.TP
+.B image
+display an image from a file specified in "value"
+.TP
+.B button
+add a clickable button with an option to launch external programs on click
+.P
+Each widget is placed within the parent grid. By default, widgets are placed next
+to the previous widget along the "direction" of the grid (left to right by default).
+You can define specific positions within grid using properties "x" and "y" and size
+of the widget within the grid using properties "w" and "h".
+I.e.
+.P
+{
+  "type": "button",
+  "x":2, "y":1, "w":2, "h":2
+}
+.P
+Widgets can have the following properties:
+.P
+Widgets can have the following properties:
+.TP
+.B value 
+[string]
+an expression specifying the value to display. This can be a static value i.e. 
+"'string'" or "1" or an expression, i.e. "'Value is:'+$MyString" or "MyNumber.val"
+(see expressions section for more detail)
+.TP
+.B style 
+[string]
+assign a style to the widget. Styles can be used in CSS to theme individual widgets.
+Multiple widgets can have the same style.
+.TP
+.B expand
+[true|false]
+expand the widget to occupy all available space (false by default)
+.TP
+.B direction
+["vertical"|"horizontal"]
+specify "direction" of a widget, applicable to "grid" and "scale" widgets.
+Defaults to "horizontal".
+.TP
+.B action
+[string]
+An action to execute upon a button click. Applicable to buttons only.
+Defaults to "horizontal".
+.TP
+.B children
+[array]
+Add children to widget. Applicable to "grid" only. Syntax is the same as 
+for the main "layout".
+.TP
+.B icon
+[string]|[true|false]
+A name of an icon to display in a button or an indicator whether to display
+application icons within the taskbar.
+.TP
+.B isize
+[number]
+Specify the size of the icon in pixels (for button or taskbar)
+.TP
+.B rows
+[number]
+Specify number of rows in a taskbar
+.SH EXPRESSIONS
+Values in widgets can contain basic arithmetic and string manipulation
+expressions. Each numeric scan variable contains four values
+.TP
+.B .val
+current value of the variable
+.TP
+.B .pval
+previous value of the variable
+.TP
+.B .time
+time elapsed between observing .pval and .val
+.TP
+.B .count
+a number of time the pattern has been matched
+during the last scan
+.P
+By default, the value of the variable is the value of .val
+.P
+You can perform arithmetic operations on any of these value. I.e.
+"(Var.val -Var.pval)/Var.time" will give you a rate of change in the
+value of the variable.
+Valid operators are +, -, * and /. 
+.P
+You can convert a number into a string with arbitrary precision using
+operator Str, i.e. "Str(Var,2)".
+String variables are prefixed with $, i.e. $StringVar
+You can concatenate strings using + operator, i.e. "'String'+$Var".
+You can extract a substring using mid operator i.e. "Mid($Var,2,5)"
+Time() operator gives current time as a string and Extract operator
+allows extracting a patterns from a string using regular expressions,
+I.e. "Extract($Var,'FindThis: (FindThat)')"
+
+.SH SCANNER
+SFWBar displays the data it obtains by reading various files. These
+files can be simple text files that SFWBar will read or programs whose 
+output SFWBar will parse.
+
+Each file contains one or more variables that SFWBar will poll periodically
+and use to update the display. Json object "scanner" contains an array of
+files to scan for data. 
+
+"scanner": [
+{
+  "name": "/proc/cpuinfo",
+  "flags", "NoGlob",
+  "variables": [ ... ]
+} ]
+.TP
+.B name 
+specifies filename to read (or a program to execute if Exec flag is specified)
+.TP
+.B flags 
+specifies flags controlling how or when the file is scanned. The allowed flags are:
+.RS 4
+.TP
+.B NoGlob
+specifies that SFWBar shouldn't attempt to expand the pattern in the file
+name.
+.TP
+.B CheckTime
+indicates that the program should only update the variables from this file
+when file modification date/time changes.
+.TP
+.B Exec
+tells SFWBar to execute this program and parse its output. Please note that
+SFWBar will execute this program as often as needed to update variables
+based on its output. This may take up a significant part of system resourses.
+.RE
+.PP
+.B variables
+An array of variable definitions 
+
+"variables": [ 
+ {"string":"MyString", "value":"FindThis:.*(GrabThis)"},
+  "number":"MyNumber", "value":"FindThis:.*([0-9\\.)","flag":"Add"} ]
+
+.RS 4
+.B string
+A string variable to populate from the file data
+.TP
+.B number
+A numeric variable to populate from the file data
+.TP
+.B value
+a regular expression specifying how to extract the variable from the file.
+SFWBar reads the file one line at a time, matching each line against the
+regular expression. If the expression matches, the variable is set to the
+value of the first capture buffer defined in the regular expression.
+.TP
+.B flag
+can only be specified for numeric variables. Flag clarifes how multiple
+occurances of the pattern should be interpreted. The handler can take one of
+the following values: Add, Replace, Producti or First. By default, if SFWBar 
+matches the regular expression more than once, the variable will be set to 
+the value of the last occurence (Replace). If the flag is set to Add, 
+the variable will be set to the sum of all matches. Product will similarly 
+return the product of all values, while First will return the first occurence.
+.SH "PLACEMENT"
+Placement section enables intelligent placement if new floating windows. If
+enabled the program will first attemp to place the window in a location, where
+it won't overlap with other windows. If such location doesn't exist, the window
+will be placed in a cascading pattern from top-left to bottom-right. Placement
+declaration accepts two parameters "xcascade" and "ycascade" that specify the
+steps in the window cascade. These are specified in percentage of the desktop
+Adimensions.
+I.e.
+.P
+"placement: {
+  "xcascade":5,
+  "ycascade":5 }
+
+
+
