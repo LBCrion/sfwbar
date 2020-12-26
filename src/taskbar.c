@@ -16,7 +16,7 @@ GtkWidget *taskbar_init ( struct context *context )
 
   context->features |= F_TASKBAR;
 
-  context->box = gtk_grid_new();
+  context->box = clamp_grid_new();
   g_object_set(context->box,"column-homogeneous",TRUE,NULL);
 
   w = gtk_button_new();
