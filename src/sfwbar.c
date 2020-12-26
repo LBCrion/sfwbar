@@ -83,11 +83,12 @@ gint shell_timer ( struct context *context )
   scanner_expire(context->scan_list);
   widget_update_all(context);
   obj = ipc_poll(context->ipc);
-  if (obj != NULL)
+  while (obj != NULL)
   {
     ev = ipc_parse_event(obj);
     dispatch_event(&ev,context);
     json_object_put(obj);
+    obj = ipc_poll(context->ipc);
   }
   return TRUE;
 }
