@@ -131,6 +131,7 @@ void taskbar_update_window (struct ipc_event *ev, struct context *context)
     if(context->features & F_TB_LABEL)
     {
       button->label = gtk_label_new(ev->title);
+      gtk_label_set_ellipsize (GTK_LABEL(button->label),PANGO_ELLIPSIZE_END);
       gtk_container_add(GTK_CONTAINER(box),button->label);
     }
 
