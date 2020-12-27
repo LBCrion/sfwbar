@@ -1,0 +1,39 @@
+# Maintainer: Lev Babiev <harley at hosers dot org>
+
+pkgname=sfwbar
+pkgver=0.9.1
+pkgrel=1
+
+pkgdesc='Sway Floating Window Bar - a taskbar for sway'
+arch=('x86_64')
+url='https://github.com/LBCrion/sfwbar'
+license=('GPL')
+depends=(
+    'gtk3'
+    'json-c'
+    'gtk-layer-shell'
+    )
+makedepends=(
+    'meson'
+    )
+
+source=(
+    "$pkgname-$pkgver.tar.gz::https://github.com/LBCrion/sfwbar/archive/v$pkgver.tar.gz"
+    )
+sha256sums=('1d268173872b35f31b851e93d3b9a35d3964f31e0a468b371c6d46512ac152af')
+
+build() {
+    cd "sfwbar-$pkgver"
+    meson --prefix=/usr \
+          --buildtype=plain \
+          --auto-features=enabled \
+          --wrap-mode=nodownload \
+          build
+    ninja -C build
+}
+
+package() {
+    cd "sfwbar-$pkgver"
+    DESTDIR="$pkgdir" ninja -C build install
+    install -Dm644 LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+}
