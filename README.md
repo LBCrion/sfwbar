@@ -22,6 +22,8 @@ json-c
 Compile instructions:
 meson build
 ninja -C build
+sudo ninja -C build install
 
 ## Configuration
-See man page for config file details
+Copy sfwbar.config and sfwbar.css from /usr/share/sfwbar/ to ~/.config/sfwbar/
+See man page for config file details. 
