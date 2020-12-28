@@ -26,4 +26,10 @@ sudo ninja -C build install
 
 ## Configuration
 Copy sfwbar.config and sfwbar.css from /usr/share/sfwbar/ to ~/.config/sfwbar/
+
+you may want to add the following line to your sway config file to open windows
+as floating by default:
+
+for_window [app_id="[.]*"] floating enable
+
 See man page for config file details. 
