@@ -8,6 +8,7 @@ compositor, designed with a stacking layout in mind.
 
 ## SFWBar implements the following features:
 1. Taskbar - to control floating windows
+1. Pager - to allow switching between workspaces
 1. Window placement engine - to open new windows in more logical locations
 1. A simple widget set to display information from system files
 
