@@ -22,7 +22,7 @@ source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
 sha256sums=('094f70b9e9ef4cf6c181d95c924597d913ee8e6731ea373b79f868a11d70e7e6')
 
 build() {
-    cd "sfwbar-$pkgver"
+    cd "$pkgname-$pkgver"
     meson --prefix=/usr \
           --buildtype=plain \
           build
@@ -30,6 +30,6 @@ build() {
 }
 
 package() {
-    cd "sfwbar-$pkgver"
+    cd "$pkgname-$pkgver"
     DESTDIR="$pkgdir" ninja -C build install
 }
