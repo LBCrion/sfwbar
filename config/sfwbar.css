@@ -22,6 +22,22 @@ button#taskbar_normal:hover {
   background-color: #cccccc;
 }
 
+button#pager_normal , button#pager_visible , button#pager_focused {
+  padding-left: 5px;
+  padding-right: 5px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  background-image: none;
+  border-radius: 0;
+  border-image: none;
+  font: 10px Sans;
+}
+
+button#pager_focused {
+  background-color: #bbddff;
+}
+
+
 progress, trough {
   border-radius: 0;
 }
