@@ -12,6 +12,7 @@ src = ['src/sfwbar.c',
     'src/scanner.c',
     'src/expr.c',
     'src/misc.c',
+    'src/pager.c',
     'src/clampgrid.c',
     'src/parser.tab.c',
     'src/lex.yy.c']

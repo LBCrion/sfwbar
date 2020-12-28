@@ -89,6 +89,8 @@ gint shell_timer ( struct context *context )
     ev = ipc_parse_event(obj);
     if(etype==0x80000003)
       dispatch_event(&ev,context);
+    if(etype==0x80000000)
+      pager_update(context);
     json_object_put(obj);
     obj = ipc_poll(context->ipc,&etype);
   }
@@ -135,7 +137,7 @@ static void activate (GtkApplication* app, struct context *context)
   if(context->features & F_TASKBAR)
     taskbar_populate(context);
 
-  if((context->features & F_TASKBAR)||(context->features & F_PLACEMENT))
+  if((context->features & F_TASKBAR)||(context->features & F_PLACEMENT)||(context->features & F_PAGER))
   {
     context->ipc = ipc_open();
     ipc_subscribe(context->ipc);

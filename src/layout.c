@@ -86,7 +86,13 @@ void layout_config_iter ( struct context *context, json_object *obj, GtkWidget *
     if(context->tb_rows<1)
       context->tb_rows = 1;
     widget = taskbar_init(context);
-
+  }
+  if(g_strcmp0(type,"pager")==0)
+  {
+    context->pager_rows = json_int_by_name(obj,"rows",1);
+    if(context->pager_rows<1)
+      context->pager_rows = 1;
+    widget = pager_init(context);
   }
 
   if(widget==NULL)

@@ -35,6 +35,9 @@ each item in the array is a widget. The following widget types are supported:
 .B taskbar
 this is a special widget displaying a list of all floating windows.
 .TP
+.B pager
+this is a special widget display a list of all workspaces.
+.TP
 .B grid
 a layout grid used to fine tune placement of widgets. You can use these to
 further subdivide each cell of the main grid and arrange items therein.
@@ -96,6 +99,9 @@ Defaults to "horizontal".
 Add children to widget. Applicable to "grid" only. Syntax is the same as 
 for the main "layout".
 .TP
+.B title
+[true|false]
+An indicator whether to display an application title within the taskbar.
 .B icon
 [string]|[true|false]
 A name of an icon to display in a button or an indicator whether to display
@@ -107,7 +113,7 @@ Specify the size of the icon in pixels (for button or taskbar)
 .TP
 .B rows
 [number]
-Specify number of rows in a taskbar
+Specify number of rows in a taskbar or a pager
 .SH EXPRESSIONS
 Values in widgets can contain basic arithmetic and string manipulation
 expressions. Each numeric scan variable contains four values

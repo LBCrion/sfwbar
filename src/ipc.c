@@ -125,7 +125,7 @@ int ipc_send ( int sock, gint32 type, gchar *command )
 
 int ipc_subscribe ( int sock )
 {
-  if ( ipc_send(sock, 2, "['window']") == -1)
+  if ( ipc_send(sock, 2, "['workspace','window']") == -1)
     return -1;
 
   return sock;

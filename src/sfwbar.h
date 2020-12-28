@@ -18,10 +18,12 @@ struct context {
   gint32 tb_focus;
   gint32 tb_rows;
   gint32 tb_isize;
+  gint32 pager_rows;
   gint32 position;
   gint32 wp_x,wp_y;
   GtkCssProvider *css;
   GtkWidget *box;
+  GtkWidget *pager;
   GList *buttons;
   GList *widgets;
   GList *file_list;
@@ -83,6 +85,9 @@ void taskbar_refresh ( struct context *context );
 void taskbar_delete_window (gint64 pid, struct context *context);
 void taskbar_update_window (struct ipc_event *ev, struct context *context);
 
+GtkWidget *pager_init ( struct context *context );
+void pager_update ( struct context *context );
+
 GtkWidget *layout_init ( struct context *context, json_object *obj );
 void widget_update_all( struct context *context );
 void widget_action ( GtkWidget *widget, gpointer data );
@@ -118,9 +123,10 @@ int md5_file( char *path, unsigned char output[16] );
 enum {
         F_TASKBAR   = 1<<0,
         F_PLACEMENT = 1<<1,
-        F_TB_ICON   = 1<<2,
-        F_TB_LABEL  = 1<<3,
-        F_TB_EXPAND = 1<<4
+        F_PAGER     = 1<<2,
+        F_TB_ICON   = 1<<3,
+        F_TB_LABEL  = 1<<4,
+        F_TB_EXPAND = 1<<5
 };
 
 enum {
