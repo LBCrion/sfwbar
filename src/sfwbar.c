@@ -79,16 +79,18 @@ gint shell_timer ( struct context *context )
 {
   json_object *obj;
   struct ipc_event ev;
+  gint32 etype;
 
   scanner_expire(context->scan_list);
   widget_update_all(context);
-  obj = ipc_poll(context->ipc);
+  obj = ipc_poll(context->ipc,&etype);
   while (obj != NULL)
   {
     ev = ipc_parse_event(obj);
-    dispatch_event(&ev,context);
+    if(etype==0x80000003)
+      dispatch_event(&ev,context);
     json_object_put(obj);
-    obj = ipc_poll(context->ipc);
+    obj = ipc_poll(context->ipc,&etype);
   }
   return TRUE;
 }

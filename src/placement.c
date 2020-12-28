@@ -139,12 +139,13 @@ json_object *placement_find_pid ( json_object *obj, gint64 pid )
 void place_window ( gint64 pid, struct context *context )
 {
   int sock;
+  gint32 etype;
   char buff[256];
   struct rect r;
   json_object *obj, *node;
   sock = ipc_open();
   ipc_send(sock,4,"");
-  obj = ipc_poll(sock);
+  obj = ipc_poll(sock,&etype);
   node = placement_find_pid ( obj, pid );
   placement_location(context,node,pid,&r);
   json_object_put(obj);

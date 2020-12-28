@@ -14,23 +14,33 @@
 
 const  gint8 magic[6] = {0x69, 0x33, 0x2d, 0x69, 0x70, 0x63};
 
-json_object *ipc_poll ( int sock )
+json_object *ipc_poll ( int sock, gint32 *etype )
 {
   gint8 ipc_header[14];
   gchar *response = NULL;
   gint32 plen;
   size_t pos=0;
+  ssize_t rlen;
 
-  if(recv(sock,(gchar *)ipc_header,sizeof(ipc_header),0)==sizeof(ipc_header))
+  while(pos<sizeof(ipc_header))
   {
-    memcpy(&plen,ipc_header+sizeof(magic)+sizeof(plen),sizeof(plen));
+    rlen = recv(sock,(gchar *)ipc_header,sizeof(ipc_header)-pos,0);
+    if (rlen<=0)
+      break;
+    pos+=rlen;
+  }
+
+  if(pos==sizeof(ipc_header))
+  {
+    pos=0;
+    memcpy(etype,ipc_header+sizeof(magic)+sizeof(plen),sizeof(plen));
     memcpy(&plen,ipc_header+sizeof(magic),sizeof(plen));
     response = g_malloc(plen+1);
     if ( response != NULL)
     {
       while(pos<plen)
       {
-        ssize_t rlen = recv(sock,(gchar *)response,plen,0);
+        rlen = recv(sock,(gchar *)response,plen-pos,0);
         if (rlen<=0)
           break;
         pos+=rlen;

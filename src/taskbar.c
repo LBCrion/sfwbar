@@ -33,11 +33,12 @@ void taskbar_populate ( struct context *context )
 {
   json_object *obj;
   int sock;
+  gint32 etype;
   sock=ipc_open();
   if(sock==-1)
     return;
   ipc_send(sock,4,"");
-  obj = ipc_poll(sock);
+  obj = ipc_poll(sock,&etype);
   if(obj!=NULL)
   {
     taskbar_traverse_tree(obj,context);
