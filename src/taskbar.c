@@ -13,6 +13,7 @@ void taskbar_traverse_tree ( json_object *obj, struct context *context );
 GtkWidget *taskbar_init ( struct context *context )
 {
   GtkWidget *w;
+  int i;
 
   context->features |= F_TASKBAR;
 
@@ -22,9 +23,13 @@ GtkWidget *taskbar_init ( struct context *context )
   w = gtk_button_new();
   gtk_widget_set_name(w, "taskbar_active");
   gtk_grid_attach(GTK_GRID(context->box),w,1,1,1,1);
-  w = gtk_button_new();
-  gtk_widget_set_name(w, "taskbar_normal");
-  gtk_grid_attach(GTK_GRID(context->box),w,1,2,1,1);
+
+  for(i=1;i<context->tb_rows;i++)
+  {
+    w = gtk_button_new();
+    gtk_widget_set_name(w, "taskbar_normal");
+    gtk_grid_attach(GTK_GRID(context->box),w,1,i+1,1,1);
+  } 
 
   return context->box;
 }

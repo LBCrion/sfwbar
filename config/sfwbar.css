@@ -1,11 +1,11 @@
 button#taskbar_normal label, button#taskbar_active label, button#taskbar_normal:hover label {
-  padding-left: 10px;
+  padding-left: 3px;
   padding-top: 0px;
   padding-bottom: 0px;
 }
 
 button#taskbar_normal , button#taskbar_active , button#taskbar_normal:hover {
-  padding-left: 10px;
+  padding-left: 3px;
   padding-top: 2px;
   padding-bottom: 2px;
   background-image: none;
