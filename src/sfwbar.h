@@ -68,7 +68,7 @@ struct scan_file {
   GList *vars;
   };
 
-int ipc_open();
+int ipc_open(int);
 int ipc_subscribe( int sock );
 json_object *ipc_poll( int sock, gint32 *etype );
 int ipc_send ( int sock, gint32 type, gchar *command );

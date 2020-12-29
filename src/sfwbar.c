@@ -139,7 +139,7 @@ static void activate (GtkApplication* app, struct context *context)
 
   if((context->features & F_TASKBAR)||(context->features & F_PLACEMENT)||(context->features & F_PAGER))
   {
-    context->ipc = ipc_open();
+    context->ipc = ipc_open(10);
     ipc_subscribe(context->ipc);
   }
 

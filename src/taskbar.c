@@ -34,7 +34,7 @@ void taskbar_populate ( struct context *context )
   json_object *obj;
   int sock;
   gint32 etype;
-  sock=ipc_open();
+  sock=ipc_open(3000);
   if(sock==-1)
     return;
   ipc_send(sock,4,"");

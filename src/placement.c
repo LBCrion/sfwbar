@@ -143,7 +143,7 @@ void place_window ( gint64 pid, struct context *context )
   char buff[256];
   struct rect r;
   json_object *obj, *node;
-  sock = ipc_open();
+  sock = ipc_open(3000);
   ipc_send(sock,4,"");
   obj = ipc_poll(sock,&etype);
   node = placement_find_pid ( obj, pid );

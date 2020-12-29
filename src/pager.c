@@ -35,7 +35,7 @@ void pager_update ( struct context *context )
   GtkWidget *widget;
   gchar *label;
 
-  sock=ipc_open();
+  sock=ipc_open(3000);
   if(sock==-1)
     return;
   

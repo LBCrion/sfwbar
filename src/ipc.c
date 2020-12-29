@@ -86,12 +86,12 @@ struct ipc_event ipc_parse_event ( json_object *obj )
   return ev;
 }
 
-int ipc_open ()
+int ipc_open (int to)
 {
   const gchar *socket_path;
   int sock;
   struct sockaddr_un addr;
-  struct timeval timeout = {.tv_sec = 0, .tv_usec = 10};
+  struct timeval timeout = {.tv_sec = to/1000, .tv_usec = to%1000};
 
   socket_path = g_getenv("SWAYSOCK");
   if (socket_path == NULL)
