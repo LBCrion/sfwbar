@@ -7,6 +7,21 @@
 #include <gtk-layer-shell.h>
 #include "sfwbar.h"
 
+gchar *confname=NULL, *cssname=NULL, *sockname=NULL;
+static GOptionEntry entries[] = {
+  {"config",'f',0,G_OPTION_ARG_FILENAME,&confname,"Specify config file"},
+  {"css",'c',0,G_OPTION_ARG_FILENAME,&cssname,"Specify css file"},
+  {"socket",'s',0,G_OPTION_ARG_FILENAME,&sockname,"Specify sway socket file"},
+  {NULL}};
+
+void parse_command_line ( struct context *context, int argc, char **argv)
+{
+  GOptionContext *optc;
+  optc = g_option_context_new(" - Sway Floating Window Bar");
+  g_option_context_add_main_entries(optc,entries,NULL);
+  g_option_context_add_group (optc, gtk_get_option_group (TRUE));
+  g_option_context_parse(optc,&argc,&argv,NULL);
+}
 
 void dispatch_event ( struct ipc_event *ev, struct context *context )
 {
@@ -60,9 +75,13 @@ GtkWidget *load_config ( struct context *context )
   gchar *json, *fname;
   json_object *obj;
   GtkWidget *root;
-
-  fname = get_xdg_config_file("sfwbar.config");
+  
+  if(confname!=NULL)
+    fname = g_strdup(confname);
+  else
+    fname = get_xdg_config_file("sfwbar.config");
   obj = json_object_from_file(fname);
+  g_free(fname);
   json = (gchar *)json_util_get_last_err();
   if(json!=NULL)
     printf("%s\n",json);
@@ -147,6 +166,7 @@ static void activate (GtkApplication* app, struct context *context)
   gtk_widget_show_all ((GtkWidget *)window);
 }
 
+
 int main (int argc, char **argv)
 {
   GtkApplication *app;
@@ -154,6 +174,8 @@ int main (int argc, char **argv)
   struct context context;
 
   init_context(&context);
+
+  parse_command_line(&context,argc,argv);
 
   app = gtk_application_new ("org.gtk.sfwbar", G_APPLICATION_FLAGS_NONE);
   g_signal_connect (app, "activate", G_CALLBACK (activate), &context);
