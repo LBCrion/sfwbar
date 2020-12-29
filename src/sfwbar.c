@@ -128,7 +128,10 @@ static void activate (GtkApplication* app, struct context *context)
   gtk_layer_auto_exclusive_zone_enable (window);
   gtk_layer_set_keyboard_interactivity(window,FALSE);
 
-  cssf = get_xdg_config_file("sfwbar.css");
+  if(cssname!=NULL)
+    cssf=g_strdup(cssname);
+  else
+    cssf = get_xdg_config_file("sfwbar.css");
   if(cssf!=NULL)
   {
     css = gtk_css_provider_new();
