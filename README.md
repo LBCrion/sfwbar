@@ -18,7 +18,7 @@ Install dependencies:
 glib
 gtk3
 gtk-layer-shell
-json-c
+libucl
 
 Compile instructions:
 meson build

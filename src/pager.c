@@ -1,5 +1,10 @@
+/* This entire file is licensed under GNU General Public License v3.0
+ *
+ * Copyright 2020 Lev Babiev
+ */
+
+
 #include <gtk/gtk.h>
-#include <json.h>
 #include "sfwbar.h"
 
 GtkWidget *pager_init ( struct context *context )
@@ -28,10 +33,13 @@ void pager_button_click( GtkWidget *widget, struct context *context )
 
 void pager_update ( struct context *context )
 {
-  int i,c=0;
+  int c=0;
   int sock;
   gint32 etype;
-  json_object *obj,*iter;
+  const ucl_object_t *obj,*iter;
+  struct ucl_parser *parse;
+  gchar *response;
+  ucl_object_iter_t *itp;
   GtkWidget *widget;
   gchar *label;
 
@@ -40,31 +48,37 @@ void pager_update ( struct context *context )
     return;
   
   ipc_send(sock,1,"");
-  obj = ipc_poll(sock,&etype);
+  response = ipc_poll(sock,&etype);
   close(sock);
+  parse = ucl_parser_new(0);
+  ucl_parser_add_string(parse,response,strlen(response));
+  obj = ucl_parser_get_object(parse);
 
-  if(!json_object_is_type(obj, json_type_array))
-    return;
-  gtk_container_foreach(GTK_CONTAINER(context->pager),(GtkCallback)pager_remove_button,context);
-  for(i=0;i<json_object_array_length(obj);i++)
-    {
-      iter = json_object_array_get_idx(obj,i);
-      label = json_string_by_name(iter,"name");
-      if(label!=NULL)
+  if(obj)
+  {
+    gtk_container_foreach(GTK_CONTAINER(context->pager),(GtkCallback)pager_remove_button,context);
+    itp = ucl_object_iterate_new(obj);
+    while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
       {
-        widget = gtk_button_new_with_label(label);
-        g_free(label);
-        gtk_widget_set_name(widget, "pager_normal");
-        if(json_bool_by_name(iter,"visible",FALSE)==TRUE)
-          gtk_widget_set_name(widget, "pager_visible");
-        if(json_bool_by_name(iter,"focused",FALSE)==TRUE)
-          gtk_widget_set_name(widget, "pager_focused");
-        g_signal_connect(widget,"clicked",G_CALLBACK(pager_button_click),context);
-        gtk_grid_attach(GTK_GRID(context->pager),widget, c/(context->pager_rows),
-          c%(context->pager_rows),1,1);
-        c++;
+        label = ucl_string_by_name(iter,"name");
+        if(label!=NULL)
+        {
+          widget = gtk_button_new_with_label(label);
+          g_free(label);
+          gtk_widget_set_name(widget, "pager_normal");
+          if(ucl_bool_by_name(iter,"visible",FALSE)==TRUE)
+            gtk_widget_set_name(widget, "pager_visible");
+          if(ucl_bool_by_name(iter,"focused",FALSE)==TRUE)
+            gtk_widget_set_name(widget, "pager_focused");
+          g_signal_connect(widget,"clicked",G_CALLBACK(pager_button_click),context);
+          gtk_grid_attach(GTK_GRID(context->pager),widget, c/(context->pager_rows),
+            c%(context->pager_rows),1,1);
+          c++;
+        }
       }
-    }
-  gtk_widget_show_all(context->pager);
-  json_object_put(obj);
+    gtk_widget_show_all(context->pager);
+    ucl_object_unref((ucl_object_t *)obj);
+  }
+  ucl_parser_free(parse);
+  g_free(response);
 }

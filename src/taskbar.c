@@ -8,7 +8,7 @@
 #include <gtk/gtk.h>
 #include "sfwbar.h"
 
-void taskbar_traverse_tree ( json_object *obj, struct context *context );
+void taskbar_traverse_tree ( const ucl_object_t *obj, struct context *context );
 
 GtkWidget *taskbar_init ( struct context *context )
 {
@@ -36,48 +36,63 @@ GtkWidget *taskbar_init ( struct context *context )
 
 void taskbar_populate ( struct context *context )
 {
-  json_object *obj;
+  const ucl_object_t *obj;
+  struct ucl_parser *parse;
+  gchar *response;
   int sock;
   gint32 etype;
   sock=ipc_open(3000);
   if(sock==-1)
     return;
   ipc_send(sock,4,"");
-  obj = ipc_poll(sock,&etype);
+  response = ipc_poll(sock,&etype);
+  if(response==NULL)
+    return;
+  parse = ucl_parser_new(0);
+  ucl_parser_add_string(parse,response,strlen(response));
+  obj = ucl_parser_get_object(parse);
   if(obj!=NULL)
   {
     taskbar_traverse_tree(obj,context);
-    json_object_put(obj);
+    ucl_object_unref((ucl_object_t *)obj);
   }
+  ucl_parser_free(parse);
+  g_free(response);
   close(sock);
 }
 
-void taskbar_traverse_tree ( json_object *obj, struct context *context )
+void taskbar_traverse_tree ( const ucl_object_t *obj, struct context *context )
 {
-  json_object *ptr,*iter,*arr;
+  const ucl_object_t *iter,*arr;
+  ucl_object_iter_t *itp;
   struct ipc_event ev;
-  int i;
-  json_object_object_get_ex(obj,"floating_nodes",&arr);
-  if( json_object_is_type(arr, json_type_array))
-    for(i=0;i<json_object_array_length(arr);i++)
+  arr = ucl_object_lookup(obj,"floating_nodes");
+  if( arr )
+  {
+    itp = ucl_object_iterate_new(arr);
+    while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
     {
-      iter = json_object_array_get_idx(arr,i);
-      ev.appid = json_string_by_name(iter,"app_id");
+      ev.appid = ucl_string_by_name(iter,"app_id");
       if(ev.appid!=NULL)
       {
-        ev.title = json_string_by_name(iter,"name");
-        ev.pid = json_int_by_name(iter,"pid",G_MININT64); 
-        json_object_object_get_ex(iter,"focused",&ptr);
-        if(json_object_get_boolean(ptr) == TRUE)
+        ev.title = ucl_string_by_name(iter,"name");
+        ev.pid = ucl_int_by_name(iter,"pid",G_MININT64); 
+        if(ucl_bool_by_name(iter,"focused",FALSE) == TRUE)
           context->tb_focus = ev.pid;
         ev.event = 99;
         dispatch_event(&ev,context);
       }
     }
-  json_object_object_get_ex(obj,"nodes",&arr);
-  if( json_object_is_type(arr, json_type_array))
-    for(i=0;i<json_object_array_length(arr);i++)
-      taskbar_traverse_tree(json_object_array_get_idx(arr,i),context);
+    ucl_object_iterate_free(itp);
+  }
+  arr = ucl_object_lookup(obj,"nodes");
+  if( arr )
+  {
+    itp = ucl_object_iterate_new(arr);
+    while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
+      taskbar_traverse_tree(iter,context);
+    ucl_object_iterate_free(itp);
+  }
 }
 
 void taskbar_remove_button ( GtkWidget *widget, struct context *context )

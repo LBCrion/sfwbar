@@ -1,7 +1,7 @@
 project('sfwbar','c')
 gtk3 = dependency('gtk+-3.0')
 glib = dependency('glib-2.0')
-json = dependency('json-c')
+ucl  = dependency('libucl')
 glsh = dependency('gtk-layer-shell-0')
 
 src = ['src/sfwbar.c',
@@ -16,9 +16,9 @@ src = ['src/sfwbar.c',
     'src/clampgrid.c',
     'src/parser.tab.c',
     'src/lex.yy.c']
-dep = [gtk3, glib, json, glsh ]
+dep = [gtk3, glib, ucl, glsh ]
 
-executable ('sfwbar', sources: src, dependencies: dep, install: true)
+executable ('sfwbar', sources: src, c_args: '-DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED', dependencies: dep, install: true)
 
 install_man('sfwbar.1')
 install_data(['config/sfwbar.config','config/sfwbar.css'],

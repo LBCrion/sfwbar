@@ -16,6 +16,8 @@ IUSE=""
 
 DEPEND="
 	>=x11-libs/gtk+-3.22.0:3[introspection,wayland]
+	gtk-layer-shell
+	libcfg
 "
 RDEPEND="${DEPEND}"
 BDEPEND="

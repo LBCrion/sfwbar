@@ -3,7 +3,7 @@
 
 #include <glib.h>
 #include <gtk/gtk.h>
-#include <json.h>
+#include <ucl.h>
 
 struct ipc_event {
   gint8 event;
@@ -70,9 +70,9 @@ struct scan_file {
 
 int ipc_open(int);
 int ipc_subscribe( int sock );
-json_object *ipc_poll( int sock, gint32 *etype );
+gchar *ipc_poll( int sock, gint32 *etype );
 int ipc_send ( int sock, gint32 type, gchar *command );
-struct ipc_event ipc_parse_event ( json_object *obj );
+struct ipc_event ipc_parse_event ( const ucl_object_t *obj );
 
 void place_window ( gint64 pid, struct context *context );
 
@@ -88,7 +88,7 @@ void taskbar_update_window (struct ipc_event *ev, struct context *context);
 GtkWidget *pager_init ( struct context *context );
 void pager_update ( struct context *context );
 
-GtkWidget *layout_init ( struct context *context, json_object *obj );
+GtkWidget *layout_init ( struct context *context, const ucl_object_t *obj );
 void widget_update_all( struct context *context );
 void widget_action ( GtkWidget *widget, gpointer data );
 
@@ -105,15 +105,15 @@ char *time_str ( void );
 char *extract_str ( char *str, char *pattern );
 void *list_by_name ( GList *prev, char *name );
 char *parse_identifier ( char *id, char **fname );
-void scanner_init ( struct context *context, json_object *obj );
-GList *scanner_add_vars( struct context *context, json_object *obj, struct scan_file *file );
+void scanner_init ( struct context *context, const ucl_object_t *obj );
+GList *scanner_add_vars( struct context *context, const ucl_object_t *obj, struct scan_file *file );
 char *numeric_to_str ( double num, int dec );
 char *str_mid ( char *str, int c1, int c2 );
 
 gchar *get_xdg_config_file ( gchar *fname );
-gchar *json_string_by_name ( json_object *obj, gchar *name);
-gint64 json_int_by_name ( json_object *obj, gchar *name, gint64 defval );
-gboolean json_bool_by_name ( json_object *obj, gchar *name, gboolean defval );
+gchar *ucl_string_by_name ( const ucl_object_t *obj, gchar *name);
+gint64 ucl_int_by_name ( const ucl_object_t *obj, gchar *name, gint64 defval );
+gboolean ucl_bool_by_name ( const ucl_object_t *obj, gchar *name, gboolean defval );
 int md5_file( char *path, unsigned char output[16] );
 
 #define SCAN_VAR(x) ((struct scan_var *)x)

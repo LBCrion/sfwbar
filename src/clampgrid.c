@@ -1,3 +1,8 @@
+/* This entire file is licensed under GNU General Public License v3.0
+ *
+ * Copyright 2020 Lev Babiev
+ */
+
 
 #include <gtk/gtk.h>
 

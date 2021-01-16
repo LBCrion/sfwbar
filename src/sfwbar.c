@@ -55,34 +55,37 @@ void init_context ( struct context *context )
   context->read_buff = g_malloc(context->buff_len);
 }
 
-void placement_init ( struct context *context, json_object *obj )
+void placement_init ( struct context *context, const ucl_object_t *obj )
 {
-  json_object *ptr;
-  if(!json_object_object_get_ex(obj,"placement",&ptr))
+  const ucl_object_t *ptr;
+  if((ptr=ucl_object_lookup(obj,"placement"))==NULL)
     return;
   context->features |= F_PLACEMENT;
-  context->wp_x= json_int_by_name(ptr,"xcascade",10);
-  context->wp_y= json_int_by_name(ptr,"ycascade",10);
+  context->wp_x= ucl_int_by_name(ptr,"xcascade",10);
+  context->wp_y= ucl_int_by_name(ptr,"ycascade",10);
   if(context->wp_x<1)
     context->wp_x=1;
   if(context->wp_y<1)
     context->wp_y=1;
-
 }
 
 GtkWidget *load_config ( struct context *context )
 {
-  gchar *json, *fname;
-  json_object *obj;
+  const gchar *json;
+  gchar *fname;
+  struct ucl_parser *uparse;
+  const ucl_object_t *obj;
   GtkWidget *root;
   
   if(confname!=NULL)
     fname = g_strdup(confname);
   else
     fname = get_xdg_config_file("sfwbar.config");
-  obj = json_object_from_file(fname);
+  uparse = ucl_parser_new(0);
+  ucl_parser_add_file(uparse,fname);
+  obj = ucl_parser_get_object(uparse);
   g_free(fname);
-  json = (gchar *)json_util_get_last_err();
+  json = ucl_parser_get_error(uparse);
   if(json!=NULL)
     printf("%s\n",json);
   
@@ -90,28 +93,39 @@ GtkWidget *load_config ( struct context *context )
   scanner_init(context,obj);
   root = layout_init(context,obj);
 
-  json_object_put(obj);
+  ucl_object_unref((ucl_object_t *)obj);
+  ucl_parser_free(uparse);
   return root;
 }
 
 gint shell_timer ( struct context *context )
 {
-  json_object *obj;
+  const ucl_object_t *obj;
+  struct ucl_parser *parse;
+  gchar *response;
   struct ipc_event ev;
   gint32 etype;
 
   scanner_expire(context->scan_list);
   widget_update_all(context);
-  obj = ipc_poll(context->ipc,&etype);
-  while (obj != NULL)
+  response = ipc_poll(context->ipc,&etype);
+  while (response != NULL)
   {
-    ev = ipc_parse_event(obj);
-    if(etype==0x80000003)
-      dispatch_event(&ev,context);
-    if(etype==0x80000000)
-      pager_update(context);
-    json_object_put(obj);
-    obj = ipc_poll(context->ipc,&etype);
+    parse = ucl_parser_new(0);
+    ucl_parser_add_string(parse,response,strlen(response));
+    obj = ucl_parser_get_object(parse);
+    if(obj!=NULL)
+    {
+      ev = ipc_parse_event(obj);
+      if(etype==0x80000003)
+        dispatch_event(&ev,context);
+      if(etype==0x80000000)
+        pager_update(context);
+    }
+    ucl_object_unref((ucl_object_t *)obj);
+    ucl_parser_free(parse);
+    g_free(response);
+    response = ipc_poll(context->ipc,&etype);
   }
   return TRUE;
 }

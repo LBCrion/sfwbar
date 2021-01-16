@@ -13,76 +13,82 @@
 #include <glob.h>
 #include "sfwbar.h"
 
-void scanner_init ( struct context *context, json_object *obj )
+void scanner_init ( struct context *context, const ucl_object_t *obj )
 {
-  json_object *ptr,*iter,*arr;
-  int i,j;
+  const ucl_object_t *iter,*arr;
+  ucl_object_iter_t *itp;
+  int j;
   struct scan_file *file;
   const char *flags[] = {"NoGlob","Exec","CheckTime"};
   gchar *flist;
-  json_object_object_get_ex(obj,"scanner",&arr);
-  if( json_object_is_type(arr, json_type_array))
-    for(i=0;i<json_object_array_length(arr);i++)
+  arr = ucl_object_lookup(obj,"scanner");
+  if( arr )
+  {
+    itp = ucl_object_iterate_new(arr);
+    while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
     {
-      iter = json_object_array_get_idx(arr,i);
-      json_object_object_get_ex(iter,"name",&ptr);
-      if(ptr!=NULL)
+      file = g_malloc(sizeof(struct scan_file));  
+      if((file!=NULL)&&(ucl_object_key(iter)!=NULL))
       {
-        file = g_malloc(sizeof(struct scan_file));  
-        if(file!=NULL)
-        {
-          file->fname = strdup(json_object_get_string(ptr));
-          file->mod_time = 0;
-          file->flags = 0;
-          memset(file->md5,0,16);
-          flist = json_string_by_name(iter,"flags");
-          if(flist!=NULL)
-            for(j=0;j<3;j++)
-              if(g_strrstr(flist,flags[j])!=NULL)
-                file->flags |= (1<<j);
-          g_free(flist);
-          json_object_object_get_ex(iter,"variables",&ptr);
-          file->vars = scanner_add_vars(context, ptr, file);
-          context->file_list = g_list_append(context->file_list,file);
+        file->fname = g_strdup(ucl_object_key(iter));
+        file->mod_time = 0;
+        file->flags = 0;
+        memset(file->md5,0,16);
+        flist = ucl_string_by_name(iter,"flags");
+        if(flist!=NULL)
+          for(j=0;j<3;j++)
+            if(g_strrstr(flist,flags[j])!=NULL)
+              file->flags |= (1<<j);
+        file->vars = scanner_add_vars(context, iter, file);
+        context->file_list = g_list_append(context->file_list,file);
         }
-      }
     }
+    ucl_object_iterate_free(itp);
+  }
 }
 
-GList *scanner_add_vars( struct context *context, json_object *obj, struct scan_file *file )
+GList *scanner_add_vars( struct context *context, const ucl_object_t *obj, struct scan_file *file )
 {
   struct scan_var *var;
-  json_object *iter,*ptr;
-  char *name, *match;
+  const ucl_object_t *iter;
+  ucl_object_iter_t *itp;
+  char *name, *match, *p;
   GRegex *regex;
   GList *vlist;
-  int i,j,v;
+  int j;
   const char *flags[] = {"Add","Product","Replace","First"};
   gchar *flist;
-  if(!json_object_is_type(obj, json_type_array))
+  if(!obj)
     return NULL;
 
   vlist=NULL;
+  itp = ucl_object_iterate_new(obj);
 
-  for(i=0;i<json_object_array_length(obj);i++)
+  while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
   {
-    iter = json_object_array_get_idx(obj,i);
+    name = g_strdup(ucl_object_key(iter)); 
 
-    v=1;
-    if(json_object_object_get_ex(iter,"number",&ptr)==FALSE)
-      json_object_object_get_ex(iter,"string",&ptr);
-    else
-      v=0;
-    name = g_strdup(json_object_get_string(ptr));
-    json_object_object_get_ex(iter,"value",&ptr);
-    match = g_strdup(json_object_get_string(ptr));
+    match = (char *)ucl_object_tostring(iter);
     var = g_malloc(sizeof(struct scan_var)); 
     if(match!=NULL)
       regex = g_regex_new(match,0,0,NULL);
 
     if((name!=NULL)&&(match!=NULL)&&(var!=NULL)&&(regex!=NULL))
     {
-      var->name = name;
+      p = strchr(name,'.');
+      if(p==NULL)
+        var->var_type = 1;
+      else
+      {
+        *p='\0';
+        var->var_type = 0;
+        var->multi = SV_REPLACE;
+        flist = p+sizeof(char);
+        for(j=0;j<4;j++)
+          if(g_ascii_strcasecmp(flist,flags[j])==0)
+            var->multi = j+1;
+      }
+      var->name = g_strdup(name);
       var->file = file;
       var->regex = regex;
       var->val = 0;
@@ -91,26 +97,17 @@ GList *scanner_add_vars( struct context *context, json_object *obj, struct scan_
       var->ptime = 0;
       var->status = 0;
       var->str = NULL;
-      var->var_type = v;
-      var->multi = SV_REPLACE;
-      json_object_object_get_ex(iter,"flag",&ptr);
-      flist=(gchar *)json_object_get_string(ptr);
-        if(flist!=NULL)
-          for(j=0;j<4;j++)
-            if(g_strrstr(flist,flags[j])!=NULL)
-              var->multi = j+1;
       vlist = g_list_append(vlist,var);
       context->scan_list = g_list_append(context->scan_list,var);
-
     }
     else
     {
-      g_free(name);
       g_free(var);
       g_regex_unref (regex);
     }
-  g_free(match);
+  g_free(name);
   }
+  ucl_object_iterate_free(itp);
   return vlist;
 }
 

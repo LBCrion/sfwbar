@@ -9,12 +9,11 @@
 #include <glib.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <json.h>
 #include "sfwbar.h"
 
 const  gint8 magic[6] = {0x69, 0x33, 0x2d, 0x69, 0x70, 0x63};
 
-json_object *ipc_poll ( int sock, gint32 *etype )
+gchar *ipc_poll ( int sock, gint32 *etype )
 {
   gint8 ipc_header[14];
   gchar *response = NULL;
@@ -53,16 +52,14 @@ json_object *ipc_poll ( int sock, gint32 *etype )
       response[plen]='\0';
     }
   }
-  if(response==NULL)
-    return NULL;
-  return json_tokener_parse(response);
+  return response;
 }
 
-struct ipc_event ipc_parse_event ( json_object *obj )
+struct ipc_event ipc_parse_event ( const ucl_object_t *obj )
 {
   struct ipc_event ev;
   const char *changes[] = {"new","close","focus","title","fullscreen_mode","move","floating","urgent","mark"};
-  json_object *container;
+  const ucl_object_t *container;
   char *change;
   int i;
 
@@ -70,17 +67,17 @@ struct ipc_event ipc_parse_event ( json_object *obj )
   ev.appid = NULL;
   ev.title = NULL;
 
-  change = json_string_by_name(obj,"change");
+  change = ucl_string_by_name(obj,"change");
   if(change==NULL)
     return ev;
-  json_object_object_get_ex(obj,"container",&container);
+  container = ucl_object_lookup(obj,"container");
   for(i=0;i<9;i++)
     if(!g_strcmp0(change,changes[i]))
     {
       ev.event=i;
-      ev.pid = json_int_by_name(container,"pid",G_MININT64); 
-      ev.appid = json_string_by_name(container,"app_id");
-      ev.title = json_string_by_name(container,"name");
+      ev.pid = ucl_int_by_name(container,"pid",G_MININT64); 
+      ev.appid = ucl_string_by_name(container,"app_id");
+      ev.title = ucl_string_by_name(container,"name");
    }
   g_free(change);
   return ev;

@@ -4,7 +4,6 @@
  */
 
 #include <glib.h>
-#include <json.h>
 #include "sfwbar.h"
 
 int comp_int ( const void *x1, const void *x2)
@@ -12,42 +11,43 @@ int comp_int ( const void *x1, const void *x2)
   return ( *(int*)x1 - *(int*)x2 );
 }
 
-struct rect parse_rect ( json_object *obj )
+struct rect parse_rect ( const ucl_object_t *obj )
 {
-  json_object *rect;
+  const ucl_object_t *rect;
   struct rect ret;
-  json_object_object_get_ex(obj,"rect",&rect);
-  ret.x = json_int_by_name(rect,"x",0);
-  ret.y = json_int_by_name(rect,"y",0);
-  ret.w = json_int_by_name(rect,"width",0);
-  ret.h = json_int_by_name(rect,"height",0);
+  rect = ucl_object_lookup(obj,"rect");
+  ret.x = ucl_int_by_name(rect,"x",0);
+  ret.y = ucl_int_by_name(rect,"y",0);
+  ret.w = ucl_int_by_name(rect,"width",0);
+  ret.h = ucl_int_by_name(rect,"height",0);
 
   return ret;
 }
 
-int placement_location ( struct context *context, json_object *obj, gint64 pid, struct rect *r )
+int placement_location ( struct context *context, const ucl_object_t *obj, gint64 pid, struct rect *r )
 {
   struct rect output, win, *obs;
-  json_object *ptr,*iter,*arr;
+  const ucl_object_t *ptr,*iter,*arr;
+  ucl_object_iter_t *itp;
   int c,i,j,nobs,success;
   int *x, *y;
   output = parse_rect(obj);
 
-  json_object_object_get_ex(obj,"floating_nodes",&arr);
-  if( !json_object_is_type(arr, json_type_array))
+  arr = ucl_object_lookup(obj,"floating_nodes");
+  if( arr == NULL )
     return -1;
-  nobs = json_object_array_length(arr)-1;
+  nobs = ucl_array_size(arr)-1;
   obs = g_malloc(nobs*sizeof(struct rect));
   x = g_malloc((nobs+1)*sizeof(int));
   y = g_malloc((nobs+1)*sizeof(int));
   c=0;
-  for(i=0;i<json_object_array_length(arr);i++)
+  itp = ucl_object_iterate_new(arr);
+  while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
   {
-    iter = json_object_array_get_idx(arr,i);
-    json_object_object_get_ex(iter,"pid",&ptr);
-    if(json_object_is_type(ptr,json_type_int))
+    ptr = ucl_object_lookup(iter,"pid");
+    if(ucl_object_type(ptr) == UCL_INT)
     {
-      if(json_object_get_int64(ptr) == pid)
+      if(ucl_object_toint(ptr) == pid)
         win = parse_rect(iter);
       else
       {
@@ -60,6 +60,7 @@ int placement_location ( struct context *context, json_object *obj, gint64 pid, 
       }
     }
   }
+  ucl_object_iterate_free(itp);
   if(c!=nobs)
     return -1;
   x[c]=output.x;
@@ -111,29 +112,36 @@ int placement_location ( struct context *context, json_object *obj, gint64 pid, 
   return 1;
 }
 
-json_object *placement_find_pid ( json_object *obj, gint64 pid )
+const ucl_object_t *placement_find_pid ( const ucl_object_t *obj, gint64 pid )
 {
-  json_object *ptr,*iter,*arr, *ret;
-  int i;
-  json_object_object_get_ex(obj,"floating_nodes",&arr);
-  if( json_object_is_type(arr, json_type_array))
-    for(i=0;i<json_object_array_length(arr);i++)
+  const ucl_object_t *ptr,*iter,*arr, *ret;
+  ucl_object_iter_t *itp;
+  arr= ucl_object_lookup(obj,"floating_nodes");
+  if( arr )
+  {
+    itp = ucl_object_iterate_new(arr);
+    while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
     {
-      iter = json_object_array_get_idx(arr,i);
-      json_object_object_get_ex(iter,"pid",&ptr);
-      if(json_object_is_type(ptr,json_type_int))
-        if(json_object_get_int(ptr) == pid)
+      ptr = ucl_object_lookup(iter,"pid");
+      if(ucl_object_type(ptr)==UCL_INT)
+        if(ucl_object_toint(ptr) == pid)
           return obj;
     }
-  json_object_object_get_ex(obj,"nodes",&arr);
-  if( json_object_is_type(arr, json_type_array))
-    for(i=0;i<json_object_array_length(arr);i++)
+    ucl_object_iterate_free(itp);
+  }
+  ret = NULL;
+  arr = ucl_object_lookup(obj,"nodes");
+  if( arr )
+  {
+    itp = ucl_object_iterate_new(arr);
+    while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
     {
-      ret = placement_find_pid(json_object_array_get_idx(arr,i),pid);
-      if (ret != NULL)
-        return ret;
+      if(ret==NULL)
+        ret = placement_find_pid(iter,pid);
     }
-  return NULL;
+    ucl_object_iterate_free(itp);
+  }
+  return ret;
 }
 
 void place_window ( gint64 pid, struct context *context )
@@ -142,14 +150,24 @@ void place_window ( gint64 pid, struct context *context )
   gint32 etype;
   char buff[256];
   struct rect r;
-  json_object *obj, *node;
+  const ucl_object_t *obj, *node;
+  struct ucl_parser *parse;
+  gchar *response;
+
   sock = ipc_open(3000);
   ipc_send(sock,4,"");
-  obj = ipc_poll(sock,&etype);
+  response = ipc_poll(sock,&etype);
+  if(response==NULL)
+    return;
+  parse = ucl_parser_new(0);
+  ucl_parser_add_string(parse,response,strlen(response));
+  obj = ucl_parser_get_object(parse);
   node = placement_find_pid ( obj, pid );
   placement_location(context,node,pid,&r);
-  json_object_put(obj);
   snprintf(buff,255,"[pid=%ld] move absolute position %d %d",pid,r.x,r.y);
   ipc_send(context->ipc,0,buff);
+  ucl_object_unref((ucl_object_t *)obj);
+  ucl_parser_free(parse);
+  g_free(response);
   close(sock);
 }
