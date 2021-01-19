@@ -39,41 +39,38 @@ void widget_update_all( struct context *context )
   }
 }
 
-void layout_config_iter ( struct context *context, const ucl_object_t *obj, GtkWidget *parent )
+GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj,
+    GtkWidget *parent, GtkWidget *neighbor )
 {
   const ucl_object_t *ptr,*arr;
   ucl_object_iter_t *itp;
-  gchar *type,*name,*expr,*dir,*css;
+  gchar *type,*name,*expr,*css;
+  gint dir;
   GtkWidget *widget=NULL;
   gint64 freq;
   int x,y,w,h;
+  gboolean expand;
 
   type = ucl_string_by_name(obj,"type");
 
   if(type==NULL)
-    return;
+    return neighbor;
 
-  if(g_strcmp0(type,"label")==0)
+  if(g_ascii_strcasecmp(type,"label")==0)
     widget = gtk_label_new("");
-  if(g_strcmp0(type,"scale")==0)
+  if(g_ascii_strcasecmp(type,"scale")==0)
     widget = gtk_progress_bar_new();
-  if(g_strcmp0(type,"grid")==0)
+  if(g_ascii_strcasecmp(type,"grid")==0)
     widget = gtk_grid_new();
-  if(g_strcmp0(type,"image")==0)
+  if(g_ascii_strcasecmp(type,"image")==0)
     widget = gtk_image_new();
   if(g_ascii_strcasecmp(type,"button")==0)
   {
-    GtkWidget *img;
     widget = gtk_button_new();
-    ptr = ucl_object_lookup(obj,"icon");
-    img = gtk_image_new_from_icon_name(ucl_object_tostring(ptr),GTK_ICON_SIZE_DIALOG);
-    gtk_image_set_pixel_size(GTK_IMAGE(img),ucl_int_by_name(obj,"isize",48));
-//    gtk_button_set_image(GTK_BUTTON(widget),img);
-    gtk_container_add(GTK_CONTAINER(widget),img);
     g_signal_connect(widget,"clicked",G_CALLBACK(widget_action),NULL);
     g_object_set_data(G_OBJECT(widget),"action", ucl_string_by_name(obj,"action"));
   }
-  if(g_strcmp0(type,"taskbar")==0)
+  if(g_ascii_strcasecmp(type,"taskbar")==0)
   {
     if(ucl_bool_by_name(obj,"icon",TRUE))
       context->features |= F_TB_ICON;
@@ -81,13 +78,12 @@ void layout_config_iter ( struct context *context, const ucl_object_t *obj, GtkW
       context->features |= F_TB_LABEL;
     if(!(context->features & F_TB_ICON))
       context->features |= F_TB_LABEL;
-    context->tb_isize = ucl_int_by_name(obj,"isize",16);
     context->tb_rows = ucl_int_by_name(obj,"rows",1);
     if(context->tb_rows<1)
       context->tb_rows = 1;
     widget = taskbar_init(context);
   }
-  if(g_strcmp0(type,"pager")==0)
+  if(g_ascii_strcasecmp(type,"pager")==0)
   {
     context->pager_rows = ucl_int_by_name(obj,"rows",1);
     if(context->pager_rows<1)
@@ -96,7 +92,7 @@ void layout_config_iter ( struct context *context, const ucl_object_t *obj, GtkW
   }
 
   if(widget==NULL)
-    return;
+    return neighbor;
 
   name = ucl_string_by_name(obj,"style");
   if(name!=NULL)
@@ -122,24 +118,38 @@ void layout_config_iter ( struct context *context, const ucl_object_t *obj, GtkW
   g_object_set_data(G_OBJECT(widget),"freq",g_memdup(&freq,sizeof(freq)));
   g_object_set_data(G_OBJECT(widget),"next_poll",g_try_malloc0(sizeof(gint64)));
 
-  if(GTK_IS_ORIENTABLE(widget))
+  if(GTK_IS_PROGRESS_BAR(widget))
   {
-    dir = ucl_string_by_name(obj,"direction");
-    if(g_strcmp0(dir,"vertical")==0)
-    {
-      gtk_orientable_set_orientation(GTK_ORIENTABLE(widget),GTK_ORIENTATION_VERTICAL);
-      if(!g_strcmp0(type,"scale"))
-        gtk_progress_bar_set_inverted(GTK_PROGRESS_BAR(widget),TRUE);
-    }
-    else
+    gtk_widget_style_get(widget,"direction",&dir,NULL);
+    if((dir==GTK_POS_LEFT)||(dir==GTK_POS_RIGHT))
       gtk_orientable_set_orientation(GTK_ORIENTABLE(widget),GTK_ORIENTATION_HORIZONTAL);
-    g_free(dir);
+    else
+      gtk_orientable_set_orientation(GTK_ORIENTABLE(widget),GTK_ORIENTATION_VERTICAL);
+    if((dir==GTK_POS_TOP)||(dir==GTK_POS_LEFT))
+      gtk_progress_bar_set_inverted(GTK_PROGRESS_BAR(widget),TRUE);
+    else
+      gtk_progress_bar_set_inverted(GTK_PROGRESS_BAR(widget),FALSE);
   }
-  else
+
+  if(GTK_IS_BUTTON(widget))
   {
-    ptr = ucl_object_lookup(obj,"xalign");
-    if(ptr!=NULL)
-      gtk_label_set_xalign(GTK_LABEL(widget),ucl_object_todouble(ptr));
+    gint isize;
+    GtkWidget *img;
+    ptr = ucl_object_lookup(obj,"icon");
+    img = gtk_image_new_from_icon_name(ucl_object_tostring(ptr),GTK_ICON_SIZE_DIALOG);
+    gtk_container_add(GTK_CONTAINER(widget),img);
+    gtk_widget_style_get(widget,"icon-size",&isize,NULL);
+    gtk_image_set_pixel_size(GTK_IMAGE(img),isize);
+  }
+
+  if(g_ascii_strcasecmp(type,"taskbar")==0)
+    gtk_widget_style_get(widget,"icon-size",&(context->tb_isize),NULL);
+
+  if(GTK_IS_LABEL(widget))
+  {
+    gdouble xalign;
+    gtk_widget_style_get(widget,"align",&xalign,NULL);
+    gtk_label_set_xalign(GTK_LABEL(widget),xalign);
   }
 
   x = ucl_int_by_name(obj,"x",0);
@@ -150,31 +160,39 @@ void layout_config_iter ( struct context *context, const ucl_object_t *obj, GtkW
     w=1;
   if(h<1)
     h=1;
-  gtk_widget_set_hexpand(GTK_WIDGET(widget),ucl_bool_by_name(obj,"expand",FALSE));
+  gtk_widget_style_get(widget,"hexpand",&expand,NULL);
+  gtk_widget_set_hexpand(GTK_WIDGET(widget),expand);
+  gtk_widget_style_get(widget,"vexpand",&expand,NULL);
+  gtk_widget_set_vexpand(GTK_WIDGET(widget),expand);
   if((x<1)||(y<1))
-    gtk_container_add(GTK_CONTAINER(parent),widget);
+  {
+    gtk_widget_style_get(parent,"direction",&dir,NULL);
+    gtk_grid_attach_next_to(GTK_GRID(parent),widget,neighbor,dir,1,1);
+  }
   else
     gtk_grid_attach(GTK_GRID(parent),widget,x,y,w,h);
 
   context->widgets = g_list_append(context->widgets,widget);
 
-  if(g_strcmp0(type,"grid")==0)
+  if(GTK_IS_GRID(widget))
   {
     arr = ucl_object_lookup(obj,"children");
     if( arr )
     {
+      GtkWidget *sibling = NULL;
       itp = ucl_object_iterate_new(arr);
       while((ptr = ucl_object_iterate_safe(itp,true))!=NULL)
-        layout_config_iter(context,ptr,widget);
+        sibling = layout_config_iter(context,ptr,widget,sibling);
       ucl_object_iterate_free(itp);
     }
   }
   g_free(type);
+  return widget;
 }
 
 GtkWidget *layout_init ( struct context *context, const ucl_object_t *obj )
 {
-  GtkWidget *grid;
+  GtkWidget *grid,*sibling = NULL;
   const ucl_object_t *arr,*ptr;
   ucl_object_iter_t *itp;
 
@@ -187,7 +205,7 @@ GtkWidget *layout_init ( struct context *context, const ucl_object_t *obj )
 
   itp = ucl_object_iterate_new(arr);
   while((ptr = ucl_object_iterate_safe(itp,true))!=NULL)
-    layout_config_iter(context,ptr,grid);
+    sibling = layout_config_iter(context,ptr,grid,sibling);
 
   ucl_object_iterate_free(itp);
 

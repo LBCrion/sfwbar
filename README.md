@@ -2,9 +2,11 @@
 
 ### SFWBar
 
-SFWBar (Sway Floating Window Bar) is a flexible taskbar application for 
+SFWBar (Sway Floating Window Bar) is a flexible taskbar application for
 [Sway](https://github.com/swaywm/sway) wayland
-compositor, designed with a stacking layout in mind. 
+compositor, designed with a stacking layout in mind. SFWBar will work 
+with other wayland compositors supporting layer shell protocol, but 
+taskbar and pager functionality requires sway (or at least i3 IPC support).
 
 ## SFWBar implements the following features:
 1. Taskbar - to control floating windows
@@ -15,22 +17,23 @@ compositor, designed with a stacking layout in mind.
 ## Compiling from Source
 
 Install dependencies:
-glib
-gtk3
-gtk-layer-shell
-libucl
+* gtk3
+* gtk-layer-shell
+* libucl
 
 Compile instructions:
-meson build
+`meson build
 ninja -C build
-sudo ninja -C build install
+sudo ninja -C build install`
 
 ## Configuration
 Copy sfwbar.config and sfwbar.css from /usr/share/sfwbar/ to ~/.config/sfwbar/
+For more information on the format of configuration file, please see the
+[man page](sfwbar.rst)
 
 you may want to add the following line to your sway config file to open windows
 as floating by default:
 
-for_window [app_id="[.]*"] floating enable
+`for_window [app_id="[.]*"] floating enable`
 
 See man page for config file details. 

@@ -93,6 +93,7 @@ void widget_update_all( struct context *context );
 void widget_action ( GtkWidget *widget, gpointer data );
 
 GtkWidget *clamp_grid_new();
+GtkWidget *alabel_new();
 int scanner_expire ( GList *start );
 int update_var_tree ( struct context *context );
 int update_var_file ( struct context *context, FILE *in, GList *var_list );

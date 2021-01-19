@@ -67,13 +67,12 @@ GList *scanner_add_vars( struct context *context, const ucl_object_t *obj, struc
   while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
   {
     name = g_strdup(ucl_object_key(iter)); 
-
     match = (char *)ucl_object_tostring(iter);
     var = g_malloc(sizeof(struct scan_var)); 
     if(match!=NULL)
       regex = g_regex_new(match,0,0,NULL);
 
-    if((name!=NULL)&&(match!=NULL)&&(var!=NULL)&&(regex!=NULL))
+    if((name!=NULL)&&(match!=NULL)&&(var!=NULL)&&(regex!=NULL)&&(g_ascii_strcasecmp(name,"flags")!=0))
     {
       p = strchr(name,'.');
       if(p==NULL)

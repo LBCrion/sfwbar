@@ -1,230 +1,456 @@
-.TH "SFWBar" 1
+.\" Man page generated from reStructuredText.
+.
+.TH SFWBAR 1 "" "" ""
 .SH NAME
-SFWBar \- Sway Floating Window Bar
+SFWBar \- Sway Floating Window taskBar
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
 .SH SYNOPSIS
-.B sfwbar
+.nf
+\fBsfwbar\fP [options]
+.fi
+.sp
 .SH DESCRIPTION
-SFWBar is a taskbar for Sway wayland compositor. SFWBar facilitates
+.sp
+\fBSFWBar\fP is a taskbar for Sway wayland compositor. SFWBar assists in
 handling of floating windows on a sway desktop. It provdes a taskbar,
-implements a window placement policy and facilitates monitoring of 
-system files via a set of widgets linked to regular expression parser.
-.SH CONFIGURATION
-SFWBar is configured via a json file sfwbar.config, the program checks
-users XDG config directory (usually ~/.config/sfwbar/), followed by 
-/usr/share/sfwbar for the config file. Widget presentation can be further
-adjusted via CSS properties in a file sfwbar.css. The program looks for this
-file in the same locations as the config file.
-
-The config file consists of three main sections:
-"layout" - defining the presentation of various gui components in the bar
-"scanner" - defining the files and patters used to extract system information
-"placement" - controlling the placement of the new floating windows
-.SH LAYOUT
-Specifies what items are displayed on the taskbar. The layout is defined as a
-json array of items. The top level items are placed into a grid with a style
-"layout" (for CSS theming purposes).
-
-"layout": [
-{
-  "type": "taskbar",
-  "rows": 2
-} ]
+implements a window placement policy and facilitates monitoring of
+system files via a set of widgets linked to data exposed in system files.
+SFWBar can work with any wayland compositor supporting layer shell protocol,
+but window handling functionality relies on i3/sway IPC.
+.SH USAGE
+.sp
+SFWBar executable can be invoked with the following options:
+.INDENT 0.0
 .TP
-each item in the array is a widget. The following widget types are supported:
+.B \-f | \-\-config
+Specify a filename of a configuration file
+.TP
+.B \-c | \-\-css
+Specify a filename of a css file
+.TP
+.B \-s | \-\-socket
+Specify a location of sway ipc socket
+.UNINDENT
+.SH CONFIGURATION
+.sp
+SFWBar is configured via a libucl formatted file sfwbar.config, the program
+checks users XDG config directory (usually ~/.config/sfwbar/), followed by
+/usr/share/sfwbar for the presence of the config file. Additionally, user can
+specify a location of the config file via \fB\-f\fP command line option.
+Appearance of the program can be further adjusted via CSS properties, these
+are sourced from a file sfwbar.css located in the same directory as the config
+file. The location of the css file can be also specifies via \fB\-c\fP option.
+.sp
+The config file consists of the following top level sections sections:
+.SS Placement
+.sp
+Placement section enables intelligent placement of new floating windows. If
+enabled the program will first attemp to place the window in a location, where
+it won\(aqt overlap with other windows. If such location doesn\(aqt exist, the window
+will be placed in a cascading pattern from top\-left to bottom\-right. Placement
+declaration accepts two parameters "xcascade" and "ycascade" that specify the
+steps in the window cascade. These are specified in percentage of the desktop
+dimensions.  I.e.:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+placement {
+  xcascade = 5,
+  ycascade = 5 }
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+if the placement section is not present in the file, SFWBar will let
+the compositor determine the locations for new windows.
+.SS Scanner
+.sp
+SFWBar displays the data it obtains by reading various files. These
+files can be simple text files that SFWBar will read or programs whose
+output SFWBar will parse.
+.sp
+Each file contains one or more variables that SFWBar will poll periodically
+and use to update the display. Configuration file section \fBscanner\fP contains
+the information on files and patters to extract:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+scanner {
+  "/proc/swaps" {
+    flags = NoGlob
+    SwapTotal.add = "[\et ]([0\-9]+)"
+    SwapUsed.add = "[\et ][0\-9]+[\et ]([0\-9]+)"
+  }
+}
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Each section within the \fBscanner\fP block starts with a filename and contains
+a list of variables and regular expression patterns used to populate them.
+Optionally, a file section may also contain a \fBflags\fP option, used to modify
+how the file is handled. The supported flags are:
+.INDENT 0.0
+.TP
+.B NoGlob
+specifies that SFWBar shouldn\(aqt attempt to expand the pattern in
+the file name.
+.TP
+.B CheckTime
+indicates that the program should only update the variables from
+this file when file modification date/time changes.
+.TP
+.B Exec
+tells SFWBar to execute this program and parse its output. Please
+note that SFWBar will execute this program as often as needed to
+update variables based on its output. This may take up a significant
+part of system resourses. The program is executed synchironouslyr.
+If it takes a while to execute, SFWBar will freeze while waiting for
+the executed program to finish. In these situatuations, it may be
+better to execute the program periodically via cron and save it\(aqs
+output to a temp file that would in turn be read by SFWBar.
+.UNINDENT
+.sp
+\fBVariables\fP are populated using a regular expression specified to the scanner. The
+scanner reads the file looking for the regular expression and populates the
+variable with data from the first capture buffer in the regular expression. If
+the name of the variable doesn\(aqt contain a dot \fB\&.\fP, the variable is treated as
+a string variable and the scanner copies the data from the capture buffer as is.
+If the variable name contains a dot, the scanner treats the variable as a
+numeric variable. In this case the text before the dot specifies the variable
+name and the text after the dot is the modifier, specifying how multiple
+occurences of the pattern within the file should be handled.
+.sp
+The following modifiers are supported: \fBadd\fP, \fBreplace\fP, \fBproduct\fP and
+\fBfirst\fP\&. By default, if SFWBar matches the regular expression more than once,
+the variable will be set to the value of the last occurence (\fBreplace\fP). If
+the modifier is set to \fBadd\fP, the variable will be set to the sum of all
+matches. Modifier \fBproduct\fP will similarly return the product of all values,
+while \fBfirst\fP will return the first occurence.
+.SS Layout
+.sp
+Specifies what items are displayed on the taskbar. The layout section contains
+a list of widget definitions. These can be nested in case of a \fBgrid\fP widget,
+which can be used as a container.
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+layout {
+  MyLabel {
+  type = label
+  style = mystyle
+  value = "SwapUsed/SwapTotal+\(aq%\(aq"
+  x = 2, y = 1, w = 1, h = 1
+  }
+}
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+The following widget types are supported:
+.INDENT 0.0
 .TP
 .B taskbar
-this is a special widget displaying a list of all floating windows.
+a special widget displaying a list of all floating windows.
+(requires a compositor supporting i3 ipc)
 .TP
 .B pager
-this is a special widget display a list of all workspaces.
+a special widget displaying a list of all workspaces.
+(requires a compositor supporting i3 ipc)
 .TP
 .B grid
 a layout grid used to fine tune placement of widgets. You can use these to
 further subdivide each cell of the main grid and arrange items therein.
 .TP
 .B label
-display text (either static or sourced from scan variables).
+a label displaying text (either static or sourced from scan variables).
 .TP
 .B scale
-display a progress bar with a progress value sourced from a scan variable
+a progress bar with a progress value sourced from a scan variable
 .TP
 .B image
 display an image from a file specified in "value"
 .TP
 .B button
 add a clickable button with an option to launch external programs on click
-.P
+.UNINDENT
+.sp
 Each widget is placed within the parent grid. By default, widgets are placed next
 to the previous widget along the "direction" of the grid (left to right by default).
-You can define specific positions within grid using properties "x" and "y" and size
-of the widget within the grid using properties "w" and "h".
-I.e.
-.P
-{
-  "type": "button",
-  "x":2, "y":1, "w":2, "h":2
-}
-.P
+You can specify widget\(aqs  positions within a grid by using properties "x" and "y"
+and size of the widget within the grid using properties "w" and "h".
+.sp
 Widgets can have the following properties:
-.P
-Widgets can have the following properties:
-.TP
-.B value 
-[string]
-an expression specifying the value to display. This can be a static value i.e. 
-"'string'" or "1" or an expression, i.e. "'Value is:'+$MyString" or "MyNumber.val"
-(see expressions section for more detail)
-.TP
-.B style 
-[string]
-assign a style to the widget. Styles can be used in CSS to theme individual widgets.
-Multiple widgets can have the same style.
-.TP
-.B expand
-[true|false]
-expand the widget to occupy all available space (false by default)
-.TP
-.B direction
-["vertical"|"horizontal"]
-specify "direction" of a widget, applicable to "grid" and "scale" widgets.
-Defaults to "horizontal".
-.TP
-.B action
-[string]
-An action to execute upon a button click. Applicable to buttons only.
-Defaults to "horizontal".
-.TP
-.B children
-[array]
-Add children to widget. Applicable to "grid" only. Syntax is the same as 
-for the main "layout".
-.TP
-.B title
-[true|false]
-An indicator whether to display an application title within the taskbar.
-.B icon
-[string]|[true|false]
-A name of an icon to display in a button or an indicator whether to display
-application icons within the taskbar.
-.TP
-.B isize
-[number]
-Specify the size of the icon in pixels (for button or taskbar)
-.TP
-.B rows
-[number]
-Specify number of rows in a taskbar or a pager
-.SH EXPRESSIONS
-Values in widgets can contain basic arithmetic and string manipulation
-expressions. Each numeric scan variable contains four values
-.TP
-.B .val
-current value of the variable
-.TP
-.B .pval
-previous value of the variable
-.TP
-.B .time
-time elapsed between observing .pval and .val
-.TP
-.B .count
-a number of time the pattern has been matched
-during the last scan
-.P
-By default, the value of the variable is the value of .val
-.P
-You can perform arithmetic operations on any of these value. I.e.
-"(Var.val -Var.pval)/Var.time" will give you a rate of change in the
-value of the variable.
-Valid operators are +, -, * and /. 
-.P
-You can convert a number into a string with arbitrary precision using
-operator Str, i.e. "Str(Var,2)".
-String variables are prefixed with $, i.e. $StringVar
-You can concatenate strings using + operator, i.e. "'String'+$Var".
-You can extract a substring using mid operator i.e. "Mid($Var,2,5)"
-Time() operator gives current time as a string and Extract operator
-allows extracting a patterns from a string using regular expressions,
-I.e. "Extract($Var,'FindThis: (FindThat)')"
-
-.SH SCANNER
-SFWBar displays the data it obtains by reading various files. These
-files can be simple text files that SFWBar will read or programs whose 
-output SFWBar will parse.
-
-Each file contains one or more variables that SFWBar will poll periodically
-and use to update the display. Json object "scanner" contains an array of
-files to scan for data. 
-
-"scanner": [
-{
-  "name": "/proc/cpuinfo",
-  "flags", "NoGlob",
-  "variables": [ ... ]
-} ]
-.TP
-.B name 
-specifies filename to read (or a program to execute if Exec flag is specified)
-.TP
-.B flags 
-specifies flags controlling how or when the file is scanned. The allowed flags are:
-.RS 4
-.TP
-.B NoGlob
-specifies that SFWBar shouldn't attempt to expand the pattern in the file
-name.
-.TP
-.B CheckTime
-indicates that the program should only update the variables from this file
-when file modification date/time changes.
-.TP
-.B Exec
-tells SFWBar to execute this program and parse its output. Please note that
-SFWBar will execute this program as often as needed to update variables
-based on its output. This may take up a significant part of system resourses.
-.RE
-.PP
-.B variables
-An array of variable definitions 
-
-"variables": [ 
- {"string":"MyString", "value":"FindThis:.*(GrabThis)"},
-  "number":"MyNumber", "value":"FindThis:.*([0-9\\.)","flag":"Add"} ]
-
-.RS 4
-.B string
-A string variable to populate from the file data
-.TP
-.B number
-A numeric variable to populate from the file data
+.INDENT 0.0
 .TP
 .B value
-a regular expression specifying how to extract the variable from the file.
-SFWBar reads the file one line at a time, matching each line against the
-regular expression. If the expression matches, the variable is set to the
-value of the first capture buffer defined in the regular expression.
+an expression specifying the value to display. This can be a static value
+i.e. "\(aqstring\(aq" or "1" or an expression, i.e. "\(aqValue is:\(aq+$MyString" or
+"MyNumber.val" (see \fBexpressions\fP section for more detail)
 .TP
-.B flag
-can only be specified for numeric variables. Flag clarifes how multiple
-occurances of the pattern should be interpreted. The handler can take one of
-the following values: Add, Replace, Producti or First. By default, if SFWBar 
-matches the regular expression more than once, the variable will be set to 
-the value of the last occurence (Replace). If the flag is set to Add, 
-the variable will be set to the sum of all matches. Product will similarly 
-return the product of all values, while First will return the first occurence.
-.SH "PLACEMENT"
-Placement section enables intelligent placement if new floating windows. If
-enabled the program will first attemp to place the window in a location, where
-it won't overlap with other windows. If such location doesn't exist, the window
-will be placed in a cascading pattern from top-left to bottom-right. Placement
-declaration accepts two parameters "xcascade" and "ycascade" that specify the
-steps in the window cascade. These are specified in percentage of the desktop
-Adimensions.
-I.e.
-.P
-"placement: {
-  "xcascade":5,
-  "ycascade":5 }
-
-
-
+.B style
+assign a style to the widget. Styles can be used in CSS to theme widgets.
+Multiple widgets can have the same style. A style name can be used in css
+using gtk+ named widget convention, i.e. \fBlabel#mystyle\fP
+.TP
+.B freq
+specify update frequency in milliseconds
+.TP
+.B css
+specify additional css properties for the widget. These propertes will
+only applyy for the widget in question.
+.TP
+.B children
+Add children to widget. Applicable to grid widget only. Syntax is the same
+as for the main "layout".
+.UNINDENT
+.sp
+\fBButton\fP widget may contain the following options
+.INDENT 0.0
+.TP
+.B action
+An action to execute upon a button click. Applicable to buttons only.
+.TP
+.B icon
+An icon to display within the button
+.UNINDENT
+.sp
+\fBTaskbar\fP widget may contain the following options
+.INDENT 0.0
+.TP
+.B title [true|false]
+An indicator whether to display an application title within the taskbar.
+.TP
+.B icon [true|false]
+An indicator whether to display application icons within the taskbar.
+.TP
+.B rows
+Specify number of rows in a taskbar. (also applicable to a pager widget)
+.UNINDENT
+.SH EXPRESSIONS
+.sp
+Values in widgets can contain basic arithmetic and string manipulation
+expressions. For numeric variables, the following operators are supported:
+\fB+\fP, \fB\-\fP, \fB*\fP, \fB/\fP\&. Furthermore any numeric value can be converted
+to a string using a specified rounding convention with a function \fBStr\fP,
+i.e. \fBStr(MyValue.val,2)\fP\&.
+.sp
+Each numeric variable contains four values
+.INDENT 0.0
+.TP
+.B \&.val
+current value of the variable
+.TP
+.B \&.pval
+previous value of the variable
+.TP
+.B \&.time
+time elapsed between observing .pval and .val
+.TP
+.B \&.count
+a number of time the pattern has been matched
+during the last scan
+.UNINDENT
+.sp
+By default, the value of the variable is the value of .val
+.sp
+String variables are prefixed with $, i.e. $StringVar
+You can concatenate strings using + operator, i.e. \fB"\(aqString\(aq+$Var"\fP\&.
+You can extract a substring using mid function i.e. \fBMid($Var,2,5)\fP
+\fBTime()\fP function gives current time as a string and Extract function
+extracts a patterns from a string using a regular expressions,
+I.e. \fBExtract($Var,\(aqFindThis: (GrabThat)\(aq)\fP
+.SH CSS STYLE
+.sp
+SFWBar uses gtk+ widgets and can accept all css properties supported by
+gtk+. SFWBar widgets correspond to gtk+ widgets as following:
+.TS
+center;
+|l|l|l|.
+_
+T{
+SFWBar widget
+T}	T{
+gtk+ widget
+T}	T{
+css class
+T}
+_
+T{
+label
+T}	T{
+GtkLabel
+T}	T{
+label
+T}
+_
+T{
+image
+T}	T{
+GtkImage
+T}	T{
+image
+T}
+_
+T{
+button
+T}	T{
+GtkButton
+T}	T{
+button
+T}
+_
+T{
+scale
+T}	T{
+GtkProgressBar
+T}	T{
+progressbar, trough, progress
+T}
+_
+.TE
+.sp
+Taskbar and Pager use combinations of these widgets and can be themed
+using gtk+ nested css convention, i.e. \fBgrid#taskbar button { ... }\fP
+(this example assumes you assigned \fBstyle = taskbar\fP to your taskbar
+widget).
+.sp
+In addition to standard gtk+ css properties SFWBar implements several
+additional properties. These are:
+.TS
+center;
+|l|l|.
+_
+T{
+property
+T}	T{
+description
+T}
+_
+T{
+\-GtkWidget\-align
+T}	T{
+specify text alignment for a label, defined as a fraction.
+(0 = left aligned, 1 = right aligned, 0.5 = centered)
+T}
+_
+T{
+\-GtkWidget\-direction
+T}	T{
+specify a direction for a widget. For scale, it\(aqs a
+direction towards which scale grows. For a grid, it\(aqs a
+direction in which a new widget is position relative to
+the last placed widget.
+Possible values [top|bottom|left|right]
+T}
+_
+T{
+\-GtkWidget\-hexpand
+T}	T{
+specify if a widget should expand horizontally to occupy
+available space. [true|false]
+T}
+_
+T{
+\-GtkWidget\-vexpand
+T}	T{
+as above, for vertical expansion.
+T}
+_
+T{
+\-GtkWidget\-icon\-size
+T}	T{
+specify icon size for a taskbar or button.
+T}
+_
+.TE
+.sp
+Taskbar and pager buttons are assigned the following styles
+.TS
+center;
+|l|l|.
+_
+T{
+style name
+T}	T{
+description
+T}
+_
+T{
+layout
+T}	T{
+Top level layout grid
+T}
+_
+T{
+taskbar_normal
+T}	T{
+taskbar button for a window
+T}
+_
+T{
+taskbar_active
+T}	T{
+taskbar button for currently focused window
+T}
+_
+T{
+pager_normal
+T}	T{
+pager button for a workspace
+T}
+_
+T{
+pager_visible
+T}	T{
+pager button for a visible workspace
+T}
+_
+T{
+pager_focused
+T}	T{
+pager button for a curently focused workspace
+T}
+_
+.TE
+.sp
+For example you can style top level grid using \fBgrid#layout { }\fP\&.
+.SH COPYRIGHT
+GPLv3+
+.\" Generated by docutils manpage writer.
+.

@@ -69,6 +69,51 @@ void placement_init ( struct context *context, const ucl_object_t *obj )
     context->wp_y=1;
 }
 
+void css_init ( void )
+{
+  GtkCssProvider *css;
+  gchar *cssf;
+  GtkWidgetClass *widget_class = g_type_class_ref(GTK_TYPE_WIDGET);
+
+  gtk_widget_class_install_style_property( widget_class,
+    g_param_spec_double("align","text alignment","text alignment",
+      0.0,1.0,0.0, G_PARAM_READABLE));
+
+  gtk_widget_class_install_style_property( widget_class,
+    g_param_spec_boolean("hexpand","hotizonal expansion","horizontal expansion",
+       false, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property( widget_class,
+    g_param_spec_boolean("vexpand","vertical expansion","vertical expansion",
+      false, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property( widget_class,
+    g_param_spec_int("icon-size","icon size","icon size",
+      0,500,48, G_PARAM_READABLE));
+
+  static GEnumValue dir_types [] = {
+    {GTK_POS_TOP,"top","top"},
+    {GTK_POS_BOTTOM,"bottom","bottom"},
+    {GTK_POS_LEFT,"left","left"},
+    {GTK_POS_RIGHT,"right","right"},
+    {0,NULL,NULL}};
+  gtk_widget_class_install_style_property( widget_class,
+    g_param_spec_enum("direction","direction","direction",
+      g_enum_register_static ("direction",dir_types),
+      GTK_POS_RIGHT, G_PARAM_READABLE));
+
+  if(cssname!=NULL)
+    cssf=g_strdup(cssname);
+  else
+    cssf = get_xdg_config_file("sfwbar.css");
+  if(cssf!=NULL)
+  {
+    css = gtk_css_provider_new();
+    gtk_css_provider_load_from_path(css,cssf,NULL);
+    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
+      GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
+    g_free(cssf);
+  }
+}
+
 GtkWidget *load_config ( struct context *context )
 {
   const gchar *json;
@@ -89,6 +134,7 @@ GtkWidget *load_config ( struct context *context )
   if(json!=NULL)
     printf("%s\n",json);
   
+  css_init();
   placement_init(context,obj);
   scanner_init(context,obj);
   root = layout_init(context,obj);
@@ -134,32 +180,18 @@ static void activate (GtkApplication* app, struct context *context)
 {
   GtkWindow *window;
   GtkWidget *root;
-  GtkCssProvider *css;
-  gchar *cssf;
 
   window = (GtkWindow *)gtk_application_window_new (app);
   gtk_layer_init_for_window (window);
   gtk_layer_auto_exclusive_zone_enable (window);
   gtk_layer_set_keyboard_interactivity(window,FALSE);
-
-  if(cssname!=NULL)
-    cssf=g_strdup(cssname);
-  else
-    cssf = get_xdg_config_file("sfwbar.css");
-  if(cssf!=NULL)
-  {
-    css = gtk_css_provider_new();
-    gtk_css_provider_load_from_path(css,cssf,NULL);
-    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
-      GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
-    g_free(cssf);
-  }
   
-  root = load_config(context);
   gtk_layer_set_anchor (window,GTK_LAYER_SHELL_EDGE_LEFT,TRUE);
   gtk_layer_set_anchor (window,GTK_LAYER_SHELL_EDGE_RIGHT,TRUE);
   gtk_layer_set_anchor (window,GTK_LAYER_SHELL_EDGE_BOTTOM,TRUE);
   gtk_layer_set_anchor (window,GTK_LAYER_SHELL_EDGE_TOP,FALSE);
+  
+  root = load_config(context);
 
   if(root != NULL)
   {
