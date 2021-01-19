@@ -1,11 +1,12 @@
 language: cpp
-compiler: gcc
 
 distro: archlinux
 distro: fedora
 distro: gentoo
 
 jobs:
-  script:
-  meson build
-  ninja -C build
+  include:
+    compiler: gcc
+    script:
+      - meson build
+      - ninja -C build
