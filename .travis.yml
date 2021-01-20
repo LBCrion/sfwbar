@@ -13,6 +13,7 @@ jobs:
       - wget https://github.com/wmww/gtk-layer-shell/archive/v0.5.2.tar.gz -O /tmp/glsh.tar.gz
       - cd /tmp
       - tar -xvf glsh.tar.gz
+      - gtk-layer-shell-0.5.2
       - meson build
       - ninja -C build
       - ninja -C build install
