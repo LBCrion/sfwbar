@@ -37,37 +37,27 @@ button#pager_focused {
   background-color: #bbddff;
 }
 
-
-progress, trough {
-  border-radius: 0;
-}
-
 progressbar {
   padding-left: 1px;
   padding-right: 1px;
+  -GtkWidget-vexpand: true;
+  -GtkWidget-direction: top;
+}
+
+progress, trough {
+  border-radius: 0;
+  border-color: #9c9c9c;
 }
 
 progress {
   border-style: outset;
-  border-color: #9c9c9c;
   min-width: 8px;
-}
-
-progressbar#red progress{
-  background-color: #ff0000;
-}
-progressbar#green progress {
-  background-color: #00ff00;
-}
-progressbar#blue progress {
-  background-color: #0000ff;
 }
 
 trough {
   background-color: #a1a1a1;
-  border-color: #9c9c9c;
   border-style: inset;
-  min-height: 56px;
+  min-height: 10px;
   min-width: 10px;
 }
 
@@ -79,7 +69,8 @@ grid#frame {
 }
 
 grid#layout {
-padding: 1px;
+  padding: 1px;
+  -GtkWidget-direction: right;
 }
 
 label {
@@ -88,31 +79,15 @@ label {
 }
 
 label#static {
-  font: 10px Sans;
   min-width: 35px;
   min-height: 11px;
   padding-left: 5px;
 }
 
 label#value {
-  font: 10px Sans;
   min-width: 42px;
   min-height: 11px;
   padding-right: 5px;
+  -GtkWidget-align: 1;
 }
 
-label#bold {
-  font: 20px Sans;
-  font-weight: 700;
-  min-width: 84px;
-  padding-top: 1px;
-  padding-bottom: 2px;
-}
-
-label#w10 {
-  min-width: 10px;
-}
-
-label#w25 {
-  min-width: 25px;
-}
