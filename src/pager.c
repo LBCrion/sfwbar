@@ -51,7 +51,8 @@ void pager_update ( struct context *context )
   response = ipc_poll(sock,&etype);
   close(sock);
   parse = ucl_parser_new(0);
-  ucl_parser_add_string(parse,response,strlen(response));
+  if(response!=NULL)
+    ucl_parser_add_string(parse,response,strlen(response));
   obj = ucl_parser_get_object(parse);
 
   if(obj)

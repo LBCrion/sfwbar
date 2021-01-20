@@ -71,6 +71,8 @@ GList *scanner_add_vars( struct context *context, const ucl_object_t *obj, struc
     var = g_malloc(sizeof(struct scan_var)); 
     if(match!=NULL)
       regex = g_regex_new(match,0,0,NULL);
+    else
+      regex = NULL;
 
     if((name!=NULL)&&(match!=NULL)&&(var!=NULL)&&(regex!=NULL)&&(g_ascii_strcasecmp(name,"flags")!=0))
     {
@@ -199,7 +201,8 @@ int update_var_files ( struct context *context, struct scan_file *file )
 
   for(i=0;gbuf.gl_pathv[i]!=NULL;i++)
     {
-    stat(gbuf.gl_pathv[i],&stattr);
+    if(stat(gbuf.gl_pathv[i],&stattr)!=0)
+      stattr.st_mtime = 0;
     if((!(file->flags & VF_CHTIME))||(stattr.st_mtime>file->mod_time)||(file->flags & VF_EXEC))
     {
       file->mod_time=stattr.st_mtime;
@@ -215,9 +218,12 @@ int update_var_files ( struct context *context, struct scan_file *file )
 	  reset_var_list(file->vars);
         }
         update_var_file(context,in,file->vars);
-	fclose(in);
-        stat(gbuf.gl_pathv[i],&stattr);
-        file->mod_time=stattr.st_mtime;
+        if(file->flags & VF_EXEC)
+          pclose(in);
+        else
+          fclose(in);
+        if(stat(gbuf.gl_pathv[i],&stattr)==0)
+          file->mod_time=stattr.st_mtime;
       }
     }
   }

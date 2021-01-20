@@ -46,6 +46,7 @@ void taskbar_populate ( struct context *context )
     return;
   ipc_send(sock,4,"");
   response = ipc_poll(sock,&etype);
+  close(sock);
   if(response==NULL)
     return;
   parse = ucl_parser_new(0);
@@ -58,7 +59,6 @@ void taskbar_populate ( struct context *context )
   }
   ucl_parser_free(parse);
   g_free(response);
-  close(sock);
 }
 
 void taskbar_traverse_tree ( const ucl_object_t *obj, struct context *context )

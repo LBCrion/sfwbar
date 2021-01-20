@@ -18,7 +18,7 @@ src = ['src/sfwbar.c',
     'src/lex.yy.c']
 dep = [gtk3, glib, ucl, glsh ]
 
-executable ('sfwbar', sources: src, c_args: '-DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED', dependencies: dep, install: true)
+executable ('sfwbar', sources: src, c_args: '-DGLIB_DISABLE_DEPRECATION_WARNINGS -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED', dependencies: dep, install: true)
 
 install_man('sfwbar.1')
 install_data(['config/sfwbar.config','config/sfwbar.css'],

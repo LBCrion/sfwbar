@@ -38,9 +38,10 @@ char *parse_expr ( struct context *context, char *expr_str )
 char *str_mid ( char *str, int c1, int c2 )
   {
   char *res;
-  int len=strlen(str);
+  int len;
   if(str==NULL)
     return NULL;
+  len = strlen(str);
   if(c1<0)	/* negative offsets are relative to the end of the string */
     c1+=len;
   if(c2<0)

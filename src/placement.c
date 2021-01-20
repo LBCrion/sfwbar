@@ -155,8 +155,11 @@ void place_window ( gint64 pid, struct context *context )
   gchar *response;
 
   sock = ipc_open(3000);
+  if(sock<0)
+    return;
   ipc_send(sock,4,"");
   response = ipc_poll(sock,&etype);
+  close(sock);
   if(response==NULL)
     return;
   parse = ucl_parser_new(0);
@@ -169,5 +172,4 @@ void place_window ( gint64 pid, struct context *context )
   ucl_object_unref((ucl_object_t *)obj);
   ucl_parser_free(parse);
   g_free(response);
-  close(sock);
 }

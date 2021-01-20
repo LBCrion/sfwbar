@@ -49,7 +49,8 @@ gchar *ipc_poll ( int sock, gint32 *etype )
         g_free(response);
         response = NULL;
       }
-      response[plen]='\0';
+      else
+        response[plen]='\0';
     }
   }
   return response;
@@ -64,6 +65,7 @@ struct ipc_event ipc_parse_event ( const ucl_object_t *obj )
   int i;
 
   ev.event = -1;
+  ev.pid = 0;
   ev.appid = NULL;
   ev.title = NULL;
 
@@ -103,11 +105,11 @@ int ipc_open (int to)
     return -1;
   addr.sun_family = AF_UNIX;
   strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
-  if(connect(sock,(struct sockaddr *)&addr,sizeof(struct sockaddr_un)) == -1 )
-    return -1;
-  if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1)
-    return -1;
-  return sock;
+  if(connect(sock,(struct sockaddr *)&addr,sizeof(struct sockaddr_un)) != -1 )
+    if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) != -1)
+      return sock;
+  close(sock);
+  return -1;
 }
 
 int ipc_send ( int sock, gint32 type, gchar *command )
