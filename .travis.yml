@@ -4,6 +4,10 @@ arch: amd64
 os: linux
 dist: focal
 
+env:
+  global:
+    -secure: "i_qUUPo5B4fh2ekd51nNTgi"
+
 jobs:
   include:
     compiler: gcc
@@ -22,3 +26,13 @@ jobs:
     script:
       - meson build
       - ninja -C build
+
+addons:
+  coverity_scan:
+    roject:
+      name: "LBCrion/sfwbar"
+      description: "SFWBar"
+    notification_email: harley@hosers.org
+    build_command_prepend: "meson build"
+    build_command: "ninja -C build"
+    branch_pattern: main
