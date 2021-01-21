@@ -24,6 +24,8 @@ void pager_button_click( GtkWidget *widget, struct context *context )
 {
   char buff[256];
   gchar *label;
+  if(context->ipc==-1)
+    return;
   label = (gchar *)gtk_button_get_label(GTK_BUTTON(widget));
   if(label==NULL)
     return;

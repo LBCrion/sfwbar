@@ -20,7 +20,7 @@ dep = [gtk3, glib, ucl, glsh ]
 
 executable ('sfwbar', sources: src, c_args: '-DGLIB_DISABLE_DEPRECATION_WARNINGS -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED', dependencies: dep, install: true)
 
-install_man('sfwbar.1')
+install_man('doc/sfwbar.1')
 install_data(['config/sfwbar.config','config/sfwbar.css'],
     rename: ['sfwbar.config','sfwbar.css'],
     install_dir: get_option('datadir') / 'sfwbar')

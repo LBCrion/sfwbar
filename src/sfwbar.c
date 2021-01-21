@@ -154,24 +154,27 @@ gint shell_timer ( struct context *context )
 
   scanner_expire(context->scan_list);
   widget_update_all(context);
-  response = ipc_poll(context->ipc,&etype);
-  while (response != NULL)
+  if(context->ipc!=-1)
   {
-    parse = ucl_parser_new(0);
-    ucl_parser_add_string(parse,response,strlen(response));
-    obj = ucl_parser_get_object(parse);
-    if(obj!=NULL)
-    {
-      ev = ipc_parse_event(obj);
-      if(etype==0x80000003)
-        dispatch_event(&ev,context);
-      if(etype==0x80000000)
-        pager_update(context);
-    }
-    ucl_object_unref((ucl_object_t *)obj);
-    ucl_parser_free(parse);
-    g_free(response);
     response = ipc_poll(context->ipc,&etype);
+    while (response != NULL)
+    { 
+      parse = ucl_parser_new(0);
+      ucl_parser_add_string(parse,response,strlen(response));
+      obj = ucl_parser_get_object(parse);
+      if(obj!=NULL)
+      {
+        ev = ipc_parse_event(obj);
+        if(etype==0x80000003)
+          dispatch_event(&ev,context);
+        if(etype==0x80000000)
+          pager_update(context);
+      }
+      ucl_object_unref((ucl_object_t *)obj);
+      ucl_parser_free(parse);
+      g_free(response);
+      response = ipc_poll(context->ipc,&etype);
+    }
   }
   return TRUE;
 }

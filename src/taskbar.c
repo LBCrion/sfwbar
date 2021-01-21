@@ -104,7 +104,8 @@ void taskbar_button_click( GtkWidget *widget, struct context *context )
 {
   char buff[256];
   struct tb_button *button = g_object_get_data(G_OBJECT(widget),"parent");
-  if(button == NULL)
+
+  if((button == NULL)||(context->ipc==-1))
     return;
   if ( button->pid == context->tb_focus)
     snprintf(buff,255,"[pid=%ld] move window to scratchpad",button->pid);

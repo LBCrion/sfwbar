@@ -155,7 +155,7 @@ void place_window ( gint64 pid, struct context *context )
   gchar *response;
 
   sock = ipc_open(3000);
-  if(sock<0)
+  if(sock==-1)
     return;
   ipc_send(sock,4,"");
   response = ipc_poll(sock,&etype);
@@ -168,7 +168,8 @@ void place_window ( gint64 pid, struct context *context )
   node = placement_find_pid ( obj, pid );
   placement_location(context,node,pid,&r);
   snprintf(buff,255,"[pid=%ld] move absolute position %d %d",pid,r.x,r.y);
-  ipc_send(context->ipc,0,buff);
+  if(context->ipc != -1)
+    ipc_send(context->ipc,0,buff);
   ucl_object_unref((ucl_object_t *)obj);
   ucl_parser_free(parse);
   g_free(response);
