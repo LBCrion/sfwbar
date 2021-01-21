@@ -17,7 +17,7 @@ jobs:
       - ./autogen.sh
       - ./configure
       - make
-      - make install
+      - sudo make install
     script:
       - meson build
       - ninja -C build
