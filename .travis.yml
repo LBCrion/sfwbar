@@ -9,7 +9,14 @@ jobs:
     compiler: gcc
     before_install:
       - sudo apt-get update
-      - sudo apt-get -y install libucl-dev libgtk-3-dev meson libgtk-layer-shell-dev
+      - sudo apt-get -y install libgtk-3-dev meson libgtk-layer-shell-dev
+      - wget https://github.com/vstakhov/libucl/archive/0.8.1.tar.gz -O /tmp/libucl.tgz
+      - cd /tmp
+      - tar -xvf libucl.tgz
+      - cd libucl-0.8.1
+      - ./configure
+      - make
+      - make install
     script:
       - meson build
       - ninja -C build
