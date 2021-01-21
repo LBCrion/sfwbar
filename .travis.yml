@@ -11,13 +11,14 @@ jobs:
       - sudo apt-get update
       - sudo apt-get -y install libgtk-3-dev meson libgtk-layer-shell-dev
       - wget https://github.com/vstakhov/libucl/archive/0.8.1.tar.gz -O /tmp/libucl.tgz
-      - cd /tmp
+      - pushd /tmp
       - tar -xvf libucl.tgz
       - cd libucl-0.8.1
       - ./autogen.sh
       - ./configure
       - make
       - sudo make install
+      - popd
     script:
       - meson build
       - ninja -C build
