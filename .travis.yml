@@ -14,6 +14,7 @@ jobs:
       - cd /tmp
       - tar -xvf libucl.tgz
       - cd libucl-0.8.1
+      - ./autogen.sh
       - ./configure
       - make
       - make install
