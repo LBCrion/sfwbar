@@ -39,6 +39,11 @@ void scanner_init ( struct context *context, const ucl_object_t *obj )
           for(j=0;j<3;j++)
             if(g_strrstr(flist,flags[j])!=NULL)
               file->flags |= (1<<j);
+        if(file->flags & VF_EXEC )
+        {
+          file->flags |= VF_NOGLOB;
+          file->flags &= !VF_CHTIME;
+        }
         file->vars = scanner_add_vars(context, iter, file);
         context->file_list = g_list_append(context->file_list,file);
         }
@@ -178,6 +183,7 @@ int update_var_files ( struct context *context, struct scan_file *file )
   struct stat stattr;
   int i;
   char reset=0;
+  char update=0;
   FILE *in;
   glob_t gbuf;
   char *dnames[2];
@@ -186,7 +192,7 @@ int update_var_files ( struct context *context, struct scan_file *file )
     return -1;
   if(file->fname==NULL)
     return -1;
-  if(file->flags & (VF_EXEC | VF_NOGLOB))
+  if(file->flags & VF_NOGLOB)
   {
     dnames[0] = file->fname;
     dnames[1] = NULL;
@@ -199,13 +205,25 @@ int update_var_files ( struct context *context, struct scan_file *file )
       return -1;
     }
 
+  if(file->flags & VF_CHTIME)
+  {
+    for(i=0;gbuf.gl_pathv[i]!=NULL;i++)
+    {
+      if(stat(gbuf.gl_pathv[i],&stattr)!=0)
+        stattr.st_mtime = 0;
+      if(stattr.st_mtime>file->mod_time)
+      {
+        update=1;
+        file->mod_time=stattr.st_mtime;
+      }
+    }
+  }
+  else
+    update=1;
+
   for(i=0;gbuf.gl_pathv[i]!=NULL;i++)
+    if(update)
     {
-    if(stat(gbuf.gl_pathv[i],&stattr)!=0)
-      stattr.st_mtime = 0;
-    if((!(file->flags & VF_CHTIME))||(stattr.st_mtime>file->mod_time)||(file->flags & VF_EXEC))
-    {
-      file->mod_time=stattr.st_mtime;
       if(file->flags & VF_EXEC)
         in = popen(file->fname,"r");
       else
@@ -226,8 +244,7 @@ int update_var_files ( struct context *context, struct scan_file *file )
           file->mod_time=stattr.st_mtime;
       }
     }
-  }
-  if(!(file->flags & (VF_EXEC | VF_NOGLOB)))
+  if(!(file->flags & VF_NOGLOB))
     globfree(&gbuf);
 
   return 0;
