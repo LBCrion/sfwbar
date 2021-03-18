@@ -19,6 +19,7 @@ struct context {
   gint32 tb_rows;
   gint32 tb_isize;
   gint32 pager_rows;
+  GList *pager_pins;
   gint32 position;
   gint32 wp_x,wp_y;
   GtkCssProvider *css;

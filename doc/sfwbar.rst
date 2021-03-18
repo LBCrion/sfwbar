@@ -207,7 +207,16 @@ icon [true|false]
   An indicator whether to display application icons within the taskbar.
 
 rows
-  Specify number of rows in a taskbar. (also applicable to a pager widget)
+  Specify number of rows in a taskbar.
+
+``Pager`` widget may contain the following options
+
+pins
+  List "pinned" workspaces. These will show up in the pager even if the 
+  workspace is empty.
+
+rows
+  Specify number of rows in a pager.
 
 EXPRESSIONS
 ===========

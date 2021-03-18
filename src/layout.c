@@ -88,6 +88,20 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
     context->pager_rows = ucl_int_by_name(obj,"rows",1);
     if(context->pager_rows<1)
       context->pager_rows = 1;
+    context->pager_pins = NULL;
+    arr = ucl_object_lookup(obj,"pins");
+    if( arr )
+    {
+      itp = ucl_object_iterate_new(arr);
+      while((ptr = ucl_object_iterate_safe(itp,true))!=NULL)
+      {
+        char *pin = (char *)ucl_object_tostring(ptr);
+        if(pin!=NULL)
+          context->pager_pins = g_list_append(context->pager_pins,g_strdup(pin));
+      }
+      ucl_object_iterate_free(itp);
+    }
+
     widget = pager_init(context);
   }
 
