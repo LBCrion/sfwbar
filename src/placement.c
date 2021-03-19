@@ -4,6 +4,7 @@
  */
 
 #include <glib.h>
+#include <unistd.h>
 #include "sfwbar.h"
 
 int comp_int ( const void *x1, const void *x2)
@@ -152,7 +153,14 @@ void place_window ( gint64 pid, struct context *context )
   struct rect r;
   const ucl_object_t *obj, *node;
   struct ucl_parser *parse;
+  GList *iter;
   gchar *response;
+
+  for(iter=context->buttons;iter!=NULL;iter=g_list_next(iter))
+    if(AS_BUTTON(iter->data)->pid==pid)
+      return;
+  if(pid==getpid())
+    return;
 
   sock = ipc_open(3000);
   if(sock==-1)
