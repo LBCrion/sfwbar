@@ -235,6 +235,6 @@ void widget_action ( GtkWidget *widget, gpointer data )
   if(cmd!=NULL)
   {
     argv[0]=cmd;
-    g_spawn_async(NULL,argv,NULL,G_SPAWN_DEFAULT,NULL,NULL,&pid,NULL);
+    g_spawn_async(NULL,argv,NULL,G_SPAWN_SEARCH_PATH,NULL,NULL,&pid,NULL);
   }
 }
