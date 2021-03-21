@@ -37,14 +37,14 @@ void switcher_event ( struct context *context, const ucl_object_t *obj )
       context->sw_hstate = *mode;
       context->sw_count = context->sw_max;
       focus = NULL;
-      for (item = context->buttons; item!= NULL; item = g_list_next(item) )
-        if (AS_BUTTON(item->data)->wid == context->tb_focus)
+      for (item = context->wt_list; item!= NULL; item = g_list_next(item) )
+        if (AS_WINDOW(item->data)->wid == context->tb_focus)
           focus = g_list_next(item);
       if(focus==NULL)
-        focus=context->buttons;
+        focus=context->wt_list;
       if(focus!=NULL)
       {
-        snprintf(buff,255,"[con_id=%ld] focus",AS_BUTTON(focus->data)->wid);
+        snprintf(buff,255,"[con_id=%ld] focus",AS_WINDOW(focus->data)->wid);
         ipc_send ( context->ipc, 0, buff );
       }
     }
@@ -70,10 +70,10 @@ void switcher_update ( struct context *context )
   if(context->sw_count > 0)
   {
     gtk_container_foreach(GTK_CONTAINER(context->sw_box),(GtkCallback)switcher_delete,NULL);
-    for (item = context->buttons; item!= NULL; item = g_list_next(item) )
+    for (item = context->wt_list; item!= NULL; item = g_list_next(item) )
     {
       box = gtk_grid_new();
-      if (AS_BUTTON(item->data)->wid == context->tb_focus)
+      if (AS_WINDOW(item->data)->wid == context->tb_focus)
         gtk_widget_set_name(box, "switcher_active");
       else
         gtk_widget_set_name(box, "switcher_normal");
@@ -81,10 +81,10 @@ void switcher_update ( struct context *context )
       gtk_widget_set_hexpand(box,TRUE);
       gtk_grid_attach(GTK_GRID(context->sw_box),box,i%context->sw_cols,i/context->sw_cols,1,1);
       if(context->features & F_SW_LABEL)
-        gtk_grid_attach(GTK_GRID(box),gtk_label_new(AS_BUTTON(item->data)->title),2,1,1,1);
+        gtk_grid_attach(GTK_GRID(box),gtk_label_new(AS_WINDOW(item->data)->title),2,1,1,1);
       if(context->features & F_SW_ICON)
       {
-        gtk_grid_attach(GTK_GRID(box),img=gtk_image_new_from_icon_name(AS_BUTTON(item->data)->appid,
+        gtk_grid_attach(GTK_GRID(box),img=gtk_image_new_from_icon_name(AS_WINDOW(item->data)->appid,
           GTK_ICON_SIZE_SMALL_TOOLBAR),1,1,1,1);
         gtk_image_set_pixel_size(GTK_IMAGE(img),context->sw_isize);
       }

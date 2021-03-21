@@ -156,8 +156,8 @@ void place_window ( gint64 wid, gint64 pid, struct context *context )
   GList *iter;
   gchar *response;
 
-  for(iter=context->buttons;iter!=NULL;iter=g_list_next(iter))
-    if(AS_BUTTON(iter->data)->pid==pid)
+  for(iter=context->wt_list;iter!=NULL;iter=g_list_next(iter))
+    if(AS_WINDOW(iter->data)->pid==pid)
       return;
   if(pid==getpid())
     return;

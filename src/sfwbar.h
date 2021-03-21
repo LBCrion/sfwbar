@@ -34,7 +34,7 @@ struct context {
   GtkCssProvider *css;
   GtkWidget *box;
   GtkWidget *pager;
-  GList *buttons;
+  GList *wt_list;
   GList *widgets;
   GList *file_list;
   GList *scan_list;
@@ -45,7 +45,7 @@ struct context {
   char *ret_val;
 };
 
-struct tb_button {
+struct wt_window {
   GtkWidget *button;
   GtkWidget *label;
   GtkWidget *switcher;
@@ -94,13 +94,15 @@ void dispatch_event ( struct ipc_event *ev, struct context *context );
 
 GtkWidget *taskbar_init ( struct context *context );
 GtkIconSize taskbar_icon_size ( gchar *str );
-void taskbar_populate ( struct context *context );
+void wintree_populate ( struct context *context );
 void taskbar_refresh ( struct context *context );
-void taskbar_delete_window (gint64 wid, struct context *context);
-void taskbar_update_window (struct ipc_event *ev, struct context *context);
+void taskbar_update_window (struct ipc_event *ev, struct context *context, struct wt_window *win);
+void wintree_delete_window (gint64 wid, struct context *context);
+void wintree_update_window (struct ipc_event *ev, struct context *context);
 
 void switcher_event ( struct context *context, const ucl_object_t *obj );
 void switcher_update ( struct context *context );
+void switcher_update_window (struct ipc_event *ev, struct context *context, struct wt_window *win);
 
 GtkWidget *pager_init ( struct context *context );
 void pager_update ( struct context *context );
@@ -136,7 +138,7 @@ int md5_file( char *path, unsigned char output[16] );
 
 #define SCAN_VAR(x) ((struct scan_var *)x)
 #define SCAN_FILE(x) ((struct scan_file *)x)
-#define AS_BUTTON(x) ((struct tb_button *)(x))
+#define AS_WINDOW(x) ((struct wt_window *)(x))
 
 enum {
         F_TASKBAR   = 1<<0,

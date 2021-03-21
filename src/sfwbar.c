@@ -33,9 +33,9 @@ void dispatch_event ( struct ipc_event *ev, struct context *context )
     if (ev->event == 99)
       ev->event = 0;
     if (ev->event == 0 || ev->event == 3)
-      taskbar_update_window (ev,context);
+      wintree_update_window (ev,context);
     if (ev->event == 1)
-      taskbar_delete_window(ev->wid,context);
+      wintree_delete_window(ev->wid,context);
     if (ev->event == 2)
       context->tb_focus = ev->wid;
   }
@@ -52,7 +52,7 @@ void init_context ( struct context *context )
   context->scan_list=NULL;
   context->file_list=NULL;
   context->widgets=NULL;
-  context->buttons = NULL;
+  context->wt_list = NULL;
   context->features=0;
   context->default_dec=4;
   context->buff_len = 1024;
@@ -252,7 +252,7 @@ static void activate (GtkApplication* app, struct context *context)
   }
 
   if((context->features & F_TASKBAR)||(context->features & F_SWITCHER))
-    taskbar_populate(context);
+    wintree_populate(context);
 
   if((context->features & F_TASKBAR)||(context->features & F_PLACEMENT)||(context->features & F_PAGER))
   {
