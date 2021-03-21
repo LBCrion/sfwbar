@@ -61,7 +61,7 @@ void switcher_delete ( GtkWidget *w, gpointer data )
 void switcher_update ( struct context *context )
 {
   GList *item;
-  GtkWidget *box;
+  GtkWidget *box,*img;
   int i = 1;
   if(context->sw_count <= 0)
     return;
@@ -73,15 +73,21 @@ void switcher_update ( struct context *context )
     for (item = context->buttons; item!= NULL; item = g_list_next(item) )
     {
       box = gtk_grid_new();
-      gtk_grid_attach(GTK_GRID(context->sw_box),box,1,i,1,1);
-      gtk_grid_attach(GTK_GRID(box),gtk_label_new(AS_BUTTON(item->data)->title),2,1,1,1);
-      gtk_grid_attach(GTK_GRID(box),gtk_image_new_from_icon_name(AS_BUTTON(item->data)->appid,
-            GTK_ICON_SIZE_SMALL_TOOLBAR),1,1,1,1);
-//      if (AS_BUTTON(item->data)->pid == context->tb_focus)
-//        gtk_widget_set_name(box, "switcher_active");
-//      else
-//        gtk_widget_set_name(box, "switcher_normal");
+      if (AS_BUTTON(item->data)->wid == context->tb_focus)
+        gtk_widget_set_name(box, "switcher_active");
+      else
+        gtk_widget_set_name(box, "switcher_normal");
 
+      gtk_widget_set_hexpand(box,TRUE);
+      gtk_grid_attach(GTK_GRID(context->sw_box),box,i%context->sw_cols,i/context->sw_cols,1,1);
+      if(context->features & F_SW_LABEL)
+        gtk_grid_attach(GTK_GRID(box),gtk_label_new(AS_BUTTON(item->data)->title),2,1,1,1);
+      if(context->features & F_SW_ICON)
+      {
+        gtk_grid_attach(GTK_GRID(box),img=gtk_image_new_from_icon_name(AS_BUTTON(item->data)->appid,
+          GTK_ICON_SIZE_SMALL_TOOLBAR),1,1,1,1);
+        gtk_image_set_pixel_size(GTK_IMAGE(img),context->sw_isize);
+      }
       i++;
     }
     gtk_widget_show_all(GTK_WIDGET(context->sw_win));

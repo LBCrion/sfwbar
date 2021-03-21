@@ -22,6 +22,8 @@ struct context {
   char sw_hstate;
   gint32 sw_count;
   gint32 sw_max;
+  gint32 sw_cols;
+  gint32 sw_isize;
   GtkWidget *sw_win;
   GtkWidget *sw_box;
   gint32 pager_rows;
@@ -143,7 +145,9 @@ enum {
         F_TB_ICON   = 1<<3,
         F_TB_LABEL  = 1<<4,
         F_TB_EXPAND = 1<<5,
-        F_SWITCHER  = 1<<6
+        F_SWITCHER  = 1<<6,
+        F_SW_ICON   = 1<<7,
+        F_SW_LABEL  = 1<<8
 };
 
 enum {

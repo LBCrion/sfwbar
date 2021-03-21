@@ -116,6 +116,16 @@ void taskbar_button_click( GtkWidget *widget, struct context *context )
   ipc_send ( context->ipc, 0, buff );
 }
 
+gint wintree_compare ( gconstpointer a, gconstpointer b)
+{
+  gint s;
+  s = g_strcmp0(a,b);
+  if(s==0)
+    return a-b;
+  return s;
+}
+
+
 void taskbar_update_window (struct ipc_event *ev, struct context *context)
 {
   GList *iter,*item;
@@ -175,7 +185,7 @@ void taskbar_update_window (struct ipc_event *ev, struct context *context)
       
     }
 
-    context->buttons = g_list_append (context->buttons,button);
+    context->buttons = g_list_insert_sorted (context->buttons,button,wintree_compare);
   }
 }
 

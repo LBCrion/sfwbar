@@ -76,13 +76,35 @@ void placement_init ( struct context *context, const ucl_object_t *obj )
 void switcher_init (struct context *context, const ucl_object_t *obj )
 {
   const ucl_object_t *ptr;
+  char *css;
   if((ptr=ucl_object_lookup(obj,"switcher"))==NULL)
     return;
   context->features |= F_SWITCHER;
   context->sw_max = ucl_int_by_name(ptr,"delay",1)*10;
   context->sw_win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_layer_init_for_window (GTK_WINDOW(context->sw_win));
+  gtk_layer_set_layer(GTK_WINDOW(context->sw_win),GTK_LAYER_SHELL_LAYER_OVERLAY);
   context->sw_box = gtk_grid_new();
+  gtk_widget_set_name(context->sw_box, "switcher_normal");
   gtk_container_add(GTK_CONTAINER(context->sw_win),context->sw_box);
+  if(ucl_bool_by_name(ptr,"icon",TRUE))
+    context->features |= F_SW_ICON;
+  if(ucl_bool_by_name(ptr,"title",TRUE))
+    context->features |= F_SW_LABEL;
+  if(!(context->features & F_SW_ICON))
+    context->features |= F_SW_LABEL;
+  context->sw_cols = ucl_int_by_name(ptr,"columns",1);
+  css = ucl_string_by_name(ptr,"css");
+  if(css!=NULL)
+  {
+    GtkStyleContext *cont = gtk_widget_get_style_context (context->sw_box);
+    GtkCssProvider *provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(provider,css,strlen(css),NULL);
+    gtk_style_context_add_provider (cont,
+      GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+    g_free(css);
+  }
+  gtk_widget_style_get(context->sw_box,"icon-size",&(context->sw_isize),NULL);
 }
 
 void css_init ( void )
@@ -211,6 +233,7 @@ static void activate (GtkApplication* app, struct context *context)
   gtk_layer_init_for_window (context->window);
   gtk_layer_auto_exclusive_zone_enable (context->window);
   gtk_layer_set_keyboard_interactivity(context->window,FALSE);
+  gtk_layer_set_layer(context->window,GTK_LAYER_SHELL_LAYER_OVERLAY);
   
   gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_LEFT,TRUE);
   gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_RIGHT,TRUE);
