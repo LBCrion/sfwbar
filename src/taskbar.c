@@ -5,6 +5,7 @@
 
 
 #include <glib.h>
+#include <unistd.h>
 #include <gtk/gtk.h>
 #include "sfwbar.h"
 
@@ -77,8 +78,9 @@ void taskbar_traverse_tree ( const ucl_object_t *obj, struct context *context )
       {
         ev.title = ucl_string_by_name(iter,"name");
         ev.pid = ucl_int_by_name(iter,"pid",G_MININT64); 
+        ev.wid = ucl_int_by_name(iter,"id",G_MININT64); 
         if(ucl_bool_by_name(iter,"focused",FALSE) == TRUE)
-          context->tb_focus = ev.pid;
+          context->tb_focus = ev.wid;
         ev.event = 99;
         dispatch_event(&ev,context);
       }
@@ -107,10 +109,10 @@ void taskbar_button_click( GtkWidget *widget, struct context *context )
 
   if((button == NULL)||(context->ipc==-1))
     return;
-  if ( button->pid == context->tb_focus)
-    snprintf(buff,255,"[pid=%ld] move window to scratchpad",button->pid);
+  if ( button->wid == context->tb_focus)
+    snprintf(buff,255,"[con_id=%ld] move window to scratchpad",button->wid);
   else
-    snprintf(buff,255,"[pid=%ld] focus",button->pid);
+    snprintf(buff,255,"[con_id=%ld] focus",button->wid);
   ipc_send ( context->ipc, 0, buff );
 }
 
@@ -127,7 +129,7 @@ void taskbar_update_window (struct ipc_event *ev, struct context *context)
 
   item = NULL;
   for(iter=context->buttons;iter!=NULL;iter = g_list_next(iter))
-    if (AS_BUTTON(iter->data)->pid == ev->pid)
+    if (AS_BUTTON(iter->data)->wid == ev->wid)
       item=iter;
   if (item != NULL)
   {
@@ -137,29 +139,42 @@ void taskbar_update_window (struct ipc_event *ev, struct context *context)
   }
 
   button = g_malloc(sizeof(struct tb_button));
-  if ( button != NULL)
+  if ( button != NULL && ev->pid != getpid())
   {
     button->pid = ev->pid;
-    button->button = gtk_button_new();
+    button->wid = ev->wid;
+    button->appid = g_strdup(ev->appid);
+    button->title = g_strdup(ev->title);
 
-    box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
-    gtk_container_add(GTK_CONTAINER(button->button),box);
-    if(context->features & F_TB_ICON)
+    if(context->features & F_TASKBAR)
     {
-      icon = gtk_image_new_from_icon_name(ev->appid,GTK_ICON_SIZE_SMALL_TOOLBAR);
-      gtk_image_set_pixel_size(GTK_IMAGE(icon),context->tb_isize);
-      gtk_container_add(GTK_CONTAINER(box),icon);
+      button->button = gtk_button_new();
+      box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
+      gtk_container_add(GTK_CONTAINER(button->button),box);
+      if(context->features & F_TB_ICON)
+      {
+        icon = gtk_image_new_from_icon_name(ev->appid,GTK_ICON_SIZE_SMALL_TOOLBAR);
+        gtk_image_set_pixel_size(GTK_IMAGE(icon),context->tb_isize);
+        gtk_container_add(GTK_CONTAINER(box),icon);
+      }
+      if(context->features & F_TB_LABEL)
+      {
+        button->label = gtk_label_new(ev->title);
+        gtk_label_set_ellipsize (GTK_LABEL(button->label),PANGO_ELLIPSIZE_END);
+        gtk_container_add(GTK_CONTAINER(box),button->label);
+      }
+
+      g_object_set_data(G_OBJECT(button->button),"parent",button);
+      g_object_ref(G_OBJECT(button->button));
+      g_signal_connect(button->button,"clicked",G_CALLBACK(taskbar_button_click),context);
     }
-    if(context->features & F_TB_LABEL)
+    if(context->features & F_SWITCHER)
     {
-      button->label = gtk_label_new(ev->title);
-      gtk_label_set_ellipsize (GTK_LABEL(button->label),PANGO_ELLIPSIZE_END);
-      gtk_container_add(GTK_CONTAINER(box),button->label);
+      button->switcher = gtk_label_new(button->title);
+      g_object_ref(G_OBJECT(button->switcher));
+      
     }
 
-    g_object_set_data(G_OBJECT(button->button),"parent",button);
-    g_object_ref(G_OBJECT(button->button));
-    g_signal_connect(button->button,"clicked",G_CALLBACK(taskbar_button_click),context);
     context->buttons = g_list_append (context->buttons,button);
   }
 }
@@ -171,7 +186,7 @@ void taskbar_refresh( struct context *context )
   gtk_container_foreach(GTK_CONTAINER(context->box),(GtkCallback)taskbar_remove_button,context);
   for (item = context->buttons; item!= NULL; item = g_list_next(item) )
   {
-    if (AS_BUTTON(item->data)->pid == context->tb_focus)
+    if (AS_BUTTON(item->data)->wid == context->tb_focus)
       gtk_widget_set_name(AS_BUTTON(item->data)->button, "taskbar_active");
     else
       gtk_widget_set_name(AS_BUTTON(item->data)->button, "taskbar_normal");
@@ -182,17 +197,26 @@ void taskbar_refresh( struct context *context )
   gtk_widget_show_all(context->box);
 }
 
-void taskbar_delete_window (gint64 pid, struct context *context)
+void taskbar_delete_window (gint64 wid, struct context *context)
 {
   GList *iter,*item;
   item = NULL;
   for(iter=context->buttons;iter!=NULL;iter = g_list_next(iter))
-    if (AS_BUTTON(iter->data)->pid == pid)
+    if (AS_BUTTON(iter->data)->wid == wid)
       item=iter;
   if(item==NULL)
     return;
-  gtk_widget_destroy((AS_BUTTON(item->data))->button);
-  g_object_unref(G_OBJECT(AS_BUTTON(item->data)->button));
+  if(context->features & F_TASKBAR)
+  {
+    gtk_widget_destroy((AS_BUTTON(item->data))->button);
+    g_object_unref(G_OBJECT(AS_BUTTON(item->data)->button));
+  }
+  if(context->features & F_SWITCHER)
+  {
+    gtk_widget_destroy((AS_BUTTON(item->data))->switcher);
+    g_object_unref(G_OBJECT(AS_BUTTON(item->data)->switcher));
+  }
+  g_free(AS_BUTTON(item->data)->appid);
+  g_free(AS_BUTTON(item->data)->title);
   context->buttons = g_list_delete_link(context->buttons,item);
 }
-

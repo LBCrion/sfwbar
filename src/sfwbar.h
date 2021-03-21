@@ -8,6 +8,7 @@
 struct ipc_event {
   gint8 event;
   gint64 pid;
+  gint64 wid;
   gchar *title;
   gchar *appid;
 };
@@ -18,10 +19,16 @@ struct context {
   gint32 tb_focus;
   gint32 tb_rows;
   gint32 tb_isize;
+  char sw_hstate;
+  gint32 sw_count;
+  gint32 sw_max;
+  GtkWidget *sw_win;
+  GtkWidget *sw_box;
   gint32 pager_rows;
   GList *pager_pins;
   gint32 position;
   gint32 wp_x,wp_y;
+  GtkWindow *window;
   GtkCssProvider *css;
   GtkWidget *box;
   GtkWidget *pager;
@@ -39,7 +46,11 @@ struct context {
 struct tb_button {
   GtkWidget *button;
   GtkWidget *label;
+  GtkWidget *switcher;
+  char *title;
+  char *appid;
   gint64 pid;
+  gint64 wid;
 };
 
 struct rect {
@@ -75,7 +86,7 @@ gchar *ipc_poll( int sock, gint32 *etype );
 int ipc_send ( int sock, gint32 type, gchar *command );
 struct ipc_event ipc_parse_event ( const ucl_object_t *obj );
 
-void place_window ( gint64 pid, struct context *context );
+void place_window ( gint64 wid, gint64 pid, struct context *context );
 
 void dispatch_event ( struct ipc_event *ev, struct context *context );
 
@@ -83,8 +94,11 @@ GtkWidget *taskbar_init ( struct context *context );
 GtkIconSize taskbar_icon_size ( gchar *str );
 void taskbar_populate ( struct context *context );
 void taskbar_refresh ( struct context *context );
-void taskbar_delete_window (gint64 pid, struct context *context);
+void taskbar_delete_window (gint64 wid, struct context *context);
 void taskbar_update_window (struct ipc_event *ev, struct context *context);
+
+void switcher_event ( struct context *context, const ucl_object_t *obj );
+void switcher_update ( struct context *context );
 
 GtkWidget *pager_init ( struct context *context );
 void pager_update ( struct context *context );
@@ -128,7 +142,8 @@ enum {
         F_PAGER     = 1<<2,
         F_TB_ICON   = 1<<3,
         F_TB_LABEL  = 1<<4,
-        F_TB_EXPAND = 1<<5
+        F_TB_EXPAND = 1<<5,
+        F_SWITCHER  = 1<<6
 };
 
 enum {

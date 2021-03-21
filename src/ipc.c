@@ -66,6 +66,7 @@ struct ipc_event ipc_parse_event ( const ucl_object_t *obj )
 
   ev.event = -1;
   ev.pid = 0;
+  ev.wid = 0;
   ev.appid = NULL;
   ev.title = NULL;
 
@@ -78,6 +79,7 @@ struct ipc_event ipc_parse_event ( const ucl_object_t *obj )
     {
       ev.event=i;
       ev.pid = ucl_int_by_name(container,"pid",G_MININT64); 
+      ev.wid = ucl_int_by_name(container,"id",G_MININT64); 
       ev.appid = ucl_string_by_name(container,"app_id");
       ev.title = ucl_string_by_name(container,"name");
    }
@@ -129,7 +131,7 @@ int ipc_send ( int sock, gint32 type, gchar *command )
 
 int ipc_subscribe ( int sock )
 {
-  if ( ipc_send(sock, 2, "['workspace','window']") == -1)
+  if ( ipc_send(sock, 2, "['workspace','window','barconfig_update']") == -1)
     return -1;
 
   return sock;

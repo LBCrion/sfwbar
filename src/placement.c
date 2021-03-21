@@ -25,7 +25,7 @@ struct rect parse_rect ( const ucl_object_t *obj )
   return ret;
 }
 
-int placement_location ( struct context *context, const ucl_object_t *obj, gint64 pid, struct rect *r )
+int placement_location ( struct context *context, const ucl_object_t *obj, gint64 wid, struct rect *r )
 {
   struct rect output, win, *obs;
   const ucl_object_t *ptr,*iter,*arr;
@@ -45,10 +45,10 @@ int placement_location ( struct context *context, const ucl_object_t *obj, gint6
   itp = ucl_object_iterate_new(arr);
   while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
   {
-    ptr = ucl_object_lookup(iter,"pid");
+    ptr = ucl_object_lookup(iter,"id");
     if(ucl_object_type(ptr) == UCL_INT)
     {
-      if(ucl_object_toint(ptr) == pid)
+      if(ucl_object_toint(ptr) == wid)
         win = parse_rect(iter);
       else
       {
@@ -113,7 +113,7 @@ int placement_location ( struct context *context, const ucl_object_t *obj, gint6
   return 1;
 }
 
-const ucl_object_t *placement_find_pid ( const ucl_object_t *obj, gint64 pid )
+const ucl_object_t *placement_find_wid ( const ucl_object_t *obj, gint64 wid )
 {
   const ucl_object_t *ptr,*iter,*arr, *ret;
   ucl_object_iter_t *itp;
@@ -123,9 +123,9 @@ const ucl_object_t *placement_find_pid ( const ucl_object_t *obj, gint64 pid )
     itp = ucl_object_iterate_new(arr);
     while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
     {
-      ptr = ucl_object_lookup(iter,"pid");
+      ptr = ucl_object_lookup(iter,"id");
       if(ucl_object_type(ptr)==UCL_INT)
-        if(ucl_object_toint(ptr) == pid)
+        if(ucl_object_toint(ptr) == wid)
           return obj;
     }
     ucl_object_iterate_free(itp);
@@ -138,14 +138,14 @@ const ucl_object_t *placement_find_pid ( const ucl_object_t *obj, gint64 pid )
     while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
     {
       if(ret==NULL)
-        ret = placement_find_pid(iter,pid);
+        ret = placement_find_wid(iter,wid);
     }
     ucl_object_iterate_free(itp);
   }
   return ret;
 }
 
-void place_window ( gint64 pid, struct context *context )
+void place_window ( gint64 wid, gint64 pid, struct context *context )
 {
   int sock;
   gint32 etype;
@@ -173,9 +173,9 @@ void place_window ( gint64 pid, struct context *context )
   parse = ucl_parser_new(0);
   ucl_parser_add_string(parse,response,strlen(response));
   obj = ucl_parser_get_object(parse);
-  node = placement_find_pid ( obj, pid );
-  placement_location(context,node,pid,&r);
-  snprintf(buff,255,"[pid=%ld] move absolute position %d %d",pid,r.x,r.y);
+  node = placement_find_wid ( obj, wid );
+  placement_location(context,node,wid,&r);
+  snprintf(buff,255,"[con_id=%ld] move absolute position %d %d",wid,r.x,r.y);
   if(context->ipc != -1)
     ipc_send(context->ipc,0,buff);
   ucl_object_unref((ucl_object_t *)obj);

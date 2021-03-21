@@ -26,19 +26,23 @@ void parse_command_line ( struct context *context, int argc, char **argv)
 void dispatch_event ( struct ipc_event *ev, struct context *context )
 {
   if ((ev->event == 0)&&(context->features & F_PLACEMENT))
-    place_window(ev->pid, context);
-  if(context->features & F_TASKBAR)
+    place_window(ev->wid, ev->pid, context);
+
+  if(context->features & (F_TASKBAR | F_SWITCHER | F_PLACEMENT))
   {
     if (ev->event == 99)
       ev->event = 0;
     if (ev->event == 0 || ev->event == 3)
       taskbar_update_window (ev,context);
     if (ev->event == 1)
-      taskbar_delete_window(ev->pid,context);
+      taskbar_delete_window(ev->wid,context);
     if (ev->event == 2)
-      context->tb_focus = ev->pid;
-    taskbar_refresh(context);
+      context->tb_focus = ev->wid;
   }
+
+  if(context->features & F_TASKBAR)
+    taskbar_refresh(context);
+
   g_free(ev->title);
   g_free(ev->appid);
 }
@@ -67,6 +71,18 @@ void placement_init ( struct context *context, const ucl_object_t *obj )
     context->wp_x=1;
   if(context->wp_y<1)
     context->wp_y=1;
+}
+
+void switcher_init (struct context *context, const ucl_object_t *obj )
+{
+  const ucl_object_t *ptr;
+  if((ptr=ucl_object_lookup(obj,"switcher"))==NULL)
+    return;
+  context->features |= F_SWITCHER;
+  context->sw_max = ucl_int_by_name(ptr,"delay",1)*10;
+  context->sw_win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  context->sw_box = gtk_grid_new();
+  gtk_container_add(GTK_CONTAINER(context->sw_win),context->sw_box);
 }
 
 void css_init ( void )
@@ -136,6 +152,7 @@ GtkWidget *load_config ( struct context *context )
   
   css_init();
   placement_init(context,obj);
+  switcher_init(context,obj);
   scanner_init(context,obj);
   root = layout_init(context,obj);
 
@@ -169,6 +186,8 @@ gint shell_timer ( struct context *context )
           dispatch_event(&ev,context);
         if(etype==0x80000000)
           pager_update(context);
+        if(etype==0x80000004)
+          switcher_event(context,obj);
       }
       ucl_object_unref((ucl_object_t *)obj);
       ucl_parser_free(parse);
@@ -176,36 +195,40 @@ gint shell_timer ( struct context *context )
       response = ipc_poll(context->ipc,&etype);
     }
   }
+
+  if(context->features & F_SWITCHER)
+    switcher_update(context);
+
   return TRUE;
 }
 
 static void activate (GtkApplication* app, struct context *context)
 {
-  GtkWindow *window;
+//  GtkWindow *window;
   GtkWidget *root;
 
-  window = (GtkWindow *)gtk_application_window_new (app);
-  gtk_layer_init_for_window (window);
-  gtk_layer_auto_exclusive_zone_enable (window);
-  gtk_layer_set_keyboard_interactivity(window,FALSE);
+  context->window = (GtkWindow *)gtk_application_window_new (app);
+  gtk_layer_init_for_window (context->window);
+  gtk_layer_auto_exclusive_zone_enable (context->window);
+  gtk_layer_set_keyboard_interactivity(context->window,FALSE);
   
-  gtk_layer_set_anchor (window,GTK_LAYER_SHELL_EDGE_LEFT,TRUE);
-  gtk_layer_set_anchor (window,GTK_LAYER_SHELL_EDGE_RIGHT,TRUE);
-  gtk_layer_set_anchor (window,GTK_LAYER_SHELL_EDGE_BOTTOM,TRUE);
-  gtk_layer_set_anchor (window,GTK_LAYER_SHELL_EDGE_TOP,FALSE);
+  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_LEFT,TRUE);
+  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_RIGHT,TRUE);
+  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_BOTTOM,TRUE);
+  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_TOP,FALSE);
   
   root = load_config(context);
 
   if(root != NULL)
   {
-    gtk_container_add(GTK_CONTAINER(window), root);
+    gtk_container_add(GTK_CONTAINER(context->window), root);
 
-    gtk_widget_show_all ((GtkWidget *)window);
-    gtk_widget_set_size_request (GTK_WIDGET (window), -1, gtk_widget_get_allocated_height(context->box));
-    gtk_window_resize (window, 1, 1);
+    gtk_widget_show_all ((GtkWidget *)context->window);
+    gtk_widget_set_size_request (GTK_WIDGET (context->window), -1, gtk_widget_get_allocated_height(context->box));
+    gtk_window_resize (context->window, 1, 1);
   }
 
-  if(context->features & F_TASKBAR)
+  if((context->features & F_TASKBAR)||(context->features & F_SWITCHER))
     taskbar_populate(context);
 
   if((context->features & F_TASKBAR)||(context->features & F_PLACEMENT)||(context->features & F_PAGER))
@@ -216,7 +239,7 @@ static void activate (GtkApplication* app, struct context *context)
   }
 
   g_timeout_add (100,(GSourceFunc )shell_timer,context);
-  gtk_widget_show_all ((GtkWidget *)window);
+  gtk_widget_show_all ((GtkWidget *)context->window);
 }
 
 
