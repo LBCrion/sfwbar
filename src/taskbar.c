@@ -79,15 +79,6 @@ void taskbar_update_window (struct ipc_event *ev, struct context *context, struc
   }
 }
 
-void switcher_update_window (struct ipc_event *ev, struct context *context, struct wt_window *win)
-{
-  if(context->features & F_SWITCHER)
-  {
-    win->switcher = gtk_label_new(win->title);
-    g_object_ref(G_OBJECT(win->switcher));
-  }
-}
-
 void taskbar_refresh( struct context *context )
 {
   GList *item;
