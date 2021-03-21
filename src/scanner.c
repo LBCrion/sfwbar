@@ -26,26 +26,27 @@ void scanner_init ( struct context *context, const ucl_object_t *obj )
   {
     itp = ucl_object_iterate_new(arr);
     while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
-    {
-      file = g_malloc(sizeof(struct scan_file));  
-      if((file!=NULL)&&(ucl_object_key(iter)!=NULL))
+      if(ucl_object_key(iter)!=NULL)
       {
-        file->fname = g_strdup(ucl_object_key(iter));
-        file->mod_time = 0;
-        file->flags = 0;
-        memset(file->md5,0,16);
-        flist = ucl_string_by_name(iter,"flags");
-        if(flist!=NULL)
-          for(j=0;j<3;j++)
-            if(g_strrstr(flist,flags[j])!=NULL)
-              file->flags |= (1<<j);
-        if(file->flags & VF_EXEC )
+        file = g_malloc(sizeof(struct scan_file));  
+        if(file!=NULL)
         {
-          file->flags |= VF_NOGLOB;
-          file->flags &= !VF_CHTIME;
-        }
-        file->vars = scanner_add_vars(context, iter, file);
-        context->file_list = g_list_append(context->file_list,file);
+          file->fname = g_strdup(ucl_object_key(iter));
+          file->mod_time = 0;
+          file->flags = 0;
+          memset(file->md5,0,16);
+          flist = ucl_string_by_name(iter,"flags");
+          if(flist!=NULL)
+            for(j=0;j<3;j++)
+              if(g_strrstr(flist,flags[j])!=NULL)
+                file->flags |= (1<<j);
+          if(file->flags & VF_EXEC )
+          {
+            file->flags |= VF_NOGLOB;
+            file->flags &= ~VF_CHTIME;
+          }
+          file->vars = scanner_add_vars(context, iter, file);
+          context->file_list = g_list_append(context->file_list,file);
         }
     }
     ucl_object_iterate_free(itp);

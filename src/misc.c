@@ -85,8 +85,11 @@ int md5_file( char *path, unsigned char output[16] )
 
     ctx = g_checksum_new(G_CHECKSUM_MD5);
 
-    while( ( n = fread( buf, 1, sizeof( buf ), f ) ) > 0 )
-        g_checksum_update( ctx, buf, n );
+    while( ( n = fread( buf, 1, sizeof( buf )-1, f ) ) > 0 )
+    {
+      buf[n]='\0';
+      g_checksum_update( ctx, buf, n );
+    }
 
     n=16;
     g_checksum_get_digest( ctx, output, (gsize *)&n );

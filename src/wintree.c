@@ -113,9 +113,10 @@ void wintree_update_window (struct ipc_event *ev, struct context *context)
     taskbar_update_window(ev,context,win);
     switcher_update_window(ev,context,win);
 
-
     context->wt_list = g_list_insert_sorted (context->wt_list,win,wintree_compare);
   }
+  else
+    g_free(win);
 }
 
 void wintree_delete_window (gint64 wid, struct context *context)

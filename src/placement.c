@@ -53,7 +53,12 @@ int placement_location ( struct context *context, const ucl_object_t *obj, gint6
       else
       {
         if(c>=nobs)
+        {
+          g_free(obs);
+          g_free(x);
+          g_free(y);
           return -1;
+        }
         obs[c] = parse_rect(iter);
         x[c] = obs[c].x+obs[c].w;
         y[c] = obs[c].y+obs[c].h;
@@ -63,7 +68,12 @@ int placement_location ( struct context *context, const ucl_object_t *obj, gint6
   }
   ucl_object_iterate_free(itp);
   if(c!=nobs)
+  {
+    g_free(obs);
+    g_free(x);
+    g_free(y);
     return -1;
+  }
   x[c]=output.x;
   y[c]=output.y;
   qsort(x,nobs+1,sizeof(int),comp_int);
