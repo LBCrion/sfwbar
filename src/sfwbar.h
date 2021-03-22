@@ -30,6 +30,7 @@ struct context {
   GList *pager_pins;
   gint32 position;
   gint32 wp_x,wp_y;
+  gint32 wo_x,wo_y;
   GtkWindow *window;
   GtkCssProvider *css;
   GtkWidget *box;
@@ -89,6 +90,7 @@ int ipc_send ( int sock, gint32 type, gchar *command );
 struct ipc_event ipc_parse_event ( const ucl_object_t *obj );
 
 void place_window ( gint64 wid, gint64 pid, struct context *context );
+void placement_init ( struct context *context, const ucl_object_t *obj );
 
 void dispatch_event ( struct ipc_event *ev, struct context *context );
 
@@ -103,6 +105,7 @@ void wintree_update_window (struct ipc_event *ev, struct context *context);
 void switcher_event ( struct context *context, const ucl_object_t *obj );
 void switcher_update ( struct context *context );
 void switcher_update_window (struct ipc_event *ev, struct context *context, struct wt_window *win);
+void switcher_init ( struct context *context, const ucl_object_t *obj );
 
 GtkWidget *pager_init ( struct context *context );
 void pager_update ( struct context *context );
@@ -149,7 +152,8 @@ enum {
         F_TB_EXPAND = 1<<5,
         F_SWITCHER  = 1<<6,
         F_SW_ICON   = 1<<7,
-        F_SW_LABEL  = 1<<8
+        F_SW_LABEL  = 1<<8,
+        F_PL_CHKPID = 1<<9
 };
 
 enum {
