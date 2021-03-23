@@ -5,13 +5,48 @@
 
 #include <glib.h>
 #include <gtk/gtk.h>
+#include <gtk-layer-shell.h>
 #include "sfwbar.h"
+
+void switcher_init (struct context *context, const ucl_object_t *obj )
+{
+  const ucl_object_t *ptr;
+  char *css;
+  if((ptr=ucl_object_lookup(obj,"switcher"))==NULL)
+    return;
+  context->features |= F_SWITCHER;
+  context->sw_max = ucl_int_by_name(ptr,"delay",1);
+  context->sw_win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_layer_init_for_window (GTK_WINDOW(context->sw_win));
+  gtk_layer_set_layer(GTK_WINDOW(context->sw_win),GTK_LAYER_SHELL_LAYER_OVERLAY);
+  context->sw_box = gtk_grid_new();
+  gtk_widget_set_name(context->sw_box, "switcher");
+  gtk_widget_set_name(context->sw_win, "switcher");
+  gtk_container_add(GTK_CONTAINER(context->sw_win),context->sw_box);
+  if(ucl_bool_by_name(ptr,"icon",TRUE))
+    context->features |= F_SW_ICON;
+  if(ucl_bool_by_name(ptr,"title",TRUE))
+    context->features |= F_SW_LABEL;
+  if(!(context->features & F_SW_ICON))
+    context->features |= F_SW_LABEL;
+  context->sw_cols = ucl_int_by_name(ptr,"columns",1);
+  css = ucl_string_by_name(ptr,"css");
+  if(css!=NULL)
+  {
+    GtkStyleContext *cont = gtk_widget_get_style_context (context->sw_box);
+    GtkCssProvider *provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(provider,css,strlen(css),NULL);
+    gtk_style_context_add_provider (cont,
+      GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+    g_free(css);
+  }
+  gtk_widget_style_get(context->sw_box,"icon-size",&(context->sw_isize),NULL);
+}
 
 void switcher_event ( struct context *context, const ucl_object_t *obj )
 {
   char *mode;
   GList *item, *focus;
-  char buff[256];
 
   if(obj==NULL)
     return;
@@ -44,8 +79,7 @@ void switcher_event ( struct context *context, const ucl_object_t *obj )
         focus=context->wt_list;
       if(focus!=NULL)
       {
-        snprintf(buff,255,"[con_id=%ld] focus",AS_WINDOW(focus->data)->wid);
-        ipc_send ( context->ipc, 0, buff );
+        context->tb_focus = AS_WINDOW(focus->data)->wid;
       }
     }
     g_free(mode);
@@ -69,8 +103,7 @@ void switcher_update_window (struct ipc_event *ev, struct context *context, stru
       gtk_grid_attach(GTK_GRID(win->switcher),gtk_label_new(win->title),2,1,1,1);
     if(context->features & F_SW_ICON)
     {
-      img=gtk_image_new_from_icon_name(win->appid,GTK_ICON_SIZE_SMALL_TOOLBAR);
-      gtk_image_set_pixel_size(GTK_IMAGE(img),context->sw_isize);
+      img = widget_icon_by_name(win->appid,context->sw_isize);
       gtk_grid_attach(GTK_GRID(win->switcher),img,1,1,1,1);
     }
   }
@@ -80,7 +113,8 @@ void switcher_update_window (struct ipc_event *ev, struct context *context, stru
 void switcher_update ( struct context *context )
 {
   GList *item;
-  int i = 1;
+  int i = 0;
+  char buff[256];
   if(context->sw_count <= 0)
     return;
   context->sw_count--;
@@ -102,7 +136,11 @@ void switcher_update ( struct context *context )
     gtk_widget_show_all(GTK_WIDGET(context->sw_win));
   }
   else
+  {
     gtk_widget_hide(GTK_WIDGET(context->sw_win));
+    snprintf(buff,255,"[con_id=%d] focus",context->tb_focus);
+    ipc_send ( context->ipc, 0, buff );
+  }
 }
 
 

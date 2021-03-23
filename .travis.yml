@@ -39,4 +39,4 @@ addons:
     notification_email: harley@hosers.org
     build_command_prepend: "meson build"
     build_command: "ninja -C build"
-    branch_pattern: main
+    branch_pattern: coverity

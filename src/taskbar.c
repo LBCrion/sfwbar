@@ -62,8 +62,7 @@ void taskbar_update_window (struct ipc_event *ev, struct context *context, struc
     gtk_container_add(GTK_CONTAINER(win->button),box);
     if(context->features & F_TB_ICON)
     {
-      icon = gtk_image_new_from_icon_name(ev->appid,GTK_ICON_SIZE_SMALL_TOOLBAR);
-      gtk_image_set_pixel_size(GTK_IMAGE(icon),context->tb_isize);
+      icon = widget_icon_by_name(ev->appid,context->tb_isize);
       gtk_container_add(GTK_CONTAINER(box),icon);
     }
     if(context->features & F_TB_LABEL)

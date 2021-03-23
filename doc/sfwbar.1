@@ -38,11 +38,11 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .SH DESCRIPTION
 .sp
 \fBSFWBar\fP is a taskbar for Sway wayland compositor. SFWBar assists in
-handling of floating windows on a sway desktop. It provdes a taskbar,
-implements a window placement policy and facilitates monitoring of
-system files via a set of widgets linked to data exposed in system files.
-SFWBar can work with any wayland compositor supporting layer shell protocol,
-but window handling functionality relies on i3/sway IPC.
+handling of floating windows on a sway desktop. It provdes a taskbar, provides
+a task switcher, implements a window placement policy and facilitates
+monitoring of system files via a set of widgets linked to data exposed in
+system files. SFWBar can work with any wayland compositor supporting layer
+shell protocol, but window handling functionality relies on i3/sway IPC.
 .SH USAGE
 .sp
 SFWBar executable can be invoked with the following options:
@@ -74,24 +74,71 @@ Placement section enables intelligent placement of new floating windows. If
 enabled the program will first attemp to place the window in a location, where
 it won\(aqt overlap with other windows. If such location doesn\(aqt exist, the window
 will be placed in a cascading pattern from top\-left to bottom\-right. Placement
-declaration accepts two parameters "xcascade" and "ycascade" that specify the
+declaration accepts parameters "xcascade" and "ycascade" that specify the
 steps in the window cascade. These are specified in percentage of the desktop
-dimensions.  I.e.:
+dimensions. The cascade placement will start at a location specified by "xorigin"
+"yorigin" parameters. I.e.:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
 placement {
-  xcascade = 5,
-  ycascade = 5 }
+  xcascade = 5
+  ycascade = 5
+  xorigin = 5
+  yorigin = 5
+  children = false
+}
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-if the placement section is not present in the file, SFWBar will let
-the compositor determine the locations for new windows.
+"children" parameter specifies if new windows opened by a program with other
+windows already opened should be placed. These are usually dialog windows and
+SFWBar won\(aqt place them by default. If the placement section is not present in
+the file, SFWBar will let the compositor determine the locations for new windows.
+.SS Task Switcher
+.sp
+Task switcher implements a keyboard shortcut to cycle focus across windows
+(i.e. Alt\-Tab). The action is triggered upon receiving a change in a bar
+hidden_state property. This can be configured in Sway, by the following
+binding:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+bindsym Alt\-Tab bar hidden_state toggle
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Task switcher is configured in the "switcher" section of the configuration file.
+The following parameters are accepted:
+.INDENT 0.0
+.TP
+.B delay
+an timeout after the last task switch event after which the selected
+window is activated
+.TP
+.B title [true|false]
+display window title in the task list
+.TP
+.B icon [true|false]
+display window icon in the task list
+.TP
+.B columns
+a number of columns in the task list
+.TP
+.B css
+css code applicable to the switcher window and any widgets in it. You can
+also specify css code in the main CSS file. Using style name #switcher for
+the task switcher window and the main grid and names #switcher_normal and
+#switcher_active for inactive and active window representations respectively.
+.UNINDENT
 .SS Scanner
 .sp
 SFWBar displays the data it obtains by reading various files. These
@@ -260,7 +307,18 @@ An indicator whether to display an application title within the taskbar.
 An indicator whether to display application icons within the taskbar.
 .TP
 .B rows
-Specify number of rows in a taskbar. (also applicable to a pager widget)
+Specify number of rows in a taskbar.
+.UNINDENT
+.sp
+\fBPager\fP widget may contain the following options
+.INDENT 0.0
+.TP
+.B pins
+List "pinned" workspaces. These will show up in the pager even if the
+workspace is empty.
+.TP
+.B rows
+Specify number of rows in a pager.
 .UNINDENT
 .SH EXPRESSIONS
 .sp
@@ -445,6 +503,24 @@ T{
 pager_focused
 T}	T{
 pager button for a curently focused workspace
+T}
+_
+T{
+switcher
+T}	T{
+switcher window and top level grid
+T}
+_
+T{
+switcher_active
+T}	T{
+switcher active window representation
+T}
+_
+T{
+switcher_normal
+T}	T{
+switcher inactive window representation
 T}
 _
 .TE

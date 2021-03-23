@@ -7,6 +7,24 @@
 #include <unistd.h>
 #include "sfwbar.h"
 
+void placement_init ( struct context *context, const ucl_object_t *obj )
+{
+  const ucl_object_t *ptr;
+  if((ptr=ucl_object_lookup(obj,"placement"))==NULL)
+    return;
+  context->features |= F_PLACEMENT;
+  context->wp_x= ucl_int_by_name(ptr,"xcascade",10);
+  context->wp_y= ucl_int_by_name(ptr,"ycascade",10);
+  context->wo_x= ucl_int_by_name(ptr,"xorigin",0);
+  context->wo_y= ucl_int_by_name(ptr,"yorigin",0);
+  if(ucl_bool_by_name(ptr,"children",FALSE)==FALSE)
+    context->features |= F_PL_CHKPID;
+  if(context->wp_x<1)
+    context->wp_x=1;
+  if(context->wp_y<1)
+    context->wp_y=1;
+}
+
 int comp_int ( const void *x1, const void *x2)
 {
   return ( *(int*)x1 - *(int*)x2 );
@@ -32,6 +50,7 @@ int placement_location ( struct context *context, const ucl_object_t *obj, gint6
   ucl_object_iter_t *itp;
   int c,i,j,nobs,success;
   int *x, *y;
+  int xoff,yoff;
   output = parse_rect(obj);
 
   arr = ucl_object_lookup(obj,"floating_nodes");
@@ -52,22 +71,22 @@ int placement_location ( struct context *context, const ucl_object_t *obj, gint6
         win = parse_rect(iter);
       else
       {
-        if(c>=nobs)
+        if(c<nobs)
         {
-          g_free(obs);
-          g_free(x);
-          g_free(y);
-          return -1;
+          obs[c] = parse_rect(iter);
+          x[c] = obs[c].x+obs[c].w;
+          y[c] = obs[c].y+obs[c].h;
+          c++;
         }
-        obs[c] = parse_rect(iter);
-        x[c] = obs[c].x+obs[c].w;
-        y[c] = obs[c].y+obs[c].h;
-        c++;
       }
     }
   }
+
   ucl_object_iterate_free(itp);
-  if(c!=nobs)
+
+  xoff = (win.x*2+win.w)/2 - (output.x*2+output.w)/2;
+  yoff = (win.y*2+win.h)/2 - (output.y*2+output.h)/2;
+  if((xoff<-1)||(xoff>1)||(yoff<-1)||(yoff>1)||(c!=nobs))
   {
     g_free(obs);
     g_free(x);
@@ -80,8 +99,8 @@ int placement_location ( struct context *context, const ucl_object_t *obj, gint6
   qsort(y,nobs+1,sizeof(int),comp_int);
 
   *r=win;
-  win.x = output.x;
-  win.y = output.y;
+  win.x = output.x+context->wo_x*output.w/100;
+  win.y = output.y+context->wo_y*output.h/100;
   do
   {
     success=1;
@@ -166,11 +185,10 @@ void place_window ( gint64 wid, gint64 pid, struct context *context )
   GList *iter;
   gchar *response;
 
-  for(iter=context->wt_list;iter!=NULL;iter=g_list_next(iter))
-    if(AS_WINDOW(iter->data)->pid==pid)
-      return;
-  if(pid==getpid())
-    return;
+  if(context->features & F_PL_CHKPID)
+    for(iter=context->wt_list;iter!=NULL;iter=g_list_next(iter))
+      if(AS_WINDOW(iter->data)->pid==pid)
+        return;
 
   sock = ipc_open(3000);
   if(sock==-1)

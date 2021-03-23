@@ -103,7 +103,7 @@ void wintree_update_window (struct ipc_event *ev, struct context *context)
   }
 
   win = g_malloc(sizeof(struct wt_window));
-  if ( win != NULL && ev->pid != getpid())
+  if ( win != NULL )
   {
     win->pid = ev->pid;
     win->wid = ev->wid;

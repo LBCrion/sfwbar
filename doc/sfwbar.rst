@@ -15,11 +15,11 @@ SYNOPSIS
 DESCRIPTION
 ===========
 **SFWBar** is a taskbar for Sway wayland compositor. SFWBar assists in
-handling of floating windows on a sway desktop. It provdes a taskbar,
-implements a window placement policy and facilitates monitoring of 
-system files via a set of widgets linked to data exposed in system files.
-SFWBar can work with any wayland compositor supporting layer shell protocol,
-but window handling functionality relies on i3/sway IPC.
+handling of floating windows on a sway desktop. It provdes a taskbar, provides
+a task switcher, implements a window placement policy and facilitates 
+monitoring of system files via a set of widgets linked to data exposed in 
+system files. SFWBar can work with any wayland compositor supporting layer 
+shell protocol, but window handling functionality relies on i3/sway IPC.
 
 USAGE
 =====
@@ -52,16 +52,54 @@ Placement section enables intelligent placement of new floating windows. If
 enabled the program will first attemp to place the window in a location, where
 it won't overlap with other windows. If such location doesn't exist, the window
 will be placed in a cascading pattern from top-left to bottom-right. Placement
-declaration accepts two parameters "xcascade" and "ycascade" that specify the
+declaration accepts parameters "xcascade" and "ycascade" that specify the
 steps in the window cascade. These are specified in percentage of the desktop
-dimensions.  I.e.::
+dimensions. The cascade placement will start at a location specified by "xorigin"
+"yorigin" parameters. I.e.::
 
   placement {
-    xcascade = 5,
-    ycascade = 5 }
+    xcascade = 5
+    ycascade = 5
+    xorigin = 5
+    yorigin = 5
+    children = false
+  }
 
-if the placement section is not present in the file, SFWBar will let
-the compositor determine the locations for new windows.
+"children" parameter specifies if new windows opened by a program with other
+windows already opened should be placed. These are usually dialog windows and
+SFWBar won't place them by default. If the placement section is not present in 
+the file, SFWBar will let the compositor determine the locations for new windows.
+
+Task Switcher
+-------------
+Task switcher implements a keyboard shortcut to cycle focus across windows
+(i.e. Alt-Tab). The action is triggered upon receiving a change in a bar
+hidden_state property. This can be configured in Sway, by the following
+binding: ::
+
+  bindsym Alt-Tab bar hidden_state toggle
+
+Task switcher is configured in the "switcher" section of the configuration file.
+The following parameters are accepted:
+
+delay
+      an timeout after the last task switch event after which the selected
+      window is activated
+
+title [true|false]
+      display window title in the task list
+
+icon [true|false]
+      display window icon in the task list
+
+columns
+      a number of columns in the task list
+
+css
+      css code applicable to the switcher window and any widgets in it. You can
+      also specify css code in the main CSS file. Using style name #switcher for
+      the task switcher window and the main grid and names #switcher_normal and 
+      #switcher_active for inactive and active window representations respectively.
 
 Scanner
 -------
@@ -296,6 +334,9 @@ taskbar_active        taskbar button for currently focused window
 pager_normal          pager button for a workspace
 pager_visible         pager button for a visible workspace
 pager_focused         pager button for a curently focused workspace
+switcher              switcher window and top level grid
+switcher_active       switcher active window representation
+switcher_normal       switcher inactive window representation
 ===================== =============
 
 For example you can style top level grid using ``grid#layout { }``.
