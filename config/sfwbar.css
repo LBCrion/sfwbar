@@ -37,6 +37,31 @@ button#pager_focused {
   background-color: #bbddff;
 }
 
+grid#switcher_active *, grid#switcher_active, grid#switcher_active * * {
+  background-color: #bbddff;
+  border-image: none;
+  border-radius: 5px;
+  padding: 5px;
+}
+
+grid#switcher_normal *, grid#switcher_normal {
+  border-image: none;
+  padding: 5px;
+}
+
+window#switcher { 
+  border-style: solid;
+  border-width: 1px;
+  border-color: #000000;
+  border-radius: 5px; 
+  padding: 5px; 
+}
+
+grid#switcher { 
+  border-radius: 5px;
+  padding: 5px;
+}
+
 progressbar {
   padding-left: 1px;
   padding-right: 1px;
