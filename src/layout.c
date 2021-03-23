@@ -5,6 +5,7 @@
 
 #include "sfwbar.h"
 #include <gtk/gtk.h>
+#include <gio/gdesktopappinfo.h>
 
 void widget_update_all( struct context *context )
 {
@@ -237,4 +238,51 @@ void widget_action ( GtkWidget *widget, gpointer data )
     argv[0]=cmd;
     g_spawn_async(NULL,argv,NULL,G_SPAWN_SEARCH_PATH,NULL,NULL,&pid,NULL);
   }
+}
+
+GtkWidget *widget_icon_by_name ( gchar *name, int size )
+{
+  GtkWidget *icon;
+  GtkIconTheme *theme;
+  GdkPixbuf *buf=NULL;
+  GDesktopAppInfo *app;
+  int i=0;
+  char ***desktop;
+  char *iname;
+
+  theme = gtk_icon_theme_get_default();
+  if(theme)
+    buf = gtk_icon_theme_load_icon(theme,name,size,0,NULL);
+
+  if(buf==NULL)
+  {
+    desktop = g_desktop_app_info_search(name);
+    if(*desktop)
+    {
+      if(*desktop[0])
+        while(desktop[0][i])
+        {
+          app = g_desktop_app_info_new(desktop[0][i]);
+          if(app)
+            if(!g_desktop_app_info_get_nodisplay(app))
+            {
+              iname = (char *)g_desktop_app_info_get_string(app,"Icon");
+              g_object_unref(G_OBJECT(app));
+              if(iname)
+              {
+                buf = gtk_icon_theme_load_icon(theme,iname,size,0,NULL);
+                g_free(iname);
+              }
+            }
+          i++;
+        }
+      i=0;
+      while(desktop[i])
+        g_strfreev(desktop[i++]);
+      g_free(desktop);
+    }
+  }
+  icon = gtk_image_new_from_pixbuf(buf);
+  g_object_unref(G_OBJECT(buf));
+  return icon;
 }

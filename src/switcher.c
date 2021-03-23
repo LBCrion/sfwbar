@@ -103,8 +103,7 @@ void switcher_update_window (struct ipc_event *ev, struct context *context, stru
       gtk_grid_attach(GTK_GRID(win->switcher),gtk_label_new(win->title),2,1,1,1);
     if(context->features & F_SW_ICON)
     {
-      img=gtk_image_new_from_icon_name(win->appid,GTK_ICON_SIZE_SMALL_TOOLBAR);
-      gtk_image_set_pixel_size(GTK_IMAGE(img),context->sw_isize);
+      img = widget_icon_by_name(win->appid,context->sw_isize);
       gtk_grid_attach(GTK_GRID(win->switcher),img,1,1,1,1);
     }
   }

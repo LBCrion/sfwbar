@@ -113,6 +113,7 @@ void pager_update ( struct context *context );
 GtkWidget *layout_init ( struct context *context, const ucl_object_t *obj );
 void widget_update_all( struct context *context );
 void widget_action ( GtkWidget *widget, gpointer data );
+GtkWidget *widget_icon_by_name ( gchar *name, int size );
 
 GtkWidget *clamp_grid_new();
 GtkWidget *alabel_new();
