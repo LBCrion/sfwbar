@@ -139,7 +139,8 @@ void switcher_update ( struct context *context )
   {
     gtk_widget_hide(GTK_WIDGET(context->sw_win));
     snprintf(buff,255,"[con_id=%d] focus",context->tb_focus);
-    ipc_send ( context->ipc, 0, buff );
+    if(context->ipc != -1)
+      ipc_send ( context->ipc, 0, buff );
   }
 }
 
