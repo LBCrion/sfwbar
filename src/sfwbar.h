@@ -139,10 +139,12 @@ gchar *ucl_string_by_name ( const ucl_object_t *obj, gchar *name);
 gint64 ucl_int_by_name ( const ucl_object_t *obj, gchar *name, gint64 defval );
 gboolean ucl_bool_by_name ( const ucl_object_t *obj, gchar *name, gboolean defval );
 int md5_file( char *path, unsigned char output[16] );
+struct rect parse_rect ( const ucl_object_t *obj );
 
 #define SCAN_VAR(x) ((struct scan_var *)x)
 #define SCAN_FILE(x) ((struct scan_file *)x)
 #define AS_WINDOW(x) ((struct wt_window *)(x))
+#define AS_RECT(x) ((struct rect *)(x))
 
 enum {
         F_TASKBAR   = 1<<0,
@@ -154,7 +156,8 @@ enum {
         F_SWITCHER  = 1<<6,
         F_SW_ICON   = 1<<7,
         F_SW_LABEL  = 1<<8,
-        F_PL_CHKPID = 1<<9
+        F_PL_CHKPID = 1<<9,
+        F_PA_RENDER = 1<<10
 };
 
 enum {

@@ -37,6 +37,23 @@ button#pager_focused {
   background-color: #bbddff;
 }
 
+button#pager_preview {
+  background-image: none;
+  border-radius: 0;
+  border-image: none;
+  border-color: #000000;
+  border-width: 1px;
+  color: #777777;
+  min-width: 160px;
+  min-height: 90px;
+}
+
+grid#pager {
+  outline-color: #000000;
+  outline-style: dashed;
+  outline-width: 1px;
+}
+
 grid#switcher_active *, grid#switcher_active, grid#switcher_active * * {
   background-color: #bbddff;
   border-image: none;

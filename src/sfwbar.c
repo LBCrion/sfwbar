@@ -70,7 +70,7 @@ void css_init ( void )
       0.0,1.0,0.0, G_PARAM_READABLE));
 
   gtk_widget_class_install_style_property( widget_class,
-    g_param_spec_boolean("hexpand","hotizonal expansion","horizontal expansion",
+    g_param_spec_boolean("hexpand","horizonal expansion","horizontal expansion",
        false, G_PARAM_READABLE));
   gtk_widget_class_install_style_property( widget_class,
     g_param_spec_boolean("vexpand","vertical expansion","vertical expansion",
@@ -178,7 +178,6 @@ gint shell_timer ( struct context *context )
 
 static void activate (GtkApplication* app, struct context *context)
 {
-//  GtkWindow *window;
   GtkWidget *root;
 
   context->window = (GtkWindow *)gtk_application_window_new (app);
@@ -216,7 +215,6 @@ static void activate (GtkApplication* app, struct context *context)
   g_timeout_add (100,(GSourceFunc )shell_timer,context);
   gtk_widget_show_all ((GtkWidget *)context->window);
 }
-
 
 int main (int argc, char **argv)
 {

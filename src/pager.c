@@ -9,7 +9,15 @@
 
 GtkWidget *pager_init ( struct context *context )
 {
+  int i;
+  GtkWidget *img;
   context->pager = gtk_grid_new();
+  gtk_widget_set_name(context->pager, "pager");
+  for(i=0;i<context->pager_rows;i++)
+  {
+    img = gtk_image_new();
+    gtk_grid_attach(GTK_GRID(context->pager),img,1,i+1,1,1);
+  } 
   context->features |= F_PAGER;
   pager_update(context);
   return context->pager;
@@ -31,6 +39,93 @@ void pager_button_click( GtkWidget *widget, struct context *context )
     return;
   snprintf(buff,255,"workspace '%s'",label);
   ipc_send ( context->ipc, 0, buff );
+}
+
+gboolean pager_draw_preview ( GtkWidget *widget, cairo_t *cr, gchar *desk )
+{
+  guint w,h;
+  GtkStyleContext *style;
+  GdkRGBA fg;
+  int sock;
+  gint32 etype;
+  const ucl_object_t *obj,*iter,*fiter,*arr;
+  ucl_object_iter_t *itp,*fitp;
+  struct ucl_parser *parse;
+  struct rect wr,cw;
+  gchar *response,*label;
+
+
+  w = gtk_widget_get_allocated_width (widget);
+  h = gtk_widget_get_allocated_height (widget);
+  style = gtk_widget_get_style_context(widget);
+  gtk_style_context_get_color (style,GTK_STATE_FLAG_NORMAL, &fg);
+  cairo_set_line_width(cr,1);
+
+  sock=ipc_open(3000);
+  if(sock==-1)
+    return FALSE;
+  
+  ipc_send(sock,1,"");
+  response = ipc_poll(sock,&etype);
+  close(sock);
+  parse = ucl_parser_new(0);
+  if(response!=NULL)
+    ucl_parser_add_string(parse,response,strlen(response));
+  obj = ucl_parser_get_object(parse);
+
+  if(obj)
+  {
+    itp = ucl_object_iterate_new(obj);
+    while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
+    {
+      label = ucl_string_by_name(iter,"name");
+      wr = parse_rect(iter);
+      if(g_strcmp0(desk,label)==0)
+      {
+        arr = ucl_object_lookup(iter,"floating_nodes");
+        fitp = ucl_object_iterate_new(arr);
+        while((fiter = ucl_object_iterate_safe(fitp,true))!=NULL)
+        {
+          if(ucl_bool_by_name(fiter,"focused",FALSE))
+            cairo_set_source_rgba(cr,fg.red,fg.blue,fg.green,1);
+          else
+            cairo_set_source_rgba(cr,fg.red,fg.blue,fg.green,0.5);
+          cw = parse_rect(fiter);
+          cairo_rectangle(cr,
+              (int)(cw.x*w/wr.w),
+              (int)(cw.y*h/wr.h),
+              (int)(cw.w*w/wr.w),
+              (int)(cw.h*h/wr.h));
+          cairo_fill(cr);
+          gtk_render_frame(style,cr,
+              (int)(cw.x*w/wr.w),
+              (int)(cw.y*h/wr.h),
+              (int)(cw.w*w/wr.w),
+              (int)(cw.h*h/wr.h));
+          cairo_stroke(cr);
+        }
+      }
+      g_free(label);
+    }
+  }
+
+  ucl_parser_free(parse);
+  g_free(response);
+  return TRUE;
+}
+
+gboolean pager_draw_tooltip ( GtkWidget *widget, int x, int y, gboolean kbmode, 
+    GtkTooltip *tooltip, struct context *context )
+{
+  GtkWidget *button;
+  char *desk;
+
+  desk = (gchar *)gtk_button_get_label(GTK_BUTTON(widget));
+  button = gtk_button_new();
+  g_signal_connect(button,"draw",G_CALLBACK(pager_draw_preview),desk);
+  gtk_widget_set_name(button, "pager_preview");
+  gtk_tooltip_set_custom(tooltip,button);
+  return TRUE;
 }
 
 void pager_update ( struct context *context )
@@ -91,6 +186,11 @@ void pager_update ( struct context *context )
       {
         label = node->data;
         widget = gtk_button_new_with_label(label);
+        if(context->features & F_PA_RENDER)
+        {
+          gtk_widget_set_has_tooltip(widget,TRUE);
+          g_signal_connect(widget,"query-tooltip",G_CALLBACK(pager_draw_tooltip),context);
+        }
         gtk_widget_set_name(widget, "pager_normal");
         if(g_list_find_custom(visible,label,(int (*)(const void *, const void *))g_strcmp0)!=NULL)
           gtk_widget_set_name(widget, "pager_visible");

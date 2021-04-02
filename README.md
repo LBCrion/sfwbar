@@ -36,10 +36,11 @@ For more information on the format of configuration file, please see the
 you may want to add the following lines to your sway config file to open windows
 as floating by default:
 
-`# open new windows as floating by default
+```no-highlight
+# open new windows as floating by default
 for_window [app_id="[.]*"] floating enable
 # set Alt-tab as a task switcher combo
 bindsym Alt+Tab bar hidden_state toggle 
 # set $mod+c to hide/unhide taskbar 
-bindsym $mod+c bar mode toggle`
+bindsym $mod+c bar mode toggle```
 
