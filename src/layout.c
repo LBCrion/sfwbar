@@ -33,7 +33,15 @@ void widget_update_all( struct context *context )
             gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(iter->data),g_ascii_strtod(eval,NULL));
         }
         if(GTK_IS_IMAGE(iter->data))
-          gtk_image_set_from_file(GTK_IMAGE(iter->data),eval=parse_expr(context,expr));
+        {
+          gint isize;
+          GdkPixbuf *buf;
+          gtk_widget_style_get(GTK_WIDGET(iter->data),"icon-size",&isize,NULL);
+          buf = gdk_pixbuf_new_from_file_at_scale(eval=parse_expr(context,expr),-1,isize,TRUE,NULL);
+          gtk_image_set_from_pixbuf(GTK_IMAGE(iter->data),buf);
+          g_object_unref(G_OBJECT(buf));
+
+        }
         g_free(eval);
       }
     }
@@ -89,6 +97,8 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
     context->pager_rows = ucl_int_by_name(obj,"rows",1);
     if(context->pager_rows<1)
       context->pager_rows = 1;
+    if(ucl_bool_by_name(obj,"preview",FALSE)==TRUE)
+      context->features |= F_PA_RENDER;
     context->pager_pins = NULL;
     arr = ucl_object_lookup(obj,"pins");
     if( arr )
