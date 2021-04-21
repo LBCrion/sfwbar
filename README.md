@@ -1,3 +1,4 @@
+![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar-oneline.png)
 ![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar.png)
 ![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar-preview.png)
 ![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar-switch.png)
