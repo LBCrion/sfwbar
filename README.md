@@ -12,6 +12,9 @@ with other wayland compositors supporting layer shell protocol, but
 taskbar, switcher and pager functionality requires sway (or at least i3
 IPC support).
 
+SFWBar is licensed under GNU GPL
+Weather icons are from yr.no and are licensed under MIT license 
+
 ## SFWBar implements the following features:
 1. Taskbar - to control floating windows
 1. Task Switcher - to allow switching active window with a keyboard (Alt-Tab)
