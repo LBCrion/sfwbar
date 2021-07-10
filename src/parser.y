@@ -73,7 +73,8 @@ string2:
  | STRW LPAREN num COMMA num RPAREN { $$ = numeric_to_str ( $3, $5 ); }
  | MIDW LPAREN str COMMA num COMMA num RPAREN { $$ = str_mid($3,$5,$7); g_free($3); }
  | EXTRACT LPAREN str COMMA str RPAREN { $$ = extract_str($3,$5); g_free($3); g_free($5); }
- | TIME LPAREN RPAREN { $$ = time_str(); }
+ | TIME LPAREN RPAREN { $$ = time_str(NULL); }
+ | TIME LPAREN str RPAREN { $$ = time_str($3); g_free($3); }
 ;
 
 num:

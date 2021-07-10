@@ -125,7 +125,7 @@ int update_var_files ( struct context *context, struct scan_file *file );
 char *parse_expr ( struct context *context, char *expr_str );
 char *string_from_name ( struct context *context, char *name );
 double numeric_from_name ( struct context *context, char *name );
-char *time_str ( void );
+char *time_str ( char *tz );
 char *extract_str ( char *str, char *pattern );
 void *list_by_name ( GList *prev, char *name );
 char *parse_identifier ( char *id, char **fname );

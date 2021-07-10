@@ -68,14 +68,31 @@ char *str_mid ( char *str, int c1, int c2 )
   }
 
 /* Get current time string */
-char *time_str ( void )
+char *time_str ( char *tz )
   {
   time_t tp;
   char *str;
+  char *oldtz;
+  if(tz!=NULL)
+  {
+    oldtz = getenv("TZ");
+    setenv("TZ",tz,1);
+    tzset();
+  }
   if((str=malloc(26*sizeof(char)))==NULL)
     return NULL;
   time(&tp);
-  return ctime_r(&tp,str);
+  ctime_r(&tp,str);
+  if(tz)
+  {
+    if(oldtz)
+      setenv("TZ",oldtz,1);
+    else
+      unsetenv("TZ");
+    tzset();
+  }
+
+  return str;
   }
 
 /* Extract substring using pcre */
