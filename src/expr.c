@@ -75,7 +75,7 @@ char *time_str ( char *tz )
   char *oldtz;
   if(tz!=NULL)
   {
-    oldtz = getenv("TZ");
+    oldtz = g_strdup(getenv("TZ"));
     setenv("TZ",tz,1);
     tzset();
   }
@@ -83,10 +83,13 @@ char *time_str ( char *tz )
     return NULL;
   time(&tp);
   ctime_r(&tp,str);
-  if(tz)
+  if(tz!=NULL)
   {
-    if(oldtz)
+    if(oldtz!=NULL)
+    {
       setenv("TZ",oldtz,1);
+      g_free(oldtz);
+    }
     else
       unsetenv("TZ");
     tzset();
