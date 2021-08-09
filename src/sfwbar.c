@@ -102,6 +102,7 @@ void css_init ( void )
       GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
     g_free(cssf);
   }
+
 }
 
 GtkWidget *load_config ( struct context *context )
@@ -111,6 +112,7 @@ GtkWidget *load_config ( struct context *context )
   struct ucl_parser *uparse;
   const ucl_object_t *obj;
   GtkWidget *root;
+  gint dir;
   
   if(confname!=NULL)
     fname = g_strdup(confname);
@@ -125,6 +127,13 @@ GtkWidget *load_config ( struct context *context )
     printf("%s\n",json);
   
   css_init();
+
+  gtk_widget_style_get(GTK_WIDGET(context->window),"direction",&dir,NULL);
+  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_LEFT,!(dir==GTK_POS_RIGHT));
+  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_RIGHT,!(dir==GTK_POS_LEFT));
+  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_BOTTOM,!(dir==GTK_POS_TOP));
+  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_TOP,!(dir==GTK_POS_BOTTOM));
+
   placement_init(context,obj);
   switcher_init(context,obj);
   scanner_init(context,obj);
@@ -186,10 +195,6 @@ static void activate (GtkApplication* app, struct context *context)
   gtk_layer_set_keyboard_interactivity(context->window,FALSE);
   gtk_layer_set_layer(context->window,GTK_LAYER_SHELL_LAYER_OVERLAY);
   
-  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_LEFT,TRUE);
-  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_RIGHT,TRUE);
-  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_BOTTOM,TRUE);
-  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_TOP,FALSE);
   
   root = load_config(context);
 
