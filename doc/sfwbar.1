@@ -1,8 +1,5 @@
 .\" Man page generated from reStructuredText.
 .
-.TH SFWBAR 1 "" "" ""
-.SH NAME
-SFWBar \- Sway Floating Window taskBar
 .
 .nr rst2man-indent-level 0
 .
@@ -30,6 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
+.TH "SFWBAR" 1 "" "" ""
+.SH NAME
+SFWBar \- Sway Floating Window taskBar
 .SH SYNOPSIS
 .nf
 \fBsfwbar\fP [options]
@@ -430,10 +430,11 @@ _
 T{
 \-GtkWidget\-direction
 T}	T{
-specify a direction for a widget. For scale, it\(aqs a
-direction towards which scale grows. For a grid, it\(aqs a
-direction in which a new widget is position relative to
-the last placed widget.
+specify a direction for a widget.
+For scale, it\(aqs a direction towards which scale grows.
+For a grid, it\(aqs a direction in which a new widget is
+position relative to the last placed widget.
+For a window it\(aqs an edge along which the bar is positioned.
 Possible values [top|bottom|left|right]
 T}
 _

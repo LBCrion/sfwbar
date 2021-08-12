@@ -312,10 +312,11 @@ property              description
 ===================== =============
 -GtkWidget-align      specify text alignment for a label, defined as a fraction.
                       (0 = left aligned, 1 = right aligned, 0.5 = centered)
--GtkWidget-direction  specify a direction for a widget. For scale, it's a
-                      direction towards which scale grows. For a grid, it's a 
-                      direction in which a new widget is position relative to 
-                      the last placed widget. 
+-GtkWidget-direction  specify a direction for a widget.
+                      For scale, it's a direction towards which scale grows.
+                      For a grid, it's a direction in which a new widget is 
+                      position relative to the last placed widget.
+                      For a window it's an edge along which the bar is positioned.
                       Possible values [top|bottom|left|right]
 -GtkWidget-hexpand    specify if a widget should expand horizontally to occupy
                       available space. [true|false]

@@ -96,6 +96,12 @@ void css_init ( void )
     cssf = get_xdg_config_file("sfwbar.css");
   if(cssf!=NULL)
   {
+    char *def = "window { -GtkWidget-direction: bottom; }";
+    css = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(css,def,strlen(def),NULL);
+    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
+      GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
+
     css = gtk_css_provider_new();
     gtk_css_provider_load_from_path(css,cssf,NULL);
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
