@@ -279,11 +279,19 @@ Each numeric variable contains four values
 By default, the value of the variable is the value of .val
 
 String variables are prefixed with $, i.e. $StringVar
-You can concatenate strings using + operator, i.e. ``"'String'+$Var"``.
-You can extract a substring using mid function i.e. ``Mid($Var,2,5)``
-``Time()`` function gives current time as a string and Extract function
-extracts a patterns from a string using a regular expressions,
-I.e. ``Extract($Var,'FindThis: (GrabThat)')``
+The following string operation are supported:
+
+=========== ==================================================================
+Operation   Description
+=========== ==================================================================
++           concatenate strings i.e. ``"'String'+$Var"``.
+Mid         extract substring i.e. ``Mid($Var,2,5)``
+Extract     extract a regex pattern i.e.  ``Extract($Var,'FindThis: (GrabThat)')``
+Time        get current time as a string, you can specify a timezone as an
+            optional argument.
+Df          get disk utilization data. You need to specify a mount point as an
+            argument.
+=========== ==================================================================
 
 CSS Style
 =========

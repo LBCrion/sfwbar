@@ -348,11 +348,52 @@ during the last scan
 By default, the value of the variable is the value of .val
 .sp
 String variables are prefixed with $, i.e. $StringVar
-You can concatenate strings using + operator, i.e. \fB"\(aqString\(aq+$Var"\fP\&.
-You can extract a substring using mid function i.e. \fBMid($Var,2,5)\fP
-\fBTime()\fP function gives current time as a string and Extract function
-extracts a patterns from a string using a regular expressions,
-I.e. \fBExtract($Var,\(aqFindThis: (GrabThat)\(aq)\fP
+The following string operation are supported:
+.TS
+center;
+|l|l|.
+_
+T{
+Operation
+T}	T{
+Description
+T}
+_
+T{
+.INDENT 0.0
+.IP \(bu 2
+.UNINDENT
+T}	T{
+concatenate strings i.e. \fB"\(aqString\(aq+$Var"\fP\&.
+T}
+_
+T{
+Mid
+T}	T{
+extract substring i.e. \fBMid($Var,2,5)\fP
+T}
+_
+T{
+Extract
+T}	T{
+extract a regex pattern i.e.  \fBExtract($Var,\(aqFindThis: (GrabThat)\(aq)\fP
+T}
+_
+T{
+Time
+T}	T{
+get current time as a string, you can specify a timezone as an
+optional argument.
+T}
+_
+T{
+Df
+T}	T{
+get disk utilization data. You need to specify a mount point as an
+argument.
+T}
+_
+.TE
 .SH CSS STYLE
 .sp
 SFWBar uses gtk+ widgets and can accept all css properties supported by

@@ -42,9 +42,11 @@ int yyerror(struct context *x,const char *y);
 %token PLUS
 %token MULT
 %token DIVIDE
+%token PERCENT
 %token EQUAL
 %token UPDSTR
 %token <ptr> TIME
+%token <ptr> DF
 %token <ptr> STRW
 %token <ptr> MIDW
 %token <ptr> EXTRACT
@@ -73,6 +75,7 @@ string2:
  | STRW LPAREN num COMMA num RPAREN { $$ = numeric_to_str ( $3, $5 ); }
  | MIDW LPAREN str COMMA num COMMA num RPAREN { $$ = str_mid($3,$5,$7); g_free($3); }
  | EXTRACT LPAREN str COMMA str RPAREN { $$ = extract_str($3,$5); g_free($3); g_free($5); }
+ | DF LPAREN str RPAREN { $$ = df_str($3); g_free($3); }
  | TIME LPAREN RPAREN { $$ = time_str(NULL); }
  | TIME LPAREN str RPAREN { $$ = time_str($3); g_free($3); }
 ;
@@ -87,6 +90,7 @@ expr2:
    expr3 { $$ = $1; }
  | expr2 MULT expr3 { $$ = $1 * $3; }
  | expr2 DIVIDE expr3 { $$ = $1 / $3; }
+ | expr2 PERCENT expr3 { $$ = (int)$1 % (int)$3; }
 ;
 
 expr3:

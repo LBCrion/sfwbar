@@ -32,10 +32,12 @@ YY_DECL;
 "/"			{ return DIVIDE; }
 ","			{ return COMMA; }
 "="		        { return EQUAL; }
+"%"                     { return PERCENT; }
 "Time"			{ return TIME; }
 "Mid"			{ return MIDW; }
 "Extract"		{ return EXTRACT; }
 "Str"			{ return STRW; }
+"Df"                    { return DF; }
 [0-9.]+			{ yylval->num = g_ascii_strtod(yytext,NULL); return NUMBER; }
 $[a-zA-Z0-9._]+		{ yylval->ptr = g_strdup(yytext); return SNAME; }
 ")"			{ return RPAREN; }

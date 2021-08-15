@@ -66,13 +66,15 @@ extern int yydebug;
     PLUS = 272,                    /* PLUS  */
     MULT = 273,                    /* MULT  */
     DIVIDE = 274,                  /* DIVIDE  */
-    EQUAL = 275,                   /* EQUAL  */
-    UPDSTR = 276,                  /* UPDSTR  */
-    TIME = 277,                    /* TIME  */
-    STRW = 278,                    /* STRW  */
-    MIDW = 279,                    /* MIDW  */
-    EXTRACT = 280,                 /* EXTRACT  */
-    SNAME = 281                    /* SNAME  */
+    PERCENT = 275,                 /* PERCENT  */
+    EQUAL = 276,                   /* EQUAL  */
+    UPDSTR = 277,                  /* UPDSTR  */
+    TIME = 278,                    /* TIME  */
+    DF = 279,                      /* DF  */
+    STRW = 280,                    /* STRW  */
+    MIDW = 281,                    /* MIDW  */
+    EXTRACT = 282,                 /* EXTRACT  */
+    SNAME = 283                    /* SNAME  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -86,7 +88,7 @@ union YYSTYPE
   double num;
   void *ptr;
 
-#line 90 "parser.tab.h"
+#line 92 "parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

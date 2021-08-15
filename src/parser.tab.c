@@ -114,20 +114,22 @@ enum yysymbol_kind_t
   YYSYMBOL_PLUS = 17,                      /* PLUS  */
   YYSYMBOL_MULT = 18,                      /* MULT  */
   YYSYMBOL_DIVIDE = 19,                    /* DIVIDE  */
-  YYSYMBOL_EQUAL = 20,                     /* EQUAL  */
-  YYSYMBOL_UPDSTR = 21,                    /* UPDSTR  */
-  YYSYMBOL_TIME = 22,                      /* TIME  */
-  YYSYMBOL_STRW = 23,                      /* STRW  */
-  YYSYMBOL_MIDW = 24,                      /* MIDW  */
-  YYSYMBOL_EXTRACT = 25,                   /* EXTRACT  */
-  YYSYMBOL_SNAME = 26,                     /* SNAME  */
-  YYSYMBOL_YYACCEPT = 27,                  /* $accept  */
-  YYSYMBOL_ROOT = 28,                      /* ROOT  */
-  YYSYMBOL_str = 29,                       /* str  */
-  YYSYMBOL_string2 = 30,                   /* string2  */
-  YYSYMBOL_num = 31,                       /* num  */
-  YYSYMBOL_expr2 = 32,                     /* expr2  */
-  YYSYMBOL_expr3 = 33                      /* expr3  */
+  YYSYMBOL_PERCENT = 20,                   /* PERCENT  */
+  YYSYMBOL_EQUAL = 21,                     /* EQUAL  */
+  YYSYMBOL_UPDSTR = 22,                    /* UPDSTR  */
+  YYSYMBOL_TIME = 23,                      /* TIME  */
+  YYSYMBOL_DF = 24,                        /* DF  */
+  YYSYMBOL_STRW = 25,                      /* STRW  */
+  YYSYMBOL_MIDW = 26,                      /* MIDW  */
+  YYSYMBOL_EXTRACT = 27,                   /* EXTRACT  */
+  YYSYMBOL_SNAME = 28,                     /* SNAME  */
+  YYSYMBOL_YYACCEPT = 29,                  /* $accept  */
+  YYSYMBOL_ROOT = 30,                      /* ROOT  */
+  YYSYMBOL_str = 31,                       /* str  */
+  YYSYMBOL_string2 = 32,                   /* string2  */
+  YYSYMBOL_num = 33,                       /* num  */
+  YYSYMBOL_expr2 = 34,                     /* expr2  */
+  YYSYMBOL_expr3 = 35                      /* expr3  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -382,18 +384,18 @@ typedef int yytype_uint16;
 #define YY_ASSERT(E) ((void) (0 && (E)))
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  25
+#define YYFINAL  27
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   78
+#define YYLAST   87
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  27
+#define YYNTOKENS  29
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  7
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  23
+#define YYNRULES  25
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  54
+#define YYNSTATES  60
 /* YYMAXRHS -- Maximum number of symbols on right-hand side of rule.  */
 #define YYMAXRHS 8
 /* YYMAXLEFT -- Maximum number of symbols to the left of a handle
@@ -401,7 +403,7 @@ typedef int yytype_uint16;
 #define YYMAXLEFT 0
 
 /* YYMAXUTOK -- Last valid token kind.  */
-#define YYMAXUTOK   281
+#define YYMAXUTOK   283
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
    as returned by yylex, with out-of-bounds checking.  */
@@ -442,32 +444,32 @@ static const yytype_int8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26
+      25,    26,    27,    28
 };
 
 #if YYDEBUG
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    61,    61,    62,    66,    67,    71,    72,    73,    74,
-      75,    76,    77,    81,    82,    83,    87,    88,    89,    93,
-      94,    95,    96,    97
+       0,    63,    63,    64,    68,    69,    73,    74,    75,    76,
+      77,    78,    79,    80,    84,    85,    86,    90,    91,    92,
+      93,    97,    98,    99,   100,   101
 };
 #endif
 
-#define YYPACT_NINF (-19)
+#define YYPACT_NINF (-22)
 #define YYTABLE_NINF (-1)
 
   /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
      STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-       6,   -19,   -19,    55,   -19,    55,    55,     5,    29,    36,
-      54,   -19,    43,    52,   -19,    -8,    59,   -19,    -5,   -19,
-     -19,    11,    55,    31,    31,   -19,    31,    55,    55,    55,
-      55,   -19,   -19,    51,    42,     4,     7,   -19,    59,    59,
-     -19,   -19,   -19,    55,    55,    31,    33,    45,    58,   -19,
-      55,   -19,    35,   -19
+      12,   -22,   -22,    62,   -22,    62,    62,    21,    44,    61,
+      70,    77,   -22,    18,    28,   -22,    -2,   -10,   -22,    33,
+     -22,   -22,    34,    41,    62,    41,    41,   -22,    41,    62,
+      62,    62,    62,    62,   -22,   -22,    46,    66,     0,     9,
+      10,   -22,   -10,   -10,   -22,   -22,   -22,   -22,   -22,    62,
+      62,    41,    35,     8,    67,   -22,    62,   -22,    65,   -22
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -475,24 +477,24 @@ static const yytype_int8 yypact[] =
      means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
-       0,     6,    23,     0,    22,     0,     0,     0,     0,     0,
-       0,     7,     0,     2,     4,     3,    13,    16,     0,    20,
-      19,     0,     0,     0,     0,     1,     0,     0,     0,     0,
-       0,    21,    11,     0,     0,     0,     0,     5,    14,    15,
-      17,    18,    12,     0,     0,     0,     0,     0,     0,     8,
-       0,    10,     0,     9
+       0,     6,    25,     0,    24,     0,     0,     0,     0,     0,
+       0,     0,     7,     0,     2,     4,     3,    14,    17,     0,
+      22,    21,     0,     0,     0,     0,     0,     1,     0,     0,
+       0,     0,     0,     0,    23,    12,     0,     0,     0,     0,
+       0,     5,    15,    16,    18,    19,    20,    13,    11,     0,
+       0,     0,     0,     0,     0,     8,     0,    10,     0,     9
 };
 
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -19,   -19,   -18,    44,    -3,    46,    -4
+     -22,   -22,   -21,    49,    -3,    56,     1
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-       0,    12,    13,    14,    15,    16,    17
+       0,    13,    14,    15,    16,    17,    18
 };
 
   /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -500,54 +502,56 @@ static const yytype_int8 yydefgoto[] =
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
-      18,    19,    20,    33,    31,    35,    36,    44,    27,    28,
-      45,    27,    28,     1,     2,    21,     3,     4,     1,    34,
-      32,    26,     5,     6,    26,    40,    41,    48,     7,     8,
-       9,    10,    11,     7,     8,     9,    10,    11,     1,    22,
-      46,    47,    49,    25,    53,    43,    23,    52,    50,    27,
-      28,    27,    28,     7,     8,     9,    10,    11,    27,    28,
-      42,    27,    28,     2,    24,     3,     4,    51,    26,    26,
-      37,     5,     6,    38,    39,    26,     0,    29,    30
+      19,    36,    37,    49,    39,    40,    20,    21,    31,    32,
+      33,    56,    50,    51,    29,    30,    29,    30,    27,     1,
+       2,    38,     3,     4,    29,    30,    28,    28,     5,     6,
+      54,    22,    44,    45,    46,     7,     8,     9,    10,    11,
+      12,     1,    34,    35,    55,    28,    52,    53,     1,    29,
+      30,    29,    30,    58,    23,    47,     0,     7,     8,     9,
+      10,    11,    12,    28,     7,     8,     9,    10,    11,    12,
+       2,    24,     3,     4,    59,    48,    57,    41,     5,     6,
+      25,    29,    30,    28,    28,    42,    43,    26
 };
 
 static const yytype_int8 yycheck[] =
 {
-       3,     5,     6,    21,     9,    23,    24,     3,    16,    17,
-       3,    16,    17,     7,     8,    10,    10,    11,     7,    22,
-       9,    17,    16,    17,    17,    29,    30,    45,    22,    23,
-      24,    25,    26,    22,    23,    24,    25,    26,     7,    10,
-      43,    44,     9,     0,     9,     3,    10,    50,     3,    16,
-      17,    16,    17,    22,    23,    24,    25,    26,    16,    17,
-       9,    16,    17,     8,    10,    10,    11,     9,    17,    17,
-      26,    16,    17,    27,    28,    17,    -1,    18,    19
+       3,    22,    23,     3,    25,    26,     5,     6,    18,    19,
+      20,     3,     3,     3,    16,    17,    16,    17,     0,     7,
+       8,    24,    10,    11,    16,    17,    17,    17,    16,    17,
+      51,    10,    31,    32,    33,    23,    24,    25,    26,    27,
+      28,     7,     9,     9,     9,    17,    49,    50,     7,    16,
+      17,    16,    17,    56,    10,     9,    -1,    23,    24,    25,
+      26,    27,    28,    17,    23,    24,    25,    26,    27,    28,
+       8,    10,    10,    11,     9,     9,     9,    28,    16,    17,
+      10,    16,    17,    17,    17,    29,    30,    10
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
      symbol of state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,     7,     8,    10,    11,    16,    17,    22,    23,    24,
-      25,    26,    28,    29,    30,    31,    32,    33,    31,    33,
-      33,    10,    10,    10,    10,     0,    17,    16,    17,    18,
-      19,     9,     9,    29,    31,    29,    29,    30,    32,    32,
-      33,    33,     9,     3,     3,     3,    31,    31,    29,     9,
-       3,     9,    31,     9
+       0,     7,     8,    10,    11,    16,    17,    23,    24,    25,
+      26,    27,    28,    30,    31,    32,    33,    34,    35,    33,
+      35,    35,    10,    10,    10,    10,    10,     0,    17,    16,
+      17,    18,    19,    20,     9,     9,    31,    31,    33,    31,
+      31,    32,    34,    34,    35,    35,    35,     9,     9,     3,
+       3,     3,    33,    33,    31,     9,     3,     9,    33,     9
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    27,    28,    28,    29,    29,    30,    30,    30,    30,
-      30,    30,    30,    31,    31,    31,    32,    32,    32,    33,
-      33,    33,    33,    33
+       0,    29,    30,    30,    31,    31,    32,    32,    32,    32,
+      32,    32,    32,    32,    33,    33,    33,    34,    34,    34,
+      34,    35,    35,    35,    35,    35
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
 static const yytype_int8 yyr2[] =
 {
        0,     2,     1,     1,     1,     3,     1,     1,     6,     8,
-       6,     3,     4,     1,     3,     3,     1,     3,     3,     2,
-       2,     3,     1,     1
+       6,     4,     3,     4,     1,     3,     3,     1,     3,     3,
+       3,     2,     2,     3,     1,     1
 };
 
 
@@ -556,7 +560,7 @@ static const yytype_int8 yydprec[] =
 {
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0
+       0,     0,     0,     0,     0,     0
 };
 
 /* YYMERGER[RULE-NUM] -- Index of merging function for rule #RULE-NUM.  */
@@ -564,7 +568,7 @@ static const yytype_int8 yymerger[] =
 {
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0
+       0,     0,     0,     0,     0,     0
 };
 
 /* YYIMMEDIATE[RULE-NUM] -- True iff rule #RULE-NUM is not to be deferred, as
@@ -573,7 +577,7 @@ static const yybool yyimmediate[] =
 {
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0
+       0,     0,     0,     0,     0,     0
 };
 
 /* YYCONFLP[YYPACT[STATE-NUM]] -- Pointer into YYCONFL of start of
@@ -589,7 +593,8 @@ static const yytype_int8 yyconflp[] =
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0
+       0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0
 };
 
 /* YYCONFL[I] -- lists of conflicting rule numbers, each terminated by
@@ -788,8 +793,9 @@ static const char *const yytname[] =
   "\"end of file\"", "error", "\"invalid token\"", "COMMA", "INCLUDE",
   "SEMICOLON", "QUOTE", "STRING", "IDENTIFIER", "RPAREN", "LPAREN",
   "NUMBER", "ADD", "PRODUCT", "REPLACE", "EOL", "MINUS", "PLUS", "MULT",
-  "DIVIDE", "EQUAL", "UPDSTR", "TIME", "STRW", "MIDW", "EXTRACT", "SNAME",
-  "$accept", "ROOT", "str", "string2", "num", "expr2", "expr3", YY_NULLPTR
+  "DIVIDE", "PERCENT", "EQUAL", "UPDSTR", "TIME", "DF", "STRW", "MIDW",
+  "EXTRACT", "SNAME", "$accept", "ROOT", "str", "string2", "num", "expr2",
+  "expr3", YY_NULLPTR
 };
 
 static const char *
@@ -1002,139 +1008,151 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   switch (yyn)
     {
   case 2: /* ROOT: str  */
-#line 61 "parser.y"
+#line 63 "parser.y"
        { context->ret_val = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr); }
-#line 1008 "parser.tab.c"
-    break;
-
-  case 3: /* ROOT: num  */
-#line 62 "parser.y"
-       { context->ret_val = numeric_to_str((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num),context->default_dec); }
 #line 1014 "parser.tab.c"
     break;
 
-  case 4: /* str: string2  */
-#line 66 "parser.y"
-           { ((*yyvalp).ptr) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr); }
+  case 3: /* ROOT: num  */
+#line 64 "parser.y"
+       { context->ret_val = numeric_to_str((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num),context->default_dec); }
 #line 1020 "parser.tab.c"
     break;
 
-  case 5: /* str: str PLUS string2  */
-#line 67 "parser.y"
-                    { ((*yyvalp).ptr) = g_strconcat ( (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.ptr), (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr), NULL ); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.ptr)); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr)); }
+  case 4: /* str: string2  */
+#line 68 "parser.y"
+           { ((*yyvalp).ptr) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr); }
 #line 1026 "parser.tab.c"
     break;
 
-  case 6: /* string2: STRING  */
-#line 71 "parser.y"
-          { ((*yyvalp).ptr) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr); }
+  case 5: /* str: str PLUS string2  */
+#line 69 "parser.y"
+                    { ((*yyvalp).ptr) = g_strconcat ( (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.ptr), (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr), NULL ); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.ptr)); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr)); }
 #line 1032 "parser.tab.c"
     break;
 
-  case 7: /* string2: SNAME  */
-#line 72 "parser.y"
-         { ((*yyvalp).ptr) = string_from_name(context,(YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr)); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr)); }
+  case 6: /* string2: STRING  */
+#line 73 "parser.y"
+          { ((*yyvalp).ptr) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr); }
 #line 1038 "parser.tab.c"
     break;
 
-  case 8: /* string2: STRW LPAREN num COMMA num RPAREN  */
-#line 73 "parser.y"
-                                    { ((*yyvalp).ptr) = numeric_to_str ( (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.num), (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.num) ); }
+  case 7: /* string2: SNAME  */
+#line 74 "parser.y"
+         { ((*yyvalp).ptr) = string_from_name(context,(YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr)); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr)); }
 #line 1044 "parser.tab.c"
     break;
 
-  case 9: /* string2: MIDW LPAREN str COMMA num COMMA num RPAREN  */
-#line 74 "parser.y"
-                                              { ((*yyvalp).ptr) = str_mid((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-5)].yystate.yysemantics.yysval.ptr),(YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.num),(YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.num)); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-5)].yystate.yysemantics.yysval.ptr)); }
+  case 8: /* string2: STRW LPAREN num COMMA num RPAREN  */
+#line 75 "parser.y"
+                                    { ((*yyvalp).ptr) = numeric_to_str ( (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.num), (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.num) ); }
 #line 1050 "parser.tab.c"
     break;
 
-  case 10: /* string2: EXTRACT LPAREN str COMMA str RPAREN  */
-#line 75 "parser.y"
-                                       { ((*yyvalp).ptr) = extract_str((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.ptr),(YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.ptr)); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.ptr)); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.ptr)); }
+  case 9: /* string2: MIDW LPAREN str COMMA num COMMA num RPAREN  */
+#line 76 "parser.y"
+                                              { ((*yyvalp).ptr) = str_mid((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-5)].yystate.yysemantics.yysval.ptr),(YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.num),(YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.num)); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-5)].yystate.yysemantics.yysval.ptr)); }
 #line 1056 "parser.tab.c"
     break;
 
-  case 11: /* string2: TIME LPAREN RPAREN  */
-#line 76 "parser.y"
-                      { ((*yyvalp).ptr) = time_str(NULL); }
+  case 10: /* string2: EXTRACT LPAREN str COMMA str RPAREN  */
+#line 77 "parser.y"
+                                       { ((*yyvalp).ptr) = extract_str((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.ptr),(YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.ptr)); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.ptr)); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.ptr)); }
 #line 1062 "parser.tab.c"
     break;
 
-  case 12: /* string2: TIME LPAREN str RPAREN  */
-#line 77 "parser.y"
-                          { ((*yyvalp).ptr) = time_str((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.ptr)); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.ptr)); }
+  case 11: /* string2: DF LPAREN str RPAREN  */
+#line 78 "parser.y"
+                        { ((*yyvalp).ptr) = df_str((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.ptr)); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.ptr)); }
 #line 1068 "parser.tab.c"
     break;
 
-  case 13: /* num: expr2  */
-#line 81 "parser.y"
-         { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
+  case 12: /* string2: TIME LPAREN RPAREN  */
+#line 79 "parser.y"
+                      { ((*yyvalp).ptr) = time_str(NULL); }
 #line 1074 "parser.tab.c"
     break;
 
-  case 14: /* num: num MINUS expr2  */
-#line 82 "parser.y"
-                   { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.num) - (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
+  case 13: /* string2: TIME LPAREN str RPAREN  */
+#line 80 "parser.y"
+                          { ((*yyvalp).ptr) = time_str((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.ptr)); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.ptr)); }
 #line 1080 "parser.tab.c"
     break;
 
-  case 15: /* num: num PLUS expr2  */
-#line 83 "parser.y"
-                  { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.num) + (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
+  case 14: /* num: expr2  */
+#line 84 "parser.y"
+         { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
 #line 1086 "parser.tab.c"
     break;
 
-  case 16: /* expr2: expr3  */
-#line 87 "parser.y"
-         { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
+  case 15: /* num: num MINUS expr2  */
+#line 85 "parser.y"
+                   { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.num) - (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
 #line 1092 "parser.tab.c"
     break;
 
-  case 17: /* expr2: expr2 MULT expr3  */
-#line 88 "parser.y"
-                    { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.num) * (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
+  case 16: /* num: num PLUS expr2  */
+#line 86 "parser.y"
+                  { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.num) + (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
 #line 1098 "parser.tab.c"
     break;
 
-  case 18: /* expr2: expr2 DIVIDE expr3  */
-#line 89 "parser.y"
-                      { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.num) / (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
+  case 17: /* expr2: expr3  */
+#line 90 "parser.y"
+         { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
 #line 1104 "parser.tab.c"
     break;
 
-  case 19: /* expr3: PLUS expr3  */
-#line 93 "parser.y"
-              { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
+  case 18: /* expr2: expr2 MULT expr3  */
+#line 91 "parser.y"
+                    { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.num) * (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
 #line 1110 "parser.tab.c"
     break;
 
-  case 20: /* expr3: MINUS expr3  */
-#line 94 "parser.y"
-               { ((*yyvalp).num) = -(YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
+  case 19: /* expr2: expr2 DIVIDE expr3  */
+#line 92 "parser.y"
+                      { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.num) / (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
 #line 1116 "parser.tab.c"
     break;
 
-  case 21: /* expr3: LPAREN num RPAREN  */
-#line 95 "parser.y"
-                     { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.num); }
+  case 20: /* expr2: expr2 PERCENT expr3  */
+#line 93 "parser.y"
+                       { ((*yyvalp).num) = (int)(YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.num) % (int)(YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
 #line 1122 "parser.tab.c"
     break;
 
-  case 22: /* expr3: NUMBER  */
-#line 96 "parser.y"
-          { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
+  case 21: /* expr3: PLUS expr3  */
+#line 97 "parser.y"
+              { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
 #line 1128 "parser.tab.c"
     break;
 
-  case 23: /* expr3: IDENTIFIER  */
-#line 97 "parser.y"
-              { ((*yyvalp).num) = numeric_from_name(context,(YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr)); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr)); }
+  case 22: /* expr3: MINUS expr3  */
+#line 98 "parser.y"
+               { ((*yyvalp).num) = -(YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
 #line 1134 "parser.tab.c"
     break;
 
+  case 23: /* expr3: LPAREN num RPAREN  */
+#line 99 "parser.y"
+                     { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.num); }
+#line 1140 "parser.tab.c"
+    break;
 
-#line 1138 "parser.tab.c"
+  case 24: /* expr3: NUMBER  */
+#line 100 "parser.y"
+          { ((*yyvalp).num) = (YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.num); }
+#line 1146 "parser.tab.c"
+    break;
+
+  case 25: /* expr3: IDENTIFIER  */
+#line 101 "parser.y"
+              { ((*yyvalp).num) = numeric_from_name(context,(YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr)); g_free((YY_CAST (yyGLRStackItem const *, yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.ptr)); }
+#line 1152 "parser.tab.c"
+    break;
+
+
+#line 1156 "parser.tab.c"
 
       default: break;
     }
