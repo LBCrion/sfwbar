@@ -122,7 +122,8 @@ the information on files and patters to extract: ::
 Each section within the ``scanner`` block starts with a filename and contains
 a list of variables and regular expression patterns used to populate them. 
 Optionally, a file section may also contain a ``flags`` option, used to modify 
-how the file is handled. The supported flags are:
+how the file is handled. If the file is declared multiple times, the flags from
+the last declaration will be used. The supported flags are:
 
 NoGlob    
           specifies that SFWBar shouldn't attempt to expand the pattern in 
@@ -199,6 +200,9 @@ image
 
 button
   add a clickable button with an option to launch external programs on click
+
+You can also include files containing "scanner" and "layout" section by adding
+a layout element in the form of ``id = "filename.config"``.
 
 Each widget is placed within the parent grid. By default, widgets are placed next
 to the previous widget along the "direction" of the grid (left to right by default).

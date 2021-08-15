@@ -117,7 +117,7 @@ GtkWidget *load_config ( struct context *context )
   gchar *fname;
   struct ucl_parser *uparse;
   const ucl_object_t *obj;
-  GtkWidget *root;
+  GtkWidget *grid;
   gint dir;
   
   if(confname!=NULL)
@@ -143,11 +143,15 @@ GtkWidget *load_config ( struct context *context )
   placement_init(context,obj);
   switcher_init(context,obj);
   scanner_init(context,obj);
-  root = layout_init(context,obj);
+
+  grid = gtk_grid_new();
+  gtk_widget_set_name(grid,"layout");
+
+  layout_init(context,obj,grid,NULL);
 
   ucl_object_unref((ucl_object_t *)obj);
   ucl_parser_free(uparse);
-  return root;
+  return grid;
 }
 
 gint shell_timer ( struct context *context )

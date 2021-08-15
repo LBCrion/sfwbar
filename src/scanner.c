@@ -13,12 +13,18 @@
 #include <glob.h>
 #include "sfwbar.h"
 
+gint scanner_file_comp ( struct scan_file *f, gchar *n )
+{
+  return g_strcmp0(f->fname,n);
+}
+
 void scanner_init ( struct context *context, const ucl_object_t *obj )
 {
   const ucl_object_t *iter,*arr;
   ucl_object_iter_t *itp;
   int j;
   struct scan_file *file;
+  GList *find;
   const char *flags[] = {"NoGlob","Exec","CheckTime"};
   gchar *flist;
   arr = ucl_object_lookup(obj,"scanner");
@@ -28,7 +34,12 @@ void scanner_init ( struct context *context, const ucl_object_t *obj )
     while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
       if(ucl_object_key(iter)!=NULL)
       {
-        file = g_malloc(sizeof(struct scan_file));  
+        find = g_list_find_custom(context->file_list,ucl_object_key(iter),
+            (GCompareFunc)scanner_file_comp);
+        if(find!=NULL)
+          file = find->data;
+        else
+          file = g_malloc(sizeof(struct scan_file));  
         if(file!=NULL)
         {
           file->fname = g_strdup(ucl_object_key(iter));

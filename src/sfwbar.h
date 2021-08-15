@@ -110,7 +110,7 @@ void switcher_init ( struct context *context, const ucl_object_t *obj );
 GtkWidget *pager_init ( struct context *context );
 void pager_update ( struct context *context );
 
-GtkWidget *layout_init ( struct context *context, const ucl_object_t *obj );
+GtkWidget *layout_init ( struct context *context, const ucl_object_t *obj, GtkWidget *, GtkWidget * );
 void widget_update_all( struct context *context );
 void widget_action ( GtkWidget *widget, gpointer data );
 GtkWidget *widget_icon_by_name ( gchar *name, int size );

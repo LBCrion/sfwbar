@@ -48,8 +48,34 @@ void widget_update_all( struct context *context )
   }
 }
 
+GtkWidget *layout_config_include ( struct context *context, char *fname, GtkWidget *parent, GtkWidget *sibling )
+{
+  const gchar *json;
+  struct ucl_parser *uparse;
+  const ucl_object_t *obj;
+  char *fullname;
+  GtkWidget *ret;
+
+  fullname = get_xdg_config_file(fname);
+  if(fullname==NULL)
+    return sibling;
+  uparse = ucl_parser_new(0);
+  ucl_parser_add_file(uparse,fullname);
+  obj = ucl_parser_get_object(uparse);
+  g_free(fullname);
+  json = ucl_parser_get_error(uparse);
+  if(json!=NULL)
+    printf("%s\n",json);
+  scanner_init(context,obj);
+  ret = layout_init(context,obj,parent,sibling);
+
+  ucl_object_unref((ucl_object_t *)obj);
+  ucl_parser_free(uparse);
+  return ret;
+}
+
 GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj,
-    GtkWidget *parent, GtkWidget *neighbor )
+    GtkWidget *parent, GtkWidget *sibling )
 {
   const ucl_object_t *ptr,*arr;
   ucl_object_iter_t *itp;
@@ -60,10 +86,13 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
   int x,y,w,h;
   gboolean expand;
 
+  if(ucl_object_type(obj)==UCL_STRING)
+    return layout_config_include(context,(char *)ucl_object_tostring(obj),parent,sibling);
+
   type = ucl_string_by_name(obj,"type");
 
   if(type==NULL)
-    return neighbor;
+    return sibling;
 
   if(g_ascii_strcasecmp(type,"label")==0)
     widget = gtk_label_new("");
@@ -117,7 +146,7 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
   }
 
   if(widget==NULL)
-    return neighbor;
+    return sibling;
 
   name = ucl_string_by_name(obj,"style");
   if(name!=NULL)
@@ -192,7 +221,7 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
   if((x<1)||(y<1))
   {
     gtk_widget_style_get(parent,"direction",&dir,NULL);
-    gtk_grid_attach_next_to(GTK_GRID(parent),widget,neighbor,dir,1,1);
+    gtk_grid_attach_next_to(GTK_GRID(parent),widget,sibling,dir,1,1);
   }
   else
     gtk_grid_attach(GTK_GRID(parent),widget,x,y,w,h);
@@ -215,9 +244,8 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
   return widget;
 }
 
-GtkWidget *layout_init ( struct context *context, const ucl_object_t *obj )
+GtkWidget *layout_init ( struct context *context, const ucl_object_t *obj, GtkWidget *parent, GtkWidget *sibling )
 {
-  GtkWidget *grid,*sibling = NULL;
   const ucl_object_t *arr,*ptr;
   ucl_object_iter_t *itp;
 
@@ -225,16 +253,13 @@ GtkWidget *layout_init ( struct context *context, const ucl_object_t *obj )
   if(arr==NULL)
     return NULL;
 
-  grid = gtk_grid_new();
-  gtk_widget_set_name(grid,"layout");
-
   itp = ucl_object_iterate_new(arr);
   while((ptr = ucl_object_iterate_safe(itp,true))!=NULL)
-    sibling = layout_config_iter(context,ptr,grid,sibling);
+    sibling = layout_config_iter(context,ptr,parent,sibling);
 
   ucl_object_iterate_free(itp);
 
-  return grid;
+  return sibling;
 }
 
 void widget_action ( GtkWidget *widget, gpointer data )

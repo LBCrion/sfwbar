@@ -7,11 +7,20 @@
 #include <stdio.h>
 #include <ucl.h>
 
+extern gchar *confname;
+
 /* get xdg config file name, first try user xdg config directory,
  * if file doesn't exist, try /usr/share/swfbar/ */
 gchar *get_xdg_config_file ( gchar *fname )
 {
   gchar *full;
+  if(confname!=NULL)
+  {
+    full = g_build_filename ( g_path_get_dirname(confname), fname, NULL );
+    if( g_file_test(full, G_FILE_TEST_EXISTS) )
+      return full;
+    g_free(full);
+  }
   full = g_build_filename ( g_get_user_config_dir(), "sfwbar", fname, NULL );
   if( g_file_test(full, G_FILE_TEST_EXISTS) )
     return full;
