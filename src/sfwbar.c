@@ -108,8 +108,6 @@ void css_init ( const ucl_object_t *obj )
 
   if(cssname!=NULL)
     cssf=g_strdup(cssname);
-  else
-    cssf = get_xdg_config_file("sfwbar.css");
   if(cssf!=NULL)
   {
     css = gtk_css_provider_new();
