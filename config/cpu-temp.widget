@@ -1,0 +1,26 @@
+scanner {
+# Poll CPU temperature
+  "/sys/class/hwmon/hwmon1/temp1_input" {
+    CPUTemp.= "([0-9]+)"
+  }
+}
+
+layout {
+  CpuTemp {
+    type = grid
+    css = "* { -GtkWidget-direction: right; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
+        children {
+          CpuLabel { 
+            type = image
+            value = "'icons/misc/cpu.svg'"
+            css = "* { -GtkWidget-icon-size: 20; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
+          }
+          CpuValue { 
+            type = label
+            style = value
+            value = "Str(CPUTemp/1000,0)+'C'"
+            css = "* { padding: 1.25mm; -GtkWidget-hexpand: true; -GtkWidget-align: 0.5; }"
+          }
+        }
+  }
+}

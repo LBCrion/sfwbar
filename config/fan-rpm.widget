@@ -1,0 +1,31 @@
+scanner {
+# Poll CPU fan rpm
+  "/sys/devices/platform/it87*/hwmon/hwmon2/fan2_input" {
+    CPUFan.= "([0-9]+)"
+  }
+
+# Poll MB fan rpm
+  "/sys/devices/platform/it87*/hwmon/hwmon2/fan1_input" {
+    MBFan.= "([0-9]+)"
+  }
+}
+
+layout {
+  CpuTemp {
+    type = grid
+    css = "* { -GtkWidget-direction: right; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
+        children {
+          FanLabel { 
+            type = image
+            value = "'icons/misc/fan.svg'"
+            css = "* { -GtkWidget-icon-size: 20; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
+          }
+          FanValue { 
+            type = label
+            style = value
+            value = "Str(CPUFan,0)"
+            css = "* { padding: 1.25mm; -GtkWidget-hexpand: true; -GtkWidget-align: 0.5; }"
+          }
+        }
+  }
+}

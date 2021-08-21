@@ -13,11 +13,12 @@ GtkWidget *pager_init ( struct context *context )
   GtkWidget *img;
   context->pager = gtk_grid_new();
   gtk_widget_set_name(context->pager, "pager");
-  for(i=0;i<context->pager_rows;i++)
-  {
-    img = gtk_image_new();
-    gtk_grid_attach(GTK_GRID(context->pager),img,1,i+1,1,1);
-  } 
+  if(context->pager_rows>0)
+    for(i=0;i<context->pager_rows;i++)
+    {
+      img = gtk_image_new();
+      gtk_grid_attach(GTK_GRID(context->pager),img,1,i+1,1,1);
+    } 
   context->features |= F_PAGER;
   pager_update(context);
   return context->pager;
@@ -197,8 +198,13 @@ void pager_update ( struct context *context )
         if(focus==label)
           gtk_widget_set_name(widget, "pager_focused");
         g_signal_connect(widget,"clicked",G_CALLBACK(pager_button_click),context);
-        gtk_grid_attach(GTK_GRID(context->pager),widget, c/(context->pager_rows),
-          c%(context->pager_rows),1,1);
+        widget_set_css(widget);
+        if(context->pager_rows>0)
+          gtk_grid_attach(GTK_GRID(context->pager),widget, c/(context->pager_rows),
+            c%(context->pager_rows),1,1);
+        else
+          gtk_grid_attach(GTK_GRID(context->pager),widget, c%(context->pager_cols),
+            c/(context->pager_cols),1,1);
         c++;
       }
     gtk_widget_show_all(context->pager);

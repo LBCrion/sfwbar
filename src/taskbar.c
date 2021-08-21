@@ -23,12 +23,13 @@ GtkWidget *taskbar_init ( struct context *context )
   gtk_widget_set_name(w, "taskbar_active");
   gtk_grid_attach(GTK_GRID(context->box),w,1,1,1,1);
 
-  for(i=1;i<context->tb_rows;i++)
-  {
-    w = gtk_button_new();
-    gtk_widget_set_name(w, "taskbar_normal");
-    gtk_grid_attach(GTK_GRID(context->box),w,1,i+1,1,1);
-  } 
+  if(context->tb_rows>0)
+    for(i=1;i<context->tb_rows;i++)
+    {
+      w = gtk_button_new();
+      gtk_widget_set_name(w, "taskbar_normal");
+      gtk_grid_attach(GTK_GRID(context->box),w,1,i+1,1,1);
+    } 
 
   return context->box;
 }
@@ -58,7 +59,7 @@ void taskbar_update_window (struct ipc_event *ev, struct context *context, struc
   if(context->features & F_TASKBAR)
   {
     win->button = gtk_button_new();
-    box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
+    box = gtk_grid_new();
     gtk_container_add(GTK_CONTAINER(win->button),box);
     if(context->features & F_TB_ICON)
     {
@@ -69,6 +70,7 @@ void taskbar_update_window (struct ipc_event *ev, struct context *context, struc
     {
       win->label = gtk_label_new(ev->title);
       gtk_label_set_ellipsize (GTK_LABEL(win->label),PANGO_ELLIPSIZE_END);
+      widget_set_css(win->label);
       gtk_container_add(GTK_CONTAINER(box),win->label);
     }
 
@@ -89,8 +91,13 @@ void taskbar_refresh( struct context *context )
       gtk_widget_set_name(AS_WINDOW(item->data)->button, "taskbar_active");
     else
       gtk_widget_set_name(AS_WINDOW(item->data)->button, "taskbar_normal");
-    gtk_grid_attach(GTK_GRID(context->box),AS_WINDOW(item->data)->button,
-      (tb_count)/(context->tb_rows),(tb_count)%(context->tb_rows),1,1);
+    widget_set_css(AS_WINDOW(item->data)->button);
+    if(context->tb_rows>0)
+      gtk_grid_attach(GTK_GRID(context->box),AS_WINDOW(item->data)->button,
+        (tb_count)/(context->tb_rows),(tb_count)%(context->tb_rows),1,1);
+    else
+      gtk_grid_attach(GTK_GRID(context->box),AS_WINDOW(item->data)->button,
+        (tb_count)%(context->tb_cols),(tb_count)/(context->tb_cols),1,1);
     tb_count++;
   }
   gtk_widget_show_all(context->box);

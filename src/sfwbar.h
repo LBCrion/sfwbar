@@ -18,6 +18,7 @@ struct context {
   int ipc;
   gint32 tb_focus;
   gint32 tb_rows;
+  gint32 tb_cols;
   gint32 tb_isize;
   char sw_hstate;
   gint32 sw_count;
@@ -27,6 +28,7 @@ struct context {
   GtkWidget *sw_win;
   GtkWidget *sw_box;
   gint32 pager_rows;
+  gint32 pager_cols;
   GList *pager_pins;
   gint32 position;
   gint32 wp_x,wp_y;
@@ -114,6 +116,7 @@ GtkWidget *layout_init ( struct context *context, const ucl_object_t *obj, GtkWi
 void widget_update_all( struct context *context );
 void widget_action ( GtkWidget *widget, gpointer data );
 GtkWidget *widget_icon_by_name ( gchar *name, int size );
+void widget_set_css ( GtkWidget * );
 
 GtkWidget *clamp_grid_new();
 GtkWidget *alabel_new();

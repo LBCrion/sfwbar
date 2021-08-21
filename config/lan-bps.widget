@@ -1,0 +1,28 @@
+scanner {
+# Add up received and transmitted bytes cross all enp* interfaces  
+  "/proc/net/dev" {
+    flags = "NoGlob"
+    EthRcvd.add = "enp.*:[\t ]*([0-9]+)"
+    EthSent.add = "enp.*:(?:[\t ]*[0-9]+){8}[\t ]([0-9]+)"
+  }
+}
+
+layout {
+  CpuTemp {
+    type = grid
+    css = "* { -GtkWidget-direction: right; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
+        children {
+          EthLabel { 
+            type = image
+            value = "'icons/misc/lan.svg'"
+            css = "* { -GtkWidget-icon-size: 20; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
+          }
+          EthValue { 
+            type = label
+            style = value
+            value = "Str((EthRcvd-EthRcvd.pval)/0.001024/EthRcvd.time,0)+'K/s'"
+            css = "* { padding: 1.25mm; -GtkWidget-hexpand: true; -GtkWidget-align: 0.5; }"
+          }
+        }
+  }
+}

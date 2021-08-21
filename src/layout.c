@@ -35,12 +35,18 @@ void widget_update_all( struct context *context )
         if(GTK_IS_IMAGE(iter->data))
         {
           gint isize;
-          GdkPixbuf *buf;
-          gtk_widget_style_get(GTK_WIDGET(iter->data),"icon-size",&isize,NULL);
-          buf = gdk_pixbuf_new_from_file_at_scale(eval=parse_expr(context,expr),-1,isize,TRUE,NULL);
-          gtk_image_set_from_pixbuf(GTK_IMAGE(iter->data),buf);
-          g_object_unref(G_OBJECT(buf));
-
+          char *fname;
+          fname = get_xdg_config_file(eval=parse_expr(context,expr));
+          printf("%s %s\n",eval,fname);
+          if(fname!=NULL)
+          {
+            GdkPixbuf *buf;
+            gtk_widget_style_get(GTK_WIDGET(iter->data),"icon-size",&isize,NULL);
+            buf = gdk_pixbuf_new_from_file_at_scale(fname,-1,isize,TRUE,NULL);
+            gtk_image_set_from_pixbuf(GTK_IMAGE(iter->data),buf);
+            g_object_unref(G_OBJECT(buf));
+            g_free(fname);
+          }
         }
         g_free(eval);
       }
@@ -58,7 +64,7 @@ GtkWidget *layout_config_include ( struct context *context, char *fname, GtkWidg
 
   fullname = get_xdg_config_file(fname);
   if(fullname==NULL)
-    return NULL;
+    return sibling;
   uparse = ucl_parser_new(0);
   ucl_parser_add_file(uparse,fullname);
   obj = ucl_parser_get_object(uparse);
@@ -84,12 +90,15 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
   GtkWidget *widget=NULL;
   gint64 freq;
   int x,y,w,h;
-  gboolean expand;
 
   if(ucl_object_type(obj)==UCL_STRING)
     return layout_config_include(context,(char *)ucl_object_tostring_forced(obj),parent,sibling);
 
   type = ucl_string_by_name(obj,"type");
+
+  if(type==NULL)
+    return sibling;
+
   if(g_ascii_strcasecmp(type,"label")==0)
     widget = gtk_label_new("");
   if(g_ascii_strcasecmp(type,"scale")==0)
@@ -112,16 +121,22 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
       context->features |= F_TB_LABEL;
     if(!(context->features & F_TB_ICON))
       context->features |= F_TB_LABEL;
-    context->tb_rows = ucl_int_by_name(obj,"rows",1);
-    if(context->tb_rows<1)
+    context->tb_rows = ucl_int_by_name(obj,"rows",-1);
+    context->tb_cols = ucl_int_by_name(obj,"cols",-1);
+    if((context->tb_rows<1)&&(context->tb_cols<1))
       context->tb_rows = 1;
+    if((context->tb_rows>0)&&(context->tb_cols>0))
+      context->tb_cols = -1;
     widget = taskbar_init(context);
   }
   if(g_ascii_strcasecmp(type,"pager")==0)
   {
-    context->pager_rows = ucl_int_by_name(obj,"rows",1);
-    if(context->pager_rows<1)
+    context->pager_rows = ucl_int_by_name(obj,"rows",-1);
+    context->pager_cols = ucl_int_by_name(obj,"cols",-1);
+    if((context->pager_rows<1)&&(context->pager_cols<1))
       context->pager_rows = 1;
+    if((context->pager_rows>0)&&(context->pager_cols>0))
+      context->pager_cols = -1;
     if(ucl_bool_by_name(obj,"preview",FALSE)==TRUE)
       context->features |= F_PA_RENDER;
     context->pager_pins = NULL;
@@ -191,9 +206,8 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
     gtk_image_set_pixel_size(GTK_IMAGE(img),isize);
   }
 
-  if(type!=NULL) 
-    if(g_ascii_strcasecmp(type,"taskbar")==0)
-      gtk_widget_style_get(widget,"icon-size",&(context->tb_isize),NULL);
+  if(g_ascii_strcasecmp(type,"taskbar")==0)
+    gtk_widget_style_get(widget,"icon-size",&(context->tb_isize),NULL);
 
   if(GTK_IS_LABEL(widget))
   {
@@ -202,6 +216,7 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
     gtk_label_set_xalign(GTK_LABEL(widget),xalign);
   }
 
+  widget_set_css(widget);
   x = ucl_int_by_name(obj,"x",0);
   y = ucl_int_by_name(obj,"y",0);
   w = ucl_int_by_name(obj,"w",1);
@@ -210,10 +225,6 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
     w=1;
   if(h<1)
     h=1;
-  gtk_widget_style_get(widget,"hexpand",&expand,NULL);
-  gtk_widget_set_hexpand(GTK_WIDGET(widget),expand);
-  gtk_widget_style_get(widget,"vexpand",&expand,NULL);
-  gtk_widget_set_vexpand(GTK_WIDGET(widget),expand);
   if((x<1)||(y<1))
   {
     gtk_widget_style_get(parent,"direction",&dir,NULL);
@@ -316,4 +327,21 @@ GtkWidget *widget_icon_by_name ( gchar *name, int size )
   icon = gtk_image_new_from_pixbuf(buf);
   g_object_unref(G_OBJECT(buf));
   return icon;
+}
+
+void widget_set_css ( GtkWidget *widget )
+{
+  gboolean expand;
+  GList *l;
+  gtk_widget_style_get(widget,"hexpand",&expand,NULL);
+  gtk_widget_set_hexpand(GTK_WIDGET(widget),expand);
+  gtk_widget_style_get(widget,"vexpand",&expand,NULL);
+  gtk_widget_set_vexpand(GTK_WIDGET(widget),expand);
+  if(GTK_IS_CONTAINER(widget))
+  {
+    l = gtk_container_get_children(GTK_CONTAINER(widget));
+    for(;l!=NULL;l=g_list_next(l))
+      widget_set_css(l->data);
+  }
+
 }
