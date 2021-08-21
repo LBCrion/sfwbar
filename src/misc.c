@@ -14,9 +14,8 @@ extern gchar *confname;
 gchar *get_xdg_config_file ( gchar *fname )
 {
   gchar *full;
-  if(g_path_is_absolute(fname))
-    if( g_file_test(fname, G_FILE_TEST_EXISTS) )
-      return g_strdup(fname);
+  if( g_file_test(fname, G_FILE_TEST_EXISTS) )
+    return g_strdup(fname);
 
   if(confname!=NULL)
   {

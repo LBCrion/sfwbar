@@ -130,7 +130,7 @@ GtkWidget *load_config ( struct context *context )
   gint dir;
   
   if(confname!=NULL)
-    fname = g_strdup(confname);
+    fname = get_xdg_config_file(confname);
   else
     fname = get_xdg_config_file("sfwbar.config");
   if(fname==NULL)

@@ -55,7 +55,6 @@ gboolean pager_draw_preview ( GtkWidget *widget, cairo_t *cr, gchar *desk )
   struct rect wr,cw;
   gchar *response,*label;
 
-
   w = gtk_widget_get_allocated_width (widget);
   h = gtk_widget_get_allocated_height (widget);
   style = gtk_widget_get_style_context(widget);
