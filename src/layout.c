@@ -58,7 +58,7 @@ GtkWidget *layout_config_include ( struct context *context, char *fname, GtkWidg
 
   fullname = get_xdg_config_file(fname);
   if(fullname==NULL)
-    return sibling;
+    return NULL;
   uparse = ucl_parser_new(0);
   ucl_parser_add_file(uparse,fullname);
   obj = ucl_parser_get_object(uparse);
@@ -87,13 +87,9 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
   gboolean expand;
 
   if(ucl_object_type(obj)==UCL_STRING)
-    return layout_config_include(context,(char *)ucl_object_tostring(obj),parent,sibling);
+    return layout_config_include(context,(char *)ucl_object_tostring_forced(obj),parent,sibling);
 
   type = ucl_string_by_name(obj,"type");
-
-  if(type==NULL)
-    return sibling;
-
   if(g_ascii_strcasecmp(type,"label")==0)
     widget = gtk_label_new("");
   if(g_ascii_strcasecmp(type,"scale")==0)
@@ -141,7 +137,6 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
       }
       ucl_object_iterate_free(itp);
     }
-
     widget = pager_init(context);
   }
 
@@ -196,8 +191,9 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
     gtk_image_set_pixel_size(GTK_IMAGE(img),isize);
   }
 
-  if(g_ascii_strcasecmp(type,"taskbar")==0)
-    gtk_widget_style_get(widget,"icon-size",&(context->tb_isize),NULL);
+  if(type!=NULL) 
+    if(g_ascii_strcasecmp(type,"taskbar")==0)
+      gtk_widget_style_get(widget,"icon-size",&(context->tb_isize),NULL);
 
   if(GTK_IS_LABEL(widget))
   {

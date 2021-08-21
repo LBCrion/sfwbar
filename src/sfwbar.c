@@ -59,10 +59,10 @@ void init_context ( struct context *context )
   context->read_buff = g_malloc(context->buff_len);
 }
 
-void css_init ( void )
+void css_init ( const ucl_object_t *obj )
 {
   GtkCssProvider *css;
-  gchar *cssf;
+  gchar *cssf,*css_str;
   GtkWidgetClass *widget_class = g_type_class_ref(GTK_TYPE_WIDGET);
 
   gtk_widget_class_install_style_property( widget_class,
@@ -90,25 +90,34 @@ void css_init ( void )
       g_enum_register_static ("direction",dir_types),
       GTK_POS_RIGHT, G_PARAM_READABLE));
 
+  css_str = "window { -GtkWidget-direction: bottom; }";
+  css = gtk_css_provider_new();
+  gtk_css_provider_load_from_data(css,css_str,strlen(css_str),NULL);
+  gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
+    GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
+
+  css_str = ucl_string_by_name(obj,"css");
+  if(css_str!=NULL)
+  {
+    css = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(css,css_str,strlen(css_str),NULL);
+    g_free(css_str);
+    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
+      GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
+  }
+
   if(cssname!=NULL)
     cssf=g_strdup(cssname);
   else
     cssf = get_xdg_config_file("sfwbar.css");
   if(cssf!=NULL)
   {
-    char *def = "window { -GtkWidget-direction: bottom; }";
-    css = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(css,def,strlen(def),NULL);
-    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
-      GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
-
     css = gtk_css_provider_new();
     gtk_css_provider_load_from_path(css,cssf,NULL);
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
       GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
     g_free(cssf);
   }
-
 }
 
 GtkWidget *load_config ( struct context *context )
@@ -132,7 +141,7 @@ GtkWidget *load_config ( struct context *context )
   if(json!=NULL)
     printf("%s\n",json);
   
-  css_init();
+  css_init(obj);
 
   gtk_widget_style_get(GTK_WIDGET(context->window),"direction",&dir,NULL);
   gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_LEFT,!(dir==GTK_POS_RIGHT));
@@ -146,7 +155,6 @@ GtkWidget *load_config ( struct context *context )
 
   grid = gtk_grid_new();
   gtk_widget_set_name(grid,"layout");
-
   layout_init(context,obj,grid,NULL);
 
   ucl_object_unref((ucl_object_t *)obj);
