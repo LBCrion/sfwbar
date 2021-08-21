@@ -37,7 +37,6 @@ void widget_update_all( struct context *context )
           gint isize;
           char *fname;
           fname = get_xdg_config_file(eval=parse_expr(context,expr));
-          printf("%s %s\n",eval,fname);
           if(fname!=NULL)
           {
             GdkPixbuf *buf;
