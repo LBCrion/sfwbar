@@ -25,7 +25,7 @@ jobs:
       - make
       - sudo make install
       - popd
-      - true | openssl s_client -connect scan.coverity.com:443 | openssl x509 | sudo tee -a /etc/ssl/certs/ca-certificates.crt
+#      - true | openssl s_client -connect scan.coverity.com:443 | openssl x509 | sudo tee -a /etc/ssl/certs/ca-certificates.crt
     script:
       - meson build
       - ninja -C build
