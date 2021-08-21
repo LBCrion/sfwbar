@@ -133,13 +133,19 @@ GtkWidget *load_config ( struct context *context )
     fname = g_strdup(confname);
   else
     fname = get_xdg_config_file("sfwbar.config");
+  if(fname==NULL)
+  {
+    fprintf(stderr,"Error: can't open config file\n");
+    exit(1);
+  }
+
   uparse = ucl_parser_new(0);
   ucl_parser_add_file(uparse,fname);
   obj = ucl_parser_get_object(uparse);
   g_free(fname);
   json = ucl_parser_get_error(uparse);
   if(json!=NULL)
-    printf("%s\n",json);
+    fprintf(stderr,"%s\n",json);
   
   css_init(obj);
 
