@@ -6,7 +6,7 @@ dist: focal
 
 env:
   global:
-   - secure: "Ro0shVnQ2ntXvoBPaR98U4M+t4GDORNey+13tlvMr7al8YdKOrUfZac7r7C9XCJ40bG9Jz24i+K2BVlssyNWbR1tmDxhqTc3DQjOIcEHSQealAudmUqplsm7TUtmtMHhieR+Ta0Tu7ulZ1m+clNuFmBvSVSH6ieaMHbj5yjM8NlosDMwv/pESt2p49KO/kDdIG9qnAmpOr7hhG2vsc6wkg7qoYbSH+rfHxYPoUjr/UT62LcjniAhoOunjzLchgZlO9H/r5EK3+ZEb7kEH8RYveM50+1nL2k8Reo5aK8Idi1REkH5N5pE/5X7qzOytDMTtvWZlZ0Q+h89jqZM1bFeTSzFX0AXfiBN5OxxHvrFmRHaOD1/JTHi+jmceMH4Lu12c1WaoTrcX8MzxjB5S/W2SyhxiWKQ3az3CeVQLvKpfXff80Y8CVy42Qe3EWvN8CX27HBT9zcjqNkV41KrvQMLXh44xY6xnDBYZZw1xsKJsshDvITXTpQ8WZlckesScv4NMzcKR0pT/O+c+fRq6V7eNMzjPSNb3NPGYeFTJwZFz5Yel2TLx2QpgpEPOaHv6xfHT5FupgCpfLUKmQ+6BVb434CcUbeKQm9ZZ49lKEc5b0kjYpBWMsmD1wvU3m6lFS2AkyR6lPssNZRgLu0n5s9pSTLmhB6KCPrNgG8I3qklpnA="
+   - secure: "SuRNSMZvbACENBy/TTTlqhOfRE/oYc6Kqs1hEyR6I9sgE4dDP7BwDP6Wa2TFgpHlqmbX8ICfjv7H/PHT3+1CqhZNN3pYvyJcrx8jQTger19um0kTq/bGhpCQEacW52xaXhUzrX+ZkmovETz3rI24xwlwS8tbUdJtoItDKQJ/BxIctUHOr/7mJTyYGMMYx9lNgMvhpl9NBkSfCQmrrXB/q9hh/bwR1UD/OCj/KV4wA1IpSKt/tRVM24f0iJDZoODOSSGQdbgW8scLkmHaCg3HoO5aOw83KM/L+tv6MTcrWtHv9JnY9w74H3FxTKh4fbaRmJc2PdkJuFUtWkwIxg2x06BTt2Vp3Ce2RnyX5VLf1RypGN0DgXfu1hHfB/SYWm1tUmi0YnjLZvw1rNQQDyAai7m6u8r5QkLGZ0yk0WxgGPx0Lop5xI7iZlIqrOawvDx8xQBnpKP6zV7+QJO7SDkr1YbsUqPHLVNtqC+BUpEmdApBtedVh/EWUe7kNCpqLMG4ZI+cfJZ5Z52jBdUT91ueQ1Oki5ljFNMy4Ukt6oB9fRguXAlpRPcoXPLHRQ7M/UEWMyeOvaaRoQB1+IOk05P0xwhGC84IjbABe1hbZF8gEdXvr0oeYUMce8wZFdRQuzBvSwuJok1LMMeUpGTWgi8vkhxCtEr0nahRYU/hZw/MxSc="
 
 before_install:
   - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
@@ -39,4 +39,3 @@ addons:
     notification_email: harley@hosers.org
     build_command_prepend: "meson build"
     build_command: "ninja -C build"
-    branch_pattern: coverity
