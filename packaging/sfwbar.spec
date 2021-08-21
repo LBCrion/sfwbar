@@ -1,5 +1,5 @@
 Name:           sfwbar
-Version:        0.9.8
+Version:        0.9.9.3
 Release:        1%{?dist}
 Summary:        Sway Floating Window Bar
 License:        GPL-3.0
@@ -37,6 +37,9 @@ SFWBar (Sway Floating Window Bar) is a flexible taskbar application for Sway way
 
 
 %changelog
+* Sat Aug 21 2021 Lev Babiev <harley@hosers.org> 0.9.9.3-1
+- version bump
+
 * Fri Jun 18 2021 Lev Babiev <harley@hosers.org> 0.9.8-1
 - Fix SPEC
 
