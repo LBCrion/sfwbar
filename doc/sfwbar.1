@@ -230,6 +230,23 @@ layout {
 .UNINDENT
 .UNINDENT
 .sp
+External widgets can be included in layout using the following syntax:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+layout {
+  widget1 = MyWidget.widget
+}
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+The above will include all scanner data and widget sub\-layout from file
+MyWidget.widget
+.sp
 The following widget types are supported:
 .INDENT 0.0
 .TP
@@ -312,6 +329,11 @@ An indicator whether to display application icons within the taskbar.
 .TP
 .B rows
 Specify number of rows in a taskbar.
+.TP
+.B cols
+Specify number of columns in a taskbar.
+If both rows and cols are specified, rows will be used. If neither is
+specified, the default is rows=1
 .UNINDENT
 .sp
 \fBPager\fP widget may contain the following options
@@ -323,6 +345,11 @@ workspace is empty.
 .TP
 .B rows
 Specify number of rows in a pager.
+.TP
+.B cols
+Specify number of columns in a pager.
+If both rows and cols are specified, rows will be used. If neither is
+specified, the default is rows=1
 .UNINDENT
 .SH EXPRESSIONS
 .sp

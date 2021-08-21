@@ -175,6 +175,15 @@ which can be used as a container.  ::
     }
   }
 
+External widgets can be included in layout using the following syntax: ::
+
+  layout {
+    widget1 = MyWidget.widget
+  }
+
+The above will include all scanner data and widget sub-layout from file
+MyWidget.widget
+
 The following widget types are supported:
 
 taskbar
@@ -251,6 +260,11 @@ icon [true|false]
 rows
   Specify number of rows in a taskbar.
 
+cols
+  Specify number of columns in a taskbar.
+  If both rows and cols are specified, rows will be used. If neither is
+  specified, the default is rows=1
+
 ``Pager`` widget may contain the following options
 
 pins
@@ -259,6 +273,11 @@ pins
 
 rows
   Specify number of rows in a pager.
+
+cols
+  Specify number of columns in a pager.
+  If both rows and cols are specified, rows will be used. If neither is
+  specified, the default is rows=1
 
 EXPRESSIONS
 ===========
