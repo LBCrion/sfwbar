@@ -10,18 +10,6 @@ env:
    #   via the "travis encrypt" command using the project repo's public key
    - secure: "uiaF06bG/LKzxNB6MaPRM0SLl8fdQ3KwNJv5rlvzQkrzk0LYN0VSyC5Q51Zk4Uj6VSc8BxzR73Fii4RzcU/83Hl8TCmMuZBRpRpis5eQBw7KCncxcT78Qkdo5GbfvhVv8dVjtYOWtVycYD+yPIdmokW8rPu5hF+4JkzQnL5ON//XFDBM67iz3F1tTO7ofLsvyroT/fpOFGuIGuJwFgl2+gDhNQi7mXSZDZtByqzrcJhpcX+lVMFzydU6bDYOi9Owt78pys4R2OFE3jxEXMkD6uSrqFS/q9RFQB3CenXZrR0zMuz6vBGsgAyBXWDrwcakby6UKcZg+16OLT/Jj0kQpua++rzA5gof5zo60xdhO5/mCRDjdamPf3fB8Kn4ce+bmdinMFk+WYvOdDuITAr1cKwNKcVilM1V+/RSVmABk2Gr6G5HgADUCYQ6upYkd6MH5sTE4hBaoj2hDoOAYT+OPPqawufBaBVjQOONL+Q/Vbcs6ynzt+xxgRQoow3mlQil5H7FUGvWEbD60XVNsW9vxnNPkqAVQDLzBg4AtFEd9p08t+01J+Zveq+/cOgFN0zL75cBB0GTzGkfelrbrGJ8bzJl+bOjiPGellihKVOkGryiIZmdOgovLgE81OjjhYjqxrr+h/xBNlNFyHruNUm0NZfJPlVtGsBwEMTgDhL62Xg="
 
-before_install:
-  - true | openssl s_client -connect scan.coverity.com:443 | openssl x509 | sudo tee -a /etc/ssl/certs/ca-certificates.crt
-
-addons:
-  coverity_scan:
-    project:
-      name: "LBCrion/sfwbar"
-      description: "SFWBar"
-    notification_email: harley@hosers.org
-    build_command_prepend: "meson build"
-    build_command: "ninja -C build"
-
 jobs:
   include:
     compiler: gcc
@@ -37,6 +25,7 @@ jobs:
       - make
       - sudo make install
       - popd
+      - true | openssl s_client -connect scan.coverity.com:443 | openssl x509 | sudo tee -a /etc/ssl/certs/ca-certificates.crt
     script:
       - meson build
       - ninja -C build
