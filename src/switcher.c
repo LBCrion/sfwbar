@@ -109,7 +109,6 @@ void switcher_update_window (struct ipc_event *ev, struct context *context, stru
   }
 }
 
-
 void switcher_update ( struct context *context )
 {
   GList *item;
@@ -138,9 +137,15 @@ void switcher_update ( struct context *context )
   else
   {
     gtk_widget_hide(GTK_WIDGET(context->sw_win));
-    snprintf(buff,255,"[con_id=%d] focus",context->tb_focus);
-    if(context->ipc != -1)
-      ipc_send ( context->ipc, 0, buff );
+    if(context->ipc>=0)
+    {
+       snprintf(buff,255,"[con_id=%ld] focus",context->tb_focus);
+       ipc_send ( context->ipc, 0, buff );
+    }
+    else
+      for (item = context->wt_list; item!= NULL; item = g_list_next(item) )
+        if (AS_WINDOW(item->data)->wid == context->tb_focus)
+          zwlr_foreign_toplevel_handle_v1_activate(AS_WINDOW(item->data)->wlr, seat);
   }
 }
 

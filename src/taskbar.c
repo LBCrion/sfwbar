@@ -41,16 +41,36 @@ void taskbar_remove_button ( GtkWidget *widget, struct context *context )
 
 void taskbar_button_click( GtkWidget *widget, struct context *context )
 {
-  char buff[256];
   struct wt_window *button = g_object_get_data(G_OBJECT(widget),"parent");
 
-  if((button == NULL)||(context->ipc==-1))
+  if(button == NULL)
     return;
-  if ( button->wid == context->tb_focus)
-    snprintf(buff,255,"[con_id=%ld] move window to scratchpad",button->wid);
+
+  if(context->ipc >=0 )
+  {
+    char buff[256];
+    if ( button->wid == context->tb_focus)
+      snprintf(buff,255,"[con_id=%ld] move window to scratchpad",AS_WINDOW(button)->wid);
+    else
+      snprintf(buff,255,"[con_id=%ld] focus",AS_WINDOW(button)->wid);
+    ipc_send ( context->ipc, 0, buff );
+    return;
+  }
+
+  if ( button->wid == context->tb_focus )
+  {
+    zwlr_foreign_toplevel_handle_v1_set_minimized(button->wlr);
+    if ( button->wid == context->tb_focus )
+    {
+      context->tb_focus = -1;
+      context->wt_dirty = 1;
+    }
+  }
   else
-    snprintf(buff,255,"[con_id=%ld] focus",button->wid);
-  ipc_send ( context->ipc, 0, buff );
+  {
+    zwlr_foreign_toplevel_handle_v1_unset_minimized(button->wlr);
+    zwlr_foreign_toplevel_handle_v1_activate(button->wlr,seat);
+  }
 }
 
 void taskbar_update_window (struct ipc_event *ev, struct context *context, struct wt_window *win)
@@ -63,12 +83,12 @@ void taskbar_update_window (struct ipc_event *ev, struct context *context, struc
     gtk_container_add(GTK_CONTAINER(win->button),box);
     if(context->features & F_TB_ICON)
     {
-      icon = widget_icon_by_name(ev->appid,context->tb_isize);
+      icon = widget_icon_by_name(win->appid,context->tb_isize);
       gtk_container_add(GTK_CONTAINER(box),icon);
     }
     if(context->features & F_TB_LABEL)
     {
-      win->label = gtk_label_new(ev->title);
+      win->label = gtk_label_new(win->title);
       gtk_label_set_ellipsize (GTK_LABEL(win->label),PANGO_ELLIPSIZE_END);
       widget_set_css(win->label);
       gtk_container_add(GTK_CONTAINER(box),win->label);

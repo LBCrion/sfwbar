@@ -62,7 +62,7 @@ void init_context ( struct context *context )
 void css_init ( const ucl_object_t *obj )
 {
   GtkCssProvider *css;
-  gchar *cssf,*css_str;
+  gchar *css_str;
   GtkWidgetClass *widget_class = g_type_class_ref(GTK_TYPE_WIDGET);
 
   gtk_widget_class_install_style_property( widget_class,
@@ -107,14 +107,11 @@ void css_init ( const ucl_object_t *obj )
   }
 
   if(cssname!=NULL)
-    cssf=g_strdup(cssname);
-  if(cssf!=NULL)
   {
     css = gtk_css_provider_new();
-    gtk_css_provider_load_from_path(css,cssf,NULL);
+    gtk_css_provider_load_from_path(css,cssname,NULL);
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
       GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
-    g_free(cssf);
   }
 }
 
@@ -200,6 +197,12 @@ gint shell_timer ( struct context *context )
       response = ipc_poll(context->ipc,&etype);
     }
   }
+  else
+    if((context->features & F_TASKBAR)&&(context->wt_dirty==1))
+    {
+      taskbar_refresh(context);
+      context->wt_dirty=0;
+    }
 
   if(context->features & F_SWITCHER)
     switcher_update(context);
@@ -237,6 +240,8 @@ static void activate (GtkApplication* app, struct context *context)
     context->ipc = ipc_open(10);
     if(context->ipc>=0)
       ipc_subscribe(context->ipc);
+    else
+      wlr_ft_init(context);
   }
 
   g_timeout_add (100,(GSourceFunc )shell_timer,context);

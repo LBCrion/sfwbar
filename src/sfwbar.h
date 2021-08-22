@@ -4,6 +4,7 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <ucl.h>
+#include "wlr-foreign-toplevel-management-unstable-v1.h"
 
 struct ipc_event {
   gint8 event;
@@ -16,7 +17,7 @@ struct ipc_event {
 struct context {
   gint32 features;
   int ipc;
-  gint32 tb_focus;
+  gint64 tb_focus;
   gint32 tb_rows;
   gint32 tb_cols;
   gint32 tb_isize;
@@ -37,7 +38,9 @@ struct context {
   GtkCssProvider *css;
   GtkWidget *box;
   GtkWidget *pager;
+  gint64 wt_counter;
   GList *wt_list;
+  char wt_dirty;
   GList *widgets;
   GList *file_list;
   GList *scan_list;
@@ -56,6 +59,7 @@ struct wt_window {
   char *appid;
   gint64 pid;
   gint64 wid;
+  struct zwlr_foreign_toplevel_handle_v1 *wlr;
 };
 
 struct rect {
@@ -85,6 +89,9 @@ struct scan_file {
   GList *vars;
   };
 
+typedef struct zwlr_foreign_toplevel_handle_v1 wlr_fth;
+extern struct wl_seat *seat;
+
 int ipc_open(int);
 int ipc_subscribe( int sock );
 gchar *ipc_poll( int sock, gint32 *etype );
@@ -98,11 +105,15 @@ void dispatch_event ( struct ipc_event *ev, struct context *context );
 
 GtkWidget *taskbar_init ( struct context *context );
 GtkIconSize taskbar_icon_size ( gchar *str );
+gint64 sway_wid ( struct context *context, struct wt_window *button );
 void wintree_populate ( struct context *context );
 void taskbar_refresh ( struct context *context );
 void taskbar_update_window (struct ipc_event *ev, struct context *context, struct wt_window *win);
 void wintree_delete_window (gint64 wid, struct context *context);
 void wintree_update_window (struct ipc_event *ev, struct context *context);
+gint wintree_compare ( gconstpointer a, gconstpointer b);
+
+void wlr_ft_init ( struct context *);
 
 void switcher_event ( struct context *context, const ucl_object_t *obj );
 void switcher_update ( struct context *context );
