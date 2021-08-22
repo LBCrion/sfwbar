@@ -14,7 +14,8 @@ jobs:
   include:
     compiler: gcc
     before_install:
-      - sudo update-ca-certificates
+      - cat /etc/apt/sources.list
+      - cat /etc/apt/sources.list | grep -v erlang >/etc/apt/sources.list
       - sudo apt-get update
       - sudo apt-get -y install libgtk-3-dev meson libgtk-layer-shell-dev
       - wget https://github.com/vstakhov/libucl/archive/0.8.1.tar.gz -O /tmp/libucl.tgz
