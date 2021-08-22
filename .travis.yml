@@ -8,7 +8,10 @@ env:
   global:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
    #   via the "travis encrypt" command using the project repo's public key
-   - secure: "uiaF06bG/LKzxNB6MaPRM0SLl8fdQ3KwNJv5rlvzQkrzk0LYN0VSyC5Q51Zk4Uj6VSc8BxzR73Fii4RzcU/83Hl8TCmMuZBRpRpis5eQBw7KCncxcT78Qkdo5GbfvhVv8dVjtYOWtVycYD+yPIdmokW8rPu5hF+4JkzQnL5ON//XFDBM67iz3F1tTO7ofLsvyroT/fpOFGuIGuJwFgl2+gDhNQi7mXSZDZtByqzrcJhpcX+lVMFzydU6bDYOi9Owt78pys4R2OFE3jxEXMkD6uSrqFS/q9RFQB3CenXZrR0zMuz6vBGsgAyBXWDrwcakby6UKcZg+16OLT/Jj0kQpua++rzA5gof5zo60xdhO5/mCRDjdamPf3fB8Kn4ce+bmdinMFk+WYvOdDuITAr1cKwNKcVilM1V+/RSVmABk2Gr6G5HgADUCYQ6upYkd6MH5sTE4hBaoj2hDoOAYT+OPPqawufBaBVjQOONL+Q/Vbcs6ynzt+xxgRQoow3mlQil5H7FUGvWEbD60XVNsW9vxnNPkqAVQDLzBg4AtFEd9p08t+01J+Zveq+/cOgFN0zL75cBB0GTzGkfelrbrGJ8bzJl+bOjiPGellihKVOkGryiIZmdOgovLgE81OjjhYjqxrr+h/xBNlNFyHruNUm0NZfJPlVtGsBwEMTgDhL62Xg="
+   - secure: "elzH11r6PXDxBMvSCVuVh2sK6g/SJoy7otMs3wFRBKuJeoWraHKSakm2pxZ/Aggs9rpxFUwy2RBM7hljaSOYbvJrPyQKXFyIFg4OY+YqZAiggvjhrMhreMT9X7SAoRAIyfDvRZUxzngdYQxXGZyqwstZ0DzN7zaI0tRDK7WsdHoG7HjIbBX4+KfWaI8Pq/VIsRevPJF0LYWGxc9u9Tsq0WA1KfCMWfgmGhahWNt8s/6I4veKTyqavEWV8zkHJX8sT3OuwphVrqXRXuZ7tsWYnqQmPNjr3NN9E/YHm/mvBphOKKlh4ExEd97NL2cX5ZqetFdJUMWI3ZybkdsL26ieYsI+8EJVqcfzK9UvWEKNz7RrJL7N3r993LIqfGfzuQzmkdJZiflzn7k4p3/9hnp+7xePTQwfDKPkg2QgbP5k+IJkM0b8JhtCI1yxMBgOTSzyW1jrMDh+YX43jSgg9g2L4w5uRd7kUvTinlYkld7Xb2Yv9EI9gpiZ0QT1WSqPVIPorT4rPOfrq9/wd9PrhmBpmgKlzvaxH/34cRK5dUOBkbfr9tm5MDH4xSESdtV8uSCgf5yysbq5E/6CHQdQHg4EssmnMsBUPM6jA7kPQGNWFbMCzGr2HLyTMvt+tc1JtfzG6afstqWV0+2CWNA4o+Vd4AL20m2k0/Qxn4oblFCCUGk="
+
+before_install:
+  - true | openssl s_client -connect scan.coverity.com:443 | openssl x509 | sudo tee -a /etc/ssl/certs/ca-certificates.crt
 
 jobs:
   include:
@@ -24,7 +27,6 @@ jobs:
       - make
       - sudo make install
       - popd
-      - true | openssl s_client -connect scan.coverity.com:443 | openssl x509 | sudo tee -a /etc/ssl/certs/ca-certificates.crt
     script:
       - meson build
       - ninja -C build
@@ -32,9 +34,9 @@ jobs:
 addons:
   coverity_scan:
     project:
-      name: LBCrion/sfwbar
+      name: "LBCrion/sfwbar"
       description: SFWBar
     notification_email: harley@hosers.org
-    build_command_prepend: meson build
-    build_command: ninja -C build
+    build_command_prepend: "meson build"
+    build_command: "ninja -C build"
     branch_pattern: main
