@@ -73,9 +73,19 @@ void taskbar_button_click( GtkWidget *widget, struct context *context )
   }
 }
 
+gint win_compare ( struct wt_window *a, struct wt_window *b)
+{
+  gint s;
+  s = g_strcmp0(a->title,b->title);
+  if(s==0)
+    return (a->wid - b->wid);
+  return s;
+}
+
 void taskbar_update_window (struct ipc_event *ev, struct context *context, struct wt_window *win)
 {
   GtkWidget *box,*icon;
+  context->wt_list = g_list_sort(context->wt_list,(int (*)(const void *, const void *))win_compare);
   if(context->features & F_TASKBAR)
   {
     win->button = gtk_button_new();

@@ -10,15 +10,6 @@ static struct wl_output *pref_output = NULL;
 static uint32_t pref_output_id = UINT32_MAX;
 struct wl_seat *seat = NULL;
 
-gint win_compare ( gconstpointer a, gconstpointer b)
-{
-  gint s;
-  s = g_strcmp0(a,b);
-  if(s==0)
-    return a-b;
-  return s;
-}
-
 static void toplevel_handle_app_id(void *data, wlr_fth *tl, const char *app_id)
 {
   struct context *context = data;
@@ -53,7 +44,7 @@ static void toplevel_handle_closed(void *data, wlr_fth *tl)
 {
   struct context *context = data;
   struct wt_window *win = NULL;
-  GList *l,*f;
+  GList *l,*f=NULL;
   for(l=context->wt_list;l!=NULL;l=g_list_next(l))
     if(AS_WINDOW(l->data)->wlr == tl)
       f = l;
@@ -86,6 +77,10 @@ static void toplevel_handle_done(void *data, wlr_fth *toplevel)
   for(l=context->wt_list;l!=NULL;l=g_list_next(l))
     if(AS_WINDOW(l->data)->wlr == toplevel)
       win = l->data;
+  if(win==NULL)
+    return;
+  if(win->title == NULL)
+    win->title = g_strdup(win->appid);
   taskbar_update_window(NULL,context,win);
   switcher_update_window(NULL,context,win);
 }
@@ -106,8 +101,11 @@ static void toplevel_handle_state(void *data, wlr_fth *toplevel,
       for(l=context->wt_list;l!=NULL;l=g_list_next(l))
         if(AS_WINDOW(l->data)->wlr == toplevel)
           win = l->data;
-      ((struct context *)data)->tb_focus = win->wid;
-      ((struct context *)data)->wt_dirty = 1;
+      if(win != NULL)
+      {
+        ((struct context *)data)->tb_focus = win->wid;
+        ((struct context *)data)->wt_dirty = 1;
+      }
     }
 }
 
@@ -116,19 +114,18 @@ static void toplevel_handle_output_leave(void *data, wlr_fth *toplevel, struct w
 static void toplevel_handle_output_enter(void *data, wlr_fth *toplevel, struct wl_output *output) {}
 
 static const struct zwlr_foreign_toplevel_handle_v1_listener toplevel_impl = {
-        .title = toplevel_handle_title,
-        .app_id = toplevel_handle_app_id,
-        .output_enter = toplevel_handle_output_enter,
-        .output_leave = toplevel_handle_output_leave,
-        .state = toplevel_handle_state,
-        .done = toplevel_handle_done,
-        .closed = toplevel_handle_closed,
-        .parent = toplevel_handle_parent
+  .title = toplevel_handle_title,
+  .app_id = toplevel_handle_app_id,
+  .output_enter = toplevel_handle_output_enter,
+  .output_leave = toplevel_handle_output_leave,
+  .state = toplevel_handle_state,
+  .done = toplevel_handle_done,
+  .closed = toplevel_handle_closed,
+  .parent = toplevel_handle_parent
 };
 
 static void toplevel_manager_handle_toplevel(void *data,
-                struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager,
-                wlr_fth *tl)
+  struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager, wlr_fth *tl)
 {
   struct context *context = data;
   struct wt_window *win;
@@ -141,7 +138,7 @@ static void toplevel_manager_handle_toplevel(void *data,
     win->appid = NULL;
     win->title = NULL;
     win->button = NULL;
-    context->wt_list = g_list_insert_sorted (context->wt_list,win,win_compare);
+    context->wt_list = g_list_append (context->wt_list,win);
   }
   context->wt_dirty = 1;
 
@@ -149,14 +146,14 @@ static void toplevel_manager_handle_toplevel(void *data,
 }
 
 static void toplevel_manager_handle_finished(void *data,
-                struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager)
+  struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager)
 {
-        zwlr_foreign_toplevel_manager_v1_destroy(toplevel_manager);
+  zwlr_foreign_toplevel_manager_v1_destroy(toplevel_manager);
 }
 
 static const struct zwlr_foreign_toplevel_manager_v1_listener toplevel_manager_impl = {
-        .toplevel = toplevel_manager_handle_toplevel,
-        .finished = toplevel_manager_handle_finished,
+  .toplevel = toplevel_manager_handle_toplevel,
+  .finished = toplevel_manager_handle_finished,
 };
 
 static void handle_global(void *data, struct wl_registry *registry,
