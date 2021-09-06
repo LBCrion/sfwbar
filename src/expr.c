@@ -9,7 +9,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/stat.h>
-#include <sys/vfs.h>
+#include <sys/statvfs.h>
 #include <glob.h>
 #include <glib.h>
 #include "sfwbar.h"
@@ -72,13 +72,12 @@ char *str_mid ( char *str, int c1, int c2 )
 char *df_str ( char *fpath )
 {
   char buf[256];
-  struct statfs fs;
-  if(statfs(fpath,&fs)!=0)
+  struct statvfs fs;
+  if(statvfs(fpath,&fs)!=0)
     return g_strdup("");
   snprintf(buf,255,"%ld %ld %ld %02Lf%%",fs.f_blocks*fs.f_bsize,fs.f_bavail*fs.f_bsize,
       (fs.f_blocks-fs.f_bavail)*fs.f_bsize,
       (1.0-(long double)fs.f_bavail/(long double)fs.f_blocks)*100);
-  printf("%s\n",buf);
   return g_strdup(buf);
 }
 
