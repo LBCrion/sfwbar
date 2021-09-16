@@ -13,7 +13,7 @@ layout {
           CpuLabel { 
             type = image
             value = "'icons/misc/cpu.svg'"
-            css = "* { -GtkWidget-icon-size: 20; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
+            css = "* { min-width: 0.5cm; min-height: 0.5cm; }"
           }
           CpuValue { 
             type = label

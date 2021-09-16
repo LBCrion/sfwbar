@@ -352,7 +352,8 @@ property              description
 -GtkWidget-hexpand    specify if a widget should expand horizontally to occupy
                       available space. [true|false]
 -GtkWidget-vexpand    as above, for vertical expansion.
--GtkWidget-icon-size  specify icon size for a taskbar or button.
+-GtkWidget-icon-size  *DEPRECATED* please use min-width/min-height css properties
+                      for images.
 ===================== =============
 
 Taskbar and pager buttons are assigned the following styles

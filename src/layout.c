@@ -34,16 +34,12 @@ void widget_update_all( struct context *context )
         }
         if(GTK_IS_IMAGE(iter->data))
         {
-          gint isize;
           char *fname;
           fname = get_xdg_config_file(eval=parse_expr(context,expr));
           if(fname!=NULL)
           {
-            GdkPixbuf *buf;
-            gtk_widget_style_get(GTK_WIDGET(iter->data),"icon-size",&isize,NULL);
-            buf = gdk_pixbuf_new_from_file_at_scale(fname,-1,isize,TRUE,NULL);
-            gtk_image_set_from_pixbuf(GTK_IMAGE(iter->data),buf);
-            g_object_unref(G_OBJECT(buf));
+            scale_image_set_image(GTK_WIDGET(iter->data),fname);
+            scale_image_update(GTK_WIDGET(iter->data));
             g_free(fname);
           }
         }
@@ -105,7 +101,7 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
   if(g_ascii_strcasecmp(type,"grid")==0)
     widget = gtk_grid_new();
   if(g_ascii_strcasecmp(type,"image")==0)
-    widget = gtk_image_new();
+    widget = scale_image_new();
   if(g_ascii_strcasecmp(type,"button")==0)
   {
     widget = gtk_button_new();
@@ -165,6 +161,7 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
   css = ucl_string_by_name(obj,"css");
   if(css!=NULL)
   {
+    printf("css %s\n",css);
     GtkStyleContext *context = gtk_widget_get_style_context (widget);
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_data(provider,css,strlen(css),NULL);
@@ -196,17 +193,12 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
 
   if(GTK_IS_BUTTON(widget))
   {
-    gint isize;
     GtkWidget *img;
     ptr = ucl_object_lookup(obj,"icon");
-    img = gtk_image_new_from_icon_name(ucl_object_tostring(ptr),GTK_ICON_SIZE_DIALOG);
+    img = scale_image_new();
+    scale_image_set_image(img,(gchar *)ucl_object_tostring(ptr));
     gtk_container_add(GTK_CONTAINER(widget),img);
-    gtk_widget_style_get(widget,"icon-size",&isize,NULL);
-    gtk_image_set_pixel_size(GTK_IMAGE(img),isize);
   }
-
-  if(g_ascii_strcasecmp(type,"taskbar")==0)
-    gtk_widget_style_get(widget,"icon-size",&(context->tb_isize),NULL);
 
   if(GTK_IS_LABEL(widget))
   {
@@ -279,53 +271,6 @@ void widget_action ( GtkWidget *widget, gpointer data )
     argv[0]=cmd;
     g_spawn_async(NULL,argv,NULL,G_SPAWN_SEARCH_PATH,NULL,NULL,&pid,NULL);
   }
-}
-
-GtkWidget *widget_icon_by_name ( gchar *name, int size )
-{
-  GtkWidget *icon;
-  GtkIconTheme *theme;
-  GdkPixbuf *buf=NULL;
-  GDesktopAppInfo *app;
-  int i=0;
-  char ***desktop;
-  char *iname;
-
-  theme = gtk_icon_theme_get_default();
-  if(theme)
-    buf = gtk_icon_theme_load_icon(theme,name,size,0,NULL);
-
-  if(buf==NULL)
-  {
-    desktop = g_desktop_app_info_search(name);
-    if(*desktop)
-    {
-      if(*desktop[0])
-        while(desktop[0][i])
-        {
-          app = g_desktop_app_info_new(desktop[0][i]);
-          if(app)
-            if(!g_desktop_app_info_get_nodisplay(app))
-            {
-              iname = (char *)g_desktop_app_info_get_string(app,"Icon");
-              g_object_unref(G_OBJECT(app));
-              if(iname)
-              {
-                buf = gtk_icon_theme_load_icon(theme,iname,size,0,NULL);
-                g_free(iname);
-              }
-            }
-          i++;
-        }
-      i=0;
-      while(desktop[i])
-        g_strfreev(desktop[i++]);
-      g_free(desktop);
-    }
-  }
-  icon = gtk_image_new_from_pixbuf(buf);
-  g_object_unref(G_OBJECT(buf));
-  return icon;
 }
 
 void widget_set_css ( GtkWidget *widget )

@@ -13,7 +13,7 @@ layout {
           MbLabel { 
             type = image
             value = "'icons/misc/comp.svg'"
-            css = "* { -GtkWidget-icon-size: 20; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
+            css = "* { min-width: 0.5cm; min-height: 0.5cm; }"
           }
           MbValue { 
             type = label

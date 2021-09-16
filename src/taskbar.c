@@ -93,8 +93,9 @@ void taskbar_update_window (struct ipc_event *ev, struct context *context, struc
     gtk_container_add(GTK_CONTAINER(win->button),box);
     if(context->features & F_TB_ICON)
     {
-      icon = widget_icon_by_name(win->appid,context->tb_isize);
+      icon = scale_image_new();
       gtk_container_add(GTK_CONTAINER(box),icon);
+      scale_image_set_image(icon,win->appid);
     }
     if(context->features & F_TB_LABEL)
     {

@@ -20,12 +20,10 @@ struct context {
   gint64 tb_focus;
   gint32 tb_rows;
   gint32 tb_cols;
-  gint32 tb_isize;
   char sw_hstate;
   gint32 sw_count;
   gint32 sw_max;
   gint32 sw_cols;
-  gint32 sw_isize;
   GtkWidget *sw_win;
   GtkWidget *sw_box;
   gint32 pager_rows;
@@ -155,6 +153,9 @@ gint64 ucl_int_by_name ( const ucl_object_t *obj, gchar *name, gint64 defval );
 gboolean ucl_bool_by_name ( const ucl_object_t *obj, gchar *name, gboolean defval );
 int md5_file( char *path, unsigned char output[16] );
 struct rect parse_rect ( const ucl_object_t *obj );
+void scale_image_set_image ( GtkWidget *widget, gchar *image );
+GtkWidget *scale_image_new();
+int scale_image_update ( GtkWidget *widget );
 
 #define SCAN_VAR(x) ((struct scan_var *)x)
 #define SCAN_FILE(x) ((struct scan_file *)x)

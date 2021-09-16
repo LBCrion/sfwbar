@@ -23,7 +23,7 @@ layout {
       Cond { 
         type = image
         freq = 300000
-        css = "* { -GtkWidget-icon-size: 28; -GtkWidget-vexpand: true;}"
+        css = "* { min-width: 0.3cm; min-height: 0.3cm; -GtkWidget-vexpand: true;}"
         value = "'/usr/share/sfwbar/icons/weather/svg/'+$WthrCond+'.svg'"
       }
     }

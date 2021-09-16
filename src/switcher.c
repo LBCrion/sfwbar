@@ -40,7 +40,6 @@ void switcher_init (struct context *context, const ucl_object_t *obj )
       GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
     g_free(css);
   }
-  gtk_widget_style_get(context->sw_box,"icon-size",&(context->sw_isize),NULL);
 }
 
 void switcher_event ( struct context *context, const ucl_object_t *obj )
@@ -103,7 +102,8 @@ void switcher_update_window (struct ipc_event *ev, struct context *context, stru
       gtk_grid_attach(GTK_GRID(win->switcher),gtk_label_new(win->title),2,1,1,1);
     if(context->features & F_SW_ICON)
     {
-      img = widget_icon_by_name(win->appid,context->sw_isize);
+      img = scale_image_new();
+      scale_image_set_image(img,win->appid);
       gtk_grid_attach(GTK_GRID(win->switcher),img,1,1,1,1);
     }
   }
