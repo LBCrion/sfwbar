@@ -1,0 +1,43 @@
+0.9.10
+  - Add support for wayland foreign toplevel protocol (taskbar support for
+      wayfire and other compositors supporting this protocol)
+  - Implement json parser for scan variables
+  - Add scalabale image widget to have more consistent CSS theming
+  - Bug fixes
+
+0.9.9.3
+  - Bug fixes
+
+0.9.9.2
+  - Bug fixes
+
+0.9.9.1
+  - Bug fixes
+
+0.9.9
+  - Make configuration modular
+  - Implement Df command to check disc free space
+  - Allow placing taskbar on specified edge
+  - Allow specifying timezone for Time command
+
+0.9.8
+  - Implement pager preview
+  - Add icons
+
+0.9.7
+  - Implement task switcher
+  - Improve placement logic
+
+0.9.6
+  - Migrate config to libucl
+  - Implement css theming
+
+0.9.4
+  - Allow specifying config file through command line
+
+0.9.3
+  - Implement pager
+
+
+
+
