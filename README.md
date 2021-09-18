@@ -37,7 +37,8 @@ Compile instructions:
 ```no-highlight
 meson build
 ninja -C build
-sudo ninja -C build install```
+sudo ninja -C build install
+```
 
 ## Configuration
 Copy sfwbar.config and sfwbar.css from /usr/share/sfwbar/ to ~/.config/sfwbar/
@@ -53,5 +54,6 @@ for_window [app_id="[.]*"] floating enable
 # set Alt-tab as a task switcher combo
 bindsym Alt+Tab bar hidden_state toggle 
 # set $mod+c to hide/unhide taskbar 
-bindsym $mod+c bar mode toggle```
+bindsym $mod+c bar mode toggle
+```
 
