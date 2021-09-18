@@ -168,12 +168,13 @@ int update_json_file ( struct context *context, FILE *in, GList *var_list )
   const ucl_object_t *obj,*ptr;
 
   fdata = g_strdup("");
-  while(fgets(context->read_buff,context->buff_len,in)!=NULL)
-  {
-    temp = g_strconcat(fdata,context->read_buff,NULL);
-    g_free(fdata);
-    fdata = temp;
-  }
+  while((!feof(in))&&(!ferror(in)))
+    if(fgets(context->read_buff,context->buff_len,in)!=NULL)
+    {
+      temp = g_strconcat(fdata,context->read_buff,NULL);
+      g_free(fdata);
+      fdata = temp;
+    }
 
   parser = ucl_parser_new(0);
   ucl_parser_add_chunk( parser, (const unsigned char *) fdata, strlen(fdata));
@@ -201,7 +202,7 @@ int update_json_file ( struct context *context, FILE *in, GList *var_list )
 }
 
 /* update variables in a specific file (or pipe) */
-int update_var_file ( struct context *context, FILE *in, GList *var_list )
+int update_regex_file ( struct context *context, FILE *in, GList *var_list )
   {
   struct scan_var *var;
   GList *node;
@@ -212,22 +213,8 @@ int update_var_file ( struct context *context, FILE *in, GList *var_list )
         {
         var=node->data;
         g_regex_match (var->regex, context->read_buff, 0, &match);
-          if(g_match_info_matches (match))
-            update_var_value(var,g_match_info_fetch (match, 1));
-/*          {
-          g_free(var->str);
-          var->str=g_match_info_fetch (match, 1);
-          if(!var->var_type)
-            switch(var->multi)
-              {
-              case SV_ADD: var->val+=g_ascii_strtod((char *)var->str,NULL); break;
-              case SV_PRODUCT: var->val*=g_ascii_strtod((char *)var->str,NULL); break;
-              case SV_REPLACE: var->val=g_ascii_strtod((char *)var->str,NULL); break;
-              case SV_FIRST: if(var->count==0) var->val=g_ascii_strtod((char *)var->str,NULL); break;
-              }
-          var->count++;
-          var->status=1;
-          }*/
+        if(g_match_info_matches (match))
+          update_var_value(var,g_match_info_fetch (match, 1));
         g_match_info_free (match);
         }
   return 0;
@@ -311,7 +298,7 @@ int update_var_files ( struct context *context, struct scan_file *file )
         if(file->flags & VF_JSON)
           update_json_file(context,in,file->vars);
         else
-          update_var_file(context,in,file->vars);
+          update_regex_file(context,in,file->vars);
         if(file->flags & VF_EXEC)
           pclose(in);
         else

@@ -109,7 +109,7 @@ int scale_image_update ( GtkWidget *widget )
   GdkPixbuf *buf=NULL;
   GDesktopAppInfo *app;
   cairo_surface_t *cs;
-  int i=0;
+  int i;
   char ***desktop;
   char *iname;
   gint w,h;
@@ -140,27 +140,27 @@ int scale_image_update ( GtkWidget *widget )
     if(*desktop)
     {
       if(*desktop[0])
-        while(desktop[0][i])
+        for(i=0;desktop[0][i];i++)
         {
           app = g_desktop_app_info_new(desktop[0][i]);
           if(app)
+          {
             if(!g_desktop_app_info_get_nodisplay(app))
             {
               iname = (char *)g_desktop_app_info_get_string(app,"Icon");
-              g_object_unref(G_OBJECT(app));
               if(iname)
               {
                 buf = gtk_icon_theme_load_icon(theme,iname,size,0,NULL);
                 g_free(iname);
               }
             }
-          i++;
+          g_object_unref(G_OBJECT(app));
+          }
         }
-      i=0;
-      while(desktop[i])
-        g_strfreev(desktop[i++]);
-      g_free(desktop);
+      for(i=0;desktop[i];i++)
+        g_strfreev(desktop[i]);
     }
+    g_free(desktop);
   }
 
   if(buf==NULL)

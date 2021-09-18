@@ -228,7 +228,8 @@ static void activate (GtkApplication* app, struct context *context)
     gtk_container_add(GTK_CONTAINER(context->window), root);
 
     gtk_widget_show_all ((GtkWidget *)context->window);
-    gtk_widget_set_size_request (GTK_WIDGET (context->window), -1, gtk_widget_get_allocated_height(context->box));
+    if(context->features & F_TASKBAR)
+     gtk_widget_set_size_request (GTK_WIDGET (context->window), -1, gtk_widget_get_allocated_height(context->box));
     gtk_window_resize (context->window, 1, 1);
   }
 

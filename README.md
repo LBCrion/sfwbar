@@ -34,9 +34,10 @@ Install dependencies:
 * libucl
 
 Compile instructions:
-`meson build
+```no-highlight
+meson build
 ninja -C build
-sudo ninja -C build install`
+sudo ninja -C build install```
 
 ## Configuration
 Copy sfwbar.config and sfwbar.css from /usr/share/sfwbar/ to ~/.config/sfwbar/
