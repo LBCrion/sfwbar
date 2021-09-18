@@ -9,16 +9,8 @@
 
 GtkWidget *pager_init ( struct context *context )
 {
-  int i;
-  GtkWidget *img;
   context->pager = gtk_grid_new();
   gtk_widget_set_name(context->pager, "pager");
-  if(context->pager_rows>0)
-    for(i=0;i<context->pager_rows;i++)
-    {
-      img = gtk_image_new();
-      gtk_grid_attach(GTK_GRID(context->pager),img,1,i+1,1,1);
-    } 
   context->features |= F_PAGER;
   pager_update(context);
   return context->pager;

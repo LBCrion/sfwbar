@@ -166,18 +166,22 @@ int update_json_file ( struct context *context, FILE *in, GList *var_list )
   gchar *fdata,*temp;
   struct ucl_parser *parser;
   const ucl_object_t *obj,*ptr;
+  const int buff_step = 8192;
+  int buff_len=0,i;
 
-  fdata = g_strdup("");
+  fdata = malloc(buff_step);
   while((!feof(in))&&(!ferror(in)))
-    if(fgets(context->read_buff,context->buff_len,in)!=NULL)
-    {
-      temp = g_strconcat(fdata,context->read_buff,NULL);
-      g_free(fdata);
-      fdata = temp;
-    }
+  {
+    i=fread(fdata+buff_len,1,buff_step,in);
+    buff_len+=i;
+    temp = malloc(buff_len+buff_step);
+    memcpy(temp,fdata,buff_len);
+    g_free(fdata);
+    fdata = temp;
+  }
 
   parser = ucl_parser_new(0);
-  ucl_parser_add_chunk( parser, (const unsigned char *) fdata, strlen(fdata));
+  ucl_parser_add_chunk( parser, (const unsigned char *) fdata, buff_len);
   obj = ucl_parser_get_object(parser);
   temp = (gchar *)ucl_parser_get_error(parser);
   if(temp!=NULL)
@@ -207,6 +211,7 @@ int update_regex_file ( struct context *context, FILE *in, GList *var_list )
   struct scan_var *var;
   GList *node;
   GMatchInfo *match;
+
   while((!feof(in))&&(!ferror(in)))
     if(fgets(context->read_buff,context->buff_len,in)!=NULL)
       for(node=var_list;node!=NULL;node=g_list_next(node))
