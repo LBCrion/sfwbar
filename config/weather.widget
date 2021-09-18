@@ -1,11 +1,9 @@
 # Parse yr.no weather forecast
 scanner {
   "wget -O - \"https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=51.8711&lon=0.1587\"" {
-    flags = Exec
-    WthrTemp = "\"timeseries\".*\"air_temperature\":([0-9\\.]*)"
-    WthrPrss.= "\"timeseries\".*\"air_pressure_at_sea_level\":([0-9\\.]*)"
-    WthrWind = "\"timeseries\".*\"wind_speed\":([0-9\\.]*)"
-    WthrCond = "\"timeseries\".*\"symbol_code\":\"([A-Za-z_]*)\""
+    flags = "Json,Exec"
+    WthrTemp.= ".properties.timeseries.1.data.instant.details.air_temperature"
+    WthrCond = ".properties.timeseries.1.data.next_12_hours.summary.symbol_code"
   }
 }
 
@@ -18,7 +16,7 @@ layout {
         type = label
         freq = 300000
         css = "* { font: 0.5cm Sans; font-weight: 700; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; -GtkWidget-align: 0.5;}"
-        value = "$WthrTemp.val"
+        value = "Str(WthrTemp.val,1)"
       }
       Cond { 
         type = image

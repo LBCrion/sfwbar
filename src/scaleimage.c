@@ -42,8 +42,6 @@ void scale_image_resize ( GtkWidget *widget, GdkRectangle *alloc )
 {
   ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
 
-  printf("%p %s %d %d\n",widget,priv->file,alloc->width,alloc->height);
-
   if((alloc->width!=priv->w)||(alloc->height!=priv->h))
   {
     priv->w = alloc->width;
@@ -69,7 +67,6 @@ static void scale_image_get_preferred_height ( GtkWidget *w, gint *m, gint *n )
 
 static void scale_image_style ( GtkWidget *widget )
 {
-  printf("style %p\n",widget);
   GTK_WIDGET_CLASS(scale_image_parent_class)->style_updated(widget);
 }
 

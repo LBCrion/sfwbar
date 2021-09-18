@@ -161,7 +161,6 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
   css = ucl_string_by_name(obj,"css");
   if(css!=NULL)
   {
-    printf("css %s\n",css);
     GtkStyleContext *context = gtk_widget_get_style_context (widget);
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_data(provider,css,strlen(css),NULL);

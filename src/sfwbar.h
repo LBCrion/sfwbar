@@ -66,6 +66,7 @@ struct rect {
 
 struct scan_var {
   GRegex *regex;
+  gchar *json;
   char *name;
   gchar *str;
   double val;
@@ -83,7 +84,6 @@ struct scan_file {
   char *fname;
   int flags;
   time_t mod_time;
-  unsigned char md5[16];
   GList *vars;
   };
 
@@ -193,7 +193,7 @@ enum {
 	VF_CHTIME = 1,
 	VF_EXEC = 2,
 	VF_NOGLOB = 4,
-	VF_CHMD5 = 8
+	VF_JSON = 8
 	};
 
 #endif

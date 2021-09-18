@@ -120,10 +120,10 @@ the information on files and patters to extract: ::
   }
 
 Each section within the ``scanner`` block starts with a filename and contains
-a list of variables and regular expression patterns used to populate them. 
-Optionally, a file section may also contain a ``flags`` option, used to modify 
-how the file is handled. If the file is declared multiple times, the flags from
-the last declaration will be used. The supported flags are:
+a list of variables and regular expression or json patterns used to populate
+them. Optionally, a file section may also contain a ``flags`` option, used to
+modify how the file is handled. If the file is declared multiple times, the
+flags from the last declaration will be used. The supported flags are:
 
 NoGlob    
           specifies that SFWBar shouldn't attempt to expand the pattern in 
@@ -142,6 +142,12 @@ Exec
           the executed program to finish. In these situatuations, it may be
           better to execute the program periodically via cron and save it's 
           output to a temp file that would in turn be read by SFWBar.
+
+Json
+          Specifies a file in json format, in this file, the variables will be
+          extracted using json file notation. I.e. .data.path.to.object or 
+          !data!path!to!object. The path can contain numeric indices to
+          references items in arrays.
 
 ``Variables`` are populated using a regular expression specified to the scanner. The
 scanner reads the file looking for the regular expression and populates the 
