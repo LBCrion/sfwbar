@@ -32,7 +32,16 @@ typedef struct _ScaleImagePrivate ScaleImagePrivate;
 struct _ScaleImagePrivate
 {
   gint w,h;
+  gint ftype;
   gchar *file;
+  gchar *fname;
+};
+
+enum {
+  SI_NONE,
+  SI_ITHEME,
+  SI_ICON,
+  SI_FILE
 };
 
 G_DEFINE_TYPE_WITH_CODE (ScaleImage, scale_image, GTK_TYPE_IMAGE, G_ADD_PRIVATE (ScaleImage));
@@ -66,16 +75,19 @@ static void scale_image_get_preferred_height ( GtkWidget *w, gint *m, gint *n )
   *m=1;
 }
 
-static void scale_image_style ( GtkWidget *widget )
+static void scale_image_destroy ( GtkWidget *w )
 {
-  GTK_WIDGET_CLASS(scale_image_parent_class)->style_updated(widget);
+  ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(w));
+  g_free(priv->file);
+  g_free(priv->fname);
+  GTK_WIDGET_CLASS(scale_image_parent_class)->destroy(w);
 }
 
 static void scale_image_class_init ( ScaleImageClass *kclass )
 {
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(kclass);
   widget_class->size_allocate = scale_image_resize;
-  widget_class->style_updated = scale_image_style;
+  widget_class->destroy = scale_image_destroy;
   widget_class->get_preferred_width = scale_image_get_preferred_width;
   widget_class->get_preferred_height = scale_image_get_preferred_height;
 }
@@ -86,6 +98,8 @@ static void scale_image_init ( ScaleImage *widget )
   priv->w = -1;
   priv->h = -1;
   priv->file = NULL;
+  priv->fname = NULL;
+  priv->ftype = SI_NONE;
 }
 
 GtkWidget *scale_image_new()
@@ -96,27 +110,99 @@ GtkWidget *scale_image_new()
 void scale_image_set_image ( GtkWidget *widget, gchar *image )
 {
   ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
+  GtkIconTheme *theme;
+  GdkPixbuf *buf;
+  GDesktopAppInfo *app;
+  int i;
+  char ***desktop;
+  char *temp;
+
   if(g_strcmp0(priv->file,image)==0)
     return;
   g_free(priv->file);
   priv->file = g_strdup(image);
-}
 
+  priv->ftype = SI_NONE;
+
+  theme = gtk_icon_theme_get_default();
+  if(theme)
+  {
+    buf = gtk_icon_theme_load_icon(theme,priv->file,10,0,NULL);
+    if(buf!=NULL)
+    {
+      g_free(priv->fname);
+      priv->fname = g_strdup(priv->file);
+      priv->ftype = SI_ITHEME;
+      g_object_unref(G_OBJECT(buf));
+      return;
+    }
+  }
+
+  desktop = g_desktop_app_info_search(priv->file);
+  if(*desktop)
+  {
+    if(*desktop[0])
+      for(i=0;desktop[0][i];i++)
+      {
+        app = g_desktop_app_info_new(desktop[0][i]);
+        if(app)
+        {
+          if((!g_desktop_app_info_get_nodisplay(app))&&(priv->ftype==SI_NONE))
+          {
+            temp = (char *)g_desktop_app_info_get_string(app,"Icon");
+            if(temp)
+            {
+              buf = gtk_icon_theme_load_icon(theme,temp,10,0,NULL);
+              if( buf != NULL )
+              {
+                g_free(priv->fname);
+                priv->fname = temp;
+                priv->ftype = SI_ICON;
+                g_object_unref(G_OBJECT(buf));
+              }
+              else
+                g_free(temp);
+            }
+          }
+          g_object_unref(G_OBJECT(app));
+        }
+      }
+    for(i=0;desktop[i];i++)
+      g_strfreev(desktop[i]);
+  }
+  g_free(desktop);
+
+  if(priv->ftype == SI_ICON)
+    return;
+
+  temp = get_xdg_config_file(priv->file);
+  if(temp!=NULL)
+  {
+    buf = gdk_pixbuf_new_from_file_at_scale(temp,10,10,TRUE,NULL);
+    if(buf!=NULL)
+    {
+      g_object_unref(G_OBJECT(buf));
+      g_free(priv->fname);
+      priv->fname = temp;
+      priv->ftype = SI_FILE;
+    }
+    else
+      g_free(temp);
+  }
+}
 
 int scale_image_update ( GtkWidget *widget )
 {
   ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
   GtkIconTheme *theme;
-  GdkPixbuf *buf=NULL;
-  GDesktopAppInfo *app;
+  GdkPixbuf *buf;
   cairo_surface_t *cs;
-  int i;
-  char ***desktop;
-  char *iname;
   gint w,h;
   gint size;
 
-  if(priv->file == NULL)
+  if(priv->ftype == SI_NONE)
+    return -1;
+  if(priv->fname == NULL)
     return -1;
 
   w = priv->w;
@@ -130,47 +216,19 @@ int scale_image_update ( GtkWidget *widget )
     size = h;
   else
     size = w;
-
-  theme = gtk_icon_theme_get_default();
-  if(theme)
-    buf = gtk_icon_theme_load_icon(theme,priv->file,size,0,NULL);
-
-  if(buf==NULL)
+  
+  if(priv->ftype == SI_ITHEME)
   {
-    desktop = g_desktop_app_info_search(priv->file);
-    if(*desktop)
-    {
-      if(*desktop[0])
-        for(i=0;desktop[0][i];i++)
-        {
-          app = g_desktop_app_info_new(desktop[0][i]);
-          if(app)
-          {
-            if(!g_desktop_app_info_get_nodisplay(app))
-            {
-              iname = (char *)g_desktop_app_info_get_string(app,"Icon");
-              if(iname)
-              {
-                buf = gtk_icon_theme_load_icon(theme,iname,size,0,NULL);
-                g_free(iname);
-              }
-            }
-          g_object_unref(G_OBJECT(app));
-          }
-        }
-      for(i=0;desktop[i];i++)
-        g_strfreev(desktop[i]);
-    }
-    g_free(desktop);
+    theme = gtk_icon_theme_get_default();
+    if(theme)
+      buf = gtk_icon_theme_load_icon(theme,priv->file,size,0,NULL);
   }
 
-  if(buf==NULL)
-  {
-    gchar *fname = get_xdg_config_file(priv->file);
-    if(fname!=NULL)
-      buf = gdk_pixbuf_new_from_file_at_scale(fname,w,h,TRUE,NULL);
-    g_free(fname);
-  }
+  if(priv->ftype == SI_ICON)
+    buf = gtk_icon_theme_load_icon(theme,priv->fname,size,0,NULL);
+
+  if(priv->ftype == SI_FILE)
+    buf = gdk_pixbuf_new_from_file_at_scale(priv->fname,w,h,TRUE,NULL);
 
   if(buf==NULL)
     return -1;
