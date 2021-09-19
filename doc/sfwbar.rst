@@ -14,12 +14,15 @@ SYNOPSIS
 
 DESCRIPTION
 ===========
-**SFWBar** is a taskbar for Sway wayland compositor. SFWBar assists in
-handling of floating windows on a sway desktop. It provdes a taskbar, provides
-a task switcher, implements a window placement policy and facilitates 
-monitoring of system files via a set of widgets linked to data exposed in 
-system files. SFWBar can work with any wayland compositor supporting layer 
-shell protocol, but window handling functionality relies on i3/sway IPC.
+**SFWBar** is a taskbar for wayland compositors. Originally written for Sway,
+it should work with any compositor supporting layer-shell protocol. SFWBar
+assists in handling of floating windows on a sway desktop. It provdes a taskbar,
+a pager and a task switcher, implements a window placement policy and
+facilitates monitoring of system files via a set of widgets linked to data
+exposed in system files. SFWBar can work with any wayland compositor supporting
+layer shell protocol, but window handling functionality relies on i3/sway IPC.
+Taskbar requires either sway or wlr-foreign-toplevel protocol support.
+Placement, pager and window switcher require sway.
 
 USAGE
 =====
@@ -41,7 +44,8 @@ checks users XDG config directory (usually ~/.config/sfwbar/), followed by
 /usr/share/sfwbar for the presence of the config file. Additionally, user can
 specify a location of the config file via ``-f`` command line option.
 Appearance of the program can be further adjusted via CSS properties, these
-are sourced from a file sfwbar.css located in the same directory as the config
+are sourced either from a css section of the main configuration file or
+from a file sfwbar.css located in the same directory as the config
 file. The location of the css file can be also specifies via ``-c`` option.
 
 The config file consists of the following top level sections sections:

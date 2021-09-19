@@ -9,12 +9,12 @@
 ### SFWBar
 
 SFWBar (Sway Floating Window Bar) is a flexible taskbar application for
-[Sway](https://github.com/swaywm/sway) wayland
-compositor, designed with a stacking layout in mind. SFWBar will work 
-with other wayland compositors supporting layer shell protocol, and the
-taskbar functionality shall for with any compositor supporting foreign
-toplevel protocol, but the pager functionality requires sway (or at least
-i3 IPC support).
+wayland compositors, designed with a stacking layout in mind. 
+Originally developed for [Sway](https://github.com/swaywm/sway), SFWBar
+will work with other wayland compositors supporting layer shell protocol,
+and the taskbar functionality shall for with any compositor supportinig
+foreign toplevel protocol, but the pager, switcher and placement 
+functionality requires sway (or at least i3 IPC support).
 
 SFWBar is licensed under GNU GPL
 Weather icons are from yr.no and are licensed under MIT license 
