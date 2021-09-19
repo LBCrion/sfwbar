@@ -65,6 +65,7 @@ static void toplevel_handle_closed(void *data, wlr_fth *tl)
   }
   g_free(win->appid);
   g_free(win->title);
+  win->appid=NULL;
   context->wt_list = g_list_delete_link(context->wt_list,f);
   zwlr_foreign_toplevel_handle_v1_destroy(tl);
 }
@@ -77,12 +78,19 @@ static void toplevel_handle_done(void *data, wlr_fth *toplevel)
   for(l=context->wt_list;l!=NULL;l=g_list_next(l))
     if(AS_WINDOW(l->data)->wlr == toplevel)
       win = l->data;
-  if(win==NULL)
-    return;
+  if(win!=NULL)
+    if(win->button!=NULL)
+    {
+      if(context->features & F_TB_LABEL)
+        gtk_label_set_text(GTK_LABEL(win->label),win->title);
+      return;
+    }
   if(win->title == NULL)
     win->title = g_strdup(win->appid);
-  taskbar_update_window(NULL,context,win);
-  switcher_update_window(NULL,context,win);
+  if(win->button==NULL)
+    taskbar_update_window(NULL,context,win);
+  if(win->switcher==NULL)
+    switcher_update_window(NULL,context,win);
 }
 
 static void toplevel_handle_state(void *data, wlr_fth *toplevel,
@@ -138,6 +146,7 @@ static void toplevel_manager_handle_toplevel(void *data,
     win->appid = NULL;
     win->title = NULL;
     win->button = NULL;
+    win->switcher = NULL;
     context->wt_list = g_list_append (context->wt_list,win);
   }
   context->wt_dirty = 1;

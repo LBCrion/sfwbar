@@ -78,7 +78,9 @@ static void scale_image_destroy ( GtkWidget *w )
 {
   ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(w));
   g_free(priv->file);
+  priv->file=NULL;
   g_free(priv->fname);
+  priv->fname=NULL;
   GTK_WIDGET_CLASS(scale_image_parent_class)->destroy(w);
 }
 
