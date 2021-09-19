@@ -39,7 +39,6 @@ struct _ScaleImagePrivate
 
 enum {
   SI_NONE,
-  SI_ITHEME,
   SI_ICON,
   SI_FILE
 };
@@ -132,7 +131,7 @@ void scale_image_set_image ( GtkWidget *widget, gchar *image )
     {
       g_free(priv->fname);
       priv->fname = g_strdup(priv->file);
-      priv->ftype = SI_ITHEME;
+      priv->ftype = SI_ICON;
       g_object_unref(G_OBJECT(buf));
       return;
     }
@@ -195,7 +194,7 @@ int scale_image_update ( GtkWidget *widget )
 {
   ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
   GtkIconTheme *theme;
-  GdkPixbuf *buf;
+  GdkPixbuf *buf=NULL;
   cairo_surface_t *cs;
   gint w,h;
   gint size;
@@ -217,15 +216,12 @@ int scale_image_update ( GtkWidget *widget )
   else
     size = w;
   
-  if(priv->ftype == SI_ITHEME)
+  if(priv->ftype == SI_ICON)
   {
     theme = gtk_icon_theme_get_default();
     if(theme)
       buf = gtk_icon_theme_load_icon(theme,priv->file,size,0,NULL);
   }
-
-  if(priv->ftype == SI_ICON)
-    buf = gtk_icon_theme_load_icon(theme,priv->fname,size,0,NULL);
 
   if(priv->ftype == SI_FILE)
     buf = gdk_pixbuf_new_from_file_at_scale(priv->fname,w,h,TRUE,NULL);
