@@ -4,6 +4,7 @@
  */
 
 
+#include "sfwbar.h"
 #include <gtk/gtk.h>
 #include <gio/gdesktopappinfo.h>
 
@@ -164,8 +165,12 @@ int scale_image_update ( GtkWidget *widget )
   }
 
   if(buf==NULL)
-    if(g_file_test(priv->file,G_FILE_TEST_EXISTS))
-      buf = gdk_pixbuf_new_from_file_at_scale(priv->file,w,h,TRUE,NULL);
+  {
+    gchar *fname = get_xdg_config_file(priv->file);
+    if(fname!=NULL)
+      buf = gdk_pixbuf_new_from_file_at_scale(fname,w,h,TRUE,NULL);
+    g_free(fname);
+  }
 
   if(buf==NULL)
     return -1;

@@ -21,27 +21,18 @@ void widget_update_all( struct context *context )
       gint64 *freq = g_object_get_data(G_OBJECT(iter->data),"freq");
       *poll = ctime+(*freq);
       expr = g_object_get_data(G_OBJECT(iter->data),"expr");
-      if(expr!=NULL)
+      if((expr!=NULL)&&(GTK_IS_LABEL(iter->data)||GTK_IS_PROGRESS_BAR(iter->data)||GTK_IS_IMAGE(iter->data)))
       {
-        gchar *eval=NULL;
+        gchar *eval = parse_expr(context,expr);
         if(GTK_IS_LABEL(GTK_WIDGET(iter->data)))
-          gtk_label_set_text(GTK_LABEL(iter->data),eval=parse_expr(context,expr));
+          gtk_label_set_text(GTK_LABEL(iter->data),eval);
         if(GTK_IS_PROGRESS_BAR(iter->data))
-        {
-          eval = parse_expr(context,expr);
           if(!g_strrstr(eval,"nan"))
             gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(iter->data),g_ascii_strtod(eval,NULL));
-        }
         if(GTK_IS_IMAGE(iter->data))
         {
-          char *fname;
-          fname = get_xdg_config_file(eval=parse_expr(context,expr));
-          if(fname!=NULL)
-          {
-            scale_image_set_image(GTK_WIDGET(iter->data),fname);
-            scale_image_update(GTK_WIDGET(iter->data));
-            g_free(fname);
-          }
+          scale_image_set_image(GTK_WIDGET(iter->data),eval);
+          scale_image_update(GTK_WIDGET(iter->data));
         }
         g_free(eval);
       }
