@@ -10,18 +10,26 @@ static struct wl_output *pref_output = NULL;
 static uint32_t pref_output_id = UINT32_MAX;
 struct wl_seat *seat = NULL;
 
+GList *wlr_ft_find_win ( GList *list, wlr_fth *tl )
+{
+  GList *l;
+  for(l=list;l!=NULL;l=g_list_next(l))
+    if(l->data != NULL)
+      if(AS_WINDOW(l->data)->wlr == tl)
+        return l;
+  return NULL;
+}
+
 static void toplevel_handle_app_id(void *data, wlr_fth *tl, const char *app_id)
 {
   struct context *context = data;
   struct wt_window *win = NULL;
   GList *l;
-  for(l=context->wt_list;l!=NULL;l=g_list_next(l))
-    if(AS_WINDOW(l->data)->wlr == tl)
-      win = l->data;
-  if(win==NULL)
+  l = wlr_ft_find_win(context->wt_list,tl);
+  if(l==NULL)
     return;
-  g_free(win->appid);
-  win->appid = g_strdup(app_id);
+  win = l->data;
+  str_assign(&(win->appid), (gchar *)app_id);
   context->wt_dirty = 1;
 }
 
@@ -30,13 +38,11 @@ static void toplevel_handle_title(void *data, wlr_fth *tl, const char *title)
   struct context *context = data;
   struct wt_window *win = NULL;
   GList *l;
-  for(l=context->wt_list;l!=NULL;l=g_list_next(l))
-    if(AS_WINDOW(l->data)->wlr == tl)
-      win = l->data;
-  if(win==NULL)
+  l = wlr_ft_find_win(context->wt_list,tl);
+  if(l==NULL)
     return;
-  g_free(win->title);
-  win->title = g_strdup(title);
+  win = l->data;
+  str_assign(&(win->title), (gchar *)title);
   context->wt_dirty = 1;
 }
 
@@ -44,15 +50,11 @@ static void toplevel_handle_closed(void *data, wlr_fth *tl)
 {
   struct context *context = data;
   struct wt_window *win = NULL;
-  GList *l,*f=NULL;
-  for(l=context->wt_list;l!=NULL;l=g_list_next(l))
-    if(AS_WINDOW(l->data)->wlr == tl)
-      f = l;
-  if(f==NULL)
+  GList *l;
+  l = wlr_ft_find_win(context->wt_list,tl);
+  if(l==NULL)
     return;
-  win = f->data;
-  if(win==NULL)
-    return;
+  win = l->data;
   if(context->features & F_TASKBAR)
   {
     gtk_widget_destroy(win->button);
@@ -63,36 +65,38 @@ static void toplevel_handle_closed(void *data, wlr_fth *tl)
     gtk_widget_destroy(win->switcher);
     g_object_unref(G_OBJECT(win->switcher));
   }
-  g_free(win->appid);
-  g_free(win->title);
-  context->wt_list = g_list_delete_link(context->wt_list,f);
+  str_assign(&(win->appid),NULL);
+  str_assign(&(win->title),NULL);
+  context->wt_list = g_list_delete_link(context->wt_list,l);
   zwlr_foreign_toplevel_handle_v1_destroy(tl);
 }
 
-static void toplevel_handle_done(void *data, wlr_fth *toplevel)
+static void toplevel_handle_done(void *data, wlr_fth *tl)
 {
   struct context *context = data;
   struct wt_window *win = NULL;
   GList *l;
-  for(l=context->wt_list;l!=NULL;l=g_list_next(l))
-    if(AS_WINDOW(l->data)->wlr == toplevel)
-      win = l->data;
+  l = wlr_ft_find_win(context->wt_list,tl);
+  if(l==NULL)
+    return;
+  win = l->data;
   if(win==NULL)
     return;
   if(win->title == NULL)
-    win->title = g_strdup(win->appid);
+    str_assign(&(win->title), win->appid);
   if(win->button!=NULL)
   {
     if(context->features & F_TB_LABEL)
       gtk_label_set_text(GTK_LABEL(win->label),win->title);
     return;
   }
-  taskbar_update_window(NULL,context,win);
+  if(win->button==NULL)
+    taskbar_window_init(context,win);
   if(win->switcher==NULL)
-    switcher_update_window(NULL,context,win);
+    switcher_window_init(context,win);
 }
 
-static void toplevel_handle_state(void *data, wlr_fth *toplevel,
+static void toplevel_handle_state(void *data, wlr_fth *tl,
                 struct wl_array *state)
 {
   uint32_t *entry;
@@ -105,11 +109,10 @@ static void toplevel_handle_state(void *data, wlr_fth *toplevel,
       struct context *context = data;
       struct wt_window *win = NULL;
       GList *l;
-      for(l=context->wt_list;l!=NULL;l=g_list_next(l))
-        if(AS_WINDOW(l->data)->wlr == toplevel)
-          win = l->data;
-      if(win != NULL)
+      l = wlr_ft_find_win(context->wt_list,tl);
+      if(l!=NULL)
       {
+        win = l->data;
         ((struct context *)data)->tb_focus = win->wid;
         ((struct context *)data)->wt_dirty = 1;
       }
@@ -137,18 +140,14 @@ static void toplevel_manager_handle_toplevel(void *data,
   struct context *context = data;
   struct wt_window *win;
 
-  win = g_malloc(sizeof(struct wt_window));
+  win = wintree_window_init();
   if ( win != NULL )
   {
     win->wlr = tl;
     win->wid = context->wt_counter++;
-    win->appid = NULL;
-    win->title = NULL;
-    win->button = NULL;
-    win->switcher = NULL;
     context->wt_list = g_list_append (context->wt_list,win);
+    context->wt_dirty = 1;
   }
-  context->wt_dirty = 1;
 
   zwlr_foreign_toplevel_handle_v1_add_listener(tl, &toplevel_impl, context);
 }

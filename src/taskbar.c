@@ -82,33 +82,33 @@ gint win_compare ( struct wt_window *a, struct wt_window *b)
   return s;
 }
 
-void taskbar_update_window (struct ipc_event *ev, struct context *context, struct wt_window *win)
+void taskbar_window_init ( struct context *context, struct wt_window *win )
 {
   GtkWidget *box,*icon;
-  context->wt_list = g_list_sort(context->wt_list,(int (*)(const void *, const void *))win_compare);
-  if(context->features & F_TASKBAR)
-  {
-    win->button = gtk_button_new();
-    box = gtk_grid_new();
-    gtk_container_add(GTK_CONTAINER(win->button),box);
-    if(context->features & F_TB_ICON)
-    {
-      icon = scale_image_new();
-      gtk_container_add(GTK_CONTAINER(box),icon);
-      scale_image_set_image(icon,win->appid);
-    }
-    if(context->features & F_TB_LABEL)
-    {
-      win->label = gtk_label_new(win->title);
-      gtk_label_set_ellipsize (GTK_LABEL(win->label),PANGO_ELLIPSIZE_END);
-      widget_set_css(win->label);
-      gtk_container_add(GTK_CONTAINER(box),win->label);
-    }
 
-    g_object_set_data(G_OBJECT(win->button),"parent",win);
-    g_object_ref(G_OBJECT(win->button));
-    g_signal_connect(win->button,"clicked",G_CALLBACK(taskbar_button_click),context);
+  if(!(context->features & F_TASKBAR))
+    return;
+
+  win->button = gtk_button_new();
+  box = gtk_grid_new();
+  gtk_container_add(GTK_CONTAINER(win->button),box);
+  if(context->features & F_TB_ICON)
+  {
+    icon = scale_image_new();
+    gtk_container_add(GTK_CONTAINER(box),icon);
+    scale_image_set_image(icon,win->appid);
   }
+  if(context->features & F_TB_LABEL)
+  {
+    win->label = gtk_label_new(win->title);
+    gtk_label_set_ellipsize (GTK_LABEL(win->label),PANGO_ELLIPSIZE_END);
+    widget_set_css(win->label);
+    gtk_container_add(GTK_CONTAINER(box),win->label);
+  }
+
+  g_object_set_data(G_OBJECT(win->button),"parent",win);
+  g_object_ref(G_OBJECT(win->button));
+  g_signal_connect(win->button,"clicked",G_CALLBACK(taskbar_button_click),context);
 }
 
 void taskbar_refresh( struct context *context )

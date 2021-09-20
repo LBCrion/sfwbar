@@ -56,37 +56,6 @@ gchar *ipc_poll ( int sock, gint32 *etype )
   return response;
 }
 
-struct ipc_event ipc_parse_event ( const ucl_object_t *obj )
-{
-  struct ipc_event ev;
-  const char *changes[] = {"new","close","focus","title","fullscreen_mode","move","floating","urgent","mark"};
-  const ucl_object_t *container;
-  char *change;
-  int i;
-
-  ev.event = -1;
-  ev.pid = 0;
-  ev.wid = 0;
-  ev.appid = NULL;
-  ev.title = NULL;
-
-  change = ucl_string_by_name(obj,"change");
-  if(change==NULL)
-    return ev;
-  container = ucl_object_lookup(obj,"container");
-  for(i=0;i<9;i++)
-    if(!g_strcmp0(change,changes[i]))
-    {
-      ev.event=i;
-      ev.pid = ucl_int_by_name(container,"pid",G_MININT64); 
-      ev.wid = ucl_int_by_name(container,"id",G_MININT64); 
-      ev.appid = ucl_string_by_name(container,"app_id");
-      ev.title = ucl_string_by_name(container,"name");
-   }
-  g_free(change);
-  return ev;
-}
-
 extern gchar *sockname;
 
 int ipc_open (int to)

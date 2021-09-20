@@ -90,22 +90,21 @@ void switcher_delete ( GtkWidget *w, struct context *context )
   gtk_container_remove ( GTK_CONTAINER(context->sw_box), w );
 }
 
-void switcher_update_window (struct ipc_event *ev, struct context *context, struct wt_window *win)
+void switcher_window_init (struct context *context, struct wt_window *win)
 {
   GtkWidget *img;
-  if(context->features & F_SWITCHER)
+  if(!(context->features & F_SWITCHER))
+    return;
+  win->switcher = gtk_grid_new();
+  g_object_ref(G_OBJECT(win->switcher));
+  gtk_widget_set_hexpand(win->switcher,TRUE);
+  if(context->features & F_SW_LABEL)
+    gtk_grid_attach(GTK_GRID(win->switcher),gtk_label_new(win->title),2,1,1,1);
+  if(context->features & F_SW_ICON)
   {
-    win->switcher = gtk_grid_new();
-    g_object_ref(G_OBJECT(win->switcher));
-    gtk_widget_set_hexpand(win->switcher,TRUE);
-    if(context->features & F_SW_LABEL)
-      gtk_grid_attach(GTK_GRID(win->switcher),gtk_label_new(win->title),2,1,1,1);
-    if(context->features & F_SW_ICON)
-    {
-      img = scale_image_new();
-      scale_image_set_image(img,win->appid);
-      gtk_grid_attach(GTK_GRID(win->switcher),img,1,1,1,1);
-    }
+    img = scale_image_new();
+    scale_image_set_image(img,win->appid);
+    gtk_grid_attach(GTK_GRID(win->switcher),img,1,1,1,1);
   }
 }
 

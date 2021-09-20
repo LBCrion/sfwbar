@@ -23,30 +23,6 @@ void parse_command_line ( struct context *context, int argc, char **argv)
   g_option_context_parse(optc,&argc,&argv,NULL);
 }
 
-void dispatch_event ( struct ipc_event *ev, struct context *context )
-{
-  if ((ev->event == 0)&&(context->features & F_PLACEMENT))
-    place_window(ev->wid, ev->pid, context);
-
-  if(context->features & (F_TASKBAR | F_SWITCHER | F_PLACEMENT))
-  {
-    if (ev->event == 99)
-      ev->event = 0;
-    if (ev->event == 0 || ev->event == 3)
-      wintree_update_window (ev,context);
-    if (ev->event == 1)
-      wintree_delete_window(ev->wid,context);
-    if (ev->event == 2)
-      context->tb_focus = ev->wid;
-  }
-
-  if(context->features & F_TASKBAR)
-    taskbar_refresh(context);
-
-  g_free(ev->title);
-  g_free(ev->appid);
-}
-
 void init_context ( struct context *context )
 {
   context->scan_list=NULL;
@@ -165,44 +141,15 @@ GtkWidget *load_config ( struct context *context )
 
 gint shell_timer ( struct context *context )
 {
-  const ucl_object_t *obj;
-  struct ucl_parser *parse;
-  gchar *response;
-  struct ipc_event ev;
-  gint32 etype;
-
   scanner_expire(context->scan_list);
   widget_update_all(context);
-  if(context->ipc!=-1)
+  wintree_event(context);
+
+  if((context->features & F_TASKBAR)&&(context->wt_dirty==1))
   {
-    response = ipc_poll(context->ipc,&etype);
-    while (response != NULL)
-    { 
-      parse = ucl_parser_new(0);
-      ucl_parser_add_string(parse,response,strlen(response));
-      obj = ucl_parser_get_object(parse);
-      if(obj!=NULL)
-      {
-        ev = ipc_parse_event(obj);
-        if(etype==0x80000003)
-          dispatch_event(&ev,context);
-        if(etype==0x80000000)
-          pager_update(context);
-        if(etype==0x80000004)
-          switcher_event(context,obj);
-      }
-      ucl_object_unref((ucl_object_t *)obj);
-      ucl_parser_free(parse);
-      g_free(response);
-      response = ipc_poll(context->ipc,&etype);
-    }
+    taskbar_refresh(context);
+    context->wt_dirty=0;
   }
-  else
-    if((context->features & F_TASKBAR)&&(context->wt_dirty==1))
-    {
-      taskbar_refresh(context);
-      context->wt_dirty=0;
-    }
 
   if(context->features & F_SWITCHER)
     switcher_update(context);

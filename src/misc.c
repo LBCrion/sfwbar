@@ -110,3 +110,12 @@ int md5_file( char *path, unsigned char output[16] )
     fclose( f );
     return( 0 );
 }
+
+void str_assign ( gchar **dest, gchar *source )
+{
+  g_free(*dest);
+  if(source==NULL)
+    *dest = NULL;
+  else
+    *dest = g_strdup(source);
+}

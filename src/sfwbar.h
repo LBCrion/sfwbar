@@ -6,14 +6,6 @@
 #include <ucl.h>
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
-struct ipc_event {
-  gint8 event;
-  gint64 pid;
-  gint64 wid;
-  gchar *title;
-  gchar *appid;
-};
-
 struct context {
   gint32 features;
   int ipc;
@@ -94,28 +86,24 @@ int ipc_open(int);
 int ipc_subscribe( int sock );
 gchar *ipc_poll( int sock, gint32 *etype );
 int ipc_send ( int sock, gint32 type, gchar *command );
-struct ipc_event ipc_parse_event ( const ucl_object_t *obj );
 
 void place_window ( gint64 wid, gint64 pid, struct context *context );
 void placement_init ( struct context *context, const ucl_object_t *obj );
 
-void dispatch_event ( struct ipc_event *ev, struct context *context );
-
 GtkWidget *taskbar_init ( struct context *context );
 GtkIconSize taskbar_icon_size ( gchar *str );
-gint64 sway_wid ( struct context *context, struct wt_window *button );
+struct wt_window *wintree_window_init ( void );
 void wintree_populate ( struct context *context );
 void taskbar_refresh ( struct context *context );
-void taskbar_update_window (struct ipc_event *ev, struct context *context, struct wt_window *win);
-void wintree_delete_window (gint64 wid, struct context *context);
-void wintree_update_window (struct ipc_event *ev, struct context *context);
+void taskbar_window_init ( struct context *context, struct wt_window *win );
 gint wintree_compare ( gconstpointer a, gconstpointer b);
+void wintree_event ( struct context *context );
 
 void wlr_ft_init ( struct context *);
 
 void switcher_event ( struct context *context, const ucl_object_t *obj );
 void switcher_update ( struct context *context );
-void switcher_update_window (struct ipc_event *ev, struct context *context, struct wt_window *win);
+void switcher_window_init (struct context *context, struct wt_window *win);
 void switcher_init ( struct context *context, const ucl_object_t *obj );
 
 GtkWidget *pager_init ( struct context *context );
@@ -152,6 +140,7 @@ gchar *ucl_string_by_name ( const ucl_object_t *obj, gchar *name);
 gint64 ucl_int_by_name ( const ucl_object_t *obj, gchar *name, gint64 defval );
 gboolean ucl_bool_by_name ( const ucl_object_t *obj, gchar *name, gboolean defval );
 int md5_file( char *path, unsigned char output[16] );
+void str_assign ( gchar **dest, gchar *source );
 struct rect parse_rect ( const ucl_object_t *obj );
 void scale_image_set_image ( GtkWidget *widget, gchar *image );
 GtkWidget *scale_image_new();

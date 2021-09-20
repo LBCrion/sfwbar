@@ -9,28 +9,49 @@
 #include <gtk/gtk.h>
 #include "sfwbar.h"
 
+struct wt_window *wintree_window_init ( void )
+{
+  struct wt_window *w;
+  w = malloc(sizeof(struct wt_window));
+  if(w==NULL)
+    return NULL;
+  w->button = NULL;
+  w->label = NULL;
+  w->switcher = NULL;
+  w->title = NULL;
+  w->appid = NULL;
+  w->pid=-1;
+  w->wid=-1;
+  w->wlr=NULL;
+  return w;
+}
 
 void wintree_traverse_tree ( const ucl_object_t *obj, struct context *context )
 {
   const ucl_object_t *iter,*arr;
+  struct wt_window *win;
   ucl_object_iter_t *itp;
-  struct ipc_event ev;
+  gchar *appid;
+
   arr = ucl_object_lookup(obj,"floating_nodes");
   if( arr )
   {
     itp = ucl_object_iterate_new(arr);
     while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
     {
-      ev.appid = ucl_string_by_name(iter,"app_id");
-      if(ev.appid!=NULL)
+      appid = ucl_string_by_name(iter,"app_id");
+      if(appid!=NULL)
       {
-        ev.title = ucl_string_by_name(iter,"name");
-        ev.pid = ucl_int_by_name(iter,"pid",G_MININT64); 
-        ev.wid = ucl_int_by_name(iter,"id",G_MININT64); 
+        win = wintree_window_init();
+        win->appid = appid;
+        win->title = ucl_string_by_name(iter,"name");
+        win->pid = ucl_int_by_name(iter,"pid",G_MININT64); 
+        win->wid = ucl_int_by_name(iter,"id",G_MININT64); 
         if(ucl_bool_by_name(iter,"focused",FALSE) == TRUE)
-          context->tb_focus = ev.wid;
-        ev.event = 99;
-        dispatch_event(&ev,context);
+          context->tb_focus = win->wid;
+        taskbar_window_init(context,win);
+        switcher_window_init(context,win);
+        context->wt_list = g_list_insert_sorted (context->wt_list,win,wintree_compare);
       }
     }
     ucl_object_iterate_free(itp);
@@ -70,6 +91,7 @@ void wintree_populate ( struct context *context )
   }
   ucl_parser_free(parse);
   g_free(response);
+  taskbar_refresh(context);
 }
 
 gint wintree_compare ( gconstpointer a, gconstpointer b)
@@ -81,53 +103,87 @@ gint wintree_compare ( gconstpointer a, gconstpointer b)
   return s;
 }
 
-void wintree_update_window (struct ipc_event *ev, struct context *context)
+void wintree_window_new (const ucl_object_t *obj, struct context *context)
 {
-  GList *iter,*item;
+  GList *item;
   struct wt_window *win;
+  const ucl_object_t *container;
+  gint64 wid;
 
-  if (ev->title == NULL )
-    ev->title = g_strdup(ev->appid);
-  if (ev->title == NULL )
+  container = ucl_object_lookup(obj,"container");
+  wid = ucl_int_by_name(container,"id",G_MININT64); 
+  for(item=context->wt_list;item!=NULL;item = g_list_next(item))
+    if (AS_WINDOW(item->data)->wid == wid)
+      return;
+  
+  win = wintree_window_init();
+  if(win==NULL)
     return;
 
-  item = NULL;
-  for(iter=context->wt_list;iter!=NULL;iter = g_list_next(iter))
-    if (AS_WINDOW(iter->data)->wid == ev->wid)
-      item=iter;
-  if (item != NULL)
+  win->wid = wid;
+  win->pid = ucl_int_by_name(container,"pid",G_MININT64); 
+
+  if (context->features & F_PLACEMENT)
+    place_window(win->wid, win->pid, context);
+
+  win->appid = ucl_string_by_name(container,"app_id");
+  if(win->appid==NULL)
   {
-    if(context->features & F_TB_LABEL)
-      gtk_label_set_text(GTK_LABEL(AS_WINDOW(item->data)->label),ev->title);
-    return;
-  }
-
-  win = g_malloc(sizeof(struct wt_window));
-  if ( win != NULL )
-  {
-    win->pid = ev->pid;
-    win->wid = ev->wid;
-    win->appid = g_strdup(ev->appid);
-    win->title = g_strdup(ev->title);
-
-    taskbar_update_window(ev,context,win);
-    switcher_update_window(ev,context,win);
-
-    context->wt_list = g_list_insert_sorted (context->wt_list,win,wintree_compare);
-  }
-  else
     g_free(win);
+    return;
+  }
+
+  win->title = ucl_string_by_name(container,"name");
+  if (win->title == NULL )
+    win->title = g_strdup(win->appid);
+
+  taskbar_window_init(context,win);
+  switcher_window_init(context,win);
+  context->wt_list = g_list_insert_sorted (context->wt_list,win,wintree_compare);
 }
 
-void wintree_delete_window (gint64 wid, struct context *context)
+void wintree_window_title (const ucl_object_t *obj, struct context *context)
 {
-  GList *iter,*item;
-  item = NULL;
-  for(iter=context->wt_list;iter!=NULL;iter = g_list_next(iter))
-    if (AS_WINDOW(iter->data)->wid == wid)
-      item=iter;
+  GList *item;
+  gchar *title;
+  const ucl_object_t *container;
+  gint64 wid;
+
+  if(!(context->features & F_TB_LABEL))
+    return;
+
+  container = ucl_object_lookup(obj,"container");
+  wid = ucl_int_by_name(container,"id",G_MININT64);
+  title = ucl_string_by_name(container,"name");
+
+  if(title==NULL)
+    return;
+
+  for(item=context->wt_list;item!=NULL;item = g_list_next(item))
+    if (AS_WINDOW(item->data)->wid == wid)
+    {
+      str_assign(&(AS_WINDOW(item->data)->title),title);
+      gtk_label_set_text(GTK_LABEL((AS_WINDOW(item->data))->label),title);
+    }
+
+  g_free(title);
+}
+
+void wintree_window_close (const ucl_object_t *obj, struct context *context)
+{
+  GList *item;
+  const ucl_object_t *container;
+  gint64 wid;
+
+  container = ucl_object_lookup(obj,"container");
+  wid = ucl_int_by_name(container,"id",G_MININT64);
+
+  for(item=context->wt_list;item!=NULL;item = g_list_next(item))
+    if (AS_WINDOW(item->data)->wid == wid)
+      break;
   if(item==NULL)
     return;
+
   if(context->features & F_TASKBAR)
   {
     gtk_widget_destroy((AS_WINDOW(item->data))->button);
@@ -141,4 +197,62 @@ void wintree_delete_window (gint64 wid, struct context *context)
   g_free(AS_WINDOW(item->data)->appid);
   g_free(AS_WINDOW(item->data)->title);
   context->wt_list = g_list_delete_link(context->wt_list,item);
+}
+
+void wintree_set_focus (const ucl_object_t *obj, struct context *context)
+{
+  const ucl_object_t *container;
+
+  container = ucl_object_lookup(obj,"container");
+  context->tb_focus = ucl_int_by_name(container,"id",G_MININT64);
+}
+
+void wintree_event ( struct context *context )
+{
+  const ucl_object_t *obj;
+  struct ucl_parser *parse;
+  gchar *response,*change;
+  gint32 etype;
+
+  if(context->ipc==-1)
+    return;
+
+  response = ipc_poll(context->ipc,&etype);
+  while (response != NULL)
+  { 
+    parse = ucl_parser_new(0);
+    ucl_parser_add_string(parse,response,strlen(response));
+    obj = ucl_parser_get_object(parse);
+
+    if(etype==0x80000000)
+      pager_update(context);
+
+    if(etype==0x80000004)
+      switcher_event(context,obj);
+
+    if(etype==0x80000003)
+    {
+      if(obj!=NULL)
+      {
+        change = ucl_string_by_name(obj,"change");
+        if(change!=NULL)
+        {
+          if(g_strcmp0(change,"new")==0)
+            wintree_window_new (obj,context);
+          if(g_strcmp0(change,"close")==0)
+            wintree_window_close(obj,context);
+          if(g_strcmp0(change,"title")==0)
+            wintree_window_title(obj,context);
+          if(g_strcmp0(change,"focus")==0)
+            wintree_set_focus(obj,context);
+          context->wt_dirty=1;
+        }
+      }
+    }
+
+    ucl_object_unref((ucl_object_t *)obj);
+    ucl_parser_free(parse);
+    g_free(response);
+    response = ipc_poll(context->ipc,&etype);
+  }
 }
