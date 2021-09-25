@@ -91,12 +91,11 @@ void place_window ( gint64 wid, gint64 pid, struct context *context );
 void placement_init ( struct context *context, const ucl_object_t *obj );
 
 GtkWidget *taskbar_init ( struct context *context );
-GtkIconSize taskbar_icon_size ( gchar *str );
-struct wt_window *wintree_window_init ( void );
-void wintree_populate ( struct context *context );
 void taskbar_refresh ( struct context *context );
 void taskbar_window_init ( struct context *context, struct wt_window *win );
-gint wintree_compare ( gconstpointer a, gconstpointer b);
+struct wt_window *wintree_window_init ( void );
+void wintree_window_append ( struct context *context, struct wt_window *win );
+void wintree_populate ( struct context *context );
 void wintree_event ( struct context *context );
 
 void wlr_ft_init ( struct context *);

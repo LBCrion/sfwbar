@@ -90,10 +90,7 @@ static void toplevel_handle_done(void *data, wlr_fth *tl)
       gtk_label_set_text(GTK_LABEL(win->label),win->title);
     return;
   }
-  if(win->button==NULL)
-    taskbar_window_init(context,win);
-  if(win->switcher==NULL)
-    switcher_window_init(context,win);
+  wintree_window_append(context,win);
 }
 
 static void toplevel_handle_state(void *data, wlr_fth *tl,
@@ -145,8 +142,6 @@ static void toplevel_manager_handle_toplevel(void *data,
   {
     win->wlr = tl;
     win->wid = context->wt_counter++;
-    context->wt_list = g_list_append (context->wt_list,win);
-    context->wt_dirty = 1;
   }
 
   zwlr_foreign_toplevel_handle_v1_add_listener(tl, &toplevel_impl, context);

@@ -30,6 +30,7 @@ void init_context ( struct context *context )
   context->widgets=NULL;
   context->wt_list = NULL;
   context->features=0;
+  context->ipc = -1;
   context->default_dec=4;
   context->buff_len = 1024;
   context->read_buff = g_malloc(context->buff_len);
