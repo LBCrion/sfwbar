@@ -40,12 +40,12 @@ void widget_update_all( struct context *context )
   }
 }
 
-GtkWidget *layout_config_include ( struct context *context, char *fname, GtkWidget *parent, GtkWidget *sibling )
+GtkWidget *layout_config_include ( struct context *context, gchar *fname, GtkWidget *parent, GtkWidget *sibling )
 {
   const gchar *json;
   struct ucl_parser *uparse;
   const ucl_object_t *obj;
-  char *fullname;
+  gchar *fullname;
   GtkWidget *ret;
 
   fullname = get_xdg_config_file(fname);
@@ -75,7 +75,7 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
   gint dir;
   GtkWidget *widget=NULL;
   gint64 freq;
-  int x,y,w,h;
+  gint x,y,w,h;
 
   if(ucl_object_type(obj)==UCL_STRING)
     return layout_config_include(context,(char *)ucl_object_tostring_forced(obj),parent,sibling);
@@ -132,7 +132,7 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
       itp = ucl_object_iterate_new(arr);
       while((ptr = ucl_object_iterate_safe(itp,true))!=NULL)
       {
-        char *pin = (char *)ucl_object_tostring(ptr);
+        gchar *pin = (char *)ucl_object_tostring(ptr);
         if(pin!=NULL)
           context->pager_pins = g_list_append(context->pager_pins,g_strdup(pin));
       }

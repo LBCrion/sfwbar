@@ -13,8 +13,8 @@
 #define IS_CLAMP_GRID(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj), CLAMP_GRID_TYPE))
 #define IS_CLAMP_GRIDCLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), CLAMP_GRID_TYPE))
 
-static void clamp_grid_get_preferred_width (GtkWidget *widget, int *minimal, int *natural);
-static void clamp_grid_get_preferred_height (GtkWidget *widget, int *minimal, int *natural);
+static void clamp_grid_get_preferred_width (GtkWidget *widget, gint *minimal, gint *natural);
+static void clamp_grid_get_preferred_height (GtkWidget *widget, gint *minimal, gint *natural);
 
 typedef struct _ClampGrid ClampGrid;
 typedef struct _ClampGridClass ClampGridClass;
@@ -59,14 +59,14 @@ GtkWidget *clamp_grid_new()
   return GTK_WIDGET(g_object_new(clamp_grid_get_type(), NULL));
 }
 
-void clamp_grid_set_clamp ( ClampGrid *cgrid, int x, int y )
+void clamp_grid_set_clamp ( ClampGrid *cgrid, gint x, gint y )
 {
   ClampGridPrivate *priv = clamp_grid_get_instance_private(CLAMP_GRID(cgrid));
   priv->x=x;
   priv->y=y;
 }
 
-static void clamp_grid_get_preferred_width (GtkWidget *widget, int *minimal, int *natural)
+static void clamp_grid_get_preferred_width (GtkWidget *widget, gint *minimal, gint *natural)
 {
   ClampGridPrivate *priv;
   g_return_if_fail(widget != NULL);
@@ -84,7 +84,7 @@ static void clamp_grid_get_preferred_width (GtkWidget *widget, int *minimal, int
   }
 }
 
-static void clamp_grid_get_preferred_height (GtkWidget *widget, int *minimal, int *natural)
+static void clamp_grid_get_preferred_height (GtkWidget *widget, gint *minimal, gint *natural)
 {
   ClampGridPrivate *priv;
   g_return_if_fail(widget != NULL);

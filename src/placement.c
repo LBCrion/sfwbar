@@ -48,9 +48,9 @@ int placement_location ( struct context *context, const ucl_object_t *obj, gint6
   struct rect output, win, *obs;
   const ucl_object_t *ptr,*iter,*arr;
   ucl_object_iter_t *itp;
-  int c,i,j,nobs,success;
-  int *x, *y;
-  int xoff,yoff;
+  gint c,i,j,nobs,success;
+  gint *x, *y;
+  gint xoff,yoff;
   output = parse_rect(obj);
 
   arr = ucl_object_lookup(obj,"floating_nodes");
@@ -176,9 +176,9 @@ const ucl_object_t *placement_find_wid ( const ucl_object_t *obj, gint64 wid )
 
 void place_window ( gint64 wid, gint64 pid, struct context *context )
 {
-  int sock;
+  gint sock;
   gint32 etype;
-  char buff[256];
+  gchar buff[256];
   struct rect r;
   const ucl_object_t *obj, *node;
   struct ucl_parser *parse;
@@ -190,11 +190,11 @@ void place_window ( gint64 wid, gint64 pid, struct context *context )
       if(AS_WINDOW(iter->data)->pid==pid)
         return;
 
-  sock = ipc_open(3000);
+  sock = sway_ipc_open(3000);
   if(sock==-1)
     return;
-  ipc_send(sock,4,"");
-  response = ipc_poll(sock,&etype);
+  sway_ipc_send(sock,4,"");
+  response = sway_ipc_poll(sock,&etype);
   close(sock);
   if(response==NULL)
     return;
@@ -205,7 +205,7 @@ void place_window ( gint64 wid, gint64 pid, struct context *context )
   placement_location(context,node,wid,&r);
   snprintf(buff,255,"[con_id=%ld] move absolute position %d %d",wid,r.x,r.y);
   if(context->ipc != -1)
-    ipc_send(context->ipc,0,buff);
+    sway_ipc_send(context->ipc,0,buff);
   ucl_object_unref((ucl_object_t *)obj);
   ucl_parser_free(parse);
   g_free(response);

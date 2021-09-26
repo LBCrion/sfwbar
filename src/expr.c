@@ -20,13 +20,13 @@ int yyparse (struct context *);
 int yy_delete_buffer (int );
 int yylex_destroy ( void );
 
-int yyerror(struct context *x,const char *y)
+int yyerror(struct context *x,const gchar *y)
   {
   return 0;
   }
 
 /* call yacc to evaluate expression */
-char *parse_expr ( struct context *context, char *expr_str )
+char *parse_expr ( struct context *context, gchar *expr_str )
   {
   context->ret_val=NULL;
   yy_scan_string (expr_str);
@@ -36,10 +36,10 @@ char *parse_expr ( struct context *context, char *expr_str )
   }
 
 /* extract a substring */
-char *str_mid ( char *str, int c1, int c2 )
+char *str_mid ( gchar *str, gint c1, gint c2 )
   {
-  char *res;
-  int len;
+  gchar *res;
+  gint len;
   if(str==NULL)
     return NULL;
   len = strlen(str);
@@ -69,9 +69,9 @@ char *str_mid ( char *str, int c1, int c2 )
   }
 
 /* generate disk space utilization for a device */
-char *df_str ( char *fpath )
+char *df_str ( gchar *fpath )
 {
-  char buf[256];
+  gchar buf[256];
   struct statvfs fs;
   if(statvfs(fpath,&fs)!=0)
     return g_strdup("");
@@ -82,11 +82,11 @@ char *df_str ( char *fpath )
 }
 
 /* Get current time string */
-char *time_str ( char *tz )
+char *time_str ( gchar *tz )
   {
   time_t tp;
-  char *str;
-  char *oldtz;
+  gchar *str;
+  gchar *oldtz;
   if(tz!=NULL)
   {
     oldtz = g_strdup(getenv("TZ"));
@@ -113,9 +113,9 @@ char *time_str ( char *tz )
   }
 
 /* Extract substring using pcre */
-char *extract_str ( char *str, char *pattern )
+char *extract_str ( gchar *str, gchar *pattern )
   {
-  char *sres=NULL;
+  gchar *sres=NULL;
   GRegex *regex;
   GMatchInfo *match;
 
@@ -133,7 +133,7 @@ char *extract_str ( char *str, char *pattern )
   }
 
 /* get node by name from the list root */
-void *list_by_name ( GList *prev, char *name )
+void *list_by_name ( GList *prev, gchar *name )
   {
   GList *node;
   for(node=prev;node!=NULL;node=g_list_next(node))
@@ -145,11 +145,11 @@ void *list_by_name ( GList *prev, char *name )
 
 
 /* convert a number to a string with specified number of decimals */
-char *numeric_to_str ( double num, int dec )
+char *numeric_to_str ( double num, gint dec )
   {
-  static char *format = "%%0.%df";
-  static char fbuf[16];
-  static char res[256];
+  static gchar *format = "%%0.%df";
+  static gchar fbuf[16];
+  static gchar res[256];
 
   if((dec>99)||(dec<0))
     return NULL;

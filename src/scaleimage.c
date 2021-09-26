@@ -114,9 +114,9 @@ void scale_image_set_image ( GtkWidget *widget, gchar *image )
   GtkIconTheme *theme;
   GdkPixbuf *buf;
   GDesktopAppInfo *app;
-  int i;
-  char ***desktop;
-  char *temp;
+  gint i;
+  gchar ***desktop;
+  gchar *temp;
 
   if(g_strcmp0(priv->file,image)==0)
     return;

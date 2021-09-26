@@ -14,7 +14,7 @@ static GOptionEntry entries[] = {
   {"socket",'s',0,G_OPTION_ARG_FILENAME,&sockname,"Specify sway socket file"},
   {NULL}};
 
-void parse_command_line ( struct context *context, int argc, char **argv)
+void parse_command_line ( struct context *context, gint argc, gchar **argv)
 {
   GOptionContext *optc;
   optc = g_option_context_new(" - Sway Floating Window Bar");
@@ -144,7 +144,7 @@ gint shell_timer ( struct context *context )
 {
   scanner_expire(context->scan_list);
   widget_update_all(context);
-  wintree_event(context);
+  sway_event(context);
 
   if((context->features & F_TASKBAR)&&(context->wt_dirty==1))
   {
@@ -182,13 +182,13 @@ static void activate (GtkApplication* app, struct context *context)
   }
 
   if((context->features & F_TASKBAR)||(context->features & F_SWITCHER))
-    wintree_populate(context);
+    sway_ipc_init(context);
 
   if((context->features & F_TASKBAR)||(context->features & F_PLACEMENT)||(context->features & F_PAGER))
   {
-    context->ipc = ipc_open(10);
+    context->ipc = sway_ipc_open(10);
     if(context->ipc>=0)
-      ipc_subscribe(context->ipc);
+      sway_ipc_subscribe(context->ipc);
     else
       wlr_ft_init(context);
   }
@@ -197,10 +197,10 @@ static void activate (GtkApplication* app, struct context *context)
   gtk_widget_show_all ((GtkWidget *)context->window);
 }
 
-int main (int argc, char **argv)
+int main (int argc, gchar **argv)
 {
   GtkApplication *app;
-  int status;
+  gint status;
   struct context context;
 
   init_context(&context);

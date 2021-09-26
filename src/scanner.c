@@ -22,10 +22,10 @@ void scanner_init ( struct context *context, const ucl_object_t *obj )
 {
   const ucl_object_t *iter,*arr;
   ucl_object_iter_t *itp;
-  int j;
+  gint j;
   struct scan_file *file;
   GList *find;
-  const char *flags[] = {"NoGlob","Exec","CheckTime","Json"};
+  const gchar *flags[] = {"NoGlob","Exec","CheckTime","Json"};
   gchar *flist;
   arr = ucl_object_lookup(obj,"scanner");
   if( arr )
@@ -68,11 +68,11 @@ GList *scanner_add_vars( struct context *context, const ucl_object_t *obj, struc
   struct scan_var *var;
   const ucl_object_t *iter;
   ucl_object_iter_t *itp;
-  char *name, *match, *p;
+  gchar *name, *match, *p;
   GRegex *regex=NULL;
   GList *vlist;
-  int j;
-  const char *flags[] = {"Add","Product","Replace","First"};
+  gint j;
+  const gchar *flags[] = {"Add","Product","Replace","First"};
   gchar *flist;
   if(!obj)
     return NULL;
@@ -166,8 +166,8 @@ int update_json_file ( struct context *context, FILE *in, GList *var_list )
   gchar *fdata,*temp;
   struct ucl_parser *parser;
   const ucl_object_t *obj,*ptr;
-  const int buff_step = 8192;
-  int buff_len=0,i;
+  const gint buff_step = 8192;
+  gint buff_len=0,i;
 
   fdata = malloc(buff_step);
   while((!feof(in))&&(!ferror(in)))
@@ -181,7 +181,7 @@ int update_json_file ( struct context *context, FILE *in, GList *var_list )
   }
 
   parser = ucl_parser_new(0);
-  ucl_parser_add_chunk( parser, (const unsigned char *) fdata, buff_len);
+  ucl_parser_add_chunk( parser, (const guchar *) fdata, buff_len);
   obj = ucl_parser_get_object(parser);
   temp = (gchar *)ucl_parser_get_error(parser);
   if(temp!=NULL)
@@ -246,12 +246,12 @@ int reset_var_list ( GList *var_list )
 int update_var_files ( struct context *context, struct scan_file *file )
 {
   struct stat stattr;
-  int i;
-  char reset=0;
-  char update=0;
+  gint i;
+  gchar reset=0;
+  gchar update=0;
   FILE *in;
   glob_t gbuf;
-  char *dnames[2];
+  gchar *dnames[2];
 
   if(file==NULL)
     return -1;
@@ -319,10 +319,10 @@ int update_var_files ( struct context *context, struct scan_file *file )
 }
 
 /* get string value of a variable by name */
-char *string_from_name ( struct context *context, char *name )
+char *string_from_name ( struct context *context, gchar *name )
   {
   struct scan_var *scan;
-  char *fname,*id,*res=NULL;
+  gchar *fname,*id,*res=NULL;
 
   id = parse_identifier(name,&fname);
   g_free(fname);
@@ -339,11 +339,11 @@ char *string_from_name ( struct context *context, char *name )
   }
 
 /* get numeric value of a variable by name */
-double numeric_from_name ( struct context *context, char *name )
+double numeric_from_name ( struct context *context, gchar *name )
   {
   struct scan_var *scan;
   double retval=0;
-  char *fname,*id;
+  gchar *fname,*id;
 
   id = parse_identifier(name,&fname);
 
@@ -365,10 +365,10 @@ double numeric_from_name ( struct context *context, char *name )
   return retval;
   }
 
-char *parse_identifier ( char *id, char **fname )
+char *parse_identifier ( gchar *id, gchar **fname )
   {
-  char *temp;
-  char *ptr;
+  gchar *temp;
+  gchar *ptr;
   if(id==NULL)
     {
     *fname=NULL;

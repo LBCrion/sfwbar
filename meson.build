@@ -18,7 +18,7 @@ ftop_h = custom_target('wlr-foreign-toplevel-management-unstable-v1.h',
     command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'] )
 
 src = ['src/sfwbar.c',
-    'src/ipc.c',
+    'src/sway_ipc.c',
     'src/placement.c',
     'src/layout.c',
     'src/taskbar.c',

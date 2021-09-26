@@ -11,7 +11,7 @@
 void switcher_init (struct context *context, const ucl_object_t *obj )
 {
   const ucl_object_t *ptr;
-  char *css;
+  gchar *css;
   if((ptr=ucl_object_lookup(obj,"switcher"))==NULL)
     return;
   context->features |= F_SWITCHER;
@@ -44,7 +44,7 @@ void switcher_init (struct context *context, const ucl_object_t *obj )
 
 void switcher_event ( struct context *context, const ucl_object_t *obj )
 {
-  char *mode;
+  gchar *mode;
   GList *item, *focus;
 
   if(obj==NULL)
@@ -111,8 +111,8 @@ void switcher_window_init (struct context *context, struct wt_window *win)
 void switcher_update ( struct context *context )
 {
   GList *item;
-  int i = 0;
-  char buff[256];
+  gint i = 0;
+  gchar buff[256];
   if(context->sw_count <= 0)
     return;
   context->sw_count--;
@@ -139,7 +139,7 @@ void switcher_update ( struct context *context )
     if(context->ipc>=0)
     {
        snprintf(buff,255,"[con_id=%ld] focus",context->tb_focus);
-       ipc_send ( context->ipc, 0, buff );
+       sway_ipc_send ( context->ipc, 0, buff );
     }
     else
       for (item = context->wt_list; item!= NULL; item = g_list_next(item) )

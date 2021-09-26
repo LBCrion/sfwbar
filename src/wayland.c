@@ -20,7 +20,7 @@ GList *wlr_ft_find_win ( GList *list, wlr_fth *tl )
   return NULL;
 }
 
-static void toplevel_handle_app_id(void *data, wlr_fth *tl, const char *app_id)
+static void toplevel_handle_app_id(void *data, wlr_fth *tl, const gchar *app_id)
 {
   struct context *context = data;
   struct wt_window *win = NULL;
@@ -33,7 +33,7 @@ static void toplevel_handle_app_id(void *data, wlr_fth *tl, const char *app_id)
   context->wt_dirty = 1;
 }
 
-static void toplevel_handle_title(void *data, wlr_fth *tl, const char *title)
+static void toplevel_handle_title(void *data, wlr_fth *tl, const gchar *title)
 {
   struct context *context = data;
   struct wt_window *win = NULL;
@@ -159,7 +159,7 @@ static const struct zwlr_foreign_toplevel_manager_v1_listener toplevel_manager_i
 };
 
 static void handle_global(void *data, struct wl_registry *registry,
-                uint32_t name, const char *interface, uint32_t version)
+                uint32_t name, const gchar *interface, uint32_t version)
 {
   if (strcmp(interface, wl_output_interface.name) == 0) 
   {

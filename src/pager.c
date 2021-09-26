@@ -23,7 +23,7 @@ void pager_remove_button ( GtkWidget *widget, struct context *context )
 
 void pager_button_click( GtkWidget *widget, struct context *context )
 {
-  char buff[256];
+  gchar buff[256];
   gchar *label;
   if(context->ipc==-1)
     return;
@@ -31,7 +31,7 @@ void pager_button_click( GtkWidget *widget, struct context *context )
   if(label==NULL)
     return;
   snprintf(buff,255,"workspace '%s'",label);
-  ipc_send ( context->ipc, 0, buff );
+  sway_ipc_send ( context->ipc, 0, buff );
 }
 
 gboolean pager_draw_preview ( GtkWidget *widget, cairo_t *cr, gchar *desk )
@@ -39,7 +39,7 @@ gboolean pager_draw_preview ( GtkWidget *widget, cairo_t *cr, gchar *desk )
   guint w,h;
   GtkStyleContext *style;
   GdkRGBA fg;
-  int sock;
+  gint sock;
   gint32 etype;
   const ucl_object_t *obj,*iter,*fiter,*arr;
   ucl_object_iter_t *itp,*fitp;
@@ -53,12 +53,12 @@ gboolean pager_draw_preview ( GtkWidget *widget, cairo_t *cr, gchar *desk )
   gtk_style_context_get_color (style,GTK_STATE_FLAG_NORMAL, &fg);
   cairo_set_line_width(cr,1);
 
-  sock=ipc_open(3000);
+  sock=sway_ipc_open(3000);
   if(sock==-1)
     return FALSE;
   
-  ipc_send(sock,1,"");
-  response = ipc_poll(sock,&etype);
+  sway_ipc_send(sock,1,"");
+  response = sway_ipc_poll(sock,&etype);
   close(sock);
   parse = ucl_parser_new(0);
   if(response!=NULL)
@@ -106,11 +106,11 @@ gboolean pager_draw_preview ( GtkWidget *widget, cairo_t *cr, gchar *desk )
   return TRUE;
 }
 
-gboolean pager_draw_tooltip ( GtkWidget *widget, int x, int y, gboolean kbmode, 
+gboolean pager_draw_tooltip ( GtkWidget *widget, gint x, gint y, gboolean kbmode, 
     GtkTooltip *tooltip, struct context *context )
 {
   GtkWidget *button;
-  char *desk;
+  gchar *desk;
 
   desk = (gchar *)gtk_button_get_label(GTK_BUTTON(widget));
   button = gtk_button_new();
@@ -122,8 +122,8 @@ gboolean pager_draw_tooltip ( GtkWidget *widget, int x, int y, gboolean kbmode,
 
 void pager_update ( struct context *context )
 {
-  int c=0;
-  int sock;
+  gint c=0;
+  gint sock;
   gint32 etype;
   const ucl_object_t *obj,*iter;
   struct ucl_parser *parse;
@@ -136,12 +136,12 @@ void pager_update ( struct context *context )
   gchar *label;
   gchar *focus=NULL;
 
-  sock=ipc_open(3000);
+  sock=sway_ipc_open(3000);
   if(sock==-1)
     return;
   
-  ipc_send(sock,1,"");
-  response = ipc_poll(sock,&etype);
+  sway_ipc_send(sock,1,"");
+  response = sway_ipc_poll(sock,&etype);
   close(sock);
   parse = ucl_parser_new(0);
   if(response!=NULL)

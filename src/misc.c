@@ -85,12 +85,12 @@ gdouble ucl_double_by_name ( const ucl_object_t *obj, gchar *name, gdouble defva
 
 
 /* compute md5 checksum for a file */
-int md5_file( char *path, unsigned char output[16] )
+int md5_file( gchar *path, guchar output[16] )
 {
     FILE *f;
     gssize n;
     GChecksum *ctx;
-    unsigned char buf[1024];
+    guchar buf[1024];
 
     if( ( f = fopen( path, "rb" ) ) == NULL )
         return( 1 );
