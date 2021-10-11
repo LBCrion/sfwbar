@@ -328,6 +328,32 @@ void sni_watcher_item_lost_cb ( GDBusConnection *con, const gchar *name, gpointe
   host->item_list = g_list_delete_link(host->item_list,item);
 }
 
+gint sni_watcher_item_add ( struct sni_iface *watcher, gchar *uid )
+{
+  struct sni_iface_item *wsni;
+  GList *iter;
+  
+  for(iter=watcher->item_list;iter!=NULL;iter=g_list_next(iter))
+    if(g_strcmp0(((struct sni_iface_item *)iter->data)->name,uid)==0)
+      return;
+
+  wsni = g_malloc(sizeof(struct sni_iface_item));
+  wsni->name = g_strdup(uid);
+
+  if(strchr(wsni->name,'/')!=NULL)
+    name = g_strndup(wsni->name,strchr(wsni->name,'/')-wsni->name);
+  else
+    name = g_strdup(wsni->name);
+
+   printf("watching %s\n", name);
+   wsni->id = g_bus_watch_name(G_BUS_TYPE_SESSION,name,
+       G_BUS_NAME_WATCHER_FLAGS_NONE,watcher_item_new_cb,
+       sni_watcher_item_lost_cb,watcher,NULL);
+   watcher->item_list = g_list_append(watcher->item_list,wsni);
+   g_free(name);
+   printf("%s %d %p\n",wsni->name,wsni->id,watcher->item_list);
+}
+
 static void sni_watcher_method(GDBusConnection *con, const gchar *sender,
     const gchar *path, const gchar *iface, const gchar *method,
     GVariant *parameters, GDBusMethodInvocation *invocation, void *data)
