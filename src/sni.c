@@ -34,7 +34,7 @@ struct sni_item {
   gchar *dest;
   gchar *path;
   gchar *iface;
-  gchar *string[7];
+  gchar *string[8];
   GdkPixbuf *pixbuf[3];
   gboolean menu;
   gboolean dirty;
@@ -311,6 +311,8 @@ void sni_host_item_registered_cb ( GDBusConnection* con, const gchar* sender,
   for(host=context->sni_ifaces;host!=NULL;host=g_list_next(host))
     if(g_strcmp0(((struct sni_iface *)host->data)->watcher_iface,iface)==0)
       break;
+  if(host==NULL)
+    return;
 
   g_variant_get (parameters, "(&s)", &parameter);
   sni_item_new(con,host->data,parameter);

@@ -29,6 +29,7 @@ void init_context ( struct context *context )
   context->file_list=NULL;
   context->widgets=NULL;
   context->wt_list = NULL;
+  context->sni_ifaces=NULL;
   context->features=0;
   context->ipc = -1;
   context->default_dec=4;
