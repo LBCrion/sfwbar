@@ -33,6 +33,7 @@ src = ['src/sfwbar.c',
     'src/parser.tab.c',
     'src/lex.yy.c',
     'src/wayland.c',
+    'src/sni.c',
     ftop_c,
     ftop_h ]
 dep = [gtk3, glib, ucl, glsh, wayl ]
