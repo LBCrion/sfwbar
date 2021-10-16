@@ -28,6 +28,9 @@ struct context {
   GtkCssProvider *css;
   GtkWidget *box;
   GtkWidget *pager;
+  GtkWidget *tray;
+  GList *sni_items;
+  GList *sni_ifaces;
   gint64 wt_counter;
   GList *wt_list;
   gchar wt_dirty;
@@ -108,6 +111,9 @@ void switcher_init ( struct context *context, const ucl_object_t *obj );
 GtkWidget *pager_init ( struct context *context );
 void pager_update ( struct context *context );
 
+GtkWidget *sni_init (struct context *context);
+void sni_refresh ( struct context *context );
+
 GtkWidget *layout_init ( struct context *context, const ucl_object_t *obj, GtkWidget *, GtkWidget * );
 void widget_update_all( struct context *context );
 void widget_action ( GtkWidget *widget, gpointer data );
@@ -144,6 +150,7 @@ struct rect parse_rect ( const ucl_object_t *obj );
 void scale_image_set_image ( GtkWidget *widget, gchar *image );
 GtkWidget *scale_image_new();
 int scale_image_update ( GtkWidget *widget );
+void scale_image_set_pixbuf ( GtkWidget *widget, GdkPixbuf * );
 
 #define SCAN_VAR(x) ((struct scan_var *)x)
 #define SCAN_FILE(x) ((struct scan_file *)x)
@@ -154,14 +161,15 @@ enum {
         F_TASKBAR   = 1<<0,
         F_PLACEMENT = 1<<1,
         F_PAGER     = 1<<2,
-        F_TB_ICON   = 1<<3,
-        F_TB_LABEL  = 1<<4,
-        F_TB_EXPAND = 1<<5,
-        F_SWITCHER  = 1<<6,
-        F_SW_ICON   = 1<<7,
-        F_SW_LABEL  = 1<<8,
-        F_PL_CHKPID = 1<<9,
-        F_PA_RENDER = 1<<10
+        F_TRAY      = 1<<3,
+        F_TB_ICON   = 1<<4,
+        F_TB_LABEL  = 1<<5,
+        F_TB_EXPAND = 1<<6,
+        F_SWITCHER  = 1<<7,
+        F_SW_ICON   = 1<<8,
+        F_SW_LABEL  = 1<<9,
+        F_PL_CHKPID = 1<<10,
+        F_PA_RENDER = 1<<11
 };
 
 enum {

@@ -35,12 +35,14 @@ struct _ScaleImagePrivate
   gint ftype;
   gchar *file;
   gchar *fname;
+  GdkPixbuf *pixbuf;
 };
 
 enum {
   SI_NONE,
   SI_ICON,
-  SI_FILE
+  SI_FILE,
+  SI_BUFF
 };
 
 G_DEFINE_TYPE_WITH_CODE (ScaleImage, scale_image, GTK_TYPE_IMAGE, G_ADD_PRIVATE (ScaleImage));
@@ -100,12 +102,20 @@ static void scale_image_init ( ScaleImage *widget )
   priv->h = -1;
   priv->file = NULL;
   priv->fname = NULL;
+  priv->pixbuf = NULL;
   priv->ftype = SI_NONE;
 }
 
 GtkWidget *scale_image_new()
 {
   return GTK_WIDGET(g_object_new(scale_image_get_type(), NULL));
+}
+
+void scale_image_set_pixbuf ( GtkWidget *widget, GdkPixbuf *pb )
+{
+  ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
+  priv->pixbuf = pb;
+  priv->ftype = SI_BUFF;
 }
 
 void scale_image_set_image ( GtkWidget *widget, gchar *image )
@@ -203,7 +213,9 @@ int scale_image_update ( GtkWidget *widget )
 
   if(priv->ftype == SI_NONE)
     return -1;
-  if(priv->fname == NULL)
+  if((priv->fname == NULL)&&(priv->ftype < SI_BUFF))
+    return -1;
+  if((priv->pixbuf == NULL)&&(priv->ftype == SI_BUFF))
     return -1;
 
   w = priv->w;
@@ -228,10 +240,18 @@ int scale_image_update ( GtkWidget *widget )
   if(priv->ftype == SI_FILE)
     buf = gdk_pixbuf_new_from_file_at_scale(priv->fname,w,h,TRUE,NULL);
 
+  if(priv->ftype == SI_BUFF)
+  {
+    printf("buff %p\n",priv->pixbuf);
+    buf = gdk_pixbuf_scale_simple(priv->pixbuf,w,h, GDK_INTERP_BILINEAR);
+  }
+
   if(buf==NULL)
     return -1;
 
-  cs = gdk_cairo_surface_create_from_pixbuf(buf,0,gtk_widget_get_window(widget));
+  cs = gdk_cairo_surface_create_from_pixbuf(buf,0,
+      gtk_widget_get_window(widget));
+
   if(cs != NULL)
   {
     gtk_image_set_from_surface(GTK_IMAGE(widget), cs);

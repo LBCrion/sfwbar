@@ -115,6 +115,8 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
       context->tb_cols = -1;
     widget = taskbar_init(context);
   }
+  if(g_ascii_strcasecmp(type,"tray")==0)
+    widget = sni_init(context);
   if(g_ascii_strcasecmp(type,"pager")==0)
   {
     context->pager_rows = ucl_int_by_name(obj,"rows",-1);

@@ -152,6 +152,9 @@ gint shell_timer ( struct context *context )
     context->wt_dirty=0;
   }
 
+  if(context->features & F_TRAY)
+    sni_refresh(context);
+
   if(context->features & F_SWITCHER)
     switcher_update(context);
 

@@ -42,6 +42,7 @@ struct sni_item {
   guint signal;
   GCancellable *cancel;
   GtkWidget *image;
+  GtkWidget *box;
 };
 
 struct sni_prop_wrapper {
@@ -246,6 +247,14 @@ void sni_item_signal_cb (GDBusConnection *con, const gchar *sender,
   }
 }
 
+gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data)
+{
+  printf("clicked\n");
+  if(event->type == GDK_BUTTON_PRESS)
+    printf("clicked %d\n",event->button);
+  return TRUE;
+}
+
 void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
     const gchar *uid)
 {
@@ -275,7 +284,11 @@ void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
   }
   sni->iface = g_strdup(iface->item_iface);
   sni->image = scale_image_new();
-  g_object_ref(sni->image);
+  sni->box = gtk_event_box_new();
+  gtk_container_add(GTK_CONTAINER(sni->box),sni->image);
+  g_signal_connect(G_OBJECT(sni->box),"button-press-event",
+      G_CALLBACK(sni_item_click_cb),NULL);
+  g_object_ref(sni->box);
   sni->signal = g_dbus_connection_signal_subscribe(con,sni->dest,
       sni->iface,NULL,sni->path,NULL,0,sni_item_signal_cb,sni,NULL);
   printf("item registered: %s %s\n",sni->dest,sni->path);
@@ -332,10 +345,11 @@ gint sni_watcher_item_add ( struct sni_iface *watcher, gchar *uid )
 {
   struct sni_iface_item *wsni;
   GList *iter;
+  gchar *name;
   
   for(iter=watcher->item_list;iter!=NULL;iter=g_list_next(iter))
     if(g_strcmp0(((struct sni_iface_item *)iter->data)->name,uid)==0)
-      return;
+      return -1;
 
   wsni = g_malloc(sizeof(struct sni_iface_item));
   wsni->name = g_strdup(uid);
@@ -352,6 +366,7 @@ gint sni_watcher_item_add ( struct sni_iface *watcher, gchar *uid )
    watcher->item_list = g_list_append(watcher->item_list,wsni);
    g_free(name);
    printf("%s %d %p\n",wsni->name,wsni->id,watcher->item_list);
+   return 0;
 }
 
 static void sni_watcher_method(GDBusConnection *con, const gchar *sender,
@@ -360,7 +375,6 @@ static void sni_watcher_method(GDBusConnection *con, const gchar *sender,
 {
   const gchar *parameter;
   struct sni_iface *watcher = data;
-  struct sni_iface_item *wsni;
   gchar *name;
 
   g_variant_get (parameters, "(&s)", &parameter);
@@ -368,30 +382,15 @@ static void sni_watcher_method(GDBusConnection *con, const gchar *sender,
 
   if(g_strcmp0(method,"RegisterStatusNotifierItem")==0)
   {
-    wsni = g_malloc(sizeof(struct sni_iface_item));
-    printf("register %s %s\n", sender, parameter);
-
-    if(wsni!=NULL)
-    {
-      if(*parameter==':')
-        wsni->name = g_strdup(parameter);
-      else
-        wsni->name = g_strconcat(sender,parameter,NULL);
-      if(strchr(wsni->name,'/')!=NULL)
-        name = g_strndup(wsni->name,strchr(wsni->name,'/')-wsni->name);
-      else
-        name = g_strdup(wsni->name);
+    if(*parameter==':')
+      name = g_strdup(parameter);
+    else
+      name = g_strconcat(sender,parameter,NULL);
+    if(sni_watcher_item_add(watcher,name)!=-1)
       g_dbus_connection_emit_signal(con,NULL,"/StatusNotifierWatcher",
           watcher->watcher_iface,"StatusNotifierItemRegistered",
-          g_variant_new("(s)",wsni->name),NULL);
-      printf("watching %s\n", name);
-      wsni->id = g_bus_watch_name(G_BUS_TYPE_SESSION,name,
-          G_BUS_NAME_WATCHER_FLAGS_NONE,watcher_item_new_cb,
-          sni_watcher_item_lost_cb,watcher,NULL);
-      watcher->item_list = g_list_append(watcher->item_list,wsni);
-      g_free(name);
-      printf("%s %d %p\n",wsni->name,wsni->id,watcher->item_list);
-    }
+          g_variant_new("(s)",name),NULL);
+    g_free(name);
   }
 
   if(g_strcmp0(method,"RegisterStatusNotifierHost")==0)
@@ -418,18 +417,20 @@ static GVariant *sni_watcher_get_prop (GDBusConnection *con,
   if (g_strcmp0 (prop, "ProtocolVersion") == 0)
     ret = g_variant_new_int32(0);
   if (g_strcmp0 (prop, "RegisteredStatusNotifierItems") == 0)
-    {
-    builder = g_variant_builder_new(G_VARIANT_TYPE_ARRAY); 
-
+  {
     if(watcher->item_list==NULL)
-      g_variant_builder_add_value(builder,g_variant_new_string(""));
+      ret = g_variant_new_array(G_VARIANT_TYPE_STRING,NULL,0);
+    else
+    {
+      builder = g_variant_builder_new(G_VARIANT_TYPE_ARRAY); 
 
-    for(iter=watcher->item_list;iter!=NULL;iter=g_list_next(iter))
-      g_variant_builder_add_value(builder,g_variant_new_string(((struct sni_iface_item *)iter->data)->name));
-    ret = g_variant_builder_end (builder);
+      for(iter=watcher->item_list;iter!=NULL;iter=g_list_next(iter))
+        g_variant_builder_add_value(builder,g_variant_new_string(((struct sni_iface_item *)iter->data)->name));
+      ret = g_variant_builder_end (builder);
 
-    g_variant_builder_unref (builder);
+      g_variant_builder_unref (builder);
     }
+  }
   return ret;
 }
 
@@ -443,11 +444,15 @@ static const GDBusInterfaceVTable watcher_vtable =
 void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
     struct sni_iface *watcher)
 {
+  GList *iter;
   if(watcher->regid != 0)
     g_dbus_connection_unregister_object(con, watcher->regid);
   watcher->regid = g_dbus_connection_register_object (con,
       "/StatusNotifierWatcher", watcher->idata->interfaces[0],
       &watcher_vtable, watcher, NULL, NULL);
+  for(iter=watcher->context->sni_items;iter!=NULL;iter=g_list_next(iter))
+    if(g_strcmp0(((struct sni_item *)iter->data)->iface,watcher->item_iface)==0)
+      sni_watcher_item_add(watcher,((struct sni_item *)iter->data)->uid);
 }
 
 void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,
@@ -466,7 +471,6 @@ void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,
   }
   g_list_free(watcher->item_list);
   watcher->item_list = NULL;
-
 }
 
 void sni_host_list_cb ( GDBusConnection *con, GAsyncResult *res, struct sni_iface *iface)
@@ -597,7 +601,7 @@ void sni_refresh ( struct context *context )
     if(sni!=NULL)
       if(sni->string[SNI_PROP_STATUS]!=NULL)
         if(sni->string[SNI_PROP_STATUS][0]!='P')
-          gtk_container_add(GTK_CONTAINER(context->tray),sni->image);
+          gtk_container_add(GTK_CONTAINER(context->tray),sni->box);
   }
   gtk_widget_show_all(context->tray);
 }
