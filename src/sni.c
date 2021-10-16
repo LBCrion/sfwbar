@@ -1,8 +1,3 @@
-/* This entire file is licensed under GNU General Public License v3.0
- *
- * Copyright 2021- Lev Babiev
- */
-
 #include <glib.h>
 #include <stdio.h>
 #include <gio/gio.h>

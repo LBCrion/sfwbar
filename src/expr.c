@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020- Lev Babiev
+ * Copyright 2020 Lev Babiev
  */
 
 #include <stdio.h>
@@ -61,7 +61,8 @@ char *str_mid ( gchar *str, gint c1, gint c2 )
     c1^=c2;
     c2^=c1;
     }
-  res=g_malloc(c2-c1+2);
+  if((res=g_malloc(c2-c1+2))==NULL)
+    return NULL;
   strncpy(res,str+c1*sizeof(char),(c2-c1+1)*sizeof(char));
   *(res+(c2-c1+1)*sizeof(char))='\0';
   return res;
@@ -74,8 +75,8 @@ char *df_str ( gchar *fpath )
   struct statvfs fs;
   if(statvfs(fpath,&fs)!=0)
     return g_strdup("");
-  snprintf(buf,255,"%ld %ld %ld %02Lf%%",fs.f_blocks*fs.f_bsize,
-      fs.f_bavail*fs.f_bsize, (fs.f_blocks-fs.f_bavail)*fs.f_bsize,
+  snprintf(buf,255,"%ld %ld %ld %02Lf%%",fs.f_blocks*fs.f_bsize,fs.f_bavail*fs.f_bsize,
+      (fs.f_blocks-fs.f_bavail)*fs.f_bsize,
       (1.0-(long double)fs.f_bavail/(long double)fs.f_blocks)*100);
   return g_strdup(buf);
 }
@@ -92,7 +93,7 @@ char *time_str ( gchar *tz )
     setenv("TZ",tz,1);
     tzset();
   }
-  if((str=g_try_malloc(26*sizeof(char)))==NULL)
+  if((str=malloc(26*sizeof(char)))==NULL)
     return NULL;
   time(&tp);
   ctime_r(&tp,str);
@@ -140,6 +141,7 @@ void *list_by_name ( GList *prev, gchar *name )
         return node->data;
   return NULL;
   }
+
 
 
 /* convert a number to a string with specified number of decimals */

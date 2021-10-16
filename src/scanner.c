@@ -40,28 +40,30 @@ void scanner_init ( struct context *context, const ucl_object_t *obj )
           file = find->data;
         else
           file = g_malloc(sizeof(struct scan_file));  
-        file->fname = g_strdup(ucl_object_key(iter));
-        file->mod_time = 0;
-        file->flags = 0;
-        flist = ucl_string_by_name(iter,"flags");
-        if(flist!=NULL)
-          for(j=0;j<4;j++)
-            if(g_strrstr(flist,flags[j])!=NULL)
-              file->flags |= (1<<j);
-        if(file->flags & VF_EXEC )
+        if(file!=NULL)
         {
-          file->flags |= VF_NOGLOB;
-          file->flags &= ~VF_CHTIME;
+          file->fname = g_strdup(ucl_object_key(iter));
+          file->mod_time = 0;
+          file->flags = 0;
+          flist = ucl_string_by_name(iter,"flags");
+          if(flist!=NULL)
+            for(j=0;j<4;j++)
+              if(g_strrstr(flist,flags[j])!=NULL)
+                file->flags |= (1<<j);
+          if(file->flags & VF_EXEC )
+          {
+            file->flags |= VF_NOGLOB;
+            file->flags &= ~VF_CHTIME;
+          }
+          file->vars = scanner_add_vars(context, iter, file);
+          context->file_list = g_list_append(context->file_list,file);
         }
-        file->vars = scanner_add_vars(context, iter, file);
-        context->file_list = g_list_append(context->file_list,file);
     }
     ucl_object_iterate_free(itp);
   }
 }
 
-GList *scanner_add_vars( struct context *context, const ucl_object_t *obj,
-		struct scan_file *file )
+GList *scanner_add_vars( struct context *context, const ucl_object_t *obj, struct scan_file *file )
 {
   struct scan_var *var;
   const ucl_object_t *iter;
@@ -88,7 +90,7 @@ GList *scanner_add_vars( struct context *context, const ucl_object_t *obj,
       regex = g_regex_new(match,0,0,NULL);
 
     if((name!=NULL)&&(match!=NULL)&&(g_ascii_strcasecmp(name,"flags")!=0)&&
-      ((file->flags & VF_JSON)||(regex!=NULL)))
+      (var!=NULL)&&((file->flags & VF_JSON)||(regex!=NULL)))
     {
       p = strchr(name,'.');
       if(p==NULL)
@@ -151,8 +153,7 @@ void update_var_value ( struct scan_var *var, gchar *value)
       case SV_ADD: var->val+=g_ascii_strtod((char *)var->str,NULL); break;
       case SV_PRODUCT: var->val*=g_ascii_strtod((char *)var->str,NULL); break;
       case SV_REPLACE: var->val=g_ascii_strtod((char *)var->str,NULL); break;
-      case SV_FIRST: if(var->count==0)
-                       var->val=g_ascii_strtod((char *)var->str,NULL); break;
+      case SV_FIRST: if(var->count==0) var->val=g_ascii_strtod((char *)var->str,NULL); break;
     }
   var->count++;
   var->status=1;
@@ -168,12 +169,12 @@ int update_json_file ( struct context *context, FILE *in, GList *var_list )
   const gint buff_step = 8192;
   gint buff_len=0,i;
 
-  fdata = g_malloc(buff_step);
+  fdata = malloc(buff_step);
   while((!feof(in))&&(!ferror(in)))
   {
     i=fread(fdata+buff_len,1,buff_step,in);
     buff_len+=i;
-    temp = g_malloc(buff_len+buff_step);
+    temp = malloc(buff_len+buff_step);
     memcpy(temp,fdata,buff_len);
     g_free(fdata);
     fdata = temp;
@@ -189,8 +190,7 @@ int update_json_file ( struct context *context, FILE *in, GList *var_list )
   for (node=var_list; node!=NULL; node=g_list_next(node))
   {
     var = node->data;
-    ptr = ucl_object_lookup_path_char(obj, var->json+sizeof(gchar),
-             *(var->json));
+    ptr = ucl_object_lookup_path_char(obj, var->json+sizeof(gchar),*(var->json));
     if(ptr!=NULL)
     {
       temp = (gchar *)ucl_object_tostring_forced(ptr);
@@ -233,12 +233,10 @@ int reset_var_list ( GList *var_list )
   gint tv = g_get_real_time();
   for(node=var_list;node!=NULL;node=g_list_next(node))
     {
-    ((struct scan_var *)node->data)->pval =
-        ((struct scan_var *)node->data)->val;
+    ((struct scan_var *)node->data)->pval = ((struct scan_var *)node->data)->val;
     ((struct scan_var *)node->data)->count = 0;
     ((struct scan_var *)node->data)->val = 0;
-    ((struct scan_var *)node->data)->time=
-        tv-((struct scan_var *)node->data)->ptime;
+    ((struct scan_var *)node->data)->time=tv-((struct scan_var *)node->data)->ptime;
     ((struct scan_var *)node->data)->ptime=tv;
     }
   return 0;
