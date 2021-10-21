@@ -68,7 +68,7 @@ struct sni_iface {
 
 static const gchar sni_watcher_xml[] =
   "<node>"
-  "  <interface name='org.kde.StatusNotifierWatcher'>"
+  "  <interface name='org.%s.StatusNotifierWatcher'>"
   "    <method name='RegisterStatusNotifierItem'>"
   "      <arg type='s' name='service' direction='in'/>"
   "    </method>"
@@ -599,12 +599,15 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
 void sni_register ( gchar *name, struct context *context )
 {
   struct sni_iface *iface;
+  gchar *xml;
   GDBusConnection *con;
   iface = g_malloc(sizeof(struct sni_iface));
   iface->regid = 0;
   iface->watcher_registered = FALSE;
   iface->item_list = NULL;
-  iface->idata = g_dbus_node_info_new_for_xml (sni_watcher_xml, NULL);
+  xml = g_strdup_printf(sni_watcher_xml,name);
+  iface->idata = g_dbus_node_info_new_for_xml (xml, NULL);
+  g_free(xml);
 
   if(iface->idata==NULL)
     printf("introspection error");
@@ -658,5 +661,6 @@ GtkWidget *sni_init (struct context *context)
   context->features |= F_TRAY;
   context->tray = gtk_grid_new();
   sni_register("kde",context);
+  sni_register("freedesktop",context);
   return context->tray;
 }
