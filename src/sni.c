@@ -194,7 +194,7 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res, struct sni_prop
     if(wrap->sni->string[SNI_PROP_STATUS][0]=='P')
     {
       gtk_widget_set_name(wrap->sni->image,"tray_passive");
-      sni_item_set_icon(wrap->sni,-1,-1);
+      sni_item_set_icon(wrap->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
     }
   }
 
@@ -247,11 +247,54 @@ void sni_item_signal_cb (GDBusConnection *con, const gchar *sender,
   }
 }
 
+gboolean sni_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event, gpointer data )
+{
+  struct sni_item *sni = data;
+  GDBusConnection *con;
+  gchar *dir;
+  gint32 delta;
+  if((event->direction == GDK_SCROLL_DOWN)||
+      (event->direction == GDK_SCROLL_RIGHT))
+    delta=1;
+  else
+    delta=-1;
+  if((event->direction == GDK_SCROLL_DOWN)||
+      (event->direction == GDK_SCROLL_UP))
+    dir = "vertical";
+  else
+    dir = "horizontal";
+
+  con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
+  g_dbus_connection_call(con, sni->dest, sni->path,
+    sni->iface, "Scroll", g_variant_new("(si)", dir, delta),
+    NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+  return TRUE;
+}
+
 gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data)
 {
-  printf("clicked\n");
+  struct sni_item *sni = data;
+  GDBusConnection *con;
+  gchar *method=NULL;
   if(event->type == GDK_BUTTON_PRESS)
-    printf("clicked %d\n",event->button);
+  {
+    con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
+    if(event->button == 1)
+    {
+      if(sni->menu)
+        method = "ContextMenu";
+      else
+        method = "Activate";
+    }
+    if(event->button == 2)
+      method = "SecondaryActivate";
+    if(event->button == 3)
+      method = "ContextMenu";
+    if(method)
+      g_dbus_connection_call(con, sni->dest, sni->path,
+        sni->iface, method, g_variant_new("(ii)", (gint32)0, (gint32)0),
+        NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+  }
   return TRUE;
 }
 
@@ -286,8 +329,11 @@ void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
   sni->image = scale_image_new();
   sni->box = gtk_event_box_new();
   gtk_container_add(GTK_CONTAINER(sni->box),sni->image);
+  gtk_widget_add_events(GTK_WIDGET(sni->box),GDK_SCROLL_MASK);
   g_signal_connect(G_OBJECT(sni->box),"button-press-event",
-      G_CALLBACK(sni_item_click_cb),NULL);
+      G_CALLBACK(sni_item_click_cb),sni);
+  g_signal_connect(G_OBJECT(sni->box),"scroll-event",
+      G_CALLBACK(sni_item_scroll_cb),sni);
   g_object_ref(sni->box);
   sni->signal = g_dbus_connection_signal_subscribe(con,sni->dest,
       sni->iface,NULL,sni->path,NULL,0,sni_item_signal_cb,sni,NULL);
@@ -541,8 +587,8 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
       g_object_unref(sni->pixbuf[i]);
   for(i=0;i<7;i++)
     g_free(sni->string[i]);
-  if(sni->image!=NULL)
-    g_object_unref(sni->image);
+  if(sni->box!=NULL)
+    g_object_unref(sni->box);
   g_free(sni->uid);
   g_free(sni->path);
   g_free(sni->dest);
@@ -602,7 +648,6 @@ void sni_refresh ( struct context *context )
     sni = iter->data;
     if(sni!=NULL)
       if(sni->string[SNI_PROP_STATUS]!=NULL)
-        if(sni->string[SNI_PROP_STATUS][0]!='P')
           gtk_container_add(GTK_CONTAINER(context->tray),sni->box);
   }
   gtk_widget_show_all(context->tray);

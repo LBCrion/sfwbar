@@ -229,7 +229,7 @@ int scale_image_update ( GtkWidget *widget )
     size = h;
   else
     size = w;
-  
+
   if(priv->ftype == SI_ICON)
   {
     theme = gtk_icon_theme_get_default();
