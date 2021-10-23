@@ -42,6 +42,7 @@ struct context {
   gint buff_len;
   gchar *read_buff;
   gchar *ret_val;
+  GScanner *escan;
 };
 
 struct wt_window {
@@ -128,6 +129,8 @@ int update_var_file ( struct context *context, FILE *in, GList *var_list );
 int reset_var_list ( GList *var_list );
 int update_var_files ( struct context *context, struct scan_file *file );
 char *parse_expr ( struct context *context, gchar *expr_str );
+char *expr_parse ( struct context *context, gchar *expr_str );
+void expr_parser_init ( struct context *context );
 char *string_from_name ( struct context *context, gchar *name );
 double numeric_from_name ( struct context *context, gchar *name );
 char *time_str ( gchar *tz );

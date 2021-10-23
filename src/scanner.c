@@ -389,3 +389,14 @@ char *parse_identifier ( gchar *id, gchar **fname )
   g_free(temp);
   return ptr;
   }
+
+/* get node by name from the list root */
+void *list_by_name ( GList *prev, gchar *name )
+  {
+  GList *node;
+  for(node=prev;node!=NULL;node=g_list_next(node))
+      if(!g_strcmp0(SCAN_VAR(node->data)->name,name))
+        return node->data;
+  return NULL;
+  }
+
