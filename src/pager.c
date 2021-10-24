@@ -23,15 +23,16 @@ void pager_remove_button ( GtkWidget *widget, struct context *context )
 
 void pager_button_click( GtkWidget *widget, struct context *context )
 {
-  gchar buff[256];
+  gchar *cmd;
   gchar *label;
   if(context->ipc==-1)
     return;
   label = (gchar *)gtk_button_get_label(GTK_BUTTON(widget));
   if(label==NULL)
     return;
-  snprintf(buff,255,"workspace '%s'",label);
-  sway_ipc_send ( context->ipc, 0, buff );
+  cmd = g_strdup_printf("workspace '%s'",label);
+  sway_ipc_send ( context->ipc, 0, cmd );
+  g_free( cmd );
 }
 
 gboolean pager_draw_preview ( GtkWidget *widget, cairo_t *cr, gchar *desk )

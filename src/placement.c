@@ -178,7 +178,7 @@ void place_window ( gint64 wid, gint64 pid, struct context *context )
 {
   gint sock;
   gint32 etype;
-  gchar buff[256];
+  gchar *cmd;
   struct rect r;
   const ucl_object_t *obj, *node;
   struct ucl_parser *parse;
@@ -203,9 +203,10 @@ void place_window ( gint64 wid, gint64 pid, struct context *context )
   obj = ucl_parser_get_object(parse);
   node = placement_find_wid ( obj, wid );
   placement_location(context,node,wid,&r);
-  snprintf(buff,255,"[con_id=%ld] move absolute position %d %d",wid,r.x,r.y);
+  cmd = g_strdup_printf("[con_id=%ld] move absolute position %d %d",wid,r.x,r.y);
   if(context->ipc != -1)
-    sway_ipc_send(context->ipc,0,buff);
+    sway_ipc_send(context->ipc,0,cmd);
+  g_free(cmd);
   ucl_object_unref((ucl_object_t *)obj);
   ucl_parser_free(parse);
   g_free(response);

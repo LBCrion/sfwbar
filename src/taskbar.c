@@ -42,18 +42,19 @@ void taskbar_remove_button ( GtkWidget *widget, struct context *context )
 void taskbar_button_click( GtkWidget *widget, struct context *context )
 {
   struct wt_window *button = g_object_get_data(G_OBJECT(widget),"parent");
+  gchar *cmd;
 
   if(button == NULL)
     return;
 
   if(context->ipc >=0 )
   {
-    gchar buff[256];
     if ( button->wid == context->tb_focus)
-      snprintf(buff,255,"[con_id=%ld] move window to scratchpad",AS_WINDOW(button)->wid);
+      cmd = g_strdup_printf("[con_id=%ld] move window to scratchpad",AS_WINDOW(button)->wid);
     else
-      snprintf(buff,255,"[con_id=%ld] focus",AS_WINDOW(button)->wid);
-    sway_ipc_send ( context->ipc, 0, buff );
+      cmd = g_strdup_printf("[con_id=%ld] focus",AS_WINDOW(button)->wid);
+    sway_ipc_send ( context->ipc, 0, cmd );
+    g_free( cmd );
     return;
   }
 

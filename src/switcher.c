@@ -112,7 +112,7 @@ void switcher_update ( struct context *context )
 {
   GList *item;
   gint i = 0;
-  gchar buff[256];
+  gchar *cmd;
   if(context->sw_count <= 0)
     return;
   context->sw_count--;
@@ -138,8 +138,9 @@ void switcher_update ( struct context *context )
     gtk_widget_hide(GTK_WIDGET(context->sw_win));
     if(context->ipc>=0)
     {
-       snprintf(buff,255,"[con_id=%ld] focus",context->tb_focus);
-       sway_ipc_send ( context->ipc, 0, buff );
+       cmd = g_strdup_printf("[con_id=%ld] focus",context->tb_focus);
+       sway_ipc_send ( context->ipc, 0, cmd );
+       g_free( cmd );
     }
     else
       for (item = context->wt_list; item!= NULL; item = g_list_next(item) )
