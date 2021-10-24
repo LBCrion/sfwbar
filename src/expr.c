@@ -122,7 +122,7 @@ char *expr_parse_df ( GScanner *scanner )
 /* Extract substring using regex */
 char *expr_parse_extract( GScanner *scanner )
   {
-  gchar *str, *pattern, *sres;
+  gchar *str, *pattern, *sres=NULL;
   GRegex *regex;
   GMatchInfo *match;
 
@@ -142,7 +142,7 @@ char *expr_parse_extract( GScanner *scanner )
     g_match_info_free (match);
     g_regex_unref (regex);
   }
-  else
+  if(res==NULL)
     sres = strdup("");
 
   g_free(str);
