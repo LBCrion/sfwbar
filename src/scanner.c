@@ -18,7 +18,7 @@ gint scanner_file_comp ( struct scan_file *f, gchar *n )
   return g_strcmp0(f->fname,n);
 }
 
-void scanner_init ( struct context *context, const ucl_object_t *obj )
+void scanner_init ( const ucl_object_t *obj )
 {
   const ucl_object_t *iter,*arr;
   ucl_object_iter_t *itp;
@@ -55,7 +55,7 @@ void scanner_init ( struct context *context, const ucl_object_t *obj )
             file->flags |= VF_NOGLOB;
             file->flags &= ~VF_CHTIME;
           }
-          file->vars = scanner_add_vars(context, iter, file);
+          file->vars = scanner_add_vars(iter, file);
           context->file_list = g_list_append(context->file_list,file);
         }
     }
@@ -63,7 +63,7 @@ void scanner_init ( struct context *context, const ucl_object_t *obj )
   }
 }
 
-GList *scanner_add_vars( struct context *context, const ucl_object_t *obj, struct scan_file *file )
+GList *scanner_add_vars( const ucl_object_t *obj, struct scan_file *file )
 {
   struct scan_var *var;
   const ucl_object_t *iter;
@@ -159,7 +159,7 @@ void update_var_value ( struct scan_var *var, gchar *value)
   var->status=1;
 }
 
-int update_json_file ( struct context *context, FILE *in, GList *var_list )
+int update_json_file ( FILE *in, GList *var_list )
 {
   GList *node;
   struct scan_var *var;
@@ -206,7 +206,7 @@ int update_json_file ( struct context *context, FILE *in, GList *var_list )
 }
 
 /* update variables in a specific file (or pipe) */
-int update_regex_file ( struct context *context, FILE *in, GList *var_list )
+int update_regex_file ( FILE *in, GList *var_list )
   {
   struct scan_var *var;
   GList *node;
@@ -243,7 +243,7 @@ int reset_var_list ( GList *var_list )
   }
 
 /* update all variables in a file (by glob) */
-int update_var_files ( struct context *context, struct scan_file *file )
+int update_var_files ( struct scan_file *file )
 {
   struct stat stattr;
   gint i;
@@ -301,9 +301,9 @@ int update_var_files ( struct context *context, struct scan_file *file )
 	  reset_var_list(file->vars);
         }
         if(file->flags & VF_JSON)
-          update_json_file(context,in,file->vars);
+          update_json_file(in,file->vars);
         else
-          update_regex_file(context,in,file->vars);
+          update_regex_file(in,file->vars);
         if(file->flags & VF_EXEC)
           pclose(in);
         else
@@ -319,7 +319,7 @@ int update_var_files ( struct context *context, struct scan_file *file )
 }
 
 /* get string value of a variable by name */
-char *string_from_name ( struct context *context, gchar *name )
+char *string_from_name ( gchar *name )
   {
   struct scan_var *scan;
   gchar *fname,*id,*res=NULL;
@@ -329,7 +329,7 @@ char *string_from_name ( struct context *context, gchar *name )
   if((scan=list_by_name(context->scan_list,id))!=NULL)
     {
     if(!scan->status)
-      update_var_files(context,scan->file);
+      update_var_files(scan->file);
     res = g_strdup(scan->str);
     }
   if(res==NULL)
@@ -339,7 +339,7 @@ char *string_from_name ( struct context *context, gchar *name )
   }
 
 /* get numeric value of a variable by name */
-double numeric_from_name ( struct context *context, gchar *name )
+double numeric_from_name ( gchar *name )
   {
   struct scan_var *scan;
   double retval=0;
@@ -350,7 +350,7 @@ double numeric_from_name ( struct context *context, gchar *name )
   if((scan=list_by_name(context->scan_list,id))!=NULL)
     {
     if(!scan->status)
-      update_var_files(context,scan->file);
+      update_var_files(scan->file);
     if(!strcmp(fname,".val"))
       retval=scan->val;
     if(!strcmp(fname,".pval"))

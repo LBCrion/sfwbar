@@ -14,7 +14,7 @@ static GOptionEntry entries[] = {
   {"socket",'s',0,G_OPTION_ARG_FILENAME,&sockname,"Specify sway socket file"},
   {NULL}};
 
-void parse_command_line ( struct context *context, gint argc, gchar **argv)
+void parse_command_line ( gint argc, gchar **argv)
 {
   GOptionContext *optc;
   optc = g_option_context_new(" - Sway Floating Window Bar");
@@ -23,8 +23,9 @@ void parse_command_line ( struct context *context, gint argc, gchar **argv)
   g_option_context_parse(optc,&argc,&argv,NULL);
 }
 
-void init_context ( struct context *context )
+void init_context ( void )
 {
+  context = g_malloc( sizeof(struct context) );
   context->scan_list=NULL;
   context->file_list=NULL;
   context->widgets=NULL;
@@ -33,7 +34,6 @@ void init_context ( struct context *context )
   context->sni_items=NULL;
   context->features=0;
   context->ipc = -1;
-  context->default_dec=4;
   context->sw_count=0;
   context->buff_len = 1024;
   context->read_buff = g_malloc(context->buff_len);
@@ -95,7 +95,7 @@ void css_init ( const ucl_object_t *obj )
   }
 }
 
-GtkWidget *load_config ( struct context *context )
+GtkWidget *load_config ( void )
 {
   const gchar *json;
   gchar *fname;
@@ -130,41 +130,41 @@ GtkWidget *load_config ( struct context *context )
   gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_BOTTOM,!(dir==GTK_POS_TOP));
   gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_TOP,!(dir==GTK_POS_BOTTOM));
 
-  placement_init(context,obj);
-  switcher_init(context,obj);
-  scanner_init(context,obj);
+  placement_init(obj);
+  switcher_init(obj);
+  scanner_init(obj);
 
   grid = gtk_grid_new();
   gtk_widget_set_name(grid,"layout");
-  layout_init(context,obj,grid,NULL);
+  layout_init(obj,grid,NULL);
 
   ucl_object_unref((ucl_object_t *)obj);
   ucl_parser_free(uparse);
   return grid;
 }
 
-gint shell_timer ( struct context *context )
+gint shell_timer ( gpointer data )
 {
   scanner_expire(context->scan_list);
-  widget_update_all(context);
-  sway_event(context);
+  widget_update_all();
+  sway_event();
 
   if((context->features & F_TASKBAR)&&(context->wt_dirty==1))
   {
-    taskbar_refresh(context);
+    taskbar_refresh();
     context->wt_dirty=0;
   }
 
   if(context->features & F_TRAY)
-    sni_refresh(context);
+    sni_refresh();
 
   if(context->features & F_SWITCHER)
-    switcher_update(context);
+    switcher_update();
 
   return TRUE;
 }
 
-static void activate (GtkApplication* app, struct context *context)
+static void activate (GtkApplication* app, gpointer data )
 {
   GtkWidget *root;
 
@@ -175,7 +175,7 @@ static void activate (GtkApplication* app, struct context *context)
   gtk_layer_set_layer(context->window,GTK_LAYER_SHELL_LAYER_OVERLAY);
   
   
-  root = load_config(context);
+  root = load_config();
 
   if(root != NULL)
   {
@@ -188,7 +188,7 @@ static void activate (GtkApplication* app, struct context *context)
   }
 
   if((context->features & F_TASKBAR)||(context->features & F_SWITCHER))
-    sway_ipc_init(context);
+    sway_ipc_init();
 
   if((context->features & F_TASKBAR)||(context->features & F_PLACEMENT)||(context->features & F_PAGER))
   {
@@ -196,22 +196,23 @@ static void activate (GtkApplication* app, struct context *context)
     if(context->ipc>=0)
       sway_ipc_subscribe(context->ipc);
     else
-      wlr_ft_init(context);
+      wlr_ft_init();
   }
 
   g_timeout_add (100,(GSourceFunc )shell_timer,context);
   gtk_widget_show_all ((GtkWidget *)context->window);
 }
 
+struct context *context;
+
 int main (int argc, gchar **argv)
 {
   GtkApplication *app;
   gint status;
-  struct context context;
 
-  init_context(&context);
+  init_context();
 
-  parse_command_line(&context,argc,argv);
+  parse_command_line(argc,argv);
 
   app = gtk_application_new ("org.gtk.sfwbar", G_APPLICATION_FLAGS_NONE);
   g_signal_connect (app, "activate", G_CALLBACK (activate), &context);

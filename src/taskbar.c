@@ -9,7 +9,7 @@
 #include <gtk/gtk.h>
 #include "sfwbar.h"
 
-GtkWidget *taskbar_init ( struct context *context )
+GtkWidget *taskbar_init ( void )
 {
   GtkWidget *w;
   gint i;
@@ -34,12 +34,12 @@ GtkWidget *taskbar_init ( struct context *context )
   return context->box;
 }
 
-void taskbar_remove_button ( GtkWidget *widget, struct context *context )
+void taskbar_remove_button ( GtkWidget *widget, gpointer data )
 {
   gtk_container_remove ( GTK_CONTAINER(context->box), widget );
 }
 
-void taskbar_button_click( GtkWidget *widget, struct context *context )
+void taskbar_button_click( GtkWidget *widget, gpointer data )
 {
   struct wt_window *button = g_object_get_data(G_OBJECT(widget),"parent");
   gchar *cmd;
@@ -83,7 +83,7 @@ gint win_compare ( struct wt_window *a, struct wt_window *b)
   return s;
 }
 
-void taskbar_window_init ( struct context *context, struct wt_window *win )
+void taskbar_window_init ( struct wt_window *win )
 {
   GtkWidget *box,*icon;
 
@@ -112,7 +112,7 @@ void taskbar_window_init ( struct context *context, struct wt_window *win )
   g_signal_connect(win->button,"clicked",G_CALLBACK(taskbar_button_click),context);
 }
 
-void taskbar_refresh( struct context *context )
+void taskbar_refresh( void )
 {
   GList *item;
   gint tb_count=0;

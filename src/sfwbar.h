@@ -37,7 +37,6 @@ struct context {
   GList *widgets;
   GList *file_list;
   GList *scan_list;
-  gint default_dec;
   gint line_num;
   gint buff_len;
   gchar *read_buff;
@@ -57,7 +56,7 @@ struct wt_window {
 };
 
 struct rect {
-  gint x,y,w,h;
+  guint x,y,w,h;
 };
 
 struct scan_var {
@@ -67,12 +66,12 @@ struct scan_var {
   gchar *str;
   double val;
   double pval;
+  gint64 time;
+  gint64 ptime;
   gint multi;
   gint count;
   guchar var_type;
   guchar status;
-  gint64 time;
-  gint64 ptime;
   struct scan_file *file;
   };
 
@@ -83,6 +82,8 @@ struct scan_file {
   GList *vars;
   };
 
+extern struct context *context;
+
 typedef struct zwlr_foreign_toplevel_handle_v1 wlr_fth;
 extern struct wl_seat *seat;
 
@@ -91,32 +92,32 @@ gchar *sway_ipc_poll ( gint sock, gint32 *etype );
 int sway_ipc_open (int to);
 int sway_ipc_send ( gint sock, gint32 type, gchar *command );
 int sway_ipc_subscribe ( gint sock );
-void place_window ( gint64 wid, gint64 pid, struct context *context );
-void placement_init ( struct context *context, const ucl_object_t *obj );
+void place_window ( gint64 wid, gint64 pid );
+void placement_init ( const ucl_object_t *obj );
 
-GtkWidget *taskbar_init ( struct context *context );
-void taskbar_refresh ( struct context *context );
-void taskbar_window_init ( struct context *context, struct wt_window *win );
+GtkWidget *taskbar_init ( void );
+void taskbar_refresh ( void );
+void taskbar_window_init ( struct wt_window *win );
 struct wt_window *wintree_window_init ( void );
-void wintree_window_append ( struct context *context, struct wt_window *win );
-void sway_ipc_init ( struct context *context );
-void sway_event ( struct context *context );
+void wintree_window_append ( struct wt_window *win );
+void sway_ipc_init ( void );
+void sway_event ( void );
 
-void wlr_ft_init ( struct context *);
+void wlr_ft_init ( void );
 
-void switcher_event ( struct context *context, const ucl_object_t *obj );
-void switcher_update ( struct context *context );
-void switcher_window_init (struct context *context, struct wt_window *win);
-void switcher_init ( struct context *context, const ucl_object_t *obj );
+void switcher_event ( const ucl_object_t *obj );
+void switcher_update ( void );
+void switcher_window_init ( struct wt_window *win);
+void switcher_init ( const ucl_object_t *obj );
 
-GtkWidget *pager_init ( struct context *context );
-void pager_update ( struct context *context );
+GtkWidget *pager_init ( void );
+void pager_update ( void );
 
-GtkWidget *sni_init (struct context *context);
-void sni_refresh ( struct context *context );
+GtkWidget *sni_init ( void );
+void sni_refresh ( void );
 
-GtkWidget *layout_init ( struct context *context, const ucl_object_t *obj, GtkWidget *, GtkWidget * );
-void widget_update_all( struct context *context );
+GtkWidget *layout_init (  const ucl_object_t *obj, GtkWidget *, GtkWidget * );
+void widget_update_all( void );
 void widget_action ( GtkWidget *widget, gpointer data );
 GtkWidget *widget_icon_by_name ( gchar *name, gint size );
 void widget_set_css ( GtkWidget * );
@@ -124,17 +125,17 @@ void widget_set_css ( GtkWidget * );
 GtkWidget *clamp_grid_new();
 GtkWidget *alabel_new();
 int scanner_expire ( GList *start );
-int update_var_tree ( struct context *context );
-int update_var_file ( struct context *context, FILE *in, GList *var_list );
+int update_var_tree ( void );
+int update_var_file ( FILE *in, GList *var_list );
 int reset_var_list ( GList *var_list );
-int update_var_files ( struct context *context, struct scan_file *file );
-char *expr_parse ( struct context *context, gchar *expr_str );
-char *string_from_name ( struct context *context, gchar *name );
-double numeric_from_name ( struct context *context, gchar *name );
+int update_var_files ( struct scan_file *file );
+char *expr_parse ( gchar *expr_str );
+char *string_from_name ( gchar *name );
+double numeric_from_name ( gchar *name );
 void *list_by_name ( GList *prev, gchar *name );
 char *parse_identifier ( gchar *id, gchar **fname );
-void scanner_init ( struct context *context, const ucl_object_t *obj );
-GList *scanner_add_vars( struct context *context, const ucl_object_t *obj, struct scan_file *file );
+void scanner_init (  const ucl_object_t *obj );
+GList *scanner_add_vars( const ucl_object_t *obj, struct scan_file *file );
 
 gchar *get_xdg_config_file ( gchar *fname );
 gchar *ucl_string_by_name ( const ucl_object_t *obj, gchar *name);

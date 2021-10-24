@@ -22,7 +22,6 @@ GList *wlr_ft_find_win ( GList *list, wlr_fth *tl )
 
 static void toplevel_handle_app_id(void *data, wlr_fth *tl, const gchar *app_id)
 {
-  struct context *context = data;
   struct wt_window *win = NULL;
   GList *l;
   l = wlr_ft_find_win(context->wt_list,tl);
@@ -35,7 +34,6 @@ static void toplevel_handle_app_id(void *data, wlr_fth *tl, const gchar *app_id)
 
 static void toplevel_handle_title(void *data, wlr_fth *tl, const gchar *title)
 {
-  struct context *context = data;
   struct wt_window *win = NULL;
   GList *l;
   l = wlr_ft_find_win(context->wt_list,tl);
@@ -48,7 +46,6 @@ static void toplevel_handle_title(void *data, wlr_fth *tl, const gchar *title)
 
 static void toplevel_handle_closed(void *data, wlr_fth *tl)
 {
-  struct context *context = data;
   struct wt_window *win = NULL;
   GList *l;
   l = wlr_ft_find_win(context->wt_list,tl);
@@ -73,7 +70,6 @@ static void toplevel_handle_closed(void *data, wlr_fth *tl)
 
 static void toplevel_handle_done(void *data, wlr_fth *tl)
 {
-  struct context *context = data;
   struct wt_window *win = NULL;
   GList *l;
   l = wlr_ft_find_win(context->wt_list,tl);
@@ -90,7 +86,7 @@ static void toplevel_handle_done(void *data, wlr_fth *tl)
       gtk_label_set_text(GTK_LABEL(win->label),win->title);
     return;
   }
-  wintree_window_append(context,win);
+  wintree_window_append(win);
 }
 
 static void toplevel_handle_state(void *data, wlr_fth *tl,
@@ -103,15 +99,14 @@ static void toplevel_handle_state(void *data, wlr_fth *tl,
   wl_array_for_each(entry, state)
     if(*entry == ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_ACTIVATED)
     {
-      struct context *context = data;
       struct wt_window *win = NULL;
       GList *l;
       l = wlr_ft_find_win(context->wt_list,tl);
       if(l!=NULL)
       {
         win = l->data;
-        ((struct context *)data)->tb_focus = win->wid;
-        ((struct context *)data)->wt_dirty = 1;
+        context->tb_focus = win->wid;
+        context->wt_dirty = 1;
       }
     }
 }
@@ -134,7 +129,6 @@ static const struct zwlr_foreign_toplevel_handle_v1_listener toplevel_impl = {
 static void toplevel_manager_handle_toplevel(void *data,
   struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager, wlr_fth *tl)
 {
-  struct context *context = data;
   struct wt_window *win;
 
   win = wintree_window_init();
@@ -187,7 +181,7 @@ static const struct wl_registry_listener registry_listener = {
   .global_remove = handle_global_remove,
 };
 
-void wlr_ft_init ( struct context *context )
+void wlr_ft_init ( void )
 {
   GdkDisplay *gdisp;
   struct wl_display *wdisp;

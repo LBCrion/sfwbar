@@ -7,21 +7,21 @@
 #include <gtk/gtk.h>
 #include "sfwbar.h"
 
-GtkWidget *pager_init ( struct context *context )
+GtkWidget *pager_init ( void )
 {
   context->pager = gtk_grid_new();
   gtk_widget_set_name(context->pager, "pager");
   context->features |= F_PAGER;
-  pager_update(context);
+  pager_update();
   return context->pager;
 }
 
-void pager_remove_button ( GtkWidget *widget, struct context *context )
+void pager_remove_button ( GtkWidget *widget, gpointer data )
 {
   gtk_container_remove ( GTK_CONTAINER(context->pager), widget );
 }
 
-void pager_button_click( GtkWidget *widget, struct context *context )
+void pager_button_click( GtkWidget *widget, gpointer data )
 {
   gchar *cmd;
   gchar *label;
@@ -108,7 +108,7 @@ gboolean pager_draw_preview ( GtkWidget *widget, cairo_t *cr, gchar *desk )
 }
 
 gboolean pager_draw_tooltip ( GtkWidget *widget, gint x, gint y, gboolean kbmode, 
-    GtkTooltip *tooltip, struct context *context )
+    GtkTooltip *tooltip, gpointer data )
 {
   GtkWidget *button;
   gchar *desk;
@@ -121,7 +121,7 @@ gboolean pager_draw_tooltip ( GtkWidget *widget, gint x, gint y, gboolean kbmode
   return TRUE;
 }
 
-void pager_update ( struct context *context )
+void pager_update ( void )
 {
   gint c=0;
   gint sock;

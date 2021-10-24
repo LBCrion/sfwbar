@@ -57,7 +57,6 @@ struct sni_iface_item {
 
 struct sni_iface {
   guint regid;
-  struct context *context;
   gboolean watcher_registered;
   gchar *watcher_iface;
   gchar *item_iface;
@@ -305,7 +304,7 @@ void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
   gchar *path;
   guint i;
   GList *iter;
-  for(iter=iface->context->sni_items;iter!=NULL;iter=g_list_next(iter))
+  for(iter=context->sni_items;iter!=NULL;iter=g_list_next(iter))
     if(g_strcmp0(((struct sni_item *)iter->data)->uid,uid)==0)
       break;
   if(iter!=NULL)
@@ -338,7 +337,7 @@ void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
   sni->signal = g_dbus_connection_signal_subscribe(con,sni->dest,
       sni->iface,NULL,sni->path,NULL,0,sni_item_signal_cb,sni,NULL);
   printf("item registered: %s %s\n",sni->dest,sni->path);
-  iface->context->sni_items = g_list_append(iface->context->sni_items,sni);
+  context->sni_items = g_list_append(context->sni_items,sni);
   for(i=0;i<3;i++)
     sni->pixbuf[i]=NULL;
   for(i=0;i<7;i++)
@@ -352,7 +351,6 @@ void sni_host_item_registered_cb ( GDBusConnection* con, const gchar* sender,
   GVariant* parameters, gpointer data)
 {
   const gchar *parameter;
-  struct context *context = data;
   GList *host;
   for(host=context->sni_ifaces;host!=NULL;host=g_list_next(host))
     if(g_strcmp0(((struct sni_iface *)host->data)->watcher_iface,iface)==0)
@@ -498,7 +496,7 @@ void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
   watcher->regid = g_dbus_connection_register_object (con,
       "/StatusNotifierWatcher", watcher->idata->interfaces[0],
       &watcher_vtable, watcher, NULL, NULL);
-  for(iter=watcher->context->sni_items;iter!=NULL;iter=g_list_next(iter))
+  for(iter=context->sni_items;iter!=NULL;iter=g_list_next(iter))
     if(g_strcmp0(((struct sni_item *)iter->data)->iface,watcher->item_iface)==0)
       sni_watcher_item_add(watcher,((struct sni_item *)iter->data)->uid);
 }
@@ -565,7 +563,6 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
   const gchar* _path, const gchar* interface, const gchar* signal,
   GVariant* parameters, gpointer data)
 {
-  struct context *context = data;
   struct sni_item *sni;
   const gchar *parameter;
   GList *item;
@@ -596,7 +593,7 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
   g_free(sni);
 }
 
-void sni_register ( gchar *name, struct context *context )
+void sni_register ( gchar *name )
 {
   struct sni_iface *iface;
   gchar *xml;
@@ -616,7 +613,6 @@ void sni_register ( gchar *name, struct context *context )
   iface->host_iface = g_strdup_printf("org.%s.StatusNotifierHost-%d",name,
       getpid());
   context->sni_ifaces = g_list_append(context->sni_ifaces,iface);
-  iface->context = context;
   g_bus_own_name(G_BUS_TYPE_SESSION,iface->watcher_iface,
       G_BUS_NAME_OWNER_FLAGS_NONE,NULL,
       (GBusNameAcquiredCallback)sni_watcher_register_cb,
@@ -635,12 +631,12 @@ void sni_register ( gchar *name, struct context *context )
       G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_unregistered_cb,context,NULL);
 }
 
-void sni_item_remove ( GtkWidget *widget, struct context *context )
+void sni_item_remove ( GtkWidget *widget )
 {
   gtk_container_remove ( GTK_CONTAINER(context->tray), widget );
 }
 
-void sni_refresh ( struct context *context )
+void sni_refresh ( void )
 {
   GList *iter;
   struct sni_item *sni;
@@ -656,11 +652,11 @@ void sni_refresh ( struct context *context )
   gtk_widget_show_all(context->tray);
 }
 
-GtkWidget *sni_init (struct context *context)
+GtkWidget *sni_init ( void )
 {
   context->features |= F_TRAY;
   context->tray = gtk_grid_new();
-  sni_register("kde",context);
-  sni_register("freedesktop",context);
+  sni_register("kde");
+  sni_register("freedesktop");
   return context->tray;
 }

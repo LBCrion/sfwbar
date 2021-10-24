@@ -33,12 +33,12 @@ gint wintree_compare ( struct wt_window *a, struct wt_window *b)
   return s;
 }
 
-void wintree_window_append ( struct context *context, struct wt_window *win )
+void wintree_window_append ( struct wt_window *win )
 {
   if(win->button==NULL)
-    taskbar_window_init(context,win);
+    taskbar_window_init(win);
   if(win->switcher==NULL)
-    switcher_window_init(context,win);
+    switcher_window_init(win);
   if(g_list_find(context->wt_list,win)==NULL)
     context->wt_list = g_list_insert_sorted (context->wt_list,win,
       (GCompareFunc)wintree_compare);

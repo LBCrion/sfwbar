@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include "sfwbar.h"
 
-void placement_init ( struct context *context, const ucl_object_t *obj )
+void placement_init ( const ucl_object_t *obj )
 {
   const ucl_object_t *ptr;
   if((ptr=ucl_object_lookup(obj,"placement"))==NULL)
@@ -43,7 +43,7 @@ struct rect parse_rect ( const ucl_object_t *obj )
   return ret;
 }
 
-int placement_location ( struct context *context, const ucl_object_t *obj, gint64 wid, struct rect *r )
+int placement_location ( const ucl_object_t *obj, gint64 wid, struct rect *r )
 {
   struct rect output, win, *obs;
   const ucl_object_t *ptr,*iter,*arr;
@@ -174,7 +174,7 @@ const ucl_object_t *placement_find_wid ( const ucl_object_t *obj, gint64 wid )
   return ret;
 }
 
-void place_window ( gint64 wid, gint64 pid, struct context *context )
+void place_window ( gint64 wid, gint64 pid )
 {
   gint sock;
   gint32 etype;
@@ -202,7 +202,7 @@ void place_window ( gint64 wid, gint64 pid, struct context *context )
   ucl_parser_add_string(parse,response,strlen(response));
   obj = ucl_parser_get_object(parse);
   node = placement_find_wid ( obj, wid );
-  placement_location(context,node,wid,&r);
+  placement_location(node,wid,&r);
   cmd = g_strdup_printf("[con_id=%ld] move absolute position %d %d",wid,r.x,r.y);
   if(context->ipc != -1)
     sway_ipc_send(context->ipc,0,cmd);

@@ -7,7 +7,7 @@
 #include <gtk/gtk.h>
 #include <gio/gdesktopappinfo.h>
 
-void widget_update_all( struct context *context )
+void widget_update_all( void )
 {
   GList *iter;
   gint64 ctime = g_get_real_time();
@@ -23,7 +23,7 @@ void widget_update_all( struct context *context )
       expr = g_object_get_data(G_OBJECT(iter->data),"expr");
       if((expr!=NULL)&&(GTK_IS_LABEL(iter->data)||GTK_IS_PROGRESS_BAR(iter->data)||GTK_IS_IMAGE(iter->data)))
       {
-        gchar *eval = expr_parse(context,expr);
+        gchar *eval = expr_parse(expr);
 
         if(GTK_IS_LABEL(GTK_WIDGET(iter->data)))
           gtk_label_set_text(GTK_LABEL(iter->data),eval);
@@ -41,7 +41,7 @@ void widget_update_all( struct context *context )
   }
 }
 
-GtkWidget *layout_config_include ( struct context *context, gchar *fname, GtkWidget *parent, GtkWidget *sibling )
+GtkWidget *layout_config_include ( gchar *fname, GtkWidget *parent, GtkWidget *sibling )
 {
   const gchar *json;
   struct ucl_parser *uparse;
@@ -59,15 +59,15 @@ GtkWidget *layout_config_include ( struct context *context, gchar *fname, GtkWid
   json = ucl_parser_get_error(uparse);
   if(json!=NULL)
     printf("%s\n",json);
-  scanner_init(context,obj);
-  ret = layout_init(context,obj,parent,sibling);
+  scanner_init(obj);
+  ret = layout_init(obj,parent,sibling);
 
   ucl_object_unref((ucl_object_t *)obj);
   ucl_parser_free(uparse);
   return ret;
 }
 
-GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj,
+GtkWidget *layout_config_iter ( const ucl_object_t *obj,
     GtkWidget *parent, GtkWidget *sibling )
 {
   const ucl_object_t *ptr,*arr;
@@ -79,7 +79,7 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
   gint x,y,w,h;
 
   if(ucl_object_type(obj)==UCL_STRING)
-    return layout_config_include(context,(char *)ucl_object_tostring_forced(obj),parent,sibling);
+    return layout_config_include((char *)ucl_object_tostring_forced(obj),parent,sibling);
 
   type = ucl_string_by_name(obj,"type");
 
@@ -114,10 +114,10 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
       context->tb_rows = 1;
     if((context->tb_rows>0)&&(context->tb_cols>0))
       context->tb_cols = -1;
-    widget = taskbar_init(context);
+    widget = taskbar_init();
   }
   if(g_ascii_strcasecmp(type,"tray")==0)
-    widget = sni_init(context);
+    widget = sni_init();
   if(g_ascii_strcasecmp(type,"pager")==0)
   {
     context->pager_rows = ucl_int_by_name(obj,"rows",-1);
@@ -141,7 +141,7 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
       }
       ucl_object_iterate_free(itp);
     }
-    widget = pager_init(context);
+    widget = pager_init();
   }
 
   if(widget==NULL)
@@ -227,7 +227,7 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
       GtkWidget *sibling = NULL;
       itp = ucl_object_iterate_new(arr);
       while((ptr = ucl_object_iterate_safe(itp,true))!=NULL)
-        sibling = layout_config_iter(context,ptr,widget,sibling);
+        sibling = layout_config_iter(ptr,widget,sibling);
       ucl_object_iterate_free(itp);
     }
   }
@@ -235,7 +235,7 @@ GtkWidget *layout_config_iter ( struct context *context, const ucl_object_t *obj
   return widget;
 }
 
-GtkWidget *layout_init ( struct context *context, const ucl_object_t *obj, GtkWidget *parent, GtkWidget *sibling )
+GtkWidget *layout_init ( const ucl_object_t *obj, GtkWidget *parent, GtkWidget *sibling )
 {
   const ucl_object_t *arr,*ptr;
   ucl_object_iter_t *itp;
@@ -246,7 +246,7 @@ GtkWidget *layout_init ( struct context *context, const ucl_object_t *obj, GtkWi
 
   itp = ucl_object_iterate_new(arr);
   while((ptr = ucl_object_iterate_safe(itp,true))!=NULL)
-    sibling = layout_config_iter(context,ptr,parent,sibling);
+    sibling = layout_config_iter(ptr,parent,sibling);
 
   ucl_object_iterate_free(itp);
 

@@ -106,7 +106,7 @@ int sway_ipc_subscribe ( gint sock )
   return sock;
 }
 
-void sway_window_new (const ucl_object_t *container, struct context *context)
+void sway_window_new ( const ucl_object_t *container )
 {
   GList *item;
   struct wt_window *win;
@@ -125,7 +125,7 @@ void sway_window_new (const ucl_object_t *container, struct context *context)
   win->pid = ucl_int_by_name(container,"pid",G_MININT64); 
 
   if((context->features & F_PLACEMENT)&&(context->ipc!=-1))
-    place_window(win->wid, win->pid, context);
+    place_window(win->wid, win->pid );
 
   win->appid = ucl_string_by_name(container,"app_id");
   if(win->appid==NULL)
@@ -141,10 +141,10 @@ void sway_window_new (const ucl_object_t *container, struct context *context)
   if(ucl_bool_by_name(container,"focused",FALSE) == TRUE)
     context->tb_focus = win->wid;
 
-  wintree_window_append(context,win);
+  wintree_window_append(win);
 }
 
-void sway_window_title (const ucl_object_t *container, struct context *context)
+void sway_window_title ( const ucl_object_t *container )
 {
   GList *item;
   gchar *title;
@@ -169,7 +169,7 @@ void sway_window_title (const ucl_object_t *container, struct context *context)
   g_free(title);
 }
 
-void sway_window_close (const ucl_object_t *container, struct context *context)
+void sway_window_close (const ucl_object_t *container)
 {
   GList *item;
   gint64 wid;
@@ -197,12 +197,12 @@ void sway_window_close (const ucl_object_t *container, struct context *context)
   context->wt_list = g_list_delete_link(context->wt_list,item);
 }
 
-void sway_set_focus (const ucl_object_t *container, struct context *context)
+void sway_set_focus (const ucl_object_t *container)
 {
   context->tb_focus = ucl_int_by_name(container,"id",G_MININT64);
 }
 
-void sway_event ( struct context *context )
+void sway_event ( void )
 {
   const ucl_object_t *obj,*container;
   struct ucl_parser *parse;
@@ -220,10 +220,10 @@ void sway_event ( struct context *context )
     obj = ucl_parser_get_object(parse);
 
     if(etype==0x80000000)
-      pager_update(context);
+      pager_update();
 
     if(etype==0x80000004)
-      switcher_event(context,obj);
+      switcher_event(obj);
 
     if(etype==0x80000003)
     {
@@ -234,13 +234,13 @@ void sway_event ( struct context *context )
         {
           container = ucl_object_lookup(obj,"container");
           if(g_strcmp0(change,"new")==0)
-            sway_window_new (container,context);
+            sway_window_new (container);
           if(g_strcmp0(change,"close")==0)
-            sway_window_close(container,context);
+            sway_window_close(container);
           if(g_strcmp0(change,"title")==0)
-            sway_window_title(container,context);
+            sway_window_title(container);
           if(g_strcmp0(change,"focus")==0)
-            sway_set_focus(container,context);
+            sway_set_focus(container);
           context->wt_dirty=1;
         }
       }
@@ -253,7 +253,7 @@ void sway_event ( struct context *context )
   }
 }
 
-void sway_traverse_tree ( const ucl_object_t *obj, struct context *context )
+void sway_traverse_tree ( const ucl_object_t *obj)
 {
   const ucl_object_t *iter,*arr;
   ucl_object_iter_t *itp;
@@ -263,7 +263,7 @@ void sway_traverse_tree ( const ucl_object_t *obj, struct context *context )
   {
     itp = ucl_object_iterate_new(arr);
     while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
-      sway_window_new (iter, context);
+      sway_window_new (iter);
     ucl_object_iterate_free(itp);
   }
   arr = ucl_object_lookup(obj,"nodes");
@@ -271,12 +271,12 @@ void sway_traverse_tree ( const ucl_object_t *obj, struct context *context )
   {
     itp = ucl_object_iterate_new(arr);
     while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
-      sway_traverse_tree(iter,context);
+      sway_traverse_tree(iter);
     ucl_object_iterate_free(itp);
   }
 }
 
-void sway_ipc_init ( struct context *context )
+void sway_ipc_init ( void )
 {
   const ucl_object_t *obj;
   struct ucl_parser *parse;
@@ -296,11 +296,11 @@ void sway_ipc_init ( struct context *context )
   obj = ucl_parser_get_object(parse);
   if(obj!=NULL)
   {
-    sway_traverse_tree(obj,context);
+    sway_traverse_tree(obj);
     ucl_object_unref((ucl_object_t *)obj);
   }
   ucl_parser_free(parse);
   g_free(response);
-  taskbar_refresh(context);
+  taskbar_refresh();
 }
 

@@ -8,7 +8,7 @@
 #include <gtk-layer-shell.h>
 #include "sfwbar.h"
 
-void switcher_init (struct context *context, const ucl_object_t *obj )
+void switcher_init ( const ucl_object_t *obj )
 {
   const ucl_object_t *ptr;
   gchar *css;
@@ -42,7 +42,7 @@ void switcher_init (struct context *context, const ucl_object_t *obj )
   }
 }
 
-void switcher_event ( struct context *context, const ucl_object_t *obj )
+void switcher_event ( const ucl_object_t *obj )
 {
   gchar *mode;
   GList *item, *focus;
@@ -85,12 +85,12 @@ void switcher_event ( struct context *context, const ucl_object_t *obj )
   }
 }
 
-void switcher_delete ( GtkWidget *w, struct context *context )
+void switcher_delete ( GtkWidget *w )
 {
   gtk_container_remove ( GTK_CONTAINER(context->sw_box), w );
 }
 
-void switcher_window_init (struct context *context, struct wt_window *win)
+void switcher_window_init ( struct wt_window *win)
 {
   GtkWidget *img;
   if(!(context->features & F_SWITCHER))
@@ -108,7 +108,7 @@ void switcher_window_init (struct context *context, struct wt_window *win)
   }
 }
 
-void switcher_update ( struct context *context )
+void switcher_update ( void )
 {
   GList *item;
   gint i = 0;
