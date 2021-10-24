@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020 Lev Babiev
+ * Copyright 2020- Lev Babiev
  */
 
 #include <stdio.h>
@@ -23,8 +23,8 @@ enum {
   G_TOKEN_STRW    = G_TOKEN_LAST + 6
 };
 
-gdouble expr_parse_num_l1 ( struct context *context );
-gchar *expr_parse_str_l1 ( struct context *context );
+gdouble expr_parse_num ( struct context *context );
+gchar *expr_parse_str ( struct context *context );
 
 gboolean parser_expect_symbol ( struct context *context, gchar symbol )
 {
@@ -38,23 +38,36 @@ gboolean parser_expect_symbol ( struct context *context, gchar symbol )
   return FALSE;
 }
 
+/* convert a number to a string with specified number of decimals */
+char *expr_dtostr ( double num, gint dec )
+  {
+  static gchar *format = "%%0.%df";
+  static gchar fbuf[16];
+
+  if((dec>99)||(dec<0))
+    return strdup("");
+
+  snprintf(fbuf,15,format,dec);
+  return g_strdup_printf(fbuf,num);
+  }
+
 /* extract a substring */
 char *expr_parse_str_mid ( struct context *context )
 {
-  gchar *str, *res;
+  gchar *str, *result;
   gint len, c1, c2;
 
   g_scanner_get_next_token( context->escan );
   parser_expect_symbol(context,'(');
-  str = expr_parse_str_l1(context);
+  str = expr_parse_str(context);
   parser_expect_symbol(context,',');
-  c1 = expr_parse_num_l1(context);
+  c1 = expr_parse_num(context);
   parser_expect_symbol(context,',');
-  c2 = expr_parse_num_l1(context);
+  c2 = expr_parse_num(context);
   parser_expect_symbol(context,')');
 
   if(str==NULL)
-    return NULL;
+    return strdup("");
   len = strlen(str);
   if(c1<0)	/* negative offsets are relative to the end of the string */
     c1+=len;
@@ -75,13 +88,11 @@ char *expr_parse_str_mid ( struct context *context )
     c2^=c1;
     }
 
-  res=g_malloc(c2-c1+2);
-  strncpy(res,str+c1*sizeof(char),(c2-c1+1)*sizeof(char));
-  *(res+(c2-c1+1)*sizeof(char))='\0';
+  result = strndup( str+c1*sizeof(gchar), (c2-c1+1)*sizeof(gchar));
 
   g_free(str);
 
-  return res;
+  return result;
   }
 
 /* generate disk space utilization for a device */
@@ -92,7 +103,7 @@ char *expr_parse_df ( struct context *context )
 
   g_scanner_get_next_token( context->escan );
   parser_expect_symbol(context,'(');
-  fpath = expr_parse_str_l1(context);
+  fpath = expr_parse_str(context);
   parser_expect_symbol(context,')');
 
   if(statvfs(fpath,&fs)!=0)
@@ -108,15 +119,15 @@ char *expr_parse_df ( struct context *context )
 /* Extract substring using regex */
 char *expr_parse_extract( struct context *context )
   {
-  gchar *str, *pattern, *sres=NULL;
+  gchar *str, *pattern, *sres;
   GRegex *regex;
   GMatchInfo *match;
 
   g_scanner_get_next_token( context->escan );
   parser_expect_symbol(context,'(');
-  str = expr_parse_str_l1(context);
+  str = expr_parse_str(context);
   parser_expect_symbol(context,',');
-  pattern = expr_parse_str_l1(context);
+  pattern = expr_parse_str(context);
   parser_expect_symbol(context,')');
 
   if((str!=NULL)||(pattern!=NULL))
@@ -128,6 +139,8 @@ char *expr_parse_extract( struct context *context )
     g_match_info_free (match);
     g_regex_unref (regex);
   }
+  else
+    sres = strdup("");
 
   g_free(str);
   g_free(pattern);
@@ -146,7 +159,10 @@ char *expr_parse_time ( struct context *context )
   if(g_scanner_peek_next_token(context->escan)==')')
     tz = NULL;
   else
-    tz = expr_parse_str_l1(context);
+  {
+    g_scanner_get_next_token( context->escan );
+    tz = expr_parse_str(context);
+  }
   parser_expect_symbol(context,')');
 
   if(tz!=NULL)
@@ -155,8 +171,7 @@ char *expr_parse_time ( struct context *context )
     setenv("TZ",tz,1);
     tzset();
   }
-  if((str=malloc(26*sizeof(char)))==NULL)
-    return NULL;
+  str=g_malloc(26*sizeof(char));
   time(&tp);
   ctime_r(&tp,str);
   if(tz!=NULL)
@@ -176,10 +191,11 @@ char *expr_parse_time ( struct context *context )
   return str;
   }
 
-gchar *expr_parse_str ( struct context *context )
+gchar *expr_parse_str_l1 ( struct context *context )
 {
   gchar *str;
   gdouble n1, n2;
+
   switch((gint)g_scanner_peek_next_token(context->escan))
   {
     case G_TOKEN_STRING:
@@ -189,11 +205,11 @@ gchar *expr_parse_str ( struct context *context )
     case G_TOKEN_STRW:
       g_scanner_get_next_token( context->escan );
       parser_expect_symbol(context,'(');
-      n1 = expr_parse_num_l1(context);
+      n1 = expr_parse_num(context);
       parser_expect_symbol(context,',');
-      n2 = expr_parse_num_l1(context);
+      n2 = expr_parse_num(context);
       parser_expect_symbol(context,')');
-      str = numeric_to_str(n1,n2);
+      str = expr_dtostr(n1,n2);
       break;
     case G_TOKEN_MIDW:
       str = expr_parse_str_mid( context );
@@ -213,19 +229,22 @@ gchar *expr_parse_str ( struct context *context )
       break;
     default:
       g_scanner_get_next_token ( context->escan );
+      g_scanner_warn(context->escan,
+          "Unexpected token at position %u, expected a string",
+          g_scanner_cur_position(context->escan));
       str = strdup("");
   }
   return str;
 }
 
-gchar *expr_parse_str_l1 ( struct context *context )
+gchar *expr_parse_str ( struct context *context )
 {
   gchar *str,*next,*tmp;;
-  str = expr_parse_str( context );
+  str = expr_parse_str_l1( context );
   while(g_scanner_peek_next_token( context->escan )=='+')
   {
     g_scanner_get_next_token( context->escan );
-    next = expr_parse_str( context );
+    next = expr_parse_str_l1( context );
     tmp = g_strconcat(str,next,NULL);
     g_free(str);
     g_free(next);
@@ -234,29 +253,34 @@ gchar *expr_parse_str_l1 ( struct context *context )
   return str;
 }
 
-gdouble expr_parse_value ( struct context *context )
+gdouble expr_parse_num_l2 ( struct context *context )
 {
   gdouble val;
-  gint sign = 1;
+  gchar *str;
 
   switch((gint)g_scanner_peek_next_token(context->escan) )
   {
+    case '+':
+      g_scanner_get_next_token(context->escan);
+      val = expr_parse_num_l2 ( context );
+      break;
     case '-':
       g_scanner_get_next_token(context->escan);
-      sign = -1;
+      val = -expr_parse_num_l2 ( context );
+      break;
     case G_TOKEN_FLOAT: 
       g_scanner_get_next_token ( context->escan );
-      val = context->escan->value.v_float * sign;
+      val = context->escan->value.v_float;
       break;
     case '(':
       g_scanner_get_next_token ( context->escan );
-      val = expr_parse_num_l1 ( context );
+      val = expr_parse_num ( context );
       parser_expect_symbol(context, ')');
       break;
     case G_TOKEN_VAL:
       g_scanner_get_next_token ( context->escan );
       parser_expect_symbol(context,'(');
-      gchar *str = expr_parse_str_l1(context);
+      str = expr_parse_str(context);
       val = strtod(str,NULL);
       g_free(str);
       parser_expect_symbol(context,')');
@@ -267,28 +291,12 @@ gdouble expr_parse_value ( struct context *context )
       break;
     default:
       g_scanner_get_next_token ( context->escan );
+      g_scanner_warn(context->escan,
+          "Unexpected token at position %u, expected a number",
+          g_scanner_cur_position(context->escan));
       val = 0;
-      // warning
   }
   
-  return val;
-}
-
-gdouble expr_parse_num_l2 ( struct context *context )
-{
-  gdouble val;
-
-  val = expr_parse_value ( context );
-  while(strchr("*/",g_scanner_peek_next_token ( context->escan )))
-  {
-    g_scanner_get_next_token ( context->escan );
-    if(context->escan->token == '*')
-      val*=expr_parse_value( context );
-    if(context->escan->token == '/')
-      val/=expr_parse_value( context );
-    if(g_scanner_eof(context->escan))
-      break;
-  }
   return val;
 }
 
@@ -297,13 +305,33 @@ gdouble expr_parse_num_l1 ( struct context *context )
   gdouble val;
 
   val = expr_parse_num_l2 ( context );
+  while(strchr("*/%",g_scanner_peek_next_token ( context->escan )))
+  {
+    g_scanner_get_next_token ( context->escan );
+    if(context->escan->token == '*')
+      val *= expr_parse_num_l2( context );
+    if(context->escan->token == '/')
+      val /= expr_parse_num_l2( context );
+    if(context->escan->token == '%')
+      val = (gint)val % (gint)expr_parse_num_l2( context );
+    if(g_scanner_eof(context->escan))
+      break;
+  }
+  return val;
+}
+
+gdouble expr_parse_num ( struct context *context )
+{
+  gdouble val;
+
+  val = expr_parse_num_l1 ( context );
   while(strchr("+-",g_scanner_peek_next_token( context->escan )))
   {
     g_scanner_get_next_token (context->escan );
     if(context->escan->token == '+')
-      val+=expr_parse_num_l2( context );
+      val+=expr_parse_num_l1( context );
     if(context->escan->token == '-')
-      val-=expr_parse_num_l2( context );
+      val-=expr_parse_num_l1( context );
     if(g_scanner_eof(context->escan))
       break;
   }
@@ -312,21 +340,8 @@ gdouble expr_parse_num_l1 ( struct context *context )
 
 gchar *expr_parse( struct context *context, gchar *expr )
 {
-  context->escan->input_name = expr;
-  g_scanner_input_text(context->escan, expr, strlen(expr));
+  gchar *result;
 
-  if((g_scanner_peek_next_token(context->escan)==G_TOKEN_FLOAT)||
-      (g_scanner_peek_next_token(context->escan)==(GTokenType)G_TOKEN_VAL)||
-      (g_scanner_peek_next_token(context->escan)==(GTokenType)G_TOKEN_LEFT_PAREN)||
-      ((g_scanner_peek_next_token(context->escan)==G_TOKEN_IDENTIFIER)&&
-       (*(context->escan->next_value.v_identifier)!='$')))
-    return numeric_to_str(expr_parse_num_l1(context),context->default_dec);
-  else
-    return expr_parse_str_l1(context);
-}
-
-void expr_parser_init ( struct context *context )
-{
   context->escan = g_scanner_new(NULL);
   context->escan->config->scan_octal = 0;
   context->escan->config->symbol_2_token = 1;
@@ -345,22 +360,23 @@ void expr_parser_init ( struct context *context )
   g_scanner_scope_add_symbol(context->escan,0, "Val", (gpointer)G_TOKEN_VAL );
   g_scanner_scope_add_symbol(context->escan,0, "Time", (gpointer)G_TOKEN_TIME );
   g_scanner_scope_add_symbol(context->escan,0, "Df", (gpointer)G_TOKEN_DF );
-
   g_scanner_set_scope(context->escan,0);
+
+  context->escan->input_name = expr;
+  g_scanner_input_text(context->escan, expr, strlen(expr));
+
+  if((g_scanner_peek_next_token(context->escan)==G_TOKEN_FLOAT)||
+      (g_scanner_peek_next_token(context->escan)==(GTokenType)G_TOKEN_VAL)||
+      (g_scanner_peek_next_token(context->escan)==(GTokenType)G_TOKEN_LEFT_PAREN)||
+      ((g_scanner_peek_next_token(context->escan)==G_TOKEN_IDENTIFIER)&&
+       (*(context->escan->next_value.v_identifier)!='$')))
+    result = expr_dtostr(expr_parse_num(context),context->default_dec);
+  else
+    result = expr_parse_str(context);
+
+  g_free(context->escan->config->cset_identifier_nth);
+  g_free(context->escan->config->cset_identifier_first);
+  g_scanner_destroy( context->escan );
+
+  return result;
 }
-
-
-/* convert a number to a string with specified number of decimals */
-char *numeric_to_str ( double num, gint dec )
-  {
-  static gchar *format = "%%0.%df";
-  static gchar fbuf[16];
-  static gchar res[256];
-
-  if((dec>99)||(dec<0))
-    return NULL;
-
-  snprintf(fbuf,15,format,dec);
-  snprintf(res,255,fbuf,num);
-  return g_strdup(res);
-  }

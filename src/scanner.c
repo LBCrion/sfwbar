@@ -169,12 +169,12 @@ int update_json_file ( struct context *context, FILE *in, GList *var_list )
   const gint buff_step = 8192;
   gint buff_len=0,i;
 
-  fdata = malloc(buff_step);
+  fdata = g_malloc(buff_step);
   while((!feof(in))&&(!ferror(in)))
   {
     i=fread(fdata+buff_len,1,buff_step,in);
     buff_len+=i;
-    temp = malloc(buff_len+buff_step);
+    temp = g_malloc(buff_len+buff_step);
     memcpy(temp,fdata,buff_len);
     g_free(fdata);
     fdata = temp;

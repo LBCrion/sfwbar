@@ -133,7 +133,6 @@ GtkWidget *load_config ( struct context *context )
   placement_init(context,obj);
   switcher_init(context,obj);
   scanner_init(context,obj);
-  expr_parser_init(context);
 
   grid = gtk_grid_new();
   gtk_widget_set_name(grid,"layout");
