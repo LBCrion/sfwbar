@@ -142,7 +142,7 @@ char *expr_parse_extract( GScanner *scanner )
     g_match_info_free (match);
     g_regex_unref (regex);
   }
-  if(res==NULL)
+  if(sres==NULL)
     sres = strdup("");
 
   g_free(str);
