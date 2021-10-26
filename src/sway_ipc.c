@@ -202,7 +202,7 @@ void sway_set_focus (const ucl_object_t *container)
   context->tb_focus = ucl_int_by_name(container,"id",G_MININT64);
 }
 
-void sway_event ( void )
+gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 {
   const ucl_object_t *obj,*container;
   struct ucl_parser *parse;
@@ -210,7 +210,7 @@ void sway_event ( void )
   gint32 etype;
 
   if(context->ipc==-1)
-    return;
+    return FALSE;
 
   response = sway_ipc_poll(context->ipc,&etype);
   while (response != NULL)
@@ -251,6 +251,7 @@ void sway_event ( void )
     g_free(response);
     response = sway_ipc_poll(context->ipc,&etype);
   }
+  return TRUE;
 }
 
 void sway_traverse_tree ( const ucl_object_t *obj)
@@ -283,6 +284,7 @@ void sway_ipc_init ( void )
   gchar *response;
   gint sock;
   gint32 etype;
+
   sock=sway_ipc_open(3000);
   if(sock==-1)
     return;
@@ -302,5 +304,13 @@ void sway_ipc_init ( void )
   ucl_parser_free(parse);
   g_free(response);
   taskbar_refresh();
+
+  context->ipc = sway_ipc_open(10);
+  if(context->ipc<0)
+    return;
+
+  sway_ipc_subscribe(context->ipc);
+  GIOChannel *chan = g_io_channel_unix_new(context->ipc);
+  g_io_add_watch(chan,G_IO_IN,sway_ipc_event,NULL);
 }
 

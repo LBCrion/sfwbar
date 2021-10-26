@@ -88,10 +88,12 @@ typedef struct zwlr_foreign_toplevel_handle_v1 wlr_fth;
 extern struct wl_seat *seat;
 
 
+void sway_ipc_init ( void );
 gchar *sway_ipc_poll ( gint sock, gint32 *etype );
 int sway_ipc_open (int to);
 int sway_ipc_send ( gint sock, gint32 type, gchar *command );
 int sway_ipc_subscribe ( gint sock );
+gboolean sway_ipc_event ( GIOChannel *, GIOCondition , gpointer );
 void place_window ( gint64 wid, gint64 pid );
 void placement_init ( const ucl_object_t *obj );
 
@@ -100,8 +102,6 @@ void taskbar_refresh ( void );
 void taskbar_window_init ( struct wt_window *win );
 struct wt_window *wintree_window_init ( void );
 void wintree_window_append ( struct wt_window *win );
-void sway_ipc_init ( void );
-void sway_event ( void );
 
 void wlr_ft_init ( void );
 
@@ -129,7 +129,7 @@ int update_var_tree ( void );
 int update_var_file ( FILE *in, GList *var_list );
 int reset_var_list ( GList *var_list );
 int update_var_files ( struct scan_file *file );
-char *expr_parse ( gchar *expr_str );
+char *expr_parse ( gchar *expr_str, guint * );
 char *string_from_name ( gchar *name );
 double numeric_from_name ( gchar *name );
 void *list_by_name ( GList *prev, gchar *name );

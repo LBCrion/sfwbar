@@ -147,7 +147,6 @@ gint shell_timer ( gpointer data )
 {
   scanner_expire(context->scan_list);
   widget_update_all();
-  sway_event();
 
   if((context->features & F_TASKBAR)&&(context->wt_dirty==1))
   {
@@ -164,6 +163,7 @@ gint shell_timer ( gpointer data )
   return TRUE;
 }
 
+
 static void activate (GtkApplication* app, gpointer data )
 {
   GtkWidget *root;
@@ -173,7 +173,6 @@ static void activate (GtkApplication* app, gpointer data )
   gtk_layer_auto_exclusive_zone_enable (context->window);
   gtk_layer_set_keyboard_interactivity(context->window,FALSE);
   gtk_layer_set_layer(context->window,GTK_LAYER_SHELL_LAYER_OVERLAY);
-  
   
   root = load_config();
 
@@ -187,15 +186,10 @@ static void activate (GtkApplication* app, gpointer data )
     gtk_window_resize (context->window, 1, 1);
   }
 
-  if((context->features & F_TASKBAR)||(context->features & F_SWITCHER))
-    sway_ipc_init();
-
   if((context->features & F_TASKBAR)||(context->features & F_PLACEMENT)||(context->features & F_PAGER))
   {
-    context->ipc = sway_ipc_open(10);
-    if(context->ipc>=0)
-      sway_ipc_subscribe(context->ipc);
-    else
+   sway_ipc_init();
+   if(context->ipc<0)
       wlr_ft_init();
   }
 
