@@ -42,33 +42,39 @@ void switcher_init ( const ucl_object_t *obj )
   }
 }
 
-void switcher_event ( const ucl_object_t *obj )
+gboolean switcher_event ( const ucl_object_t *obj )
 {
   gchar *mode;
   GList *item, *focus;
+  gboolean event = FALSE;
 
-  if(obj==NULL)
-    return;
-
-  mode = ucl_string_by_name(obj,"mode");
-  if(mode!=NULL)
+  if(obj!=NULL)
   {
-    if(*mode=='h')
-      gtk_widget_hide(GTK_WIDGET(context->window));
-    else
-      gtk_widget_show(GTK_WIDGET(context->window));
-    g_free(mode);
-  }
-
-  if(!(context->features & F_SWITCHER))
-    return;
-
-  mode = ucl_string_by_name(obj,"hidden_state");
-  if(mode!=NULL)
-  {
-    if(*mode!=context->sw_hstate)
+    mode = ucl_string_by_name(obj,"mode");
+    if(mode!=NULL)
     {
-      context->sw_hstate = *mode;
+      if(*mode=='h')
+        gtk_widget_hide(GTK_WIDGET(context->window));
+      else
+        gtk_widget_show(GTK_WIDGET(context->window));
+      g_free(mode);
+    }
+
+    if(!(context->features & F_SWITCHER))
+    {
+      mode = ucl_string_by_name(obj,"hidden_state");
+      if(mode!=NULL)
+      {
+        if(*mode!=context->sw_hstate)
+        {
+          context->sw_hstate = *mode;
+          event=TRUE;
+        }
+      }
+    }
+
+    if(event)
+    {
       context->sw_count = context->sw_max;
       focus = NULL;
       for (item = context->wt_list; item!= NULL; item = g_list_next(item) )
@@ -83,6 +89,7 @@ void switcher_event ( const ucl_object_t *obj )
     }
     g_free(mode);
   }
+  return TRUE;
 }
 
 void switcher_delete ( GtkWidget *w )

@@ -22,7 +22,8 @@ void widget_update_all( void )
       gint64 *freq = g_object_get_data(G_OBJECT(iter->data),"freq");
       *poll = ctime+(*freq);
       expr = g_object_get_data(G_OBJECT(iter->data),"expr");
-      if((expr!=NULL)&&(GTK_IS_LABEL(iter->data)||GTK_IS_PROGRESS_BAR(iter->data)||GTK_IS_IMAGE(iter->data)))
+      if((expr!=NULL)&&(GTK_IS_LABEL(iter->data)||
+            GTK_IS_PROGRESS_BAR(iter->data)||GTK_IS_IMAGE(iter->data)))
       {
         eval = expr_parse(expr, &vcount);
 
@@ -30,10 +31,14 @@ void widget_update_all( void )
           g_object_set_data(G_OBJECT(iter->data),"expr",NULL);
 
         if(GTK_IS_LABEL(GTK_WIDGET(iter->data)))
-          gtk_label_set_text(GTK_LABEL(iter->data),eval);
+          if(g_strcmp0(gtk_label_get_text(GTK_LABEL(iter->data)),eval))
+            gtk_label_set_text(GTK_LABEL(iter->data),eval);
         if(GTK_IS_PROGRESS_BAR(iter->data))
           if(!g_strrstr(eval,"nan"))
-            gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(iter->data),g_ascii_strtod(eval,NULL));
+            if(gtk_progress_bar_get_fraction(GTK_PROGRESS_BAR(iter->data))!=
+                g_ascii_strtod(eval,NULL))
+              gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(iter->data),
+                  g_ascii_strtod(eval,NULL));
         if(GTK_IS_IMAGE(iter->data))
         {
           scale_image_set_image(GTK_WIDGET(iter->data),eval);

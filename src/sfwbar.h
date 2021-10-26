@@ -105,7 +105,7 @@ void wintree_window_append ( struct wt_window *win );
 
 void wlr_ft_init ( void );
 
-void switcher_event ( const ucl_object_t *obj );
+gboolean switcher_event ( const ucl_object_t *obj );
 void switcher_update ( void );
 void switcher_window_init ( struct wt_window *win);
 void switcher_init ( const ucl_object_t *obj );
