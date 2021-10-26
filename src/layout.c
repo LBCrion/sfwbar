@@ -11,7 +11,8 @@ void widget_update_all( void )
 {
   GList *iter;
   gint64 ctime = g_get_real_time();
-  gchar *expr;
+  gchar *expr, *eval;
+  guint vcount;
 
   for(iter=context->widgets;iter!=NULL;iter=g_list_next(iter))
   {
@@ -23,7 +24,10 @@ void widget_update_all( void )
       expr = g_object_get_data(G_OBJECT(iter->data),"expr");
       if((expr!=NULL)&&(GTK_IS_LABEL(iter->data)||GTK_IS_PROGRESS_BAR(iter->data)||GTK_IS_IMAGE(iter->data)))
       {
-        gchar *eval = expr_parse(expr);
+        eval = expr_parse(expr, &vcount);
+
+        if(!vcount)
+          g_object_set_data(G_OBJECT(iter->data),"expr",NULL);
 
         if(GTK_IS_LABEL(GTK_WIDGET(iter->data)))
           gtk_label_set_text(GTK_LABEL(iter->data),eval);

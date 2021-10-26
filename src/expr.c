@@ -229,6 +229,7 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
     case G_TOKEN_IDENTIFIER:
       g_scanner_get_next_token( scanner );
       str = string_from_name(scanner->value.v_identifier);
+      *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       break;
     default:
       g_scanner_get_next_token ( scanner );
@@ -242,7 +243,8 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
 
 gchar *expr_parse_str ( GScanner *scanner )
 {
-  gchar *str,*next,*tmp;;
+  gchar *str,*next,*tmp;
+
   str = expr_parse_str_l1( scanner );
   while(g_scanner_peek_next_token( scanner )=='+')
   {
@@ -291,6 +293,7 @@ gdouble expr_parse_num_l2 ( GScanner *scanner )
     case G_TOKEN_IDENTIFIER:
       g_scanner_get_next_token( scanner );
       val = numeric_from_name( scanner->value.v_identifier );
+      *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       break;
     default:
       g_scanner_get_next_token ( scanner );
@@ -341,7 +344,7 @@ gdouble expr_parse_num ( GScanner *scanner )
   return val;
 }
 
-gchar *expr_parse( gchar *expr )
+gchar *expr_parse( gchar *expr, guint *vcount )
 {
   GScanner *scanner;
   gchar *result;
@@ -367,6 +370,8 @@ gchar *expr_parse( gchar *expr )
   g_scanner_set_scope(scanner,0);
 
   scanner->input_name = expr;
+  scanner->user_data = vcount;
+  *vcount=0;
   g_scanner_input_text(scanner, expr, strlen(expr));
 
   if((g_scanner_peek_next_token(scanner)==G_TOKEN_FLOAT)||
