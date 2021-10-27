@@ -303,7 +303,8 @@ void sway_ipc_init ( void )
   }
   ucl_parser_free(parse);
   g_free(response);
-  taskbar_refresh();
+
+  context->wt_dirty = 1;
 
   context->ipc = sway_ipc_open(10);
   if(context->ipc<0)

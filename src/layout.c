@@ -59,6 +59,7 @@ GtkWidget *layout_config_include ( gchar *fname, GtkWidget *parent, GtkWidget *s
   GtkWidget *ret;
 
   fullname = get_xdg_config_file(fname);
+  printf("%s\n",fullname);
   if(fullname==NULL)
     return sibling;
   uparse = ucl_parser_new(0);

@@ -219,12 +219,14 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
       break;
     case G_TOKEN_DF:
       str = expr_parse_df ( scanner );
+      *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       break;
     case G_TOKEN_EXTRACT:
       str = expr_parse_extract ( scanner );
       break;
     case G_TOKEN_TIME:
       str = expr_parse_time ( scanner );
+      *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       break;
     case G_TOKEN_IDENTIFIER:
       g_scanner_get_next_token( scanner );
