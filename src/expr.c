@@ -24,15 +24,19 @@ enum {
 gdouble expr_parse_num ( GScanner *scanner );
 gchar *expr_parse_str ( GScanner *scanner );
 
-gboolean parser_expect_symbol ( GScanner *scanner, gchar symbol )
+gboolean parser_expect_symbol ( GScanner *scanner, gchar symbol, gchar *expr )
 {
   if(g_scanner_peek_next_token(scanner)==symbol)
   {
     g_scanner_get_next_token(scanner);
     return TRUE;
   }
-  g_scanner_warn(scanner, "Unexpected token at position %u, expected '%c'",
+  if(!expr)
+    g_scanner_warn(scanner, "Unexpected token at position %u, expected '%c'",
       g_scanner_cur_position(scanner), symbol );
+  else
+    g_scanner_warn(scanner, "%u: Unexpected token in expression %s, expected '%c'",
+      g_scanner_cur_position(scanner), expr, symbol );
   return FALSE;
 }
 
@@ -59,13 +63,13 @@ char *expr_parse_str_mid ( GScanner *scanner )
   gint len, c1, c2;
 
   g_scanner_get_next_token( scanner );
-  parser_expect_symbol(scanner,'(');
+  parser_expect_symbol(scanner,'(',"Mid(String,Number,Number)");
   str = expr_parse_str(scanner);
-  parser_expect_symbol(scanner,',');
+  parser_expect_symbol(scanner,',',"Mid(String,Number,Number)");
   c1 = expr_parse_num(scanner);
-  parser_expect_symbol(scanner,',');
+  parser_expect_symbol(scanner,',',"Mid(String,Number,Number)");
   c2 = expr_parse_num(scanner);
-  parser_expect_symbol(scanner,')');
+  parser_expect_symbol(scanner,')',"Mid(String,Number,Number)");
 
   if(str==NULL)
     return strdup("");
@@ -103,9 +107,9 @@ char *expr_parse_df ( GScanner *scanner )
   struct statvfs fs;
 
   g_scanner_get_next_token( scanner );
-  parser_expect_symbol(scanner,'(');
+  parser_expect_symbol(scanner,'(',"Df()");
   fpath = expr_parse_str(scanner);
-  parser_expect_symbol(scanner,')');
+  parser_expect_symbol(scanner,')',"Df()");
 
   if(statvfs(fpath,&fs)!=0)
     return g_strdup("");
@@ -125,11 +129,11 @@ char *expr_parse_extract( GScanner *scanner )
   GMatchInfo *match;
 
   g_scanner_get_next_token( scanner );
-  parser_expect_symbol(scanner,'(');
+  parser_expect_symbol(scanner,'(',"Extract(String,String)");
   str = expr_parse_str(scanner);
-  parser_expect_symbol(scanner,',');
+  parser_expect_symbol(scanner,',',"Extract(String,String)");
   pattern = expr_parse_str(scanner);
-  parser_expect_symbol(scanner,')');
+  parser_expect_symbol(scanner,')',"Extract(String,String)");
 
   if((str!=NULL)||(pattern!=NULL))
   {
@@ -157,7 +161,7 @@ char *expr_parse_time ( GScanner *scanner )
   gchar *str, *tzstr;
 
   g_scanner_get_next_token( scanner );
-  parser_expect_symbol(scanner,'(');
+  parser_expect_symbol(scanner,'(',"Time([String])");
   if(g_scanner_peek_next_token(scanner)==')')
     tz = NULL;
   else
@@ -167,7 +171,7 @@ char *expr_parse_time ( GScanner *scanner )
     tz = g_time_zone_new_identifier(tzstr);
     g_free(tzstr);
   }
-  parser_expect_symbol(scanner,')');
+  parser_expect_symbol(scanner,')',"Time([String])");
 
   if(tz==NULL)
     time = g_date_time_new_now_local();
@@ -196,11 +200,11 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
       break;
     case G_TOKEN_STRW:
       g_scanner_get_next_token( scanner );
-      parser_expect_symbol(scanner,'(');
+      parser_expect_symbol(scanner,'(',"Str(Number,Number)");
       n1 = expr_parse_num(scanner);
-      parser_expect_symbol(scanner,',');
+      parser_expect_symbol(scanner,',',"Str(Number,Number)");
       n2 = expr_parse_num(scanner);
-      parser_expect_symbol(scanner,')');
+      parser_expect_symbol(scanner,')',"Str(Number,Number)");
       str = expr_dtostr(n1,n2);
       break;
     case G_TOKEN_MIDW:
@@ -271,15 +275,15 @@ gdouble expr_parse_num_l2 ( GScanner *scanner )
     case '(':
       g_scanner_get_next_token ( scanner );
       val = expr_parse_num ( scanner );
-      parser_expect_symbol(scanner, ')');
+      parser_expect_symbol(scanner, ')',"(Number)");
       break;
     case G_TOKEN_VAL:
       g_scanner_get_next_token ( scanner );
-      parser_expect_symbol(scanner,'(');
+      parser_expect_symbol(scanner,'(',"Val(String)");
       str = expr_parse_str(scanner);
       val = strtod(str,NULL);
       g_free(str);
-      parser_expect_symbol(scanner,')');
+      parser_expect_symbol(scanner,')',"Val(String)");
       break;
     case G_TOKEN_IDENTIFIER:
       g_scanner_get_next_token( scanner );
