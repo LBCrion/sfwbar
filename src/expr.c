@@ -6,8 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <glob.h>
@@ -153,9 +151,10 @@ char *expr_parse_extract( GScanner *scanner )
 
 /* Get current time string */
 char *expr_parse_time ( GScanner *scanner )
-  {
-  time_t tp;
-  gchar *str, *tz, *oldtz;
+{
+  GTimeZone *tz;
+  GDateTime *time;
+  gchar *str, *tzstr;
 
   g_scanner_get_next_token( scanner );
   parser_expect_symbol(scanner,'(');
@@ -164,32 +163,22 @@ char *expr_parse_time ( GScanner *scanner )
   else
   {
     g_scanner_get_next_token( scanner );
-    tz = expr_parse_str(scanner);
+    tzstr = expr_parse_str(scanner);
+    tz = g_time_zone_new_identifier(tzstr);
+    g_free(tzstr);
   }
   parser_expect_symbol(scanner,')');
 
-  if(tz!=NULL)
+  if(tz==NULL)
+    time = g_date_time_new_now_local();
+  else
   {
-    oldtz = g_strdup(getenv("TZ"));
-    setenv("TZ",tz,1);
-    tzset();
-  }
-  str=g_malloc(26*sizeof(char));
-  time(&tp);
-  ctime_r(&tp,str);
-  if(tz!=NULL)
-  {
-    if(oldtz!=NULL)
-    {
-      setenv("TZ",oldtz,1);
-      g_free(oldtz);
-    }
-    else
-      unsetenv("TZ");
-    tzset();
+    time = g_date_time_new_now(tz);
+    g_time_zone_unref(tz);
   }
 
-  g_free(tz);
+  str = g_date_time_format ( time, "%a %b %d %H:%M:%S %Y" );
+  g_date_time_unref(time);
 
   return str;
   }
