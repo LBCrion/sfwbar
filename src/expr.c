@@ -168,7 +168,11 @@ char *expr_parse_time ( GScanner *scanner )
   {
     g_scanner_get_next_token( scanner );
     tzstr = expr_parse_str(scanner);
+#if GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 68
     tz = g_time_zone_new_identifier(tzstr);
+#else
+    tz = g_time_zone_new(tzstr);
+#endif
     g_free(tzstr);
   }
   parser_expect_symbol(scanner,')',"Time([String])");
