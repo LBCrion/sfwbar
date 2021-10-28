@@ -57,7 +57,6 @@ gboolean switcher_event ( const ucl_object_t *obj )
         gtk_widget_hide(GTK_WIDGET(context->window));
       else
         gtk_widget_show(GTK_WIDGET(context->window));
-      g_free(mode);
     }
 
     if(!(context->features & F_SWITCHER))

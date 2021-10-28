@@ -17,13 +17,13 @@ gchar *sway_ipc_poll ( gint sock, gint32 *etype )
 {
   gint8 sway_ipc_header[14];
   gchar *response = NULL;
-  gint32 plen;
+  guint32 plen;
   size_t pos=0;
   ssize_t rlen;
 
   while(pos<sizeof(sway_ipc_header))
   {
-    rlen = recv(sock,(gchar *)sway_ipc_header,sizeof(sway_ipc_header)-pos,0);
+    rlen = recv(sock,(gchar *)sway_ipc_header+pos,sizeof(sway_ipc_header)-pos,0);
     if (rlen<=0)
       break;
     pos+=rlen;
@@ -34,12 +34,15 @@ gchar *sway_ipc_poll ( gint sock, gint32 *etype )
     pos=0;
     memcpy(etype,sway_ipc_header+sizeof(magic)+sizeof(plen),sizeof(plen));
     memcpy(&plen,sway_ipc_header+sizeof(magic),sizeof(plen));
-    response = g_malloc(plen+1);
+    if(plen>65536)
+      response=NULL;
+    else
+      response = g_malloc(plen+1);
     if ( response != NULL)
     {
       while(pos<plen)
       {
-        rlen = recv(sock,(gchar *)response,plen-pos,0);
+        rlen = recv(sock,(gchar *)response+pos,plen-pos,0);
         if (rlen<=0)
           break;
         pos+=rlen;
