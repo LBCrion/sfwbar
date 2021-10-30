@@ -4,6 +4,7 @@
  */
 
 #include <gtk/gtk.h>
+#include <glib-unix.h>
 #include <gtk-layer-shell.h>
 #include "sfwbar.h"
 
@@ -35,6 +36,7 @@ void init_context ( void )
   context->features=0;
   context->ipc = -1;
   context->sw_count=0;
+  context->sw_hstate=0;
   context->buff_len = 1024;
   context->read_buff = g_malloc(context->buff_len);
 }
@@ -194,6 +196,8 @@ static void activate (GtkApplication* app, gpointer data )
   }
 
   g_timeout_add (100,(GSourceFunc )shell_timer,context);
+  g_unix_signal_add(10,(GSourceFunc)switcher_event,NULL);
+  g_unix_signal_add(12,(GSourceFunc)hide_event,NULL);
   gtk_widget_show_all ((GtkWidget *)context->window);
 }
 

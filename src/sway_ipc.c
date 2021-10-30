@@ -226,7 +226,10 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
       pager_update();
 
     if(etype==0x80000004)
+    {
+      hide_event(obj);
       switcher_event(obj);
+    }
 
     if(etype==0x80000003)
     {

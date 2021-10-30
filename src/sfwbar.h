@@ -106,6 +106,7 @@ gint wintree_compare ( struct wt_window *a, struct wt_window *b);
 
 void wlr_ft_init ( void );
 
+gboolean hide_event ( const ucl_object_t *obj );
 gboolean switcher_event ( const ucl_object_t *obj );
 void switcher_update ( void );
 void switcher_window_init ( struct wt_window *win);

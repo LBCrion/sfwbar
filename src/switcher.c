@@ -42,52 +42,67 @@ void switcher_init ( const ucl_object_t *obj )
   }
 }
 
+gboolean hide_event ( const ucl_object_t *obj )
+{
+  gchar *mode, state;
+
+  if ( obj )
+  {
+    mode = ucl_string_by_name(obj,"mode");
+    if(mode!=NULL)
+      state = *mode;
+    g_free(mode);
+  }
+  else
+    if( gtk_widget_is_visible (GTK_WIDGET(context->window)) )
+      state = 'h';
+    else
+      state = 's';
+
+  if(state=='h')
+    gtk_widget_hide(GTK_WIDGET(context->window));
+  else
+    gtk_widget_show(GTK_WIDGET(context->window));
+  return TRUE;
+}
+
 gboolean switcher_event ( const ucl_object_t *obj )
 {
   gchar *mode;
   GList *item, *focus;
   gboolean event = FALSE;
 
+  if(!(context->features & F_SWITCHER))
+    return TRUE;
+
   if(obj!=NULL)
   {
-    mode = ucl_string_by_name(obj,"mode");
+    mode = ucl_string_by_name(obj,"hidden_state");
     if(mode!=NULL)
-    {
-      if(*mode=='h')
-        gtk_widget_hide(GTK_WIDGET(context->window));
-      else
-        gtk_widget_show(GTK_WIDGET(context->window));
-    }
-
-    if(!(context->features & F_SWITCHER))
-    {
-      mode = ucl_string_by_name(obj,"hidden_state");
-      if(mode!=NULL)
+      if(*mode!=context->sw_hstate)
       {
-        if(*mode!=context->sw_hstate)
-        {
-          context->sw_hstate = *mode;
+        if(context->sw_hstate!=0)
           event=TRUE;
-        }
+        context->sw_hstate = *mode;
       }
-    }
-
-    if(event)
-    {
-      context->sw_count = context->sw_max;
-      focus = NULL;
-      for (item = context->wt_list; item!= NULL; item = g_list_next(item) )
-        if (AS_WINDOW(item->data)->wid == context->tb_focus)
-          focus = g_list_next(item);
-      if(focus==NULL)
-        focus=context->wt_list;
-      if(focus!=NULL)
-      {
-        context->tb_focus = AS_WINDOW(focus->data)->wid;
-      }
-    }
     g_free(mode);
   }
+  else
+    event = TRUE;
+
+  if(event)
+  {
+    context->sw_count = context->sw_max;
+    focus = NULL;
+    for (item = context->wt_list; item!= NULL; item = g_list_next(item) )
+      if (AS_WINDOW(item->data)->wid == context->tb_focus)
+        focus = g_list_next(item);
+    if(focus==NULL)
+      focus=context->wt_list;
+    if(focus!=NULL)
+      context->tb_focus = AS_WINDOW(focus->data)->wid;
+  }
+
   return TRUE;
 }
 
