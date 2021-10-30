@@ -51,6 +51,8 @@ gboolean hide_event ( const ucl_object_t *obj )
     mode = ucl_string_by_name(obj,"mode");
     if(mode!=NULL)
       state = *mode;
+    else
+      state ='s';
     g_free(mode);
   }
   else
