@@ -40,24 +40,21 @@ void scanner_init ( const ucl_object_t *obj )
           file = find->data;
         else
           file = g_malloc(sizeof(struct scan_file));  
-        if(file!=NULL)
+        file->fname = g_strdup(ucl_object_key(iter));
+        file->mod_time = 0;
+        file->flags = 0;
+        flist = ucl_string_by_name(iter,"flags");
+        if(flist!=NULL)
+          for(j=0;j<4;j++)
+            if(g_strrstr(flist,flags[j])!=NULL)
+              file->flags |= (1<<j);
+        if(file->flags & VF_EXEC )
         {
-          file->fname = g_strdup(ucl_object_key(iter));
-          file->mod_time = 0;
-          file->flags = 0;
-          flist = ucl_string_by_name(iter,"flags");
-          if(flist!=NULL)
-            for(j=0;j<4;j++)
-              if(g_strrstr(flist,flags[j])!=NULL)
-                file->flags |= (1<<j);
-          if(file->flags & VF_EXEC )
-          {
-            file->flags |= VF_NOGLOB;
-            file->flags &= ~VF_CHTIME;
-          }
-          file->vars = scanner_add_vars(iter, file);
-          context->file_list = g_list_append(context->file_list,file);
+          file->flags |= VF_NOGLOB;
+          file->flags &= ~VF_CHTIME;
         }
+        file->vars = scanner_add_vars(iter, file);
+        context->file_list = g_list_append(context->file_list,file);
     }
     ucl_object_iterate_free(itp);
   }
@@ -134,7 +131,7 @@ GList *scanner_add_vars( const ucl_object_t *obj, struct scan_file *file )
 
 /* expire all variables in the tree */
 int scanner_expire ( GList *start )
-  {
+{
   GList *node;
 
   for(node=start;node!=NULL;node=g_list_next(node))
@@ -207,7 +204,7 @@ int update_json_file ( FILE *in, GList *var_list )
 
 /* update variables in a specific file (or pipe) */
 int update_regex_file ( FILE *in, GList *var_list )
-  {
+{
   struct scan_var *var;
   GList *node;
   GMatchInfo *match;
@@ -223,12 +220,12 @@ int update_regex_file ( FILE *in, GList *var_list )
         g_match_info_free (match);
         }
   return 0;
-  }
+}
 
 
 /* reset variables in a list */
 int reset_var_list ( GList *var_list )
-  {
+{
   GList *node;
   gint tv = g_get_real_time();
   for(node=var_list;node!=NULL;node=g_list_next(node))
@@ -240,7 +237,7 @@ int reset_var_list ( GList *var_list )
     ((struct scan_var *)node->data)->ptime=tv;
     }
   return 0;
-  }
+}
 
 /* update all variables in a file (by glob) */
 int update_var_files ( struct scan_file *file )
@@ -320,7 +317,7 @@ int update_var_files ( struct scan_file *file )
 
 /* get string value of a variable by name */
 char *string_from_name ( gchar *name )
-  {
+{
   struct scan_var *scan;
   gchar *fname,*id,*res=NULL;
 
@@ -336,11 +333,11 @@ char *string_from_name ( gchar *name )
     res = g_strdup("");
   g_free(id);
   return res;
-  }
+}
 
 /* get numeric value of a variable by name */
 double numeric_from_name ( gchar *name )
-  {
+{
   struct scan_var *scan;
   double retval=0;
   gchar *fname,*id;
@@ -363,10 +360,10 @@ double numeric_from_name ( gchar *name )
   g_free(id);
   g_free(fname);
   return retval;
-  }
+}
 
 char *parse_identifier ( gchar *id, gchar **fname )
-  {
+{
   gchar *temp;
   gchar *ptr;
   if(id==NULL)
@@ -388,15 +385,15 @@ char *parse_identifier ( gchar *id, gchar **fname )
   ptr=g_strdup(temp);
   g_free(temp);
   return ptr;
-  }
+}
 
 /* get node by name from the list root */
 void *list_by_name ( GList *prev, gchar *name )
-  {
+{
   GList *node;
   for(node=prev;node!=NULL;node=g_list_next(node))
       if(!g_strcmp0(SCAN_VAR(node->data)->name,name))
         return node->data;
   return NULL;
-  }
+}
 
