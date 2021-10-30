@@ -40,7 +40,6 @@ void wintree_window_append ( struct wt_window *win )
   if(win->switcher==NULL)
     switcher_window_init(win);
   if(g_list_find(context->wt_list,win)==NULL)
-    context->wt_list = g_list_insert_sorted (context->wt_list,win,
-      (GCompareFunc)wintree_compare);
+    context->wt_list = g_list_append (context->wt_list,win);
   context->wt_dirty = 1;
 }

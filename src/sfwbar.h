@@ -102,6 +102,7 @@ void taskbar_refresh ( void );
 void taskbar_window_init ( struct wt_window *win );
 struct wt_window *wintree_window_init ( void );
 void wintree_window_append ( struct wt_window *win );
+gint wintree_compare ( struct wt_window *a, struct wt_window *b);
 
 void wlr_ft_init ( void );
 
@@ -130,6 +131,7 @@ int update_var_file ( FILE *in, GList *var_list );
 int reset_var_list ( GList *var_list );
 int update_var_files ( struct scan_file *file );
 char *expr_parse ( gchar *expr_str, guint * );
+gboolean parser_expect_symbol ( GScanner *, gchar , gchar *);
 char *string_from_name ( gchar *name );
 double numeric_from_name ( gchar *name );
 void *list_by_name ( GList *prev, gchar *name );

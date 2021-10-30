@@ -132,11 +132,9 @@ static void toplevel_manager_handle_toplevel(void *data,
   struct wt_window *win;
 
   win = wintree_window_init();
-  if ( win != NULL )
-  {
-    win->wlr = tl;
-    win->wid = context->wt_counter++;
-  }
+  win->wlr = tl;
+  win->wid = context->wt_counter++;
+  context->wt_list = g_list_append (context->wt_list,win);
 
   zwlr_foreign_toplevel_handle_v1_add_listener(tl, &toplevel_impl, context);
 }

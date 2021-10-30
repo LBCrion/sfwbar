@@ -116,7 +116,10 @@ void taskbar_refresh( void )
 {
   GList *item;
   gint tb_count=0;
-  gtk_container_foreach(GTK_CONTAINER(context->box),(GtkCallback)taskbar_remove_button,context);
+  gtk_container_foreach(GTK_CONTAINER(context->box),
+      (GtkCallback)taskbar_remove_button,context);
+  context->wt_list = g_list_sort(context->wt_list,
+      (GCompareFunc)wintree_compare);
   for (item = context->wt_list; item!= NULL; item = g_list_next(item) )
   {
     if (AS_WINDOW(item->data)->wid == context->tb_focus)
