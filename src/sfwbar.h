@@ -132,7 +132,7 @@ void pager_update ( void );
 
 GtkWidget *sni_init ( void );
 void sni_refresh ( void );
-GtkWidget *config_parse ( gchar * );
+struct layout_widget *config_parse ( gchar * );
 
 struct layout_widget *layout_widget_new ( void );
 void layout_widget_config ( struct layout_widget *lw );

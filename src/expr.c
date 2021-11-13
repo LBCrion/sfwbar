@@ -22,14 +22,21 @@ gboolean parser_expect_symbol ( GScanner *scanner, gchar symbol, gchar *expr )
   if(g_scanner_peek_next_token(scanner)==symbol)
   {
     g_scanner_get_next_token(scanner);
+    scanner->max_parse_errors = FALSE;
     return FALSE;
   }
-  if(!expr)
-    g_scanner_warn(scanner, "Unexpected token at position %u, expected '%c'",
-      g_scanner_cur_position(scanner), symbol );
-  else
-    g_scanner_warn(scanner, "%u: Unexpected token in expression %s, expected '%c'",
-      g_scanner_cur_position(scanner), expr, symbol );
+  if(!scanner->max_parse_errors)
+  {
+    if(!expr)
+      g_scanner_warn(scanner,
+          "Unexpected token at position %u, expected '%c'",
+          g_scanner_cur_position(scanner), symbol );
+    else
+      g_scanner_warn(scanner,
+          "%u: Unexpected token in expression %s, expected '%c'",
+          g_scanner_cur_position(scanner), expr, symbol );
+  }
+  scanner->max_parse_errors = TRUE;
   return TRUE;
 }
 

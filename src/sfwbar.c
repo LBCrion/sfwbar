@@ -116,7 +116,7 @@ gint shell_timer ( gpointer data )
 
 static void activate (GtkApplication* app, gpointer data )
 {
-  GtkWidget *root;
+  struct layout_widget *lw;
 
   context->window = (GtkWindow *)gtk_application_window_new (app);
   gtk_layer_init_for_window (context->window);
@@ -126,13 +126,14 @@ static void activate (GtkApplication* app, gpointer data )
 
   css_init();
   
-  root = config_parse(confname?confname:"sfwbar.config");
+  lw = config_parse(confname?confname:"sfwbar.config");
 
 //  root = load_config();
 
-  if(root != NULL)
+  if((lw != NULL)&&(lw->widget!=NULL))
   {
-    gtk_container_add(GTK_CONTAINER(context->window), root);
+    gtk_container_add(GTK_CONTAINER(context->window), lw->widget);
+    layout_widget_free(lw);
 
     gtk_widget_show_all ((GtkWidget *)context->window);
     if(context->features & F_TASKBAR)

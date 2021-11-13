@@ -7,11 +7,12 @@
 extern gchar *confname;
 
 
-void config_boolean_setbit ( GScanner *scanner, gint *dest, gint mask,  gchar *expr,
-    gboolean *err)
+void config_boolean_setbit ( GScanner *scanner, gint *dest, gint mask,
+    gchar *expr )
 {
-  *err = parser_expect_symbol ( scanner, '=', expr);
-  if(*err)
+  scanner->max_parse_errors = FALSE;
+  parser_expect_symbol ( scanner, '=', expr);
+  if(scanner->max_parse_errors)
     return;
   switch((gint)g_scanner_get_next_token(scanner))
   {
@@ -24,76 +25,80 @@ void config_boolean_setbit ( GScanner *scanner, gint *dest, gint mask,  gchar *e
     default:
       g_scanner_error(scanner, "Unexpected token, expecting a boolean in %s",
           expr);
-      *err = TRUE;
+      scanner->max_parse_errors = TRUE;
       break;
   }
 }
 
-gchar *config_assign_string ( GScanner *scanner, gchar *expr, gboolean *err )
+gchar *config_assign_string ( GScanner *scanner, gchar *expr )
 {
-  *err = parser_expect_symbol ( scanner, '=', expr);
-  if(*err)
+  scanner->max_parse_errors = FALSE;
+  parser_expect_symbol ( scanner, '=', expr);
+  if(scanner->max_parse_errors)
     return NULL;
   if(g_scanner_peek_next_token(scanner) != G_TOKEN_STRING)
   {
     g_scanner_error(scanner, "Unexpected token, expecting a string in %s",expr);
-    *err = TRUE;
+    scanner->max_parse_errors = TRUE;
     return NULL;
   }
   g_scanner_get_next_token(scanner);
-  *err = FALSE;
+  scanner->max_parse_errors = FALSE;
   return g_strdup(scanner->value.v_string);
 }
 
-gdouble config_assign_number ( GScanner *scanner, gchar *expr, gboolean *err )
+gdouble config_assign_number ( GScanner *scanner, gchar *expr )
 {
-  *err = parser_expect_symbol ( scanner, '=', expr);
-  if(*err)
+  scanner->max_parse_errors = FALSE;
+  parser_expect_symbol ( scanner, '=', expr);
+  if(scanner->max_parse_errors)
     return 0;
   if(g_scanner_peek_next_token(scanner) != G_TOKEN_FLOAT)
   {
     g_scanner_error(scanner, "Unexpected token, expecting a number in %s",expr);
-    *err = TRUE;
+    scanner->max_parse_errors = TRUE;
     return 0;
   }
   g_scanner_get_next_token(scanner);
-  *err = FALSE;
+  scanner->max_parse_errors = FALSE;
   return scanner->value.v_float;
 }
 
-gboolean config_scanner_var ( GScanner *scanner, struct scan_file *file )
+void config_scanner_var ( GScanner *scanner, struct scan_file *file )
 {
-  gboolean err;
   struct scan_var *var;
   gchar *vname, *pattern;
   guchar type;
   gint flag = SV_REPLACE;
 
+  scanner->max_parse_errors = FALSE;
   g_scanner_get_next_token(scanner);
   vname = g_strdup(scanner->value.v_identifier);
-  err = parser_expect_symbol(scanner,'=',"Identifier = Source(..)");
+  parser_expect_symbol(scanner,'=',"Identifier = Source(..)");
   g_scanner_get_next_token(scanner);
 
   if(((gint)scanner->token < G_TOKEN_REGEX)||
       ((gint)scanner->token > G_TOKEN_GRAB))
   {
-    if(!err)
+    if(!scanner->max_parse_errors)
       g_scanner_error(scanner,"Expecting a Parser");
-    return TRUE;
+    scanner->max_parse_errors = TRUE;
+    return;
   }
   else
   {
     type = scanner->token - G_TOKEN_REGEX;
-    err = parser_expect_symbol(scanner,'(',"Parser(String[,Flag])");
+    parser_expect_symbol(scanner,'(',"Parser(String[,Flag])");
 
     if(type != VP_GRAB)
     {
       if(g_scanner_get_next_token(scanner)!=G_TOKEN_STRING)
       {
-        if(!err)
+        if(!scanner->max_parse_errors)
           g_scanner_error(scanner,"Expecting a String in Parser(string,[Flag])");
         g_free(vname);
-        return TRUE;
+        scanner->max_parse_errors = TRUE;
+        return;
       }
       else
       {
@@ -114,12 +119,12 @@ gboolean config_scanner_var ( GScanner *scanner, struct scan_file *file )
       else
       {
         g_scanner_get_next_token(scanner);
-        if(!err)
+        if(!scanner->max_parse_errors)
           g_scanner_error(scanner,"Expecting a variable flag after a comma");
-        err = TRUE;
+        scanner->max_parse_errors = TRUE;
       }
     }
-    err = parser_expect_symbol(scanner,')',"Source(String,Flag)");
+    parser_expect_symbol(scanner,')',"Source(String,Flag)");
   }
 
   var = g_malloc(sizeof(struct scan_var));
@@ -153,18 +158,17 @@ gboolean config_scanner_var ( GScanner *scanner, struct scan_file *file )
 
   file->vars = g_list_append(file->vars,var);
   context->scan_list = g_list_append(context->scan_list,var);
-  return err;
 }
 
-gboolean config_scanner_source ( GScanner *scanner, gint source )
+void config_scanner_source ( GScanner *scanner, gint source )
 {
-  gboolean err;
   gchar *fname=NULL;
   gint flags=0;
   struct scan_file *file;
   GList *find;
 
-  err = parser_expect_symbol(scanner,'(',"File(string)");
+  scanner->max_parse_errors = FALSE;
+  parser_expect_symbol(scanner,'(',"File(string)");
   if(g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
   {
     g_scanner_get_next_token(scanner);
@@ -173,9 +177,9 @@ gboolean config_scanner_source ( GScanner *scanner, gint source )
   else
   {
     g_scanner_get_next_token(scanner);
-    if(!err)
+    if(!scanner->max_parse_errors)
       g_error("Expecting a string in File(string)");
-    err = TRUE;
+    scanner->max_parse_errors = TRUE;
   }
   if(source == SO_FILE)
     while((gint)g_scanner_peek_next_token(scanner)==',')
@@ -190,20 +194,20 @@ gboolean config_scanner_source ( GScanner *scanner, gint source )
       else
       {
         g_scanner_get_next_token(scanner);
-        if(!err)
+        if(!scanner->max_parse_errors)
           g_scanner_error(scanner, "Expecting a file flag");
-        err = TRUE;
+        scanner->max_parse_errors = TRUE;
       }
     } 
 
-  err = parser_expect_symbol(scanner,')',"Missing ')' in File(string[,flag])");
+  parser_expect_symbol(scanner,')',"Missing ')' in File(string[,flag])");
 
-  err = parser_expect_symbol(scanner,'{',"file(string) { ... }");
-  if(err)
-    return err;
+  parser_expect_symbol(scanner,'{',"file(string) { ... }");
+  if(scanner->max_parse_errors)
+    return;
 
   if(fname==NULL)
-    return err;
+    return;
 
   for(find=context->file_list;find;find=g_list_next(find))
     if(!g_strcmp0(fname,((struct scan_file *)(find->data))->fname))
@@ -226,27 +230,26 @@ gboolean config_scanner_source ( GScanner *scanner, gint source )
     switch((gint)g_scanner_peek_next_token(scanner))
     {
       case G_TOKEN_IDENTIFIER:
-        err = config_scanner_var(scanner, file);
+        config_scanner_var(scanner, file);
         break;
       default:
         g_scanner_get_next_token(scanner);
-        if(!err)
+        if(!scanner->max_parse_errors)
           g_scanner_error(scanner, "Expecting a variable declaration or End");
-        err = TRUE;
+        scanner->max_parse_errors = TRUE;
         break;
     }
   }
   if((gint)scanner->next_token == '}')
     g_scanner_get_next_token(scanner);
-  return err;
 }
 
 void config_scanner ( GScanner *scanner )
 {
-  gboolean err = FALSE;
+  scanner->max_parse_errors = FALSE;
 
-  err = parser_expect_symbol(scanner,'{',"scanner { ... }");
-  if(err)
+  parser_expect_symbol(scanner,'{',"scanner { ... }");
+  if(scanner->max_parse_errors)
     return;
 
   while(((gint)g_scanner_peek_next_token(scanner) != '}' )&&
@@ -255,15 +258,15 @@ void config_scanner ( GScanner *scanner )
     switch((gint)g_scanner_get_next_token(scanner))
     {
       case G_TOKEN_FILE:
-        err = config_scanner_source(scanner,SO_FILE);
+        config_scanner_source(scanner,SO_FILE);
         break;
       case G_TOKEN_EXEC:
-        err = config_scanner_source(scanner,SO_EXEC);
+        config_scanner_source(scanner,SO_EXEC);
         break;
       default:
-        if(!err)
+        if(!scanner->max_parse_errors)
           g_scanner_error(scanner, "Unexpected declaration in scanner");
-        err = TRUE;
+        scanner->max_parse_errors = TRUE;
         break;
     }
   }
@@ -271,31 +274,32 @@ void config_scanner ( GScanner *scanner )
     g_scanner_get_next_token(scanner);
 }
 
-struct rect config_get_loc ( GScanner *scanner, gboolean *err )
+struct rect config_get_loc ( GScanner *scanner )
 {
   struct rect rect;
   rect.x = 0;
   rect.y = 0;
   rect.w = 0;
   rect.h = 0;
-  *err = parser_expect_symbol(scanner, '(', ".loc(x,y[,w,h])");
-  if(*err)
+  scanner->max_parse_errors = FALSE;
+  parser_expect_symbol(scanner, '(', ".loc(x,y[,w,h])");
+  if(scanner->max_parse_errors)
     return rect;
   if(g_scanner_peek_next_token(scanner)!=G_TOKEN_FLOAT)
   {
     g_scanner_error(scanner,"expecting a number in .loc");
-    *err=TRUE;
+    scanner->max_parse_errors=TRUE;
     return rect;
   }
   g_scanner_get_next_token(scanner);
   rect.x = scanner->value.v_float;
-  *err = parser_expect_symbol(scanner, ',', ".loc(x,y[,w,h])");
-  if(*err)
+  parser_expect_symbol(scanner, ',', ".loc(x,y[,w,h])");
+  if(scanner->max_parse_errors)
     return rect;
   if(g_scanner_peek_next_token(scanner)!=G_TOKEN_FLOAT)
   {
     g_scanner_error(scanner,"expecting a number in .loc");
-    *err=TRUE;
+    scanner->max_parse_errors=TRUE;
     return rect;
   }
   g_scanner_get_next_token(scanner);
@@ -305,40 +309,41 @@ struct rect config_get_loc ( GScanner *scanner, gboolean *err )
     g_scanner_get_next_token(scanner);
     return rect;
   }
-  *err = parser_expect_symbol(scanner, ',', ".loc(x,y[,w,h])");
-  if(*err)
+  parser_expect_symbol(scanner, ',', ".loc(x,y[,w,h])");
+  if(scanner->max_parse_errors)
     return rect;
   if(g_scanner_peek_next_token(scanner)!=G_TOKEN_FLOAT)
   {
     g_scanner_error(scanner,"expecting a number in .loc");
-    *err=TRUE;
+    scanner->max_parse_errors=TRUE;
     return rect;
   }
   g_scanner_get_next_token(scanner);
   rect.w = scanner->value.v_float;
-  *err = parser_expect_symbol(scanner, ',', ".loc(x,y[,w,h])");
-  if(*err)
+  parser_expect_symbol(scanner, ',', ".loc(x,y[,w,h])");
+  if(scanner->max_parse_errors)
     return rect;
   if(g_scanner_peek_next_token(scanner)!=G_TOKEN_FLOAT)
   {
     g_scanner_error(scanner,"expecting a number in .loc");
-    *err=TRUE;
+    scanner->max_parse_errors=TRUE;
     return rect;
   }
   g_scanner_get_next_token(scanner);
   rect.h = scanner->value.v_float;
-  *err = parser_expect_symbol(scanner, ')', ".loc(x,y[,w,h])");
+  parser_expect_symbol(scanner, ')', ".loc(x,y[,w,h])");
 
   return rect;
 }
 
-gchar *config_get_value ( GScanner *scanner, gboolean *err )
+gchar *config_get_value ( GScanner *scanner )
 {
   gchar *value, *temp;
+  scanner->max_parse_errors = FALSE;
   if(g_scanner_peek_next_token(scanner)!='=')
   {
     g_scanner_error(scanner,"expecting value = expression");
-    *err = TRUE;
+    scanner->max_parse_errors = TRUE;
     return NULL;
   }
   g_scanner_get_next_token(scanner);
@@ -384,14 +389,12 @@ gchar *config_get_value ( GScanner *scanner, gboolean *err )
   return value;
 }
 
-gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw)
+void config_widget_props ( GScanner *scanner, struct layout_widget *lw)
 {
-  gboolean err;
-
-  err = FALSE;
+  scanner->max_parse_errors = FALSE;
 
   if( g_scanner_peek_next_token( scanner ) != '{')
-    return FALSE;
+    return;
   else
     g_scanner_get_next_token(scanner);
 
@@ -400,32 +403,31 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw)
       ( (gint)g_scanner_peek_next_token ( scanner ) != '}' )&&
       ( (gint)g_scanner_peek_next_token ( scanner ) != G_TOKEN_EOF ))
   {
-    err = FALSE;
     switch ((gint)g_scanner_get_next_token ( scanner ) )
     {
       case G_TOKEN_STYLE:
-        lw->style = config_assign_string(scanner,"style = String",&err);
+        lw->style = config_assign_string(scanner,"style = String");
         break;
       case G_TOKEN_CSS:
-        lw->css = config_assign_string(scanner,"css = String",&err);
+        lw->css = config_assign_string(scanner,"css = String");
         break;
       case G_TOKEN_INTERVAL:
-        lw->interval = config_assign_number(scanner, "interval = Number",&err);
+        lw->interval = config_assign_number(scanner, "interval = Number");
         break;
       case G_TOKEN_VALUE:
-        lw->value = config_get_value(scanner,&err);
+        lw->value = config_get_value(scanner);
         break;
       case G_TOKEN_PINS:
         if(lw->wtype != G_TOKEN_PAGER)
         {
           g_scanner_error(scanner,"this widget has no property 'pins'");
-          err = TRUE;
+          scanner->max_parse_errors = TRUE;
           break;
         }
         if(g_scanner_peek_next_token(scanner)!='=')
         {
           g_scanner_error(scanner,"expecting pins = string [,string]");
-          err = TRUE;
+          scanner->max_parse_errors = TRUE;
           break;
         }
         do {
@@ -433,7 +435,7 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw)
           if(g_scanner_peek_next_token(scanner)!=G_TOKEN_STRING)
           {
             g_scanner_error(scanner,"expecting a string in pins = string [,string]");
-            err = TRUE;
+            scanner->max_parse_errors = TRUE;
             break;
           }
           g_scanner_get_next_token(scanner);
@@ -445,25 +447,25 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw)
         if(lw->wtype != G_TOKEN_PAGER)
         {
           g_scanner_error(scanner,"this widget has no property 'preview'");
-          err = TRUE;
+          scanner->max_parse_errors = TRUE;
           break;
         }
-        config_boolean_setbit(scanner,&context->features,F_PA_RENDER,"preview = true|false",&err);
+        config_boolean_setbit(scanner,&context->features,F_PA_RENDER,"preview = true|false");
         break;
       case G_TOKEN_COLS:
         switch(lw->wtype)
         {
           case G_TOKEN_TASKBAR:
             context->tb_cols =
-              config_assign_number(scanner, "cols = Number",&err);
+              config_assign_number(scanner, "cols = Number");
             break;
           case G_TOKEN_PAGER:
             context->pager_cols =
-              config_assign_number(scanner, "cols = Number",&err);
+              config_assign_number(scanner, "cols = Number");
             break;
           default:
             g_scanner_error(scanner,"this widget has no property 'cols'");
-            err = TRUE;
+            scanner->max_parse_errors = TRUE;
             break;
         }
         break;
@@ -472,51 +474,52 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw)
         {
           case G_TOKEN_TASKBAR:
             context->tb_rows =
-              config_assign_number(scanner, "rows = Number",&err);
+              config_assign_number(scanner, "rows = Number");
             break;
           case G_TOKEN_PAGER:
             context->pager_rows =
-              config_assign_number(scanner, "rows = Number",&err);
+              config_assign_number(scanner, "rows = Number");
             break;
           default:
             g_scanner_error(scanner,"this widget has no property 'rows'");
-            err = TRUE;
+            scanner->max_parse_errors = TRUE;
             break;
         }
         break;
       case G_TOKEN_ACTION:
-        lw->action = config_assign_string(scanner,"action = String",&err);
+        lw->action = config_assign_string(scanner,"action = String");
         break;
       case G_TOKEN_ICONS:
-        config_boolean_setbit(scanner,&context->features,F_TB_ICON,"icons = true|false",&err);
+        config_boolean_setbit(scanner,&context->features,F_TB_ICON,"icons = true|false");
         break;
       case G_TOKEN_LABELS:
-        config_boolean_setbit(scanner,&context->features,F_TB_LABEL,"labels = true|false",&err);
+        config_boolean_setbit(scanner,&context->features,F_TB_LABEL,"labels = true|false");
         break;
       case G_TOKEN_ICON:
-        lw->icon = config_assign_string(scanner,"action = String",&err);
+        lw->icon = config_assign_string(scanner,"action = String");
         break;
       case G_TOKEN_LOC:
-        lw->rect = config_get_loc(scanner,&err);
+        lw->rect = config_get_loc(scanner);
         break;
       default:
-        if(!err)
+        if(!scanner->max_parse_errors)
           g_scanner_error(scanner, "Widget: unexpected token");
+        scanner->max_parse_errors = TRUE;
     }
   }
   if((gint)g_scanner_peek_next_token(scanner) == '}')
     g_scanner_get_next_token(scanner);
 
   layout_widget_config(lw);
-
-  return err;
 }
 
-GtkWidget *config_include ( GScanner *scanner, gboolean *err )
+struct layout_widget *config_include ( GScanner *scanner )
 {
-  GtkWidget *widget;
-  *err = parser_expect_symbol(scanner, '(', "Include(String)");
-  if(*err)
+  struct layout_widget *lw;
+
+  scanner->max_parse_errors = FALSE;
+  parser_expect_symbol(scanner, '(', "Include(String)");
+  if(scanner->max_parse_errors)
       return NULL;
   if(g_scanner_peek_next_token(scanner)!=G_TOKEN_STRING)
   {
@@ -524,16 +527,15 @@ GtkWidget *config_include ( GScanner *scanner, gboolean *err )
     return NULL;
   }
   g_scanner_get_next_token(scanner);
-  widget = config_parse(scanner->value.v_string);
-  *err = parser_expect_symbol(scanner, ')', "Include(String)");
-  return widget;
+  lw = config_parse(scanner->value.v_string);
+  parser_expect_symbol(scanner, ')', "Include(String)");
+  return lw;
 }
 
 void config_widgets ( GScanner *scanner, GtkWidget *parent );
 
 void config_widgets ( GScanner *scanner, GtkWidget *parent )
 {
-  gboolean err;
   GtkWidget *sibling=NULL;
   gint dir = GTK_POS_RIGHT;
   struct layout_widget *lw;
@@ -545,46 +547,54 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
   {
     lw = layout_widget_new();
     lw->wtype = g_scanner_get_next_token(scanner);
-    err = FALSE;
     switch ( lw->wtype )
     {
       case G_TOKEN_GRID:
+        scanner->max_parse_errors=FALSE;
         lw->widget = gtk_grid_new();
         break;
       case G_TOKEN_LABEL:
+        scanner->max_parse_errors=FALSE;
         lw->widget = gtk_label_new("");
         break;
       case G_TOKEN_IMAGE:
+        scanner->max_parse_errors=FALSE;
         lw->widget = scale_image_new();
         break;
       case G_TOKEN_BUTTON:
+        scanner->max_parse_errors=FALSE;
         lw->widget = gtk_button_new();
         break;
       case G_TOKEN_SCALE:
+        scanner->max_parse_errors=FALSE;
         lw->widget = gtk_progress_bar_new();
         break;
       case G_TOKEN_INCLUDE:
-        lw->widget = config_include( scanner, &err );
+        layout_widget_free(lw);
+        lw = config_include( scanner );
         break;
       case G_TOKEN_TASKBAR:
+        scanner->max_parse_errors=FALSE;
         lw->widget = clamp_grid_new();
         break;
       case G_TOKEN_PAGER:
+        scanner->max_parse_errors=FALSE;
         lw->widget = gtk_grid_new();
         break;
       case G_TOKEN_TRAY:
+        scanner->max_parse_errors=FALSE;
         lw->widget = gtk_grid_new();
         break;
       default:
-        if(!err)
+        if(!scanner->max_parse_errors)
           g_scanner_error(scanner,"Layout: unexpected token");
-        err = TRUE;
+        scanner->max_parse_errors = TRUE;
         continue;
     }
-    if(!err)
+    if(!scanner->max_parse_errors)
     {
-      err = config_widget_props( scanner, lw);
-      if(!err)
+      config_widget_props( scanner, lw);
+      if(!scanner->max_parse_errors)
       {
         if(lw->rect.w<1)
           lw->rect.w=1;
@@ -595,40 +605,43 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
         else
           gtk_grid_attach(GTK_GRID(parent),lw->widget,
               lw->rect.x,lw->rect.y,lw->rect.w,lw->rect.h);
-        if(lw->value)
-          context->widgets = g_list_append(context->widgets,lw);
         sibling = lw->widget;
       }
       if(lw->wtype == G_TOKEN_GRID)
         config_widgets(scanner,lw->widget);
+      if(lw->value)
+        context->widgets = g_list_append(context->widgets,lw);
+      else
+        layout_widget_free(lw);
     }
   }
   if((gint)scanner->next_token == '}')
     g_scanner_get_next_token(scanner);
 }
 
-GtkWidget *config_layout ( GScanner *scanner )
+struct layout_widget *config_layout ( GScanner *scanner )
 {
   struct layout_widget *lw;
 
-  lw = layout_widget_new();
+  scanner->max_parse_errors=FALSE;
 
+  lw = layout_widget_new();
   lw->widget = gtk_grid_new();
   gtk_widget_set_name(lw->widget,"layout");
-  config_widget_props(scanner, lw);
 
+  config_widget_props(scanner, lw);
   config_widgets(scanner, lw->widget);
 
-  return lw->widget;
+  return lw;
 }
 
 void config_switcher ( GScanner *scanner )
 {
   gchar *css=NULL;
-  gboolean err = FALSE;
+  scanner->max_parse_errors = FALSE;
 
-  err = parser_expect_symbol(scanner,'{',"switcher { ... }");
-  if(err)
+  parser_expect_symbol(scanner,'{',"switcher { ... }");
+  if(scanner->max_parse_errors)
     return;
 
   context->features |= F_SWITCHER;
@@ -642,25 +655,25 @@ void config_switcher ( GScanner *scanner )
     {
       case G_TOKEN_INTERVAL: 
         context->sw_max = 1000*
-          config_assign_number(scanner,"interval = number",&err);
+          config_assign_number(scanner,"interval = number");
         break;
       case G_TOKEN_COLS: 
-        context->sw_cols = config_assign_number(scanner,"cols = number",&err);
+        context->sw_cols = config_assign_number(scanner,"cols = number");
         break;
       case G_TOKEN_CSS:
         g_free(css);
-        css = config_assign_string(scanner,"css = string",&err);
+        css = config_assign_string(scanner,"css = string");
         break;
       case G_TOKEN_ICONS:
-        config_boolean_setbit(scanner,&context->features,F_SW_ICON,"icons = true|false",&err);
+        config_boolean_setbit(scanner,&context->features,F_SW_ICON,"icons = true|false");
         break;
       case G_TOKEN_LABELS:
-        config_boolean_setbit(scanner,&context->features,F_SW_LABEL,"labels = true|false",&err);
+        config_boolean_setbit(scanner,&context->features,F_SW_LABEL,"labels = true|false");
         break;
       default:
-        if(!err)
+        if(!scanner->max_parse_errors)
           g_scanner_error(scanner,"Switcher: unexpected token");
-        err = TRUE;
+        scanner->max_parse_errors = TRUE;
         break;
     }
   }
@@ -689,10 +702,10 @@ void config_switcher ( GScanner *scanner )
 
 void config_placer ( GScanner *scanner )
 {
-  gboolean err = FALSE;
+  scanner->max_parse_errors = FALSE;
 
-  err = parser_expect_symbol(scanner,'{',"placer { ... }");
-  if(err)
+  parser_expect_symbol(scanner,'{',"placer { ... }");
+  if(scanner->max_parse_errors)
     return;
 
   context->features |= F_PLACEMENT;
@@ -706,24 +719,24 @@ void config_placer ( GScanner *scanner )
     switch ((gint)g_scanner_get_next_token(scanner) )
     {
       case G_TOKEN_XSTEP: 
-        context->wp_x = config_assign_number ( scanner, "xstep = number", &err );
+        context->wp_x = config_assign_number ( scanner, "xstep = number" );
         break;
       case G_TOKEN_YSTEP: 
-        context->wp_y = config_assign_number ( scanner, "ystep = number", &err );
+        context->wp_y = config_assign_number ( scanner, "ystep = number" );
         break;
       case G_TOKEN_XORIGIN: 
-        context->wo_x = config_assign_number ( scanner, "xorigin = number", &err );
+        context->wo_x = config_assign_number ( scanner, "xorigin = number" );
         break;
       case G_TOKEN_YORIGIN: 
-        context->wo_y = config_assign_number ( scanner, "yorigin = number", &err );
+        context->wo_y = config_assign_number ( scanner, "yorigin = number" );
         break;
       case G_TOKEN_CHILDREN:
-        config_boolean_setbit(scanner,&context->features,F_PL_CHKPID,"children = true|false",&err);
+        config_boolean_setbit(scanner,&context->features,F_PL_CHKPID,"children = true|false");
         break;
       default:
-        if(!err)
+        if(!scanner->max_parse_errors)
           g_scanner_error(scanner,"Placer: unexpected token");
-        err = TRUE;
+        scanner->max_parse_errors = TRUE;
         break;
     }
   }
@@ -736,9 +749,9 @@ void config_placer ( GScanner *scanner )
     context->wp_y=1;
 }
 
-GtkWidget *config_parse_toplevel ( GScanner *scanner )
+struct layout_widget *config_parse_toplevel ( GScanner *scanner )
 {
-  GtkWidget *w=NULL;
+  struct layout_widget *w=NULL;
   while(g_scanner_peek_next_token(scanner) != G_TOKEN_EOF)
   {
     switch((gint)g_scanner_get_next_token(scanner))
@@ -756,14 +769,16 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner )
         config_switcher(scanner);
         break;
       default:
-        g_scanner_error(scanner,"Unexpected toplevel token");
+        if(!scanner->max_parse_errors)
+          g_scanner_error(scanner,"Unexpected toplevel token");
+        scanner->max_parse_errors = TRUE;
         break;
     }
   }
   return w;
 }
 
-GtkWidget *config_parse ( gchar *file )
+struct layout_widget *config_parse ( gchar *file )
 {
   GScanner *scanner;
   gchar *fname;
@@ -772,17 +787,15 @@ GtkWidget *config_parse ( gchar *file )
   GtkCssProvider *css;
   gsize size;
   gint dir;
-  GtkWidget *w=NULL;
+  struct layout_widget *w=NULL;
 
   fname = get_xdg_config_file(file);
   if(fname)
-    g_file_get_contents(fname,&conf,&size,NULL);
-
-  if(!conf)
-  {
-    g_error("Error: can't read config file\n");
-    exit(1);
-  }
+    if(!g_file_get_contents(fname,&conf,&size,NULL))
+    {
+      g_error("Error: can't read config file\n");
+      exit(1);
+    }
 
   tmp = g_strstr_len(conf,size,"\n#CSS");
   if(tmp)
@@ -812,6 +825,8 @@ GtkWidget *config_parse ( gchar *file )
       scanner->config->cset_identifier_nth,NULL);
   scanner->config->cset_identifier_first = g_strconcat("$",
       scanner->config->cset_identifier_first,NULL);
+
+  scanner->max_parse_errors = FALSE;
 
   g_scanner_scope_add_symbol(scanner,0, "Scanner", (gpointer)G_TOKEN_SCANNER );
   g_scanner_scope_add_symbol(scanner,0, "Layout", (gpointer)G_TOKEN_LAYOUT );
