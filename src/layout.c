@@ -91,6 +91,8 @@ void layout_widget_config ( struct layout_widget *lw )
 
 void layout_widget_free ( struct layout_widget *lw )
 {
+  if(!lw)
+    return;
   g_free(lw->style);
   g_free(lw->css);
   g_free(lw->value);

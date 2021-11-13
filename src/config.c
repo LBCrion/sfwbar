@@ -412,7 +412,7 @@ void config_widget_props ( GScanner *scanner, struct layout_widget *lw)
         lw->css = config_assign_string(scanner,"css = String");
         break;
       case G_TOKEN_INTERVAL:
-        lw->interval = config_assign_number(scanner, "interval = Number");
+        lw->interval = 1000*config_assign_number(scanner, "interval = Number");
         break;
       case G_TOKEN_VALUE:
         lw->value = config_get_value(scanner);
@@ -609,11 +609,11 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
       }
       if(lw->wtype == G_TOKEN_GRID)
         config_widgets(scanner,lw->widget);
-      if(lw->value)
-        context->widgets = g_list_append(context->widgets,lw);
-      else
-        layout_widget_free(lw);
     }
+    if(lw->value)
+      context->widgets = g_list_append(context->widgets,lw);
+    else
+      layout_widget_free(lw);
   }
   if((gint)scanner->next_token == '}')
     g_scanner_get_next_token(scanner);
@@ -760,6 +760,7 @@ struct layout_widget *config_parse_toplevel ( GScanner *scanner )
         config_scanner(scanner);
         break;
       case G_TOKEN_LAYOUT:
+        layout_widget_free(w);
         w = config_layout(scanner);
         break;
       case G_TOKEN_PLACER:
@@ -791,7 +792,7 @@ struct layout_widget *config_parse ( gchar *file )
 
   fname = get_xdg_config_file(file);
   if(fname)
-    if(!g_file_get_contents(fname,&conf,&size,NULL))
+    if((!g_file_get_contents(fname,&conf,&size,NULL))||(!conf))
     {
       g_error("Error: can't read config file\n");
       exit(1);
