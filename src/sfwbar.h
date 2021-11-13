@@ -3,7 +3,7 @@
 
 #include <glib.h>
 #include <gtk/gtk.h>
-#include <ucl.h>
+#include <json.h>
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
 struct context {
@@ -111,7 +111,6 @@ int sway_ipc_send ( gint sock, gint32 type, gchar *command );
 int sway_ipc_subscribe ( gint sock );
 gboolean sway_ipc_event ( GIOChannel *, GIOCondition , gpointer );
 void place_window ( gint64 wid, gint64 pid );
-void placement_init ( const ucl_object_t *obj );
 
 GtkWidget *taskbar_init ( GtkWidget * );
 void taskbar_refresh ( void );
@@ -122,11 +121,10 @@ gint wintree_compare ( struct wt_window *a, struct wt_window *b);
 
 void wlr_ft_init ( void );
 
-gboolean hide_event ( const ucl_object_t *obj );
-gboolean switcher_event ( const ucl_object_t *obj );
+gboolean hide_event ( struct json_object *obj );
+gboolean switcher_event ( struct json_object *obj );
 void switcher_update ( void );
 void switcher_window_init ( struct wt_window *win);
-void switcher_init ( const ucl_object_t *obj );
 
 GtkWidget *pager_init ( GtkWidget * );
 void pager_update ( void );
@@ -138,7 +136,6 @@ struct layout_widget *config_parse ( gchar * );
 struct layout_widget *layout_widget_new ( void );
 void layout_widget_config ( struct layout_widget *lw );
 void layout_widget_free ( struct layout_widget *lw );
-GtkWidget *layout_init (  const ucl_object_t *obj, GtkWidget *, GtkWidget * );
 void widget_update_all( void );
 void widget_action ( GtkWidget *widget, gchar *cmd );
 GtkWidget *widget_icon_by_name ( gchar *name, gint size );
@@ -157,16 +154,15 @@ char *string_from_name ( gchar *name );
 double numeric_from_name ( gchar *name );
 void *list_by_name ( GList *prev, gchar *name );
 char *parse_identifier ( gchar *id, gchar **fname );
-void scanner_init (  const ucl_object_t *obj );
-GList *scanner_add_vars( const ucl_object_t *obj, struct scan_file *file );
 
 gchar *get_xdg_config_file ( gchar *fname );
-gchar *ucl_string_by_name ( const ucl_object_t *obj, gchar *name);
-gint64 ucl_int_by_name ( const ucl_object_t *obj, gchar *name, gint64 defval );
-gboolean ucl_bool_by_name ( const ucl_object_t *obj, gchar *name, gboolean defval );
+gchar *json_string_by_name ( struct json_object *obj, gchar *name );
+gint64 json_int_by_name ( struct json_object *obj, gchar *name, gint64 defval);
+gboolean json_bool_by_name ( struct json_object *obj, gchar *name, gboolean defval);
+gdouble json_double_by_name ( struct json_object *obj, gchar *name, gdouble defval);
 int md5_file( gchar *path, guchar output[16] );
 void str_assign ( gchar **dest, gchar *source );
-struct rect parse_rect ( const ucl_object_t *obj );
+struct rect parse_rect ( struct json_object *obj );
 void scale_image_set_image ( GtkWidget *widget, gchar *image );
 GtkWidget *scale_image_new();
 int scale_image_update ( GtkWidget *widget );

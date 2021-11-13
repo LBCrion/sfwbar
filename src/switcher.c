@@ -8,13 +8,13 @@
 #include <gtk-layer-shell.h>
 #include "sfwbar.h"
 
-gboolean hide_event ( const ucl_object_t *obj )
+gboolean hide_event ( struct json_object *obj )
 {
   gchar *mode, state;
 
   if ( obj )
   {
-    mode = ucl_string_by_name(obj,"mode");
+    mode = json_string_by_name(obj,"mode");
     if(mode!=NULL)
       state = *mode;
     else
@@ -34,7 +34,7 @@ gboolean hide_event ( const ucl_object_t *obj )
   return TRUE;
 }
 
-gboolean switcher_event ( const ucl_object_t *obj )
+gboolean switcher_event ( struct json_object *obj )
 {
   gchar *mode;
   GList *item, *focus;
@@ -45,7 +45,7 @@ gboolean switcher_event ( const ucl_object_t *obj )
 
   if(obj!=NULL)
   {
-    mode = ucl_string_by_name(obj,"hidden_state");
+    mode = json_string_by_name(obj,"hidden_state");
     if(mode!=NULL)
       if(*mode!=context->sw_hstate)
       {

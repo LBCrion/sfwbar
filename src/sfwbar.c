@@ -36,7 +36,7 @@ void init_context ( void )
   context->features=0;
   context->ipc = -1;
   context->sw_count=0;
-  context->sw_hstate=0;
+  context->sw_hstate='s';
   context->buff_len = 1024;
   context->read_buff = g_malloc(context->buff_len);
   context->features |= F_TB_ICON;
@@ -59,10 +59,10 @@ void css_init ( void )
 
   gtk_widget_class_install_style_property( widget_class,
     g_param_spec_boolean("hexpand","horizonal expansion","horizontal expansion",
-       false, G_PARAM_READABLE));
+       FALSE, G_PARAM_READABLE));
   gtk_widget_class_install_style_property( widget_class,
     g_param_spec_boolean("vexpand","vertical expansion","vertical expansion",
-      false, G_PARAM_READABLE));
+      FALSE, G_PARAM_READABLE));
   gtk_widget_class_install_style_property( widget_class,
     g_param_spec_int("icon-size","icon size","icon size",
       0,500,48, G_PARAM_READABLE));

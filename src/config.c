@@ -654,8 +654,7 @@ void config_switcher ( GScanner *scanner )
     switch ((gint)g_scanner_get_next_token ( scanner ) )
     {
       case G_TOKEN_INTERVAL: 
-        context->sw_max = 1000*
-          config_assign_number(scanner,"interval = number");
+        context->sw_max = config_assign_number(scanner,"interval = number");
         break;
       case G_TOKEN_COLS: 
         context->sw_cols = config_assign_number(scanner,"cols = number");

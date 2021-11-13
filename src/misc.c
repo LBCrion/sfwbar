@@ -5,7 +5,7 @@
 
 #include <glib.h>
 #include <stdio.h>
-#include <ucl.h>
+#include <json.h>
 
 extern gchar *confname;
 
@@ -35,54 +35,47 @@ gchar *get_xdg_config_file ( gchar *fname )
 }
 
 /* get string value from an object within current object */
-gchar *ucl_string_by_name ( const ucl_object_t *obj, gchar *name )
+gchar *json_string_by_name ( struct json_object *obj, gchar *name )
 {
-  const ucl_object_t *ptr;
+  struct json_object *ptr;
 
-  if((ptr = ucl_object_lookup(obj,name))!=NULL)
-    if(ucl_object_type(ptr)==UCL_STRING)
-      return g_strdup(ucl_object_tostring(ptr));
+  if(json_object_object_get_ex(obj,name,&ptr))
+    return g_strdup(json_object_get_string(ptr));
   return NULL;
 }
 
 /* get int value from an object within current object */
-gint64 ucl_int_by_name ( const ucl_object_t *obj, gchar *name, gint64 defval)
+gint64 json_int_by_name ( struct json_object *obj, gchar *name, gint64 defval)
 {
-  const ucl_object_t *ptr;
+  struct json_object *ptr;
 
-  if((ptr = ucl_object_lookup(obj,name))!=NULL)
-    if(ucl_object_type(ptr)==UCL_INT)
-      return ucl_object_toint(ptr);
+  if(json_object_object_get_ex(obj,name,&ptr))
+    return json_object_get_int64(ptr);
 
   return defval;
 }
 
 /* get bool value from an object within current object */
-gboolean ucl_bool_by_name ( const ucl_object_t *obj, gchar *name, gboolean defval)
+gboolean json_bool_by_name ( struct json_object *obj, gchar *name, gboolean defval)
 {
-  const ucl_object_t *ptr;
+  struct json_object *ptr;
 
-  if((ptr = ucl_object_lookup(obj,name))!=NULL)
-    if(ucl_object_type(ptr)==UCL_BOOLEAN)
-      return ucl_object_toboolean(ptr);
+  if(json_object_object_get_ex(obj,name,&ptr))
+    return json_object_get_boolean(ptr);
 
   return defval;
 }
 
 /* get double value from an object within current object */
-gdouble ucl_double_by_name ( const ucl_object_t *obj, gchar *name, gdouble defval)
+gdouble json_double_by_name ( struct json_object *obj, gchar *name, gdouble defval)
 {
-  const ucl_object_t *ptr;
+  struct json_object *ptr;
 
-  if((ptr = ucl_object_lookup(obj,name))!=NULL)
-    if(ucl_object_type(ptr)==UCL_FLOAT)
-      return ucl_object_todouble(ptr);
+  if(json_object_object_get_ex(obj,name,&ptr))
+    return json_object_get_double(ptr);
 
   return defval;
 }
-
-
-
 
 /* compute md5 checksum for a file */
 int md5_file( gchar *path, guchar output[16] )

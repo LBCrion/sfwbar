@@ -37,7 +37,7 @@ void update_var_value ( struct scan_var *var, gchar *value)
   var->count++;
   var->status=1;
 }
-
+/*
 int update_json_file ( FILE *in, GList *var_list )
 {
   GList *node;
@@ -82,7 +82,7 @@ int update_json_file ( FILE *in, GList *var_list )
   ucl_parser_free(parser);
   free(fdata);
   return 0;
-}
+}*/
 
 /* update variables in a specific file (or pipe) */
 int scanner_update_file ( FILE *in, struct scan_file *file )

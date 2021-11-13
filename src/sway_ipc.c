@@ -109,13 +109,13 @@ int sway_ipc_subscribe ( gint sock )
   return sock;
 }
 
-void sway_window_new ( const ucl_object_t *container )
+void sway_window_new ( struct json_object *container )
 {
   GList *item;
   struct wt_window *win;
   gint64 wid;
 
-  wid = ucl_int_by_name(container,"id",G_MININT64); 
+  wid = json_int_by_name(container,"id",G_MININT64); 
   for(item=context->wt_list;item!=NULL;item = g_list_next(item))
     if (AS_WINDOW(item->data)->wid == wid)
       return;
@@ -125,29 +125,29 @@ void sway_window_new ( const ucl_object_t *container )
     return;
 
   win->wid = wid;
-  win->pid = ucl_int_by_name(container,"pid",G_MININT64); 
+  win->pid = json_int_by_name(container,"pid",G_MININT64); 
 
   if((context->features & F_PLACEMENT)&&(context->ipc!=-1))
     place_window(win->wid, win->pid );
 
-  win->appid = ucl_string_by_name(container,"app_id");
+  win->appid = json_string_by_name(container,"app_id");
   if(win->appid==NULL)
   {
     g_free(win);
     return;
   }
 
-  win->title = ucl_string_by_name(container,"name");
+  win->title = json_string_by_name(container,"name");
   if (win->title == NULL )
     win->title = g_strdup(win->appid);
 
-  if(ucl_bool_by_name(container,"focused",FALSE) == TRUE)
+  if(json_bool_by_name(container,"focused",FALSE) == TRUE)
     context->tb_focus = win->wid;
 
   wintree_window_append(win);
 }
 
-void sway_window_title ( const ucl_object_t *container )
+void sway_window_title ( struct json_object *container )
 {
   GList *item;
   gchar *title;
@@ -156,8 +156,8 @@ void sway_window_title ( const ucl_object_t *container )
   if(!(context->features & F_TB_LABEL))
     return;
 
-  wid = ucl_int_by_name(container,"id",G_MININT64);
-  title = ucl_string_by_name(container,"name");
+  wid = json_int_by_name(container,"id",G_MININT64);
+  title = json_string_by_name(container,"name");
 
   if(title==NULL)
     return;
@@ -172,12 +172,12 @@ void sway_window_title ( const ucl_object_t *container )
   g_free(title);
 }
 
-void sway_window_close (const ucl_object_t *container)
+void sway_window_close (struct json_object *container)
 {
   GList *item;
   gint64 wid;
 
-  wid = ucl_int_by_name(container,"id",G_MININT64);
+  wid = json_int_by_name(container,"id",G_MININT64);
 
   for(item=context->wt_list;item!=NULL;item = g_list_next(item))
     if (AS_WINDOW(item->data)->wid == wid)
@@ -200,15 +200,14 @@ void sway_window_close (const ucl_object_t *container)
   context->wt_list = g_list_delete_link(context->wt_list,item);
 }
 
-void sway_set_focus (const ucl_object_t *container)
+void sway_set_focus ( struct json_object *container)
 {
-  context->tb_focus = ucl_int_by_name(container,"id",G_MININT64);
+  context->tb_focus = json_int_by_name(container,"id",G_MININT64);
 }
 
 gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 {
-  const ucl_object_t *obj,*container;
-  struct ucl_parser *parse;
+  struct json_object *obj,*container;
   gchar *response,*change;
   gint32 etype;
 
@@ -218,9 +217,7 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
   response = sway_ipc_poll(context->ipc,&etype);
   while (response != NULL)
   { 
-    parse = ucl_parser_new(0);
-    ucl_parser_add_string(parse,response,strlen(response));
-    obj = ucl_parser_get_object(parse);
+    obj = json_tokener_parse(response);
 
     if(etype==0x80000000)
       pager_update();
@@ -235,10 +232,10 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
     {
       if(obj!=NULL)
       {
-        change = ucl_string_by_name(obj,"change");
+        change = json_string_by_name(obj,"change");
         if(change!=NULL)
         {
-          container = ucl_object_lookup(obj,"container");
+          json_object_object_get_ex(obj,"container",&container);
           if(g_strcmp0(change,"new")==0)
             sway_window_new (container);
           if(g_strcmp0(change,"close")==0)
@@ -252,41 +249,38 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
       }
     }
 
-    ucl_object_unref((ucl_object_t *)obj);
-    ucl_parser_free(parse);
+    json_object_put(obj);
     g_free(response);
     response = sway_ipc_poll(context->ipc,&etype);
   }
   return TRUE;
 }
 
-void sway_traverse_tree ( const ucl_object_t *obj)
+void sway_traverse_tree ( struct json_object *obj)
 {
-  const ucl_object_t *iter,*arr;
-  ucl_object_iter_t *itp;
+  struct json_object *iter,*arr;
+  gint i;
 
-  arr = ucl_object_lookup(obj,"floating_nodes");
-  if( arr )
-  {
-    itp = ucl_object_iterate_new(arr);
-    while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
+  json_object_object_get_ex(obj,"floating_nodes",&arr);
+  if( arr && json_object_is_type(arr, json_type_array) )
+    for(i=0;i<json_object_array_length(arr);i++)
+    {
+      iter = json_object_array_get_idx(arr,i);
       sway_window_new (iter);
-    ucl_object_iterate_free(itp);
-  }
-  arr = ucl_object_lookup(obj,"nodes");
-  if( arr )
-  {
-    itp = ucl_object_iterate_new(arr);
-    while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
+    }
+
+  json_object_object_get_ex(obj,"nodes",&arr);
+  if( arr && json_object_is_type(arr, json_type_array) )
+    for(i=0;i<json_object_array_length(arr);i++)
+    {
+      iter = json_object_array_get_idx(arr,i);
       sway_traverse_tree(iter);
-    ucl_object_iterate_free(itp);
-  }
+    }
 }
 
 void sway_ipc_init ( void )
 {
-  const ucl_object_t *obj;
-  struct ucl_parser *parse;
+  struct json_object *obj;
   gchar *response;
   gint sock;
   gint32 etype;
@@ -294,20 +288,20 @@ void sway_ipc_init ( void )
   sock=sway_ipc_open(3000);
   if(sock==-1)
     return;
+  sway_ipc_send(sock,0,"bar hidden_state show");
+  response = sway_ipc_poll(sock,&etype);
+  g_free(response);
   sway_ipc_send(sock,4,"");
   response = sway_ipc_poll(sock,&etype);
   close(sock);
   if(response==NULL)
     return;
-  parse = ucl_parser_new(0);
-  ucl_parser_add_string(parse,response,strlen(response));
-  obj = ucl_parser_get_object(parse);
+  obj = json_tokener_parse(response);
   if(obj!=NULL)
   {
     sway_traverse_tree(obj);
-    ucl_object_unref((ucl_object_t *)obj);
+    json_object_put(obj);
   }
-  ucl_parser_free(parse);
   g_free(response);
 
   context->wt_dirty = 1;

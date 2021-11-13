@@ -1,7 +1,7 @@
 project('sfwbar','c')
 gtk3 = dependency('gtk+-3.0')
 glib = dependency('glib-2.0')
-ucl  = dependency('libucl')
+json  = dependency('json-c')
 glsh = dependency('gtk-layer-shell-0')
 wayl = dependency('wayland-client')
 
@@ -35,7 +35,7 @@ src = ['src/sfwbar.c',
     'src/config.c',
     ftop_c,
     ftop_h ]
-dep = [gtk3, glib, ucl, glsh, wayl ]
+dep = [gtk3, glib, glsh, wayl, json ]
 
 
 executable ('sfwbar', sources: src, c_args: ['-DGLIB_DISABLE_DEPRECATION_WARNINGS','-DGDK_DISABLE_DEPRECATED','-DGTK_DISABLE_DEPRECATED'], dependencies: dep, install: true)

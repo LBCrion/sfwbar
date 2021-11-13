@@ -46,9 +46,8 @@ gboolean pager_draw_preview ( GtkWidget *widget, cairo_t *cr, gchar *desk )
   GdkRGBA fg;
   gint sock;
   gint32 etype;
-  const ucl_object_t *obj,*iter,*fiter,*arr;
-  ucl_object_iter_t *itp,*fitp;
-  struct ucl_parser *parse;
+  struct json_object *obj,*iter,*fiter,*arr;
+  gint i,j;
   struct rect wr,cw;
   gchar *response,*label;
 
@@ -65,48 +64,47 @@ gboolean pager_draw_preview ( GtkWidget *widget, cairo_t *cr, gchar *desk )
   sway_ipc_send(sock,1,"");
   response = sway_ipc_poll(sock,&etype);
   close(sock);
-  parse = ucl_parser_new(0);
   if(response!=NULL)
-    ucl_parser_add_string(parse,response,strlen(response));
-  obj = ucl_parser_get_object(parse);
+    obj = json_tokener_parse(response);
 
-  if(obj)
+  if( (obj) && json_object_is_type(obj,json_type_array) )
   {
-    itp = ucl_object_iterate_new(obj);
-    while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
+    for(i=0;i<json_object_array_length(obj);i++)
     {
-      label = ucl_string_by_name(iter,"name");
+      iter = json_object_array_get_idx(obj,i);
+      label = json_string_by_name(iter,"name");
       wr = parse_rect(iter);
       if(g_strcmp0(desk,label)==0)
       {
-        arr = ucl_object_lookup(iter,"floating_nodes");
-        fitp = ucl_object_iterate_new(arr);
-        while((fiter = ucl_object_iterate_safe(fitp,true))!=NULL)
-        {
-          if(ucl_bool_by_name(fiter,"focused",FALSE))
-            cairo_set_source_rgba(cr,fg.red,fg.blue,fg.green,1);
-          else
-            cairo_set_source_rgba(cr,fg.red,fg.blue,fg.green,0.5);
-          cw = parse_rect(fiter);
-          cairo_rectangle(cr,
-              (int)(cw.x*w/wr.w),
-              (int)(cw.y*h/wr.h),
-              (int)(cw.w*w/wr.w),
-              (int)(cw.h*h/wr.h));
-          cairo_fill(cr);
-          gtk_render_frame(style,cr,
-              (int)(cw.x*w/wr.w),
-              (int)(cw.y*h/wr.h),
-              (int)(cw.w*w/wr.w),
-              (int)(cw.h*h/wr.h));
-          cairo_stroke(cr);
-        }
+        json_object_object_get_ex(iter,"floating_nodes",&arr);
+        if(json_object_is_type(arr,json_type_array))
+          for(j=0;j<json_object_array_length(arr);j++)
+          {
+            fiter = json_object_array_get_idx(arr,j);
+            if(json_bool_by_name(fiter,"focused",FALSE))
+              cairo_set_source_rgba(cr,fg.red,fg.blue,fg.green,1);
+            else
+              cairo_set_source_rgba(cr,fg.red,fg.blue,fg.green,0.5);
+            cw = parse_rect(fiter);
+            cairo_rectangle(cr,
+                (int)(cw.x*w/wr.w),
+                (int)(cw.y*h/wr.h),
+                (int)(cw.w*w/wr.w),
+                (int)(cw.h*h/wr.h));
+            cairo_fill(cr);
+            gtk_render_frame(style,cr,
+                (int)(cw.x*w/wr.w),
+                (int)(cw.y*h/wr.h),
+                (int)(cw.w*w/wr.w),
+                (int)(cw.h*h/wr.h));
+            cairo_stroke(cr);
+          }
       }
       g_free(label);
     }
   }
 
-  ucl_parser_free(parse);
+  json_object_put(obj);
   g_free(response);
   return TRUE;
 }
@@ -130,13 +128,12 @@ void pager_update ( void )
   gint c=0;
   gint sock;
   gint32 etype;
-  const ucl_object_t *obj,*iter;
-  struct ucl_parser *parse;
+  struct json_object *obj,*iter;
+  gint i;
   GList *wslist = NULL;
   GList *visible = NULL;
   GList *node;
   gchar *response;
-  ucl_object_iter_t *itp;
   GtkWidget *widget;
   gchar *label;
   gchar *focus=NULL;
@@ -148,27 +145,25 @@ void pager_update ( void )
   sway_ipc_send(sock,1,"");
   response = sway_ipc_poll(sock,&etype);
   close(sock);
-  parse = ucl_parser_new(0);
   if(response!=NULL)
-    ucl_parser_add_string(parse,response,strlen(response));
-  obj = ucl_parser_get_object(parse);
+    obj = json_tokener_parse(response);
 
-  if(obj)
+  if(obj && json_object_is_type(obj,json_type_array))
   {
-    itp = ucl_object_iterate_new(obj);
-    while((iter = ucl_object_iterate_safe(itp,true))!=NULL)
+    for(i=0;i<json_object_array_length(obj);i++)
       {
-        label = ucl_string_by_name(iter,"name");
+        iter = json_object_array_get_idx(obj,i);
+        label = json_string_by_name(iter,"name");
         if(label!=NULL)
         {
           wslist = g_list_append(wslist,label);
-          if(ucl_bool_by_name(iter,"visible",FALSE)==TRUE)
+          if(json_bool_by_name(iter,"visible",FALSE)==TRUE)
             visible = g_list_append(visible,label);
-          if(ucl_bool_by_name(iter,"focused",FALSE)==TRUE)
+          if(json_bool_by_name(iter,"focused",FALSE)==TRUE)
             focus = label;
         }
       }
-    ucl_object_unref((ucl_object_t *)obj);
+    json_object_put(obj);
   }
 
   for(node=context->pager_pins;node!=NULL;node=g_list_next(node))
@@ -208,6 +203,5 @@ void pager_update ( void )
 
   g_list_free(visible);
   g_list_free_full(wslist,g_free);
-  ucl_parser_free(parse);
   g_free(response);
 }
