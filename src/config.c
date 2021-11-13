@@ -792,7 +792,10 @@ struct layout_widget *config_parse ( gchar *file )
 
   fname = get_xdg_config_file(file);
   if(fname)
-    if((!g_file_get_contents(fname,&conf,&size,NULL))||(!conf))
+    if(!g_file_get_contents(fname,&conf,&size,NULL))
+      conf=NULL;
+
+  if(!conf)
     {
       g_error("Error: can't read config file\n");
       exit(1);

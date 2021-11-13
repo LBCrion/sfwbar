@@ -18,6 +18,7 @@ struct layout_widget *layout_widget_new ( void )
   lw->value = NULL;
   lw->action = NULL;
   lw->icon = NULL;
+  lw->eval = NULL;
   lw->wtype = 0;
   lw->interval = 0;
   lw->next_poll = 0;
@@ -98,6 +99,7 @@ void layout_widget_free ( struct layout_widget *lw )
   g_free(lw->value);
   g_free(lw->action);
   g_free(lw->icon);
+  g_free(lw->eval);
   g_free(lw);
 }
 
@@ -122,23 +124,25 @@ void widget_update_all( void )
       {
         eval = expr_parse(lw->value, &vcount);
 
-        if(GTK_IS_LABEL(GTK_WIDGET(lw->widget)))
-          if(g_strcmp0(gtk_label_get_text(GTK_LABEL(lw->widget)),eval))
+        if(g_strcmp0(eval,lw->eval))
+        {
+          if(GTK_IS_LABEL(GTK_WIDGET(lw->widget)))
             gtk_label_set_text(GTK_LABEL(lw->widget),eval);
-
-        if(GTK_IS_PROGRESS_BAR(lw->widget))
-          if(!g_strrstr(eval,"nan"))
-            if(gtk_progress_bar_get_fraction(GTK_PROGRESS_BAR(lw->widget))!=
-                g_ascii_strtod(eval,NULL))
-              gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(lw->widget),
+          if(GTK_IS_PROGRESS_BAR(lw->widget))
+            if(!g_strrstr(eval,"nan"))
+             gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(lw->widget),
                   g_ascii_strtod(eval,NULL));
 
-        if(GTK_IS_IMAGE(lw->widget))
-        {
-          scale_image_set_image(GTK_WIDGET(lw->widget),eval);
-          scale_image_update(GTK_WIDGET(lw->widget));
+          if(GTK_IS_IMAGE(lw->widget))
+          {
+            scale_image_set_image(GTK_WIDGET(lw->widget),eval);
+            scale_image_update(GTK_WIDGET(lw->widget));
+          }
+          g_free(lw->eval);
+          lw->eval = eval;
         }
-        g_free(eval);
+        else
+          g_free(eval);
 
         if(!vcount)
         {
