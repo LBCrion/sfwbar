@@ -6,6 +6,12 @@
 ![](https://scan.coverity.com/projects/22494/badge.svg)
 ![](https://api.travis-ci.com/LBCrion/sfwbar.svg)
 
+### CONFIG FILE CHANGE
+Please note that the config file format is changing, the main branch in
+git is using the new format, but documentation hasn't been updated yet.
+This will be corrected before the next release. The change will allow
+for cleaner configuration files and more widely available dependencies.
+
 ### SFWBar
 
 SFWBar (Sway Floating Window Bar) is a flexible taskbar application for

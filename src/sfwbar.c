@@ -39,12 +39,18 @@ void init_context ( void )
   context->sw_hstate=0;
   context->buff_len = 1024;
   context->read_buff = g_malloc(context->buff_len);
+  context->features |= F_TB_ICON;
+  context->features |= F_TB_LABEL;
+  context->tb_rows = -1;
+  context->tb_rows = -1;
+  context->pager_cols = -1;
+  context->pager_rows = -1;
 }
 
-void css_init ( const ucl_object_t *obj )
+void css_init ( void )
 {
-  GtkCssProvider *css;
   gchar *css_str;
+  GtkCssProvider *css;
   GtkWidgetClass *widget_class = g_type_class_ref(GTK_TYPE_WIDGET);
 
   gtk_widget_class_install_style_property( widget_class,
@@ -78,16 +84,6 @@ void css_init ( const ucl_object_t *obj )
   gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
     GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
 
-  css_str = ucl_string_by_name(obj,"css");
-  if(css_str!=NULL)
-  {
-    css = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(css,css_str,strlen(css_str),NULL);
-    g_free(css_str);
-    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
-      GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
-  }
-
   if(cssname!=NULL)
   {
     css = gtk_css_provider_new();
@@ -97,57 +93,9 @@ void css_init ( const ucl_object_t *obj )
   }
 }
 
-GtkWidget *load_config ( void )
-{
-  const gchar *json;
-  gchar *fname;
-  struct ucl_parser *uparse;
-  const ucl_object_t *obj;
-  GtkWidget *grid;
-  gint dir;
-  
-  if(confname!=NULL)
-    fname = get_xdg_config_file(confname);
-  else
-    fname = get_xdg_config_file("sfwbar.config");
-  if(fname==NULL)
-  {
-    fprintf(stderr,"Error: can't open config file\n");
-    exit(1);
-  }
-
-  uparse = ucl_parser_new(0);
-  ucl_parser_add_file(uparse,fname);
-  obj = ucl_parser_get_object(uparse);
-  g_free(fname);
-  json = ucl_parser_get_error(uparse);
-  if(json!=NULL)
-    fprintf(stderr,"%s\n",json);
-  
-  css_init(obj);
-
-  gtk_widget_style_get(GTK_WIDGET(context->window),"direction",&dir,NULL);
-  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_LEFT,!(dir==GTK_POS_RIGHT));
-  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_RIGHT,!(dir==GTK_POS_LEFT));
-  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_BOTTOM,!(dir==GTK_POS_TOP));
-  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_TOP,!(dir==GTK_POS_BOTTOM));
-
-  placement_init(obj);
-  switcher_init(obj);
-  scanner_init(obj);
-
-  grid = gtk_grid_new();
-  gtk_widget_set_name(grid,"layout");
-  layout_init(obj,grid,NULL);
-
-  ucl_object_unref((ucl_object_t *)obj);
-  ucl_parser_free(uparse);
-  return grid;
-}
-
 gint shell_timer ( gpointer data )
 {
-  scanner_expire(context->scan_list);
+  scanner_expire();
   widget_update_all();
 
   if((context->features & F_TASKBAR)&&(context->wt_dirty==1))
@@ -175,8 +123,12 @@ static void activate (GtkApplication* app, gpointer data )
   gtk_layer_auto_exclusive_zone_enable (context->window);
   gtk_layer_set_keyboard_interactivity(context->window,FALSE);
   gtk_layer_set_layer(context->window,GTK_LAYER_SHELL_LAYER_OVERLAY);
+
+  css_init();
   
-  root = load_config();
+  root = config_parse(confname?confname:"sfwbar.config");
+
+//  root = load_config();
 
   if(root != NULL)
   {

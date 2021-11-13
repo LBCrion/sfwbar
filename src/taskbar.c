@@ -9,14 +9,20 @@
 #include <gtk/gtk.h>
 #include "sfwbar.h"
 
-GtkWidget *taskbar_init ( void )
+GtkWidget *taskbar_init ( GtkWidget *widget )
 {
   GtkWidget *w;
   gint i;
 
   context->features |= F_TASKBAR;
+  if(!(context->features & F_TB_ICON))
+    context->features |= F_TB_LABEL;
+  if((context->tb_rows<1)&&(context->tb_cols<1))
+    context->tb_rows = 1;
+  if((context->tb_rows>0)&&(context->tb_cols>0))
+    context->tb_cols = -1;
 
-  context->box = clamp_grid_new();
+  context->box = widget;
   g_object_set(context->box,"column-homogeneous",TRUE,NULL);
 
   w = gtk_button_new();

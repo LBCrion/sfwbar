@@ -1,50 +1,48 @@
 scanner {
-  
 # Extract memory usage information
-  "/proc/meminfo" {
-    MemTotal. = "^MemTotal:[\t ]*([0-9]+)[\t ]"
-    MemFree.= "^MemFree:[\t ]*([0-9]+)[\t ]"
-    MemCache.= "^Cached:[\t ]*([0-9]+)[\t ]"
-    MemBuff.= "^Buffers:[\t ]*([0-9]+)[\t ]"
+  file("/proc/meminfo") {
+    MemTotal = RegEx("^MemTotal:[\t ]*([0-9]+)[\t ]")
+    MemFree = RegEx("^MemFree:[\t ]*([0-9]+)[\t ]")
+    MemCache = RegEx( "^Cached:[\t ]*([0-9]+)[\t ]")
+    MemBuff = Regex("^Buffers:[\t ]*([0-9]+)[\t ]")
   }
 
 # Add up total and used swap capacity across all partitions
-  "/proc/swaps" {
-    SwapTotal.add = "[\t ]([0-9]+)"
-    SwapUsed.add = "[\t ][0-9]+[\t ]([0-9]+)"
+  file("/proc/swaps") {
+    SwapTotal = RegEx("[\t ]([0-9]+)",Sum)
+    SwapUsed = RegEx("[\t ][0-9]+[\t ]([0-9]+)",Sum)
   }
 
 # Add up CPU utilization stats across all CPUs
-  "/proc/stat" {
-    CpuUser.add = "^cpu [\\t ]*([0-9]+)","flag"
-    CpuNice.add = "^cpu [\\t ]*[0-9]+ ([0-9]+)"
-    CpuSystem.add = "^cpu [\\t ]*[0-9]+ [0-9]+ ([0-9]+)"
-    CpuIdle.add = "^cpu [\\t ]*[0-9]+ [0-9]+ [0-9]+ ([0-9]+)"
+  file("/proc/stat") {
+    CpuUser = RegEx("^cpu [\t ]*([0-9]+)",Sum)
+    CpuNice = RegEx("^cpu [\t ]*[0-9]+ ([0-9]+)",Sum)
+    CpuSystem = RegEx("^cpu [\t ]*[0-9]+ [0-9]+ ([0-9]+)",Sum)
+    CpuIdle = RegEx("^cpu [\t ]*[0-9]+ [0-9]+ [0-9]+ ([0-9]+)",Sum)
+  }
+
+# Get total and remaining battery charge
+  file("/sys/class/power_supply/BAT0/charge_full") {
+    BatteryTotal = Grab(Sum)
+  }
+  file("/sys/class/power_supply/BAT0/charge_now") {
+    BatteryLeft = Grab(Sum)
   }
 }
 
 layout {
   # add a sub-grid to house scales
-  pbars {
-    type = grid
-    style = scales
-    children {
-  # add a scale to display CPU utilization
-      Cpu { 
-        type = scale
-        css = "progressbar progress { background-color: #0000ff;}"
-        value = "(CpuUser-CpuUser.pval)/(CpuUser+CpuNice+CpuSystem+CpuIdle-CpuUser.pval-CpuNice.pval-CpuSystem.pval-CpuIdle.pval)"
-      }
-      Mem { 
-        type = scale
-        css = "progressbar progress { background-color: #00ff00;}"
-        value= "(MemTotal-MemFree-MemCache-MemBuff)/MemTotal" 
-      }
-      Swap { 
-        type = scale
-        css = "progressbar progress { background-color: #ff0000;}"
-        value = "SwapUsed/SwapTotal"
-      }
-    }
+  style = "scales"
+  scale { 
+    css = "progressbar progress { background-color: #0000ff;}"
+    value = (CpuUser-CpuUser.pval)/(CpuUser+CpuNice+CpuSystem+CpuIdle-CpuUser.pval-CpuNice.pval-CpuSystem.pval-CpuIdle.pval)
+  }
+  scale {
+    css = "progressbar progress { background-color: #00ff00;}"
+    value= (MemTotal-MemFree-MemCache-MemBuff)/MemTotal
+  }
+  scale {
+    css = "progressbar progress { background-color: #ff0000;}"
+    value = BatteryLeft/BatteryTotal
   }
 }

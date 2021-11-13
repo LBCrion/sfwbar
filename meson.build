@@ -32,6 +32,7 @@ src = ['src/sfwbar.c',
     'src/clampgrid.c',
     'src/wayland.c',
     'src/sni.c',
+    'src/config.c',
     ftop_c,
     ftop_h ]
 dep = [gtk3, glib, ucl, glsh, wayl ]

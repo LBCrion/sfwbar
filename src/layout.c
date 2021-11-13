@@ -4,275 +4,158 @@
  */
 
 #include "sfwbar.h"
+#include "config.h"
 #include <gtk/gtk.h>
 #include <gio/gdesktopappinfo.h>
+
+struct layout_widget *layout_widget_new ( void )
+{
+  struct layout_widget *lw;
+  lw = g_malloc(sizeof(struct layout_widget));
+  lw->widget = NULL;
+  lw->style = NULL;
+  lw->css = NULL;
+  lw->value = NULL;
+  lw->action = NULL;
+  lw->icon = NULL;
+  lw->wtype = 0;
+  lw->interval = 0;
+  lw->next_poll = 0;
+  lw->dir = GTK_POS_RIGHT;
+  lw->rect.x = 0;
+  lw->rect.y = 0;
+  lw->rect.w = 0;
+  lw->rect.h = 0;
+  return lw;
+}
+
+void layout_widget_config ( struct layout_widget *lw )
+{
+  GtkWidget *img;
+
+  if(lw->style)
+  {
+    gtk_widget_set_name(lw->widget,lw->style);
+    g_free(lw->style);
+    lw->style = NULL;
+  }
+  if(lw->css)
+  {
+    GtkStyleContext *context = gtk_widget_get_style_context (lw->widget);
+    GtkCssProvider *provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(provider,lw->css,strlen(lw->css),NULL);
+    gtk_style_context_add_provider (context,
+      GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+    g_free(lw->css);
+    lw->css = NULL;
+  }
+
+  if(GTK_IS_PROGRESS_BAR(lw->widget))
+  {
+    gtk_widget_style_get(lw->widget,"direction",&(lw->dir),NULL);
+    if((lw->dir==GTK_POS_LEFT)||(lw->dir==GTK_POS_RIGHT))
+      gtk_orientable_set_orientation(GTK_ORIENTABLE(lw->widget),GTK_ORIENTATION_HORIZONTAL);
+    else
+      gtk_orientable_set_orientation(GTK_ORIENTABLE(lw->widget),GTK_ORIENTATION_VERTICAL);
+    if((lw->dir==GTK_POS_TOP)||(lw->dir==GTK_POS_LEFT))
+      gtk_progress_bar_set_inverted(GTK_PROGRESS_BAR(lw->widget),TRUE);
+    else
+      gtk_progress_bar_set_inverted(GTK_PROGRESS_BAR(lw->widget),FALSE);
+  }
+
+  if(lw->wtype==G_TOKEN_TASKBAR)
+    taskbar_init(lw->widget);
+
+  if(lw->wtype==G_TOKEN_PAGER)
+    pager_init(lw->widget);
+
+  if(lw->icon&&GTK_IS_BUTTON(lw->widget))
+  {
+    img = scale_image_new();
+    scale_image_set_image(img,lw->icon);
+    gtk_container_add(GTK_CONTAINER(lw->widget),img);
+  }
+
+  if(GTK_IS_LABEL(lw->widget))
+  {
+    gdouble xalign;
+    gtk_widget_style_get(lw->widget,"align",&xalign,NULL);
+    gtk_label_set_xalign(GTK_LABEL(lw->widget),xalign);
+  }
+
+  widget_set_css(lw->widget);
+
+  if(lw->action)
+    g_signal_connect(lw->widget,"clicked",G_CALLBACK(widget_action),lw->action);
+}
+
+void layout_widget_free ( struct layout_widget *lw )
+{
+  g_free(lw->style);
+  g_free(lw->css);
+  g_free(lw->value);
+  g_free(lw->action);
+  g_free(lw->icon);
+  g_free(lw);
+}
 
 void widget_update_all( void )
 {
   GList *iter;
-  gint64 ctime = g_get_real_time();
-  gchar *expr, *eval;
+  gint64 ctime;
+  struct layout_widget *lw;
+  gchar *eval;
   guint vcount;
+
+  ctime = g_get_real_time();
 
   for(iter=context->widgets;iter!=NULL;iter=g_list_next(iter))
   {
-    gint64 *poll = g_object_get_data(G_OBJECT(iter->data),"next_poll");
-    if(*poll <= ctime)
+    lw = iter->data;
+    if(lw->next_poll <= ctime)
     {
-      gint64 *freq = g_object_get_data(G_OBJECT(iter->data),"freq");
-      *poll = ctime+(*freq);
-      expr = g_object_get_data(G_OBJECT(iter->data),"expr");
-      if((expr!=NULL)&&(GTK_IS_LABEL(iter->data)||
-            GTK_IS_PROGRESS_BAR(iter->data)||GTK_IS_IMAGE(iter->data)))
+      lw->next_poll = ctime+lw->interval;
+      if((lw->value!=NULL)&&(GTK_IS_LABEL(lw->widget)||
+            GTK_IS_PROGRESS_BAR(lw->widget)||GTK_IS_IMAGE(lw->widget)))
       {
-        eval = expr_parse(expr, &vcount);
+        eval = expr_parse(lw->value, &vcount);
 
-        if(!vcount)
-          g_object_set_data(G_OBJECT(iter->data),"expr",NULL);
+        if(GTK_IS_LABEL(GTK_WIDGET(lw->widget)))
+          if(g_strcmp0(gtk_label_get_text(GTK_LABEL(lw->widget)),eval))
+            gtk_label_set_text(GTK_LABEL(lw->widget),eval);
 
-        if(GTK_IS_LABEL(GTK_WIDGET(iter->data)))
-          if(g_strcmp0(gtk_label_get_text(GTK_LABEL(iter->data)),eval))
-            gtk_label_set_text(GTK_LABEL(iter->data),eval);
-        if(GTK_IS_PROGRESS_BAR(iter->data))
+        if(GTK_IS_PROGRESS_BAR(lw->widget))
           if(!g_strrstr(eval,"nan"))
-            if(gtk_progress_bar_get_fraction(GTK_PROGRESS_BAR(iter->data))!=
+            if(gtk_progress_bar_get_fraction(GTK_PROGRESS_BAR(lw->widget))!=
                 g_ascii_strtod(eval,NULL))
-              gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(iter->data),
+              gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(lw->widget),
                   g_ascii_strtod(eval,NULL));
-        if(GTK_IS_IMAGE(iter->data))
+
+        if(GTK_IS_IMAGE(lw->widget))
         {
-          scale_image_set_image(GTK_WIDGET(iter->data),eval);
-          scale_image_update(GTK_WIDGET(iter->data));
+          scale_image_set_image(GTK_WIDGET(lw->widget),eval);
+          scale_image_update(GTK_WIDGET(lw->widget));
         }
         g_free(eval);
+
+        if(!vcount)
+        {
+          layout_widget_free(lw);
+          context->widgets = g_list_delete_link(context->widgets,iter);
+        }
       }
     }
   }
 }
 
-GtkWidget *layout_config_include ( gchar *fname, GtkWidget *parent, GtkWidget *sibling )
+void widget_action ( GtkWidget *widget, gchar *cmd )
 {
-  const gchar *json;
-  struct ucl_parser *uparse;
-  const ucl_object_t *obj;
-  gchar *fullname;
-  GtkWidget *ret;
-
-  fullname = get_xdg_config_file(fname);
-  if(fullname==NULL)
-    return sibling;
-  uparse = ucl_parser_new(0);
-  ucl_parser_add_file(uparse,fullname);
-  obj = ucl_parser_get_object(uparse);
-  g_free(fullname);
-  json = ucl_parser_get_error(uparse);
-  if(json!=NULL)
-    printf("%s\n",json);
-  scanner_init(obj);
-  ret = layout_init(obj,parent,sibling);
-
-  ucl_object_unref((ucl_object_t *)obj);
-  ucl_parser_free(uparse);
-  return ret;
-}
-
-GtkWidget *layout_config_iter ( const ucl_object_t *obj,
-    GtkWidget *parent, GtkWidget *sibling )
-{
-  const ucl_object_t *ptr,*arr;
-  ucl_object_iter_t *itp;
-  gchar *type,*name,*expr,*css;
-  gint dir;
-  GtkWidget *widget=NULL;
-  gint64 freq;
-  gint x,y,w,h;
-
-  if(ucl_object_type(obj)==UCL_STRING)
-    return layout_config_include((char *)ucl_object_tostring_forced(obj),parent,sibling);
-
-  type = ucl_string_by_name(obj,"type");
-
-  if(type==NULL)
-    return sibling;
-
-  if(g_ascii_strcasecmp(type,"label")==0)
-    widget = gtk_label_new("");
-  if(g_ascii_strcasecmp(type,"scale")==0)
-    widget = gtk_progress_bar_new();
-  if(g_ascii_strcasecmp(type,"grid")==0)
-    widget = gtk_grid_new();
-  if(g_ascii_strcasecmp(type,"image")==0)
-    widget = scale_image_new();
-  if(g_ascii_strcasecmp(type,"button")==0)
-  {
-    widget = gtk_button_new();
-    g_signal_connect(widget,"clicked",G_CALLBACK(widget_action),NULL);
-    g_object_set_data(G_OBJECT(widget),"action", ucl_string_by_name(obj,"action"));
-  }
-  if(g_ascii_strcasecmp(type,"taskbar")==0)
-  {
-    if(ucl_bool_by_name(obj,"icon",TRUE))
-      context->features |= F_TB_ICON;
-    if(ucl_bool_by_name(obj,"title",TRUE))
-      context->features |= F_TB_LABEL;
-    if(!(context->features & F_TB_ICON))
-      context->features |= F_TB_LABEL;
-    context->tb_rows = ucl_int_by_name(obj,"rows",-1);
-    context->tb_cols = ucl_int_by_name(obj,"cols",-1);
-    if((context->tb_rows<1)&&(context->tb_cols<1))
-      context->tb_rows = 1;
-    if((context->tb_rows>0)&&(context->tb_cols>0))
-      context->tb_cols = -1;
-    widget = taskbar_init();
-  }
-  if(g_ascii_strcasecmp(type,"tray")==0)
-    widget = sni_init();
-  if(g_ascii_strcasecmp(type,"pager")==0)
-  {
-    context->pager_rows = ucl_int_by_name(obj,"rows",-1);
-    context->pager_cols = ucl_int_by_name(obj,"cols",-1);
-    if((context->pager_rows<1)&&(context->pager_cols<1))
-      context->pager_rows = 1;
-    if((context->pager_rows>0)&&(context->pager_cols>0))
-      context->pager_cols = -1;
-    if(ucl_bool_by_name(obj,"preview",FALSE)==TRUE)
-      context->features |= F_PA_RENDER;
-    context->pager_pins = NULL;
-    arr = ucl_object_lookup(obj,"pins");
-    if( arr )
-    {
-      itp = ucl_object_iterate_new(arr);
-      while((ptr = ucl_object_iterate_safe(itp,true))!=NULL)
-      {
-        gchar *pin = (char *)ucl_object_tostring(ptr);
-        if(pin!=NULL)
-          context->pager_pins = g_list_append(context->pager_pins,g_strdup(pin));
-      }
-      ucl_object_iterate_free(itp);
-    }
-    widget = pager_init();
-  }
-
-  if(widget==NULL)
-    return sibling;
-
-  name = ucl_string_by_name(obj,"style");
-  if(name!=NULL)
-    gtk_widget_set_name(widget,name);
-  g_free(name);
-
-  css = ucl_string_by_name(obj,"css");
-  if(css!=NULL)
-  {
-    GtkStyleContext *context = gtk_widget_get_style_context (widget);
-    GtkCssProvider *provider = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(provider,css,strlen(css),NULL);
-    gtk_style_context_add_provider (context,
-      GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-    g_free(css);
-  }
-
-  expr = ucl_string_by_name(obj,"value");
-  if(expr!=NULL)
-    g_object_set_data(G_OBJECT(widget),"expr",expr);
-
-  freq = ucl_int_by_name(obj,"freq",0)*1000;
-  g_object_set_data(G_OBJECT(widget),"freq",g_memdup(&freq,sizeof(freq)));
-  g_object_set_data(G_OBJECT(widget),"next_poll",g_try_malloc0(sizeof(gint64)));
-
-  if(GTK_IS_PROGRESS_BAR(widget))
-  {
-    gtk_widget_style_get(widget,"direction",&dir,NULL);
-    if((dir==GTK_POS_LEFT)||(dir==GTK_POS_RIGHT))
-      gtk_orientable_set_orientation(GTK_ORIENTABLE(widget),GTK_ORIENTATION_HORIZONTAL);
-    else
-      gtk_orientable_set_orientation(GTK_ORIENTABLE(widget),GTK_ORIENTATION_VERTICAL);
-    if((dir==GTK_POS_TOP)||(dir==GTK_POS_LEFT))
-      gtk_progress_bar_set_inverted(GTK_PROGRESS_BAR(widget),TRUE);
-    else
-      gtk_progress_bar_set_inverted(GTK_PROGRESS_BAR(widget),FALSE);
-  }
-
-  if(GTK_IS_BUTTON(widget))
-  {
-    GtkWidget *img;
-    ptr = ucl_object_lookup(obj,"icon");
-    img = scale_image_new();
-    scale_image_set_image(img,(gchar *)ucl_object_tostring(ptr));
-    gtk_container_add(GTK_CONTAINER(widget),img);
-  }
-
-  if(GTK_IS_LABEL(widget))
-  {
-    gdouble xalign;
-    gtk_widget_style_get(widget,"align",&xalign,NULL);
-    gtk_label_set_xalign(GTK_LABEL(widget),xalign);
-  }
-
-  widget_set_css(widget);
-  x = ucl_int_by_name(obj,"x",0);
-  y = ucl_int_by_name(obj,"y",0);
-  w = ucl_int_by_name(obj,"w",1);
-  h = ucl_int_by_name(obj,"h",1);
-  if(w<1)
-    w=1;
-  if(h<1)
-    h=1;
-  if((x<1)||(y<1))
-  {
-    gtk_widget_style_get(parent,"direction",&dir,NULL);
-    gtk_grid_attach_next_to(GTK_GRID(parent),widget,sibling,dir,1,1);
-  }
-  else
-    gtk_grid_attach(GTK_GRID(parent),widget,x,y,w,h);
-
-  context->widgets = g_list_append(context->widgets,widget);
-
-  if(GTK_IS_GRID(widget))
-  {
-    arr = ucl_object_lookup(obj,"children");
-    if( arr )
-    {
-      GtkWidget *sibling = NULL;
-      itp = ucl_object_iterate_new(arr);
-      while((ptr = ucl_object_iterate_safe(itp,true))!=NULL)
-        sibling = layout_config_iter(ptr,widget,sibling);
-      ucl_object_iterate_free(itp);
-    }
-  }
-  g_free(type);
-  return widget;
-}
-
-GtkWidget *layout_init ( const ucl_object_t *obj, GtkWidget *parent, GtkWidget *sibling )
-{
-  const ucl_object_t *arr,*ptr;
-  ucl_object_iter_t *itp;
-
-  arr = ucl_object_lookup(obj,"layout");
-  if(arr==NULL)
-    return NULL;
-
-  itp = ucl_object_iterate_new(arr);
-  while((ptr = ucl_object_iterate_safe(itp,true))!=NULL)
-    sibling = layout_config_iter(ptr,parent,sibling);
-
-  ucl_object_iterate_free(itp);
-
-  return sibling;
-}
-
-void widget_action ( GtkWidget *widget, gpointer data )
-{
-  gchar *cmd;
   gchar *argv[] = {NULL,NULL};
   GPid pid;
-  cmd = g_object_get_data(G_OBJECT(widget),"action");
-  if(cmd!=NULL)
-  {
-    argv[0]=cmd;
-    g_spawn_async(NULL,argv,NULL,G_SPAWN_SEARCH_PATH,NULL,NULL,&pid,NULL);
-  }
+  if(!cmd)
+    return;
+  argv[0]=cmd;
+  g_spawn_async(NULL,argv,NULL,G_SPAWN_SEARCH_PATH,NULL,NULL,&pid,NULL);
 }
 
 void widget_set_css ( GtkWidget *widget )

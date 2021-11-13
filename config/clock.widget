@@ -1,20 +1,15 @@
 layout {
-  Clock {
-    type = grid
-    style = "frame",
-    children {
-      Time { 
-        type = label
-        style = time
-        css = "label { font: 0.5cm Sans; font-weight: 700; -GtkWidget-align: 0.5; -GtkWidget-hexpand: true; -GtkWidget-vexpand: true;}"
-        value = "Extract(Time(),'([0-9]*:[0-9]*)')"
-      }
-      Date { 
-        type = label
-        style = date
-        css = "label { -GtkWidget-align: 0.5; -GtkWidget-hexpand: true; -GtkWidget-vexpand: true; }"
-        value = "Extract(Time(),'^([A-Za-z]+\\ [A-Za-z]+[\\ ]+[0-9]+)')"
-      }
-    }
+  style = "frame"
+
+  label {
+    style = "time"
+    css = "label { font: 0.5cm Sans; font-weight: 700; -GtkWidget-align: 0.5; -GtkWidget-hexpand: true; -GtkWidget-vexpand: true;}"
+    value = Extract(Time(),'([0-9]*:[0-9]*)')
+  }
+
+  label {
+    style = "date"
+    css = "label { -GtkWidget-align: 0.5; -GtkWidget-hexpand: true; -GtkWidget-vexpand: true; }"
+    value = Extract(Time(),'^([A-Za-z]+\\ [A-Za-z]+[\\ ]+[0-9]+)')
   }
 }

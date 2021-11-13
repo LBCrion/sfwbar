@@ -1,28 +1,20 @@
 scanner {
 # Add up received and transmitted bytes cross all enp* interfaces  
-  "/proc/net/dev" {
-    flags = "NoGlob"
-    EthRcvd.add = "enp.*:[\t ]*([0-9]+)"
-    EthSent.add = "enp.*:(?:[\t ]*[0-9]+){8}[\t ]([0-9]+)"
+  file("/proc/net/dev",NoGLob) {
+    EthRcvd = RegEx("enp.*:[\t ]*([0-9]+)",Sum)
+    EthSent = RegEx("enp.*:(?:[\t ]*[0-9]+){8}[\t ]([0-9]+)",Sum)
   }
 }
 
 layout {
-  CpuTemp {
-    type = grid
-    css = "* { -GtkWidget-direction: right; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
-        children {
-          EthLabel { 
-            type = image
-            value = "'icons/misc/lan.svg'"
-            css = "* { min-width: 0.5cm; min-height: 0.5cm; }"
-          }
-          EthValue { 
-            type = label
-            style = value
-            value = "Str((EthRcvd-EthRcvd.pval)/0.001024/EthRcvd.time,0)+'K/s'"
-            css = "* { padding: 1.25mm; -GtkWidget-hexpand: true; -GtkWidget-align: 0.5; }"
-          }
-        }
+  css = "* { -GtkWidget-direction: right; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
+  image {
+    value = "icons/misc/lan.svg"
+    css = "* { min-width: 0.5cm; min-height: 0.5cm; }"
+  }
+  label {
+    style = "value"
+    value = Str((EthRcvd-EthRcvd.pval)/0.001024/EthRcvd.time,0)+"K/s"
+    css = "* { padding: 1.25mm; -GtkWidget-hexpand: true; -GtkWidget-align: 0.5; }"
   }
 }

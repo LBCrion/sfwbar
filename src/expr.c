@@ -12,14 +12,7 @@
 #include <glib.h>
 #include "sfwbar.h"
 
-enum {
-  G_TOKEN_TIME    = G_TOKEN_LAST + 1,
-  G_TOKEN_MIDW    = G_TOKEN_LAST + 2,
-  G_TOKEN_EXTRACT = G_TOKEN_LAST + 3,
-  G_TOKEN_DF      = G_TOKEN_LAST + 4,
-  G_TOKEN_VAL     = G_TOKEN_LAST + 5,
-  G_TOKEN_STRW    = G_TOKEN_LAST + 6
-};
+gchar *expr_token[] = {"Time","Mid","Extract","Df","Val","Str"};
 
 gdouble expr_parse_num ( GScanner *scanner );
 gchar *expr_parse_str ( GScanner *scanner );
@@ -29,7 +22,7 @@ gboolean parser_expect_symbol ( GScanner *scanner, gchar symbol, gchar *expr )
   if(g_scanner_peek_next_token(scanner)==symbol)
   {
     g_scanner_get_next_token(scanner);
-    return TRUE;
+    return FALSE;
   }
   if(!expr)
     g_scanner_warn(scanner, "Unexpected token at position %u, expected '%c'",
@@ -37,7 +30,7 @@ gboolean parser_expect_symbol ( GScanner *scanner, gchar symbol, gchar *expr )
   else
     g_scanner_warn(scanner, "%u: Unexpected token in expression %s, expected '%c'",
       g_scanner_cur_position(scanner), expr, symbol );
-  return FALSE;
+  return TRUE;
 }
 
 /* convert a number to a string with specified number of decimals */

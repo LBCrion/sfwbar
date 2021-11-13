@@ -7,11 +7,15 @@
 #include <gtk/gtk.h>
 #include "sfwbar.h"
 
-GtkWidget *pager_init ( void )
+GtkWidget *pager_init ( GtkWidget *widget )
 {
-  context->pager = gtk_grid_new();
+  context->pager = widget;
   gtk_widget_set_name(context->pager, "pager");
   context->features |= F_PAGER;
+  if((context->pager_rows<1)&&(context->pager_cols<1))
+    context->pager_rows = 1;
+  if((context->pager_rows>0)&&(context->pager_cols>0))
+    context->pager_cols = -1;
   pager_update();
   return context->pager;
 }

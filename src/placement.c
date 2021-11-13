@@ -7,24 +7,6 @@
 #include <unistd.h>
 #include "sfwbar.h"
 
-void placement_init ( const ucl_object_t *obj )
-{
-  const ucl_object_t *ptr;
-  if((ptr=ucl_object_lookup(obj,"placement"))==NULL)
-    return;
-  context->features |= F_PLACEMENT;
-  context->wp_x= ucl_int_by_name(ptr,"xcascade",10);
-  context->wp_y= ucl_int_by_name(ptr,"ycascade",10);
-  context->wo_x= ucl_int_by_name(ptr,"xorigin",0);
-  context->wo_y= ucl_int_by_name(ptr,"yorigin",0);
-  if(ucl_bool_by_name(ptr,"children",FALSE)==FALSE)
-    context->features |= F_PL_CHKPID;
-  if(context->wp_x<1)
-    context->wp_x=1;
-  if(context->wp_y<1)
-    context->wp_y=1;
-}
-
 int comp_int ( const void *x1, const void *x2)
 {
   return ( *(int*)x1 - *(int*)x2 );
@@ -195,9 +177,8 @@ void place_window ( gint64 wid, gint64 pid )
     return;
   sway_ipc_send(sock,4,"");
   response = sway_ipc_poll(sock,&etype);
-  close(sock);
-  if(response==NULL)
-    return;
+  if(response!=NULL)
+  {
   parse = ucl_parser_new(0);
   ucl_parser_add_string(parse,response,strlen(response));
   obj = ucl_parser_get_object(parse);
@@ -210,4 +191,6 @@ void place_window ( gint64 wid, gint64 pid )
   ucl_object_unref((ucl_object_t *)obj);
   ucl_parser_free(parse);
   g_free(response);
+  }
+  close(sock);
 }

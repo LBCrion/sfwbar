@@ -1,0 +1,125 @@
+button { background-image: none; background-color: #000000;}
+grid { background-image: none; background-color: #000000; border-image: none; border:0px; }
+window { background-image: none; background-color: #000000; border:0px; border-image:none;}
+
+button#taskbar_normal label, button#taskbar_active label, button#taskbar_normal:hover label {
+  padding-left: 3px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  color: #555555;
+  text-shadow: none;
+}
+
+button#taskbar_normal , button#taskbar_active , button#taskbar_normal:hover, button {
+  padding-left: 3px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  background-image: none;
+  border-radius: 0;
+  border-image: none;
+  border-color: #222222;
+  font: 10px Sans;
+}
+
+button#taskbar_active {
+  background-color: #113355;
+}
+
+button#taskbar_normal:hover {
+  background-color: #cccccc;
+}
+
+button#pager_normal , button#pager_visible , button#pager_focused {
+  padding-left: 2px;
+  padding-right: 2px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  background-image: none;
+  border-radius: 0;
+  border-image: none;
+  font: 10px Sans;
+}
+
+button#pager_focused {
+  background-color: #113355;
+}
+
+
+progress, trough {
+  border-radius: 0;
+}
+
+progressbar {
+  padding-left: 1px;
+  padding-right: 1px;
+}
+
+progress {
+  border-style: outset;
+  border-color: #222222;
+  min-width: 8px;
+}
+
+progressbar#red progress{
+  background-color: #ff0000;
+}
+progressbar#green progress {
+  background-color: #00ff00;
+}
+progressbar#blue progress {
+  background-color: #0000ff;
+}
+
+trough {
+  background-color: #a1a1a1;
+  border-color: #222222;
+  border-style: inset;
+  min-height: 28px;
+  min-width: 10px;
+}
+
+grid#frame {
+  border-color: #222222;
+  border-style: groove;
+  border-width: 2px;
+  padding-top: 1px;
+}
+
+grid#layout {
+padding: 1px;
+}
+
+label {
+  font: 10px Sans;
+  color: #555555;
+}
+
+label#static {
+  font: 10px Sans;
+  min-width: 35px;
+  min-height: 11px;
+  padding-left: 5px;
+}
+
+label#value {
+  font: 10px Sans;
+  min-width: 42px;
+  min-height: 11px;
+  padding-right: 5px;
+}
+
+label#bold {
+  font: 20px Sans;
+  font-weight: 700;
+  min-width: 84px;
+  padding-top: 1px;
+  padding-bottom: 2px;
+}
+
+label#w10 {
+  min-width: 10px;
+}
+
+label#w25 {
+  min-width: 25px;
+}

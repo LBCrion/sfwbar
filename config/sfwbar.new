@@ -1,19 +1,49 @@
-# Placement configuration, add placement section if you want SFWBar to handle
-# window placement. xcascade and ycascade paramters define a step to offset
-# a new window location by. They are specified as a percent of desktop size.
 
+scanner {
+# Extract memory usage information
+  file("/proc/meminfo") {
+    MemTotal = RegEx("^MemTotal:[\t ]*([0-9]+)[\t ]")
+    MemFree = RegEx("^MemFree:[\t ]*([0-9]+)[\t ]")
+    MemCache = RegEx( "^Cached:[\t ]*([0-9]+)[\t ]")
+    MemBuff = Regex("^Buffers:[\t ]*([0-9]+)[\t ]")
+  }
+
+# Add up total and used swap capacity across all partitions
+  file("/proc/swaps") {
+    SwapTotal = RegEx("[\t ]([0-9]+)",Sum)
+    SwapUsed = RegEx("[\t ][0-9]+[\t ]([0-9]+)",Sum)
+  }
+
+# Add up CPU utilization stats across all CPUs
+  file("/proc/stat") {
+    CpuUser = RegEx("^cpu [\t ]*([0-9]+)",Sum)
+    CpuNice = RegEx("^cpu [\t ]*[0-9]+ ([0-9]+)",Sum)
+    CpuSystem = RegEx("^cpu [\t ]*[0-9]+ [0-9]+ ([0-9]+)",Sum)
+    CpuIdle = RegEx("^cpu [\t ]*[0-9]+ [0-9]+ [0-9]+ ([0-9]+)",Sum)
+  }
+
+# Get total and remaining battery charge
+  file("/sys/class/power_supply/BAT0/charge_full") {
+    BatteryTotal = RegEx("^([0-9]*)",Sum)
+  }
+  file("sys/class/power_supply/BAT0/charge_now") {
+    BatteryLeft = RegEx("^([0-9]*)",Sum)
+  }
+}
+
+# Window Placer
 placer {
-  xstep = 5    # step by 5% of desktop horizontally
-  ystep = 5    # step by 5% of desktop vertically
-  xorigin = 5
-  yorigin = 5
+  xorigin = 5  # place the first window at X% from the left
+  yorigin = 5  # place the first window at X% from the top
+  xstep = 5    # step by X% of desktop horizontally
+  ystep = 5    # step by X% of desktop vertically
   children = false
 }
 
 # Task Switcher
-
 switcher {
   interval = 7
+  icons = true
   labels = false
   cols = 5
 }
@@ -21,53 +51,61 @@ switcher {
 # Panel layout
 
 layout {
-
-  # add a taskbar
   taskbar {
-    css = "* { -GtkWidget-hexpand: true; }" # take up empty space, set icon size
-    icons = true     # display icons
-    labels = true    # display titles
-    rows = 1        # stack window buttons across two rows
+    rows = 2
+    css = "* { -GtkWidget-hexpand: true; }" # stretch horizontally
+    icons = true
+    labels = true
   }
-
-# Uncomment this section if you would like to put widgets on the left and right
-# edges of the taskbar with empty space in the middle.
-#  spacer {
-#    type = label
-#  }
 
   # add a pager
   pager {
+    rows = 2
     preview = true
-    rows = 1
     pins = "1","2","3","4"
   }
 
   # add a launcher
   button {
+    icon = "firefox"
     action = "firefox"                        # launch firefox on click
-    icon = "firefox"                          # set icon on the button 
-    css = "* { min-height: 0.5cm; min-width: 0.5cm; }"   # set icon size
-  }
-  button {
-    action = "alacritty"
-    icon = "Alacritty"
-    css = "* { min-height: 0.5cm; min-width: 0.5cm; }"
+    css = "* { min-height: 1.25cm; min-width: 1.25cm; }"   # set icon size
   }
 
-  include("usage.widget")
- 
+  button {
+    icon = "Alacritty"
+    action = "alacritty"
+    css = "* { min-width: 1.25cm; min-height: 1.25cm; }"
+  }
+
   grid {
+    scale {
+      css = "progressbar progress { background-color: #0000ff;}"
+      value = (CpuUser-CpuUser.pval)/(CpuUser+CpuNice+CpuSystem+CpuIdle
+        -CpuUser.pval-CpuNice.pval-CpuSystem.pval-CpuIdle.pval)
+    }
+    scale {
+      css = "progressbar progress { background-color: #00ff00;}"
+      value= (MemTotal-MemFree-MemCache-MemBuff)/MemTotal
+    }
+    scale {
+      css = "progressbar progress { background-color: #ff0000;}"
+      value = "BatteryLeft/BatteryTotal"
+    }
+  }
+
+/*  grid
     style = "frame"
     css = "* { -GtkWidget-direction: right; }"
+
     include("cpu-temp.widget")
     include("lan-bps.widget")
     include("mb-temp.widget")
     include("fan-rpm.widget")
-  }
+  end
 
   include("weather.widget")
-  include("clock.widget")
+  include("clock.widget")*/
 }
 
 #CSS
@@ -186,12 +224,8 @@ trough {
   min-width: 2.5mm;
 }
 
-label#time, label#date {
-  min-width: 2cm;
-}
-
 grid#frame {
-  -GtkWidget-direction: right;
+  -GtkWidget-direction: bottom;
   min-width: 2cm;
   border-color: #9c9c9c;
   border-style: groove;

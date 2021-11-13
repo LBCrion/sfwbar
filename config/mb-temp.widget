@@ -1,26 +1,19 @@
 scanner {
 # Poll motherboard temperature
-  "/sys/class/hwmon/hwmon2/temp1_input" {
-    MBTemp.= "([0-9]+)"
+  file("/sys/class/hwmon/hwmon2/temp1_input") {
+    MBTemp = RegEx("([0-9]+)")
   }
 }
 
 layout {
-  CpuTemp {
-    type = grid
-    css = "* { -GtkWidget-direction: right; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
-        children {
-          MbLabel { 
-            type = image
-            value = "'icons/misc/comp.svg'"
-            css = "* { min-width: 0.5cm; min-height: 0.5cm; }"
-          }
-          MbValue { 
-            type = label
-            style = value
-            value = "Str(MBTemp/1000,0)+'C'"
-            css = "* { padding: 1.25mm; -GtkWidget-hexpand: true; -GtkWidget-align: 0.5; }"
-          }
-        }
+  css = "* { -GtkWidget-direction: right; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
+  image {
+    value = "icons/misc/comp.svg"
+    css = "* { min-width: 0.5cm; min-height: 0.5cm; }"
+  }
+  label {
+    style = "value"
+    value = Str(MBTemp/1000,0)+"C"
+    css = "* { padding: 1.25mm; -GtkWidget-hexpand: true; -GtkWidget-align: 0.5; }"
   }
 }
