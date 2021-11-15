@@ -389,17 +389,80 @@ gchar *config_get_value ( GScanner *scanner )
   return value;
 }
 
-void config_widget_props ( GScanner *scanner, struct layout_widget *lw)
+void config_get_pins ( GScanner *scanner, struct layout_widget *lw )
+{
+  if(lw->wtype != G_TOKEN_PAGER)
+  {
+    g_scanner_error(scanner,"this widget has no property 'pins'");
+    scanner->max_parse_errors = TRUE;
+    return;
+  }
+  if(g_scanner_peek_next_token(scanner)!='=')
+  {
+    g_scanner_error(scanner,"expecting pins = string [,string]");
+    scanner->max_parse_errors = TRUE;
+    return;
+  }
+  do
+  {
+    g_scanner_get_next_token(scanner);
+    if(g_scanner_peek_next_token(scanner)!=G_TOKEN_STRING)
+    {
+      g_scanner_error(scanner,"expecting a string in pins = string [,string]");
+      scanner->max_parse_errors = TRUE;
+      break;
+    }
+    g_scanner_get_next_token(scanner);
+    context->pager_pins = g_list_append(context->pager_pins,
+        g_strdup(scanner->value.v_string));
+  } while ( g_scanner_peek_next_token(scanner)==',');
+}
+
+void config_widget_cols ( GScanner *scanner, struct layout_widget *lw )
+{
+  switch(lw->wtype)
+  {
+    case G_TOKEN_TASKBAR:
+      context->tb_cols = config_assign_number(scanner, "cols = Number");
+      break;
+    case G_TOKEN_PAGER:
+      context->pager_cols = config_assign_number(scanner, "cols = Number");
+      break;
+    default:
+      g_scanner_error(scanner,"this widget has no property 'cols'");
+      scanner->max_parse_errors = TRUE;
+      break;
+  }
+}
+
+void config_widget_rows ( GScanner *scanner, struct layout_widget *lw )
+{
+  switch(lw->wtype)
+  {
+    case G_TOKEN_TASKBAR:
+      context->tb_rows = config_assign_number(scanner, "rows = Number");
+      break;
+    case G_TOKEN_PAGER:
+      context->pager_rows = config_assign_number(scanner, "rows = Number");
+      break;
+    default:
+      g_scanner_error(scanner,"this widget has no property 'rows'");
+      scanner->max_parse_errors = TRUE;
+      break;
+  }
+}
+
+void config_widget_props ( GScanner *scanner, struct layout_widget *lw )
 {
   scanner->max_parse_errors = FALSE;
 
   if( g_scanner_peek_next_token( scanner ) != '{')
-    return;
+    return layout_widget_config(lw);
   else
     g_scanner_get_next_token(scanner);
 
   while (!(( (gint)g_scanner_peek_next_token ( scanner ) >= G_TOKEN_GRID )&&
-    ((gint)g_scanner_peek_next_token ( scanner ) <= G_TOKEN_TRAY ))&&
+      ( (gint)g_scanner_peek_next_token ( scanner ) <= G_TOKEN_TRAY ))&&
       ( (gint)g_scanner_peek_next_token ( scanner ) != '}' )&&
       ( (gint)g_scanner_peek_next_token ( scanner ) != G_TOKEN_EOF ))
   {
@@ -418,30 +481,7 @@ void config_widget_props ( GScanner *scanner, struct layout_widget *lw)
         lw->value = config_get_value(scanner);
         break;
       case G_TOKEN_PINS:
-        if(lw->wtype != G_TOKEN_PAGER)
-        {
-          g_scanner_error(scanner,"this widget has no property 'pins'");
-          scanner->max_parse_errors = TRUE;
-          break;
-        }
-        if(g_scanner_peek_next_token(scanner)!='=')
-        {
-          g_scanner_error(scanner,"expecting pins = string [,string]");
-          scanner->max_parse_errors = TRUE;
-          break;
-        }
-        do {
-          g_scanner_get_next_token(scanner);
-          if(g_scanner_peek_next_token(scanner)!=G_TOKEN_STRING)
-          {
-            g_scanner_error(scanner,"expecting a string in pins = string [,string]");
-            scanner->max_parse_errors = TRUE;
-            break;
-          }
-          g_scanner_get_next_token(scanner);
-          context->pager_pins = g_list_append(context->pager_pins,
-              g_strdup(scanner->value.v_string));
-        } while ( g_scanner_peek_next_token(scanner)==',');
+        config_get_pins( scanner, lw );
         break;
       case G_TOKEN_PREVIEW:
         if(lw->wtype != G_TOKEN_PAGER)
@@ -453,38 +493,10 @@ void config_widget_props ( GScanner *scanner, struct layout_widget *lw)
         config_boolean_setbit(scanner,&context->features,F_PA_RENDER,"preview = true|false");
         break;
       case G_TOKEN_COLS:
-        switch(lw->wtype)
-        {
-          case G_TOKEN_TASKBAR:
-            context->tb_cols =
-              config_assign_number(scanner, "cols = Number");
-            break;
-          case G_TOKEN_PAGER:
-            context->pager_cols =
-              config_assign_number(scanner, "cols = Number");
-            break;
-          default:
-            g_scanner_error(scanner,"this widget has no property 'cols'");
-            scanner->max_parse_errors = TRUE;
-            break;
-        }
+        config_widget_cols(scanner, lw);
         break;
       case G_TOKEN_ROWS:
-        switch(lw->wtype)
-        {
-          case G_TOKEN_TASKBAR:
-            context->tb_rows =
-              config_assign_number(scanner, "rows = Number");
-            break;
-          case G_TOKEN_PAGER:
-            context->pager_rows =
-              config_assign_number(scanner, "rows = Number");
-            break;
-          default:
-            g_scanner_error(scanner,"this widget has no property 'rows'");
-            scanner->max_parse_errors = TRUE;
-            break;
-        }
+        config_widget_rows(scanner, lw);
         break;
       case G_TOKEN_ACTION:
         lw->action = config_assign_string(scanner,"action = String");
@@ -532,8 +544,6 @@ struct layout_widget *config_include ( GScanner *scanner )
   return lw;
 }
 
-void config_widgets ( GScanner *scanner, GtkWidget *parent );
-
 void config_widgets ( GScanner *scanner, GtkWidget *parent )
 {
   GtkWidget *sibling=NULL;
@@ -572,6 +582,7 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
       case G_TOKEN_INCLUDE:
         layout_widget_free(lw);
         lw = config_include( scanner );
+        lw->wtype = G_TOKEN_INCLUDE;
         break;
       case G_TOKEN_TASKBAR:
         scanner->max_parse_errors=FALSE;
@@ -591,25 +602,24 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
         scanner->max_parse_errors = TRUE;
         continue;
     }
+    if(scanner->max_parse_errors || (lw == NULL) )
+      continue;
+    config_widget_props( scanner, lw);
     if(!scanner->max_parse_errors)
     {
-      config_widget_props( scanner, lw);
-      if(!scanner->max_parse_errors)
-      {
-        if(lw->rect.w<1)
-          lw->rect.w=1;
-        if(lw->rect.h<1)
-          lw->rect.h=1;
-        if((lw->rect.x<1)||(lw->rect.y<1))
-          gtk_grid_attach_next_to(GTK_GRID(parent),lw->widget,sibling,dir,1,1);
-        else
-          gtk_grid_attach(GTK_GRID(parent),lw->widget,
-              lw->rect.x,lw->rect.y,lw->rect.w,lw->rect.h);
-        sibling = lw->widget;
-      }
-      if(lw->wtype == G_TOKEN_GRID)
-        config_widgets(scanner,lw->widget);
+      if( lw->rect.w < 1)
+        lw->rect.w = 1;
+      if( lw->rect.h < 1)
+        lw->rect.h = 1;
+      if( (lw->rect.x < 1) || (lw->rect.y < 1 ) )
+        gtk_grid_attach_next_to(GTK_GRID(parent),lw->widget,sibling,dir,1,1);
+      else
+        gtk_grid_attach(GTK_GRID(parent),lw->widget,
+            lw->rect.x,lw->rect.y,lw->rect.w,lw->rect.h);
+      sibling = lw->widget;
     }
+    if(lw->wtype == G_TOKEN_GRID)
+      config_widgets(scanner,lw->widget);
     if(lw->value)
       context->widgets = g_list_append(context->widgets,lw);
     else

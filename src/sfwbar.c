@@ -128,8 +128,6 @@ static void activate (GtkApplication* app, gpointer data )
   
   lw = config_parse(confname?confname:"sfwbar.config");
 
-//  root = load_config();
-
   if((lw != NULL)&&(lw->widget!=NULL))
   {
     gtk_container_add(GTK_CONTAINER(context->window), lw->widget);

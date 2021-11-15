@@ -8,6 +8,17 @@
 #include <gtk/gtk.h>
 #include <gio/gdesktopappinfo.h>
 
+gboolean widget_action ( GtkWidget *widget, gchar *cmd )
+{
+  gchar *argv[] = {NULL,NULL};
+  GPid pid;
+  if(!cmd)
+    return TRUE;
+  argv[0]=cmd;
+  g_spawn_async(NULL,argv,NULL,G_SPAWN_SEARCH_PATH,NULL,NULL,&pid,NULL);
+  return TRUE;
+}
+
 struct layout_widget *layout_widget_new ( void )
 {
   struct layout_widget *lw;
@@ -70,6 +81,9 @@ void layout_widget_config ( struct layout_widget *lw )
   if(lw->wtype==G_TOKEN_PAGER)
     pager_init(lw->widget);
 
+  if(lw->wtype==G_TOKEN_TRAY)
+    sni_init(lw->widget);
+
   if(lw->icon&&GTK_IS_BUTTON(lw->widget))
   {
     img = scale_image_new();
@@ -86,8 +100,9 @@ void layout_widget_config ( struct layout_widget *lw )
 
   widget_set_css(lw->widget);
 
-  if(lw->action)
-    g_signal_connect(lw->widget,"clicked",G_CALLBACK(widget_action),lw->action);
+  if((lw->action)&&(GTK_BUTTON(lw->widget)))
+    g_signal_connect(G_OBJECT(lw->widget),"clicked",
+      G_CALLBACK(widget_action),g_strdup(lw->action));
 }
 
 void layout_widget_free ( struct layout_widget *lw )
@@ -152,16 +167,6 @@ void widget_update_all( void )
       }
     }
   }
-}
-
-void widget_action ( GtkWidget *widget, gchar *cmd )
-{
-  gchar *argv[] = {NULL,NULL};
-  GPid pid;
-  if(!cmd)
-    return;
-  argv[0]=cmd;
-  g_spawn_async(NULL,argv,NULL,G_SPAWN_SEARCH_PATH,NULL,NULL,&pid,NULL);
 }
 
 void widget_set_css ( GtkWidget *widget )

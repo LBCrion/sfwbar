@@ -238,13 +238,13 @@ int scale_image_update ( GtkWidget *widget )
   }
 
   if(priv->ftype == SI_FILE)
+  {
     buf = gdk_pixbuf_new_from_file_at_scale(priv->fname,w,h,TRUE,NULL);
+    buf = gdk_pixbuf_scale_simple(buf,w,h,GDK_INTERP_BILINEAR);
+  }
 
   if(priv->ftype == SI_BUFF)
-  {
-    printf("buff %p\n",priv->pixbuf);
     buf = gdk_pixbuf_scale_simple(priv->pixbuf,w,h, GDK_INTERP_BILINEAR);
-  }
 
   if(buf==NULL)
     return -1;

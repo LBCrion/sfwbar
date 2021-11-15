@@ -85,6 +85,7 @@ struct scan_file {
 
 struct layout_widget {
   GtkWidget *widget;
+  GtkWidget *ebox;
   gchar *style;
   gchar *css;
   gchar *value;
@@ -129,7 +130,7 @@ void switcher_window_init ( struct wt_window *win);
 GtkWidget *pager_init ( GtkWidget * );
 void pager_update ( void );
 
-GtkWidget *sni_init ( void );
+void sni_init ( GtkWidget *w );
 void sni_refresh ( void );
 struct layout_widget *config_parse ( gchar * );
 
@@ -137,7 +138,6 @@ struct layout_widget *layout_widget_new ( void );
 void layout_widget_config ( struct layout_widget *lw );
 void layout_widget_free ( struct layout_widget *lw );
 void widget_update_all( void );
-void widget_action ( GtkWidget *widget, gchar *cmd );
 GtkWidget *widget_icon_by_name ( gchar *name, gint size );
 void widget_set_css ( GtkWidget * );
 

@@ -652,11 +652,10 @@ void sni_refresh ( void )
   gtk_widget_show_all(context->tray);
 }
 
-GtkWidget *sni_init ( void )
+void sni_init ( GtkWidget *w )
 {
   context->features |= F_TRAY;
-  context->tray = gtk_grid_new();
+  context->tray = w;
   sni_register("kde");
   sni_register("freedesktop");
-  return context->tray;
 }
