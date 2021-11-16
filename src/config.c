@@ -74,7 +74,7 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
   scanner->max_parse_errors = FALSE;
   g_scanner_get_next_token(scanner);
   vname = g_strdup(scanner->value.v_identifier);
-  parser_expect_symbol(scanner,'=',"Identifier = Source(..)");
+  parser_expect_symbol(scanner,'=',"Identifier = Parser(..)");
   g_scanner_get_next_token(scanner);
 
   if(((gint)scanner->token < G_TOKEN_REGEX)||
@@ -88,14 +88,15 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
   else
   {
     type = scanner->token - G_TOKEN_REGEX;
-    parser_expect_symbol(scanner,'(',"Parser(String[,Flag])");
+    parser_expect_symbol(scanner,'(',"Parser([String][,Aggregator])");
 
     if(type != VP_GRAB)
     {
       if(g_scanner_get_next_token(scanner)!=G_TOKEN_STRING)
       {
         if(!scanner->max_parse_errors)
-          g_scanner_error(scanner,"Expecting a String in Parser(string,[Flag])");
+          g_scanner_error(scanner,
+              "Expecting a String in Parser(string,[Aggregator])");
         g_free(vname);
         scanner->max_parse_errors = TRUE;
         return;
@@ -120,11 +121,11 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
       {
         g_scanner_get_next_token(scanner);
         if(!scanner->max_parse_errors)
-          g_scanner_error(scanner,"Expecting a variable flag after a comma");
+          g_scanner_error(scanner,"Expecting an aggregator");
         scanner->max_parse_errors = TRUE;
       }
     }
-    parser_expect_symbol(scanner,')',"Source(String,Flag)");
+    parser_expect_symbol(scanner,')',"Source(String,Aggregator)");
   }
 
   var = g_malloc(sizeof(struct scan_var));
@@ -602,22 +603,24 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
         scanner->max_parse_errors = TRUE;
         continue;
     }
-    if(scanner->max_parse_errors || (lw == NULL) )
+    if(lw == NULL)
       continue;
-    config_widget_props( scanner, lw);
-    if(!scanner->max_parse_errors)
+    if(scanner->max_parse_errors)
     {
-      if( lw->rect.w < 1)
-        lw->rect.w = 1;
-      if( lw->rect.h < 1)
-        lw->rect.h = 1;
-      if( (lw->rect.x < 1) || (lw->rect.y < 1 ) )
-        gtk_grid_attach_next_to(GTK_GRID(parent),lw->widget,sibling,dir,1,1);
-      else
-        gtk_grid_attach(GTK_GRID(parent),lw->widget,
-            lw->rect.x,lw->rect.y,lw->rect.w,lw->rect.h);
-      sibling = lw->widget;
+      layout_widget_free(lw);
+      continue;
     }
+    config_widget_props( scanner, lw);
+    if( lw->rect.w < 1)
+      lw->rect.w = 1;
+    if( lw->rect.h < 1)
+      lw->rect.h = 1;
+    if( (lw->rect.x < 1) || (lw->rect.y < 1 ) )
+      gtk_grid_attach_next_to(GTK_GRID(parent),lw->widget,sibling,dir,1,1);
+    else
+      gtk_grid_attach(GTK_GRID(parent),lw->widget,
+          lw->rect.x,lw->rect.y,lw->rect.w,lw->rect.h);
+    sibling = lw->widget;
     if(lw->wtype == G_TOKEN_GRID)
       config_widgets(scanner,lw->widget);
     if(lw->value)
