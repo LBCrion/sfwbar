@@ -186,18 +186,18 @@ void config_scanner_source ( GScanner *scanner, gint source )
     while((gint)g_scanner_peek_next_token(scanner)==',')
     {
       g_scanner_get_next_token(scanner);
-      if(((gint)g_scanner_peek_next_token(scanner)>=G_TOKEN_NOGLOB)&&
-          ((gint)g_scanner_peek_next_token(scanner)<=G_TOKEN_CHTIME))
+      switch((gint)g_scanner_get_next_token(scanner))
       {
-        g_scanner_get_next_token(scanner);
-        flags |= (1>>(scanner->token - G_TOKEN_NOGLOB));
-      }
-      else
-      {
-        g_scanner_get_next_token(scanner);
-        if(!scanner->max_parse_errors)
-          g_scanner_error(scanner, "Expecting a file flag");
-        scanner->max_parse_errors = TRUE;
+        case G_TOKEN_CHTIME:
+          flags |= VF_CHTIME;
+          break;
+        case G_TOKEN_NOGLOB:
+          flags |= VF_NOGLOB;
+        default:
+          if(!scanner->max_parse_errors)
+            g_scanner_error(scanner,"expecting a file flag");
+          scanner->max_parse_errors = TRUE;
+          break;
       }
     } 
 
@@ -223,6 +223,8 @@ void config_scanner_source ( GScanner *scanner, gint source )
   file->mtime = 0;
   file->flags = flags;
   file->vars = NULL;
+  if( !strchr(fname,'*') && !strchr(fname,'?') )
+    file->flags |= VF_NOGLOB;
   context->file_list = g_list_append(context->file_list,file);
 
   while(((gint)g_scanner_peek_next_token(scanner)!='}')&&
