@@ -35,6 +35,7 @@ int placement_location ( struct json_object*obj, gint64 wid, struct rect *r )
   gint *x, *y;
   gint xoff,yoff;
   output = parse_rect(obj);
+  win = output;
 
   if(!json_object_object_get_ex(obj,"floating_nodes",&arr))
     return -1;

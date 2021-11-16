@@ -46,10 +46,11 @@ gboolean pager_draw_preview ( GtkWidget *widget, cairo_t *cr, gchar *desk )
   GdkRGBA fg;
   gint sock;
   gint32 etype;
-  struct json_object *obj,*iter,*fiter,*arr;
+  struct json_object *obj = NULL;
+  struct json_object *iter,*fiter,*arr;
   gint i,j;
   struct rect wr,cw;
-  gchar *response,*label;
+  gchar *response, *label;
 
   w = gtk_widget_get_allocated_width (widget);
   h = gtk_widget_get_allocated_height (widget);
@@ -128,7 +129,8 @@ void pager_update ( void )
   gint c=0;
   gint sock;
   gint32 etype;
-  struct json_object *obj,*iter;
+  struct json_object *obj = NULL;
+  struct json_object *iter;
   gint i;
   GList *wslist = NULL;
   GList *visible = NULL;

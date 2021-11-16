@@ -51,6 +51,7 @@ void layout_widget_config ( struct layout_widget *lw )
     g_free(lw->style);
     lw->style = NULL;
   }
+
   if(lw->css)
   {
     GtkStyleContext *context = gtk_widget_get_style_context (lw->widget);
@@ -98,11 +99,11 @@ void layout_widget_config ( struct layout_widget *lw )
     gtk_label_set_xalign(GTK_LABEL(lw->widget),xalign);
   }
 
-  widget_set_css(lw->widget);
-
   if((lw->action)&&(GTK_BUTTON(lw->widget)))
     g_signal_connect(G_OBJECT(lw->widget),"clicked",
       G_CALLBACK(widget_action),g_strdup(lw->action));
+
+  widget_set_css(lw->widget);
 }
 
 void layout_widget_free ( struct layout_widget *lw )

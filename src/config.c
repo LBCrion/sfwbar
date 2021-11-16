@@ -540,6 +540,7 @@ struct layout_widget *config_include ( GScanner *scanner )
   }
   g_scanner_get_next_token(scanner);
   lw = config_parse(scanner->value.v_string);
+  lw->wtype = G_TOKEN_INCLUDE;
   parser_expect_symbol(scanner, ')', "Include(String)");
   return lw;
 }
@@ -582,7 +583,6 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
       case G_TOKEN_INCLUDE:
         layout_widget_free(lw);
         lw = config_include( scanner );
-        lw->wtype = G_TOKEN_INCLUDE;
         break;
       case G_TOKEN_TASKBAR:
         scanner->max_parse_errors=FALSE;
