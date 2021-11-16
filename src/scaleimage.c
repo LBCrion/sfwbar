@@ -206,7 +206,7 @@ int scale_image_update ( GtkWidget *widget )
 {
   ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
   GtkIconTheme *theme;
-  GdkPixbuf *buf=NULL;
+  GdkPixbuf *buf=NULL,*tmp=NULL;
   cairo_surface_t *cs;
   gint w,h;
   gint size;
@@ -234,20 +234,22 @@ int scale_image_update ( GtkWidget *widget )
   {
     theme = gtk_icon_theme_get_default();
     if(theme)
-      buf = gtk_icon_theme_load_icon(theme,priv->file,size,0,NULL);
+    {
+      tmp = gtk_icon_theme_load_icon(theme,priv->file,size,0,NULL);
+      buf = gdk_pixbuf_scale_simple(tmp,size,size, GDK_INTERP_BILINEAR);
+      g_object_unref(G_OBJECT(tmp));
+    }
   }
 
   if(priv->ftype == SI_FILE)
-  {
-    buf = gdk_pixbuf_new_from_file_at_scale(priv->fname,w,h,TRUE,NULL);
-    buf = gdk_pixbuf_scale_simple(buf,w,h,GDK_INTERP_BILINEAR);
-  }
+    buf = gdk_pixbuf_new_from_file_at_scale(priv->fname,size,size,TRUE,NULL);
 
   if(priv->ftype == SI_BUFF)
-    buf = gdk_pixbuf_scale_simple(priv->pixbuf,w,h, GDK_INTERP_BILINEAR);
+    buf = gdk_pixbuf_scale_simple(priv->pixbuf,size,size, GDK_INTERP_BILINEAR);
 
   if(buf==NULL)
     return -1;
+
 
   cs = gdk_cairo_surface_create_from_pixbuf(buf,0,
       gtk_widget_get_window(widget));
