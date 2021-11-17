@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <gio/gio.h>
 #include <unistd.h>
-#include <arpa/inet.h>
 #include "sfwbar.h"
 
 enum {
@@ -109,7 +108,7 @@ GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
 
     ptr=(guint32 *)buff;
     for(i=0;i<x*y;i++)
-      ptr[i] = ntohl(ptr[i]);
+      ptr[i] = g_ntohl(ptr[i]);
       
     cs = cairo_image_surface_create_for_data(buff,CAIRO_FORMAT_ARGB32,x,y,
         cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,x));
@@ -189,7 +188,6 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res, struct sni_prop
       gtk_widget_set_name(wrap->sni->image,"tray_passive");
       sni_item_set_icon(wrap->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
     }
-    context->status &= ST_TRAY;
   }
 
   if(inner)
@@ -197,6 +195,7 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res, struct sni_prop
   if(result)
     g_variant_unref(result);
   g_free(wrap);
+  context->status |= ST_TRAY;
 }
 
 void sni_item_get_prop ( GDBusConnection *con, struct sni_item *sni, guint prop )
@@ -586,7 +585,7 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
   g_free(sni->dest);
   g_free(sni->iface);
   g_free(sni);
-  context->status &= ST_TRAY;
+  context->status |= ST_TRAY;
 }
 
 void sni_register ( gchar *name )
