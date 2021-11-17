@@ -98,10 +98,9 @@ gint shell_timer ( gpointer data )
   scanner_expire();
   widget_update_all();
 
-  if((context->features & F_TASKBAR)&&(context->wt_dirty==1))
+  if((context->features & F_TASKBAR)&&(context->status & ST_TASKBAR))
   {
     taskbar_refresh();
-    context->wt_dirty=0;
   }
 
   if(context->features & F_TRAY)

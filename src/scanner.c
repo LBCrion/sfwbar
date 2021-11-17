@@ -91,7 +91,34 @@ int scanner_update_file ( FILE *in, struct scan_file *file )
   GList *node;
   GMatchInfo *match;
 
-  while((!feof(in))&&(!ferror(in)))
+  gchar *buff;
+  gsize size;
+  GIOChannel *chan;
+
+  chan = g_io_channel_unix_new(fileno(in));
+  g_io_channel_read_to_end(chan,&buff,&size,NULL);
+  g_io_channel_shutdown(chan,FALSE,NULL);
+
+  for(node=file->vars;node!=NULL;node=g_list_next(node))
+  {
+    var=node->data;
+    if(var->type == VP_REGEX)
+    {
+      g_regex_match (var->regex, buff, 0, &match);
+      if(g_match_info_matches (match))
+      {
+        do 
+        {
+          update_var_value(var,g_match_info_fetch (match, 1));
+        } while(g_match_info_next(match,NULL));
+      }
+      g_match_info_free (match);
+    }
+  }
+  g_free(buff);
+
+
+/*  while((!feof(in))&&(!ferror(in)))
     if(fgets(context->read_buff,context->buff_len,in)!=NULL)
     {
       if(file->flags & VF_CONCUR)
@@ -102,13 +129,16 @@ int scanner_update_file ( FILE *in, struct scan_file *file )
           {
             g_regex_match (var->regex, context->read_buff, 0, &match);
             if(g_match_info_matches (match))
+            {
               update_var_value(var,g_match_info_fetch (match, 1));
+              printf("%s %s\n",var->name,g_match_info_fetch(match,1));
+            }
             g_match_info_free (match);
           }
           if(var->type == VP_GRAB)
             update_var_value(var,g_strdup(context->read_buff));
         }
-    }
+    }*/
   return 0;
 }
 

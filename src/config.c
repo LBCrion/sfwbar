@@ -137,7 +137,7 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
       file->flags |= VF_FINAL;
       break;
     case VP_REGEX:
-      var->regex = g_regex_new(pattern,0,0,NULL);
+      var->regex = g_regex_new(pattern,G_REGEX_MULTILINE,0,NULL);
       g_free(pattern);
       file->flags |= VF_CONCUR;
       break;

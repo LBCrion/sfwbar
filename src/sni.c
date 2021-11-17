@@ -189,6 +189,7 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res, struct sni_prop
       gtk_widget_set_name(wrap->sni->image,"tray_passive");
       sni_item_set_icon(wrap->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
     }
+    context->status &= ST_TRAY;
   }
 
   if(inner)
@@ -585,6 +586,7 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
   g_free(sni->dest);
   g_free(sni->iface);
   g_free(sni);
+  context->status &= ST_TRAY;
 }
 
 void sni_register ( gchar *name )
@@ -634,6 +636,10 @@ void sni_refresh ( void )
 {
   GList *iter;
   struct sni_item *sni;
+
+  if( !(context->status & ST_TRAY) )
+    return;
+
   gtk_container_foreach(GTK_CONTAINER(context->tray),
       (GtkCallback)sni_item_remove,context);
   for(iter = context->sni_items;iter!=NULL;iter=g_list_next(iter))
@@ -644,6 +650,7 @@ void sni_refresh ( void )
           gtk_container_add(GTK_CONTAINER(context->tray),sni->box);
   }
   gtk_widget_show_all(context->tray);
+  context->status &= ~ST_TRAY;
 }
 
 void sni_init ( GtkWidget *w )

@@ -70,7 +70,7 @@ void taskbar_button_click( GtkWidget *widget, gpointer data )
     if ( button->wid == context->tb_focus )
     {
       context->tb_focus = -1;
-      context->wt_dirty = 1;
+      context->status |= ST_TASKBAR;
     }
   }
   else
@@ -142,4 +142,5 @@ void taskbar_refresh( void )
     tb_count++;
   }
   gtk_widget_show_all(context->box);
+  context->status &= ~ST_TASKBAR;
 }

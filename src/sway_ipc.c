@@ -244,7 +244,8 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
             sway_window_title(container);
           if(g_strcmp0(change,"focus")==0)
             sway_set_focus(container);
-          context->wt_dirty=1;
+          context->status |= ST_TASKBAR;
+          context->status |= ST_SWITCHER;
         }
       }
     }
@@ -304,7 +305,7 @@ void sway_ipc_init ( void )
   }
   g_free(response);
 
-  context->wt_dirty = 1;
+  context->status |= ST_TASKBAR;
 
   context->ipc = sway_ipc_open(10);
   if(context->ipc<0)

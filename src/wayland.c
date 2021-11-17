@@ -29,7 +29,8 @@ static void toplevel_handle_app_id(void *data, wlr_fth *tl, const gchar *app_id)
     return;
   win = l->data;
   str_assign(&(win->appid), (gchar *)app_id);
-  context->wt_dirty = 1;
+  context->status |= ST_TASKBAR;
+  context->status |= ST_SWITCHER;
 }
 
 static void toplevel_handle_title(void *data, wlr_fth *tl, const gchar *title)
@@ -41,7 +42,8 @@ static void toplevel_handle_title(void *data, wlr_fth *tl, const gchar *title)
     return;
   win = l->data;
   str_assign(&(win->title), (gchar *)title);
-  context->wt_dirty = 1;
+  context->status |= ST_TASKBAR;
+  context->status |= ST_SWITCHER;
 }
 
 static void toplevel_handle_closed(void *data, wlr_fth *tl)
@@ -106,7 +108,8 @@ static void toplevel_handle_state(void *data, wlr_fth *tl,
       {
         win = l->data;
         context->tb_focus = win->wid;
-        context->wt_dirty = 1;
+        context->status |= ST_TASKBAR;
+        context->status |= ST_SWITCHER;
       }
     }
 }

@@ -33,15 +33,12 @@ struct context {
   GList *sni_ifaces;
   gint64 wt_counter;
   GList *wt_list;
-  gchar wt_dirty;
+  guchar status;
   GList *widgets;
   GList *file_list;
   GList *scan_list;
-  gint line_num;
   gint buff_len;
   gchar *read_buff;
-  gchar *ret_val;
-  GScanner *escan;
 };
 
 struct wt_window {
@@ -186,6 +183,12 @@ enum {
   F_SW_LABEL  = 1<<9,
   F_PL_CHKPID = 1<<10,
   F_PA_RENDER = 1<<11
+};
+
+enum {
+  ST_TASKBAR  = 1<<0,
+  ST_SWITCHER = 1<<1,
+  ST_TRAY     = 1<<2
 };
 
 enum {

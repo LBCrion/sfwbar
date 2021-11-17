@@ -69,6 +69,7 @@ gboolean switcher_event ( struct json_object *obj )
       focus=context->wt_list;
     if(focus!=NULL)
       context->tb_focus = AS_WINDOW(focus->data)->wid;
+    context->status |= ST_SWITCHER;
   }
 
   return TRUE;
@@ -108,6 +109,8 @@ void switcher_update ( void )
 
   if(context->sw_count > 0)
   {
+    if(!(context->status & ST_SWITCHER))
+      return;
     gtk_container_foreach(GTK_CONTAINER(context->sw_box),(GtkCallback)switcher_delete,context);
     for (item = context->wt_list; item!= NULL; item = g_list_next(item) )
     {
@@ -121,15 +124,16 @@ void switcher_update ( void )
       i++;
     }
     gtk_widget_show_all(GTK_WIDGET(context->sw_win));
+    context->status &= ~ST_SWITCHER;
   }
   else
   {
     gtk_widget_hide(GTK_WIDGET(context->sw_win));
     if(context->ipc>=0)
     {
-       cmd = g_strdup_printf("[con_id=%ld] focus",context->tb_focus);
-       sway_ipc_send ( context->ipc, 0, cmd );
-       g_free( cmd );
+      cmd = g_strdup_printf("[con_id=%ld] focus",context->tb_focus);
+      sway_ipc_send ( context->ipc, 0, cmd );
+      g_free( cmd );
     }
     else
       for (item = context->wt_list; item!= NULL; item = g_list_next(item) )
