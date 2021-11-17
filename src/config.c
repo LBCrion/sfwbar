@@ -193,6 +193,7 @@ void config_scanner_source ( GScanner *scanner, gint source )
           break;
         case G_TOKEN_NOGLOB:
           flags |= VF_NOGLOB;
+          break;
         default:
           if(!scanner->max_parse_errors)
             g_scanner_error(scanner,"expecting a file flag");
