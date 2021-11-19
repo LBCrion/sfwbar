@@ -82,7 +82,6 @@ struct scan_file {
 
 struct layout_widget {
   GtkWidget *widget;
-  GtkWidget *ebox;
   gchar *style;
   gchar *css;
   gchar *value;
@@ -91,6 +90,8 @@ struct layout_widget {
   gchar *eval;
   gint64 interval;
   gint64 next_poll;
+  gboolean invalid;
+  gboolean ready;
   gint wtype;
   gint dir;
   struct rect rect;
@@ -134,16 +135,15 @@ struct layout_widget *config_parse ( gchar * );
 struct layout_widget *layout_widget_new ( void );
 void layout_widget_config ( struct layout_widget *lw );
 void layout_widget_free ( struct layout_widget *lw );
-void widget_update_all( void );
+void layout_widgets_update ( void );
+void layout_widgets_draw ( void );
 GtkWidget *widget_icon_by_name ( gchar *name, gint size );
 void widget_set_css ( GtkWidget * );
 
 GtkWidget *clamp_grid_new();
 GtkWidget *alabel_new();
 void scanner_expire ( void );
-int update_var_tree ( void );
-int update_var_file ( FILE *in, GList *var_list );
-int reset_var_list ( GList *var_list );
+int scanner_reset_vars ( GList *var_list );
 int scanner_glob_file ( struct scan_file *file );
 char *expr_parse ( gchar *expr_str, guint * );
 gboolean parser_expect_symbol ( GScanner *, gchar , gchar *);

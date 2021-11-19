@@ -96,7 +96,7 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
       {
         if(!scanner->max_parse_errors)
           g_scanner_error(scanner,
-              "Expecting a String in Parser(string,[Aggregator])");
+              "Expecting a String in Parser(String[,Aggregator])");
         g_free(vname);
         scanner->max_parse_errors = TRUE;
         return;
@@ -118,17 +118,19 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
         flag = scanner->token - G_TOKEN_SUM + 1;
       }
       else
-      {
-        g_scanner_get_next_token(scanner);
-        if(!scanner->max_parse_errors)
-          g_scanner_error(scanner,"Expecting an aggregator");
-        scanner->max_parse_errors = TRUE;
-      }
+        if(type != VP_GRAB)
+        {
+          g_scanner_get_next_token(scanner);
+          if(!scanner->max_parse_errors)
+            g_scanner_error(scanner,"Expecting an aggregator");
+          scanner->max_parse_errors = TRUE;
+        }
     }
     parser_expect_symbol(scanner,')',"Source(String,Aggregator)");
   }
 
   var = g_malloc(sizeof(struct scan_var));
+  var->json = NULL;
 
   switch(type)
   {
@@ -137,7 +139,7 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
       file->flags |= VF_FINAL;
       break;
     case VP_REGEX:
-      var->regex = g_regex_new(pattern,G_REGEX_MULTILINE,0,NULL);
+      var->regex = g_regex_new(pattern,0,0,NULL);
       g_free(pattern);
       file->flags |= VF_CONCUR;
       break;

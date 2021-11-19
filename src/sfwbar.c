@@ -93,15 +93,22 @@ void css_init ( void )
   }
 }
 
+gpointer scanner_thread ( gpointer data )
+{
+  while ( TRUE )
+  {
+    scanner_expire();
+    layout_widgets_update();
+    usleep(100000);
+  }
+}
+
 gint shell_timer ( gpointer data )
 {
-  scanner_expire();
-  widget_update_all();
+  layout_widgets_draw();
 
   if((context->features & F_TASKBAR)&&(context->status & ST_TASKBAR))
-  {
     taskbar_refresh();
-  }
 
   if(context->features & F_TRAY)
     sni_refresh();
@@ -111,7 +118,6 @@ gint shell_timer ( gpointer data )
 
   return TRUE;
 }
-
 
 static void activate (GtkApplication* app, gpointer data )
 {
@@ -145,6 +151,8 @@ static void activate (GtkApplication* app, gpointer data )
       wlr_ft_init();
   }
 
+  if(context->widgets)
+    g_thread_new("scanner",scanner_thread,NULL);
   g_timeout_add (100,(GSourceFunc )shell_timer,context);
   g_unix_signal_add(10,(GSourceFunc)switcher_event,NULL);
   g_unix_signal_add(12,(GSourceFunc)hide_event,NULL);

@@ -22,7 +22,7 @@ void scanner_expire ( void )
     SCAN_VAR(node->data)->status=0;
 }
 
-void update_var_value ( struct scan_var *var, gchar *value)
+void scanner_update_var ( struct scan_var *var, gchar *value)
 {
   g_free(var->str);
   var->str=value;
@@ -37,52 +37,46 @@ void update_var_value ( struct scan_var *var, gchar *value)
   var->count++;
   var->status=1;
 }
-/*
-int update_json_file ( FILE *in, GList *var_list )
+
+gchar *scanner_extract_json ( struct json_object *obj, gchar *expr )
 {
-  GList *node;
-  struct scan_var *var;
-  gchar *fdata,*temp;
-  struct ucl_parser *parser;
-  const ucl_object_t *obj,*ptr;
-  const gint buff_step = 8192;
-  gint buff_len=0,i;
+  struct json_object *iter;
+  gchar **evect;
+  gchar *result;
+  gchar *sep;
+  gint i,n;
 
-  fdata = g_malloc(buff_step);
-  while((!feof(in))&&(!ferror(in)))
-  {
-    i=fread(fdata+buff_len,1,buff_step,in);
-    buff_len+=i;
-    temp = g_malloc(buff_len+buff_step);
-    memcpy(temp,fdata,buff_len);
-    g_free(fdata);
-    fdata = temp;
-  }
+  if(!expr || !obj)
+    return NULL;
 
-  parser = ucl_parser_new(0);
-  ucl_parser_add_chunk( parser, (const guchar *) fdata, buff_len);
-  obj = ucl_parser_get_object(parser);
-  temp = (gchar *)ucl_parser_get_error(parser);
-  if(temp!=NULL)
-    fprintf(stderr,"%s\n",temp);
+  if(strlen(expr)<2)
+    return NULL;
 
-  for (node=var_list; node!=NULL; node=g_list_next(node))
-  {
-    var = node->data;
-    ptr = ucl_object_lookup_path_char(obj, var->json+sizeof(gchar),*(var->json));
-    if(ptr!=NULL)
+  sep = g_strndup(expr,1);
+  evect = g_strsplit(expr+1,sep,64);
+  g_free(sep);
+  iter = obj;
+
+  for(i=0;evect[i];i++)
+    if(iter)
     {
-      temp = (gchar *)ucl_object_tostring_forced(ptr);
-      if(temp!=NULL)
-        update_var_value(var,g_strdup(temp));
+      n = g_ascii_strtoull(evect[i],&sep,10);
+      if(*sep)
+        json_object_object_get_ex(iter,evect[i],&iter);
+      else
+        if(json_object_is_type(iter,json_type_array))
+          iter = json_object_array_get_idx(iter,n);
+        else
+          iter = NULL;
     }
-  }
 
-  ucl_object_unref((ucl_object_t *)obj);
-  ucl_parser_free(parser);
-  free(fdata);
-  return 0;
-}*/
+  result = g_strdup(json_object_get_string(iter));
+
+  g_strfreev(evect);
+
+  return result;
+}
+
 
 /* update variables in a specific file (or pipe) */
 int scanner_update_file ( FILE *in, struct scan_file *file )
@@ -90,61 +84,52 @@ int scanner_update_file ( FILE *in, struct scan_file *file )
   struct scan_var *var;
   GList *node;
   GMatchInfo *match;
+  struct json_tokener *json = NULL;
+  struct json_object *obj;
 
-  gchar *buff;
-  gsize size;
-  GIOChannel *chan;
-
-  chan = g_io_channel_unix_new(fileno(in));
-  g_io_channel_read_to_end(chan,&buff,&size,NULL);
-  g_io_channel_shutdown(chan,FALSE,NULL);
-
-  for(node=file->vars;node!=NULL;node=g_list_next(node))
-  {
-    var=node->data;
-    if(var->type == VP_REGEX)
-    {
-      g_regex_match (var->regex, buff, 0, &match);
-      if(g_match_info_matches (match))
-      {
-        do 
-        {
-          update_var_value(var,g_match_info_fetch (match, 1));
-        } while(g_match_info_next(match,NULL));
-      }
-      g_match_info_free (match);
-    }
-  }
-  g_free(buff);
-
-
-/*  while((!feof(in))&&(!ferror(in)))
+  while((!feof(in))&&(!ferror(in)))
     if(fgets(context->read_buff,context->buff_len,in)!=NULL)
     {
-      if(file->flags & VF_CONCUR)
-        for(node=file->vars;node!=NULL;node=g_list_next(node))
+      for(node=file->vars;node!=NULL;node=g_list_next(node))
+      {
+        var=node->data;
+        switch(var->type)
         {
-          var=node->data;
-          if(var->type == VP_REGEX)
-          {
+          case VP_REGEX:
             g_regex_match (var->regex, context->read_buff, 0, &match);
             if(g_match_info_matches (match))
-            {
-              update_var_value(var,g_match_info_fetch (match, 1));
-              printf("%s %s\n",var->name,g_match_info_fetch(match,1));
-            }
+              scanner_update_var(var,g_match_info_fetch (match, 1));
             g_match_info_free (match);
-          }
-          if(var->type == VP_GRAB)
-            update_var_value(var,g_strdup(context->read_buff));
+            break;
+          case VP_GRAB:
+            scanner_update_var(var,g_strdup(context->read_buff));
+            break;
+          case VP_JSON:
+            if(!json)
+              json = json_tokener_new();
+            break;
         }
-    }*/
+      }
+      if(json)
+        obj = json_tokener_parse_ex(json,context->read_buff,
+            strlen(context->read_buff));
+    }
+  if(json)
+  {
+    for(node=file->vars;node!=NULL;node=g_list_next(node))
+      scanner_update_var(SCAN_VAR(node->data),
+          scanner_extract_json(obj,SCAN_VAR(node->data)->json));
+    json_object_put(obj);
+    json_tokener_free(json);
+  }
+  for(node=file->vars;node!=NULL;node=g_list_next(node))
+    SCAN_VAR(node->data)->status=1;
   return 0;
 }
 
 
 /* reset variables in a list */
-int reset_var_list ( GList *var_list )
+int scanner_reset_vars ( GList *var_list )
 {
   GList *node;
   gint tv = g_get_real_time();
@@ -181,7 +166,7 @@ int scanner_update_file_glob ( struct scan_file *file )
   struct stat stattr;
   gint i;
   FILE *in;
-  gchar reset=0;
+  gboolean reset=FALSE;
 
   if(file==NULL)
     return -1;
@@ -211,8 +196,8 @@ int scanner_update_file_glob ( struct scan_file *file )
       {
         if(!reset)
         {
-          reset=1;
-          reset_var_list(file->vars);
+          reset=TRUE;
+          scanner_reset_vars(file->vars);
         }
         scanner_update_file(in,file);
 
