@@ -211,9 +211,7 @@ enum {
 
 enum {
   VF_CHTIME = 1,
-  VF_NOGLOB = 2,
-  VF_CONCUR = 16,
-  VF_FINAL = 32
+  VF_NOGLOB = 2
 };
 
 enum {

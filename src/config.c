@@ -136,15 +136,12 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
   {
     case VP_JSON:
       var->json = pattern;
-      file->flags |= VF_FINAL;
       break;
     case VP_REGEX:
       var->regex = g_regex_new(pattern,0,0,NULL);
       g_free(pattern);
-      file->flags |= VF_CONCUR;
       break;
     case VP_GRAB:
-      file->flags |= VF_CONCUR;
       break;
   }
 
