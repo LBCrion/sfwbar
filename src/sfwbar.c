@@ -152,7 +152,9 @@ static void activate (GtkApplication* app, gpointer data )
   }
 
   if(context->widgets)
-    g_thread_new("scanner",scanner_thread,NULL);
+    g_thread_unref(g_thread_new("scanner",scanner_thread,NULL));
+
+
   g_timeout_add (100,(GSourceFunc )shell_timer,context);
   g_unix_signal_add(10,(GSourceFunc)switcher_event,NULL);
   g_unix_signal_add(12,(GSourceFunc)hide_event,NULL);
