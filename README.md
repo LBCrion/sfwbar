@@ -7,10 +7,10 @@
 ![](https://api.travis-ci.com/LBCrion/sfwbar.svg)
 
 ### CONFIG FILE CHANGE
-Please note that the config file format is changing, the main branch in
-git is using the new format, but documentation hasn't been updated yet.
-This will be corrected before the next release. The change will allow
-for cleaner configuration files and more widely available dependencies.
+Please note that the config file format is changing, the main branch in git is
+using the new format, the documentation in the repository reflects the new
+configuration format. The change will allow for cleaner configuration files
+and more widely available dependencies.
 
 ### SFWBar
 
@@ -29,6 +29,7 @@ Weather icons are from yr.no and are licensed under MIT license
 1. Taskbar - to control floating windows
 1. Task Switcher - to allow switching active window with a keyboard (Alt-Tab)
 1. Pager - to allow switching between workspaces
+1. Tray - a systm tray using status notification item protocol
 1. Window placement engine - to open new windows in more logical locations
 1. A simple widget set to display information from system files
 
@@ -37,7 +38,7 @@ Weather icons are from yr.no and are licensed under MIT license
 Install dependencies:
 * gtk3
 * gtk-layer-shell
-* libucl
+* json-c
 
 Compile instructions:
 ```no-highlight
