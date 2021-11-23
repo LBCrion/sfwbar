@@ -48,8 +48,6 @@ struct layout_widget *layout_widget_new ( void )
 
 void layout_widget_config ( struct layout_widget *lw )
 {
-  GtkWidget *img;
-
   lw->lobject = lw->widget;
 
   if(lw->style)
@@ -92,13 +90,6 @@ void layout_widget_config ( struct layout_widget *lw )
   if(lw->wtype==G_TOKEN_TRAY)
     sni_init(lw->widget);
 
-  if(lw->icon&&GTK_IS_BUTTON(lw->widget))
-  {
-    img = scale_image_new();
-    scale_image_set_image(img,lw->icon);
-    gtk_container_add(GTK_CONTAINER(lw->widget),img);
-  }
-
   if(GTK_IS_LABEL(lw->widget))
   {
     gdouble xalign;
@@ -116,6 +107,12 @@ void layout_widget_config ( struct layout_widget *lw )
     gtk_container_add(GTK_CONTAINER(lw->lobject),lw->widget);
     g_signal_connect(G_OBJECT(lw->lobject),"button_press_event",
         G_CALLBACK(widget_ebox_action),g_strdup(lw->action));
+  }
+
+  if(GTK_IS_BUTTON(lw->widget))
+  {
+    lw->widget = scale_image_new();
+    gtk_container_add(GTK_CONTAINER(lw->lobject),lw->widget);
   }
 
   widget_set_css(lw->widget);

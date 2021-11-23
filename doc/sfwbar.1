@@ -332,8 +332,10 @@ Widgets can have the following properties:
 .TP
 .B value
 an expression specifying the value to display. This can be a static value
-i.e. "\(aqstring\(aq" or "1" or an expression, i.e. "\(aqValue is:\(aq+$MyString" or
-"MyNumber.val" (see \fBexpressions\fP section for more detail)
+i.e. "\(aqstring\(aq" or "1" or an expression, i.e. "Value is: "+$MyString" or
+2 * MyNumber.val (see \fBexpressions\fP section for more detail), For labels
+value specifies text to display. Scale widgets accept a fraction to
+display. Images and buttons accept an icon or an image file name.
 .TP
 .B style
 assign a style to the widget. Styles can be used in CSS to theme widgets.
@@ -349,13 +351,6 @@ only applyy for the widget in question.
 .TP
 .B action
 An action to execute upon a button click. Applicable to buttons only.
-.UNINDENT
-.sp
-\fBButton\fP widget may contain the following options
-.INDENT 0.0
-.TP
-.B icon
-An icon to display within the button
 .UNINDENT
 .sp
 \fBTaskbar\fP widget may contain the following options

@@ -254,8 +254,10 @@ Widgets can have the following properties:
 
 value 
   an expression specifying the value to display. This can be a static value
-  i.e. "'string'" or "1" or an expression, i.e. "'Value is:'+$MyString" or 
-  "MyNumber.val" (see ``expressions`` section for more detail)
+  i.e. "'string'" or "1" or an expression, i.e. "Value is: "+$MyString" or 
+  2 * MyNumber.val (see ``expressions`` section for more detail), For labels
+  value specifies text to display. Scale widgets accept a fraction to
+  display. Images and buttons accept an icon or an image file name.
 
 style 
   assign a style to the widget. Styles can be used in CSS to theme widgets.
@@ -271,11 +273,6 @@ css
 
 action
   An action to execute upon a button click. Applicable to buttons only.
-
-``Button`` widget may contain the following options
-
-icon
-  An icon to display within the button
 
 ``Taskbar`` widget may contain the following options
 
