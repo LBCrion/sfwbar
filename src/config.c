@@ -67,7 +67,7 @@ gdouble config_assign_number ( GScanner *scanner, gchar *expr )
 void config_scanner_var ( GScanner *scanner, struct scan_file *file )
 {
   struct scan_var *var;
-  gchar *vname, *pattern;
+  gchar *vname, *pattern = NULL;
   guchar type;
   gint flag = SV_REPLACE;
 
@@ -102,9 +102,7 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
         return;
       }
       else
-      {
         pattern = g_strdup(scanner->value.v_string);
-      }
     }
 
     if((g_scanner_peek_next_token(scanner)==',')||(type == VP_GRAB))
@@ -131,6 +129,7 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
 
   var = g_malloc(sizeof(struct scan_var));
   var->json = NULL;
+  var->regex = NULL;
 
   switch(type)
   {
@@ -141,7 +140,8 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
       var->regex = g_regex_new(pattern,0,0,NULL);
       g_free(pattern);
       break;
-    case VP_GRAB:
+    default:
+      g_free(pattern);
       break;
   }
 
@@ -339,6 +339,33 @@ struct rect config_get_loc ( GScanner *scanner )
   return rect;
 }
 
+gchar *config_value_string ( gchar *dest, gchar *string )
+{
+  gint i,j=0,l;
+  gchar *result;
+
+  l = strlen(dest);
+
+  for(i=0;string[i];i++)
+    if(string[i] == '"')
+      j++;
+  result = g_malloc(l+i+j+3);
+  memcpy(result,dest,l);
+
+  result[l++]='"';
+  for(i=0;string[i];i++)
+  {
+    if(string[i] == '"')
+      result[l++]='\\';
+    result[l++] = string[i];
+  }
+  result[l++]='"';
+  result[l]=0;
+
+  g_free(dest);
+  return result;
+}
+
 gchar *config_get_value ( GScanner *scanner )
 {
   gchar *value, *temp;
@@ -358,9 +385,7 @@ gchar *config_get_value ( GScanner *scanner )
     switch((gint)g_scanner_get_next_token(scanner))
     {
       case G_TOKEN_STRING:
-        temp = value;
-        value = g_strconcat(value,"\"", scanner->value.v_string, "\"", NULL);
-        g_free(temp);
+        value = config_value_string(value, scanner->value.v_string);
         break;
       case G_TOKEN_IDENTIFIER:
         temp = value;
@@ -669,7 +694,7 @@ void config_switcher ( GScanner *scanner )
     switch ((gint)g_scanner_get_next_token ( scanner ) )
     {
       case G_TOKEN_INTERVAL: 
-        context->sw_max = config_assign_number(scanner,"interval = number");
+        context->sw_max = config_assign_number(scanner,"interval = number")/100;
         break;
       case G_TOKEN_COLS: 
         context->sw_cols = config_assign_number(scanner,"cols = number");

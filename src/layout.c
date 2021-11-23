@@ -174,7 +174,7 @@ void layout_widgets_draw ( void )
     if(lw->ready)
     {
       if(GTK_IS_LABEL(GTK_WIDGET(lw->widget)))
-        gtk_label_set_text(GTK_LABEL(lw->widget),lw->eval);
+        gtk_label_set_markup(GTK_LABEL(lw->widget),lw->eval);
       if(GTK_IS_PROGRESS_BAR(lw->widget))
         if(!g_strrstr(lw->eval,"nan"))
          gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(lw->widget),

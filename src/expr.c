@@ -158,24 +158,31 @@ char *expr_parse_time ( GScanner *scanner )
 {
   GTimeZone *tz;
   GDateTime *time;
-  gchar *str, *tzstr;
+  gchar *str, *tzstr, *format;
 
   g_scanner_get_next_token( scanner );
-  parser_expect_symbol(scanner,'(',"Time([String])");
+  parser_expect_symbol(scanner,'(',"Time([String][,String])");
+
+  if(g_scanner_peek_next_token(scanner)==')')
+    format = NULL;
+  else
+    format = expr_parse_str( scanner );
+
   if(g_scanner_peek_next_token(scanner)==')')
     tz = NULL;
   else
   {
-    g_scanner_get_next_token( scanner );
-    tzstr = expr_parse_str(scanner);
+    parser_expect_symbol(scanner,',',"Time([String][,String])");
+    tzstr = expr_parse_str( scanner );
 #if GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 68
-    tz = g_time_zone_new_identifier(tzstr);
+    tz = g_time_zone_new_identifier( tzstr );
 #else
-    tz = g_time_zone_new(tzstr);
+    tz = g_time_zone_new( tzstr );
 #endif
     g_free(tzstr);
   }
-  parser_expect_symbol(scanner,')',"Time([String])");
+
+  parser_expect_symbol(scanner,')',"Time([String][,String])");
 
   if(tz==NULL)
     time = g_date_time_new_now_local();
@@ -185,7 +192,12 @@ char *expr_parse_time ( GScanner *scanner )
     g_time_zone_unref(tz);
   }
 
-  str = g_date_time_format ( time, "%a %b %d %H:%M:%S %Y" );
+  if(!format)
+    str = g_date_time_format ( time, "%a %b %d %H:%M:%S %Y" );
+  else
+    str = g_date_time_format ( time, format );
+
+  g_free(format);
   g_date_time_unref(time);
 
   return str;

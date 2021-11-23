@@ -24,16 +24,29 @@ void scanner_expire ( void )
 
 void scanner_update_var ( struct scan_var *var, gchar *value)
 {
-  g_free(var->str);
-  var->str=value;
-  if(*(var->name) != '$')
-    switch(var->multi)
-    {
-      case SV_ADD: var->val+=g_ascii_strtod((char *)var->str,NULL); break;
-      case SV_PRODUCT: var->val*=g_ascii_strtod((char *)var->str,NULL); break;
-      case SV_REPLACE: var->val=g_ascii_strtod((char *)var->str,NULL); break;
-      case SV_FIRST: if(var->count==0) var->val=g_ascii_strtod((char *)var->str,NULL); break;
-    }
+  if(!value)
+    return;
+  if((var->multi!=SV_FIRST)||(!var->count))
+  {
+    g_free(var->str);
+    var->str=value;
+  }
+  switch(var->multi)
+  {
+    case SV_ADD:
+      var->val+=g_ascii_strtod(value,NULL);
+      break;
+    case SV_PRODUCT:
+      var->val*=g_ascii_strtod(value,NULL);
+      break;
+    case SV_REPLACE:
+      var->val=g_ascii_strtod(value,NULL);
+      break;
+    case SV_FIRST:
+      if(!var->count)
+        var->val=g_ascii_strtod(value,NULL);
+      break;
+  }
   var->count++;
   var->status=1;
 }
