@@ -82,6 +82,7 @@ struct scan_file {
 
 struct layout_widget {
   GtkWidget *widget;
+  GtkWidget *lobject;
   gchar *style;
   gchar *css;
   gchar *value;

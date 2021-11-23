@@ -10,12 +10,15 @@
 
 gboolean widget_action ( GtkWidget *widget, gchar *cmd )
 {
-  gchar *argv[] = {NULL,NULL};
-  GPid pid;
-  if(!cmd)
-    return TRUE;
-  argv[0]=cmd;
-  g_spawn_async(NULL,argv,NULL,G_SPAWN_SEARCH_PATH,NULL,NULL,&pid,NULL);
+  if(cmd)
+    g_spawn_command_line_async(cmd,NULL);
+  return TRUE;
+}
+
+gboolean widget_ebox_action ( GtkWidget *w, GdkEventButton *ev, gchar *cmd )
+{
+  if(ev->type == GDK_BUTTON_PRESS && ev->button == 1)
+    widget_action(w,cmd);
   return TRUE;
 }
 
@@ -46,6 +49,8 @@ struct layout_widget *layout_widget_new ( void )
 void layout_widget_config ( struct layout_widget *lw )
 {
   GtkWidget *img;
+
+  lw->lobject = lw->widget;
 
   if(lw->style)
   {
@@ -101,9 +106,17 @@ void layout_widget_config ( struct layout_widget *lw )
     gtk_label_set_xalign(GTK_LABEL(lw->widget),xalign);
   }
 
-  if((lw->action)&&(GTK_BUTTON(lw->widget)))
+  if((lw->action)&&(GTK_IS_BUTTON(lw->widget)))
     g_signal_connect(G_OBJECT(lw->widget),"clicked",
       G_CALLBACK(widget_action),g_strdup(lw->action));
+
+  if((lw->action)&&(!GTK_IS_BUTTON(lw->widget)))
+  {
+    lw->lobject = gtk_event_box_new();
+    gtk_container_add(GTK_CONTAINER(lw->lobject),lw->widget);
+    g_signal_connect(G_OBJECT(lw->lobject),"button_press_event",
+        G_CALLBACK(widget_ebox_action),g_strdup(lw->action));
+  }
 
   widget_set_css(lw->widget);
 }

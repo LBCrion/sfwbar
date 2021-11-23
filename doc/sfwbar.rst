@@ -269,10 +269,10 @@ css
   specify additional css properties for the widget. These propertes will
   only applyy for the widget in question.
 
-``Button`` widget may contain the following options
-
 action
   An action to execute upon a button click. Applicable to buttons only.
+
+``Button`` widget may contain the following options
 
 icon
   An icon to display within the button
