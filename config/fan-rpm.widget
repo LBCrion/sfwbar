@@ -1,12 +1,12 @@
 scanner {
 # Poll CPU fan rpm
   file("/sys/devices/platform/it87*/hwmon/hwmon2/fan2_input") {
-    CPUFan = RegEx("([0-9]+)")
+    CPUFan = Grab()
   }
 
 # Poll MB fan rpm
   file("/sys/devices/platform/it87*/hwmon/hwmon2/fan1_input") {
-    MBFan = RegEx("([0-9]+)")
+    MBFan = Grab()
   }
 }
 

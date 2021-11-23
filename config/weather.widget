@@ -1,9 +1,9 @@
 # Parse yr.no weather forecast
 scanner {
-#  Exec("wget -O - \"https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=51.8711&lon=0.1587\"") {
-#    WthrTemp= Json(".properties.timeseries.1.data.instant.details.air_temperature")
-#    WthrCond= Json(".properties.timeseries.1.data.next_12_hours.summary.symbol_code")
-#  }
+  Exec("wget -O - \"https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=51.8711&lon=0.1587\"") {
+    WthrTemp= Json(".properties.timeseries.1.data.instant.details.air_temperature")
+    WthrCond= Json(".properties.timeseries.1.data.next_12_hours.summary.symbol_code")
+  }
 }
 
 layout {
@@ -16,6 +16,6 @@ layout {
   image {
     interval = 300000
     css = "* { min-width: 0.3cm; min-height: 0.3cm; -GtkWidget-vexpand: true;}"
-    value = '/usr/share/sfwbar/icons/weather/svg/'+$WthrCond+'.svg'
+    value = '/usr/share/sfwbar/icons/weather/'+$WthrCond+'.svg'
   }
 }

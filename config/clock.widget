@@ -3,13 +3,15 @@ layout {
 
   label {
     style = "time"
+    interval = 1000
     css = "label { font: 0.5cm Sans; font-weight: 700; -GtkWidget-align: 0.5; -GtkWidget-hexpand: true; -GtkWidget-vexpand: true;}"
-    value = Extract(Time(),'([0-9]*:[0-9]*)')
+    value = Time("%k:%M")
   }
 
   label {
     style = "date"
+    interval = 1000
     css = "label { -GtkWidget-align: 0.5; -GtkWidget-hexpand: true; -GtkWidget-vexpand: true; }"
-    value = Extract(Time(),'^([A-Za-z]+\\ [A-Za-z]+[\\ ]+[0-9]+)')
+    value = Time("%a %b %d")
   }
 }

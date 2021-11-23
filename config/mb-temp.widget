@@ -1,7 +1,7 @@
 scanner {
 # Poll motherboard temperature
   file("/sys/class/hwmon/hwmon2/temp1_input") {
-    MBTemp = RegEx("([0-9]+)")
+    MBTemp = Grab(First)
   }
 }
 

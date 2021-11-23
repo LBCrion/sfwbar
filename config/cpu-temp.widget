@@ -1,7 +1,7 @@
 scanner {
 # Poll CPU temperature
   file("/sys/class/hwmon/hwmon1/temp1_input") {
-    CPUTemp = RegEx("([0-9]+)")
+    CPUTemp = Grab()
   }
 }
 

@@ -1,8 +1,8 @@
 scanner {
 # Add up received and transmitted bytes cross all enp* interfaces  
-  file("/proc/net/dev",NoGLob) {
-    EthRcvd = RegEx("enp.*:[\t ]*([0-9]+)",Sum)
-    EthSent = RegEx("enp.*:(?:[\t ]*[0-9]+){8}[\t ]([0-9]+)",Sum)
+  file("/proc/net/dev") {
+    EthRcvd = RegEx("wlp.*:[\t ]*([0-9]+)",Sum)
+    EthSent = RegEx("wlp.*:(?:[\t ]*[0-9]+){8}[\t ]([0-9]+)",Sum)
   }
 }
 
