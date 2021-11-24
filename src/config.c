@@ -282,26 +282,26 @@ struct rect config_get_loc ( GScanner *scanner )
   struct rect rect;
   rect.x = 0;
   rect.y = 0;
-  rect.w = 0;
-  rect.h = 0;
+  rect.w = 1;
+  rect.h = 1;
   scanner->max_parse_errors = FALSE;
-  parser_expect_symbol(scanner, '(', ".loc(x,y[,w,h])");
+  parser_expect_symbol(scanner, '(', "loc(x,y[,w,h])");
   if(scanner->max_parse_errors)
     return rect;
   if(g_scanner_peek_next_token(scanner)!=G_TOKEN_FLOAT)
   {
-    g_scanner_error(scanner,"expecting a number in .loc");
+    g_scanner_error(scanner,"expecting a number in loc");
     scanner->max_parse_errors=TRUE;
     return rect;
   }
   g_scanner_get_next_token(scanner);
   rect.x = scanner->value.v_float;
-  parser_expect_symbol(scanner, ',', ".loc(x,y[,w,h])");
+  parser_expect_symbol(scanner, ',', "loc(x,y[,w,h])");
   if(scanner->max_parse_errors)
     return rect;
   if(g_scanner_peek_next_token(scanner)!=G_TOKEN_FLOAT)
   {
-    g_scanner_error(scanner,"expecting a number in .loc");
+    g_scanner_error(scanner,"expecting a number in loc");
     scanner->max_parse_errors=TRUE;
     return rect;
   }
@@ -312,7 +312,7 @@ struct rect config_get_loc ( GScanner *scanner )
     g_scanner_get_next_token(scanner);
     return rect;
   }
-  parser_expect_symbol(scanner, ',', ".loc(x,y[,w,h])");
+  parser_expect_symbol(scanner, ',', "loc(x,y[,w,h])");
   if(scanner->max_parse_errors)
     return rect;
   if(g_scanner_peek_next_token(scanner)!=G_TOKEN_FLOAT)
@@ -322,19 +322,19 @@ struct rect config_get_loc ( GScanner *scanner )
     return rect;
   }
   g_scanner_get_next_token(scanner);
-  rect.w = scanner->value.v_float;
-  parser_expect_symbol(scanner, ',', ".loc(x,y[,w,h])");
+  rect.w = MAX(1,scanner->value.v_float);
+  parser_expect_symbol(scanner, ',', "loc(x,y[,w,h])");
   if(scanner->max_parse_errors)
     return rect;
   if(g_scanner_peek_next_token(scanner)!=G_TOKEN_FLOAT)
   {
-    g_scanner_error(scanner,"expecting a number in .loc");
+    g_scanner_error(scanner,"expecting a number in loc");
     scanner->max_parse_errors=TRUE;
     return rect;
   }
   g_scanner_get_next_token(scanner);
-  rect.h = scanner->value.v_float;
-  parser_expect_symbol(scanner, ')', ".loc(x,y[,w,h])");
+  rect.h = MAX(1,scanner->value.v_float);
+  parser_expect_symbol(scanner, ')', "loc(x,y[,w,h])");
 
   return rect;
 }
@@ -503,9 +503,21 @@ void config_widget_props ( GScanner *scanner, struct layout_widget *lw )
         lw->css = config_assign_string(scanner,"css = String");
         break;
       case G_TOKEN_INTERVAL:
+        if(GTK_IS_GRID(lw->widget))
+        {
+          g_scanner_error(scanner,"this widget has no property 'interval'");
+          scanner->max_parse_errors = TRUE;
+          break;
+        }
         lw->interval = 1000*config_assign_number(scanner, "interval = Number");
         break;
       case G_TOKEN_VALUE:
+        if(GTK_IS_GRID(lw->widget))
+        {
+          g_scanner_error(scanner,"this widget has no property 'value'");
+          scanner->max_parse_errors = TRUE;
+          break;
+        }
         lw->value = config_get_value(scanner);
         break;
       case G_TOKEN_PINS:
@@ -630,26 +642,24 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
         scanner->max_parse_errors = TRUE;
         continue;
     }
-    if(lw == NULL)
+    if(!lw)
       continue;
-    if(scanner->max_parse_errors)
+    if(scanner->max_parse_errors || !lw->widget)
     {
       layout_widget_free(lw);
       continue;
     }
     config_widget_props( scanner, lw);
-    if( lw->rect.w < 1)
-      lw->rect.w = 1;
-    if( lw->rect.h < 1)
-      lw->rect.h = 1;
     if( (lw->rect.x < 1) || (lw->rect.y < 1 ) )
       gtk_grid_attach_next_to(GTK_GRID(parent),lw->lobject,sibling,dir,1,1);
     else
       gtk_grid_attach(GTK_GRID(parent),lw->lobject,
           lw->rect.x,lw->rect.y,lw->rect.w,lw->rect.h);
     sibling = lw->lobject;
+
     if(lw->wtype == G_TOKEN_GRID)
       config_widgets(scanner,lw->widget);
+
     if(lw->value)
       context->widgets = g_list_append(context->widgets,lw);
     else

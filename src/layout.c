@@ -41,8 +41,8 @@ struct layout_widget *layout_widget_new ( void )
   lw->ready = FALSE;
   lw->rect.x = 0;
   lw->rect.y = 0;
-  lw->rect.w = 0;
-  lw->rect.h = 0;
+  lw->rect.w = 1;
+  lw->rect.h = 1;
   return lw;
 }
 
@@ -109,13 +109,13 @@ void layout_widget_config ( struct layout_widget *lw )
         G_CALLBACK(widget_ebox_action),g_strdup(lw->action));
   }
 
+  widget_set_css(lw->widget);
+
   if(GTK_IS_BUTTON(lw->widget))
   {
     lw->widget = scale_image_new();
     gtk_container_add(GTK_CONTAINER(lw->lobject),lw->widget);
   }
-
-  widget_set_css(lw->widget);
 }
 
 void layout_widget_free ( struct layout_widget *lw )
