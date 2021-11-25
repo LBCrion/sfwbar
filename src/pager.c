@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020 Lev Babiev
+ * Copyright 2020-2021 Lev Babiev
  */
 
 
@@ -10,12 +10,7 @@
 GtkWidget *pager_init ( GtkWidget *widget )
 {
   context->pager = widget;
-  gtk_widget_set_name(context->pager, "pager");
   context->features |= F_PAGER;
-  if((context->pager_rows<1)&&(context->pager_cols<1))
-    context->pager_rows = 1;
-  if((context->pager_rows>0)&&(context->pager_cols>0))
-    context->pager_cols = -1;
   pager_update();
   return context->pager;
 }
@@ -126,7 +121,6 @@ gboolean pager_draw_tooltip ( GtkWidget *widget, gint x, gint y, gboolean kbmode
 
 void pager_update ( void )
 {
-  gint c=0;
   gint sock;
   gint32 etype;
   struct json_object *obj = NULL;
@@ -192,14 +186,9 @@ void pager_update ( void )
           gtk_widget_set_name(widget, "pager_focused");
         g_signal_connect(widget,"clicked",G_CALLBACK(pager_button_click),context);
         widget_set_css(widget);
-        if(context->pager_rows>0)
-          gtk_grid_attach(GTK_GRID(context->pager),widget, c/(context->pager_rows),
-            c%(context->pager_rows),1,1);
-        else
-          gtk_grid_attach(GTK_GRID(context->pager),widget, c%(context->pager_cols),
-            c/(context->pager_cols),1,1);
-        c++;
+        flow_grid_attach(context->pager,widget);
       }
+    flow_grid_pad(context->pager);
     gtk_widget_show_all(context->pager);
   }
 

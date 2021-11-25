@@ -11,31 +11,11 @@
 
 GtkWidget *taskbar_init ( GtkWidget *widget )
 {
-  GtkWidget *w;
-  gint i;
-
   context->features |= F_TASKBAR;
   if(!(context->features & F_TB_ICON))
     context->features |= F_TB_LABEL;
-  if((context->tb_rows<1)&&(context->tb_cols<1))
-    context->tb_rows = 1;
-  if((context->tb_rows>0)&&(context->tb_cols>0))
-    context->tb_cols = -1;
 
   context->box = widget;
-  g_object_set(context->box,"column-homogeneous",TRUE,NULL);
-
-  w = gtk_button_new();
-  gtk_widget_set_name(w, "taskbar_active");
-  gtk_grid_attach(GTK_GRID(context->box),w,1,1,1,1);
-
-  if(context->tb_rows>0)
-    for(i=1;i<context->tb_rows;i++)
-    {
-      w = gtk_button_new();
-      gtk_widget_set_name(w, "taskbar_normal");
-      gtk_grid_attach(GTK_GRID(context->box),w,1,i+1,1,1);
-    } 
 
   return context->box;
 }
@@ -121,7 +101,7 @@ void taskbar_window_init ( struct wt_window *win )
 void taskbar_refresh( void )
 {
   GList *item;
-  gint tb_count=0;
+
   gtk_container_foreach(GTK_CONTAINER(context->box),
       (GtkCallback)taskbar_remove_button,context);
   context->wt_list = g_list_sort(context->wt_list,
@@ -132,15 +112,11 @@ void taskbar_refresh( void )
       gtk_widget_set_name(AS_WINDOW(item->data)->button, "taskbar_active");
     else
       gtk_widget_set_name(AS_WINDOW(item->data)->button, "taskbar_normal");
+
     widget_set_css(AS_WINDOW(item->data)->button);
-    if(context->tb_rows>0)
-      gtk_grid_attach(GTK_GRID(context->box),AS_WINDOW(item->data)->button,
-        (tb_count)/(context->tb_rows),(tb_count)%(context->tb_rows),1,1);
-    else
-      gtk_grid_attach(GTK_GRID(context->box),AS_WINDOW(item->data)->button,
-        (tb_count)%(context->tb_cols),(tb_count)/(context->tb_cols),1,1);
-    tb_count++;
+    flow_grid_attach(context->box,AS_WINDOW(item->data)->button);
   }
+  flow_grid_pad(context->box);
   gtk_widget_show_all(context->box);
   context->status &= ~ST_TASKBAR;
 }

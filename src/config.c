@@ -448,36 +448,28 @@ void config_get_pins ( GScanner *scanner, struct layout_widget *lw )
 
 void config_widget_cols ( GScanner *scanner, struct layout_widget *lw )
 {
-  switch(lw->wtype)
+  if( (lw->wtype != G_TOKEN_TASKBAR) &&
+      (lw->wtype != G_TOKEN_PAGER) &&
+      (lw->wtype != G_TOKEN_TRAY) )
   {
-    case G_TOKEN_TASKBAR:
-      context->tb_cols = config_assign_number(scanner, "cols = Number");
-      break;
-    case G_TOKEN_PAGER:
-      context->pager_cols = config_assign_number(scanner, "cols = Number");
-      break;
-    default:
-      g_scanner_error(scanner,"this widget has no property 'cols'");
-      scanner->max_parse_errors = TRUE;
-      break;
+    g_scanner_error(scanner,"this widget has no property 'cols'");
+    scanner->max_parse_errors = TRUE;
+    return;
   }
+  flow_grid_set_cols(lw->widget, config_assign_number(scanner, "cols = number"));
 }
 
 void config_widget_rows ( GScanner *scanner, struct layout_widget *lw )
 {
-  switch(lw->wtype)
+  if( (lw->wtype != G_TOKEN_TASKBAR) &&
+      (lw->wtype != G_TOKEN_PAGER) &&
+      (lw->wtype != G_TOKEN_TRAY) )
   {
-    case G_TOKEN_TASKBAR:
-      context->tb_rows = config_assign_number(scanner, "rows = Number");
-      break;
-    case G_TOKEN_PAGER:
-      context->pager_rows = config_assign_number(scanner, "rows = Number");
-      break;
-    default:
-      g_scanner_error(scanner,"this widget has no property 'rows'");
-      scanner->max_parse_errors = TRUE;
-      break;
+    g_scanner_error(scanner,"this widget has no property 'rows'");
+    scanner->max_parse_errors = TRUE;
+    return;
   }
+  flow_grid_set_rows(lw->widget, config_assign_number(scanner, "rows = number"));
 }
 
 void config_widget_props ( GScanner *scanner, struct layout_widget *lw )
@@ -626,15 +618,15 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
         break;
       case G_TOKEN_TASKBAR:
         scanner->max_parse_errors=FALSE;
-        lw->widget = clamp_grid_new();
+        lw->widget = flow_grid_new();
         break;
       case G_TOKEN_PAGER:
         scanner->max_parse_errors=FALSE;
-        lw->widget = gtk_grid_new();
+        lw->widget = flow_grid_new();
         break;
       case G_TOKEN_TRAY:
         scanner->max_parse_errors=FALSE;
-        lw->widget = gtk_grid_new();
+        lw->widget = flow_grid_new();
         break;
       default:
         if(!scanner->max_parse_errors)

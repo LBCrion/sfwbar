@@ -41,10 +41,6 @@ void init_context ( void )
   context->read_buff = g_malloc(context->buff_len);
   context->features |= F_TB_ICON;
   context->features |= F_TB_LABEL;
-  context->tb_rows = -1;
-  context->tb_rows = -1;
-  context->pager_cols = -1;
-  context->pager_rows = -1;
 }
 
 void css_init ( void )
