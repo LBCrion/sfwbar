@@ -142,6 +142,7 @@ void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );
 void flow_grid_set_cols ( GtkWidget *cgrid, gint cols );
 void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w );
 void flow_grid_pad ( GtkWidget *cgrid );
+void flow_grid_clean ( GtkWidget *cgrid );
 GtkWidget *alabel_new();
 void scanner_expire ( void );
 int scanner_reset_vars ( GList *var_list );

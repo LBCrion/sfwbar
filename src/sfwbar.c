@@ -129,15 +129,12 @@ static void activate (GtkApplication* app, gpointer data )
   
   lw = config_parse(confname?confname:"sfwbar.config");
 
-  if((lw != NULL)&&(lw->widget!=NULL))
+  if((lw != NULL)&&(lw->lobject!=NULL))
   {
     gtk_container_add(GTK_CONTAINER(context->window), lw->widget);
     layout_widget_free(lw);
 
     gtk_widget_show_all ((GtkWidget *)context->window);
-    if(context->features & F_TASKBAR)
-     gtk_widget_set_size_request (GTK_WIDGET (context->window), -1, gtk_widget_get_allocated_height(context->box));
-    gtk_window_resize (context->window, 1, 1);
   }
 
   if((context->features & F_TASKBAR)||(context->features & F_PLACEMENT)||(context->features & F_PAGER))
@@ -149,7 +146,6 @@ static void activate (GtkApplication* app, gpointer data )
 
   if(context->widgets)
     g_thread_unref(g_thread_new("scanner",scanner_thread,NULL));
-
 
   g_timeout_add (100,(GSourceFunc )shell_timer,context);
   g_unix_signal_add(10,(GSourceFunc)switcher_event,NULL);

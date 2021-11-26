@@ -44,7 +44,7 @@ static void flow_grid_class_init ( FlowGridClass *kclass )
   widget_class->get_preferred_height = flow_grid_get_preferred_height;
 }
 
-static void flow_grid_init (FlowGrid *cgrid )
+static void flow_grid_init ( FlowGrid *cgrid )
 {
   FlowGridPrivate *priv = flow_grid_get_instance_private(FLOW_GRID(cgrid));
 
@@ -62,20 +62,32 @@ GtkWidget *flow_grid_new()
 
 static void flow_grid_get_preferred_width (GtkWidget *widget, gint *minimal, gint *natural)
 {
+  FlowGridPrivate *priv;
+
   g_return_if_fail(widget != NULL);
   g_return_if_fail(IS_FLOW_GRID(widget));
 
-  *minimal = 1;
-  *natural = 1;
+  priv = flow_grid_get_instance_private(FLOW_GRID(widget));
+
+  GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_width(widget,minimal,natural);
+
+  if(priv->rows>0)
+    *minimal = MIN(*natural,1);
 }
 
 static void flow_grid_get_preferred_height (GtkWidget *widget, gint *minimal, gint *natural)
 {
+  FlowGridPrivate *priv;
+
   g_return_if_fail(widget != NULL);
   g_return_if_fail(IS_FLOW_GRID(widget));
 
-  *minimal = 1;
-  *natural = 1;
+  priv = flow_grid_get_instance_private(FLOW_GRID(widget));
+
+  GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_height(widget,minimal,natural);
+
+  if(priv->cols>0)
+    *minimal = MIN(*natural,1);
 }
 
 void flow_grid_set_cols ( GtkWidget *cgrid, gint cols )
@@ -147,4 +159,18 @@ void flow_grid_pad ( GtkWidget *cgrid )
     for(;priv->i<priv->cols;priv->i++)
       gtk_grid_attach(GTK_GRID(cgrid),gtk_label_new(""),priv->i,0,1,1);
 
+}
+
+void flow_grid_remove_widget ( GtkWidget *widget, GtkWidget *parent )
+{
+  gtk_container_remove ( GTK_CONTAINER(parent), widget );
+}
+
+void flow_grid_clean ( GtkWidget *cgrid )
+{
+  g_return_if_fail(cgrid != NULL);
+  g_return_if_fail(IS_FLOW_GRID(cgrid));
+
+  gtk_container_foreach(GTK_CONTAINER(cgrid),
+      (GtkCallback)flow_grid_remove_widget,cgrid);
 }

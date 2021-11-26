@@ -15,11 +15,6 @@ GtkWidget *pager_init ( GtkWidget *widget )
   return context->pager;
 }
 
-void pager_remove_button ( GtkWidget *widget, gpointer data )
-{
-  gtk_container_remove ( GTK_CONTAINER(context->pager), widget );
-}
-
 void pager_button_click( GtkWidget *widget, gpointer data )
 {
   gchar *cmd;
@@ -169,7 +164,7 @@ void pager_update ( void )
 
   if(wslist)
   {
-    gtk_container_foreach(GTK_CONTAINER(context->pager),(GtkCallback)pager_remove_button,context);
+    flow_grid_clean(context->pager);
     for(node=wslist;node!=NULL;node=g_list_next(node))
       {
         label = node->data;

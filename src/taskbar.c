@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020- Lev Babiev
+ * Copyright 2020-2021 Lev Babiev
  */
 
 
@@ -18,11 +18,6 @@ GtkWidget *taskbar_init ( GtkWidget *widget )
   context->box = widget;
 
   return context->box;
-}
-
-void taskbar_remove_button ( GtkWidget *widget, gpointer data )
-{
-  gtk_container_remove ( GTK_CONTAINER(context->box), widget );
 }
 
 void taskbar_button_click( GtkWidget *widget, gpointer data )
@@ -102,8 +97,7 @@ void taskbar_refresh( void )
 {
   GList *item;
 
-  gtk_container_foreach(GTK_CONTAINER(context->box),
-      (GtkCallback)taskbar_remove_button,context);
+  flow_grid_clean(context->box);
   context->wt_list = g_list_sort(context->wt_list,
       (GCompareFunc)wintree_compare);
   for (item = context->wt_list; item!= NULL; item = g_list_next(item) )
