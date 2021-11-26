@@ -75,11 +75,6 @@ gboolean switcher_event ( struct json_object *obj )
   return TRUE;
 }
 
-void switcher_delete ( GtkWidget *w )
-{
-  gtk_container_remove ( GTK_CONTAINER(context->sw_box), w );
-}
-
 void switcher_window_init ( struct wt_window *win)
 {
   GtkWidget *img;
@@ -101,8 +96,8 @@ void switcher_window_init ( struct wt_window *win)
 void switcher_update ( void )
 {
   GList *item;
-  gint i = 0;
   gchar *cmd;
+
   if(context->sw_count <= 0)
     return;
   context->sw_count--;
@@ -111,7 +106,7 @@ void switcher_update ( void )
   {
     if(!(context->status & ST_SWITCHER))
       return;
-    gtk_container_foreach(GTK_CONTAINER(context->sw_box),(GtkCallback)switcher_delete,context);
+    flow_grid_clean(context->sw_box);
     for (item = context->wt_list; item!= NULL; item = g_list_next(item) )
     {
       if (AS_WINDOW(item->data)->wid == context->tb_focus)
@@ -119,9 +114,7 @@ void switcher_update ( void )
       else
         gtk_widget_set_name(AS_WINDOW(item->data)->switcher, "switcher_normal");
 
-      gtk_grid_attach(GTK_GRID(context->sw_box),AS_WINDOW(item->data)->switcher,
-          i%context->sw_cols,i/context->sw_cols,1,1);
-      i++;
+      flow_grid_attach(context->sw_box,AS_WINDOW(item->data)->switcher);
     }
     gtk_widget_show_all(GTK_WIDGET(context->sw_win));
     context->status &= ~ST_SWITCHER;

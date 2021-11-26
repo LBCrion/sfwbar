@@ -618,15 +618,15 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
         break;
       case G_TOKEN_TASKBAR:
         scanner->max_parse_errors=FALSE;
-        lw->widget = flow_grid_new();
+        lw->widget = flow_grid_new(TRUE);
         break;
       case G_TOKEN_PAGER:
         scanner->max_parse_errors=FALSE;
-        lw->widget = flow_grid_new();
+        lw->widget = flow_grid_new(TRUE);
         break;
       case G_TOKEN_TRAY:
         scanner->max_parse_errors=FALSE;
-        lw->widget = flow_grid_new();
+        lw->widget = flow_grid_new(TRUE);
         break;
       default:
         if(!scanner->max_parse_errors)
@@ -726,7 +726,8 @@ void config_switcher ( GScanner *scanner )
   context->sw_win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_layer_init_for_window (GTK_WINDOW(context->sw_win));
   gtk_layer_set_layer(GTK_WINDOW(context->sw_win),GTK_LAYER_SHELL_LAYER_OVERLAY);
-  context->sw_box = gtk_grid_new();
+  context->sw_box = flow_grid_new(FALSE);
+  flow_grid_set_cols(context->sw_box,context->sw_cols);
   gtk_widget_set_name(context->sw_box, "switcher");
   gtk_widget_set_name(context->sw_win, "switcher");
   gtk_container_add(GTK_CONTAINER(context->sw_win),context->sw_box);

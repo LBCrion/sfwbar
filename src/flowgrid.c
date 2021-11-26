@@ -33,6 +33,7 @@ typedef struct _FlowGridPrivate FlowGridPrivate;
 struct _FlowGridPrivate
 {
   gint cols,rows,i;
+  gboolean limit;
 };
 
 G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, GTK_TYPE_GRID, G_ADD_PRIVATE (FlowGrid));
@@ -50,14 +51,23 @@ static void flow_grid_init ( FlowGrid *cgrid )
 
   priv->rows = 1;
   priv->cols = 0;
+  priv->limit = TRUE;
 
   gtk_grid_set_row_homogeneous(GTK_GRID(cgrid),TRUE);
   gtk_grid_set_column_homogeneous(GTK_GRID(cgrid),TRUE);
 }
 
-GtkWidget *flow_grid_new()
+GtkWidget *flow_grid_new( gboolean limit )
 {
-  return GTK_WIDGET(g_object_new(flow_grid_get_type(), NULL));
+  GtkWidget *w;
+  FlowGridPrivate *priv;
+
+  w = GTK_WIDGET(g_object_new(flow_grid_get_type(), NULL));
+  priv = flow_grid_get_instance_private(FLOW_GRID(w));
+
+  priv->limit = limit;
+  
+  return w;
 }
 
 static void flow_grid_get_preferred_width (GtkWidget *widget, gint *minimal, gint *natural)
@@ -71,7 +81,7 @@ static void flow_grid_get_preferred_width (GtkWidget *widget, gint *minimal, gin
 
   GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_width(widget,minimal,natural);
 
-  if(priv->rows>0)
+  if(priv->rows>0 && priv->limit )
     *minimal = MIN(*natural,1);
 }
 
@@ -86,7 +96,7 @@ static void flow_grid_get_preferred_height (GtkWidget *widget, gint *minimal, gi
 
   GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_height(widget,minimal,natural);
 
-  if(priv->cols>0)
+  if(priv->cols>0 && priv->limit)
     *minimal = MIN(*natural,1);
 }
 
@@ -100,6 +110,7 @@ void flow_grid_set_cols ( GtkWidget *cgrid, gint cols )
   priv = flow_grid_get_instance_private(FLOW_GRID(cgrid));
 
   priv->cols = cols;
+  priv->rows = 0;
   if((priv->rows<1)&&(priv->cols<1))
     priv->rows = 1;
   if((priv->rows>0)&&(priv->cols>0))
@@ -116,6 +127,8 @@ void flow_grid_set_rows ( GtkWidget *cgrid, gint rows )
   priv = flow_grid_get_instance_private(FLOW_GRID(cgrid));
 
   priv->rows = rows;
+  priv->cols = 0;
+
   if((priv->rows<1)&&(priv->cols<1))
     priv->rows = 1;
   if((priv->rows>0)&&(priv->cols>0))

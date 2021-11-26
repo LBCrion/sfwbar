@@ -77,8 +77,8 @@ void taskbar_window_init ( struct wt_window *win )
   if(context->features & F_TB_ICON)
   {
     icon = scale_image_new();
-    gtk_container_add(GTK_CONTAINER(box),icon);
     scale_image_set_image(icon,win->appid);
+    gtk_container_add(GTK_CONTAINER(box),icon);
   }
   if(context->features & F_TB_LABEL)
   {
