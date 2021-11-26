@@ -106,6 +106,7 @@ void taskbar_refresh( void )
       gtk_widget_set_name(AS_WINDOW(item->data)->button, "taskbar_active");
     else
       gtk_widget_set_name(AS_WINDOW(item->data)->button, "taskbar_normal");
+    gtk_widget_unset_state_flags(AS_WINDOW(item->data)->button, GTK_STATE_FLAG_PRELIGHT);
 
     widget_set_css(AS_WINDOW(item->data)->button);
     flow_grid_attach(context->box,AS_WINDOW(item->data)->button);
