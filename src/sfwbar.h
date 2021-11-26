@@ -143,10 +143,11 @@ void flow_grid_set_cols ( GtkWidget *cgrid, gint cols );
 void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w );
 void flow_grid_pad ( GtkWidget *cgrid );
 void flow_grid_clean ( GtkWidget *cgrid );
-GtkWidget *alabel_new();
+
 void scanner_expire ( void );
 int scanner_reset_vars ( GList *var_list );
 int scanner_glob_file ( struct scan_file *file );
+
 char *expr_parse ( gchar *expr_str, guint * );
 gboolean parser_expect_symbol ( GScanner *, gchar , gchar *);
 char *string_from_name ( gchar *name );
@@ -162,15 +163,14 @@ gdouble json_double_by_name ( struct json_object *obj, gchar *name, gdouble defv
 int md5_file( gchar *path, guchar output[16] );
 void str_assign ( gchar **dest, gchar *source );
 struct rect parse_rect ( struct json_object *obj );
+
 void scale_image_set_image ( GtkWidget *widget, gchar *image );
 GtkWidget *scale_image_new();
 int scale_image_update ( GtkWidget *widget );
 void scale_image_set_pixbuf ( GtkWidget *widget, GdkPixbuf * );
 
 #define SCAN_VAR(x) ((struct scan_var *)x)
-#define SCAN_FILE(x) ((struct scan_file *)x)
 #define AS_WINDOW(x) ((struct wt_window *)(x))
-#define AS_RECT(x) ((struct rect *)(x))
 
 enum {
   F_TASKBAR   = 1<<0,

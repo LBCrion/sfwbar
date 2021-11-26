@@ -647,11 +647,6 @@ void sni_register ( gchar *name )
       G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_unregistered_cb,context,NULL);
 }
 
-void sni_item_remove ( GtkWidget *widget )
-{
-  gtk_container_remove ( GTK_CONTAINER(context->tray), widget );
-}
-
 void sni_refresh ( void )
 {
   GList *iter;
@@ -660,16 +655,16 @@ void sni_refresh ( void )
   if( !(context->status & ST_TRAY) )
     return;
 
-  gtk_container_foreach(GTK_CONTAINER(context->tray),
-      (GtkCallback)sni_item_remove,context);
+  flow_grid_clean(context->tray);
 
   for(iter = context->sni_items;iter!=NULL;iter=g_list_next(iter))
   {
     sni = iter->data;
     if(sni)
       if(sni->string[SNI_PROP_STATUS])
-          flow_grid_attach(context->tray,sni->box);
+        flow_grid_attach(context->tray,sni->box);
   }
+
   flow_grid_pad(context->tray);
   gtk_widget_show_all(context->tray);
   context->status &= ~ST_TRAY;
