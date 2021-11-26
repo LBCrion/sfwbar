@@ -78,8 +78,10 @@ gboolean switcher_event ( struct json_object *obj )
 void switcher_window_init ( struct wt_window *win)
 {
   GtkWidget *img;
+
   if(!(context->features & F_SWITCHER))
     return;
+
   win->switcher = gtk_grid_new();
   g_object_ref(G_OBJECT(win->switcher));
   gtk_widget_set_hexpand(win->switcher,TRUE);

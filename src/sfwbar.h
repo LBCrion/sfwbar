@@ -137,7 +137,7 @@ void layout_widgets_draw ( void );
 GtkWidget *widget_icon_by_name ( gchar *name, gint size );
 void widget_set_css ( GtkWidget * );
 
-GtkWidget *flow_grid_new();
+GtkWidget *flow_grid_new( gboolean limit );
 void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );
 void flow_grid_set_cols ( GtkWidget *cgrid, gint cols );
 void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w );
