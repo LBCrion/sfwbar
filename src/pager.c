@@ -3,7 +3,6 @@
  * Copyright 2020-2021 Lev Babiev
  */
 
-
 #include <gtk/gtk.h>
 #include "sfwbar.h"
 
@@ -100,8 +99,8 @@ gboolean pager_draw_preview ( GtkWidget *widget, cairo_t *cr, gchar *desk )
   return TRUE;
 }
 
-gboolean pager_draw_tooltip ( GtkWidget *widget, gint x, gint y, gboolean kbmode, 
-    GtkTooltip *tooltip, gpointer data )
+gboolean pager_draw_tooltip ( GtkWidget *widget, gint x, gint y,
+    gboolean kbmode, GtkTooltip *tooltip, gpointer data )
 {
   GtkWidget *button;
   gchar *desk;
@@ -158,9 +157,9 @@ void pager_update ( void )
   }
 
   for(node=context->pager_pins;node!=NULL;node=g_list_next(node))
-    if(g_list_find_custom(wslist,node->data,(int (*)(const void *, const void *))g_strcmp0)==NULL)
+    if(!g_list_find_custom(wslist,node->data,(GCompareFunc)g_strcmp0))
       wslist = g_list_append(wslist,g_strdup(node->data));
-  wslist = g_list_sort(wslist,(int (*)(const void *, const void *))g_strcmp0);
+  wslist = g_list_sort(wslist,(GCompareFunc)g_strcmp0);
 
   if(wslist)
   {
@@ -172,14 +171,15 @@ void pager_update ( void )
         if(context->features & F_PA_RENDER)
         {
           gtk_widget_set_has_tooltip(widget,TRUE);
-          g_signal_connect(widget,"query-tooltip",G_CALLBACK(pager_draw_tooltip),context);
+          g_signal_connect(widget,"query-tooltip",
+              G_CALLBACK(pager_draw_tooltip),NULL);
         }
         gtk_widget_set_name(widget, "pager_normal");
-        if(g_list_find_custom(visible,label,(int (*)(const void *, const void *))g_strcmp0)!=NULL)
+        if(g_list_find_custom(visible,label,(GCompareFunc)g_strcmp0)!=NULL)
           gtk_widget_set_name(widget, "pager_visible");
         if(focus==label)
           gtk_widget_set_name(widget, "pager_focused");
-        g_signal_connect(widget,"clicked",G_CALLBACK(pager_button_click),context);
+        g_signal_connect(widget,"clicked",G_CALLBACK(pager_button_click),NULL);
         widget_set_css(widget);
         flow_grid_attach(context->pager,widget);
       }
