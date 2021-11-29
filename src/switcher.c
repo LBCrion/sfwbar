@@ -5,7 +5,6 @@
 
 #include <glib.h>
 #include <gtk/gtk.h>
-#include <gtk-layer-shell.h>
 #include "sfwbar.h"
 
 gboolean hide_event ( struct json_object *obj )
@@ -136,5 +135,3 @@ void switcher_update ( void )
           zwlr_foreign_toplevel_handle_v1_activate(AS_WINDOW(item->data)->wlr, seat);
   }
 }
-
-

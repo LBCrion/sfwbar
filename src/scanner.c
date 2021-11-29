@@ -5,10 +5,6 @@
 
 #include <glib.h>
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
 #include <sys/stat.h>
 #include <glob.h>
 #include "sfwbar.h"
@@ -90,6 +86,7 @@ gchar *scanner_extract_json ( struct json_object *obj, gchar *expr )
   return result;
 }
 
+#define SCANNER_BUFF_LEN 1024
 
 /* update variables in a specific file (or pipe) */
 int scanner_update_file ( FILE *in, struct scan_file *file )
@@ -99,9 +96,10 @@ int scanner_update_file ( FILE *in, struct scan_file *file )
   GMatchInfo *match;
   struct json_tokener *json = NULL;
   struct json_object *obj;
+  static gchar read_buff[SCANNER_BUFF_LEN];
 
   while((!feof(in))&&(!ferror(in)))
-    if(fgets(context->read_buff,context->buff_len,in)!=NULL)
+    if(fgets(read_buff,SCANNER_BUFF_LEN,in)!=NULL)
     {
       for(node=file->vars;node!=NULL;node=g_list_next(node))
       {
@@ -109,13 +107,13 @@ int scanner_update_file ( FILE *in, struct scan_file *file )
         switch(var->type)
         {
           case VP_REGEX:
-            g_regex_match (var->regex, context->read_buff, 0, &match);
+            g_regex_match (var->regex, read_buff, 0, &match);
             if(g_match_info_matches (match))
               scanner_update_var(var,g_match_info_fetch (match, 1));
             g_match_info_free (match);
             break;
           case VP_GRAB:
-            scanner_update_var(var,g_strdup(context->read_buff));
+            scanner_update_var(var,g_strdup(read_buff));
             break;
           case VP_JSON:
             if(!json)
@@ -124,8 +122,8 @@ int scanner_update_file ( FILE *in, struct scan_file *file )
         }
       }
       if(json)
-        obj = json_tokener_parse_ex(json,context->read_buff,
-            strlen(context->read_buff));
+        obj = json_tokener_parse_ex(json,read_buff,
+            strlen(read_buff));
     }
   if(json)
   {
@@ -248,6 +246,7 @@ char *string_from_name ( gchar *name )
   if(res==NULL)
     res = g_strdup("");
   g_free(id);
+  g_debug("scanner: %s = \"%s\"",name,res);
   return res;
 }
 
@@ -275,6 +274,7 @@ double numeric_from_name ( gchar *name )
     }
   g_free(id);
   g_free(fname);
+  g_debug("scanner: %s = %f",name,retval);
   return retval;
 }
 

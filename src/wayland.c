@@ -5,6 +5,8 @@
 
 #define WLR_FOREIGN_TOPLEVEL_MANAGEMENT_VERSION 3
 
+typedef struct zwlr_foreign_toplevel_handle_v1 wlr_fth;
+
 static struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager = NULL;
 static struct wl_output *pref_output = NULL;
 static uint32_t pref_output_id = UINT32_MAX;

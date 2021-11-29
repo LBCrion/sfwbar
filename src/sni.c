@@ -217,7 +217,7 @@ void sni_item_signal_cb (GDBusConnection *con, const gchar *sender,
          const gchar *path, const gchar *interface, const gchar *signal,
          GVariant *parameters, gpointer data)
 {
-  g_message("signal %s from %s\n",signal,sender);
+  g_debug("received signal %s from %s",signal,sender);
   if(g_strcmp0(signal,"NewTitle")==0)
     sni_item_get_prop(con,data,SNI_PROP_TITLE);
   if(g_strcmp0(signal,"NewStatus")==0)
@@ -334,7 +334,6 @@ void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
   g_object_ref(sni->box);
   sni->signal = g_dbus_connection_signal_subscribe(con,sni->dest,
       sni->iface,NULL,sni->path,NULL,0,sni_item_signal_cb,sni,NULL);
-  g_message("item registered: %s %s\n",sni->dest,sni->path);
   context->sni_items = g_list_append(context->sni_items,sni);
   for(i=0;i<3;i++)
     sni->pixbuf[i]=NULL;
@@ -342,6 +341,8 @@ void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
     sni->string[i]=NULL;
   for(i=0;i<15;i++)
     sni_item_get_prop(con,sni,i);
+  g_debug("host %s: item registered: %s %s",iface->host_iface,sni->dest,
+      sni->path);
 }
 
 void sni_host_item_registered_cb ( GDBusConnection* con, const gchar* sender,
@@ -362,30 +363,30 @@ void sni_host_item_registered_cb ( GDBusConnection* con, const gchar* sender,
 }
 void watcher_item_new_cb ( GDBusConnection *con, const gchar *name, const gchar *owner_name, gpointer data )
 {
-  g_message("appeared %s owner %s\n",name,owner_name);
+  g_debug("appeared %s owner %s",name,owner_name);
 }
 
 void sni_watcher_item_lost_cb ( GDBusConnection *con, const gchar *name, gpointer data )
 {
-  struct sni_iface *host = data;
+  struct sni_iface *watcher = data;
   struct sni_iface_item *wsni;
   GList *item;
 
-  for(item=host->item_list;item!=NULL;item=g_list_next(item))
+  for(item=watcher->item_list;item!=NULL;item=g_list_next(item))
     if(strncmp(name,((struct sni_iface_item *)item->data)->name,strlen(name))==0)
       break;
   if(item==NULL)
     return;
 
   wsni = item->data;
-  g_message("%s disappeared\n",name);
+  g_debug("watcher %s: lost item %s",watcher->watcher_iface,name);
   g_dbus_connection_emit_signal(con,NULL,"/StatusNotifierWatcher",
-      host->watcher_iface,"StatusNotifierItemUnregistered",
+      watcher->watcher_iface,"StatusNotifierItemUnregistered",
       g_variant_new("(s)",wsni->name),NULL);
   g_bus_unwatch_name(wsni->id);
   g_free(wsni->name);
   g_free(wsni);
-  host->item_list = g_list_delete_link(host->item_list,item);
+  watcher->item_list = g_list_delete_link(watcher->item_list,item);
 }
 
 gint sni_watcher_item_add ( struct sni_iface *watcher, gchar *uid )
@@ -406,13 +407,12 @@ gint sni_watcher_item_add ( struct sni_iface *watcher, gchar *uid )
   else
     name = g_strdup(wsni->name);
 
-  g_message("watching %s\n", name);
+  g_debug("watcher %s: watching item %s", watcher->watcher_iface, name);
   wsni->id = g_bus_watch_name(G_BUS_TYPE_SESSION,name,
-      G_BUS_NAME_WATCHER_FLAGS_NONE,watcher_item_new_cb,
+      G_BUS_NAME_WATCHER_FLAGS_NONE,NULL,
       sni_watcher_item_lost_cb,watcher,NULL);
   watcher->item_list = g_list_append(watcher->item_list,wsni);
   g_free(name);
-  g_message("%s %d %p\n",wsni->name,wsni->id,watcher->item_list);
   return 0;
 }
 
@@ -443,7 +443,7 @@ static void sni_watcher_method(GDBusConnection *con, const gchar *sender,
   if(g_strcmp0(method,"RegisterStatusNotifierHost")==0)
   {
     watcher->watcher_registered = TRUE;
-    g_message("registered host %s\n",parameter);
+    g_debug("watcher %s: registered host %s",watcher->watcher_iface,parameter);
     g_dbus_connection_emit_signal(con,NULL,"/StatusNotifierWatcher",
         watcher->watcher_iface,"StatusNotifierHostRegistered",
         g_variant_new("(s)",parameter),NULL);
@@ -564,20 +564,21 @@ void sni_host_register_cb ( GDBusConnection *con, const gchar *name,
     NULL,
     G_DBUS_CALL_FLAGS_NONE,-1,NULL,(GAsyncReadyCallback)sni_host_list_cb,host);
 
-  g_message("host: found watcher %s owner %s\n",name,owner_name);
+  g_debug("host %s: found watcher %s (%s)",host->host_iface,name,owner_name);
 }
 
 void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
-  const gchar* _path, const gchar* interface, const gchar* signal,
+  const gchar* path, const gchar* interface, const gchar* signal,
   GVariant* parameters, gpointer data)
 {
   struct sni_item *sni;
   const gchar *parameter;
   GList *item;
   gint i;
+  struct sni_iface *host = data;
 
   g_variant_get (parameters, "(&s)", &parameter);
-  g_message("unregister %s\n",parameter);
+  g_debug("host %s: unregister item %s",host->host_iface, parameter);
 
   for(item=context->sni_items;item!=NULL;item=g_list_next(item))
     if(g_strcmp0(((struct sni_item *)item->data)->uid,parameter)==0)
@@ -589,7 +590,7 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
   g_dbus_connection_signal_unsubscribe(con,sni->signal);
   g_cancellable_cancel(sni->cancel);
   context->sni_items = g_list_delete_link(context->sni_items,item);
-  g_message("removed %s\n",sni->uid);
+  g_debug("host %s: removing item %s",host->host_iface,sni->uid);
   for(i=0;i<3;i++)
     if(sni->pixbuf[i]!=NULL)
       g_object_unref(sni->pixbuf[i]);
@@ -644,7 +645,7 @@ void sni_register ( gchar *name )
       G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_registered_cb,context,NULL);
   g_dbus_connection_signal_subscribe(con,NULL,iface->watcher_iface,
       "StatusNotifierItemUnregistered","/StatusNotifierWatcher",NULL,
-      G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_unregistered_cb,context,NULL);
+      G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_unregistered_cb,iface,NULL);
 }
 
 void sni_refresh ( void )

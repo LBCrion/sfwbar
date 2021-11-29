@@ -97,7 +97,6 @@ struct layout_widget {
 extern struct context *context;
 extern gchar *expr_token[];
 
-typedef struct zwlr_foreign_toplevel_handle_v1 wlr_fth;
 extern struct wl_seat *seat;
 
 void sway_ipc_init ( void );
@@ -134,7 +133,6 @@ void layout_widget_config ( struct layout_widget *lw );
 void layout_widget_free ( struct layout_widget *lw );
 void layout_widgets_update ( void );
 void layout_widgets_draw ( void );
-GtkWidget *widget_icon_by_name ( gchar *name, gint size );
 void widget_set_css ( GtkWidget * );
 
 GtkWidget *flow_grid_new( gboolean limit );

@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020- Lev Babiev
+ * Copyright 2020-2021 Lev Babiev
  */
 
 #include <stdio.h>
@@ -25,18 +25,15 @@ gboolean parser_expect_symbol ( GScanner *scanner, gchar symbol, gchar *expr )
     scanner->max_parse_errors = FALSE;
     return FALSE;
   }
-  if(!scanner->max_parse_errors)
-  {
-    if(!expr)
-      g_scanner_warn(scanner,
-          "Unexpected token at position %u, expected '%c'",
+  if(!expr)
+    g_scanner_error(scanner,
+        "Unexpected token at position %u, expected '%c'",
           g_scanner_cur_position(scanner), symbol );
-    else
-      g_scanner_warn(scanner,
-          "%u: Unexpected token in expression %s, expected '%c'",
-          g_scanner_cur_position(scanner), expr, symbol );
-  }
-  scanner->max_parse_errors = TRUE;
+  else
+    g_scanner_error(scanner,
+        "%u: Unexpected token in expression %s, expected '%c'",
+        g_scanner_cur_position(scanner), expr, symbol );
+
   return TRUE;
 }
 

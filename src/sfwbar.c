@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020 Lev Babiev
+ * Copyright 2020-2021 Lev Babiev
  */
 
 #include <gtk/gtk.h>
@@ -9,10 +9,12 @@
 #include "sfwbar.h"
 
 gchar *confname=NULL, *cssname=NULL, *sockname=NULL;
+gboolean debug = FALSE;
 static GOptionEntry entries[] = {
   {"config",'f',0,G_OPTION_ARG_FILENAME,&confname,"Specify config file"},
   {"css",'c',0,G_OPTION_ARG_FILENAME,&cssname,"Specify css file"},
   {"socket",'s',0,G_OPTION_ARG_FILENAME,&sockname,"Specify sway socket file"},
+  {"debug",'d',0,G_OPTION_ARG_NONE,&debug,"Display debug info"},
   {NULL}};
 
 void parse_command_line ( gint argc, gchar **argv)
@@ -33,14 +35,28 @@ void init_context ( void )
   context->wt_list = NULL;
   context->sni_ifaces=NULL;
   context->sni_items=NULL;
-  context->features=0;
   context->ipc = -1;
   context->sw_count=0;
   context->sw_hstate='s';
-  context->buff_len = 1024;
-  context->read_buff = g_malloc(context->buff_len);
-  context->features |= F_TB_ICON;
-  context->features |= F_TB_LABEL;
+  context->features = F_TB_ICON | F_TB_LABEL;
+}
+
+void log_print ( const gchar *log_domain, GLogLevelFlags log_level, 
+    const gchar *message, gpointer data )
+{
+  GDateTime *now;
+  if(!debug && (log_level==G_LOG_LEVEL_DEBUG || log_level==G_LOG_LEVEL_INFO) )
+    return;
+
+  now = g_date_time_new_now_local();
+
+  fprintf(stderr,"%02d:%02d:%02.2f %s\n",
+      g_date_time_get_hour(now),
+      g_date_time_get_minute(now),
+      g_date_time_get_seconds(now),
+      message);
+
+  g_date_time_unref(now);
 }
 
 void css_init ( void )
@@ -99,7 +115,7 @@ gpointer scanner_thread ( gpointer data )
   }
 }
 
-gint shell_timer ( gpointer data )
+gboolean shell_timer ( gpointer data )
 {
   layout_widgets_draw();
 
@@ -159,6 +175,8 @@ int main (int argc, gchar **argv)
 {
   GtkApplication *app;
   gint status;
+
+  g_log_set_handler(NULL,G_LOG_LEVEL_MASK,log_print,NULL);
 
   init_context();
 
