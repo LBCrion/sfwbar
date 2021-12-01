@@ -143,7 +143,7 @@ int scanner_update_file ( FILE *in, struct scan_file *file )
 int scanner_reset_vars ( GList *var_list )
 {
   GList *node;
-  gint tv = g_get_real_time();
+  gint tv = g_get_monotonic_time();
   for(node=var_list;node!=NULL;node=g_list_next(node))
     {
     ((struct scan_var *)node->data)->pval = ((struct scan_var *)node->data)->val;

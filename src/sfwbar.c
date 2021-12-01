@@ -107,11 +107,23 @@ void css_init ( void )
 
 gpointer scanner_thread ( gpointer data )
 {
+  GList *iter;
+  struct layout_widget *lw;
+  gint64 timer;
+
   while ( TRUE )
   {
     scanner_expire();
     layout_widgets_update();
-    usleep(100000);
+    timer = G_MAXINT64;
+    for(iter=context->widgets;iter!=NULL;iter=g_list_next(iter))
+    {
+      lw = iter->data;
+      timer = MIN(timer,lw->next_poll);
+    }
+    timer -= g_get_monotonic_time();
+    if(timer>0)
+      usleep(timer);
   }
 }
 

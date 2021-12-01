@@ -139,7 +139,7 @@ void layout_widgets_update ( void )
   gchar *eval;
   guint vcount;
 
-  ctime = g_get_real_time();
+  ctime = g_get_monotonic_time();
 
   for(iter=context->widgets;iter!=NULL;iter=g_list_next(iter))
   {
