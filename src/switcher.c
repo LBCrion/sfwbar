@@ -19,9 +19,7 @@ void switcher_config ( GtkWidget *nwin, GtkWidget *ngrid, gint nmax)
   grid = ngrid;
   interval = nmax;
   hstate = 's';
-  counter = 0;
 }
-
 
 gboolean hide_event ( struct json_object *obj )
 {
