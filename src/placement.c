@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <json.h>
 #include "sfwbar.h"
+#include <fcntl.h>
 
 int comp_int ( const void *x1, const void *x2)
 {
@@ -66,7 +67,6 @@ int placement_location ( struct json_object*obj, gint64 wid, struct rect *r )
       }
     }
   }
-
   xoff = (win.x*2+win.w)/2 - (output.x*2+output.w)/2;
   yoff = (win.y*2+win.h)/2 - (output.y*2+output.h)/2;
   if((xoff<-1)||(xoff>1)||(yoff<-1)||(yoff>1)||(c!=nobs))
@@ -110,7 +110,7 @@ int placement_location ( struct json_object*obj, gint64 wid, struct rect *r )
             ((y[j]+win.h-1)<obs[c].y)||(y[j]>(obs[c].y+obs[c].h-1))))
           success=0;
       if((x[i]<output.x)||(x[i]+win.w>output.x+output.w)||
-          (y[j]<output.y)||(y[j]+win.h>output.x+output.h))
+          (y[j]<output.y)||(y[j]+win.h>output.y+output.h))
         success=0;
       if(success==1)
       {
@@ -144,9 +144,9 @@ struct json_object *placement_find_wid ( struct json_object *obj, gint64 wid )
   if(json_object_object_get_ex(obj,"nodes",&arr))
     if(json_object_is_type(arr, json_type_array))
       for(i=0;i<json_object_array_length(arr);i++)
-      {
-        item = json_object_array_get_idx(arr,i);
         if(ret==NULL)
+      {
+          item = json_object_array_get_idx(arr,i);
           ret = placement_find_wid(item,wid);
       }
   return ret;
@@ -175,6 +175,7 @@ void place_window ( gint64 wid, gint64 pid )
   sway_ipc_send(sock,4,"");
   response = sway_ipc_poll(sock,&etype);
   close(sock);
+
   if(!response)
     return;
   obj = json_tokener_parse(response);
@@ -182,11 +183,16 @@ void place_window ( gint64 wid, gint64 pid )
   {
     node = placement_find_wid ( obj, wid );
     if(node!=NULL)
-    placement_location(node,wid,&r);
-    cmd = g_strdup_printf("[con_id=%ld] move absolute position %d %d",wid,r.x,r.y);
-       sway_ipc_send(context->ipc,0,cmd);
-    g_free(cmd);
-    json_object_put(obj);
+    {
+      if(placement_location(node,wid,&r)!=-1)
+      {
+        cmd = g_strdup_printf("[con_id=%ld] move absolute position %d %d",
+            wid,r.x,r.y);
+        sway_ipc_send(context->ipc,0,cmd);
+        g_free(cmd);
+      }
+      json_object_put(obj);
+    }
   }
   g_free(response);
 }
