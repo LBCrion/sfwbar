@@ -114,7 +114,7 @@ struct wt_window *wintree_window_init ( void );
 void wintree_window_append ( struct wt_window *win );
 gint wintree_compare ( struct wt_window *a, struct wt_window *b);
 
-void wlr_ft_init ( void );
+void wayland_init ( void );
 
 gboolean hide_event ( struct json_object *obj );
 gboolean switcher_event ( struct json_object *obj );
@@ -131,7 +131,7 @@ struct layout_widget *config_parse ( gchar * );
 struct layout_widget *layout_widget_new ( void );
 void layout_widget_config ( struct layout_widget *lw );
 void layout_widget_free ( struct layout_widget *lw );
-void layout_widgets_update ( void );
+void layout_widgets_update ( GMainContext * );
 void layout_widgets_draw ( void );
 void widget_set_css ( GtkWidget * );
 
@@ -152,6 +152,8 @@ char *string_from_name ( gchar *name );
 double numeric_from_name ( gchar *name );
 void *list_by_name ( GList *prev, gchar *name );
 char *parse_identifier ( gchar *id, gchar **fname );
+
+gchar *gdk_monitor_get_xdg_name ( GdkMonitor *monitor );
 
 gchar *get_xdg_config_file ( gchar *fname );
 gchar *json_string_by_name ( struct json_object *obj, gchar *name );
@@ -182,7 +184,8 @@ enum {
   F_SW_ICON   = 1<<8,
   F_SW_LABEL  = 1<<9,
   F_PL_CHKPID = 1<<10,
-  F_PA_RENDER = 1<<11
+  F_PA_RENDER = 1<<11,
+  F_WLRFT     = 1<<12
 };
 
 enum {

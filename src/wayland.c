@@ -2,12 +2,14 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkwayland.h>
+#include "xdg-output-unstable-v1.h"
 
 #define WLR_FOREIGN_TOPLEVEL_MANAGEMENT_VERSION 3
 
 typedef struct zwlr_foreign_toplevel_handle_v1 wlr_fth;
 
 static struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager = NULL;
+static struct zxdg_output_manager_v1 *xdg_output_manager = NULL;
 static struct wl_output *pref_output = NULL;
 static uint32_t pref_output_id = UINT32_MAX;
 struct wl_seat *seat = NULL;
@@ -155,6 +157,48 @@ static const struct zwlr_foreign_toplevel_manager_v1_listener toplevel_manager_i
   .finished = toplevel_manager_handle_finished,
 };
 
+static void noop ()
+{
+}
+
+static void xdg_output_handle_name ( void *data,
+    struct zxdg_output_v1 *xdg_output, const gchar *name )
+{
+  gchar **dest = data;
+  *dest = strdup(name);
+}
+
+static const struct zxdg_output_v1_listener xdg_output_listener = {
+  .logical_position = noop,
+  .logical_size = noop,
+  .done = noop,
+  .name = xdg_output_handle_name,
+  .description = noop,
+};
+
+gchar *gdk_monitor_get_xdg_name ( GdkMonitor *monitor )
+{
+  GdkDisplay *gdisp;
+  struct wl_display *wdisp;
+  struct wl_output *output;
+  struct zxdg_output_v1 *xdg;
+  gchar *name;
+
+  if(!monitor || !GDK_IS_WAYLAND_MONITOR(monitor))
+    return NULL;
+
+  name = NULL;
+  output = gdk_wayland_monitor_get_wl_output(monitor);
+  gdisp = gdk_monitor_get_display(monitor);
+  wdisp = gdk_wayland_display_get_wl_display(gdisp);
+  xdg = zxdg_output_manager_v1_get_xdg_output(xdg_output_manager, output);
+  zxdg_output_v1_add_listener(xdg,&xdg_output_listener,&name);
+  wl_display_roundtrip(wdisp);
+  zxdg_output_v1_destroy(xdg);
+
+  return name;
+}
+
 static void handle_global(void *data, struct wl_registry *registry,
                 uint32_t name, const gchar *interface, uint32_t version)
 {
@@ -162,7 +206,9 @@ static void handle_global(void *data, struct wl_registry *registry,
   {
     if (name == pref_output_id)
       pref_output = wl_registry_bind(registry,name,&wl_output_interface, version);
-  } else if (strcmp(interface,zwlr_foreign_toplevel_manager_v1_interface.name)==0)
+  } 
+  else if ( context->features & F_WLRFT &&
+      strcmp(interface,zwlr_foreign_toplevel_manager_v1_interface.name)==0)
   {
     toplevel_manager = wl_registry_bind(registry, name,
       &zwlr_foreign_toplevel_manager_v1_interface,
@@ -170,7 +216,13 @@ static void handle_global(void *data, struct wl_registry *registry,
 
     zwlr_foreign_toplevel_manager_v1_add_listener(toplevel_manager,
       &toplevel_manager_impl, data);
-  } else if (strcmp(interface, wl_seat_interface.name) == 0 && seat == NULL)
+  } 
+  else if (strcmp(interface,zxdg_output_manager_v1_interface.name)==0)
+  {
+    xdg_output_manager = wl_registry_bind(registry, name, &zxdg_output_manager_v1_interface,
+        ZXDG_OUTPUT_V1_NAME_SINCE_VERSION);
+  }
+  else if (strcmp(interface, wl_seat_interface.name) == 0 && seat == NULL)
     seat = wl_registry_bind(registry, name, &wl_seat_interface, version);
 }
 
@@ -184,7 +236,7 @@ static const struct wl_registry_listener registry_listener = {
   .global_remove = handle_global_remove,
 };
 
-void wlr_ft_init ( void )
+void wayland_init ( void )
 {
   GdkDisplay *gdisp;
   struct wl_display *wdisp;
@@ -202,7 +254,7 @@ void wlr_ft_init ( void )
   wl_registry_add_listener(registry, &registry_listener, context);
   wl_display_roundtrip(wdisp);
 
-  if (toplevel_manager == NULL)
+  if (context->features & F_WLRFT && toplevel_manager == NULL)
   {
     fprintf(stderr, "wlr-foreign-toplevel not available\n");
       return;

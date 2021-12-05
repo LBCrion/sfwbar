@@ -8,13 +8,15 @@
 #include <gtk-layer-shell.h>
 #include "sfwbar.h"
 
-gchar *confname=NULL, *cssname=NULL, *sockname=NULL;
+gchar *confname=NULL, *cssname=NULL, *sockname=NULL, *monitor=NULL;
 gboolean debug = FALSE;
 static GOptionEntry entries[] = {
   {"config",'f',0,G_OPTION_ARG_FILENAME,&confname,"Specify config file"},
   {"css",'c',0,G_OPTION_ARG_FILENAME,&cssname,"Specify css file"},
   {"socket",'s',0,G_OPTION_ARG_FILENAME,&sockname,"Specify sway socket file"},
   {"debug",'d',0,G_OPTION_ARG_NONE,&debug,"Display debug info"},
+  {"monitor",'m',0,G_OPTION_ARG_STRING,&monitor,
+    "Monitor to display the panel on (use \"-m list\" to list monitors`"},
   {NULL}};
 
 void parse_command_line ( gint argc, gchar **argv)
@@ -39,6 +41,63 @@ void init_context ( void )
   context->sw_count=0;
   context->sw_hstate='s';
   context->features = F_TB_ICON | F_TB_LABEL;
+}
+
+void monitor_change_cb ( );
+
+void set_monitor ( gboolean connect )
+{
+  GdkDisplay *gdisp;
+  GdkDisplayManager *gdman;
+  GdkMonitor *gmon,*match;
+  GSList *dlist;
+  gint nmon,i;
+  gchar *name;
+  gboolean list;
+
+  list = !g_strcmp0(monitor,"list");
+
+  gdman = gdk_display_manager_get();
+  gdisp = gdk_display_get_default();
+  match = gdk_display_get_primary_monitor(gdisp);
+  dlist = gdk_display_manager_list_displays(gdman);
+
+  for(;dlist!=NULL;dlist=g_slist_next(dlist))
+  {
+    gdisp = dlist->data;
+    nmon = gdk_display_get_n_monitors(gdisp);
+    for(i=0;i<nmon;i++)
+    {
+      gmon = gdk_display_get_monitor(gdisp,i);
+      name = gdk_monitor_get_xdg_name(gmon);
+      if(list)
+        printf("%s: %s %s\n",name,gdk_monitor_get_manufacturer(gmon),
+            gdk_monitor_get_model(gmon));
+      else
+        if(g_strcmp0(name,monitor)==0)
+          match = gmon;
+      g_free(name);
+    }
+  }
+  if(list)
+    exit(0);
+
+  gtk_layer_set_monitor(context->window, match);
+
+  if(connect)
+  {
+    gdisp = gdk_screen_get_display(gtk_window_get_screen(context->window)),
+            gtk_widget_get_window(GTK_WIDGET(context->window));
+    g_signal_connect(gdisp, "monitor-added",monitor_change_cb,NULL);
+    g_signal_connect(gdisp, "monitor-removed",monitor_change_cb,NULL);
+  }
+}
+
+void monitor_change_cb ( void )
+{
+  gtk_widget_hide ((GtkWidget *)context->window);
+  set_monitor(FALSE);
+  gtk_widget_show ((GtkWidget *)context->window);
 }
 
 void log_print ( const gchar *log_domain, GLogLevelFlags log_level, 
@@ -108,19 +167,15 @@ void css_init ( void )
 gpointer scanner_thread ( gpointer data )
 {
   GList *iter;
-  struct layout_widget *lw;
   gint64 timer;
 
   while ( TRUE )
   {
     scanner_expire();
-    layout_widgets_update();
+    layout_widgets_update(data);
     timer = G_MAXINT64;
     for(iter=context->widgets;iter!=NULL;iter=g_list_next(iter))
-    {
-      lw = iter->data;
-      timer = MIN(timer,lw->next_poll);
-    }
+      timer = MIN(timer,((struct layout_widget *)iter->data)->next_poll);
     timer -= g_get_monotonic_time();
     if(timer>0)
       usleep(timer);
@@ -129,8 +184,6 @@ gpointer scanner_thread ( gpointer data )
 
 gboolean shell_timer ( gpointer data )
 {
-  layout_widgets_draw();
-
   if((context->features & F_TASKBAR)&&(context->status & ST_TASKBAR))
     taskbar_refresh();
 
@@ -165,15 +218,23 @@ static void activate (GtkApplication* app, gpointer data )
     gtk_widget_show_all ((GtkWidget *)context->window);
   }
 
+
   if((context->features & F_TASKBAR)||(context->features & F_PLACEMENT)||(context->features & F_PAGER))
   {
    sway_ipc_init();
    if(context->ipc<0)
-      wlr_ft_init();
+     context->features |= F_WLRFT;
   }
 
+  wayland_init();
+
+  if(monitor)
+    set_monitor(TRUE);
+
+
   if(context->widgets)
-    g_thread_unref(g_thread_new("scanner",scanner_thread,NULL));
+    g_thread_unref(g_thread_new("scanner",scanner_thread,
+          g_main_context_get_thread_default()));
 
   g_timeout_add (100,(GSourceFunc )shell_timer,context);
   g_unix_signal_add(10,(GSourceFunc)switcher_event,NULL);

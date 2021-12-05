@@ -131,7 +131,27 @@ void layout_widget_free ( struct layout_widget *lw )
   g_free(lw);
 }
 
-void layout_widgets_update ( void )
+gboolean layout_widget_draw ( struct layout_widget *lw )
+{
+  if(GTK_IS_LABEL(GTK_WIDGET(lw->widget)))
+    gtk_label_set_markup(GTK_LABEL(lw->widget),lw->eval);
+  if(GTK_IS_PROGRESS_BAR(lw->widget))
+    if(!g_strrstr(lw->eval,"nan"))
+      gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(lw->widget),
+          g_ascii_strtod(lw->eval,NULL));
+
+  if(GTK_IS_IMAGE(lw->widget))
+  {
+    scale_image_set_image(GTK_WIDGET(lw->widget),lw->eval);
+    scale_image_update(GTK_WIDGET(lw->widget));
+  }
+  if(lw->invalid)
+    layout_widget_free(lw);
+
+  return FALSE;
+}
+
+void layout_widgets_update ( GMainContext *gmc )
 {
   GList *iter;
   gint64 ctime;
@@ -144,14 +164,7 @@ void layout_widgets_update ( void )
   for(iter=context->widgets;iter!=NULL;iter=g_list_next(iter))
   {
     lw = iter->data;
-    if(lw->ready)
-      continue;
-    if(lw->invalid)
-    {
-      layout_widget_free(lw);
-      context->widgets = g_list_delete_link(context->widgets,iter);
-      continue;
-    }
+
     if(lw->next_poll > ctime)
       continue;
     lw->next_poll = ctime+lw->interval;
@@ -159,16 +172,21 @@ void layout_widgets_update ( void )
         GTK_IS_PROGRESS_BAR(lw->widget)||GTK_IS_IMAGE(lw->widget)))
     {
       eval = expr_parse(lw->value, &vcount);
-      if(g_strcmp0(eval,lw->eval))
+      if(!vcount)
       {
-        lw->ready = TRUE;
+        lw->invalid = TRUE;
+        context->widgets = g_list_delete_link(context->widgets,iter);
+      }
+      if(g_strcmp0(eval,lw->eval)||lw->invalid)
+      {
         g_free(lw->eval);
         lw->eval = eval;
+        GSource *src = g_idle_source_new();
+        g_source_set_callback(src,(GSourceFunc)layout_widget_draw,lw,NULL);
+        g_source_attach(src,gmc);
       }
       else
         g_free(eval);
-      if(!vcount)
-        lw->invalid = TRUE;
     }
   }
 }

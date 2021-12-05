@@ -17,6 +17,16 @@ ftop_h = custom_target('wlr-foreign-toplevel-management-unstable-v1.h',
     input: 'protocols/wlr-foreign-toplevel-management-unstable-v1.xml',
     command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'] )
 
+xout_c = custom_target('xdg-output-unstable-v1.c',
+    output: 'xdg-output-unstable-v1.c',
+    input: 'protocols/xdg-output-unstable-v1.xml',
+    command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@'] )
+
+xout_h = custom_target('xdg-output-unstable-v1.h',
+    output: 'xdg-output-unstable-v1.h',
+    input: 'protocols/xdg-output-unstable-v1.xml',
+    command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'] )
+
 src = ['src/sfwbar.c',
     'src/sway_ipc.c',
     'src/placement.c',
@@ -34,7 +44,9 @@ src = ['src/sfwbar.c',
     'src/sni.c',
     'src/config.c',
     ftop_c,
-    ftop_h ]
+    ftop_h,
+    xout_c,
+    xout_h ]
 dep = [gtk3, glib, glsh, wayl, json ]
 
 
