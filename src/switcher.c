@@ -1,11 +1,27 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2021- Lev Babiev
+ * Copyright 2021 Lev Babiev
  */
 
 #include <glib.h>
 #include <gtk/gtk.h>
 #include "sfwbar.h"
+
+static GtkWidget *window;
+static GtkWidget *grid;
+static gint interval;
+static gchar hstate;
+static gint counter;
+
+void switcher_config ( GtkWidget *nwin, GtkWidget *ngrid, gint nmax)
+{
+  window = nwin;
+  grid = ngrid;
+  interval = nmax;
+  hstate = 's';
+  counter = 0;
+}
+
 
 gboolean hide_event ( struct json_object *obj )
 {
@@ -46,11 +62,11 @@ gboolean switcher_event ( struct json_object *obj )
   {
     mode = json_string_by_name(obj,"hidden_state");
     if(mode!=NULL)
-      if(*mode!=context->sw_hstate)
+      if(*mode!=hstate)
       {
-        if(context->sw_hstate!=0)
+        if(hstate!=0)
           event=TRUE;
-        context->sw_hstate = *mode;
+        hstate = *mode;
       }
     g_free(mode);
   }
@@ -59,7 +75,7 @@ gboolean switcher_event ( struct json_object *obj )
 
   if(event)
   {
-    context->sw_count = context->sw_max;
+    counter = interval;
     focus = NULL;
     for (item = context->wt_list; item!= NULL; item = g_list_next(item) )
       if (AS_WINDOW(item->data)->wid == context->tb_focus)
@@ -99,15 +115,15 @@ void switcher_update ( void )
   GList *item;
   gchar *cmd;
 
-  if(context->sw_count <= 0)
+  if(counter <= 0)
     return;
-  context->sw_count--;
+  counter--;
 
-  if(context->sw_count > 0)
+  if(counter > 0)
   {
     if(!(context->status & ST_SWITCHER))
       return;
-    flow_grid_clean(context->sw_box);
+    flow_grid_clean(grid);
     for (item = context->wt_list; item!= NULL; item = g_list_next(item) )
     {
       if (AS_WINDOW(item->data)->wid == context->tb_focus)
@@ -115,14 +131,14 @@ void switcher_update ( void )
       else
         gtk_widget_set_name(AS_WINDOW(item->data)->switcher, "switcher_normal");
 
-      flow_grid_attach(context->sw_box,AS_WINDOW(item->data)->switcher);
+      flow_grid_attach(grid,AS_WINDOW(item->data)->switcher);
     }
-    gtk_widget_show_all(GTK_WIDGET(context->sw_win));
+    gtk_widget_show_all(window);
     context->status &= ~ST_SWITCHER;
   }
   else
   {
-    gtk_widget_hide(GTK_WIDGET(context->sw_win));
+    gtk_widget_hide(window);
     if(context->ipc>=0)
     {
       cmd = g_strdup_printf("[con_id=%ld] focus",context->tb_focus);

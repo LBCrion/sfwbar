@@ -10,12 +10,7 @@ struct context {
   gint32 features;
   gint ipc;
   gint64 tb_focus;
-  gchar sw_hstate;
   gint32 sw_count;
-  gint32 sw_max;
-  gint32 sw_cols;
-  GtkWidget *sw_win;
-  GtkWidget *sw_box;
   GList *pager_pins;
   gint32 position;
   gint32 wp_x,wp_y;
@@ -120,6 +115,7 @@ gboolean hide_event ( struct json_object *obj );
 gboolean switcher_event ( struct json_object *obj );
 void switcher_update ( void );
 void switcher_window_init ( struct wt_window *win);
+void switcher_config ( GtkWidget *nwin, GtkWidget *ngrid, gint nmax);
 
 GtkWidget *pager_init ( GtkWidget * );
 void pager_update ( void );

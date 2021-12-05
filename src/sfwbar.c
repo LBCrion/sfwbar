@@ -38,8 +38,6 @@ void init_context ( void )
   context->sni_ifaces=NULL;
   context->sni_items=NULL;
   context->ipc = -1;
-  context->sw_count=0;
-  context->sw_hstate='s';
   context->features = F_TB_ICON | F_TB_LABEL;
 }
 

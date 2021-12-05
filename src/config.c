@@ -758,6 +758,8 @@ struct layout_widget *config_layout ( GScanner *scanner )
 void config_switcher ( GScanner *scanner )
 {
   gchar *css=NULL;
+  GtkWidget *win, *box;
+  gint interval = 1;
   scanner->max_parse_errors = FALSE;
 
   if(g_scanner_peek_next_token(scanner)!='{')
@@ -765,8 +767,14 @@ void config_switcher ( GScanner *scanner )
   g_scanner_get_next_token(scanner);
 
   context->features |= F_SWITCHER;
-  context->sw_max = 1;
-  context->sw_cols = 1;
+  win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_layer_init_for_window (GTK_WINDOW(win));
+  gtk_layer_set_layer(GTK_WINDOW(win),GTK_LAYER_SHELL_LAYER_OVERLAY);
+  box = flow_grid_new(FALSE);
+  gtk_widget_set_name(box, "switcher");
+  gtk_widget_set_name(win, "switcher");
+  gtk_container_add(GTK_CONTAINER(win),box);
+  flow_grid_set_cols(box,1);
 
   while (( (gint)g_scanner_peek_next_token ( scanner ) != '}' )&&
       ( (gint)g_scanner_peek_next_token ( scanner ) != G_TOKEN_EOF ))
@@ -774,10 +782,11 @@ void config_switcher ( GScanner *scanner )
     switch ((gint)g_scanner_get_next_token ( scanner ) )
     {
       case G_TOKEN_INTERVAL: 
-        context->sw_max = config_assign_number(scanner,"interval")/100;
+        interval = config_assign_number(scanner,"interval")/100;
         break;
       case G_TOKEN_COLS: 
-        context->sw_cols = config_assign_number(scanner,"cols");
+        flow_grid_set_cols(box,
+            config_assign_number(scanner,"cols"));
         break;
       case G_TOKEN_CSS:
         g_free(css);
@@ -802,23 +811,17 @@ void config_switcher ( GScanner *scanner )
 
   if(!(context->features & F_SW_ICON))
     context->features |= F_SW_LABEL;
-  context->sw_win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_layer_init_for_window (GTK_WINDOW(context->sw_win));
-  gtk_layer_set_layer(GTK_WINDOW(context->sw_win),GTK_LAYER_SHELL_LAYER_OVERLAY);
-  context->sw_box = flow_grid_new(FALSE);
-  flow_grid_set_cols(context->sw_box,context->sw_cols);
-  gtk_widget_set_name(context->sw_box, "switcher");
-  gtk_widget_set_name(context->sw_win, "switcher");
-  gtk_container_add(GTK_CONTAINER(context->sw_win),context->sw_box);
+
   if(css!=NULL)
   {
-    GtkStyleContext *cont = gtk_widget_get_style_context (context->sw_box);
+    GtkStyleContext *cont = gtk_widget_get_style_context (box);
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_data(provider,css,strlen(css),NULL);
     gtk_style_context_add_provider (cont,
       GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
     g_free(css);
   }
+  switcher_config(win,box,interval);
 }
 
 void config_placer ( GScanner *scanner )
