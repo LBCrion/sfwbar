@@ -213,6 +213,7 @@ void config_scanner_source ( GScanner *scanner, gint source )
   gint flags=0;
   struct scan_file *file;
   GList *find;
+  static GList *file_list = NULL;
 
   scanner->max_parse_errors = FALSE;
   if(g_scanner_peek_next_token(scanner) != '(')
@@ -259,7 +260,7 @@ void config_scanner_source ( GScanner *scanner, gint source )
   if(fname==NULL)
     return;
 
-  for(find=context->file_list;find;find=g_list_next(find))
+  for(find=file_list;find;find=g_list_next(find))
     if(!g_strcmp0(fname,((struct scan_file *)(find->data))->fname))
       break;
 
@@ -274,7 +275,7 @@ void config_scanner_source ( GScanner *scanner, gint source )
   file->vars = NULL;
   if( !strchr(fname,'*') && !strchr(fname,'?') )
     file->flags |= VF_NOGLOB;
-  context->file_list = g_list_append(context->file_list,file);
+  file_list = g_list_append(file_list,file);
 
   while(((gint)g_scanner_peek_next_token(scanner)!='}')&&
       ( (gint)g_scanner_peek_next_token ( scanner ) != G_TOKEN_EOF ))

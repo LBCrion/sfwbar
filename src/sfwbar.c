@@ -35,6 +35,7 @@ void init_context ( void )
   context->file_list=NULL;
   context->widgets=NULL;
   context->wt_list = NULL;
+  context->pager_pins=NULL;
   context->sni_ifaces=NULL;
   context->sni_items=NULL;
   context->ipc = -1;

@@ -28,8 +28,6 @@ struct context {
   GList *widgets;
   GList *file_list;
   GList *scan_list;
-  gint buff_len;
-  gchar *read_buff;
 };
 
 struct wt_window {
