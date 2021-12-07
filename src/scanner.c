@@ -9,12 +9,19 @@
 #include <glob.h>
 #include "sfwbar.h"
 
+static GList *scan_list;
+
+void scanner_var_attach ( struct scan_var *var )
+{
+  scan_list = g_list_append(scan_list,var);
+}
+
 /* expire all variables in the tree */
 void scanner_expire ( void )
 {
   GList *node;
 
-  for(node=context->scan_list;node!=NULL;node=g_list_next(node))
+  for(node=scan_list;node!=NULL;node=g_list_next(node))
     SCAN_VAR(node->data)->status=0;
 }
 
@@ -237,7 +244,7 @@ char *string_from_name ( gchar *name )
 
   id = parse_identifier(name,&fname);
   g_free(fname);
-  if((scan=list_by_name(context->scan_list,id))!=NULL)
+  if((scan=list_by_name(scan_list,id))!=NULL)
     {
     if(!scan->status)
       scanner_update_file_glob(scan->file);
@@ -259,7 +266,7 @@ double numeric_from_name ( gchar *name )
 
   id = parse_identifier(name,&fname);
 
-  if((scan=list_by_name(context->scan_list,id))!=NULL)
+  if((scan=list_by_name(scan_list,id))!=NULL)
     {
     if(!scan->status)
       scanner_update_file_glob(scan->file);

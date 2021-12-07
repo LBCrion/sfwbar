@@ -87,6 +87,11 @@ static const gchar sni_watcher_xml[] =
   "  </interface>"
   "</node>";
 
+static GtkWidget *tray;
+static GList *sni_items;
+static GList *sni_ifaces;
+static gboolean invalid;
+
 GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
 {
   gint32 x,y;
@@ -195,7 +200,7 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res, struct sni_prop
   if(result)
     g_variant_unref(result);
   g_free(wrap);
-  context->status |= ST_TRAY;
+  invalid = TRUE;
 }
 
 void sni_item_get_prop ( GDBusConnection *con, struct sni_item *sni, guint prop )
@@ -302,7 +307,7 @@ void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
   guint i;
   GList *iter;
 
-  for(iter=context->sni_items;iter!=NULL;iter=g_list_next(iter))
+  for(iter=sni_items;iter!=NULL;iter=g_list_next(iter))
     if(g_strcmp0(((struct sni_item *)iter->data)->uid,uid)==0)
       break;
   if(iter!=NULL)
@@ -334,7 +339,7 @@ void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
   g_object_ref(sni->box);
   sni->signal = g_dbus_connection_signal_subscribe(con,sni->dest,
       sni->iface,NULL,sni->path,NULL,0,sni_item_signal_cb,sni,NULL);
-  context->sni_items = g_list_append(context->sni_items,sni);
+  sni_items = g_list_append(sni_items,sni);
   for(i=0;i<3;i++)
     sni->pixbuf[i]=NULL;
   for(i=0;i<7;i++)
@@ -352,7 +357,7 @@ void sni_host_item_registered_cb ( GDBusConnection* con, const gchar* sender,
   const gchar *parameter;
   GList *host;
 
-  for(host=context->sni_ifaces;host!=NULL;host=g_list_next(host))
+  for(host=sni_ifaces;host!=NULL;host=g_list_next(host))
     if(g_strcmp0(((struct sni_iface *)host->data)->watcher_iface,iface)==0)
       break;
   if(host==NULL)
@@ -503,7 +508,7 @@ void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
       "/StatusNotifierWatcher", watcher->idata->interfaces[0],
       &watcher_vtable, watcher, NULL, NULL);
 
-  for(iter=context->sni_items;iter!=NULL;iter=g_list_next(iter))
+  for(iter=sni_items;iter!=NULL;iter=g_list_next(iter))
     if(g_strcmp0(((struct sni_item *)iter->data)->iface,watcher->item_iface)==0)
       sni_watcher_item_add(watcher,((struct sni_item *)iter->data)->uid);
 }
@@ -580,7 +585,7 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
   g_variant_get (parameters, "(&s)", &parameter);
   g_debug("host %s: unregister item %s",host->host_iface, parameter);
 
-  for(item=context->sni_items;item!=NULL;item=g_list_next(item))
+  for(item=sni_items;item!=NULL;item=g_list_next(item))
     if(g_strcmp0(((struct sni_item *)item->data)->uid,parameter)==0)
       break;
   if(item==NULL)
@@ -589,7 +594,7 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
   sni = item->data;
   g_dbus_connection_signal_unsubscribe(con,sni->signal);
   g_cancellable_cancel(sni->cancel);
-  context->sni_items = g_list_delete_link(context->sni_items,item);
+  sni_items = g_list_delete_link(sni_items,item);
   g_debug("host %s: removing item %s",host->host_iface,sni->uid);
   for(i=0;i<3;i++)
     if(sni->pixbuf[i]!=NULL)
@@ -603,7 +608,7 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
   g_free(sni->dest);
   g_free(sni->iface);
   g_free(sni);
-  context->status |= ST_TRAY;
+  invalid = TRUE;
 }
 
 void sni_register ( gchar *name )
@@ -628,7 +633,7 @@ void sni_register ( gchar *name )
   iface->item_iface = g_strdup_printf("org.%s.StatusNotifierItem",name);
   iface->host_iface = g_strdup_printf("org.%s.StatusNotifierHost-%d",name,
       getpid());
-  context->sni_ifaces = g_list_append(context->sni_ifaces,iface);
+  sni_ifaces = g_list_append(sni_ifaces,iface);
 
   g_bus_own_name(G_BUS_TYPE_SESSION,iface->watcher_iface,
       G_BUS_NAME_OWNER_FLAGS_NONE,NULL,
@@ -642,39 +647,38 @@ void sni_register ( gchar *name )
   con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
   g_dbus_connection_signal_subscribe(con,NULL,iface->watcher_iface,
       "StatusNotifierItemRegistered","/StatusNotifierWatcher",NULL,
-      G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_registered_cb,context,NULL);
+      G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_registered_cb,NULL,NULL);
   g_dbus_connection_signal_subscribe(con,NULL,iface->watcher_iface,
       "StatusNotifierItemUnregistered","/StatusNotifierWatcher",NULL,
       G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_unregistered_cb,iface,NULL);
 }
 
-void sni_refresh ( void )
+void sni_update ( void )
 {
   GList *iter;
   struct sni_item *sni;
 
-  if( !(context->status & ST_TRAY) )
+  if( !tray || !invalid )
     return;
 
-  flow_grid_clean(context->tray);
+  flow_grid_clean(tray);
 
-  for(iter = context->sni_items;iter!=NULL;iter=g_list_next(iter))
+  for(iter = sni_items;iter!=NULL;iter=g_list_next(iter))
   {
     sni = iter->data;
     if(sni)
       if(sni->string[SNI_PROP_STATUS])
-        flow_grid_attach(context->tray,sni->box);
+        flow_grid_attach(tray,sni->box);
   }
 
-  flow_grid_pad(context->tray);
-  gtk_widget_show_all(context->tray);
-  context->status &= ~ST_TRAY;
+  flow_grid_pad(tray);
+  gtk_widget_show_all(tray);
+  invalid = FALSE;
 }
 
 void sni_init ( GtkWidget *w )
 {
-  context->features |= F_TRAY;
-  context->tray = w;
+  tray = w;
   sni_register("kde");
   sni_register("freedesktop");
 }

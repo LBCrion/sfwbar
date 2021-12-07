@@ -6,26 +6,35 @@
 #include <gtk/gtk.h>
 #include "sfwbar.h"
 
-GtkWidget *pager_init ( GtkWidget *widget )
+static GtkWidget *pager;
+static GList *pager_pins;
+static gboolean preview;
+
+void pager_init ( GtkWidget *widget )
 {
-  context->pager = widget;
-  context->features |= F_PAGER;
+  pager = widget;
   pager_update();
-  return context->pager;
+}
+
+void pager_set_preview ( gboolean pv )
+{
+  preview = pv;
+}
+
+void pager_add_pin ( gchar *pin )
+{
+  pager_pins = g_list_append(pager_pins,pin);
 }
 
 void pager_button_click( GtkWidget *widget, gpointer data )
 {
-  gchar *cmd;
   gchar *label;
-  if(context->ipc==-1)
+  if(!sway_ipc_active())
     return;
   label = (gchar *)gtk_button_get_label(GTK_BUTTON(widget));
   if(label==NULL)
     return;
-  cmd = g_strdup_printf("workspace '%s'",label);
-  sway_ipc_send ( context->ipc, 0, cmd );
-  g_free( cmd );
+  sway_ipc_command("workspace '%s'",label);
 }
 
 gboolean pager_draw_preview ( GtkWidget *widget, cairo_t *cr, gchar *desk )
@@ -128,6 +137,9 @@ void pager_update ( void )
   gchar *label;
   gchar *focus=NULL;
 
+  if(!pager)
+    return;
+
   sock=sway_ipc_open(3000);
   if(sock==-1)
     return;
@@ -156,19 +168,19 @@ void pager_update ( void )
     json_object_put(obj);
   }
 
-  for(node=context->pager_pins;node!=NULL;node=g_list_next(node))
+  for(node=pager_pins;node!=NULL;node=g_list_next(node))
     if(!g_list_find_custom(wslist,node->data,(GCompareFunc)g_strcmp0))
       wslist = g_list_append(wslist,g_strdup(node->data));
   wslist = g_list_sort(wslist,(GCompareFunc)g_strcmp0);
 
   if(wslist)
   {
-    flow_grid_clean(context->pager);
+    flow_grid_clean(pager);
     for(node=wslist;node!=NULL;node=g_list_next(node))
       {
         label = node->data;
         widget = gtk_button_new_with_label(label);
-        if(context->features & F_PA_RENDER)
+        if(preview)
         {
           gtk_widget_set_has_tooltip(widget,TRUE);
           g_signal_connect(widget,"query-tooltip",
@@ -181,10 +193,10 @@ void pager_update ( void )
           gtk_widget_set_name(widget, "pager_focused");
         g_signal_connect(widget,"clicked",G_CALLBACK(pager_button_click),NULL);
         widget_set_css(widget);
-        flow_grid_attach(context->pager,widget);
+        flow_grid_attach(pager,widget);
       }
-    flow_grid_pad(context->pager);
-    gtk_widget_show_all(context->pager);
+    flow_grid_pad(pager);
+    gtk_widget_show_all(pager);
   }
 
   g_list_free(visible);

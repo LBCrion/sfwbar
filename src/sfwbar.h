@@ -6,30 +6,6 @@
 #include <json.h>
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
-struct context {
-  gint32 features;
-  gint ipc;
-  gint64 tb_focus;
-  gint32 sw_count;
-  GList *pager_pins;
-  gint32 position;
-  gint32 wp_x,wp_y;
-  gint32 wo_x,wo_y;
-  GtkWindow *window;
-  GtkCssProvider *css;
-  GtkWidget *box;
-  GtkWidget *pager;
-  GtkWidget *tray;
-  GList *sni_items;
-  GList *sni_ifaces;
-  gint64 wt_counter;
-  GList *wt_list;
-  guchar status;
-  GList *widgets;
-  GList *file_list;
-  GList *scan_list;
-};
-
 struct wt_window {
   GtkWidget *button;
   GtkWidget *label;
@@ -38,7 +14,7 @@ struct wt_window {
   gchar *appid;
   gint64 pid;
   gint64 wid;
-  struct zwlr_foreign_toplevel_handle_v1 *wlr;
+  gpointer uid;
 };
 
 struct rect {
@@ -87,43 +63,59 @@ struct layout_widget {
   struct rect rect;
 };
 
-extern struct context *context;
 extern gchar *expr_token[];
 
 extern struct wl_seat *seat;
 
 void sway_ipc_init ( void );
+gboolean sway_ipc_active ( void );
 gchar *sway_ipc_poll ( gint sock, gint32 *etype );
 int sway_ipc_open (int to);
 int sway_ipc_send ( gint sock, gint32 type, gchar *command );
+void sway_ipc_command ( gchar *cmd, ... );
 int sway_ipc_subscribe ( gint sock );
 gboolean sway_ipc_event ( GIOChannel *, GIOCondition , gpointer );
 void place_window ( gint64 wid, gint64 pid );
+void placer_config ( gint xs, gint ys, gint xo, gint yo, gboolean pid );
 
-GtkWidget *taskbar_init ( GtkWidget * );
-void taskbar_refresh ( void );
+void taskbar_init ( GtkWidget * );
+void taskbar_invalidate ( void );
+void taskbar_set_visual ( gboolean nicons, gboolean nlabels );
+void taskbar_update ( void );
 void taskbar_window_init ( struct wt_window *win );
+void taskbar_set_label ( struct wt_window *win, gchar *title );
+
 struct wt_window *wintree_window_init ( void );
+struct wt_window *wintree_from_id ( gpointer id );
+struct wt_window *wintree_from_pid ( gint64 pid );
 void wintree_window_append ( struct wt_window *win );
-gint wintree_compare ( struct wt_window *a, struct wt_window *b);
+void wintree_window_delete ( gpointer id );
+void wintree_set_focus ( gpointer id );
+gboolean wintree_is_focused ( gpointer id );
+GList *wintree_get_list ( void );
 
-void wayland_init ( void );
+void wayland_init ( GtkWindow *, gboolean );
 
-gboolean hide_event ( struct json_object *obj );
+gboolean window_hide_event ( struct json_object *obj );
 gboolean switcher_event ( struct json_object *obj );
+void switcher_invalidate ( void );
 void switcher_update ( void );
 void switcher_window_init ( struct wt_window *win);
-void switcher_config ( GtkWidget *nwin, GtkWidget *ngrid, gint nmax);
+void switcher_config ( GtkWidget *, GtkWidget *, gint, gboolean, gboolean);
 
-GtkWidget *pager_init ( GtkWidget * );
+void pager_init ( GtkWidget * );
+void pager_set_preview ( gboolean pv );
+void pager_add_pin ( gchar *pin );
 void pager_update ( void );
 
 void sni_init ( GtkWidget *w );
-void sni_refresh ( void );
+void sni_update ( void );
 struct layout_widget *config_parse ( gchar * );
 
 struct layout_widget *layout_widget_new ( void );
+gpointer layout_scanner_thread ( gpointer data );
 void layout_widget_config ( struct layout_widget *lw );
+void layout_widget_attach ( struct layout_widget *lw );
 void layout_widget_free ( struct layout_widget *lw );
 void layout_widgets_update ( GMainContext * );
 void layout_widgets_draw ( void );
@@ -136,6 +128,7 @@ void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w );
 void flow_grid_pad ( GtkWidget *cgrid );
 void flow_grid_clean ( GtkWidget *cgrid );
 
+void scanner_var_attach ( struct scan_var *var );
 void scanner_expire ( void );
 int scanner_reset_vars ( GList *var_list );
 int scanner_glob_file ( struct scan_file *file );
@@ -165,28 +158,6 @@ void scale_image_set_pixbuf ( GtkWidget *widget, GdkPixbuf * );
 
 #define SCAN_VAR(x) ((struct scan_var *)x)
 #define AS_WINDOW(x) ((struct wt_window *)(x))
-
-enum {
-  F_TASKBAR   = 1<<0,
-  F_PLACEMENT = 1<<1,
-  F_PAGER     = 1<<2,
-  F_TRAY      = 1<<3,
-  F_TB_ICON   = 1<<4,
-  F_TB_LABEL  = 1<<5,
-  F_TB_EXPAND = 1<<6,
-  F_SWITCHER  = 1<<7,
-  F_SW_ICON   = 1<<8,
-  F_SW_LABEL  = 1<<9,
-  F_PL_CHKPID = 1<<10,
-  F_PA_RENDER = 1<<11,
-  F_WLRFT     = 1<<12
-};
-
-enum {
-  ST_TASKBAR  = 1<<0,
-  ST_SWITCHER = 1<<1,
-  ST_TRAY     = 1<<2
-};
 
 enum {
   SV_ADD = 1,
@@ -219,6 +190,5 @@ enum {
   G_TOKEN_VAL     = G_TOKEN_LAST + 5,
   G_TOKEN_STRW    = G_TOKEN_LAST + 6
 };
-
 
 #endif

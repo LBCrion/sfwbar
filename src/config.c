@@ -18,6 +18,37 @@ void config_log_error ( GScanner *scanner, gchar *message, gboolean error )
     g_message("%s:%d: %s",scanner->input_name,scanner->line,message);
 }
 
+gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr)
+{
+  gboolean result = def;
+
+  scanner->max_parse_errors = FALSE;
+  if(g_scanner_peek_next_token(scanner) != '=')
+  {
+    g_scanner_error(scanner, "Missing '=' in %s = <boolean>",expr);
+    return 0;
+  }
+  g_scanner_get_next_token(scanner);
+
+  switch((gint)g_scanner_get_next_token(scanner))
+  {
+    case G_TOKEN_TRUE:
+      result = TRUE;
+      break;
+    case G_TOKEN_FALSE:
+      result = FALSE;
+      break;
+    default:
+      g_scanner_error(scanner, "Missing <boolean> in %s = <boolean>", expr);
+      break;
+  }
+
+  if(g_scanner_peek_next_token(scanner) == ';')
+    g_scanner_get_next_token(scanner);
+
+  return result;
+}
+
 void config_boolean_setbit ( GScanner *scanner, gint *dest, gint mask,
     gchar *expr )
 {
@@ -204,7 +235,7 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
   var->str = NULL;
 
   file->vars = g_list_append(file->vars,var);
-  context->scan_list = g_list_append(context->scan_list,var);
+  scanner_var_attach(var);
 }
 
 void config_scanner_source ( GScanner *scanner, gint source )
@@ -512,8 +543,7 @@ void config_get_pins ( GScanner *scanner, struct layout_widget *lw )
       break;
     }
     g_scanner_get_next_token(scanner);
-    context->pager_pins = g_list_append(context->pager_pins,
-        g_strdup(scanner->value.v_string));
+    pager_add_pin(g_strdup(scanner->value.v_string));
   } while ( g_scanner_peek_next_token(scanner)==',');
   if(g_scanner_peek_next_token(scanner) == ';')
     g_scanner_get_next_token(scanner);
@@ -549,6 +579,8 @@ void config_widget_rows ( GScanner *scanner, struct layout_widget *lw )
 
 void config_widget_props ( GScanner *scanner, struct layout_widget *lw )
 {
+  gboolean labels = FALSE, icons = FALSE;
+
   scanner->max_parse_errors = FALSE;
 
   if( g_scanner_peek_next_token( scanner ) != '{')
@@ -594,7 +626,7 @@ void config_widget_props ( GScanner *scanner, struct layout_widget *lw )
           g_scanner_error(scanner,"this widget has no property 'preview'");
           break;
         }
-        config_boolean_setbit(scanner,&context->features,F_PA_RENDER,"preview");
+        pager_set_preview(config_assign_boolean(scanner,FALSE,"preview"));
         break;
       case G_TOKEN_COLS:
         config_widget_cols(scanner, lw);
@@ -606,10 +638,10 @@ void config_widget_props ( GScanner *scanner, struct layout_widget *lw )
         lw->action = config_assign_string(scanner,"action");
         break;
       case G_TOKEN_ICONS:
-        config_boolean_setbit(scanner,&context->features,F_TB_ICON,"icons");
+        icons = config_assign_boolean(scanner,FALSE,"icons");
         break;
       case G_TOKEN_LABELS:
-        config_boolean_setbit(scanner,&context->features,F_TB_LABEL,"labels");
+        labels = config_assign_boolean(scanner,FALSE,"labels");
         break;
       case G_TOKEN_ICON:
         lw->icon = config_assign_string(scanner,"action");
@@ -621,6 +653,8 @@ void config_widget_props ( GScanner *scanner, struct layout_widget *lw )
         g_scanner_error(scanner, "Unexpected token in widget definition");
     }
   }
+  if(lw->wtype == G_TOKEN_TASKBAR)
+    taskbar_set_visual(icons,labels);
   if((gint)g_scanner_peek_next_token(scanner) == '}')
     g_scanner_get_next_token(scanner);
 
@@ -732,7 +766,7 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
       config_widgets(scanner,lw->widget);
 
     if(lw->value)
-      context->widgets = g_list_append(context->widgets,lw);
+      layout_widget_attach(lw);
     else
       layout_widget_free(lw);
   }
@@ -761,13 +795,13 @@ void config_switcher ( GScanner *scanner )
   gchar *css=NULL;
   GtkWidget *win, *box;
   gint interval = 1;
+  gboolean icons = FALSE, labels = FALSE;
   scanner->max_parse_errors = FALSE;
 
   if(g_scanner_peek_next_token(scanner)!='{')
     return g_scanner_error(scanner,"Missing '{' after 'switcher'");
   g_scanner_get_next_token(scanner);
 
-  context->features |= F_SWITCHER;
   win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_layer_init_for_window (GTK_WINDOW(win));
   gtk_layer_set_layer(GTK_WINDOW(win),GTK_LAYER_SHELL_LAYER_OVERLAY);
@@ -794,10 +828,10 @@ void config_switcher ( GScanner *scanner )
         css = config_assign_string(scanner,"css");
         break;
       case G_TOKEN_ICONS:
-        config_boolean_setbit(scanner,&context->features,F_SW_ICON,"icons");
+        icons = config_assign_boolean(scanner,FALSE,"icons");
         break;
       case G_TOKEN_LABELS:
-        config_boolean_setbit(scanner,&context->features,F_SW_LABEL,"labels");
+        labels = config_assign_boolean(scanner,FALSE,"labels");
         break;
       default:
         g_scanner_error(scanner,"Unexpected token in 'switcher'");
@@ -810,9 +844,6 @@ void config_switcher ( GScanner *scanner )
   if(g_scanner_peek_next_token(scanner) == ';')
     g_scanner_get_next_token(scanner);
 
-  if(!(context->features & F_SW_ICON))
-    context->features |= F_SW_LABEL;
-
   if(css!=NULL)
   {
     GtkStyleContext *cont = gtk_widget_get_style_context (box);
@@ -822,41 +853,41 @@ void config_switcher ( GScanner *scanner )
       GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
     g_free(css);
   }
-  switcher_config(win,box,interval);
+  switcher_config(win,box,interval,icons,labels);
 }
 
 void config_placer ( GScanner *scanner )
 {
+  gint wp_x= 10;
+  gint wp_y= 10;
+  gint wo_x= 0;
+  gint wo_y= 0;
+  gboolean pid = FALSE;
   scanner->max_parse_errors = FALSE;
 
   if(g_scanner_peek_next_token(scanner)!='{')
     return g_scanner_error(scanner,"Missing '{' after 'placer'");
   g_scanner_get_next_token(scanner);
 
-  context->features |= F_PLACEMENT;
-  context->wp_x= 10;
-  context->wp_y= 10;
-  context->wo_x= 0;
-  context->wo_y= 0;
   while (( (gint)g_scanner_peek_next_token ( scanner ) != '}' )&&
       ( (gint)g_scanner_peek_next_token ( scanner ) != G_TOKEN_EOF ))
   {
     switch ((gint)g_scanner_get_next_token(scanner) )
     {
       case G_TOKEN_XSTEP: 
-        context->wp_x = config_assign_number ( scanner, "xstep" );
+        wp_x = config_assign_number ( scanner, "xstep" );
         break;
       case G_TOKEN_YSTEP: 
-        context->wp_y = config_assign_number ( scanner, "ystep" );
+        wp_y = config_assign_number ( scanner, "ystep" );
         break;
       case G_TOKEN_XORIGIN: 
-        context->wo_x = config_assign_number ( scanner, "xorigin" );
+        wo_x = config_assign_number ( scanner, "xorigin" );
         break;
       case G_TOKEN_YORIGIN: 
-        context->wo_y = config_assign_number ( scanner, "yorigin" );
+        wo_y = config_assign_number ( scanner, "yorigin" );
         break;
       case G_TOKEN_CHILDREN:
-        config_boolean_setbit(scanner,&context->features,F_PL_CHKPID,"children");
+        pid = config_assign_boolean(scanner,FALSE,"children");
         break;
       default:
         g_scanner_error(scanner,"Unexpected token in 'placer'");
@@ -869,10 +900,11 @@ void config_placer ( GScanner *scanner )
   if(g_scanner_peek_next_token(scanner) == ';')
     g_scanner_get_next_token(scanner);
 
-  if(context->wp_x<1)
-    context->wp_x=1;
-  if(context->wp_y<1)
-    context->wp_y=1;
+  if(wp_x<1)
+    wp_x=1;
+  if(wp_y<1)
+    wp_y=1;
+  placer_config(wp_x,wp_y,wo_x,wo_y,pid);
 }
 
 struct layout_widget *config_parse_toplevel ( GScanner *scanner )
@@ -912,7 +944,6 @@ struct layout_widget *config_parse ( gchar *file )
   gchar *conf=NULL;
   GtkCssProvider *css;
   gsize size;
-  gint dir;
   struct layout_widget *w=NULL;
 
   fname = get_xdg_config_file(file);
@@ -935,13 +966,6 @@ struct layout_widget *config_parse ( gchar *file )
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
       GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
   }
-
-  gtk_widget_style_get(GTK_WIDGET(context->window),"direction",&dir,NULL);
-  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_LEFT,!(dir==GTK_POS_RIGHT));
-  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_RIGHT,!(dir==GTK_POS_LEFT));
-  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_BOTTOM,!(dir==GTK_POS_TOP));
-  gtk_layer_set_anchor (context->window,GTK_LAYER_SHELL_EDGE_TOP,!(dir==GTK_POS_BOTTOM));
-
 
   scanner = g_scanner_new(NULL);
   scanner->config->scan_octal = 0;

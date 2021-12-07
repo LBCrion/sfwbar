@@ -12,84 +12,51 @@ static struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager = NULL;
 static struct zxdg_output_manager_v1 *xdg_output_manager = NULL;
 static struct wl_output *pref_output = NULL;
 static uint32_t pref_output_id = UINT32_MAX;
+static gint64 wt_counter;
 struct wl_seat *seat = NULL;
-
-GList *wlr_ft_find_win ( GList *list, wlr_fth *tl )
-{
-  GList *l;
-  for(l=list;l!=NULL;l=g_list_next(l))
-    if(l->data != NULL)
-      if(AS_WINDOW(l->data)->wlr == tl)
-        return l;
-  return NULL;
-}
 
 static void toplevel_handle_app_id(void *data, wlr_fth *tl, const gchar *app_id)
 {
-  struct wt_window *win = NULL;
-  GList *l;
-  l = wlr_ft_find_win(context->wt_list,tl);
-  if(l==NULL)
+  struct wt_window *win;
+
+  win = wintree_from_id(tl);
+  if(!win)
     return;
-  win = l->data;
   str_assign(&(win->appid), (gchar *)app_id);
-  context->status |= ST_TASKBAR;
-  context->status |= ST_SWITCHER;
+  taskbar_invalidate();
+  switcher_invalidate();
 }
 
 static void toplevel_handle_title(void *data, wlr_fth *tl, const gchar *title)
 {
-  struct wt_window *win = NULL;
-  GList *l;
-  l = wlr_ft_find_win(context->wt_list,tl);
-  if(l==NULL)
+  struct wt_window *win;
+
+  win = wintree_from_id(tl);
+  if(!win)
     return;
-  win = l->data;
   str_assign(&(win->title), (gchar *)title);
-  context->status |= ST_TASKBAR;
-  context->status |= ST_SWITCHER;
+  taskbar_invalidate();
+  switcher_invalidate();
 }
 
 static void toplevel_handle_closed(void *data, wlr_fth *tl)
 {
-  struct wt_window *win = NULL;
-  GList *l;
-  l = wlr_ft_find_win(context->wt_list,tl);
-  if(l==NULL)
-    return;
-  win = l->data;
-  if(context->features & F_TASKBAR)
-  {
-    gtk_widget_destroy(win->button);
-    g_object_unref(G_OBJECT(win->button));
-  }
-  if(context->features & F_SWITCHER)
-  {
-    gtk_widget_destroy(win->switcher);
-    g_object_unref(G_OBJECT(win->switcher));
-  }
-  str_assign(&(win->appid),NULL);
-  str_assign(&(win->title),NULL);
-  context->wt_list = g_list_delete_link(context->wt_list,l);
+  wintree_window_delete(tl);
   zwlr_foreign_toplevel_handle_v1_destroy(tl);
 }
 
 static void toplevel_handle_done(void *data, wlr_fth *tl)
 {
-  struct wt_window *win = NULL;
-  GList *l;
-  l = wlr_ft_find_win(context->wt_list,tl);
-  if(l==NULL)
-    return;
-  win = l->data;
-  if(win==NULL)
+  struct wt_window *win;
+
+  win = wintree_from_id(tl);
+  if(!win)
     return;
   if(win->title == NULL)
     str_assign(&(win->title), win->appid);
   if(win->button!=NULL)
   {
-    if(context->features & F_TB_LABEL)
-      gtk_label_set_text(GTK_LABEL(win->label),win->title);
+    taskbar_set_label(win,win->title);
     return;
   }
   wintree_window_append(win);
@@ -99,21 +66,20 @@ static void toplevel_handle_state(void *data, wlr_fth *tl,
                 struct wl_array *state)
 {
   uint32_t *entry;
+  struct wt_window *win;
+
   wl_array_for_each(entry, state)
     if(*entry == ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_MINIMIZED)
       return;
   wl_array_for_each(entry, state)
     if(*entry == ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_ACTIVATED)
     {
-      struct wt_window *win = NULL;
-      GList *l;
-      l = wlr_ft_find_win(context->wt_list,tl);
-      if(l!=NULL)
+      win = wintree_from_id(tl);
+      if(win)
       {
-        win = l->data;
-        context->tb_focus = win->wid;
-        context->status |= ST_TASKBAR;
-        context->status |= ST_SWITCHER;
+        wintree_set_focus(win->uid);
+        taskbar_invalidate();
+        switcher_invalidate();
       }
     }
 }
@@ -139,11 +105,11 @@ static void toplevel_manager_handle_toplevel(void *data,
   struct wt_window *win;
 
   win = wintree_window_init();
-  win->wlr = tl;
-  win->wid = context->wt_counter++;
-  context->wt_list = g_list_append (context->wt_list,win);
+  win->uid = tl;
+  win->wid = wt_counter++;
+  wintree_window_append(win);
 
-  zwlr_foreign_toplevel_handle_v1_add_listener(tl, &toplevel_impl, context);
+  zwlr_foreign_toplevel_handle_v1_add_listener(tl, &toplevel_impl, NULL);
 }
 
 static void toplevel_manager_handle_finished(void *data,
@@ -202,12 +168,13 @@ gchar *gdk_monitor_get_xdg_name ( GdkMonitor *monitor )
 static void handle_global(void *data, struct wl_registry *registry,
                 uint32_t name, const gchar *interface, uint32_t version)
 {
+  gboolean *wlr_ft = data;
   if (strcmp(interface, wl_output_interface.name) == 0) 
   {
     if (name == pref_output_id)
       pref_output = wl_registry_bind(registry,name,&wl_output_interface, version);
   } 
-  else if ( context->features & F_WLRFT &&
+  else if ( *wlr_ft &&
       strcmp(interface,zwlr_foreign_toplevel_manager_v1_interface.name)==0)
   {
     toplevel_manager = wl_registry_bind(registry, name,
@@ -236,13 +203,13 @@ static const struct wl_registry_listener registry_listener = {
   .global_remove = handle_global_remove,
 };
 
-void wayland_init ( void )
+void wayland_init ( GtkWindow *window, gboolean wlr_ft )
 {
   GdkDisplay *gdisp;
   struct wl_display *wdisp;
   struct wl_registry *registry;
 
-  gdisp = gdk_screen_get_display(gtk_window_get_screen(GTK_WINDOW(context->window)));
+  gdisp = gdk_screen_get_display(gtk_window_get_screen(window));
   wdisp = gdk_wayland_display_get_wl_display(gdisp);
   if(wdisp == NULL)
   {
@@ -251,10 +218,10 @@ void wayland_init ( void )
   }
 
   registry = wl_display_get_registry(wdisp);
-  wl_registry_add_listener(registry, &registry_listener, context);
+  wl_registry_add_listener(registry, &registry_listener, &wlr_ft);
   wl_display_roundtrip(wdisp);
 
-  if (context->features & F_WLRFT && toplevel_manager == NULL)
+  if (wlr_ft && toplevel_manager == NULL)
   {
     fprintf(stderr, "wlr-foreign-toplevel not available\n");
       return;

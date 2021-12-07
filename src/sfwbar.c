@@ -8,6 +8,8 @@
 #include <gtk-layer-shell.h>
 #include "sfwbar.h"
 
+static GtkWindow *bar_window;
+
 gchar *confname=NULL, *cssname=NULL, *sockname=NULL, *monitor=NULL;
 gboolean debug = FALSE;
 static GOptionEntry entries[] = {
@@ -26,20 +28,6 @@ void parse_command_line ( gint argc, gchar **argv)
   g_option_context_add_main_entries(optc,entries,NULL);
   g_option_context_add_group (optc, gtk_get_option_group (TRUE));
   g_option_context_parse(optc,&argc,&argv,NULL);
-}
-
-void init_context ( void )
-{
-  context = g_malloc( sizeof(struct context) );
-  context->scan_list=NULL;
-  context->file_list=NULL;
-  context->widgets=NULL;
-  context->wt_list = NULL;
-  context->pager_pins=NULL;
-  context->sni_ifaces=NULL;
-  context->sni_items=NULL;
-  context->ipc = -1;
-  context->features = F_TB_ICON | F_TB_LABEL;
 }
 
 void monitor_change_cb ( );
@@ -81,12 +69,12 @@ void set_monitor ( gboolean connect )
   if(list)
     exit(0);
 
-  gtk_layer_set_monitor(context->window, match);
+  gtk_layer_set_monitor(bar_window, match);
 
   if(connect)
   {
-    gdisp = gdk_screen_get_display(gtk_window_get_screen(context->window)),
-            gtk_widget_get_window(GTK_WIDGET(context->window));
+    gdisp = gdk_screen_get_display(gtk_window_get_screen(bar_window)),
+            gtk_widget_get_window(GTK_WIDGET(bar_window));
     g_signal_connect(gdisp, "monitor-added",monitor_change_cb,NULL);
     g_signal_connect(gdisp, "monitor-removed",monitor_change_cb,NULL);
   }
@@ -94,9 +82,35 @@ void set_monitor ( gboolean connect )
 
 void monitor_change_cb ( void )
 {
-  gtk_widget_hide ((GtkWidget *)context->window);
+  gtk_widget_hide ((GtkWidget *)bar_window);
   set_monitor(FALSE);
-  gtk_widget_show ((GtkWidget *)context->window);
+  gtk_widget_show ((GtkWidget *)bar_window);
+}
+
+gboolean window_hide_event ( struct json_object *obj )
+{
+  gchar *mode, state;
+
+  if ( obj )
+  {
+    mode = json_string_by_name(obj,"mode");
+    if(mode!=NULL)
+      state = *mode;
+    else
+      state ='s';
+    g_free(mode);
+  }
+  else
+    if( gtk_widget_is_visible (GTK_WIDGET(bar_window)) )
+      state = 'h';
+    else
+      state = 's';
+
+  if(state=='h')
+    gtk_widget_hide(GTK_WIDGET(bar_window));
+  else
+    gtk_widget_show(GTK_WIDGET(bar_window));
+  return TRUE;
 }
 
 void log_print ( const gchar *log_domain, GLogLevelFlags log_level, 
@@ -163,34 +177,11 @@ void css_init ( void )
   }
 }
 
-gpointer scanner_thread ( gpointer data )
-{
-  GList *iter;
-  gint64 timer;
-
-  while ( TRUE )
-  {
-    scanner_expire();
-    layout_widgets_update(data);
-    timer = G_MAXINT64;
-    for(iter=context->widgets;iter!=NULL;iter=g_list_next(iter))
-      timer = MIN(timer,((struct layout_widget *)iter->data)->next_poll);
-    timer -= g_get_monotonic_time();
-    if(timer>0)
-      usleep(timer);
-  }
-}
-
 gboolean shell_timer ( gpointer data )
 {
-  if((context->features & F_TASKBAR)&&(context->status & ST_TASKBAR))
-    taskbar_refresh();
-
-  if(context->features & F_TRAY)
-    sni_refresh();
-
-  if(context->features & F_SWITCHER)
-    switcher_update();
+  taskbar_update();
+  switcher_update();
+  sni_update();
 
   return TRUE;
 }
@@ -198,50 +189,49 @@ gboolean shell_timer ( gpointer data )
 static void activate (GtkApplication* app, gpointer data )
 {
   struct layout_widget *lw;
+  gint dir;
 
-  context->window = (GtkWindow *)gtk_application_window_new (app);
-  gtk_layer_init_for_window (context->window);
-  gtk_layer_auto_exclusive_zone_enable (context->window);
-  gtk_layer_set_keyboard_interactivity(context->window,FALSE);
-  gtk_layer_set_layer(context->window,GTK_LAYER_SHELL_LAYER_OVERLAY);
+  bar_window = (GtkWindow *)gtk_application_window_new (app);
+  gtk_layer_init_for_window (bar_window);
+  gtk_layer_auto_exclusive_zone_enable (bar_window);
+  gtk_layer_set_keyboard_interactivity(bar_window,FALSE);
+  gtk_layer_set_layer(bar_window,GTK_LAYER_SHELL_LAYER_OVERLAY);
 
   css_init();
   
   lw = config_parse(confname?confname:"sfwbar.config");
 
+  gtk_widget_style_get(GTK_WIDGET(bar_window),"direction",&dir,NULL);
+  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_LEFT,!(dir==GTK_POS_RIGHT));
+  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_RIGHT,!(dir==GTK_POS_LEFT));
+  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_BOTTOM,!(dir==GTK_POS_TOP));
+  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_TOP,!(dir==GTK_POS_BOTTOM));
+
   if((lw != NULL)&&(lw->lobject!=NULL))
   {
-    gtk_container_add(GTK_CONTAINER(context->window), lw->widget);
+    gtk_container_add(GTK_CONTAINER(bar_window), lw->widget);
     layout_widget_free(lw);
 
-    gtk_widget_show_all ((GtkWidget *)context->window);
+    gtk_widget_show_all ((GtkWidget *)bar_window);
   }
 
-
-  if((context->features & F_TASKBAR)||(context->features & F_PLACEMENT)||(context->features & F_PAGER))
-  {
-   sway_ipc_init();
-   if(context->ipc<0)
-     context->features |= F_WLRFT;
-  }
-
-  wayland_init();
+  sway_ipc_init();
+  if(!sway_ipc_active())
+    wayland_init(bar_window,TRUE);
+  else
+    wayland_init(bar_window,FALSE);
 
   if(monitor)
     set_monitor(TRUE);
 
+  g_thread_unref(g_thread_new("scanner",layout_scanner_thread,
+        g_main_context_get_thread_default()));
 
-  if(context->widgets)
-    g_thread_unref(g_thread_new("scanner",scanner_thread,
-          g_main_context_get_thread_default()));
-
-  g_timeout_add (100,(GSourceFunc )shell_timer,context);
+  g_timeout_add (100,(GSourceFunc )shell_timer,NULL);
   g_unix_signal_add(10,(GSourceFunc)switcher_event,NULL);
-  g_unix_signal_add(12,(GSourceFunc)hide_event,NULL);
-  gtk_widget_show_all ((GtkWidget *)context->window);
+  g_unix_signal_add(12,(GSourceFunc)window_hide_event,NULL);
+  gtk_widget_show_all ((GtkWidget *)bar_window);
 }
-
-struct context *context;
 
 int main (int argc, gchar **argv)
 {
@@ -250,12 +240,10 @@ int main (int argc, gchar **argv)
 
   g_log_set_handler(NULL,G_LOG_LEVEL_MASK,log_print,NULL);
 
-  init_context();
-
   parse_command_line(argc,argv);
 
   app = gtk_application_new ("org.gtk.sfwbar", G_APPLICATION_FLAGS_NONE);
-  g_signal_connect (app, "activate", G_CALLBACK (activate), &context);
+  g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);
   status = g_application_run (G_APPLICATION (app), argc, argv);
   g_object_unref (app);
 

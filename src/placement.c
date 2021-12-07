@@ -1,13 +1,26 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020 Lev Babiev
+ * Copyright 2020-2021 Lev Babiev
  */
 
 #include <glib.h>
 #include <unistd.h>
 #include <json.h>
 #include "sfwbar.h"
-#include <fcntl.h>
+
+static gint x_step, y_step, x_origin, y_origin;
+static gboolean check_pid;
+static gboolean placer;
+
+void placer_config ( gint xs, gint ys, gint xo, gint yo, gboolean pid )
+{
+  x_step = xs;
+  y_step = ys;
+  x_origin = xo;
+  y_origin = yo;
+  check_pid = !pid;
+  placer = TRUE;
+}
 
 int comp_int ( const void *x1, const void *x2)
 {
@@ -82,8 +95,8 @@ int placement_location ( struct json_object*obj, gint64 wid, struct rect *r )
   qsort(y,nobs+1,sizeof(int),comp_int);
 
   *r=win;
-  win.x = output.x+context->wo_x*output.w/100;
-  win.y = output.y+context->wo_y*output.h/100;
+  win.x = output.x+x_origin*output.w/100;
+  win.y = output.y+y_origin*output.h/100;
   do
   {
     success=1;
@@ -97,8 +110,8 @@ int placement_location ( struct json_object*obj, gint64 wid, struct rect *r )
       *r=win;
       break;
     }
-    win.x += output.w*context->wp_x/100;
-    win.y += output.h*context->wp_y/100;;
+    win.x += output.w*x_step/100;
+    win.y += output.h*y_step/100;;
   } while((win.x+win.w)<(output.x+output.w) && (win.y+win.h)<(output.y+output.h));
 
   for(j=nobs;j>=0;j--)
@@ -156,18 +169,18 @@ void place_window ( gint64 wid, gint64 pid )
 {
   gint sock;
   gint32 etype;
-  gchar *cmd;
   struct rect r;
   struct json_object *obj, *node;
-  GList *iter;
   gchar *response;
 
-  if(context->features & F_PL_CHKPID)
-    for(iter=context->wt_list;iter!=NULL;iter=g_list_next(iter))
-      if(AS_WINDOW(iter->data)->pid==pid)
-        return;
+  if(!placer)
+    return;
 
-  if(context->ipc == -1)
+  if(check_pid)
+    if(wintree_from_pid(pid)!=NULL)
+      return;
+
+  if(!sway_ipc_active())
     return;
   sock = sway_ipc_open(3000);
   if(sock==-1)
@@ -186,10 +199,8 @@ void place_window ( gint64 wid, gint64 pid )
     {
       if(placement_location(node,wid,&r)!=-1)
       {
-        cmd = g_strdup_printf("[con_id=%ld] move absolute position %d %d",
+        sway_ipc_command("[con_id=%ld] move absolute position %d %d",
             wid,r.x,r.y);
-        sway_ipc_send(context->ipc,0,cmd);
-        g_free(cmd);
       }
       json_object_put(obj);
     }

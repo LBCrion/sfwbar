@@ -11,7 +11,13 @@
 #include <sys/un.h>
 #include "sfwbar.h"
 
-const  gint8 magic[6] = {0x69, 0x33, 0x2d, 0x69, 0x70, 0x63};
+static gint main_ipc;
+static const  gint8 magic[6] = {0x69, 0x33, 0x2d, 0x69, 0x70, 0x63};
+
+gboolean sway_ipc_active ( void )
+{
+  return ( main_ipc > 0 );
+}
 
 gchar *sway_ipc_poll ( gint sock, gint32 *etype )
 {
@@ -101,6 +107,16 @@ int sway_ipc_send ( gint sock, gint32 type, gchar *command )
   return 0;
 }
 
+void sway_ipc_command ( gchar *cmd, ... )
+{
+  va_list args;
+  gchar *buf;
+  va_start(args,cmd);
+  buf = g_strdup_vprintf(cmd,args);
+  sway_ipc_send ( main_ipc, 0, buf);
+  g_free(buf);
+  va_end(args);
+}
 int sway_ipc_subscribe ( gint sock )
 {
   if ( sway_ipc_send(sock, 2, "['workspace','window','barconfig_update']") == -1)
@@ -111,24 +127,23 @@ int sway_ipc_subscribe ( gint sock )
 
 void sway_window_new ( struct json_object *container )
 {
-  GList *item;
   struct wt_window *win;
   gint64 wid;
 
   wid = json_int_by_name(container,"id",G_MININT64); 
-  for(item=context->wt_list;item!=NULL;item = g_list_next(item))
-    if (AS_WINDOW(item->data)->wid == wid)
-      return;
+  win = wintree_from_id(GINT_TO_POINTER(wid));
+  if(win)
+    return;
   
   win = wintree_window_init();
   if(win==NULL)
     return;
 
   win->wid = wid;
+  win->uid = GINT_TO_POINTER(wid);
   win->pid = json_int_by_name(container,"pid",G_MININT64); 
 
-  if((context->features & F_PLACEMENT)&&(context->ipc!=-1))
-    place_window(win->wid, win->pid );
+  place_window(win->wid, win->pid );
 
   win->appid = json_string_by_name(container,"app_id");
   if(win->appid==NULL)
@@ -142,19 +157,16 @@ void sway_window_new ( struct json_object *container )
     win->title = g_strdup(win->appid);
 
   if(json_bool_by_name(container,"focused",FALSE) == TRUE)
-    context->tb_focus = win->wid;
+    wintree_set_focus(win->uid);
 
   wintree_window_append(win);
 }
 
 void sway_window_title ( struct json_object *container )
 {
-  GList *item;
+  struct wt_window *win;
   gchar *title;
   gint64 wid;
-
-  if(!(context->features & F_TB_LABEL))
-    return;
 
   wid = json_int_by_name(container,"id",G_MININT64);
   title = json_string_by_name(container,"name");
@@ -162,47 +174,27 @@ void sway_window_title ( struct json_object *container )
   if(title==NULL)
     return;
 
-  for(item=context->wt_list;item!=NULL;item = g_list_next(item))
-    if (AS_WINDOW(item->data)->wid == wid)
-    {
-      str_assign(&(AS_WINDOW(item->data)->title),title);
-      gtk_label_set_text(GTK_LABEL((AS_WINDOW(item->data))->label),title);
-    }
+  win = wintree_from_id(GINT_TO_POINTER(wid));
+
+  if(win)
+  {
+    str_assign(&(win->title),title);
+    taskbar_set_label(win,title);
+  }
 
   g_free(title);
 }
 
 void sway_window_close (struct json_object *container)
 {
-  GList *item;
-  gint64 wid;
-
-  wid = json_int_by_name(container,"id",G_MININT64);
-
-  for(item=context->wt_list;item!=NULL;item = g_list_next(item))
-    if (AS_WINDOW(item->data)->wid == wid)
-      break;
-  if(item==NULL)
-    return;
-
-  if(context->features & F_TASKBAR)
-  {
-    gtk_widget_destroy((AS_WINDOW(item->data))->button);
-    g_object_unref(G_OBJECT(AS_WINDOW(item->data)->button));
-  }
-  if(context->features & F_SWITCHER)
-  {
-    gtk_widget_destroy((AS_WINDOW(item->data))->switcher);
-    g_object_unref(G_OBJECT(AS_WINDOW(item->data)->switcher));
-  }
-  g_free(AS_WINDOW(item->data)->appid);
-  g_free(AS_WINDOW(item->data)->title);
-  context->wt_list = g_list_delete_link(context->wt_list,item);
+  wintree_window_delete(GINT_TO_POINTER(
+        json_int_by_name(container,"id",G_MININT64)));
 }
 
 void sway_set_focus ( struct json_object *container)
 {
-  context->tb_focus = json_int_by_name(container,"id",G_MININT64);
+  wintree_set_focus(GINT_TO_POINTER(
+        json_int_by_name(container,"id",G_MININT64)));
 }
 
 gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
@@ -211,10 +203,10 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
   gchar *response,*change;
   gint32 etype;
 
-  if(context->ipc==-1)
+  if(main_ipc==-1)
     return FALSE;
 
-  response = sway_ipc_poll(context->ipc,&etype);
+  response = sway_ipc_poll(main_ipc,&etype);
   while (response != NULL)
   { 
     obj = json_tokener_parse(response);
@@ -224,7 +216,7 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 
     if(etype==0x80000004)
     {
-      hide_event(obj);
+      window_hide_event(obj);
       switcher_event(obj);
     }
 
@@ -244,15 +236,15 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
             sway_window_title(container);
           if(g_strcmp0(change,"focus")==0)
             sway_set_focus(container);
-          context->status |= ST_TASKBAR;
-          context->status |= ST_SWITCHER;
+          taskbar_invalidate();
+          switcher_invalidate();
         }
       }
     }
 
     json_object_put(obj);
     g_free(response);
-    response = sway_ipc_poll(context->ipc,&etype);
+    response = sway_ipc_poll(main_ipc,&etype);
   }
   return TRUE;
 }
@@ -305,14 +297,14 @@ void sway_ipc_init ( void )
   }
   g_free(response);
 
-  context->status |= ST_TASKBAR;
+  taskbar_invalidate();
 
-  context->ipc = sway_ipc_open(10);
-  if(context->ipc<0)
+  main_ipc = sway_ipc_open(10);
+  if(main_ipc<0)
     return;
 
-  sway_ipc_subscribe(context->ipc);
-  GIOChannel *chan = g_io_channel_unix_new(context->ipc);
+  sway_ipc_subscribe(main_ipc);
+  GIOChannel *chan = g_io_channel_unix_new(main_ipc);
   g_io_add_watch(chan,G_IO_IN,sway_ipc_event,NULL);
 }
 

@@ -8,6 +8,8 @@
 #include <gtk/gtk.h>
 #include <gio/gdesktopappinfo.h>
 
+GList *widget_list;
+
 gboolean widget_action ( GtkWidget *widget, gchar *cmd )
 {
   if(cmd)
@@ -20,6 +22,26 @@ gboolean widget_ebox_action ( GtkWidget *w, GdkEventButton *ev, gchar *cmd )
   if(ev->type == GDK_BUTTON_PRESS && ev->button == 1)
     widget_action(w,cmd);
   return TRUE;
+}
+
+gpointer layout_scanner_thread ( gpointer data )
+{
+  GList *iter;
+  gint64 timer;
+
+  while ( TRUE )
+  {
+    scanner_expire();
+    layout_widgets_update(data);
+    if(!widget_list)
+      g_thread_exit(NULL);
+    timer = G_MAXINT64;
+    for(iter=widget_list;iter!=NULL;iter=g_list_next(iter))
+      timer = MIN(timer,((struct layout_widget *)iter->data)->next_poll);
+    timer -= g_get_monotonic_time();
+    if(timer>0)
+      usleep(timer);
+  }
 }
 
 struct layout_widget *layout_widget_new ( void )
@@ -118,6 +140,11 @@ void layout_widget_config ( struct layout_widget *lw )
   }
 }
 
+void layout_widget_attach ( struct layout_widget *lw )
+{
+  widget_list = g_list_append(widget_list,lw);
+}
+
 void layout_widget_free ( struct layout_widget *lw )
 {
   if(!lw)
@@ -161,7 +188,7 @@ void layout_widgets_update ( GMainContext *gmc )
 
   ctime = g_get_monotonic_time();
 
-  for(iter=context->widgets;iter!=NULL;iter=g_list_next(iter))
+  for(iter=widget_list;iter!=NULL;iter=g_list_next(iter))
   {
     lw = iter->data;
 
@@ -175,7 +202,7 @@ void layout_widgets_update ( GMainContext *gmc )
       if(!vcount)
       {
         lw->invalid = TRUE;
-        context->widgets = g_list_delete_link(context->widgets,iter);
+        widget_list = g_list_delete_link(widget_list,iter);
       }
       if(g_strcmp0(eval,lw->eval)||lw->invalid)
       {
@@ -196,7 +223,7 @@ void layout_widgets_draw ( void )
   GList *iter;
   struct layout_widget *lw;
 
-  for(iter=context->widgets;iter!=NULL;iter=g_list_next(iter))
+  for(iter=widget_list;iter!=NULL;iter=g_list_next(iter))
   {
     lw = iter->data;
     if(lw->ready)
