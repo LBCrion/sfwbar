@@ -78,7 +78,8 @@ gboolean switcher_event ( struct json_object *obj )
 
 void switcher_window_init ( struct wt_window *win)
 {
-  GtkWidget *img;
+  GtkWidget *icon,*label;
+  gint dir;
 
   if(!switcher)
   {
@@ -87,15 +88,23 @@ void switcher_window_init ( struct wt_window *win)
   }
 
   win->switcher = gtk_grid_new();
+  gtk_widget_set_name(win->switcher, "switcher_normal");
+  gtk_widget_style_get(win->switcher,"direction",&dir,NULL);
   g_object_ref(G_OBJECT(win->switcher));
-  gtk_widget_set_hexpand(win->switcher,TRUE);
-  if(labels)
-    gtk_grid_attach(GTK_GRID(win->switcher),gtk_label_new(win->title),2,1,1,1);
   if(icons)
   {
-    img = scale_image_new();
-    scale_image_set_image(img,win->appid);
-    gtk_grid_attach(GTK_GRID(win->switcher),img,1,1,1,1);
+    icon = scale_image_new();
+    scale_image_set_image(icon,win->appid);
+    gtk_grid_attach_next_to(GTK_GRID(win->switcher),icon,NULL,dir,1,1);
+  }
+  else
+    icon = NULL;
+  if(labels)
+  {
+    label = gtk_label_new(win->title);
+    gtk_label_set_ellipsize (GTK_LABEL(label),PANGO_ELLIPSIZE_END);
+    widget_set_css(label);
+    gtk_grid_attach_next_to(GTK_GRID(win->switcher),label,icon,dir,1,1);
   }
 }
 
