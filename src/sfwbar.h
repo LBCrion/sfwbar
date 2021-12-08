@@ -8,7 +8,6 @@
 
 struct wt_window {
   GtkWidget *button;
-  GtkWidget *label;
   GtkWidget *switcher;
   gchar *title;
   gchar *appid;
@@ -100,6 +99,7 @@ gboolean window_hide_event ( struct json_object *obj );
 gboolean switcher_event ( struct json_object *obj );
 void switcher_invalidate ( void );
 void switcher_update ( void );
+void switcher_set_label ( struct wt_window *win, gchar *title );
 void switcher_window_init ( struct wt_window *win);
 void switcher_config ( GtkWidget *, GtkWidget *, gint, gboolean, gboolean);
 

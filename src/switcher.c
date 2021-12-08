@@ -99,6 +99,24 @@ void switcher_window_init ( struct wt_window *win)
   }
 }
 
+void switcher_set_label ( struct wt_window *win, gchar *title )
+{
+  GList *glist, *iter;
+
+  if(!switcher || !labels)
+    return;
+
+  if(!win->switcher)
+    return;
+
+  glist = gtk_container_get_children(GTK_CONTAINER(win->switcher));
+
+  for(iter = glist; iter; iter = g_list_next(iter))
+    if(GTK_IS_LABEL(iter->data))
+      gtk_label_set_text(GTK_LABEL(iter->data), title);
+  g_list_free(glist);
+}
+
 void switcher_update ( void )
 {
   GList *item;

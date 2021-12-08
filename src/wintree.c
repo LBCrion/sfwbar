@@ -17,7 +17,6 @@ struct wt_window *wintree_window_init ( void )
   struct wt_window *w;
   w = g_malloc(sizeof(struct wt_window));
   w->button = NULL;
-  w->label = NULL;
   w->switcher = NULL;
   w->title = NULL;
   w->appid = NULL;

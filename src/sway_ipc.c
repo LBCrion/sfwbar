@@ -180,6 +180,7 @@ void sway_window_title ( struct json_object *container )
   {
     str_assign(&(win->title),title);
     taskbar_set_label(win,title);
+    switcher_set_label(win,title);
   }
 
   g_free(title);

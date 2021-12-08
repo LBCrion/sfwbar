@@ -35,6 +35,8 @@ static void toplevel_handle_title(void *data, wlr_fth *tl, const gchar *title)
   if(!win)
     return;
   str_assign(&(win->title), (gchar *)title);
+  taskbar_set_label(win,win->title);
+  switcher_set_label(win,win->title);
   taskbar_invalidate();
   switcher_invalidate();
 }
@@ -57,6 +59,7 @@ static void toplevel_handle_done(void *data, wlr_fth *tl)
   if(win->button!=NULL)
   {
     taskbar_set_label(win,win->title);
+    switcher_set_label(win,win->title);
     return;
   }
   wintree_window_append(win);
