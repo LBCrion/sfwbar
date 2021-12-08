@@ -11,6 +11,17 @@
 
 static GList *wt_list;
 static gpointer wt_focus;
+static gchar *wt_active;
+
+void wintree_set_active ( gchar *title )
+{
+  str_assign(&wt_active,title);
+}
+
+gchar *wintree_get_active ( void )
+{
+  return wt_active;
+}
 
 struct wt_window *wintree_window_init ( void )
 {

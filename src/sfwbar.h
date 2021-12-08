@@ -90,6 +90,8 @@ struct wt_window *wintree_from_pid ( gint64 pid );
 void wintree_window_append ( struct wt_window *win );
 void wintree_window_delete ( gpointer id );
 void wintree_set_focus ( gpointer id );
+void wintree_set_active ( gchar *title );
+gchar *wintree_get_active ( void );
 gboolean wintree_is_focused ( gpointer id );
 GList *wintree_get_list ( void );
 
@@ -188,7 +190,8 @@ enum {
   G_TOKEN_EXTRACT = G_TOKEN_LAST + 3,
   G_TOKEN_DISK    = G_TOKEN_LAST + 4,
   G_TOKEN_VAL     = G_TOKEN_LAST + 5,
-  G_TOKEN_STRW    = G_TOKEN_LAST + 6
+  G_TOKEN_STRW    = G_TOKEN_LAST + 6,
+  G_TOKEN_ACTIVE  = G_TOKEN_LAST + 7
 };
 
 #endif

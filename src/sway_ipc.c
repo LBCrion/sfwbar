@@ -155,6 +155,7 @@ void sway_window_new ( struct json_object *container )
   win->title = json_string_by_name(container,"name");
   if (win->title == NULL )
     win->title = g_strdup(win->appid);
+  wintree_set_active(win->title);
 
   if(json_bool_by_name(container,"focused",FALSE) == TRUE)
     wintree_set_focus(win->uid);
@@ -181,6 +182,7 @@ void sway_window_title ( struct json_object *container )
     str_assign(&(win->title),title);
     taskbar_set_label(win,title);
     switcher_set_label(win,title);
+    wintree_set_active(title);
   }
 
   g_free(title);
@@ -194,8 +196,13 @@ void sway_window_close (struct json_object *container)
 
 void sway_set_focus ( struct json_object *container)
 {
-  wintree_set_focus(GINT_TO_POINTER(
-        json_int_by_name(container,"id",G_MININT64)));
+  struct wt_window *win;
+  gint64 wid;
+
+  wid = json_int_by_name(container,"id",G_MININT64);
+  wintree_set_focus(GINT_TO_POINTER(wid));
+  win = wintree_from_id(GINT_TO_POINTER(wid));
+  wintree_set_active(win->title);
 }
 
 gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )

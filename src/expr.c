@@ -130,7 +130,7 @@ gdouble expr_parse_disk ( GScanner *scanner )
 }
 
 /* Extract substring using regex */
-char *expr_parse_extract( GScanner *scanner )
+gchar *expr_parse_extract( GScanner *scanner )
   {
   gchar *str, *pattern, *sres=NULL;
   GRegex *regex;
@@ -161,8 +161,16 @@ char *expr_parse_extract( GScanner *scanner )
   return sres;
   }
 
+gchar *expr_parse_active ( GScanner *scanner )
+{
+  g_scanner_get_next_token( scanner );
+  parser_expect_symbol(scanner,'(',"ActiveWin()");
+  parser_expect_symbol(scanner,')',"ActiveWin()");
+  return g_strdup(wintree_get_active());
+}
+
 /* Get current time string */
-char *expr_parse_time ( GScanner *scanner )
+gchar *expr_parse_time ( GScanner *scanner )
 {
   GTimeZone *tz;
   GDateTime *time;
@@ -230,6 +238,10 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
       n2 = expr_parse_num(scanner);
       parser_expect_symbol(scanner,')',"Str(Number,Number)");
       str = expr_dtostr(n1,n2);
+      break;
+    case G_TOKEN_ACTIVE:
+      str = expr_parse_active ( scanner );
+      *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       break;
     case G_TOKEN_MIDW:
       str = expr_parse_str_mid( scanner );
@@ -385,7 +397,8 @@ gchar *expr_parse( gchar *expr, guint *vcount )
   g_scanner_scope_add_symbol(scanner,0, "Str", (gpointer)G_TOKEN_STRW);
   g_scanner_scope_add_symbol(scanner,0, "Val", (gpointer)G_TOKEN_VAL );
   g_scanner_scope_add_symbol(scanner,0, "Time", (gpointer)G_TOKEN_TIME );
-  g_scanner_scope_add_symbol(scanner,0, "Df", (gpointer)G_TOKEN_DISK );
+  g_scanner_scope_add_symbol(scanner,0, "Disk", (gpointer)G_TOKEN_DISK );
+  g_scanner_scope_add_symbol(scanner,0, "ActiveWin", (gpointer)G_TOKEN_ACTIVE );
   g_scanner_set_scope(scanner,0);
 
   scanner->input_name = expr;

@@ -35,6 +35,7 @@ static void toplevel_handle_title(void *data, wlr_fth *tl, const gchar *title)
   if(!win)
     return;
   str_assign(&(win->title), (gchar *)title);
+  wintree_set_active(win->title);
   taskbar_set_label(win,win->title);
   switcher_set_label(win,win->title);
   taskbar_invalidate();
@@ -56,6 +57,7 @@ static void toplevel_handle_done(void *data, wlr_fth *tl)
     return;
   if(win->title == NULL)
     str_assign(&(win->title), win->appid);
+  wintree_set_active(win->title);
   if(win->button!=NULL)
   {
     taskbar_set_label(win,win->title);
@@ -80,6 +82,7 @@ static void toplevel_handle_state(void *data, wlr_fth *tl,
       win = wintree_from_id(tl);
       if(win)
       {
+        wintree_set_active(win->title);
         wintree_set_focus(win->uid);
         taskbar_invalidate();
         switcher_invalidate();
