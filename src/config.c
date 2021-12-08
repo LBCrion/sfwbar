@@ -496,7 +496,7 @@ gchar *config_get_value ( GScanner *scanner )
       case G_TOKEN_TIME:
       case G_TOKEN_MIDW:
       case G_TOKEN_EXTRACT:
-      case G_TOKEN_DF:
+      case G_TOKEN_DISK:
       case G_TOKEN_VAL:
       case G_TOKEN_STRW:
         temp = value;

@@ -12,7 +12,7 @@
 #include <glib.h>
 #include "sfwbar.h"
 
-gchar *expr_token[] = {"Time","Mid","Extract","Df","Val","Str"};
+gchar *expr_token[] = {"Time","Mid","Extract","Disk","Val","Str"};
 
 gdouble expr_parse_num ( GScanner *scanner );
 gchar *expr_parse_str ( GScanner *scanner );
@@ -98,24 +98,35 @@ char *expr_parse_str_mid ( GScanner *scanner )
   }
 
 /* generate disk space utilization for a device */
-char *expr_parse_df ( GScanner *scanner )
+gdouble expr_parse_disk ( GScanner *scanner )
 {
-  gchar *fpath;
+  gchar *fpath,*param;
   struct statvfs fs;
+  gdouble result = 0;
 
   g_scanner_get_next_token( scanner );
-  parser_expect_symbol(scanner,'(',"Df()");
+  parser_expect_symbol(scanner,'(',"Disk()");
   fpath = expr_parse_str(scanner);
-  parser_expect_symbol(scanner,')',"Df()");
+  parser_expect_symbol(scanner,',',"Disk()");
+  param = expr_parse_str(scanner);
+  parser_expect_symbol(scanner,')',"Disk()");
 
-  if(statvfs(fpath,&fs)!=0)
-    return g_strdup("");
+  if(statvfs(fpath,&fs)==0 || !param)
+  {
+    if(!g_ascii_strcasecmp(param,"total"))
+      result = fs.f_blocks * fs.f_bsize;
+    if(!g_ascii_strcasecmp(param,"free"))
+      result = fs.f_bavail * fs.f_bsize;
+    if(!g_ascii_strcasecmp(param,"%free"))
+      result = (1.0 - (gdouble)fs.f_bavail / (gdouble)fs.f_blocks)*100;
+    if(!g_ascii_strcasecmp(param,"%used"))
+      result = ((gdouble)fs.f_bavail / (gdouble)fs.f_blocks)*100;
+  }
 
   g_free(fpath);
+  g_free(param);
 
-  return g_strdup_printf("%ld %ld %ld %02Lf%%",fs.f_blocks*fs.f_bsize,
-      fs.f_bavail*fs.f_bsize, (fs.f_blocks-fs.f_bavail)*fs.f_bsize,
-      (1.0-(long double)fs.f_bavail/(long double)fs.f_blocks)*100);
+  return result;
 }
 
 /* Extract substring using regex */
@@ -223,10 +234,6 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
     case G_TOKEN_MIDW:
       str = expr_parse_str_mid( scanner );
       break;
-    case G_TOKEN_DF:
-      str = expr_parse_df ( scanner );
-      *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
-      break;
     case G_TOKEN_EXTRACT:
       str = expr_parse_extract ( scanner );
       break;
@@ -289,6 +296,10 @@ gdouble expr_parse_num_l2 ( GScanner *scanner )
       g_scanner_get_next_token ( scanner );
       val = expr_parse_num ( scanner );
       parser_expect_symbol(scanner, ')',"(Number)");
+      break;
+    case G_TOKEN_DISK:
+      val = expr_parse_disk ( scanner );
+      *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       break;
     case G_TOKEN_VAL:
       g_scanner_get_next_token ( scanner );
@@ -374,7 +385,7 @@ gchar *expr_parse( gchar *expr, guint *vcount )
   g_scanner_scope_add_symbol(scanner,0, "Str", (gpointer)G_TOKEN_STRW);
   g_scanner_scope_add_symbol(scanner,0, "Val", (gpointer)G_TOKEN_VAL );
   g_scanner_scope_add_symbol(scanner,0, "Time", (gpointer)G_TOKEN_TIME );
-  g_scanner_scope_add_symbol(scanner,0, "Df", (gpointer)G_TOKEN_DF );
+  g_scanner_scope_add_symbol(scanner,0, "Df", (gpointer)G_TOKEN_DISK );
   g_scanner_set_scope(scanner,0);
 
   scanner->input_name = expr;
