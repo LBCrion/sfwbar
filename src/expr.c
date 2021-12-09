@@ -365,6 +365,7 @@ gchar *expr_parse( gchar *expr, guint *vcount )
 {
   GScanner *scanner;
   gchar *result;
+  guint vholder;
 
   scanner = g_scanner_new(NULL);
   scanner->config->scan_octal = 0;
@@ -388,8 +389,12 @@ gchar *expr_parse( gchar *expr, guint *vcount )
   g_scanner_set_scope(scanner,0);
 
   scanner->input_name = expr;
+
+  if(!vcount)
+    vcount = holder;
   scanner->user_data = vcount;
   *vcount=0;
+  `
   g_scanner_input_text(scanner, expr, strlen(expr));
 
   g_scanner_peek_next_token(scanner);
