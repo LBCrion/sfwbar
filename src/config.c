@@ -584,7 +584,7 @@ void config_widget_props ( GScanner *scanner, struct layout_widget *lw )
   scanner->max_parse_errors = FALSE;
 
   if( g_scanner_peek_next_token( scanner ) != '{')
-    return layout_widget_config(lw);
+    return; // layout_widget_config(lw);
   else
     g_scanner_get_next_token(scanner);
 
@@ -658,7 +658,7 @@ void config_widget_props ( GScanner *scanner, struct layout_widget *lw )
   if((gint)g_scanner_peek_next_token(scanner) == '}')
     g_scanner_get_next_token(scanner);
 
-  return layout_widget_config(lw);
+  return; //layout_widget_config(lw);
 }
 
 struct layout_widget *config_include ( GScanner *scanner )
@@ -755,20 +755,12 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
       continue;
     }
     config_widget_props( scanner, lw);
-    if( (lw->rect.x < 1) || (lw->rect.y < 1 ) )
-      gtk_grid_attach_next_to(GTK_GRID(parent),lw->lobject,sibling,dir,1,1);
-    else
-      gtk_grid_attach(GTK_GRID(parent),lw->lobject,
-          lw->rect.x,lw->rect.y,lw->rect.w,lw->rect.h);
-    sibling = lw->lobject;
+    sibling = layout_widget_config ( lw, parent, sibling );
 
     if(lw->wtype == G_TOKEN_GRID)
       config_widgets(scanner,lw->widget);
 
-    if(lw->value)
-      layout_widget_attach(lw);
-    else
-      layout_widget_free(lw);
+    layout_widget_attach(lw);
   }
   if((gint)scanner->next_token == '}')
     g_scanner_get_next_token(scanner);
@@ -785,6 +777,7 @@ struct layout_widget *config_layout ( GScanner *scanner )
   gtk_widget_set_name(lw->widget,"layout");
 
   config_widget_props(scanner, lw);
+  layout_widget_config(lw,NULL,NULL);
   config_widgets(scanner, lw->widget);
 
   return lw;

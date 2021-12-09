@@ -207,7 +207,7 @@ static void activate (GtkApplication* app, gpointer data )
   gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_BOTTOM,!(dir==GTK_POS_TOP));
   gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_TOP,!(dir==GTK_POS_BOTTOM));
 
-  if((lw != NULL)&&(lw->lobject!=NULL))
+  if((lw != NULL)&&(lw->widget!=NULL))
   {
     gtk_container_add(GTK_CONTAINER(bar_window), lw->widget);
     layout_widget_free(lw);

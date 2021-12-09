@@ -55,7 +55,6 @@ struct layout_widget {
   gchar *eval;
   gint64 interval;
   gint64 next_poll;
-  gboolean invalid;
   gboolean ready;
   gint wtype;
   gint dir;
@@ -116,11 +115,11 @@ struct layout_widget *config_parse ( gchar * );
 
 struct layout_widget *layout_widget_new ( void );
 gpointer layout_scanner_thread ( gpointer data );
-void layout_widget_config ( struct layout_widget *lw );
+GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
+    GtkWidget *sibling );
 void layout_widget_attach ( struct layout_widget *lw );
 void layout_widget_free ( struct layout_widget *lw );
 void layout_widgets_update ( GMainContext * );
-void layout_widgets_draw ( void );
 void widget_set_css ( GtkWidget * );
 
 GtkWidget *flow_grid_new( gboolean limit );

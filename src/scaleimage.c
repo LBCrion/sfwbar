@@ -230,6 +230,9 @@ int scale_image_update ( GtkWidget *widget )
   else
     size = w;
 
+  if(size<1)
+    return -1;
+
   if(priv->ftype == SI_ICON)
   {
     theme = gtk_icon_theme_get_default();
@@ -249,7 +252,6 @@ int scale_image_update ( GtkWidget *widget )
 
   if(buf==NULL)
     return -1;
-
 
   cs = gdk_cairo_surface_create_from_pixbuf(buf,0,
       gtk_widget_get_window(widget));
