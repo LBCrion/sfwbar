@@ -59,7 +59,6 @@ char *expr_parse_str_mid ( GScanner *scanner )
   gchar *str, *result;
   gint len, c1, c2;
 
-  g_scanner_get_next_token( scanner );
   parser_expect_symbol(scanner,'(',"Mid(String,Number,Number)");
   str = expr_parse_str(scanner);
   parser_expect_symbol(scanner,',',"Mid(String,Number,Number)");
@@ -104,7 +103,6 @@ gdouble expr_parse_disk ( GScanner *scanner )
   struct statvfs fs;
   gdouble result = 0;
 
-  g_scanner_get_next_token( scanner );
   parser_expect_symbol(scanner,'(',"Disk()");
   fpath = expr_parse_str(scanner);
   parser_expect_symbol(scanner,',',"Disk()");
@@ -114,13 +112,15 @@ gdouble expr_parse_disk ( GScanner *scanner )
   if(statvfs(fpath,&fs)==0 || !param)
   {
     if(!g_ascii_strcasecmp(param,"total"))
-      result = fs.f_blocks * fs.f_bsize;
-    if(!g_ascii_strcasecmp(param,"free"))
+      result = fs.f_blocks * fs.f_frsize;
+    if(!g_ascii_strcasecmp(param,"avail"))
       result = fs.f_bavail * fs.f_bsize;
-    if(!g_ascii_strcasecmp(param,"%free"))
-      result = (1.0 - (gdouble)fs.f_bavail / (gdouble)fs.f_blocks)*100;
+    if(!g_ascii_strcasecmp(param,"free"))
+      result = fs.f_bfree * fs.f_bsize;
+    if(!g_ascii_strcasecmp(param,"%avail"))
+      result = ((gdouble)(fs.f_bfree*fs.f_bsize) / (gdouble)(fs.f_blocks*fs.f_frsize))*100;
     if(!g_ascii_strcasecmp(param,"%used"))
-      result = ((gdouble)fs.f_bavail / (gdouble)fs.f_blocks)*100;
+      result = (1.0 - (gdouble)(fs.f_bfree*fs.f_bsize) / (gdouble)(fs.f_blocks*fs.f_frsize))*100;
   }
 
   g_free(fpath);
@@ -136,7 +136,6 @@ gchar *expr_parse_extract( GScanner *scanner )
   GRegex *regex;
   GMatchInfo *match;
 
-  g_scanner_get_next_token( scanner );
   parser_expect_symbol(scanner,'(',"Extract(String,String)");
   str = expr_parse_str(scanner);
   parser_expect_symbol(scanner,',',"Extract(String,String)");
@@ -163,7 +162,6 @@ gchar *expr_parse_extract( GScanner *scanner )
 
 gchar *expr_parse_active ( GScanner *scanner )
 {
-  g_scanner_get_next_token( scanner );
   parser_expect_symbol(scanner,'(',"ActiveWin()");
   parser_expect_symbol(scanner,')',"ActiveWin()");
   return g_strdup(wintree_get_active());
@@ -176,7 +174,6 @@ gchar *expr_parse_time ( GScanner *scanner )
   GDateTime *time;
   gchar *str, *tzstr, *format;
 
-  g_scanner_get_next_token( scanner );
   parser_expect_symbol(scanner,'(',"Time([String][,String])");
 
   if(g_scanner_peek_next_token(scanner)==')')
@@ -224,14 +221,12 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
   gchar *str;
   gdouble n1, n2;
 
-  switch((gint)g_scanner_peek_next_token(scanner))
+  switch((gint)g_scanner_get_next_token(scanner))
   {
     case G_TOKEN_STRING:
-      g_scanner_get_next_token( scanner );
       str = strdup(scanner->value.v_string);
       break;
     case G_TOKEN_STRW:
-      g_scanner_get_next_token( scanner );
       parser_expect_symbol(scanner,'(',"Str(Number,Number)");
       n1 = expr_parse_num(scanner);
       parser_expect_symbol(scanner,',',"Str(Number,Number)");
@@ -254,12 +249,10 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
       *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       break;
     case G_TOKEN_IDENTIFIER:
-      g_scanner_get_next_token( scanner );
       str = string_from_name(scanner->value.v_identifier);
       *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       break;
     default:
-      g_scanner_get_next_token ( scanner );
       g_scanner_warn(scanner,
           "Unexpected token at position %u, expected a string",
           g_scanner_cur_position(scanner));
@@ -290,22 +283,18 @@ gdouble expr_parse_num_l2 ( GScanner *scanner )
   gdouble val;
   gchar *str;
 
-  switch((gint)g_scanner_peek_next_token(scanner) )
+  switch((gint)g_scanner_get_next_token(scanner) )
   {
     case '+':
-      g_scanner_get_next_token(scanner);
       val = expr_parse_num_l2 ( scanner );
       break;
     case '-':
-      g_scanner_get_next_token(scanner);
       val = -expr_parse_num_l2 ( scanner );
       break;
     case G_TOKEN_FLOAT: 
-      g_scanner_get_next_token ( scanner );
       val = scanner->value.v_float;
       break;
     case '(':
-      g_scanner_get_next_token ( scanner );
       val = expr_parse_num ( scanner );
       parser_expect_symbol(scanner, ')',"(Number)");
       break;
@@ -314,7 +303,6 @@ gdouble expr_parse_num_l2 ( GScanner *scanner )
       *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       break;
     case G_TOKEN_VAL:
-      g_scanner_get_next_token ( scanner );
       parser_expect_symbol(scanner,'(',"Val(String)");
       str = expr_parse_str(scanner);
       val = strtod(str,NULL);
@@ -322,12 +310,10 @@ gdouble expr_parse_num_l2 ( GScanner *scanner )
       parser_expect_symbol(scanner,')',"Val(String)");
       break;
     case G_TOKEN_IDENTIFIER:
-      g_scanner_get_next_token( scanner );
       val = numeric_from_name( scanner->value.v_identifier );
       *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       break;
     default:
-      g_scanner_get_next_token ( scanner );
       g_scanner_warn(scanner,
           "Unexpected token at position %u, expected a number",
           g_scanner_cur_position(scanner));
@@ -406,10 +392,12 @@ gchar *expr_parse( gchar *expr, guint *vcount )
   *vcount=0;
   g_scanner_input_text(scanner, expr, strlen(expr));
 
-  if((g_scanner_peek_next_token(scanner)==G_TOKEN_FLOAT)||
-      (g_scanner_peek_next_token(scanner)==(GTokenType)G_TOKEN_VAL)||
-      (g_scanner_peek_next_token(scanner)==(GTokenType)G_TOKEN_LEFT_PAREN)||
-      ((g_scanner_peek_next_token(scanner)==G_TOKEN_IDENTIFIER)&&
+  g_scanner_peek_next_token(scanner);
+  if((scanner->next_token == G_TOKEN_FLOAT)||
+      (scanner->next_token == (GTokenType)G_TOKEN_DISK)||
+      (scanner->next_token == (GTokenType)G_TOKEN_VAL)||
+      (scanner->next_token == (GTokenType)G_TOKEN_LEFT_PAREN)||
+      ((scanner->next_token == G_TOKEN_IDENTIFIER)&&
        (*(scanner->next_value.v_identifier)!='$')))
     result = expr_dtostr(expr_parse_num(scanner),-1);
   else
