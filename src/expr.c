@@ -391,10 +391,10 @@ gchar *expr_parse( gchar *expr, guint *vcount )
   scanner->input_name = expr;
 
   if(!vcount)
-    vcount = holder;
+    vcount = &vholder;
   scanner->user_data = vcount;
   *vcount=0;
-  `
+  
   g_scanner_input_text(scanner, expr, strlen(expr));
 
   g_scanner_peek_next_token(scanner);
