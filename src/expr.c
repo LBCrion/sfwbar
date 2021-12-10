@@ -81,11 +81,11 @@ char *expr_parse_str_mid ( GScanner *scanner )
   if(c2>=len)
     c2=len-1;
   if(c1>c2)
-    {
+  {
     c2^=c1;	/* swap the ofsets */
     c1^=c2;
     c2^=c1;
-    }
+  }
 
   result = strndup( str+c1*sizeof(gchar), (c2-c1+1)*sizeof(gchar));
 
@@ -129,7 +129,7 @@ gdouble expr_parse_disk ( GScanner *scanner )
 
 /* Extract substring using regex */
 gchar *expr_parse_extract( GScanner *scanner )
-  {
+{
   gchar *str, *pattern, *sres=NULL;
   GRegex *regex;
   GMatchInfo *match;
@@ -156,7 +156,7 @@ gchar *expr_parse_extract( GScanner *scanner )
   g_free(pattern);
 
   return sres;
-  }
+}
 
 gchar *expr_parse_active ( GScanner *scanner )
 {
@@ -212,7 +212,7 @@ gchar *expr_parse_time ( GScanner *scanner )
   g_date_time_unref(time);
 
   return str;
-  }
+}
 
 gchar *expr_parse_str_l1 ( GScanner *scanner )
 {
