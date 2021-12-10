@@ -4,8 +4,6 @@
 #include <gtk-layer-shell.h>
 #include <sys/stat.h>
 
-extern gchar *confname;
-
 void config_log_error ( GScanner *scanner, gchar *message, gboolean error )
 {
   if(error)
@@ -478,10 +476,11 @@ gchar *config_get_value ( GScanner *scanner )
   }
   g_scanner_get_next_token(scanner);
   value = g_strdup("");;
-  while(((gint)g_scanner_peek_next_token(scanner)<=G_TOKEN_SCANNER)&&
-      (g_scanner_peek_next_token(scanner)!='}')&&
-      (g_scanner_peek_next_token(scanner)!=';')&&
-      (g_scanner_peek_next_token(scanner)!=G_TOKEN_EOF))
+  g_scanner_peek_next_token(scanner);
+  while(((gint)scanner->next_token<=G_TOKEN_SCANNER)&&
+      (scanner->next_token!='}')&&
+      (scanner->next_token!=';')&&
+      (scanner->next_token!=G_TOKEN_EOF))
   {
     switch((gint)g_scanner_get_next_token(scanner))
     {
@@ -584,14 +583,15 @@ void config_widget_props ( GScanner *scanner, struct layout_widget *lw )
   scanner->max_parse_errors = FALSE;
 
   if( g_scanner_peek_next_token( scanner ) != '{')
-    return; // layout_widget_config(lw);
+    return;
   else
     g_scanner_get_next_token(scanner);
 
-  while (!(( (gint)g_scanner_peek_next_token ( scanner ) >= G_TOKEN_GRID )&&
-      ( (gint)g_scanner_peek_next_token ( scanner ) <= G_TOKEN_TRAY ))&&
-      ( (gint)g_scanner_peek_next_token ( scanner ) != '}' )&&
-      ( (gint)g_scanner_peek_next_token ( scanner ) != G_TOKEN_EOF ))
+  g_scanner_peek_next_token( scanner );
+  while (!(( (gint)scanner->next_token >= G_TOKEN_GRID )&&
+      ( (gint)scanner->next_token <= G_TOKEN_TRAY ))&&
+      ( (gint)scanner->next_token != '}' )&&
+      ( (gint)scanner->next_token != G_TOKEN_EOF ))
   {
     switch ((gint)g_scanner_get_next_token ( scanner ) )
     {
@@ -603,19 +603,15 @@ void config_widget_props ( GScanner *scanner, struct layout_widget *lw )
         break;
       case G_TOKEN_INTERVAL:
         if(GTK_IS_GRID(lw->widget))
-        {
           g_scanner_error(scanner,"this widget has no property 'interval'");
-          break;
-        }
-        lw->interval = 1000*config_assign_number(scanner, "interval");
+        else
+          lw->interval = 1000*config_assign_number(scanner, "interval");
         break;
       case G_TOKEN_VALUE:
         if(GTK_IS_GRID(lw->widget))
-        {
           g_scanner_error(scanner,"this widget has no property 'value'");
-          break;
-        }
-        lw->value = config_get_value(scanner);
+        else
+          lw->value = config_get_value(scanner);
         break;
       case G_TOKEN_PINS:
         config_get_pins( scanner, lw );
@@ -657,8 +653,6 @@ void config_widget_props ( GScanner *scanner, struct layout_widget *lw )
     taskbar_set_visual(icons,labels);
   if((gint)g_scanner_peek_next_token(scanner) == '}')
     g_scanner_get_next_token(scanner);
-
-  return; //layout_widget_config(lw);
 }
 
 struct layout_widget *config_include ( GScanner *scanner )
