@@ -564,7 +564,8 @@ void config_widget_props ( GScanner *scanner, struct layout_widget *lw )
 
   g_scanner_peek_next_token( scanner );
   while (!(( (gint)scanner->next_token >= G_TOKEN_GRID )&&
-      ( (gint)scanner->next_token <= G_TOKEN_TRAY ))&&
+      ( (gint)scanner->next_token <= G_TOKEN_TRAY )&&
+      ( lw->wtype == G_TOKEN_GRID) )&&
       ( (gint)scanner->next_token != '}' )&&
       ( (gint)scanner->next_token != G_TOKEN_EOF ))
   {
@@ -624,7 +625,8 @@ void config_widget_props ( GScanner *scanner, struct layout_widget *lw )
   }
   if(lw->wtype == G_TOKEN_TASKBAR)
     taskbar_set_visual(icons,labels);
-  if((gint)g_scanner_peek_next_token(scanner) == '}')
+  if((gint)g_scanner_peek_next_token(scanner) == '}' &&
+      lw->wtype != G_TOKEN_GRID )
     g_scanner_get_next_token(scanner);
 }
 
@@ -740,6 +742,7 @@ struct layout_widget *config_layout ( GScanner *scanner )
   scanner->max_parse_errors=FALSE;
 
   lw = layout_widget_new();
+  lw->wtype = G_TOKEN_GRID;
   lw->widget = gtk_grid_new();
   gtk_widget_set_name(lw->widget,"layout");
 
