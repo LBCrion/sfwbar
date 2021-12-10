@@ -202,7 +202,8 @@ void sway_set_focus ( struct json_object *container)
   wid = json_int_by_name(container,"id",G_MININT64);
   wintree_set_focus(GINT_TO_POINTER(wid));
   win = wintree_from_id(GINT_TO_POINTER(wid));
-  wintree_set_active(win->title);
+  if(win)
+    wintree_set_active(win->title);
 }
 
 gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
