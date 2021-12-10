@@ -47,32 +47,6 @@ gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr)
   return result;
 }
 
-void config_boolean_setbit ( GScanner *scanner, gint *dest, gint mask,
-    gchar *expr )
-{
-  scanner->max_parse_errors = FALSE;
-  if(g_scanner_peek_next_token(scanner) != '=')
-    return g_scanner_error(scanner, "Missing '=' in %s = <boolean>",expr);
-  g_scanner_get_next_token(scanner);
-
-  switch((gint)g_scanner_get_next_token(scanner))
-  {
-    case G_TOKEN_TRUE:
-      *dest |= mask;
-      break;
-    case G_TOKEN_FALSE:
-      *dest &= ~mask;
-      break;
-    default:
-      g_scanner_error(scanner, "Missing <boolean> in %s = <boolean>",
-          expr);
-      break;
-  }
-
-  if(g_scanner_peek_next_token(scanner) == ';')
-    g_scanner_get_next_token(scanner);
-}
-
 gchar *config_assign_string ( GScanner *scanner, gchar *expr )
 {
   gchar *result;
