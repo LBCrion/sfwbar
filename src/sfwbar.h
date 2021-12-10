@@ -51,7 +51,6 @@ struct layout_widget {
   gchar *css;
   gchar *value;
   gchar *action;
-  gchar *icon;
   gchar *eval;
   gint64 interval;
   gint64 next_poll;

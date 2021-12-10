@@ -53,7 +53,6 @@ struct layout_widget *layout_widget_new ( void )
   lw->css = NULL;
   lw->value = NULL;
   lw->action = NULL;
-  lw->icon = NULL;
   lw->eval = NULL;
   lw->wtype = 0;
   lw->interval = 0;
@@ -161,7 +160,6 @@ void layout_widget_free ( struct layout_widget *lw )
   g_free(lw->css);
   g_free(lw->value);
   g_free(lw->action);
-  g_free(lw->icon);
   g_free(lw->eval);
   g_free(lw);
 }

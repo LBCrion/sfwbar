@@ -6,9 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/stat.h>
 #include <sys/statvfs.h>
-#include <glob.h>
 #include <glib.h>
 #include "sfwbar.h"
 

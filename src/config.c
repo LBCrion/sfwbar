@@ -487,6 +487,7 @@ gchar *config_get_value ( GScanner *scanner )
         g_free(temp);
         break;
     }
+    g_scanner_peek_next_token(scanner);
   }
   if(g_scanner_peek_next_token(scanner) == ';')
     g_scanner_get_next_token(scanner);
@@ -613,15 +614,13 @@ void config_widget_props ( GScanner *scanner, struct layout_widget *lw )
       case G_TOKEN_LABELS:
         labels = config_assign_boolean(scanner,FALSE,"labels");
         break;
-      case G_TOKEN_ICON:
-        lw->icon = config_assign_string(scanner,"action");
-        break;
       case G_TOKEN_LOC:
         lw->rect = config_get_loc(scanner);
         break;
       default:
         g_scanner_error(scanner, "Unexpected token in widget definition");
     }
+    g_scanner_peek_next_token( scanner );
   }
   if(lw->wtype == G_TOKEN_TASKBAR)
     taskbar_set_visual(icons,labels);
@@ -979,7 +978,6 @@ struct layout_widget *config_parse ( gchar *file )
   g_scanner_scope_add_symbol(scanner,0, "Display", (gpointer)G_TOKEN_DISPLAY );
   g_scanner_scope_add_symbol(scanner,0, "Icons", (gpointer)G_TOKEN_ICONS );
   g_scanner_scope_add_symbol(scanner,0, "Labels", (gpointer)G_TOKEN_LABELS );
-  g_scanner_scope_add_symbol(scanner,0, "Icon", (gpointer)G_TOKEN_ICON );
   g_scanner_scope_add_symbol(scanner,0, "Loc", (gpointer)G_TOKEN_LOC );
   g_scanner_scope_add_symbol(scanner,0, "XStep", (gpointer)G_TOKEN_XSTEP );
   g_scanner_scope_add_symbol(scanner,0, "YStep", (gpointer)G_TOKEN_YSTEP );
