@@ -749,10 +749,8 @@ struct layout_widget *config_layout ( GScanner *scanner )
 
   extra = config_widget_props(scanner, lw);
   layout_widget_config(lw,NULL,NULL);
-  if( lw && lw->widget && extra)
+  if( lw->widget && extra)
     config_widgets(scanner, lw->widget);
-//  if( lw )
-//    layout_widget_free(lw);
 
   return lw;
 }
