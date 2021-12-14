@@ -58,7 +58,6 @@ struct layout_widget *layout_widget_new ( void )
   lw->interval = 0;
   lw->next_poll = 0;
   lw->dir = GTK_POS_RIGHT;
-  lw->ready = FALSE;
   lw->rect.x = 0;
   lw->rect.y = 0;
   lw->rect.w = 1;
@@ -168,6 +167,7 @@ gboolean layout_widget_draw ( struct layout_widget *lw )
 {
   if(GTK_IS_LABEL(GTK_WIDGET(lw->widget)))
     gtk_label_set_markup(GTK_LABEL(lw->widget),lw->eval);
+
   if(GTK_IS_PROGRESS_BAR(lw->widget))
     if(!g_strrstr(lw->eval,"nan"))
       gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(lw->widget),
@@ -184,7 +184,6 @@ gboolean layout_widget_draw ( struct layout_widget *lw )
 
 void layout_widgets_update ( GMainContext *gmc )
 {
-  GSource *src;
   GList *iter;
   gint64 ctime;
   struct layout_widget *lw;
@@ -207,9 +206,8 @@ void layout_widgets_update ( GMainContext *gmc )
       {
         g_free(lw->eval);
         lw->eval = eval;
-        src = g_idle_source_new();
-        g_source_set_callback(src,(GSourceFunc)layout_widget_draw,lw,NULL);
-        g_source_attach(src,gmc);
+
+        g_main_context_invoke(gmc,(GSourceFunc)layout_widget_draw,lw);
       }
       else
         g_free(eval);

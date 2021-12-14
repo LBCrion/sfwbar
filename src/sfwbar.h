@@ -54,7 +54,6 @@ struct layout_widget {
   gchar *eval;
   gint64 interval;
   gint64 next_poll;
-  gboolean ready;
   gint wtype;
   gint dir;
   struct rect rect;
