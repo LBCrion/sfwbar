@@ -276,7 +276,10 @@ void sway_traverse_tree ( struct json_object *obj)
     for(i=0;i<json_object_array_length(arr);i++)
     {
       iter = json_object_array_get_idx(arr,i);
-      sway_traverse_tree(iter);
+      if( json_int_by_name(iter,"id",G_MININT64) == G_MININT64 )
+        sway_window_new (iter);
+      else
+        sway_traverse_tree(iter);
     }
 }
 
