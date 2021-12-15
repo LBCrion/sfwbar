@@ -9,9 +9,12 @@
 #include "sfwbar.h"
 
 static GtkWindow *bar_window;
+gchar *confname;
+gchar *sockname;
+static gchar *cssname;
+static gchar *monitor;
+static gboolean debug = FALSE;
 
-gchar *confname=NULL, *cssname=NULL, *sockname=NULL, *monitor=NULL;
-gboolean debug = FALSE;
 static GOptionEntry entries[] = {
   {"config",'f',0,G_OPTION_ARG_FILENAME,&confname,"Specify config file"},
   {"css",'c',0,G_OPTION_ARG_FILENAME,&cssname,"Specify css file"},
@@ -30,9 +33,7 @@ void parse_command_line ( gint argc, gchar **argv)
   g_option_context_parse(optc,&argc,&argv,NULL);
 }
 
-void monitor_change_cb ( );
-
-void set_monitor ( gboolean connect )
+void set_monitor ( void )
 {
   GdkDisplay *gdisp;
   GdkDisplayManager *gdman;
@@ -70,20 +71,12 @@ void set_monitor ( gboolean connect )
     exit(0);
 
   gtk_layer_set_monitor(bar_window, match);
-
-  if(connect)
-  {
-    gdisp = gdk_screen_get_display(gtk_window_get_screen(bar_window)),
-            gtk_widget_get_window(GTK_WIDGET(bar_window));
-    g_signal_connect(gdisp, "monitor-added",monitor_change_cb,NULL);
-    g_signal_connect(gdisp, "monitor-removed",monitor_change_cb,NULL);
-  }
 }
 
 void monitor_change_cb ( void )
 {
   gtk_widget_hide ((GtkWidget *)bar_window);
-  set_monitor(FALSE);
+  set_monitor();
   gtk_widget_show ((GtkWidget *)bar_window);
 }
 
@@ -189,6 +182,7 @@ gboolean shell_timer ( gpointer data )
 static void activate (GtkApplication* app, gpointer data )
 {
   struct layout_widget *lw;
+  GdkDisplay *gdisp;
   gint dir;
 
   bar_window = (GtkWindow *)gtk_application_window_new (app);
@@ -222,7 +216,12 @@ static void activate (GtkApplication* app, gpointer data )
     wayland_init(bar_window,FALSE);
 
   if(monitor)
-    set_monitor(TRUE);
+    set_monitor();
+
+  gdisp = gdk_screen_get_display(gtk_window_get_screen(bar_window)),
+        gtk_widget_get_window(GTK_WIDGET(bar_window));
+  g_signal_connect(gdisp, "monitor-added",monitor_change_cb,NULL);
+  g_signal_connect(gdisp, "monitor-removed",monitor_change_cb,NULL);
 
   g_thread_unref(g_thread_new("scanner",layout_scanner_thread,
         g_main_context_get_thread_default()));
