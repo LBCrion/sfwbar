@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020 Lev Babiev
+ * Copyright 2020-2021 Lev Babiev
  */
 
 #include <glib.h>
@@ -10,10 +10,12 @@
 extern gchar *confname;
 
 /* get xdg config file name, first try user xdg config directory,
- * if file doesn't exist, try /usr/share/swfbar/ */
+ * if file doesn't exist, try system xdg data dirs */
 gchar *get_xdg_config_file ( gchar *fname )
 {
   gchar *full;
+  const gchar * const *xdg_data;
+  gint i;
   if( g_file_test(fname, G_FILE_TEST_EXISTS) )
     return g_strdup(fname);
 
@@ -28,9 +30,13 @@ gchar *get_xdg_config_file ( gchar *fname )
   if( g_file_test(full, G_FILE_TEST_EXISTS) )
     return full;
   g_free(full);
-  full = g_build_filename ( "/usr/share", "sfwbar", fname, NULL );
-  if( g_file_test(full, G_FILE_TEST_EXISTS) )
-    return full;
+  xdg_data = g_get_system_data_dirs();
+  for(i=0;xdg_data[i];i++)
+  {
+    full = g_build_filename ( xdg_data[i], "sfwbar", fname, NULL );
+    if( g_file_test(full, G_FILE_TEST_EXISTS) )
+      return full;
+  }
   return NULL;
 }
 
