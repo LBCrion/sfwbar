@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020 Lev Babiev
+ * Copyright 2020-2021 Lev Babiev
  */
 
 #include "sfwbar.h"
