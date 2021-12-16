@@ -441,6 +441,7 @@ gchar *config_value_string ( gchar *dest, gchar *string )
 gchar *config_get_value ( GScanner *scanner )
 {
   gchar *value, *temp;
+  static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
 
   scanner->max_parse_errors = FALSE;
   if(g_scanner_peek_next_token(scanner)!='=')
@@ -478,7 +479,8 @@ gchar *config_get_value ( GScanner *scanner )
         break;
       case G_TOKEN_FLOAT:
         temp = value;
-        value = g_strdup_printf("%s%f",value,scanner->value.v_float);
+        value = g_strconcat(temp,g_ascii_dtostr(buf,G_ASCII_DTOSTR_BUF_SIZE,
+              scanner->value.v_float),NULL);
         g_free(temp);
         break;
       default:
