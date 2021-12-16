@@ -17,16 +17,15 @@ DESCRIPTION
 **SFWBar** is a taskbar for wayland compositors. Originally written for Sway,
 it should work with any compositor supporting layer-shell protocol. SFWBar
 assists in handling of floating windows on a wayland desktop. It provdes a
-taskbar, a pager and a task switcher, a tray (using a status notifier item
-protocol), implements a window placement policy and facilitates display of
-data extracted from ssytem files using a set of widgets.
-SFWBar can work with any wayland compositor supporting layer shell protocol,
-but some functionality relies on presence of i3/sway IPC.
+taskbar, a pager, a task switcher, a system tray, a floating window placement
+engine, a simple widget set for display data extracted from various system
+files.
+SFWBar can work with any wayland compositor supporting layer shell protocol.
 Taskbar and switcher require either sway or wlr-foreign-toplevel protocol
 support. Placer and  pager require sway.
 
-USAGE
-=====
+OPTIONS
+=======
 SFWBar executable can be invoked with the following options:
 
 -f | --config
@@ -38,21 +37,25 @@ SFWBar executable can be invoked with the following options:
 -s | --socket
   Specify a location of sway ipc socket
 
+-m | --monitor
+  Specify a monitor to display the bar on ("-m list" to list available monitors)
+
 CONFIGURATION
 =============
-SFWBar is configured via a config file  usually  sfwbar.config), the program
-checks users XDG config directory (usually ~/.config/sfwbar/), followed by 
-/usr/share/sfwbar for the presence of the config file. Additionally, user can
-specify a location of the config file via ``-f`` command line option.
-Appearance of the program can be further adjusted via CSS properties, these
-are sourced either from a css section of the main configuration file or
-from a file sfwbar.css located in the same directory as the config
-file. The location of the css file can be also specifies via ``-c`` option.
+SFWBar reads configuration from a config file (sfwbar.config by default). The
+program checks users XDG config directory (usually ~/.config/sfwbar/) for this
+file, followed by system xdg data directories. Additionally, user can specify
+a location and a name of the config file using ``-f`` command line option.
 
-The config file consists of the following top level sections sections:
+Appearance of the program can be specifie using CSS properties, these
+are sourced either from the css section of the main configuration file or
+from a file sfwbar.css located in the same directory as the config
+file. The name of the css file can be also specified using ``-c`` option.
+
+The config file consists of the following top level sections:
 
 Placer
----------
+------
 Placer section enables intelligent placement of new floating windows. If
 enabled the program will first attemp to place the window in a location, where
 it won't overlap with other windows. If such location doesn't exist, the window
@@ -62,7 +65,7 @@ steps in the window cascade. These are specified in percentage of the desktop
 dimensions. The cascade placement will start at a location specified by "xorigin"
 "yorigin" parameters. I.e.::
 
-  placement {
+  placer {
     xorigin = 5
     yorigin = 5
     xstep = 5
@@ -86,6 +89,8 @@ one of the following bindings: ::
   or
   bindsym Alt-Tab exec killall -SIGUSR1 sfwbar
 
+(for non-sway compositors, use SIGUSR1 trigger)
+
 Task switcher is configured in the "switcher" section of the configuration file.
 The following parameters are accepted:
 
@@ -103,15 +108,158 @@ cols
       a number of columns in the task list
 
 css
-      css code applicable to the switcher window and any widgets in it. You can
-      also specify css code in the main CSS file. Using style name #switcher for
-      the task switcher window and the main grid and names #switcher_normal and 
-      #switcher_active for inactive and active window representations respectively.
+      css code applicable to the switcher grid. 
+      You can specify more detailed css code in the main CSS file. Using style
+      name #switcher for the task switcher window and the main grid and names
+      #switcher_normal and #switcher_active for inactive and active window 
+      representations respectively.
+
+Layout
+------
+Defines the layout of the taskbar. The layout holds a set of widgets. Widgets
+can be nested in case of a ``grid`` widget, which acts as a container.
+
+The following widget types are supported:
+
+taskbar
+  a special widget displaying a list of all floating windows.
+  (requires a compositor supporting wlr-foreign-toplevel protocol or i3 ipc)
+
+pager
+  a special widget displaying a list of all workspaces.
+  (requires a compositor supporting wlr-foreign-toplevel protocol or i3 ipc)
+
+tray
+  a special widget displaying a list of tray icons received via status
+  notifier item interface
+
+grid
+  a layout grid capable of containing other widgets. You can use these to
+  further subdivide each cell of the main grid and arrange items within it.
+
+label
+  a label displaying text sourced from an expression. Labels accept pango
+  markup to further theme text withing them.
+
+scale
+  a progress bar with a progress value specified by an expression
+
+image
+  display an icon or an image from a file. The name of an icon or a file is
+  specified by an expression and can change dynamically.
+
+button
+  add a clickable button with an icon/image.
+
+Each widget is placed within the parent grid. By default, widgets are placed
+next to the previous widget along the "direction" of the grid (left to right
+by default). You can specify widget's positions within a grid by using a
+property "loc(x,y[,w,h])" with the first two parameters specifying the location
+of the widget within the parent grid and the last two parameters specifying the
+widget dimensions in grid cells::
+
+  layout {
+    label {
+    style = "mystyle"
+    value = SwapUsed / SwapTotal + "%"
+    loc(2,1,1,1)
+    }
+  }
+
+External widgets can be included in layout using the following syntax: ::
+
+  layout {
+    include("MyWidget.widget")
+  }
+
+The above will include all scanner variables data and widget sub-layout from
+file MyWidget.widget
+
+Grid widgets can contain other widgets, these are declared within the grid definition
+following the parent grid properties. i.e. ::
+
+  grid {
+    css = "* { border: none }"
+
+    label {
+      ...
+    }
+  }
+
+Widgets can have the following properties:
+
+value 
+  an expression specifying the value to display. This can be a static value
+  (i.e. ``"string"`` or ``1``) or an expression (i.e.
+  ``"Value is:" + $MyString`` or ``2 * MyNumber.val``). See ``expressions``
+  section for more detail.
+  For ``Label`` widgets value tells text to display.
+  For ``Scale`` widgets it speficies a fraction to display.
+  For ``Image`` widgets and buttons it provides an icon or an image file name.
+
+style 
+  a style name for the widget. Styles can be used in CSS to theme widgets.
+  Multiple widgets can have the same style. A style name can be used in css
+  using gtk+ named widget convention, i.e. ``label#mystyle``
+
+interval
+  widget update frequency in milliseconds 
+
+css
+  additional css properties for the widget. These propertes will only apply to
+  the widget in question.
+
+action
+  an action to execute upon a button click. Applicable to buttons only.
+
+``Taskbar`` widget may contain the following options
+
+labels [true|false]
+  an indicator whether to display an application title within the taskbar.
+
+icons [true|false]
+  an indicator whether to display application icons within the taskbar.
+
+rows
+  a number of rows in a taskbar.
+
+cols
+  a number of columns in a taskbar.
+  If both rows and cols are specified, rows will be used. If neither is
+  specified, the default is rows=1
+
+``Pager`` widget may contain the following options
+
+preview [true|false]
+  specifies whether workspace previews are displayed on mouse hover over
+  pager buttons
+
+pins
+  a list of "pinned" workspaces. These will show up in the pager even if the
+  workspace is empty.
+
+rows
+  a number of rows in a pager.
+
+cols
+  a number of columns in a pager.
+  If both rows and cols are specified, rows will be used. If neither is
+  specified, the default is rows=1
+
+``tray`` widget my contain the following options
+
+rows
+  a number of rows in a pager.
+
+cols
+  a number of columns in a pager.
+  If both rows and cols are specified, rows will be used. If neither is
+  specified, the default is rows=1
 
 Scanner
 -------
-SFWBar displays the data it reads from various sources. These can be files or
-output of commands.
+SFWBar widgets display data obtained from various sources. These can be files
+or output of commands.
 
 Each source section contains one or more variables that SFWBar will poll
 periodically and populate with the data parsed from the source. The sources
@@ -128,11 +276,11 @@ and variables linked to them as configured in the section ``scanner`` ::
   }
 
 Each declaration within the ``scanner`` section specifies a source. This can
-be either ``file`` or ``exec`` specifying whether to read a file or output of
-a command respectively. The first parameter of a ``file`` source specifies a
-file to read, for an ``exec`` source, this specifies command to run.
+be either ``file`` or ``exec`` specifying whether to read a file or an output
+of a command respectively. The first parameter of a ``file`` source specifies
+a file to read, for an ``exec`` source, this specifies command to run.
 The file source also accepts further optional argumens specifying how
-scanner should handle the source, these can be  :
+scanner should handle the source, these can be:
 
 NoGlob    
           specifies that SFWBar shouldn't attempt to expand the pattern in 
@@ -143,7 +291,7 @@ CheckTime
           indicates that the program should only update the variables from 
           this file when file modification date/time changes.
 
-``Variables`` are extracted from a file using parsers, currently the following
+``Variables`` are extracted from sources using parsers, currently the following
 parsers are supported:
 
 Grab([Aggregator])
@@ -178,143 +326,53 @@ Product
 
 For string variables, Sum and Product aggregators are treated as Last.
 
-Layout
-------
-Defines the layout of the taskbar. The layout section contains a tree of
-widgets. Widgets can be nested in case of a ``grid`` widget,
-which can be used as a container.  ::
-
-  layout {
-    label {
-    style = "mystyle"
-    value = SwapUsed / SwapTotal + "%"
-    loc(2,1,1,1)
-    }
-  }
-
-External widgets can be included in layout using the following syntax: ::
-
-  layout {
-    include("MyWidget.widget")
-  }
-
-The above will include all scanner data and widget sub-layout from file
-MyWidget.widget
-
-The following widget types are supported:
-
-taskbar
-  a special widget displaying a list of all floating windows.
-  (requires a compositor supporting i3 ipc)
-
-pager
-  a special widget displaying a list of all workspaces.
-  (requires a compositor supporting i3 ipc)
-
-tray
-  a special widget displaying a list of tray icons received via
-  status notifier item interface
-
-grid
-  a layout grid used to fine tune placement of widgets. You can use these to
-  further subdivide each cell of the main grid and arrange items therein.
-
-label
-  a label displaying text (either static or sourced from scan variables).
-
-scale
-  a progress bar with a progress value sourced from a scan variable
-
-image
-  display an image from a file specified in "value" ( the image displayed can
-  change as the value changes)
-
-button
-  add a clickable button with an option to launch external programs on click
-
-Each widget is placed within the parent grid. By default, widgets are placed
-next to the previous widget along the "direction" of the grid (left to right
-by default). You can specify widget's  positions within a grid by using a
-property "loc(x,y[,w,h])" with the first two parameters specifying the location
-of the widget in the parent grid and the last two parameters specifying the
-widget dimensions in grid cells.
-
-In a grid widgets, child widget declarations can be placed immediately following
-the parent grid properties. i.e. ::
-
-  grid {
-    css = "* { border: none }"
-
-    label {
-      ...
-    }
-  }
-
-Widgets can have the following properties:
-
-value 
-  an expression specifying the value to display. This can be a static value
-  i.e. "'string'" or "1" or an expression, i.e. "Value is: "+$MyString" or 
-  2 * MyNumber.val (see ``expressions`` section for more detail), For labels
-  value specifies text to display. Scale widgets accept a fraction to
-  display. Images and buttons accept an icon or an image file name.
-
-style 
-  assign a style to the widget. Styles can be used in CSS to theme widgets.
-  Multiple widgets can have the same style. A style name can be used in css
-  using gtk+ named widget convention, i.e. ``label#mystyle``
-
-interval
-  specify update frequency in milliseconds 
-
-css
-  specify additional css properties for the widget. These propertes will
-  only applyy for the widget in question.
-
-action
-  An action to execute upon a button click. Applicable to buttons only.
-
-``Taskbar`` widget may contain the following options
-
-labels [true|false]
-  An indicator whether to display an application title within the taskbar.
-
-icons [true|false]
-  An indicator whether to display application icons within the taskbar.
-
-rows
-  Specify number of rows in a taskbar.
-
-cols
-  Specify number of columns in a taskbar.
-  If both rows and cols are specified, rows will be used. If neither is
-  specified, the default is rows=1
-
-``Pager`` widget may contain the following options
-
-preview [true|false]
-  Specifies whether workspace previews are displayed on mouse hover over
-  pager buttons
-
-pins
-  List "pinned" workspaces. These will show up in the pager even if the 
-  workspace is empty.
-
-rows
-  Specify number of rows in a pager.
-
-cols
-  Specify number of columns in a pager.
-  If both rows and cols are specified, rows will be used. If neither is
-  specified, the default is rows=1
-
 EXPRESSIONS
 ===========
 Values in widgets can contain basic arithmetic and string manipulation
-expressions. For numeric variables, the following operators are supported:
-``+``, ``-``, ``*``, ``/``. Furthermore any numeric value can be converted
-to a string using a specified rounding convention with a function ``Str``,
-i.e. ``Str(MyValue.val,2)``. 
+expressions. These allow transformation of data obtained by the scanner before
+it is displayed by the widgets.
+
+The numeric operations are:
+
+=========== ==================================================================
+Operation   Description
+=========== ==================================================================
+``+``       addition
+``-``       subtraction
+``*``       multiplication
+``/``       division
+``%``       remainder of an integer division
+``Val``     convert a string into a number, the argument is a string or a
+            string expression to convert.
+=========== ==================================================================
+
+The string operations are:
+
+=========== ==================================================================
+Operation   Description
+=========== ==================================================================
+``+``       concatenate strings i.e. ``"'String'+$Var"``.
+``Mid``     extract substring i.e. ``Mid($Var,2,5)``
+``Extract`` extract a regex pattern i.e.
+            ``Extract($Var,'FindThis: (GrabThat)')``
+``Str``     convert a number into a string, the first argument is a number (or
+            a numeric expression), the second argument is decimal precision.
+=========== ==================================================================
+
+In addition the following query functions are supported
+
+=========== ==================================================================
+Function    Description
+=========== ==================================================================
+Time        get current time as a string, the first optional argument specifies
+            the format, the second argument specifies a timezone. Return a
+            string
+Disk        get disk utilization data. You need to specify a mount point as a
+            first argument and data field as a second. The supported data
+            fields are "total", "avail", "free", "%avail", "%free". Returns a
+            number.
+ActiveWin   get the title of currently focused window. Returns a string.
+=========== ==================================================================
 
 Each numeric variable contains four values
 
@@ -328,23 +386,12 @@ Each numeric variable contains four values
   a number of time the pattern has been matched
   during the last scan
 
-By default, the value of the variable is the value of .val
-
+By default, the value of the variable is the value of .val. 
 String variables are prefixed with $, i.e. $StringVar
-The following string operation are supported:
+The following string operation are supported. For example: ::
 
-=========== ==================================================================
-Operation   Description
-=========== ==================================================================
-+           concatenate strings i.e. ``"'String'+$Var"``.
-Mid         extract substring i.e. ``Mid($Var,2,5)``
-Extract     extract a regex pattern i.e.
-            ``Extract($Var,'FindThis: (GrabThat)')``
-Time        get current time as a string, the first optional parameter specifies
-            the format, the second argument specifies a timezone
-Df          get disk utilization data. You need to specify a mount point as an
-            argument.
-=========== ==================================================================
+  $MyString + Str((MyValue - MyValue.pval)/MyValue.time),2)
+
 
 CSS Style
 =========
@@ -360,8 +407,9 @@ button        GtkButton       button
 scale         GtkProgressBar  progressbar, trough, progress
 ============= =============== ===============
 
-Taskbar and Pager use combinations of these widgets and can be themed
-using gtk+ nested css convention, i.e. ``grid#taskbar button { ... }``
+Taskbar, Pager, Tray and Switcher use combinations of these widgets and can
+be themed using gtk+ nested css convention, 
+i.e. ``grid#taskbar button { ... }``
 (this example assumes you assigned ``style = taskbar`` to your taskbar
 widget).
 
@@ -398,6 +446,9 @@ pager_focused         pager button for a curently focused workspace
 switcher              switcher window and top level grid
 switcher_active       switcher active window representation
 switcher_normal       switcher inactive window representation
+tray_active           active tray icon
+tray_attention        tray icon requiring user attention
+tray_passive          passive tray icon
 ===================== =============
 
 For example you can style top level grid using ``grid#layout { }``.
