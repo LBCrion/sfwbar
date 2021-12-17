@@ -40,15 +40,16 @@ char *expr_dtostr ( double num, gint dec )
   {
   static gchar *format = "%%0.%df";
   static gchar fbuf[16];
+  static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
 
   if(dec<0)
-    return g_strdup_printf("%f",num);
+    return g_strdup(g_ascii_dtostr(buf,G_ASCII_DTOSTR_BUF_SIZE,num));
 
   if(dec>99)
     dec = 99;
 
-  snprintf(fbuf,15,format,dec);
-  return g_strdup_printf(fbuf,num);
+  g_ascii_formatd(fbuf,16,format,dec);
+  return g_strdup(g_ascii_formatd(buf,G_ASCII_DTOSTR_BUF_SIZE,fbuf,num));
   }
 
 /* extract a substring */
