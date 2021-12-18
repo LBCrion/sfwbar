@@ -6,12 +6,6 @@
 ![](https://scan.coverity.com/projects/22494/badge.svg)
 ![](https://api.travis-ci.com/LBCrion/sfwbar.svg)
 
-### CONFIG FILE CHANGE
-Please note that the config file format is changing, the main branch in git is
-using the new format, the documentation in the repository reflects the new
-configuration format. The change will allow for cleaner configuration files
-and more widely available dependencies.
-
 ### SFWBar
 
 SFWBar (Sway Floating Window Bar) is a flexible taskbar application for
@@ -21,6 +15,9 @@ will work with other wayland compositors supporting layer shell protocol,
 and the taskbar functionality shall for with any compositor supportinig
 foreign toplevel protocol, but the pager, switcher and placement 
 functionality requires sway (or at least i3 IPC support).
+
+* Please note that configuration file format has changed between 0.9 and
+1.0 series *
 
 SFWBar is licensed under GNU GPL
 Weather icons are from yr.no and are licensed under MIT license 
@@ -48,7 +45,7 @@ sudo ninja -C build install
 ```
 
 ## Configuration
-Copy sfwbar.config and sfwbar.css from /usr/share/sfwbar/ to ~/.config/sfwbar/
+Copy sfwbar.config from /usr/share/sfwbar/ to ~/.config/sfwbar/
 For more information on the format of configuration file, please see the
 [man page](doc/sfwbar.rst)
 
