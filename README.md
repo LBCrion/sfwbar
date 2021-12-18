@@ -16,8 +16,7 @@ and the taskbar functionality shall for with any compositor supportinig
 foreign toplevel protocol, but the pager, switcher and placement 
 functionality requires sway (or at least i3 IPC support).
 
-## Please note that configuration file format has changed between 0.9 and
-1.0 series 
+# Please note that configuration file format has changed between 0.9 and 1.0 series 
 
 SFWBar is licensed under GNU GPL
 Weather icons are from yr.no and are licensed under MIT license 
