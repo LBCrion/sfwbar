@@ -13,6 +13,7 @@ layout {
   }
   label {
     style = "value"
+    interval = 1000
     value = Str(MBTemp/1000,0)+"C"
     css = "* { padding: 1.25mm; -GtkWidget-hexpand: true; -GtkWidget-align: 0.5; }"
   }
