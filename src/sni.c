@@ -342,7 +342,7 @@ void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
   sni_items = g_list_append(sni_items,sni);
   for(i=0;i<3;i++)
     sni->pixbuf[i]=NULL;
-  for(i=0;i<7;i++)
+  for(i=0;i<8;i++)
     sni->string[i]=NULL;
   for(i=0;i<15;i++)
     sni_item_get_prop(con,sni,i);
@@ -599,7 +599,7 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
   for(i=0;i<3;i++)
     if(sni->pixbuf[i]!=NULL)
       g_object_unref(sni->pixbuf[i]);
-  for(i=0;i<7;i++)
+  for(i=0;i<8;i++)
     g_free(sni->string[i]);
   if(sni->box!=NULL)
     g_object_unref(sni->box);
