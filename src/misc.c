@@ -4,10 +4,20 @@
  */
 
 #include <glib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <json.h>
 
 extern gchar *confname;
+
+gboolean file_test_read ( gchar *filename )
+{
+  if( !g_file_test(filename, G_FILE_TEST_EXISTS) )
+    return FALSE;
+  if( access(filename, R_OK) == -1 )
+    return FALSE;
+  return TRUE;
+}
 
 /* get xdg config file name, first try user xdg config directory,
  * if file doesn't exist, try system xdg data dirs */
@@ -16,25 +26,25 @@ gchar *get_xdg_config_file ( gchar *fname )
   gchar *full;
   const gchar * const *xdg_data;
   gint i;
-  if( g_file_test(fname, G_FILE_TEST_EXISTS) )
+  if( file_test_read(fname) )
     return g_strdup(fname);
 
   if(confname!=NULL)
   {
     full = g_build_filename ( g_path_get_dirname(confname), fname, NULL );
-    if( g_file_test(full, G_FILE_TEST_EXISTS) )
+    if( file_test_read(full) )
       return full;
     g_free(full);
   }
   full = g_build_filename ( g_get_user_config_dir(), "sfwbar", fname, NULL );
-  if( g_file_test(full, G_FILE_TEST_EXISTS) )
+  if( file_test_read(full) )
     return full;
   g_free(full);
   xdg_data = g_get_system_data_dirs();
   for(i=0;xdg_data[i];i++)
   {
     full = g_build_filename ( xdg_data[i], "sfwbar", fname, NULL );
-    if( g_file_test(full, G_FILE_TEST_EXISTS) )
+    if( file_test_read(full) )
       return full;
   }
   return NULL;
