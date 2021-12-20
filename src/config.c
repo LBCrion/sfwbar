@@ -485,7 +485,9 @@ gchar *config_get_value ( GScanner *scanner )
         break;
       default:
         temp = value;
-        value = g_strdup_printf("%s%c",value,scanner->token);
+        buf[0] = scanner->token;
+        buf[1] = 0;
+        value = g_strconcat(temp,buf,NULL);
         g_free(temp);
         break;
     }
