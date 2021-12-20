@@ -654,6 +654,7 @@ struct layout_widget *config_include ( GScanner *scanner )
     return NULL;
   }
   g_scanner_get_next_token(scanner);
+  g_debug("include: %s",scanner->value.v_string);
   lw = config_parse(scanner->value.v_string);
   lw->wtype = G_TOKEN_INCLUDE;
 
