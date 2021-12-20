@@ -208,15 +208,9 @@ int scale_image_update ( GtkWidget *widget )
   GtkIconTheme *theme;
   GdkPixbuf *buf=NULL,*tmp=NULL;
   cairo_surface_t *cs;
+  gchar *fallback;
   gint w,h;
   gint size;
-
-  if(priv->ftype == SI_NONE)
-    return -1;
-  if((priv->fname == NULL)&&(priv->ftype < SI_BUFF))
-    return -1;
-  if((priv->pixbuf == NULL)&&(priv->ftype == SI_BUFF))
-    return -1;
 
   w = priv->w;
   h = priv->h;
@@ -233,24 +227,37 @@ int scale_image_update ( GtkWidget *widget )
   if(size<1)
     return -1;
 
-  if(priv->ftype == SI_ICON)
+  if(priv->ftype == SI_ICON && priv->file)
   {
     theme = gtk_icon_theme_get_default();
     if(theme)
     {
       tmp = gtk_icon_theme_load_icon(theme,priv->file,size,0,NULL);
-      buf = gdk_pixbuf_scale_simple(tmp,size,size, GDK_INTERP_BILINEAR);
-      g_object_unref(G_OBJECT(tmp));
+      if(tmp)
+      {
+        buf = gdk_pixbuf_scale_simple(tmp,size,size, GDK_INTERP_BILINEAR);
+        g_object_unref(G_OBJECT(tmp));
+      }
     }
   }
 
-  if(priv->ftype == SI_FILE)
+  if(priv->ftype == SI_FILE && priv->fname)
     buf = gdk_pixbuf_new_from_file_at_scale(priv->fname,size,size,TRUE,NULL);
 
-  if(priv->ftype == SI_BUFF)
+  if(priv->ftype == SI_BUFF && priv->pixbuf)
     buf = gdk_pixbuf_scale_simple(priv->pixbuf,size,size, GDK_INTERP_BILINEAR);
 
-  if(buf==NULL)
+  if(!buf)
+  {
+    fallback = get_xdg_config_file("icons/misc/missing.svg");
+    if(fallback)
+    {
+      buf = gdk_pixbuf_new_from_file_at_scale(fallback,size,size,TRUE,NULL);
+      g_free(fallback);
+    }
+  }
+
+  if(!buf)
     return -1;
 
   cs = gdk_cairo_surface_create_from_pixbuf(buf,0,
