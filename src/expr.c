@@ -37,7 +37,7 @@ gboolean parser_expect_symbol ( GScanner *scanner, gchar symbol, gchar *expr )
 
 /* convert a number to a string with specified number of decimals */
 char *expr_dtostr ( double num, gint dec )
-  {
+{
   static gchar *format = "%%0.%df";
   static gchar fbuf[16];
   static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
@@ -50,7 +50,7 @@ char *expr_dtostr ( double num, gint dec )
 
   g_ascii_formatd(fbuf,16,format,dec);
   return g_strdup(g_ascii_formatd(buf,G_ASCII_DTOSTR_BUF_SIZE,fbuf,num));
-  }
+}
 
 /* extract a substring */
 char *expr_parse_str_mid ( GScanner *scanner )
@@ -93,7 +93,7 @@ char *expr_parse_str_mid ( GScanner *scanner )
   g_free(str);
 
   return result;
-  }
+}
 
 /* generate disk space utilization for a device */
 gdouble expr_parse_disk ( GScanner *scanner )
@@ -410,6 +410,8 @@ gchar *expr_parse( gchar *expr, guint *vcount )
   g_free(scanner->config->cset_identifier_nth);
   g_free(scanner->config->cset_identifier_first);
   g_scanner_destroy( scanner );
+
+  g_debug("\"%s\" = \"%s\"",expr,result);
 
   return result;
 }
