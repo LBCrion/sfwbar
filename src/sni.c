@@ -316,7 +316,7 @@ gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data)
     else
       y = event->y + alloc.y;
 
-    g_debug("sni: click at x = %d, y = %d",x,y);
+    g_debug("sni: calling %s on %s at ( %d, %d )",method,sni->dest,x,y);
     if(method)
       g_dbus_connection_call(con, sni->dest, sni->path,
         sni->iface, method, g_variant_new("(ii)", x, y),
