@@ -52,11 +52,19 @@ int scale_image_update ( GtkWidget *widget );
 void scale_image_resize ( GtkWidget *widget, GdkRectangle *alloc )
 {
   ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
+  GtkBorder border,padding;
+  GtkStyleContext *style = gtk_widget_get_style_context(widget);
+  GtkStateFlags flags = gtk_style_context_get_state(style);
+
+  gtk_style_context_get_border(style, flags, &border );
+  gtk_style_context_get_padding(style, flags, &padding );
 
   if((alloc->width!=priv->w)||(alloc->height!=priv->h))
   {
-    priv->w = alloc->width;
-    priv->h = alloc->height;
+    priv->w = alloc->width - border.left - border.right -
+      padding.left - padding.right;
+    priv->h = alloc->height  - border.top - border.bottom -
+      padding.top - padding.bottom;
     scale_image_update(widget);
   }
 
@@ -66,14 +74,28 @@ void scale_image_resize ( GtkWidget *widget, GdkRectangle *alloc )
 
 static void scale_image_get_preferred_width ( GtkWidget *w, gint *m, gint *n )
 {
+  GtkBorder border,padding;
+  GtkStyleContext *style = gtk_widget_get_style_context(w);
+  GtkStateFlags flags = gtk_style_context_get_state(style);
+
+  gtk_style_context_get_border(style, flags, &border );
+  gtk_style_context_get_padding(style, flags, &padding );
   GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_width(w,m,n);
+  *n += border.left + border.right + padding.left + padding.right;
   *m=1;
 }
 
 static void scale_image_get_preferred_height ( GtkWidget *w, gint *m, gint *n )
 {
+  GtkBorder border,padding;
+  GtkStyleContext *style = gtk_widget_get_style_context(w);
+  GtkStateFlags flags = gtk_style_context_get_state(style);
+
+  gtk_style_context_get_border(style, flags, &border );
+  gtk_style_context_get_padding(style, flags, &padding );
   GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_height(w,m,n);
   *m=1;
+  *n += border.top + border.bottom + padding.top + padding.bottom;
 }
 
 static void scale_image_destroy ( GtkWidget *w )
@@ -160,7 +182,7 @@ void scale_image_set_image ( GtkWidget *widget, gchar *image )
         {
           if((!g_desktop_app_info_get_nodisplay(app))&&(priv->ftype==SI_NONE))
           {
-            temp = (char *)g_desktop_app_info_get_string(app,"Icon");
+            temp = (gchar *)g_desktop_app_info_get_string(app,"Icon");
             if(temp)
             {
               buf = gtk_icon_theme_load_icon(theme,temp,10,0,NULL);
@@ -212,17 +234,16 @@ int scale_image_update ( GtkWidget *widget )
   gint w,h;
   gint size;
 
-  w = priv->w;
-  h = priv->h;
-  if(w!=-1)
-    w *= gtk_widget_get_scale_factor(widget);
-  if(h!=-1)
-    h *= gtk_widget_get_scale_factor(widget);
+  w = priv->w * gtk_widget_get_scale_factor(widget);
+  h = priv->h * gtk_widget_get_scale_factor(widget);
 
   if(w > h)
     size = h;
   else
     size = w;
+
+  if(priv->file)
+    g_debug("image: %s @ %d",priv->file,size);
 
   if(size<1)
     return -1;
