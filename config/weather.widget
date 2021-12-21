@@ -16,6 +16,6 @@ layout {
   image {
     interval = 300000
     css = "* { min-width: 0.3cm; min-height: 0.3cm; -GtkWidget-vexpand: true;}"
-    value = '/usr/share/sfwbar/icons/weather/'+$WthrCond+'.svg'
+    value = 'icons/weather/'+$WthrCond+'.svg'
   }
 }
