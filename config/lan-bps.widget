@@ -7,15 +7,16 @@ scanner {
 }
 
 layout {
-  css = "* { -GtkWidget-direction: right; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
+  css = "* { -GtkWidget-direction: right; -GtkWidget-vexpand: false; -GtkWidget-hexpand: false; }"
   image {
+    style = "label"
     value = "icons/misc/lan.svg"
-    css = "* { min-width: 0.5cm; min-height: 0.5cm; }"
+    css = "* { -GtkWidget-vexpand: false; -GtkWidget-hexpand: false; }"
   }
   label {
     style = "value"
     interval = 1000
     value = Str((EthRcvd-EthRcvd.pval)/0.001024/EthRcvd.time,0)+"K/s"
-    css = "* { padding: 1.25mm; -GtkWidget-hexpand: true; -GtkWidget-align: 0.5; }"
+    css = "* { padding: 1.25mm; -GtkWidget-vexpand: false; -GtkWidget-hexpand: true; -GtkWidget-align: 0.5; }"
   }
 }

@@ -34,14 +34,17 @@ layout {
   # add a sub-grid to house scales
   style = "scales"
   scale { 
+    interval = 1000
     css = "progressbar progress { background-color: #0000ff;}"
     value = (CpuUser-CpuUser.pval)/(CpuUser+CpuNice+CpuSystem+CpuIdle-CpuUser.pval-CpuNice.pval-CpuSystem.pval-CpuIdle.pval)
   }
   scale {
+    interval = 1000
     css = "progressbar progress { background-color: #00ff00;}"
     value= (MemTotal-MemFree-MemCache-MemBuff)/MemTotal
   }
   scale {
+    interval = 1000
     css = "progressbar progress { background-color: #ff0000;}"
     value = BatteryLeft/BatteryTotal
   }

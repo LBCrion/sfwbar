@@ -6,10 +6,11 @@ scanner {
 }
 
 layout {
-  css = "* { -GtkWidget-direction: right; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
+  css = "* { -GtkWidget-direction: right; -GtkWidget-vexpand: false; -GtkWidget-hexpand: false; }"
   image {
+    style = "label"
     value = "icons/misc/comp.svg"
-    css = "* { min-width: 0.5cm; min-height: 0.5cm; }"
+    css = "* { min-width: 0.5cm; min-height: 0.5cm; -GtkWidget-vexpand: false; -GtkWidget-hexpand: false; }"
   }
   label {
     style = "value"
