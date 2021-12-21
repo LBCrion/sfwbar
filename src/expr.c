@@ -42,7 +42,7 @@ char *expr_dtostr ( double num, gint dec )
   static gchar fbuf[16];
   static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
 
-  g_message("dtostr: %f %d", num, dec );
+  g_debug("dtostr: %f %d", num, dec );
 
   if(dec<0)
     return g_strdup(g_ascii_dtostr(buf,G_ASCII_DTOSTR_BUF_SIZE,num));
