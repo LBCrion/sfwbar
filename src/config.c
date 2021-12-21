@@ -654,7 +654,6 @@ struct layout_widget *config_include ( GScanner *scanner )
     return NULL;
   }
   g_scanner_get_next_token(scanner);
-  g_debug("include: %s",scanner->value.v_string);
   lw = config_parse(scanner->value.v_string);
   lw->wtype = G_TOKEN_INCLUDE;
 
@@ -917,13 +916,14 @@ struct layout_widget *config_parse ( gchar *file )
   struct layout_widget *w=NULL;
 
   fname = get_xdg_config_file(file);
+  g_debug("include: %s -> %s",file,fname);
   if(fname)
     if(!g_file_get_contents(fname,&conf,&size,NULL))
       conf=NULL;
 
   if(!conf)
     {
-      g_error("Error: can't read config file\n");
+      g_error("Error: can't read config file %s\n",file);
       exit(1);
     }
 

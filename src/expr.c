@@ -36,7 +36,7 @@ gboolean parser_expect_symbol ( GScanner *scanner, gchar symbol, gchar *expr )
 }
 
 /* convert a number to a string with specified number of decimals */
-char *expr_dtostr ( double num, gint dec )
+gchar *expr_dtostr ( double num, gint dec )
 {
   static const gchar *format = "%%0.%0.0ff";
   static gchar fbuf[16];
@@ -56,7 +56,7 @@ char *expr_dtostr ( double num, gint dec )
 }
 
 /* extract a substring */
-char *expr_parse_str_mid ( GScanner *scanner )
+gchar *expr_parse_str_mid ( GScanner *scanner )
 {
   gchar *str, *result;
   gint len, c1, c2;
@@ -414,7 +414,7 @@ gchar *expr_parse( gchar *expr, guint *vcount )
   g_free(scanner->config->cset_identifier_first);
   g_scanner_destroy( scanner );
 
-  g_debug("\"%s\" = \"%s\"",expr,result);
+  g_debug("expr: \"%s\" = \"%s\"",expr,result);
 
   return result;
 }
