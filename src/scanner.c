@@ -295,7 +295,7 @@ char *parse_identifier ( gchar *id, gchar **fname )
     return NULL;
     }
   if(*id=='$')
-    temp=g_strdup(id+sizeof(char));
+    temp=g_strdup(id+sizeof(gchar));
   else
     temp=g_strdup(id);
   if((ptr=strchr(temp,'.'))==NULL)
