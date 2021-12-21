@@ -38,9 +38,11 @@ gboolean parser_expect_symbol ( GScanner *scanner, gchar symbol, gchar *expr )
 /* convert a number to a string with specified number of decimals */
 char *expr_dtostr ( double num, gint dec )
 {
-  static gchar *format = "%%0.%df";
+  static const gchar *format = "%%0.%0.0ff";
   static gchar fbuf[16];
   static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+
+  g_message("dtostr: %f %d", num, dec );
 
   if(dec<0)
     return g_strdup(g_ascii_dtostr(buf,G_ASCII_DTOSTR_BUF_SIZE,num));
@@ -48,7 +50,8 @@ char *expr_dtostr ( double num, gint dec )
   if(dec>99)
     dec = 99;
 
-  g_ascii_formatd(fbuf,16,format,dec);
+  g_ascii_formatd(fbuf,16,format,(gdouble)dec);
+  g_debug("dtostr: format =\"%s\"",fbuf);
   return g_strdup(g_ascii_formatd(buf,G_ASCII_DTOSTR_BUF_SIZE,fbuf,num));
 }
 
@@ -231,7 +234,7 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
       parser_expect_symbol(scanner,',',"Str(Number,Number)");
       n2 = expr_parse_num(scanner);
       parser_expect_symbol(scanner,')',"Str(Number,Number)");
-      str = expr_dtostr(n1,n2);
+      str = expr_dtostr(n1,(gint)n2);
       break;
     case G_TOKEN_ACTIVE:
       str = expr_parse_active ( scanner );
