@@ -178,6 +178,8 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
     wrap->sni->pixbuf[wrap->prop-SNI_PROP_ICONPIX] =
       sni_item_get_pixbuf(inner);
   }
+  if(wrap->prop == SNI_PROP_ISMENU)
+    g_variant_get(inner,"b",&(wrap->sni->menu));
   if(wrap->sni->string[SNI_PROP_STATUS]!=NULL)
   {
     if(wrap->sni->string[SNI_PROP_STATUS][0]=='A')
@@ -372,6 +374,7 @@ void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
     sni->string[i]=NULL;
   for(i=0;i<15;i++)
     sni_item_get_prop(con,sni,i);
+  sni->menu = FALSE;
   g_debug("sni: host %s: item registered: %s %s",iface->host_iface,sni->dest,
       sni->path);
 }
