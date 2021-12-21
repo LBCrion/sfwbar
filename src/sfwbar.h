@@ -149,6 +149,7 @@ gdouble json_double_by_name ( struct json_object *obj, gchar *name, gdouble defv
 int md5_file( gchar *path, guchar output[16] );
 void str_assign ( gchar **dest, gchar *source );
 struct rect parse_rect ( struct json_object *obj );
+gint get_toplevel_dir ( void );
 
 void scale_image_set_image ( GtkWidget *widget, gchar *image );
 GtkWidget *scale_image_new();

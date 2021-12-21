@@ -14,6 +14,7 @@ gchar *sockname;
 static gchar *cssname;
 static gchar *monitor;
 static gboolean debug = FALSE;
+static gint toplevel_dir;
 
 static GOptionEntry entries[] = {
   {"config",'f',0,G_OPTION_ARG_FILENAME,&confname,"Specify config file"},
@@ -31,6 +32,11 @@ void parse_command_line ( gint argc, gchar **argv)
   g_option_context_add_main_entries(optc,entries,NULL);
   g_option_context_add_group (optc, gtk_get_option_group (TRUE));
   g_option_context_parse(optc,&argc,&argv,NULL);
+}
+
+gint get_toplevel_dir ( void )
+{
+  return toplevel_dir;
 }
 
 void set_monitor ( void )
@@ -183,7 +189,6 @@ static void activate (GtkApplication* app, gpointer data )
 {
   struct layout_widget *lw;
   GdkDisplay *gdisp;
-  gint dir;
 
   bar_window = (GtkWindow *)gtk_application_window_new (app);
   gtk_layer_init_for_window (bar_window);
@@ -195,11 +200,15 @@ static void activate (GtkApplication* app, gpointer data )
   
   lw = config_parse(confname?confname:"sfwbar.config");
 
-  gtk_widget_style_get(GTK_WIDGET(bar_window),"direction",&dir,NULL);
-  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_LEFT,!(dir==GTK_POS_RIGHT));
-  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_RIGHT,!(dir==GTK_POS_LEFT));
-  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_BOTTOM,!(dir==GTK_POS_TOP));
-  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_TOP,!(dir==GTK_POS_BOTTOM));
+  gtk_widget_style_get(GTK_WIDGET(bar_window),"direction",&toplevel_dir,NULL);
+  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_LEFT,
+      !(toplevel_dir==GTK_POS_RIGHT));
+  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_RIGHT,
+      !(toplevel_dir==GTK_POS_LEFT));
+  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_BOTTOM,
+      !(toplevel_dir==GTK_POS_TOP));
+  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_TOP,
+      !(toplevel_dir==GTK_POS_BOTTOM));
 
   if((lw != NULL)&&(lw->widget!=NULL))
   {
