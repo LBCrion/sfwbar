@@ -195,10 +195,6 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
         item = g_variant_get_variant(tmp);
         g_variant_unref(tmp);
       }
-      idv = g_variant_get_child_value(item, 0);
-      id = g_malloc(sizeof(gint));
-      *id = g_variant_get_int32(idv);
-      g_variant_unref(idv);
       dict = g_variant_get_child_value(item, 1);
       label = sni_variant_get_string(dict,"label","");
       type = sni_variant_get_string(dict,"type","standard");
@@ -232,6 +228,10 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
       if(mitem)
       {
         gtk_widget_set_sensitive(mitem,sni_variant_get_bool(dict,"enabled",TRUE));
+        idv = g_variant_get_child_value(item, 0);
+        id = g_malloc(sizeof(gint));
+        *id = g_variant_get_int32(idv);
+        g_variant_unref(idv);
         g_object_set_data_full(G_OBJECT(mitem),"sni_id",id,g_free);
         g_signal_connect(G_OBJECT(mitem),"activate",G_CALLBACK(sni_menu_item_cb),wrap->sni);
         gtk_container_add(GTK_CONTAINER(menu),mitem);
