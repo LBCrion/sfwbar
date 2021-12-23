@@ -55,7 +55,7 @@ struct layout_widget *layout_widget_new ( void )
   lw->action = NULL;
   lw->eval = NULL;
   lw->wtype = 0;
-  lw->interval = 0;
+  lw->interval = 1000;
   lw->next_poll = 0;
   lw->dir = GTK_POS_RIGHT;
   lw->rect.x = 0;
