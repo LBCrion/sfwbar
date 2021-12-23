@@ -42,8 +42,6 @@ gchar *expr_dtostr ( double num, gint dec )
   static gchar fbuf[16];
   static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
 
-  g_debug("dtostr: %f %d", num, dec );
-
   if(dec<0)
     return g_strdup(g_ascii_dtostr(buf,G_ASCII_DTOSTR_BUF_SIZE,num));
 
@@ -51,7 +49,6 @@ gchar *expr_dtostr ( double num, gint dec )
     dec = 99;
 
   g_ascii_formatd(fbuf,16,format,(gdouble)dec);
-  g_debug("dtostr: format =\"%s\"",fbuf);
   return g_strdup(g_ascii_formatd(buf,G_ASCII_DTOSTR_BUF_SIZE,fbuf,num));
 }
 
