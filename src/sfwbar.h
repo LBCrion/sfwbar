@@ -71,6 +71,7 @@ int sway_ipc_send ( gint sock, gint32 type, gchar *command );
 void sway_ipc_command ( gchar *cmd, ... );
 int sway_ipc_subscribe ( gint sock );
 gboolean sway_ipc_event ( GIOChannel *, GIOCondition , gpointer );
+
 void place_window ( gint64 wid, gint64 pid );
 void placer_config ( gint xs, gint ys, gint xo, gint yo, gboolean pid );
 
@@ -95,6 +96,11 @@ GList *wintree_get_list ( void );
 void wayland_init ( GtkWindow *, gboolean );
 
 gboolean window_hide_event ( struct json_object *obj );
+
+struct layout_widget *config_parse ( gchar * );
+
+char *expr_parse ( gchar *expr_str, guint * );
+
 gboolean switcher_event ( struct json_object *obj );
 void switcher_invalidate ( void );
 void switcher_update ( void );
@@ -109,7 +115,6 @@ void pager_update ( void );
 
 void sni_init ( GtkWidget *w );
 void sni_update ( void );
-struct layout_widget *config_parse ( gchar * );
 
 struct layout_widget *layout_widget_new ( void );
 gpointer layout_scanner_thread ( gpointer data );
@@ -131,13 +136,8 @@ void scanner_var_attach ( struct scan_var *var );
 void scanner_expire ( void );
 int scanner_reset_vars ( GList *var_list );
 int scanner_glob_file ( struct scan_file *file );
-
-char *expr_parse ( gchar *expr_str, guint * );
-gboolean parser_expect_symbol ( GScanner *, gchar , gchar *);
-char *string_from_name ( gchar *name );
-double numeric_from_name ( gchar *name );
-void *list_by_name ( GList *prev, gchar *name );
-char *parse_identifier ( gchar *id, gchar **fname );
+char *scanner_get_string ( gchar *name );
+double scanner_get_numeric ( gchar *name );
 
 gchar *gdk_monitor_get_xdg_name ( GdkMonitor *monitor );
 
