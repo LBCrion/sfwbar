@@ -248,7 +248,7 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
       *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       break;
     case G_TOKEN_IDENTIFIER:
-      str = string_from_name(scanner->value.v_identifier);
+      str = scanner_get_string(scanner->value.v_identifier);
       *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       break;
     default:
@@ -309,7 +309,7 @@ gdouble expr_parse_num_l2 ( GScanner *scanner )
       parser_expect_symbol(scanner,')',"Val(String)");
       break;
     case G_TOKEN_IDENTIFIER:
-      val = numeric_from_name( scanner->value.v_identifier );
+      val = scanner_get_numeric( scanner->value.v_identifier );
       *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       break;
     default:
