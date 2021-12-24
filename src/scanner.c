@@ -236,56 +236,17 @@ int scanner_update_file_glob ( struct scan_file *file )
   return 0;
 }
 
-/* get string value of a variable by name */
-char *string_from_name ( gchar *name )
+/* get node by name from the list root */
+void *scanner_var_by_name ( GList *prev, gchar *name )
 {
-  struct scan_var *scan;
-  gchar *fname,*id,*res=NULL;
-
-  id = parse_identifier(name,&fname);
-  g_free(fname);
-  if((scan=list_by_name(scan_list,id))!=NULL)
-    {
-    if(!scan->status)
-      scanner_update_file_glob(scan->file);
-    res = g_strdup(scan->str);
-    }
-  if(res==NULL)
-    res = g_strdup("");
-  g_free(id);
-  g_debug("scanner: %s = \"%s\"",name,res);
-  return res;
+  GList *node;
+  for(node=prev;node!=NULL;node=g_list_next(node))
+      if(!g_strcmp0(SCAN_VAR(node->data)->name,name))
+        return node->data;
+  return NULL;
 }
 
-/* get numeric value of a variable by name */
-double numeric_from_name ( gchar *name )
-{
-  struct scan_var *scan;
-  double retval=0;
-  gchar *fname,*id;
-
-  id = parse_identifier(name,&fname);
-
-  if((scan=list_by_name(scan_list,id))!=NULL)
-    {
-    if(!scan->status)
-      scanner_update_file_glob(scan->file);
-    if(!strcmp(fname,".val"))
-      retval=scan->val;
-    if(!strcmp(fname,".pval"))
-      retval=scan->pval;
-    if(!strcmp(fname,".count"))
-      retval=scan->count;
-    if(!strcmp(fname,".time"))
-      retval=scan->time;
-    }
-  g_free(id);
-  g_free(fname);
-  g_debug("scanner: %s = %f",name,retval);
-  return retval;
-}
-
-char *parse_identifier ( gchar *id, gchar **fname )
+char *scanner_parse_identifier ( gchar *id, gchar **fname )
 {
   gchar *temp;
   gchar *ptr;
@@ -310,13 +271,51 @@ char *parse_identifier ( gchar *id, gchar **fname )
   return ptr;
 }
 
-/* get node by name from the list root */
-void *list_by_name ( GList *prev, gchar *name )
+/* get string value of a variable by name */
+char *scanner_get_string ( gchar *name )
 {
-  GList *node;
-  for(node=prev;node!=NULL;node=g_list_next(node))
-      if(!g_strcmp0(SCAN_VAR(node->data)->name,name))
-        return node->data;
-  return NULL;
+  struct scan_var *scan;
+  gchar *fname,*id,*res=NULL;
+
+  id = scanner_parse_identifier(name,&fname);
+  g_free(fname);
+  if((scan=scanner_var_by_name(scan_list,id))!=NULL)
+    {
+    if(!scan->status)
+      scanner_update_file_glob(scan->file);
+    res = g_strdup(scan->str);
+    }
+  if(res==NULL)
+    res = g_strdup("");
+  g_free(id);
+  g_debug("scanner: %s = \"%s\"",name,res);
+  return res;
 }
 
+/* get numeric value of a variable by name */
+double scanner_get_numeric ( gchar *name )
+{
+  struct scan_var *scan;
+  double retval=0;
+  gchar *fname,*id;
+
+  id = scanner_parse_identifier(name,&fname);
+
+  if((scan=scanner_var_by_name(scan_list,id))!=NULL)
+    {
+    if(!scan->status)
+      scanner_update_file_glob(scan->file);
+    if(!strcmp(fname,".val"))
+      retval=scan->val;
+    if(!strcmp(fname,".pval"))
+      retval=scan->pval;
+    if(!strcmp(fname,".count"))
+      retval=scan->count;
+    if(!strcmp(fname,".time"))
+      retval=scan->time;
+    }
+  g_free(id);
+  g_free(fname);
+  g_debug("scanner: %s = %f",name,retval);
+  return retval;
+}
