@@ -108,9 +108,8 @@ static void scale_image_destroy ( GtkWidget *w )
   GTK_WIDGET_CLASS(scale_image_parent_class)->destroy(w);
 }
 
-static void scale_image_draw ( GtkWidget *w )
+static void scale_image_map ( GtkWidget *w )
 {
-  g_message("flags");
   scale_image_update(w);
   GTK_WIDGET_CLASS(scale_image_parent_class)->map(w);
 }
@@ -120,7 +119,7 @@ static void scale_image_class_init ( ScaleImageClass *kclass )
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(kclass);
   widget_class->size_allocate = scale_image_resize;
   widget_class->destroy = scale_image_destroy;
-  widget_class->map = scale_image_draw;
+  widget_class->map = scale_image_map;
   widget_class->get_preferred_width = scale_image_get_preferred_width;
   widget_class->get_preferred_height = scale_image_get_preferred_height;
 }
