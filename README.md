@@ -2,6 +2,7 @@
 ![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar.png)
 ![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar-preview.png)
 ![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar-switch.png)
+![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar-tray.png)
 
 ![](https://scan.coverity.com/projects/22494/badge.svg)
 ![](https://api.travis-ci.com/LBCrion/sfwbar.svg)
