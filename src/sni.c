@@ -125,20 +125,18 @@ gint32 sni_variant_get_int32 ( GVariant *dict, gchar *key, gint def )
   return def;
 }
 
-gchar *sni_variant_get_string ( GVariant *dict, gchar *key, gchar *def )
+const gchar *sni_variant_get_string ( GVariant *dict, gchar *key, gchar *def )
 {
   GVariant *ptr;
-  gchar *result;
+  const gchar *result;
   ptr = g_variant_lookup_value(dict,key,G_VARIANT_TYPE_STRING);
   if(ptr)
   {
-    result = g_variant_dup_string(ptr,NULL);
+    result = g_variant_get_string(ptr,NULL);
     g_variant_unref(ptr);
     return result;
   }
-  if(def)
-    return g_strdup(def);
-  return NULL;
+  return def;
 }
 
 GtkWidget *sni_variant_get_pixbuf ( GVariant *dict, gchar *key )
@@ -182,11 +180,13 @@ GtkWidget *sni_variant_get_pixbuf ( GVariant *dict, gchar *key )
 
 void sni_menu_item_cb ( GtkWidget *item, struct sni_item *sni )
 {
-  GDBusConnection *con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
+  GDBusConnection *con;
   gint32 *id = g_object_get_data(G_OBJECT(item),"sni_id");
 
   if(!id)
     return;
+
+  con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
 
   g_debug("sni menu call: %d (%s) %s",*id,
       gtk_menu_item_get_label(GTK_MENU_ITEM(item)),sni->dest);
@@ -196,6 +196,7 @@ void sni_menu_item_cb ( GtkWidget *item, struct sni_item *sni )
       g_variant_new("(isvu)", *id, "clicked", g_variant_new_int32(0),
         gtk_get_current_event_time()),
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+  g_object_unref(con);
 }
 
 void sni_menu_item_decorate ( GtkWidget *item, GVariant *dict  )
@@ -203,7 +204,7 @@ void sni_menu_item_decorate ( GtkWidget *item, GVariant *dict  )
   GtkWidget *box;
   GtkWidget *wlabel;
   GtkWidget *child;
-  gchar *label, *icon;
+  const gchar *label, *icon;
   GtkWidget *img;
 
   if(GTK_IS_SEPARATOR_MENU_ITEM(item))
@@ -222,14 +223,12 @@ void sni_menu_item_decorate ( GtkWidget *item, GVariant *dict  )
     img = sni_variant_get_pixbuf(dict,"icon-data");
   if(img)
     gtk_grid_attach(GTK_GRID(box),img,1,1,1,1);
-  g_free(icon);
 
   label = sni_variant_get_string(dict,"label","");
   if(label)
   {
     wlabel = gtk_label_new_with_mnemonic(label);
     gtk_grid_attach(GTK_GRID(box),wlabel,2,1,1,1);
-    g_free(label);
   }
 
   gtk_container_add(GTK_CONTAINER(item),box);
@@ -241,7 +240,7 @@ GtkWidget *sni_get_menu_iter ( GVariant *list, struct sni_menu_wrapper *wrap)
   GVariant *item,*tmp;
   GtkWidget *mitem, *menu, *smenu;
   GVariant *dict,*idv;
-  gchar *type, *toggle, *children;
+  const gchar *type, *toggle, *children;
   gint32 active,*id;
   GSList *group = NULL;
 
@@ -279,27 +278,20 @@ GtkWidget *sni_get_menu_iter ( GVariant *list, struct sni_menu_wrapper *wrap)
           gtk_menu_item_set_submenu(GTK_MENU_ITEM(mitem),smenu);
         }
       }
-      else
-        if(!g_strcmp0(type,"separator"))
-          mitem = gtk_separator_menu_item_new();
-        else
-        {
-          if( !*toggle )
-            mitem= gtk_menu_item_new();
-          if(!g_strcmp0(toggle,"checkmark"))
-          {
-            mitem= gtk_check_menu_item_new();
-            gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mitem),active);
-          }
-          if(!g_strcmp0(toggle,"radio"))
-          {
-            mitem= gtk_radio_menu_item_new(group);
-            group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(mitem));
-          }
-        }
-      g_free(children);
-      g_free(toggle);
-      g_free(type);
+      if(!mitem && !g_strcmp0(type,"separator"))
+        mitem = gtk_separator_menu_item_new();
+      if(!mitem &&  !*toggle )
+        mitem= gtk_menu_item_new();
+      if(!mitem && !g_strcmp0(toggle,"checkmark"))
+      {
+        mitem= gtk_check_menu_item_new();
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mitem),active);
+      }
+      if(!mitem && !g_strcmp0(toggle,"radio"))
+      {
+        mitem= gtk_radio_menu_item_new(group);
+        group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(mitem));
+      }
     }
 
     if(mitem)
@@ -341,7 +333,6 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
       list = g_variant_get_child_value(layout, 2);
       g_variant_unref(layout);
     }
-    g_variant_unref(result);
   }
 
   menu = sni_get_menu_iter(list,wrap);
@@ -368,12 +359,16 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
         break;
     }
     gtk_widget_show_all(menu);
+    g_object_ref_sink(G_OBJECT(menu));
+    g_signal_connect(G_OBJECT(menu),"unmap",G_CALLBACK(g_object_unref),NULL);
     gtk_menu_popup_at_widget(GTK_MENU(menu),wrap->sni->image,
         wanchor,manchor,wrap->event);
   }
 
   gdk_event_free(wrap->event);
   g_free(wrap);
+  if(result)
+    g_variant_unref(result);
 }
 
 void sni_get_menu ( struct sni_item *sni, GdkEvent *event )
@@ -387,6 +382,7 @@ void sni_get_menu ( struct sni_item *sni, GdkEvent *event )
   g_dbus_connection_call(con, sni->dest, sni->menu_path, "com.canonical.dbusmenu",
       "GetLayout", g_variant_new("(iias)", 0, -1, NULL),
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, sni_get_menu_cb, wrap);
+  g_object_unref(con);
 }
 
 GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
@@ -579,6 +575,7 @@ gboolean sni_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
   g_dbus_connection_call(con, sni->dest, sni->path,
     sni->iface, "Scroll", g_variant_new("(si)", dir, delta),
     NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+  g_object_unref(con);
   return TRUE;
 }
 
@@ -643,6 +640,7 @@ gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data)
       g_dbus_connection_call(con, sni->dest, sni->path,
         sni->iface, method, g_variant_new("(ii)", 0, 0),
         NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+    g_object_unref(con);
   }
   return TRUE;
 }
@@ -1001,6 +999,7 @@ void sni_register ( gchar *name )
   g_dbus_connection_signal_subscribe(con,NULL,iface->watcher_iface,
       "StatusNotifierItemUnregistered","/StatusNotifierWatcher",NULL,
       G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_unregistered_cb,iface,NULL);
+  g_object_unref(con);
 }
 
 void sni_update ( void )
