@@ -308,7 +308,6 @@ GtkWidget *sni_get_menu_iter ( GVariant *list, struct sni_menu_wrapper *wrap)
       gtk_container_add(GTK_CONTAINER(menu),mitem);
     }
 
-    g_debug("sni menu item: %s", g_variant_print(item,TRUE));
     g_variant_unref(dict);
     g_variant_unref(item);
   }
