@@ -658,7 +658,7 @@ void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
   if(iter!=NULL)
     return;
 
-  sni = g_malloc(sizeof(struct sni_item));
+  sni = g_malloc0(sizeof(struct sni_item));
   sni->uid = g_strdup(uid);
   sni->cancel = g_cancellable_new();
   path = strchr(uid,'/');
@@ -685,14 +685,8 @@ void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
   sni->signal = g_dbus_connection_signal_subscribe(con,sni->dest,
       sni->iface,NULL,sni->path,NULL,0,sni_item_signal_cb,sni,NULL);
   sni_items = g_list_append(sni_items,sni);
-  for(i=0;i<3;i++)
-    sni->pixbuf[i]=NULL;
-  for(i=0;i<8;i++)
-    sni->string[i]=NULL;
   for(i=0;i<15;i++)
     sni_item_get_prop(con,sni,i);
-  sni->menu_path = NULL;
-  sni->menu = FALSE;
   g_debug("sni: host %s: item registered: %s %s",iface->host_iface,sni->dest,
       sni->path);
 }
@@ -964,10 +958,7 @@ void sni_register ( gchar *name )
   gchar *xml;
   GDBusConnection *con;
 
-  iface = g_malloc(sizeof(struct sni_iface));
-  iface->regid = 0;
-  iface->watcher_registered = FALSE;
-  iface->item_list = NULL;
+  iface = g_malloc0(sizeof(struct sni_iface));
 
   xml = g_strdup_printf(sni_watcher_xml,name);
   iface->idata = g_dbus_node_info_new_for_xml (xml, NULL);

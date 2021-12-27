@@ -177,9 +177,7 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
   if(g_scanner_peek_next_token(scanner) == ';')
     g_scanner_get_next_token(scanner);
 
-  var = g_malloc(sizeof(struct scan_var));
-  var->json = NULL;
-  var->regex = NULL;
+  var = g_malloc0(sizeof(struct scan_var));
 
   switch(type)
   {
@@ -199,12 +197,6 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
   var->file = file;
   var->type = type;
   var->multi = flag;
-  var->val = 0;
-  var->pval = 0;
-  var->time = 0;
-  var->ptime = 0;
-  var->status = 0;
-  var->str = NULL;
 
   file->vars = g_list_append(file->vars,var);
   scanner_var_attach(var);

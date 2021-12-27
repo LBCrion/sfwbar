@@ -47,19 +47,9 @@ gpointer layout_scanner_thread ( gpointer data )
 struct layout_widget *layout_widget_new ( void )
 {
   struct layout_widget *lw;
-  lw = g_malloc(sizeof(struct layout_widget));
-  lw->widget = NULL;
-  lw->style = NULL;
-  lw->css = NULL;
-  lw->value = NULL;
-  lw->action = NULL;
-  lw->eval = NULL;
-  lw->wtype = 0;
+  lw = g_malloc0(sizeof(struct layout_widget));
   lw->interval = 1000;
-  lw->next_poll = 0;
   lw->dir = GTK_POS_RIGHT;
-  lw->rect.x = 0;
-  lw->rect.y = 0;
   lw->rect.w = 1;
   lw->rect.h = 1;
   return lw;
