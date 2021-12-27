@@ -26,12 +26,7 @@ gchar *wintree_get_active ( void )
 struct wt_window *wintree_window_init ( void )
 {
   struct wt_window *w;
-  w = g_malloc(sizeof(struct wt_window));
-  w->button = NULL;
-  w->switcher = NULL;
-  w->title = NULL;
-  w->appid = NULL;
-  w->uid = NULL;
+  w = g_malloc0(sizeof(struct wt_window));
   w->pid=-1;
   w->wid=-1;
   return w;
