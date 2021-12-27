@@ -6,16 +6,14 @@ scanner {
 }
 
 layout {
-  css = "* { -GtkWidget-direction: right; -GtkWidget-vexpand: false; -GtkWidget-hexpand: false; }"
+  css = "* { -GtkWidget-direction: right; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
   image {
-    style = "label"
+    style = "value_icon"
     value = "icons/misc/comp.svg"
-    css = "* { min-width: 0.5cm; min-height: 0.5cm; -GtkWidget-vexpand: false; -GtkWidget-hexpand: false; }"
   }
   label {
     style = "value"
     interval = 1000
     value = Str(MBTemp/1000,0)+"C"
-    css = "* { padding: 1.25mm; -GtkWidget-hexpand: true; -GtkWidget-align: 0.5; }"
   }
 }
