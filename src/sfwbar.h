@@ -61,8 +61,6 @@ struct layout_widget {
 
 extern gchar *expr_token[];
 
-extern struct wl_seat *seat;
-
 void sway_ipc_init ( void );
 gboolean sway_ipc_active ( void );
 gchar *sway_ipc_poll ( gint sock, gint32 *etype );
@@ -94,6 +92,7 @@ gboolean wintree_is_focused ( gpointer id );
 GList *wintree_get_list ( void );
 
 void wayland_init ( GtkWindow *, gboolean );
+void foreign_toplevel_activate ( gpointer tl );
 
 gboolean window_hide_event ( struct json_object *obj );
 

@@ -166,6 +166,6 @@ void switcher_update ( void )
       sway_ipc_command("[con_id=%ld] focus",win->wid);
     }
     else
-      zwlr_foreign_toplevel_handle_v1_activate(win->uid, seat);
+      foreign_toplevel_activate(win->uid);
   }
 }

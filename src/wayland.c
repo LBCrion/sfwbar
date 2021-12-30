@@ -10,10 +10,8 @@ typedef struct zwlr_foreign_toplevel_handle_v1 wlr_fth;
 
 static struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager = NULL;
 static struct zxdg_output_manager_v1 *xdg_output_manager = NULL;
-static struct wl_output *pref_output = NULL;
-static uint32_t pref_output_id = UINT32_MAX;
 static gint64 wt_counter;
-struct wl_seat *seat = NULL;
+static struct wl_seat *seat = NULL;
 
 static void toplevel_handle_app_id(void *data, wlr_fth *tl, const gchar *app_id)
 {
@@ -118,6 +116,12 @@ static void toplevel_manager_handle_toplevel(void *data,
   zwlr_foreign_toplevel_handle_v1_add_listener(tl, &toplevel_impl, NULL);
 }
 
+void foreign_toplevel_activate ( gpointer tl )
+{
+  zwlr_foreign_toplevel_handle_v1_unset_minimized(tl);
+  zwlr_foreign_toplevel_handle_v1_activate(tl,seat);
+}
+
 static void toplevel_manager_handle_finished(void *data,
   struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager)
 {
@@ -175,12 +179,7 @@ static void handle_global(void *data, struct wl_registry *registry,
                 uint32_t name, const gchar *interface, uint32_t version)
 {
   gboolean *wlr_ft = data;
-  if (strcmp(interface, wl_output_interface.name) == 0) 
-  {
-    if (name == pref_output_id)
-      pref_output = wl_registry_bind(registry,name,&wl_output_interface, version);
-  } 
-  else if ( *wlr_ft &&
+  if ( *wlr_ft && 
       strcmp(interface,zwlr_foreign_toplevel_manager_v1_interface.name)==0)
   {
     toplevel_manager = wl_registry_bind(registry, name,
@@ -192,21 +191,15 @@ static void handle_global(void *data, struct wl_registry *registry,
   } 
   else if (strcmp(interface,zxdg_output_manager_v1_interface.name)==0)
   {
-    xdg_output_manager = wl_registry_bind(registry, name, &zxdg_output_manager_v1_interface,
-        ZXDG_OUTPUT_V1_NAME_SINCE_VERSION);
+    xdg_output_manager = wl_registry_bind(registry, name,
+        &zxdg_output_manager_v1_interface, ZXDG_OUTPUT_V1_NAME_SINCE_VERSION);
   }
   else if (strcmp(interface, wl_seat_interface.name) == 0 && seat == NULL)
     seat = wl_registry_bind(registry, name, &wl_seat_interface, version);
 }
 
-static void handle_global_remove(void *data, struct wl_registry *registry,
-  uint32_t name)
-{
-}
-
 static const struct wl_registry_listener registry_listener = {
   .global = handle_global,
-  .global_remove = handle_global_remove,
 };
 
 void wayland_init ( GtkWindow *window, gboolean wlr_ft )
@@ -218,20 +211,15 @@ void wayland_init ( GtkWindow *window, gboolean wlr_ft )
   gdisp = gdk_screen_get_display(gtk_window_get_screen(window));
   wdisp = gdk_wayland_display_get_wl_display(gdisp);
   if(wdisp == NULL)
-  {
-    fprintf(stderr, "can't get wayland display\n");
-    return;
-  }
+    g_error("Can't get wayland display\n");
 
   registry = wl_display_get_registry(wdisp);
   wl_registry_add_listener(registry, &registry_listener, &wlr_ft);
   wl_display_roundtrip(wdisp);
 
   if (wlr_ft && toplevel_manager == NULL)
-  {
-    fprintf(stderr, "wlr-foreign-toplevel not available\n");
-      return;
-  }
+    g_error("wlr-foreign-toplevel not available\n");
+
   wl_display_roundtrip(wdisp);
   wl_display_roundtrip(wdisp);
 }

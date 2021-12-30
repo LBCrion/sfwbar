@@ -57,7 +57,7 @@ void taskbar_button_click( GtkWidget *widget, gpointer data )
   else
   {
     zwlr_foreign_toplevel_handle_v1_unset_minimized(button->uid);
-    zwlr_foreign_toplevel_handle_v1_activate(button->uid,seat);
+    foreign_toplevel_activate(button->uid);
   }
 }
 
