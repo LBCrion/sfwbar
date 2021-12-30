@@ -128,6 +128,22 @@ gdouble expr_parse_disk ( GScanner *scanner )
   return result;
 }
 
+gchar *expr_parse_padstr ( GScanner *scanner )
+{
+  gchar *str, *result;
+  gint n;
+
+  parser_expect_symbol(scanner,'(',"Pad(String,Number)");
+  str = expr_parse_str(scanner);
+  parser_expect_symbol(scanner,',',"Pad(String,Number)");
+  n = expr_parse_num(scanner);
+  parser_expect_symbol(scanner,')',"Pad(String,Number)");
+
+  result = g_strdup_printf("%*s",n,str);
+  g_free(str);
+  return result;
+}
+
 /* Extract substring using regex */
 gchar *expr_parse_extract( GScanner *scanner )
 {
@@ -242,6 +258,9 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
       break;
     case G_TOKEN_EXTRACT:
       str = expr_parse_extract ( scanner );
+      break;
+    case G_TOKEN_PAD:
+      str = expr_parse_padstr ( scanner );
       break;
     case G_TOKEN_TIME:
       str = expr_parse_time ( scanner );
@@ -385,6 +404,7 @@ gchar *expr_parse( gchar *expr, guint *vcount )
   g_scanner_scope_add_symbol(scanner,0, "Time", (gpointer)G_TOKEN_TIME );
   g_scanner_scope_add_symbol(scanner,0, "Disk", (gpointer)G_TOKEN_DISK );
   g_scanner_scope_add_symbol(scanner,0, "ActiveWin", (gpointer)G_TOKEN_ACTIVE );
+  g_scanner_scope_add_symbol(scanner,0, "Pad", (gpointer)G_TOKEN_PAD );
   g_scanner_set_scope(scanner,0);
 
   scanner->input_name = expr;
