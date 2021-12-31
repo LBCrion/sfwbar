@@ -1,7 +1,6 @@
 #include "sfwbar.h"
 #include "config.h"
 #include <fcntl.h>
-#include <gtk-layer-shell.h>
 #include <sys/stat.h>
 
 void config_log_error ( GScanner *scanner, gchar *message, gboolean error )
@@ -754,23 +753,13 @@ struct layout_widget *config_layout ( GScanner *scanner )
 void config_switcher ( GScanner *scanner )
 {
   gchar *css=NULL;
-  GtkWidget *win, *box;
-  gint interval = 1;
+  gint interval = 1, cols = 1;
   gboolean icons = FALSE, labels = FALSE;
   scanner->max_parse_errors = FALSE;
 
   if(g_scanner_peek_next_token(scanner)!='{')
     return g_scanner_error(scanner,"Missing '{' after 'switcher'");
   g_scanner_get_next_token(scanner);
-
-  win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_layer_init_for_window (GTK_WINDOW(win));
-  gtk_layer_set_layer(GTK_WINDOW(win),GTK_LAYER_SHELL_LAYER_OVERLAY);
-  box = flow_grid_new(FALSE);
-  gtk_widget_set_name(box, "switcher");
-  gtk_widget_set_name(win, "switcher");
-  gtk_container_add(GTK_CONTAINER(win),box);
-  flow_grid_set_cols(box,1);
 
   while (( (gint)g_scanner_peek_next_token ( scanner ) != '}' )&&
       ( (gint)g_scanner_peek_next_token ( scanner ) != G_TOKEN_EOF ))
@@ -781,8 +770,7 @@ void config_switcher ( GScanner *scanner )
         interval = config_assign_number(scanner,"interval")/100;
         break;
       case G_TOKEN_COLS: 
-        flow_grid_set_cols(box,
-            config_assign_number(scanner,"cols"));
+        cols = config_assign_number(scanner,"cols");
         break;
       case G_TOKEN_CSS:
         g_free(css);
@@ -805,16 +793,7 @@ void config_switcher ( GScanner *scanner )
   if(g_scanner_peek_next_token(scanner) == ';')
     g_scanner_get_next_token(scanner);
 
-  if(css!=NULL)
-  {
-    GtkStyleContext *cont = gtk_widget_get_style_context (box);
-    GtkCssProvider *provider = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(provider,css,strlen(css),NULL);
-    gtk_style_context_add_provider (cont,
-      GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-    g_free(css);
-  }
-  switcher_config(win,box,interval,icons,labels);
+  switcher_config(cols,css,interval,icons,labels);
 }
 
 void config_placer ( GScanner *scanner )

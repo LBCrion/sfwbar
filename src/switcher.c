@@ -5,6 +5,7 @@
 
 #include <glib.h>
 #include <gtk/gtk.h>
+#include <gtk-layer-shell.h>
 #include "sfwbar.h"
 
 static GtkWidget *switcher;
@@ -16,18 +17,32 @@ static gboolean icons, labels;
 static gboolean invalid;
 static GList *focus;
 
-void switcher_config ( GtkWidget *nwin, GtkWidget *ngrid, gint nmax,
+void switcher_config ( gint ncols, gchar *css, gint nmax,
     gboolean nicons, gboolean nlabels)
 {
-  switcher = nwin;
-  grid = ngrid;
+  switcher = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_layer_init_for_window (GTK_WINDOW(switcher));
+  gtk_layer_set_layer(GTK_WINDOW(switcher),GTK_LAYER_SHELL_LAYER_OVERLAY);
+  grid = flow_grid_new(FALSE);
+  gtk_widget_set_name(grid, "switcher");
+  gtk_widget_set_name(switcher, "switcher");
+  gtk_container_add(GTK_CONTAINER(switcher),grid);
+  flow_grid_set_cols(grid,ncols);
+  if(css!=NULL)
+  {
+    GtkStyleContext *cont = gtk_widget_get_style_context (grid);
+    GtkCssProvider *provider = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(provider,css,strlen(css),NULL);
+    gtk_style_context_add_provider (cont,
+      GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+    g_free(css);
+  }
   interval = nmax;
   hstate = 's';
   icons = nicons;
   labels = nlabels;
   if(!icons)
     labels = TRUE;
-
 }
 
 void switcher_invalidate ( void )

@@ -105,7 +105,7 @@ void switcher_invalidate ( void );
 void switcher_update ( void );
 void switcher_set_label ( struct wt_window *win, gchar *title );
 void switcher_window_init ( struct wt_window *win);
-void switcher_config ( GtkWidget *, GtkWidget *, gint, gboolean, gboolean);
+void switcher_config ( gint, gchar *, gint, gboolean, gboolean);
 
 void pager_init ( GtkWidget * );
 void pager_set_preview ( gboolean pv );
