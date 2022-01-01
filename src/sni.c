@@ -462,6 +462,8 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
     else
       param=NULL;
     wrap->sni->string[wrap->prop] = g_strdup(param);
+    g_debug("sni %s: property %s = %s",wrap->sni->dest,
+        sni_properties[wrap->prop],wrap->sni->string[wrap->prop]);
   }
   if((wrap->prop>=SNI_PROP_ICONPIX)&&(wrap->prop<=SNI_PROP_ATTNPIX))
   {
