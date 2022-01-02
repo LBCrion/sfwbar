@@ -15,14 +15,16 @@ void widget_action ( struct layout_widget *lw, gint button )
   if(!lw || button<1 || button>MAX_BUTTON)
     return;
 
-  g_debug("widget action %d: %s",button,lw->action[button-1]);
   if(lw->action[button-1])
+  {
+    g_debug("widget action %d: %s",button,lw->action[button-1]);
     g_spawn_command_line_async(lw->action[button-1],NULL);
+  }
 }
 
 gboolean widget_button_action ( GtkWidget *widget, struct layout_widget *lw )
 {
-  widget_action(lw,0);
+  widget_action(lw,1);
   return TRUE;
 }
 
