@@ -142,7 +142,7 @@ double scanner_get_numeric ( gchar *name );
 
 gchar *gdk_monitor_get_xdg_name ( GdkMonitor *monitor );
 
-gchar *get_xdg_config_file ( gchar *fname );
+gchar *get_xdg_config_file ( gchar *fname, gchar *extra );
 gchar *json_string_by_name ( struct json_object *obj, gchar *name );
 gint64 json_int_by_name ( struct json_object *obj, gchar *name, gint64 defval);
 gboolean json_bool_by_name ( struct json_object *obj, gchar *name, gboolean defval);
@@ -152,7 +152,7 @@ void str_assign ( gchar **dest, gchar *source );
 struct rect parse_rect ( struct json_object *obj );
 gint get_toplevel_dir ( void );
 
-void scale_image_set_image ( GtkWidget *widget, gchar *image );
+void scale_image_set_image ( GtkWidget *widget, gchar *image, gchar *extra );
 GtkWidget *scale_image_new();
 int scale_image_update ( GtkWidget *widget );
 void scale_image_set_pixbuf ( GtkWidget *widget, GdkPixbuf * );

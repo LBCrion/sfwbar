@@ -86,7 +86,7 @@ void taskbar_window_init ( struct wt_window *win )
   if(icons)
   {
     icon = scale_image_new();
-    scale_image_set_image(icon,win->appid);
+    scale_image_set_image(icon,win->appid,NULL);
     gtk_grid_attach_next_to(GTK_GRID(box),icon,NULL,dir,1,1);
   }
   else

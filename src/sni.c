@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include "sfwbar.h"
 
+#define MAX_STRING 9
+
 enum {
   SNI_PROP_CATEGORY = 0,
   SNI_PROP_ID = 1,
@@ -13,19 +15,20 @@ enum {
   SNI_PROP_OVLAY = 5,
   SNI_PROP_ATTN = 6,
   SNI_PROP_ATTNMOV = 7,
-  SNI_PROP_ICONPIX = 8,
-  SNI_PROP_OVLAYPIX = 9,
-  SNI_PROP_ATTNPIX = 10,
-  SNI_PROP_WINDOWID = 11,
-  SNI_PROP_TOOLTIP = 12,
-  SNI_PROP_ISMENU = 13,
-  SNI_PROP_MENU = 14
+  SNI_PROP_THEME = 8,
+  SNI_PROP_ICONPIX = 9,
+  SNI_PROP_OVLAYPIX = 10,
+  SNI_PROP_ATTNPIX = 11,
+  SNI_PROP_WINDOWID = 12,
+  SNI_PROP_TOOLTIP = 13,
+  SNI_PROP_ISMENU = 14,
+  SNI_PROP_MENU = 15
 };
 
-static gchar *sni_properties[] = { "Category", "Id", "Title", "Status", "IconName",
-  "OverlayIconName", "AttentionIconName", "AttentionMovieName", "IconPixmap",
-  "OverlayIconPixmap", "AttentionIconPixmap", "ToolTip", "WindowId",
-  "ItemIsMenu", "Menu" };
+static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
+  "IconName", "OverlayIconName", "AttentionIconName", "AttentionMovieName",
+  "IconThemePath", "IconPixmap", "OverlayIconPixmap", "AttentionIconPixmap",
+  "ToolTip", "WindowId", "ItemIsMenu", "Menu" };
 
 struct sni_item {
   gchar *uid;
@@ -33,7 +36,7 @@ struct sni_item {
   gchar *dest;
   gchar *path;
   gchar *iface;
-  gchar *string[8];
+  gchar *string[MAX_STRING];
   gchar *menu_path;
   GdkPixbuf *pixbuf[3];
   gboolean menu;
@@ -207,6 +210,8 @@ void sni_menu_item_decorate ( GtkWidget *item, GVariant *dict  )
   const gchar *label, *icon;
   GtkWidget *img;
 
+  gtk_widget_set_name(item,"tray");
+
   if(GTK_IS_SEPARATOR_MENU_ITEM(item))
     return;
 
@@ -249,6 +254,7 @@ GtkWidget *sni_get_menu_iter ( GVariant *list, struct sni_menu_wrapper *wrap)
   g_variant_iter_init(&iter,list);
 
   menu = gtk_menu_new();
+  gtk_widget_set_name(menu,"tray");
 
   while( (item = g_variant_iter_next_value(&iter)) )
   {
@@ -427,12 +433,12 @@ void sni_item_set_icon ( struct sni_item *sni, gint icon, gint pix )
 {
   if(icon==-1)
   {
-    scale_image_set_image(sni->image,NULL);
+    scale_image_set_image(sni->image,NULL,NULL);
     return;
   }
   if(sni->string[icon]!=NULL)
   {
-    scale_image_set_image(sni->image,sni->string[icon]);
+    scale_image_set_image(sni->image,sni->string[icon],sni->string[SNI_PROP_THEME]);
     return;
   }
   if(sni->pixbuf[pix-SNI_PROP_ICONPIX]!=NULL)
@@ -454,7 +460,7 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
   if(result==NULL)
     return;
   g_variant_get(result, "(v)",&inner);
-  if(wrap->prop<=SNI_PROP_ATTNMOV)
+  if(wrap->prop<=SNI_PROP_THEME)
   {
     g_free(wrap->sni->string[wrap->prop]);
     if(inner && g_variant_is_of_type(inner,G_VARIANT_TYPE_STRING))
@@ -941,7 +947,7 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
   for(i=0;i<3;i++)
     if(sni->pixbuf[i]!=NULL)
       g_object_unref(sni->pixbuf[i]);
-  for(i=0;i<8;i++)
+  for(i=0;i<MAX_STRING;i++)
     g_free(sni->string[i]);
   if(sni->box!=NULL)
     g_object_unref(sni->box);

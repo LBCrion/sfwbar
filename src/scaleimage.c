@@ -147,17 +147,18 @@ void scale_image_set_pixbuf ( GtkWidget *widget, GdkPixbuf *pb )
   priv->ftype = SI_BUFF;
 }
 
-void scale_image_set_image ( GtkWidget *widget, gchar *image )
+void scale_image_set_image ( GtkWidget *widget, gchar *image, gchar *extra )
 {
+  static gchar *exts[4] = {"", ".svg", ".png", ".xpm"};
   ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
   GtkIconTheme *theme;
   GdkPixbuf *buf;
   GDesktopAppInfo *app;
   gint i;
   gchar ***desktop;
-  gchar *temp;
+  gchar *temp,*test;
 
-  if(g_strcmp0(priv->file,image)==0)
+  if(g_strcmp0(priv->file,image)==0 && !extra)
     return;
   g_free(priv->file);
   priv->file = g_strdup(image);
@@ -215,19 +216,25 @@ void scale_image_set_image ( GtkWidget *widget, gchar *image )
   if(priv->ftype == SI_ICON)
     return;
 
-  temp = get_xdg_config_file(priv->file);
-  if(temp!=NULL)
+  for(i=0;i<4;i++)
   {
-    buf = gdk_pixbuf_new_from_file_at_scale(temp,10,10,TRUE,NULL);
-    if(buf!=NULL)
+    test = g_strconcat(priv->file,exts[i],NULL);
+    temp = get_xdg_config_file(test,extra);
+    g_free(test);
+    if(temp!=NULL)
     {
-      g_object_unref(G_OBJECT(buf));
-      g_free(priv->fname);
-      priv->fname = temp;
-      priv->ftype = SI_FILE;
+      buf = gdk_pixbuf_new_from_file_at_scale(temp,10,10,TRUE,NULL);
+      if(buf!=NULL)
+      {
+        g_object_unref(G_OBJECT(buf));
+        g_free(priv->fname);
+        priv->fname = temp;
+        priv->ftype = SI_FILE;
+        break;
+      }
+      else
+        g_free(temp);
     }
-    else
-      g_free(temp);
   }
 }
 
@@ -277,7 +284,7 @@ int scale_image_update ( GtkWidget *widget )
 
   if(!buf)
   {
-    fallback = get_xdg_config_file("icons/misc/missing.svg");
+    fallback = get_xdg_config_file("icons/misc/missing.svg",NULL);
     if(fallback)
     {
       buf = gdk_pixbuf_new_from_file_at_scale(fallback,size,size,TRUE,NULL);

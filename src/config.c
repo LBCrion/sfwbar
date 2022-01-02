@@ -905,7 +905,7 @@ struct layout_widget *config_parse ( gchar *file )
   gsize size;
   struct layout_widget *w=NULL;
 
-  fname = get_xdg_config_file(file);
+  fname = get_xdg_config_file(file,NULL);
   g_debug("include: %s -> %s",file,fname);
   if(fname)
     if(!g_file_get_contents(fname,&conf,&size,NULL))

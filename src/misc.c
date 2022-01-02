@@ -21,7 +21,7 @@ gboolean file_test_read ( gchar *filename )
 
 /* get xdg config file name, first try user xdg config directory,
  * if file doesn't exist, try system xdg data dirs */
-gchar *get_xdg_config_file ( gchar *fname )
+gchar *get_xdg_config_file ( gchar *fname, gchar *extra )
 {
   gchar *full;
   const gchar * const *xdg_data;
@@ -36,10 +36,12 @@ gchar *get_xdg_config_file ( gchar *fname )
       return full;
     g_free(full);
   }
+
   full = g_build_filename ( g_get_user_config_dir(), "sfwbar", fname, NULL );
   if( file_test_read(full) )
     return full;
   g_free(full);
+
   xdg_data = g_get_system_data_dirs();
   for(i=0;xdg_data[i];i++)
   {
@@ -47,6 +49,14 @@ gchar *get_xdg_config_file ( gchar *fname )
     if( file_test_read(full) )
       return full;
   }
+
+  if(!extra)
+    return NULL;
+  full = g_build_filename ( extra, fname, NULL );
+  if( file_test_read(full) )
+    return full;
+  g_free(full);
+
   return NULL;
 }
 

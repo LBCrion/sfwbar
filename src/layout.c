@@ -208,7 +208,7 @@ gboolean layout_widget_draw ( struct layout_widget *lw )
 
   if(GTK_IS_IMAGE(lw->widget))
   {
-    scale_image_set_image(GTK_WIDGET(lw->widget),lw->eval);
+    scale_image_set_image(GTK_WIDGET(lw->widget),lw->eval,NULL);
     scale_image_update(GTK_WIDGET(lw->widget));
   }
 
