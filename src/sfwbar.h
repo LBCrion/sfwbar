@@ -6,6 +6,8 @@
 #include <json.h>
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
+#define MAX_BUTTON 7
+
 struct wt_window {
   GtkWidget *button;
   GtkWidget *switcher;
@@ -50,7 +52,7 @@ struct layout_widget {
   gchar *style;
   gchar *css;
   gchar *value;
-  gchar *action;
+  gchar *action[MAX_BUTTON];
   gchar *eval;
   gint64 interval;
   gint64 next_poll;

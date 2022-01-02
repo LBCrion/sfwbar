@@ -10,17 +10,52 @@
 
 GList *widget_list;
 
-gboolean widget_action ( GtkWidget *widget, gchar *cmd )
+void widget_action ( struct layout_widget *lw, gint button )
 {
-  if(cmd)
-    g_spawn_command_line_async(cmd,NULL);
+  if(!lw || button<1 || button>MAX_BUTTON)
+    return;
+
+  g_debug("widget action %d: %s",button,lw->action[button-1]);
+  if(lw->action[button-1])
+    g_spawn_command_line_async(lw->action[button-1],NULL);
+}
+
+gboolean widget_button_action ( GtkWidget *widget, struct layout_widget *lw )
+{
+  widget_action(lw,0);
   return TRUE;
 }
 
-gboolean widget_ebox_action ( GtkWidget *w, GdkEventButton *ev, gchar *cmd )
+gboolean widget_ebox_action ( GtkWidget *w, GdkEventButton *ev,
+    struct layout_widget *lw )
 {
-  if(ev->type == GDK_BUTTON_PRESS && ev->button == 1)
-    widget_action(w,cmd);
+  if(ev->type == GDK_BUTTON_PRESS && ev->button >= 1 && ev->button <= 3)
+    widget_action(lw,ev->button);
+  return TRUE;
+}
+
+gboolean widget_scroll_action ( GtkWidget *w, GdkEventScroll *event,
+    struct layout_widget *lw )
+{
+  gint button;
+  switch(event->direction)
+  {
+    case GDK_SCROLL_UP:
+      button = 4;
+      break;
+    case GDK_SCROLL_DOWN:
+      button = 5;
+      break;
+    case GDK_SCROLL_LEFT:
+      button = 6;
+      break;
+    case GDK_SCROLL_RIGHT:
+      button = 7;
+      break;
+    default:
+      button = 0;
+  }
+  widget_action(lw,button);
   return TRUE;
 }
 
@@ -58,6 +93,7 @@ struct layout_widget *layout_widget_new ( void )
 GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     GtkWidget *sibling )
 {
+  static gchar *act_check[MAX_BUTTON];
   gint dir;
   lw->lobject = lw->widget;
 
@@ -108,16 +144,18 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     gtk_label_set_xalign(GTK_LABEL(lw->widget),xalign);
   }
 
-  if((lw->action)&&(GTK_IS_BUTTON(lw->widget)))
+  if(memcmp(lw->action,act_check,sizeof(gchar *)*MAX_BUTTON)&&
+      (GTK_IS_BUTTON(lw->widget)))
     g_signal_connect(G_OBJECT(lw->widget),"clicked",
-      G_CALLBACK(widget_action),g_strdup(lw->action));
+      G_CALLBACK(widget_button_action),lw);
 
-  if((lw->action)&&(!GTK_IS_BUTTON(lw->widget)))
+  if(memcmp(lw->action,act_check,sizeof(gchar *)*MAX_BUTTON)&&
+      (!GTK_IS_BUTTON(lw->widget)))
   {
     lw->lobject = gtk_event_box_new();
     gtk_container_add(GTK_CONTAINER(lw->lobject),lw->widget);
     g_signal_connect(G_OBJECT(lw->lobject),"button_press_event",
-        G_CALLBACK(widget_ebox_action),g_strdup(lw->action));
+        G_CALLBACK(widget_ebox_action),lw);
   }
 
   widget_set_css(lw->widget);
@@ -143,12 +181,14 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
 
 void layout_widget_free ( struct layout_widget *lw )
 {
+  gint i;
   if(!lw)
     return;
   g_free(lw->style);
   g_free(lw->css);
   g_free(lw->value);
-  g_free(lw->action);
+  for(i=0;i<MAX_BUTTON;i++)
+    g_free(lw->action[i]);
   g_free(lw->eval);
   g_free(lw);
 }

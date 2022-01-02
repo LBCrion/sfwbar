@@ -546,6 +546,25 @@ void config_widget_rows ( GScanner *scanner, struct layout_widget *lw )
   flow_grid_set_rows(lw->widget, config_assign_number(scanner, "rows"));
 }
 
+void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
+{
+  gint button;
+  if(g_scanner_peek_next_token(scanner)=='[')
+  {
+    g_scanner_get_next_token(scanner);
+    if(g_scanner_get_next_token(scanner) != G_TOKEN_FLOAT)
+      return g_scanner_error(scanner,"expecting a number in action[<number>]");
+    button = (gint)scanner->value.v_float;
+    if(g_scanner_get_next_token(scanner) != ']')
+      return g_scanner_error(scanner,"expecting a ']' in action[<number>]");
+  }
+  else
+    button = 1;
+  if( button<1 || button >MAX_BUTTON )
+    return g_scanner_error(scanner,"invalid action index %d",button);
+  lw->action[button-1] = config_assign_string(scanner,"action");
+}
+
 gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
 {
   gboolean labels = FALSE, icons = FALSE;
@@ -602,7 +621,7 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
         config_widget_rows(scanner, lw);
         break;
       case G_TOKEN_ACTION:
-        lw->action = config_assign_string(scanner,"action");
+        config_widget_action(scanner, lw);
         break;
       case G_TOKEN_ICONS:
         icons = config_assign_boolean(scanner,FALSE,"icons");
