@@ -154,6 +154,7 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
   {
     lw->lobject = gtk_event_box_new();
     gtk_container_add(GTK_CONTAINER(lw->lobject),lw->widget);
+    gtk_widget_add_events(GTK_WIDGET(lw->lobject),GDK_SCROLL_MASK);
     g_signal_connect(G_OBJECT(lw->lobject),"button_press_event",
         G_CALLBACK(widget_ebox_action),lw);
   }
