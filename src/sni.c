@@ -693,7 +693,7 @@ void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
   sni->signal = g_dbus_connection_signal_subscribe(con,sni->dest,
       sni->iface,NULL,sni->path,NULL,0,sni_item_signal_cb,sni,NULL);
   sni_items = g_list_append(sni_items,sni);
-  for(i=0;i<15;i++)
+  for(i=0;i<16;i++)
     sni_item_get_prop(con,sni,i);
   g_debug("sni: host %s: item registered: %s %s",iface->host_iface,sni->dest,
       sni->path);
