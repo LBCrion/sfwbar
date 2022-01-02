@@ -191,7 +191,7 @@ static void activate (GtkApplication* app, gpointer data )
   GdkDisplay *gdisp;
 
   bar_window = (GtkWindow *)gtk_application_window_new (app);
-  gtk_widget_set_name(bar_window,"sfwbar");
+  gtk_widget_set_name(GTK_WIDGET(bar_window),"sfwbar");
   gtk_layer_init_for_window (bar_window);
   gtk_layer_auto_exclusive_zone_enable (bar_window);
   gtk_layer_set_keyboard_interactivity(bar_window,FALSE);
