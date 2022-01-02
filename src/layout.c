@@ -157,6 +157,8 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     gtk_widget_add_events(GTK_WIDGET(lw->lobject),GDK_SCROLL_MASK);
     g_signal_connect(G_OBJECT(lw->lobject),"button_press_event",
         G_CALLBACK(widget_ebox_action),lw);
+    g_signal_connect(G_OBJECT(lw->lobject),"scroll-event",
+      G_CALLBACK(widget_scroll_action),lw);
   }
 
   widget_set_css(lw->widget);
