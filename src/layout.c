@@ -24,7 +24,12 @@ void widget_action ( struct layout_widget *lw, gint button )
   if(lw->action[button-1])
   {
     g_debug("widget action %d: %s",button,lw->action[button-1]);
-    g_spawn_command_line_async(lw->action[button-1],NULL);
+    switch(lw->action_type[button-1])
+    {
+      case ACT_EXEC:
+        g_spawn_command_line_async(lw->action[button-1],NULL);
+        break;
+    }
   }
 }
 

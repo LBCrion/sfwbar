@@ -53,6 +53,7 @@ struct layout_widget {
   gchar *css;
   gchar *value;
   gchar *action[MAX_BUTTON];
+  guchar action_type[MAX_BUTTON];
   gchar *eval;
   gint64 interval;
   gint64 next_poll;
@@ -181,6 +182,12 @@ enum {
 enum {
   VF_CHTIME = 1,
   VF_NOGLOB = 2
+};
+
+enum {
+  ACT_EXEC = 1,
+  ACT_MENU = 2,
+  ACT_SWAY = 3
 };
 
 enum {

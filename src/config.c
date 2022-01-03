@@ -562,6 +562,8 @@ void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
     button = 1;
   if( button<1 || button >MAX_BUTTON )
     return g_scanner_error(scanner,"invalid action index %d",button);
+  lw->action_type[button-1] = ACT_EXEC;
+  g_free(lw->action[button-1]);
   lw->action[button-1] = config_assign_string(scanner,"action");
 }
 
