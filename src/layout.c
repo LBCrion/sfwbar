@@ -8,7 +8,8 @@
 #include <gtk/gtk.h>
 #include <gio/gdesktopappinfo.h>
 
-GList *widget_list;
+static GList *widget_list;
+static const gchar *act_check[MAX_BUTTON];
 
 void widget_action ( struct layout_widget *lw, gint button )
 {
@@ -95,7 +96,6 @@ struct layout_widget *layout_widget_new ( void )
 GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     GtkWidget *sibling )
 {
-  static gchar *act_check[MAX_BUTTON];
   gint dir;
   lw->lobject = lw->widget;
 
@@ -254,11 +254,11 @@ void layout_widget_attach ( struct layout_widget *lw )
 {
   guint vcount;
 
-  if(!lw->value)
+  if(!lw->value && !memcmp(lw->action,act_check,sizeof(gchar *)*MAX_BUTTON))
     return layout_widget_free(lw);
 
   lw->eval = expr_parse(lw->value, &vcount);
-  if(!vcount)
+  if(!vcount && !memcmp(lw->action,act_check,sizeof(gchar *)*MAX_BUTTON))
   {
     layout_widget_draw(lw);
     return layout_widget_free(lw);
