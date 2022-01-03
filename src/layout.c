@@ -37,6 +37,9 @@ gboolean widget_button_action ( GtkWidget *widget, struct layout_widget *lw )
 gboolean widget_ebox_action ( GtkWidget *w, GdkEventButton *ev,
     struct layout_widget *lw )
 {
+  if(GTK_IS_BUTTON(w) && ev->button != 1)
+    return FALSE;
+
   if(ev->type == GDK_BUTTON_PRESS && ev->button >= 1 && ev->button <= 3)
     widget_action(lw,ev->button);
   return TRUE;
@@ -102,6 +105,7 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     GtkWidget *sibling )
 {
   gint dir;
+  GtkWidget *tmp;
   lw->lobject = lw->widget;
 
   if(lw->style)
@@ -151,11 +155,7 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     gtk_label_set_xalign(GTK_LABEL(lw->widget),xalign);
   }
 
-  if(widget_has_actions(lw)&&(GTK_IS_BUTTON(lw->widget)))
-    g_signal_connect(G_OBJECT(lw->widget),"clicked",
-      G_CALLBACK(widget_button_action),lw);
-
-  if(widget_has_actions(lw)&&(!GTK_IS_BUTTON(lw->widget)))
+  if(widget_has_actions(lw))
   {
     lw->lobject = gtk_event_box_new();
     gtk_container_add(GTK_CONTAINER(lw->lobject),lw->widget);
@@ -164,14 +164,18 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
         G_CALLBACK(widget_ebox_action),lw);
     g_signal_connect(G_OBJECT(lw->lobject),"scroll-event",
       G_CALLBACK(widget_scroll_action),lw);
+    if(GTK_IS_BUTTON(lw->widget))
+      g_signal_connect(G_OBJECT(lw->widget),"clicked",
+        G_CALLBACK(widget_button_action),lw);
   }
 
   widget_set_css(lw->widget);
 
   if(GTK_IS_BUTTON(lw->widget))
   {
+    tmp = lw->widget;
     lw->widget = scale_image_new();
-    gtk_container_add(GTK_CONTAINER(lw->lobject),lw->widget);
+    gtk_container_add(GTK_CONTAINER(tmp),lw->widget);
   }
 
   if(parent)
