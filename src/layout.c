@@ -9,7 +9,12 @@
 #include <gio/gdesktopappinfo.h>
 
 static GList *widget_list;
-static const gchar *act_check[MAX_BUTTON];
+
+gboolean widget_has_actions ( struct layout_widget * lw )
+{
+  static const gchar *act_check[MAX_BUTTON];
+  return memcmp(lw->action,act_check,sizeof(gchar *)*MAX_BUTTON);
+}
 
 void widget_action ( struct layout_widget *lw, gint button )
 {
@@ -146,13 +151,11 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     gtk_label_set_xalign(GTK_LABEL(lw->widget),xalign);
   }
 
-  if(memcmp(lw->action,act_check,sizeof(gchar *)*MAX_BUTTON)&&
-      (GTK_IS_BUTTON(lw->widget)))
+  if(widget_has_actions(lw)&&(GTK_IS_BUTTON(lw->widget)))
     g_signal_connect(G_OBJECT(lw->widget),"clicked",
       G_CALLBACK(widget_button_action),lw);
 
-  if(memcmp(lw->action,act_check,sizeof(gchar *)*MAX_BUTTON)&&
-      (!GTK_IS_BUTTON(lw->widget)))
+  if(widget_has_actions(lw)&&(!GTK_IS_BUTTON(lw->widget)))
   {
     lw->lobject = gtk_event_box_new();
     gtk_container_add(GTK_CONTAINER(lw->lobject),lw->widget);
@@ -254,11 +257,11 @@ void layout_widget_attach ( struct layout_widget *lw )
 {
   guint vcount;
 
-  if(!lw->value && !memcmp(lw->action,act_check,sizeof(gchar *)*MAX_BUTTON))
+  if(!lw->value && !widget_has_actions(lw))
     return layout_widget_free(lw);
 
   lw->eval = expr_parse(lw->value, &vcount);
-  if(!vcount && !memcmp(lw->action,act_check,sizeof(gchar *)*MAX_BUTTON))
+  if(!vcount && !widget_has_actions(lw))
   {
     layout_widget_draw(lw);
     return layout_widget_free(lw);
