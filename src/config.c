@@ -562,9 +562,31 @@ void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
     button = 1;
   if( button<1 || button >MAX_BUTTON )
     return g_scanner_error(scanner,"invalid action index %d",button);
-  lw->action_type[button-1] = ACT_EXEC;
+  if(g_scanner_get_next_token(scanner) != '=')
+    return g_scanner_error(scanner,"expecting a '=' after 'action'");
+  if(g_scanner_peek_next_token(scanner) != G_TOKEN_STRING)
+  {
+    switch ((gint)g_scanner_get_next_token(scanner))
+    {
+      case G_TOKEN_EXEC:
+        lw->action_type[button-1] = ACT_EXEC;
+        break;
+      case G_TOKEN_MENU:
+        lw->action_type[button-1] = ACT_MENU;
+        break;
+      case G_TOKEN_SWAYCMD:
+        lw->action_type[button-1] = ACT_SWAY;
+        break;
+      default:
+        return g_scanner_error(scanner,"unexpected token after 'action'");
+    }
+  }
+  else
+    lw->action_type[button-1] = ACT_EXEC;
+  if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
+    return g_scanner_error(scanner,"action should be a <string>");
   g_free(lw->action[button-1]);
-  lw->action[button-1] = config_assign_string(scanner,"action");
+  lw->action[button-1] = g_strdup(scanner->value.v_string);
 }
 
 gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
@@ -988,6 +1010,8 @@ struct layout_widget *config_parse ( gchar *file )
   g_scanner_scope_add_symbol(scanner,0, "Children", (gpointer)G_TOKEN_CHILDREN );
   g_scanner_scope_add_symbol(scanner,0, "True", (gpointer)G_TOKEN_TRUE );
   g_scanner_scope_add_symbol(scanner,0, "False", (gpointer)G_TOKEN_FALSE );
+  g_scanner_scope_add_symbol(scanner,0, "Menu", (gpointer)G_TOKEN_MENU );
+  g_scanner_scope_add_symbol(scanner,0, "SwayCmd", (gpointer)G_TOKEN_SWAYCMD );
   g_scanner_scope_add_symbol(scanner,0, "RegEx", (gpointer)G_TOKEN_REGEX );
   g_scanner_scope_add_symbol(scanner,0, "Json", (gpointer)G_TOKEN_JSON );
   g_scanner_scope_add_symbol(scanner,0, "Grab", (gpointer)G_TOKEN_GRAB );
