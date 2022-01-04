@@ -1,3 +1,8 @@
+/* This entire file is licensed under GNU General Public License v3.0
+ *
+ * Copyright 2020-2022 Lev Babiev
+ */
+
 #include <glib.h>
 #include <stdio.h>
 #include <gio/gio.h>
@@ -327,7 +332,6 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
   GVariant *result, *layout, *list=NULL;
   struct sni_menu_wrapper *wrap = data;
   GtkWidget *menu;
-  GdkGravity wanchor, manchor;
 
   result = g_dbus_connection_call_finish(G_DBUS_CONNECTION(src),res,NULL);
   if(result)
@@ -344,30 +348,9 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
 
   if(menu)
   {
-    switch(get_toplevel_dir())
-    {
-      case GTK_POS_TOP:
-        wanchor = GDK_GRAVITY_SOUTH_WEST;
-        manchor = GDK_GRAVITY_NORTH_WEST;
-        break;
-      case GTK_POS_LEFT:
-        wanchor = GDK_GRAVITY_NORTH_EAST;
-        manchor = GDK_GRAVITY_NORTH_WEST;
-        break;
-      case GTK_POS_RIGHT:
-        wanchor = GDK_GRAVITY_NORTH_WEST;
-        manchor = GDK_GRAVITY_NORTH_EAST;
-        break;
-      default:
-        wanchor = GDK_GRAVITY_NORTH_WEST;
-        manchor = GDK_GRAVITY_SOUTH_WEST;
-        break;
-    }
-    gtk_widget_show_all(menu);
     g_object_ref_sink(G_OBJECT(menu));
     g_signal_connect(G_OBJECT(menu),"unmap",G_CALLBACK(g_object_unref),NULL);
-    gtk_menu_popup_at_widget(GTK_MENU(menu),wrap->sni->image,
-        wanchor,manchor,wrap->event);
+    layout_menu_popup(wrap->sni->image,menu,wrap->event);
   }
 
   gdk_event_free(wrap->event);

@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020-2021 Lev Babiev
+ * Copyright 2020-2022 Lev Babiev
  */
 
 #include "sfwbar.h"
@@ -9,6 +9,48 @@
 #include <gio/gdesktopappinfo.h>
 
 static GList *widget_list;
+static GHashTable *menus;
+
+
+void layout_init ( void )
+{
+  menus = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
+}
+
+void layout_menu_add ( gchar *name, GtkWidget *menu )
+{
+  g_hash_table_insert(menus, name, menu);
+}
+
+void layout_menu_popup ( GtkWidget *widget, GtkWidget *menu, GdkEvent *event )
+{
+  GdkGravity wanchor, manchor;
+
+  if(!menu || !widget)
+    return;
+
+  switch(get_toplevel_dir())
+  {
+    case GTK_POS_TOP:
+      wanchor = GDK_GRAVITY_SOUTH_WEST;
+      manchor = GDK_GRAVITY_NORTH_WEST;
+      break;
+    case GTK_POS_LEFT:
+      wanchor = GDK_GRAVITY_NORTH_EAST;
+      manchor = GDK_GRAVITY_NORTH_WEST;
+      break;
+    case GTK_POS_RIGHT:
+      wanchor = GDK_GRAVITY_NORTH_WEST;
+      manchor = GDK_GRAVITY_NORTH_EAST;
+      break;
+    default:
+      wanchor = GDK_GRAVITY_NORTH_WEST;
+      manchor = GDK_GRAVITY_SOUTH_WEST;
+      break;
+  }
+  gtk_widget_show_all(menu);
+  gtk_menu_popup_at_widget(GTK_MENU(menu),widget,wanchor,manchor,event);
+}
 
 gboolean widget_has_actions ( struct layout_widget * lw )
 {
@@ -16,30 +58,37 @@ gboolean widget_has_actions ( struct layout_widget * lw )
   return memcmp(lw->action,act_check,sizeof(gchar *)*MAX_BUTTON);
 }
 
-void widget_action ( struct layout_widget *lw, gint button )
+void widget_action ( GtkWidget *widget, struct layout_action *action,
+    GdkEvent *event )
 {
-  if(!lw || button<1 || button>MAX_BUTTON)
-    return;
-
-  if(lw->action[button-1])
+  if(action->command)
   {
-    g_debug("widget action [%d]: (%d) %s",button,lw->action_type[button-1],
-        lw->action[button-1]);
-    switch(lw->action_type[button-1])
+    g_debug("widget action: (%d) %s",action->type, action->command);
+    switch(action->type)
     {
       case ACT_EXEC:
-        g_spawn_command_line_async(lw->action[button-1],NULL);
+        g_spawn_command_line_async(action->command,NULL);
+        break;
+      case ACT_MENU:
+        layout_menu_popup(widget, g_hash_table_lookup(menus,action->command),
+            event);
         break;
       case ACT_SWAY:
-        sway_ipc_command(lw->action[button-1]);
+        sway_ipc_command(action->command);
         break;
     }
   }
 }
 
+gboolean widget_menu_action ( GtkWidget *w ,struct layout_action *action )
+{
+  widget_action(w,action,NULL);
+  return TRUE;
+}
+
 gboolean widget_button_action ( GtkWidget *widget, struct layout_widget *lw )
 {
-  widget_action(lw,1);
+  widget_action(lw->widget,&(lw->action[0]),NULL);
   return TRUE;
 }
 
@@ -50,7 +99,7 @@ gboolean widget_ebox_action ( GtkWidget *w, GdkEventButton *ev,
     return FALSE;
 
   if(ev->type == GDK_BUTTON_PRESS && ev->button >= 1 && ev->button <= 3)
-    widget_action(lw,ev->button);
+    widget_action(lw->widget,&(lw->action[ev->button-1]),(GdkEvent *)ev);
   return TRUE;
 }
 
@@ -75,7 +124,9 @@ gboolean widget_scroll_action ( GtkWidget *w, GdkEventScroll *event,
     default:
       button = 0;
   }
-  widget_action(lw,button);
+  if(button)
+    widget_action(lw->widget,&(lw->action[button-1]),(GdkEvent *)event);
+
   return TRUE;
 }
 
@@ -209,7 +260,7 @@ void layout_widget_free ( struct layout_widget *lw )
   g_free(lw->css);
   g_free(lw->value);
   for(i=0;i<MAX_BUTTON;i++)
-    g_free(lw->action[i]);
+    g_free(lw->action[i].command);
   g_free(lw->eval);
   g_free(lw);
 }

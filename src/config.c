@@ -1,3 +1,8 @@
+/* This entire file is licensed under GNU General Public License v3.0
+ *
+ * Copyright 2020-2022 Lev Babiev
+ */
+
 #include "sfwbar.h"
 #include "config.h"
 #include <fcntl.h>
@@ -569,24 +574,29 @@ void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
     switch ((gint)g_scanner_get_next_token(scanner))
     {
       case G_TOKEN_EXEC:
-        lw->action_type[button-1] = ACT_EXEC;
+        lw->action[button-1].type = ACT_EXEC;
         break;
       case G_TOKEN_MENU:
-        lw->action_type[button-1] = ACT_MENU;
+        lw->action[button-1].type = ACT_MENU;
         break;
       case G_TOKEN_SWAYCMD:
-        lw->action_type[button-1] = ACT_SWAY;
+        lw->action[button-1].type = ACT_SWAY;
         break;
       default:
         return g_scanner_error(scanner,"unexpected token after 'action'");
     }
   }
   else
-    lw->action_type[button-1] = ACT_EXEC;
+    lw->action[button-1].type = ACT_EXEC;
+
   if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
     return g_scanner_error(scanner,"action should be a <string>");
-  g_free(lw->action[button-1]);
-  lw->action[button-1] = g_strdup(scanner->value.v_string);
+
+  if(g_scanner_peek_next_token(scanner) == ';')
+    g_scanner_get_next_token(scanner);
+
+  g_free(lw->action[button-1].command);
+  lw->action[button-1].command = g_strdup(scanner->value.v_string);
 }
 
 gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
@@ -890,6 +900,147 @@ void config_placer ( GScanner *scanner )
   placer_config(wp_x,wp_y,wo_x,wo_y,pid);
 }
 
+GtkWidget *config_menu_item ( GScanner *scanner )
+{
+  gchar *label;
+  struct layout_action *action;
+  GtkWidget *item;
+
+  if(g_scanner_get_next_token(scanner)!='(')
+  {
+    g_scanner_error(scanner,"missing '(' after 'item'");
+    return NULL;
+  }
+
+  if(g_scanner_get_next_token(scanner)!=G_TOKEN_STRING)
+  {
+    g_scanner_error(scanner,"missing label in 'item'");
+    return NULL;
+  }
+  label = g_strdup(scanner->value.v_string);
+
+  if(g_scanner_get_next_token(scanner)!=',')
+  {
+    g_scanner_error(scanner,"missing ',' in 'item'");
+    g_free(label);
+    return NULL;
+  }
+
+  action = g_malloc0(sizeof(struct layout_action));
+
+  if(g_scanner_peek_next_token(scanner) != G_TOKEN_STRING)
+  {
+    switch ((gint)g_scanner_get_next_token(scanner))
+    {
+      case G_TOKEN_EXEC:
+        action->type = ACT_EXEC;
+        break;
+      case G_TOKEN_MENU:
+        action->type = ACT_MENU;
+        break;
+      case G_TOKEN_SWAYCMD:
+        action->type = ACT_SWAY;
+        break;
+      default:
+        g_scanner_error(scanner,"invalid action type");
+        return NULL;
+    }
+  }
+  else
+    action->type = ACT_EXEC;
+
+  if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
+  {
+    g_scanner_error(scanner,"menu item: action should be a <string>");
+    g_free(action);
+    g_free(label);
+    return NULL;
+  }
+  action->command = g_strdup(scanner->value.v_string);
+
+  if(g_scanner_get_next_token(scanner)!=')')
+  {
+    g_scanner_error(scanner,"missing ')' after 'item'");
+    g_free(action->command);
+    g_free(action);
+    g_free(label);
+    return NULL;
+  }
+
+  if(g_scanner_peek_next_token(scanner) == ';')
+    g_scanner_get_next_token(scanner);
+
+  item = gtk_menu_item_new_with_label(label);
+  g_signal_connect(G_OBJECT(item),"activate",
+      G_CALLBACK(widget_menu_action),action);
+  return item;
+}
+
+void config_menu ( GScanner *scanner, GtkWidget *parent )
+{
+  gchar *name;
+  GtkWidget *menu, *item;
+
+  if(g_scanner_get_next_token(scanner) != '(')
+    return g_scanner_error(scanner,"missing '(' after 'menu'");
+  if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
+    return g_scanner_error(scanner,"missing menu name");
+  name = g_strdup(scanner->value.v_string);
+  if(g_scanner_get_next_token(scanner) != ')')
+  {
+    g_free(name);
+    return g_scanner_error(scanner,"missing ')' afer 'menu'");
+  }
+  if(g_scanner_get_next_token(scanner) != '{')
+  {
+    g_free(name);
+    return g_scanner_error(scanner,"missing '{' afer 'menu'");
+  }
+
+  menu = gtk_menu_new();
+
+  g_scanner_peek_next_token(scanner);
+  while(scanner->next_token != G_TOKEN_EOF && scanner->next_token != '}')
+  {
+    item = NULL;
+    switch((gint)g_scanner_get_next_token(scanner))
+    {
+      case G_TOKEN_ITEM:
+        item = config_menu_item(scanner);
+        break;
+      case G_TOKEN_SEPARATOR:
+        item = gtk_separator_menu_item_new();
+        if(g_scanner_peek_next_token(scanner) == ';')
+          g_scanner_get_next_token(scanner);
+        break;
+      case G_TOKEN_SUBMENU:
+        config_menu(scanner,menu);
+        break;
+      default:
+        g_scanner_error(scanner,"Unexpected token in menu. Expecting an item or a separator");
+        break;
+    }
+    if(item)
+      gtk_container_add(GTK_CONTAINER(menu),item);
+    g_scanner_peek_next_token(scanner);
+  }
+  if(scanner->next_token == '}')
+    g_scanner_get_next_token(scanner);
+
+  if(!parent)
+    layout_menu_add(name,menu);
+  else
+  {
+    item = gtk_menu_item_new_with_label(name);
+    g_free(name);
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(item),menu);
+    gtk_container_add(GTK_CONTAINER(parent),item);
+  }
+
+  if(g_scanner_peek_next_token(scanner) == ';')
+    g_scanner_get_next_token(scanner);
+}
+
 struct layout_widget *config_parse_toplevel ( GScanner *scanner )
 {
   struct layout_widget *w=NULL;
@@ -910,6 +1061,9 @@ struct layout_widget *config_parse_toplevel ( GScanner *scanner )
         break;
       case G_TOKEN_SWITCHER:
         config_switcher(scanner);
+        break;
+      case G_TOKEN_MENU:
+        config_menu(scanner,NULL);
         break;
       default:
         g_scanner_error(scanner,"Unexpected toplevel token");
@@ -1012,6 +1166,9 @@ struct layout_widget *config_parse ( gchar *file )
   g_scanner_scope_add_symbol(scanner,0, "False", (gpointer)G_TOKEN_FALSE );
   g_scanner_scope_add_symbol(scanner,0, "Menu", (gpointer)G_TOKEN_MENU );
   g_scanner_scope_add_symbol(scanner,0, "SwayCmd", (gpointer)G_TOKEN_SWAYCMD );
+  g_scanner_scope_add_symbol(scanner,0, "Item", (gpointer)G_TOKEN_ITEM );
+  g_scanner_scope_add_symbol(scanner,0, "Separator", (gpointer)G_TOKEN_SEPARATOR );
+  g_scanner_scope_add_symbol(scanner,0, "SubMenu", (gpointer)G_TOKEN_SUBMENU );
   g_scanner_scope_add_symbol(scanner,0, "RegEx", (gpointer)G_TOKEN_REGEX );
   g_scanner_scope_add_symbol(scanner,0, "Json", (gpointer)G_TOKEN_JSON );
   g_scanner_scope_add_symbol(scanner,0, "Grab", (gpointer)G_TOKEN_GRAB );

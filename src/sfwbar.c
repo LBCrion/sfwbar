@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020-2021 Lev Babiev
+ * Copyright 2020-2022 Lev Babiev
  */
 
 #include <gtk/gtk.h>
@@ -198,8 +198,6 @@ static void activate (GtkApplication* app, gpointer data )
   gtk_layer_set_layer(bar_window,GTK_LAYER_SHELL_LAYER_OVERLAY);
 
   css_init();
-  
-  lw = config_parse(confname?confname:"sfwbar.config");
 
   gtk_widget_style_get(GTK_WIDGET(bar_window),"direction",&toplevel_dir,NULL);
   gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_LEFT,
@@ -211,6 +209,8 @@ static void activate (GtkApplication* app, gpointer data )
   gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_TOP,
       !(toplevel_dir==GTK_POS_BOTTOM));
 
+  layout_init();
+  lw = config_parse(confname?confname:"sfwbar.config");
   if((lw != NULL)&&(lw->widget!=NULL))
   {
     gtk_container_add(GTK_CONTAINER(bar_window), lw->widget);

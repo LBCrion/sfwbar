@@ -46,14 +46,18 @@ struct scan_file {
   GList *vars;
 };
 
+struct layout_action {
+  guchar type;
+  gchar *command;
+};
+
 struct layout_widget {
   GtkWidget *widget;
   GtkWidget *lobject;
   gchar *style;
   gchar *css;
   gchar *value;
-  gchar *action[MAX_BUTTON];
-  guchar action_type[MAX_BUTTON];
+  struct layout_action action[MAX_BUTTON];
   gchar *eval;
   gint64 interval;
   gint64 next_poll;
@@ -118,7 +122,10 @@ void pager_update ( void );
 void sni_init ( GtkWidget *w );
 void sni_update ( void );
 
+void layout_init ( void );
+void layout_menu_add ( gchar *name, GtkWidget *menu );
 struct layout_widget *layout_widget_new ( void );
+void layout_menu_popup ( GtkWidget *, GtkWidget *, GdkEvent *);
 gpointer layout_scanner_thread ( gpointer data );
 GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     GtkWidget *sibling );
@@ -126,6 +133,7 @@ void layout_widget_attach ( struct layout_widget *lw );
 void layout_widget_free ( struct layout_widget *lw );
 void layout_widgets_update ( GMainContext * );
 void widget_set_css ( GtkWidget * );
+gboolean widget_menu_action ( GtkWidget *widget, struct layout_action *action );
 
 GtkWidget *flow_grid_new( gboolean limit );
 void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );
@@ -152,6 +160,8 @@ int md5_file( gchar *path, guchar output[16] );
 void str_assign ( gchar **dest, gchar *source );
 struct rect parse_rect ( struct json_object *obj );
 gint get_toplevel_dir ( void );
+guint str_nhash ( gchar *str );
+gboolean str_nequal ( gchar *str1, gchar *str2 );
 
 void scale_image_set_image ( GtkWidget *widget, gchar *image, gchar *extra );
 GtkWidget *scale_image_new();

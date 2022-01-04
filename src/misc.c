@@ -138,3 +138,19 @@ void str_assign ( gchar **dest, gchar *source )
   else
     *dest = g_strdup(source);
 }
+
+guint str_nhash ( gchar *str )
+{
+  guint ret = 5381;
+  guint i=0;
+
+  while(str[i])
+    ret += g_ascii_toupper(str[i++]);
+
+  return ret;
+}
+
+gboolean str_nequal ( gchar *str1, gchar *str2 )
+{
+  return (!g_ascii_strcasecmp(str1,str2));
+}
