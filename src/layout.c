@@ -324,14 +324,17 @@ void layout_widget_attach ( struct layout_widget *lw )
   if(!lw->value && !widget_has_actions(lw))
     return layout_widget_free(lw);
 
-  lw->eval = expr_parse(lw->value, &vcount);
-  if(!vcount && !widget_has_actions(lw))
+  if(lw->value)
   {
-    layout_widget_draw(lw);
-    return layout_widget_free(lw);
+    lw->eval = expr_parse(lw->value, &vcount);
+    if(!vcount && !widget_has_actions(lw))
+    {
+      layout_widget_draw(lw);
+      return layout_widget_free(lw);
+    }
+    g_free(lw->eval);
+    lw->eval = NULL;
   }
-  g_free(lw->eval);
-  lw->eval = NULL;
 
   widget_list = g_list_append(widget_list,lw);
 }
