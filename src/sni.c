@@ -525,6 +525,8 @@ void sni_item_signal_cb (GDBusConnection *con, const gchar *sender,
     sni_item_get_prop(con,data,SNI_PROP_STATUS);
   if(g_strcmp0(signal,"NewToolTip")==0)
     sni_item_get_prop(con,data,SNI_PROP_TOOLTIP);
+  if(g_strcmp0(signal,"NewIconThemePath")==0)
+    sni_item_get_prop(con,data,SNI_PROP_THEME);
   if(g_strcmp0(signal,"NewIcon")==0)
   {
     sni_item_get_prop(con,data,SNI_PROP_ICON);
