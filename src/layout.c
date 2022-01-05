@@ -11,14 +11,15 @@
 static GList *widget_list;
 static GHashTable *menus;
 
-
-void layout_init ( void )
-{
-  menus = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
-}
-
 void layout_menu_add ( gchar *name, GtkWidget *menu )
 {
+  static gboolean once;
+  if(!once)
+  {
+    menus = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
+    once = TRUE;
+  }
+
   g_hash_table_insert(menus, name, menu);
 }
 
@@ -52,7 +53,7 @@ void layout_menu_popup ( GtkWidget *widget, GtkWidget *menu, GdkEvent *event )
   gtk_menu_popup_at_widget(GTK_MENU(menu),widget,wanchor,manchor,event);
 }
 
-gboolean widget_has_actions ( struct layout_widget * lw )
+gboolean layout_widget_has_actions ( struct layout_widget * lw )
 {
   static const gchar *act_check[MAX_BUTTON];
   return memcmp(lw->action,act_check,sizeof(gchar *)*MAX_BUTTON);
@@ -86,13 +87,13 @@ gboolean widget_menu_action ( GtkWidget *w ,struct layout_action *action )
   return TRUE;
 }
 
-gboolean widget_button_action ( GtkWidget *widget, struct layout_widget *lw )
+gboolean layout_widget_button_cb ( GtkWidget *widget, struct layout_widget *lw )
 {
   widget_action(lw->widget,&(lw->action[0]),NULL);
   return TRUE;
 }
 
-gboolean widget_ebox_action ( GtkWidget *w, GdkEventButton *ev,
+gboolean layout_widget_click_cb ( GtkWidget *w, GdkEventButton *ev,
     struct layout_widget *lw )
 {
   if(GTK_IS_BUTTON(w) && ev->button != 1)
@@ -103,7 +104,7 @@ gboolean widget_ebox_action ( GtkWidget *w, GdkEventButton *ev,
   return TRUE;
 }
 
-gboolean widget_scroll_action ( GtkWidget *w, GdkEventScroll *event,
+gboolean layout_widget_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
     struct layout_widget *lw )
 {
   gint button;
@@ -215,18 +216,18 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     gtk_label_set_xalign(GTK_LABEL(lw->widget),xalign);
   }
 
-  if(widget_has_actions(lw))
+  if(layout_widget_has_actions(lw))
   {
     lw->lobject = gtk_event_box_new();
     gtk_container_add(GTK_CONTAINER(lw->lobject),lw->widget);
     gtk_widget_add_events(GTK_WIDGET(lw->lobject),GDK_SCROLL_MASK);
     g_signal_connect(G_OBJECT(lw->lobject),"button_press_event",
-        G_CALLBACK(widget_ebox_action),lw);
+        G_CALLBACK(layout_widget_click_cb),lw);
     g_signal_connect(G_OBJECT(lw->lobject),"scroll-event",
-      G_CALLBACK(widget_scroll_action),lw);
+      G_CALLBACK(layout_widget_scroll_cb),lw);
     if(GTK_IS_BUTTON(lw->widget))
       g_signal_connect(G_OBJECT(lw->widget),"clicked",
-        G_CALLBACK(widget_button_action),lw);
+        G_CALLBACK(layout_widget_button_cb),lw);
   }
 
   widget_set_css(lw->widget);
@@ -321,13 +322,13 @@ void layout_widget_attach ( struct layout_widget *lw )
 {
   guint vcount;
 
-  if(!lw->value && !widget_has_actions(lw))
+  if(!lw->value && !layout_widget_has_actions(lw))
     return layout_widget_free(lw);
 
   if(lw->value)
   {
     lw->eval = expr_parse(lw->value, &vcount);
-    if(!vcount && !widget_has_actions(lw))
+    if(!vcount && !layout_widget_has_actions(lw))
     {
       layout_widget_draw(lw);
       return layout_widget_free(lw);

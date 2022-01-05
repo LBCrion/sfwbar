@@ -23,7 +23,6 @@ struct rect {
 };
 
 struct scan_var {
-  gchar *name;
   GRegex *regex;
   gchar *json;
   gchar *str;
@@ -142,7 +141,7 @@ void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w );
 void flow_grid_pad ( GtkWidget *cgrid );
 void flow_grid_clean ( GtkWidget *cgrid );
 
-void scanner_var_attach ( struct scan_var *var );
+void scanner_var_attach ( gchar *name, struct scan_var *var );
 void scanner_expire ( void );
 int scanner_reset_vars ( GList *var_list );
 int scanner_glob_file ( struct scan_file *file );

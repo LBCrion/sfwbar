@@ -197,13 +197,12 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
       break;
   }
 
-  var->name = vname;
   var->file = file;
   var->type = type;
   var->multi = flag;
 
   file->vars = g_list_append(file->vars,var);
-  scanner_var_attach(var);
+  scanner_var_attach(vname,var);
 }
 
 void config_scanner_source ( GScanner *scanner, gint source )
@@ -551,6 +550,40 @@ void config_widget_rows ( GScanner *scanner, struct layout_widget *lw )
   flow_grid_set_rows(lw->widget, config_assign_number(scanner, "rows"));
 }
 
+gboolean config_action ( GScanner *scanner, struct layout_action *action )
+{
+  guchar type;
+
+  if(g_scanner_peek_next_token(scanner) != G_TOKEN_STRING)
+  {
+    switch ((gint)g_scanner_get_next_token(scanner))
+    {
+      case G_TOKEN_EXEC:
+        type = ACT_EXEC;
+        break;
+      case G_TOKEN_MENU:
+        type = ACT_MENU;
+        break;
+      case G_TOKEN_SWAYCMD:
+        type = ACT_SWAY;
+        break;
+      default:
+        return FALSE;
+    }
+  }
+  else
+    type = ACT_EXEC;
+
+  if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
+    return FALSE;
+
+  g_free(action->command);
+  action->command = g_strdup(scanner->value.v_string);
+  action->type = type;
+
+  return TRUE;
+}
+
 void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
 {
   gint button;
@@ -569,34 +602,12 @@ void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
     return g_scanner_error(scanner,"invalid action index %d",button);
   if(g_scanner_get_next_token(scanner) != '=')
     return g_scanner_error(scanner,"expecting a '=' after 'action'");
-  if(g_scanner_peek_next_token(scanner) != G_TOKEN_STRING)
-  {
-    switch ((gint)g_scanner_get_next_token(scanner))
-    {
-      case G_TOKEN_EXEC:
-        lw->action[button-1].type = ACT_EXEC;
-        break;
-      case G_TOKEN_MENU:
-        lw->action[button-1].type = ACT_MENU;
-        break;
-      case G_TOKEN_SWAYCMD:
-        lw->action[button-1].type = ACT_SWAY;
-        break;
-      default:
-        return g_scanner_error(scanner,"unexpected token after 'action'");
-    }
-  }
-  else
-    lw->action[button-1].type = ACT_EXEC;
 
-  if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
-    return g_scanner_error(scanner,"action should be a <string>");
+  if(!config_action(scanner,&(lw->action[button-1])))
+    return g_scanner_error(scanner,"invalid action");
 
   if(g_scanner_peek_next_token(scanner) == ';')
     g_scanner_get_next_token(scanner);
-
-  g_free(lw->action[button-1].command);
-  lw->action[button-1].command = g_strdup(scanner->value.v_string);
 }
 
 gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
@@ -928,35 +939,13 @@ GtkWidget *config_menu_item ( GScanner *scanner )
 
   action = g_malloc0(sizeof(struct layout_action));
 
-  if(g_scanner_peek_next_token(scanner) != G_TOKEN_STRING)
+  if(!config_action(scanner,action))
   {
-    switch ((gint)g_scanner_get_next_token(scanner))
-    {
-      case G_TOKEN_EXEC:
-        action->type = ACT_EXEC;
-        break;
-      case G_TOKEN_MENU:
-        action->type = ACT_MENU;
-        break;
-      case G_TOKEN_SWAYCMD:
-        action->type = ACT_SWAY;
-        break;
-      default:
-        g_scanner_error(scanner,"invalid action type");
-        return NULL;
-    }
-  }
-  else
-    action->type = ACT_EXEC;
-
-  if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
-  {
-    g_scanner_error(scanner,"menu item: action should be a <string>");
-    g_free(action);
     g_free(label);
+    g_free(action);
+    g_scanner_error(scanner, "menu item: invalid action");
     return NULL;
   }
-  action->command = g_strdup(scanner->value.v_string);
 
   if(g_scanner_get_next_token(scanner)!=')')
   {

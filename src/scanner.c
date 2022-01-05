@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020-2021 Lev Babiev
+ * Copyright 2020-2022 Lev Babiev
  */
 
 #include <glib.h>
@@ -9,20 +9,28 @@
 #include <glob.h>
 #include "sfwbar.h"
 
-static GList *scan_list;
+static GHashTable *scan_list;
 
-void scanner_var_attach ( struct scan_var *var )
+void scanner_var_attach ( gchar *name, struct scan_var *var )
 {
-  scan_list = g_list_append(scan_list,var);
+  static guchar once;
+  if(!once)
+  {
+    scan_list = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
+    once = TRUE;
+  }
+  g_hash_table_insert(scan_list,name,var);
+}
+
+void scanner_expire_var ( void *key, struct scan_var *var, void *data )
+{
+  var->status=0;
 }
 
 /* expire all variables in the tree */
 void scanner_expire ( void )
 {
-  GList *node;
-
-  for(node=scan_list;node!=NULL;node=g_list_next(node))
-    SCAN_VAR(node->data)->status=0;
+  g_hash_table_foreach(scan_list,(GHFunc)scanner_expire_var,NULL);
 }
 
 void scanner_update_var ( struct scan_var *var, gchar *value)
@@ -145,7 +153,6 @@ int scanner_update_file ( FILE *in, struct scan_file *file )
   return 0;
 }
 
-
 /* reset variables in a list */
 int scanner_reset_vars ( GList *var_list )
 {
@@ -236,16 +243,6 @@ int scanner_update_file_glob ( struct scan_file *file )
   return 0;
 }
 
-/* get node by name from the list root */
-void *scanner_var_by_name ( GList *prev, gchar *name )
-{
-  GList *node;
-  for(node=prev;node!=NULL;node=g_list_next(node))
-      if(!g_strcmp0(SCAN_VAR(node->data)->name,name))
-        return node->data;
-  return NULL;
-}
-
 char *scanner_parse_identifier ( gchar *id, gchar **fname )
 {
   gchar *temp;
@@ -279,7 +276,7 @@ char *scanner_get_string ( gchar *name )
 
   id = scanner_parse_identifier(name,&fname);
   g_free(fname);
-  if((scan=scanner_var_by_name(scan_list,id))!=NULL)
+  if((scan=g_hash_table_lookup(scan_list,id))!=NULL)
     {
     if(!scan->status)
       scanner_update_file_glob(scan->file);
@@ -301,7 +298,7 @@ double scanner_get_numeric ( gchar *name )
 
   id = scanner_parse_identifier(name,&fname);
 
-  if((scan=scanner_var_by_name(scan_list,id))!=NULL)
+  if((scan=g_hash_table_lookup(scan_list,id))!=NULL)
     {
     if(!scan->status)
       scanner_update_file_glob(scan->file);

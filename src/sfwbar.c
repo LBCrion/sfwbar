@@ -209,7 +209,6 @@ static void activate (GtkApplication* app, gpointer data )
   gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_TOP,
       !(toplevel_dir==GTK_POS_BOTTOM));
 
-  layout_init();
   lw = config_parse(confname?confname:"sfwbar.config");
   if((lw != NULL)&&(lw->widget!=NULL))
   {
