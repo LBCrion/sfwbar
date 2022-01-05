@@ -275,7 +275,13 @@ additional css properties for the widget. These propertes will only apply to
 the widget in question.
 .TP
 .B action
-an action to execute upon a button click. Applicable to buttons only.
+an action to execute upon a button click. Actions can be attached to any
+widget. Multiple actions can be attached to different mouse buttons using
+\fBaction[n] = <type> <string>\fP syntax. For mouse buttons, n = 1,2,3 for
+left, midle and right button respectively. For mouse scroll events, use
+n = 4,5,6,7 for up, down, left and right respectively. If no index is
+specified the action is attached to a left mouse button click. See
+\fBActions\fP section for more details on how actions are specified.
 .UNINDENT
 .sp
 \fBTaskbar\fP widget may contain the following options
@@ -326,6 +332,62 @@ a number of rows in a pager.
 a number of columns in a pager.
 If both rows and cols are specified, rows will be used. If neither is
 specified, the default is rows=1
+.UNINDENT
+.SS Menus
+.sp
+User defined menus can be attached to any widget (see \fBaction\fP widget
+property). Menus are defined using a Menu section in the config file.
+The example syntax is as following:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+menu ("menu_name") {
+  item("item1", Exec "command")
+  separator
+  submenu("sub") {
+    item("item2", SwayCmd "focus next")
+  }
+}
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Each menu has a name used to link the menu to the widget action and a
+list of menu items. The following menu items are supported:
+.INDENT 0.0
+.TP
+.B item
+an actionable menu item. This item has two parameters, the first one
+is a label, the second is an action to execute when the item is activated.
+See \fBActions\fP section for more details on supported actions.
+.TP
+.B separator
+a menu separator. This item has no parameters
+.TP
+.B submenu
+attach a submenu. Submenu has a one parameter, a label to display in the
+parent menu. The submenu contains a list of items, which will be placed
+into it.
+.UNINDENT
+.SS Actions
+.sp
+Actions can be attached to mouse click and scroll events for any widget or
+attached to menu items. Actions are defined as \fB<type> <command>\fP\&. Where
+type specifies how to handle the action and command is the action to perform.
+The following action types are supported:
+.INDENT 0.0
+.TP
+.B Exec
+execute a shell comand
+.TP
+.B SwayCmd
+send a command over Sway IPC
+.TP
+.B Menu
+open a menu with a given name
 .UNINDENT
 .SS Scanner
 .sp
@@ -501,6 +563,15 @@ T{
 T}	T{
 convert a number into a string, the first argument is a number (or
 a numeric expression), the second argument is decimal precision.
+T}
+_
+T{
+\fBPad\fP
+T}	T{
+pad a string to be n characters long, the first parameter is a
+string to pad, the second is the desired number of characters,
+if the number is negative, the string is padded at the end, if
+positive, the string is padded at the front.
 T}
 _
 .TE
@@ -684,9 +755,15 @@ description
 T}
 _
 T{
+sfwbar
+T}	T{
+toplevel bar window
+T}
+_
+T{
 layout
 T}	T{
-Top level layout grid
+top level layout grid
 T}
 _
 T{
@@ -735,6 +812,12 @@ T{
 switcher_normal
 T}	T{
 switcher inactive window representation
+T}
+_
+T{
+tray
+T}	T{
+tray menus and menu items
 T}
 _
 T{

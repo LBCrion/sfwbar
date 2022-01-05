@@ -210,7 +210,13 @@ css
   the widget in question.
 
 action
-  an action to execute upon a button click. Applicable to buttons only.
+  an action to execute upon a button click. Actions can be attached to any
+  widget. Multiple actions can be attached to different mouse buttons using
+  ``action[n] = <type> <string>`` syntax. For mouse buttons, n = 1,2,3 for
+  left, midle and right button respectively. For mouse scroll events, use
+  n = 4,5,6,7 for up, down, left and right respectively. If no index is
+  specified the action is attached to a left mouse button click. See
+  ``Actions`` section for more details on how actions are specified.
 
 ``Taskbar`` widget may contain the following options
 
@@ -255,6 +261,53 @@ cols
   a number of columns in a pager.
   If both rows and cols are specified, rows will be used. If neither is
   specified, the default is rows=1
+
+Menus
+-----
+
+User defined menus can be attached to any widget (see ``action`` widget
+property). Menus are defined using a Menu section in the config file.
+The example syntax is as following: ::
+
+  menu ("menu_name") {
+    item("item1", Exec "command")
+    separator
+    submenu("sub") {
+      item("item2", SwayCmd "focus next")
+    }
+  }
+
+Each menu has a name used to link the menu to the widget action and a
+list of menu items. The following menu items are supported:
+
+item
+  an actionable menu item. This item has two parameters, the first one
+  is a label, the second is an action to execute when the item is activated.
+  See ``Actions`` section for more details on supported actions.
+
+separator
+  a menu separator. This item has no parameters
+
+submenu
+  attach a submenu. Submenu has a one parameter, a label to display in the
+  parent menu. The submenu contains a list of items, which will be placed
+  into it.
+
+Actions
+-------
+Actions can be attached to mouse click and scroll events for any widget or
+attached to menu items. Actions are defined as ``<type> <command>``. Where
+type specifies how to handle the action and command is the action to perform.
+The following action types are supported:
+
+Exec
+  execute a shell comand
+
+SwayCmd
+  send a command over Sway IPC
+
+Menu
+  open a menu with a given name
 
 Scanner
 -------
@@ -357,6 +410,10 @@ Operation   Description
             ``Extract($Var,'FindThis: (GrabThat)')``
 ``Str``     convert a number into a string, the first argument is a number (or
             a numeric expression), the second argument is decimal precision.
+``Pad``     pad a string to be n characters long, the first parameter is a
+            string to pad, the second is the desired number of characters,
+            if the number is negative, the string is padded at the end, if
+            positive, the string is padded at the front.
 =========== ==================================================================
 
 In addition the following query functions are supported
@@ -437,7 +494,8 @@ Taskbar and pager buttons are assigned the following styles
 ===================== =============
 style name            description
 ===================== =============
-layout                Top level layout grid
+sfwbar                toplevel bar window
+layout                top level layout grid
 taskbar_normal        taskbar button for a window
 taskbar_active        taskbar button for currently focused window
 pager_normal          pager button for a workspace
@@ -446,6 +504,7 @@ pager_focused         pager button for a curently focused workspace
 switcher              switcher window and top level grid
 switcher_active       switcher active window representation
 switcher_normal       switcher inactive window representation
+tray                  tray menus and menu items
 tray_active           active tray icon
 tray_attention        tray icon requiring user attention
 tray_passive          passive tray icon
