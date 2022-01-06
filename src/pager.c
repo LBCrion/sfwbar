@@ -12,7 +12,8 @@ static gboolean preview;
 
 void pager_init ( GtkWidget *widget )
 {
-  pager = widget;
+  if(!pager)
+    pager = widget;
   pager_update();
 }
 

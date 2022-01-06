@@ -69,6 +69,7 @@ extern gchar *expr_token[];
 
 void action_exec ( GtkWidget *, struct layout_action *, GdkEvent *);
 void action_free ( struct layout_action *action, GObject *old );
+void action_function_add ( gchar *name, GList *actions );
 
 void sway_ipc_init ( void );
 gboolean sway_ipc_active ( void );
@@ -106,6 +107,8 @@ void foreign_toplevel_activate ( gpointer tl );
 gboolean window_hide_event ( struct json_object *obj );
 
 struct layout_widget *config_parse ( gchar * );
+void config_pipe_read ( gchar *command );
+void config_string ( gchar *string );
 
 char *expr_parse ( gchar *expr_str, guint * );
 
@@ -126,6 +129,7 @@ void sni_update ( void );
 
 GtkWidget *layout_menu_get ( gchar *name );
 void layout_menu_add ( gchar *name, GtkWidget *menu );
+void layout_menu_remove ( gchar *name );
 struct layout_widget *layout_widget_new ( void );
 void layout_menu_popup ( GtkWidget *, GtkWidget *, GdkEvent *);
 gpointer layout_scanner_thread ( gpointer data );
@@ -199,7 +203,11 @@ enum {
 enum {
   ACT_EXEC = 1,
   ACT_MENU = 2,
-  ACT_SWAY = 3
+  ACT_CLEAR = 3,
+  ACT_PIPE = 4,
+  ACT_SWAY = 5,
+  ACT_CONF = 6,
+  ACT_FUNC = 7
 };
 
 enum {

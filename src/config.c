@@ -564,8 +564,20 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
       case G_TOKEN_MENU:
         type = ACT_MENU;
         break;
+      case G_TOKEN_MENUCLEAR:
+        type = ACT_CLEAR;
+        break;
+      case G_TOKEN_PIPEREAD:
+        type = ACT_PIPE;
+        break;
       case G_TOKEN_SWAYCMD:
         type = ACT_SWAY;
+        break;
+      case G_TOKEN_CONFIG:
+        type = ACT_CONF;
+        break;
+      case G_TOKEN_FUNCTION:
+        type = ACT_FUNC;
         break;
       default:
         return FALSE;
@@ -917,6 +929,7 @@ GtkWidget *config_menu_item ( GScanner *scanner )
   struct layout_action *action;
   GtkWidget *item;
 
+  scanner->max_parse_errors = FALSE;
   if(g_scanner_get_next_token(scanner)!='(')
   {
     g_scanner_error(scanner,"missing '(' after 'item'");
@@ -950,8 +963,7 @@ GtkWidget *config_menu_item ( GScanner *scanner )
   if(g_scanner_get_next_token(scanner)!=')')
   {
     g_scanner_error(scanner,"missing ')' after 'item'");
-    g_free(action->command);
-    g_free(action);
+    action_free(action,NULL);
     g_free(label);
     return NULL;
   }
@@ -971,6 +983,7 @@ void config_menu ( GScanner *scanner, GtkWidget *parent )
   gchar *name;
   GtkWidget *menu, *item;
 
+  scanner->max_parse_errors = FALSE;
   if(g_scanner_get_next_token(scanner) != '(')
     return g_scanner_error(scanner,"missing '(' after 'menu'");
   if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
@@ -987,7 +1000,9 @@ void config_menu ( GScanner *scanner, GtkWidget *parent )
     return g_scanner_error(scanner,"missing '{' afer 'menu'");
   }
 
-  menu = gtk_menu_new();
+  menu = layout_menu_get(name);
+  if(!menu || parent)
+    menu = gtk_menu_new();
 
   g_scanner_peek_next_token(scanner);
   while(scanner->next_token != G_TOKEN_EOF && scanner->next_token != '}')
@@ -1031,6 +1046,54 @@ void config_menu ( GScanner *scanner, GtkWidget *parent )
     g_scanner_get_next_token(scanner);
 }
 
+void config_function ( GScanner *scanner )
+{
+  gchar *name;
+  GList *actions;
+  struct layout_action *action;
+
+  scanner->max_parse_errors = FALSE;
+  if(g_scanner_get_next_token(scanner) != '(')
+    return g_scanner_error(scanner,"missing '(' after 'function'");
+  if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
+    return g_scanner_error(scanner,"missing function name");
+  name = g_strdup(scanner->value.v_string);
+  if(g_scanner_get_next_token(scanner) != ')')
+  {
+    g_free(name);
+    return g_scanner_error(scanner,"missing ')' afer 'function'");
+  }
+  if(g_scanner_get_next_token(scanner) != '{')
+  {
+    g_free(name);
+    return g_scanner_error(scanner,"missing '{' afer 'function'");
+  }
+
+  actions = NULL;
+
+  g_scanner_peek_next_token(scanner);
+  while(scanner->next_token != G_TOKEN_EOF && scanner->next_token != '}')
+  {
+    action = g_malloc0(sizeof(struct layout_action));
+    if(!config_action(scanner,action))
+    {
+      action_free(action,NULL);
+      g_scanner_error(scanner,"invalid action");
+    }
+    else
+      actions = g_list_append(actions, action);
+  g_scanner_peek_next_token(scanner);
+  }
+
+  if(scanner->next_token == '}')
+    g_scanner_get_next_token(scanner);
+
+  if(g_scanner_peek_next_token(scanner) == ';')
+    g_scanner_get_next_token(scanner);
+
+  action_function_add(name,actions);
+}
+
 struct layout_widget *config_parse_toplevel ( GScanner *scanner )
 {
   struct layout_widget *w=NULL;
@@ -1055,6 +1118,9 @@ struct layout_widget *config_parse_toplevel ( GScanner *scanner )
       case G_TOKEN_MENU:
         config_menu(scanner,NULL);
         break;
+      case G_TOKEN_FUNCTION:
+        config_function(scanner);
+        break;
       default:
         g_scanner_error(scanner,"Unexpected toplevel token");
         break;
@@ -1063,37 +1129,12 @@ struct layout_widget *config_parse_toplevel ( GScanner *scanner )
   return w;
 }
 
-struct layout_widget *config_parse ( gchar *file )
+struct layout_widget *config_parse_file ( gchar *fname, gchar *data )
 {
   GScanner *scanner;
-  gchar *fname;
-  gchar *tmp;
-  gchar *conf=NULL;
+  struct layout_widget *w;
   GtkCssProvider *css;
-  gsize size;
-  struct layout_widget *w=NULL;
-
-  fname = get_xdg_config_file(file,NULL);
-  g_debug("include: %s -> %s",file,fname);
-  if(fname)
-    if(!g_file_get_contents(fname,&conf,&size,NULL))
-      conf=NULL;
-
-  if(!conf)
-    {
-      g_error("Error: can't read config file %s\n",file);
-      exit(1);
-    }
-
-  tmp = g_strstr_len(conf,size,"\n#CSS");
-  if(tmp)
-  {
-    *tmp=0;
-    css = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(css,tmp+5,strlen(tmp+5),NULL);
-    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
-      GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
-  }
+  gchar *tmp;
 
   scanner = g_scanner_new(NULL);
   scanner->config->scan_octal = 0;
@@ -1155,7 +1196,11 @@ struct layout_widget *config_parse ( gchar *file )
   g_scanner_scope_add_symbol(scanner,0, "True", (gpointer)G_TOKEN_TRUE );
   g_scanner_scope_add_symbol(scanner,0, "False", (gpointer)G_TOKEN_FALSE );
   g_scanner_scope_add_symbol(scanner,0, "Menu", (gpointer)G_TOKEN_MENU );
+  g_scanner_scope_add_symbol(scanner,0, "MenuClear", (gpointer)G_TOKEN_MENUCLEAR );
+  g_scanner_scope_add_symbol(scanner,0, "PipeRead", (gpointer)G_TOKEN_PIPEREAD );
+  g_scanner_scope_add_symbol(scanner,0, "Config", (gpointer)G_TOKEN_CONFIG );
   g_scanner_scope_add_symbol(scanner,0, "SwayCmd", (gpointer)G_TOKEN_SWAYCMD );
+  g_scanner_scope_add_symbol(scanner,0, "Function", (gpointer)G_TOKEN_FUNCTION );
   g_scanner_scope_add_symbol(scanner,0, "Item", (gpointer)G_TOKEN_ITEM );
   g_scanner_scope_add_symbol(scanner,0, "Separator", (gpointer)G_TOKEN_SEPARATOR );
   g_scanner_scope_add_symbol(scanner,0, "SubMenu", (gpointer)G_TOKEN_SUBMENU );
@@ -1163,10 +1208,87 @@ struct layout_widget *config_parse ( gchar *file )
   g_scanner_scope_add_symbol(scanner,0, "Json", (gpointer)G_TOKEN_JSON );
   g_scanner_scope_add_symbol(scanner,0, "Grab", (gpointer)G_TOKEN_GRAB );
 
+  tmp = strstr(data,"\n#CSS");
+  if(tmp)
+  {
+    *tmp=0;
+    css = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(css,tmp+5,strlen(tmp+5),NULL);
+    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
+      GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
+  }
+
   scanner->input_name = fname;
-  g_scanner_input_text( scanner, conf, -1 );
+  g_scanner_input_text( scanner, data, -1 );
 
   w = config_parse_toplevel ( scanner );
+  g_scanner_destroy(scanner);
+
+  return w;
+}
+
+void config_string ( gchar *string )
+{
+  gchar *conf;
+  struct layout_widget *lw;
+
+  if(!string)
+    return;
+
+  conf = g_strdup(string);
+  lw = config_parse_file("config string",conf);
+  g_free(conf);
+
+  if(lw)
+    g_object_unref(lw);
+}
+
+void config_pipe_read ( gchar *command )
+{
+  FILE *fp;
+  gchar *conf;
+  GIOChannel *chan;
+  struct layout_widget *lw;
+
+  fp = popen(command, "r");
+  if(!fp)
+    return;
+
+  chan = g_io_channel_unix_new( fileno(fp) );
+  if(chan)
+  {
+    g_io_channel_read_to_end( chan , &conf, NULL, NULL );
+    lw = config_parse_file(command,conf);
+    if(lw)
+      g_object_unref(lw);
+    g_free(conf);
+    g_io_channel_unref(chan);
+  }
+
+  pclose(fp);
+}
+
+struct layout_widget *config_parse ( gchar *file )
+{
+  gchar *fname;
+  gchar *conf=NULL;
+  gsize size;
+  struct layout_widget *w=NULL;
+
+  fname = get_xdg_config_file(file,NULL);
+  g_debug("include: %s -> %s",file,fname);
+  if(fname)
+    if(!g_file_get_contents(fname,&conf,&size,NULL))
+      conf=NULL;
+
+  if(!conf)
+    {
+      g_error("Error: can't read config file %s\n",file);
+      exit(1);
+    }
+
+  w = config_parse_file (fname, conf);
+
   g_free(conf);
   g_free(fname);
   return w;

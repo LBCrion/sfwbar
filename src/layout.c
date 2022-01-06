@@ -12,26 +12,29 @@ static GHashTable *menus;
 
 GtkWidget *layout_menu_get ( gchar *name )
 {
+  if(!menus || !name)
+    return NULL;
   return g_hash_table_lookup(menus, name);
 }
 
-void layout_menu_remove ( gchar *name, GObject *old )
+void layout_menu_remove ( gchar *name )
 {
-  g_hash_table_remove(menus,name);
-  g_free(name);
+  if(name)
+    g_hash_table_remove(menus,name);
 }
 
 void layout_menu_add ( gchar *name, GtkWidget *menu )
 {
-  static gboolean once;
-  if(!once)
-  {
-    menus = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
-    once = TRUE;
-  }
+  void *old_name;
 
+  if(!menus)
+    menus = g_hash_table_new_full((GHashFunc)str_nhash,(GEqualFunc)str_nequal,
+        g_free,g_object_unref);
+
+  g_hash_table_steal_extended(menus, name, &old_name, NULL);
+  g_free(old_name);
+  g_object_ref_sink(menu);
   g_hash_table_insert(menus, name, menu);
-  g_object_weak_ref(G_OBJECT(menu),(GWeakNotify)layout_menu_remove,name);
 }
 
 void layout_menu_popup ( GtkWidget *widget, GtkWidget *menu, GdkEvent *event )

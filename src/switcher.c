@@ -20,13 +20,16 @@ static GList *focus;
 void switcher_config ( gint ncols, gchar *css, gint nmax,
     gboolean nicons, gboolean nlabels)
 {
-  switcher = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_layer_init_for_window (GTK_WINDOW(switcher));
-  gtk_layer_set_layer(GTK_WINDOW(switcher),GTK_LAYER_SHELL_LAYER_OVERLAY);
-  grid = flow_grid_new(FALSE);
-  gtk_widget_set_name(grid, "switcher");
-  gtk_widget_set_name(switcher, "switcher");
-  gtk_container_add(GTK_CONTAINER(switcher),grid);
+  if(!switcher)
+  {
+    switcher = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_layer_init_for_window (GTK_WINDOW(switcher));
+    gtk_layer_set_layer(GTK_WINDOW(switcher),GTK_LAYER_SHELL_LAYER_OVERLAY);
+    grid = flow_grid_new(FALSE);
+    gtk_widget_set_name(grid, "switcher");
+    gtk_widget_set_name(switcher, "switcher");
+    gtk_container_add(GTK_CONTAINER(switcher),grid);
+  }
   flow_grid_set_cols(grid,ncols);
   if(css!=NULL)
   {

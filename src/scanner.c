@@ -13,12 +13,9 @@ static GHashTable *scan_list;
 
 void scanner_var_attach ( gchar *name, struct scan_var *var )
 {
-  static guchar once;
-  if(!once)
-  {
+  if(!scan_list)
     scan_list = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
-    once = TRUE;
-  }
+
   g_hash_table_insert(scan_list,name,var);
 }
 
@@ -302,13 +299,13 @@ double scanner_get_numeric ( gchar *name )
     {
     if(!scan->status)
       scanner_update_file_glob(scan->file);
-    if(!strcmp(fname,".val"))
+    if(!g_strcmp0(fname,".val"))
       retval=scan->val;
-    if(!strcmp(fname,".pval"))
+    else if(!g_strcmp0(fname,".pval"))
       retval=scan->pval;
-    if(!strcmp(fname,".count"))
+    else if(!g_strcmp0(fname,".count"))
       retval=scan->count;
-    if(!strcmp(fname,".time"))
+    else if(!g_strcmp0(fname,".time"))
       retval=scan->time;
     }
   g_free(id);
