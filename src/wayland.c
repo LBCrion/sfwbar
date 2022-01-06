@@ -180,7 +180,7 @@ static void handle_global(void *data, struct wl_registry *registry,
 {
   gboolean *wlr_ft = data;
   if ( *wlr_ft && 
-      strcmp(interface,zwlr_foreign_toplevel_manager_v1_interface.name)==0)
+      g_strcmp0(interface,zwlr_foreign_toplevel_manager_v1_interface.name)==0)
   {
     toplevel_manager = wl_registry_bind(registry, name,
       &zwlr_foreign_toplevel_manager_v1_interface,
@@ -189,12 +189,12 @@ static void handle_global(void *data, struct wl_registry *registry,
     zwlr_foreign_toplevel_manager_v1_add_listener(toplevel_manager,
       &toplevel_manager_impl, data);
   } 
-  else if (strcmp(interface,zxdg_output_manager_v1_interface.name)==0)
+  else if (g_strcmp0(interface,zxdg_output_manager_v1_interface.name)==0)
   {
     xdg_output_manager = wl_registry_bind(registry, name,
         &zxdg_output_manager_v1_interface, ZXDG_OUTPUT_V1_NAME_SINCE_VERSION);
   }
-  else if (strcmp(interface, wl_seat_interface.name) == 0 && seat == NULL)
+  else if (g_strcmp0(interface, wl_seat_interface.name) == 0 && seat == NULL)
     seat = wl_registry_bind(registry, name, &wl_seat_interface, version);
 }
 
