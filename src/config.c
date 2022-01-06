@@ -962,6 +962,7 @@ GtkWidget *config_menu_item ( GScanner *scanner )
   item = gtk_menu_item_new_with_label(label);
   g_signal_connect(G_OBJECT(item),"activate",
       G_CALLBACK(widget_menu_action),action);
+  g_object_weak_ref(G_OBJECT(item),(GWeakNotify)action_free,action);
   return item;
 }
 

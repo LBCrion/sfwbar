@@ -6,10 +6,20 @@
 #include "sfwbar.h"
 #include "config.h"
 #include <gtk/gtk.h>
-#include <gio/gdesktopappinfo.h>
 
 static GList *widget_list;
 static GHashTable *menus;
+
+GtkWidget *layout_menu_get ( gchar *name )
+{
+  return g_hash_table_lookup(menus, name);
+}
+
+void layout_menu_remove ( gchar *name, GObject *old )
+{
+  g_hash_table_remove(menus,name);
+  g_free(name);
+}
 
 void layout_menu_add ( gchar *name, GtkWidget *menu )
 {
@@ -21,6 +31,7 @@ void layout_menu_add ( gchar *name, GtkWidget *menu )
   }
 
   g_hash_table_insert(menus, name, menu);
+  g_object_weak_ref(G_OBJECT(menu),(GWeakNotify)layout_menu_remove,name);
 }
 
 void layout_menu_popup ( GtkWidget *widget, GtkWidget *menu, GdkEvent *event )
@@ -59,37 +70,15 @@ gboolean layout_widget_has_actions ( struct layout_widget * lw )
   return memcmp(lw->action,act_check,sizeof(gchar *)*MAX_BUTTON);
 }
 
-void widget_action ( GtkWidget *widget, struct layout_action *action,
-    GdkEvent *event )
-{
-  if(action->command)
-  {
-    g_debug("widget action: (%d) %s",action->type, action->command);
-    switch(action->type)
-    {
-      case ACT_EXEC:
-        g_spawn_command_line_async(action->command,NULL);
-        break;
-      case ACT_MENU:
-        layout_menu_popup(widget, g_hash_table_lookup(menus,action->command),
-            event);
-        break;
-      case ACT_SWAY:
-        sway_ipc_command(action->command);
-        break;
-    }
-  }
-}
-
 gboolean widget_menu_action ( GtkWidget *w ,struct layout_action *action )
 {
-  widget_action(w,action,NULL);
+  action_exec(w,action,NULL);
   return TRUE;
 }
 
 gboolean layout_widget_button_cb ( GtkWidget *widget, struct layout_widget *lw )
 {
-  widget_action(lw->widget,&(lw->action[0]),NULL);
+  action_exec(lw->widget,&(lw->action[0]),NULL);
   return TRUE;
 }
 
@@ -100,7 +89,7 @@ gboolean layout_widget_click_cb ( GtkWidget *w, GdkEventButton *ev,
     return FALSE;
 
   if(ev->type == GDK_BUTTON_PRESS && ev->button >= 1 && ev->button <= 3)
-    widget_action(lw->widget,&(lw->action[ev->button-1]),(GdkEvent *)ev);
+    action_exec(lw->widget,&(lw->action[ev->button-1]),(GdkEvent *)ev);
   return TRUE;
 }
 
@@ -126,7 +115,7 @@ gboolean layout_widget_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
       button = 0;
   }
   if(button)
-    widget_action(lw->widget,&(lw->action[button-1]),(GdkEvent *)event);
+    action_exec(lw->widget,&(lw->action[button-1]),(GdkEvent *)event);
 
   return TRUE;
 }

@@ -67,6 +67,9 @@ struct layout_widget {
 
 extern gchar *expr_token[];
 
+void action_exec ( GtkWidget *, struct layout_action *, GdkEvent *);
+void action_free ( struct layout_action *action, GObject *old );
+
 void sway_ipc_init ( void );
 gboolean sway_ipc_active ( void );
 gchar *sway_ipc_poll ( gint sock, gint32 *etype );
@@ -121,7 +124,7 @@ void pager_update ( void );
 void sni_init ( GtkWidget *w );
 void sni_update ( void );
 
-void layout_init ( void );
+GtkWidget *layout_menu_get ( gchar *name );
 void layout_menu_add ( gchar *name, GtkWidget *menu );
 struct layout_widget *layout_widget_new ( void );
 void layout_menu_popup ( GtkWidget *, GtkWidget *, GdkEvent *);
