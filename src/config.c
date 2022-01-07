@@ -252,11 +252,14 @@ void config_scanner_source ( GScanner *scanner, gint source )
   else
     g_scanner_get_next_token(scanner);
 
-  if(scanner->max_parse_errors)
+  if(!fname==NULL)
     return;
 
-  if(fname==NULL)
+  if(scanner->max_parse_errors)
+  {
+    g_free(fname);
     return;
+  }
 
   for(find=file_list;find;find=g_list_next(find))
     if(!g_strcmp0(fname,((struct scan_file *)(find->data))->fname))
@@ -972,6 +975,7 @@ GtkWidget *config_menu_item ( GScanner *scanner )
     g_scanner_get_next_token(scanner);
 
   item = gtk_menu_item_new_with_label(label);
+  g_free(label);
   g_signal_connect(G_OBJECT(item),"activate",
       G_CALLBACK(widget_menu_action),action);
   g_object_weak_ref(G_OBJECT(item),(GWeakNotify)action_free,action);
@@ -1128,13 +1132,15 @@ struct layout_widget *config_parse_toplevel ( GScanner *scanner )
   }
   return w;
 }
-
 struct layout_widget *config_parse_file ( gchar *fname, gchar *data )
 {
   GScanner *scanner;
   struct layout_widget *w;
   GtkCssProvider *css;
   gchar *tmp;
+
+  if(!data)
+    return NULL;
 
   scanner = g_scanner_new(NULL);
   scanner->config->scan_octal = 0;
@@ -1222,6 +1228,8 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data )
   g_scanner_input_text( scanner, data, -1 );
 
   w = config_parse_toplevel ( scanner );
+  g_free(scanner->config->cset_identifier_first);
+  g_free(scanner->config->cset_identifier_nth);
   g_scanner_destroy(scanner);
 
   return w;

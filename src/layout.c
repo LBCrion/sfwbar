@@ -25,16 +25,17 @@ void layout_menu_remove ( gchar *name )
 
 void layout_menu_add ( gchar *name, GtkWidget *menu )
 {
-  void *old_name;
-
   if(!menus)
     menus = g_hash_table_new_full((GHashFunc)str_nhash,(GEqualFunc)str_nequal,
         g_free,g_object_unref);
 
-  g_hash_table_steal_extended(menus, name, &old_name, NULL);
-  g_free(old_name);
-  g_object_ref_sink(menu);
-  g_hash_table_insert(menus, name, menu);
+  if(!g_hash_table_lookup_extended(menus, name, NULL, NULL))
+  {
+    g_object_ref_sink(menu);
+    g_hash_table_insert(menus, name, menu);
+  }
+  else
+    g_free(name);
 }
 
 void layout_menu_popup ( GtkWidget *widget, GtkWidget *menu, GdkEvent *event )
