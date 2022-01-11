@@ -97,6 +97,8 @@ void wintree_window_append ( struct wt_window *win );
 void wintree_window_delete ( gpointer id );
 void wintree_set_focus ( gpointer id );
 void wintree_set_active ( gchar *title );
+void wintree_focus ( gpointer id );
+void wintree_minimize ( gpointer id );
 gchar *wintree_get_active ( void );
 gboolean wintree_is_focused ( gpointer id );
 GList *wintree_get_list ( void );
@@ -121,6 +123,7 @@ void switcher_config ( gint, gchar *, gint, gboolean, gboolean);
 
 void pager_init ( GtkWidget * );
 void pager_set_preview ( gboolean pv );
+void pager_set_numeric ( gboolean pn );
 void pager_add_pin ( gchar *pin );
 void pager_update ( void );
 

@@ -240,6 +240,10 @@ preview [true|false]
   specifies whether workspace previews are displayed on mouse hover over
   pager buttons
 
+numeric [true|false]
+  if true, the workspaces will be sorted as numbers, otherwise they will be
+  sorted as strings (defaults to true).
+
 pins
   a list of "pinned" workspaces. These will show up in the pager even if the
   workspace is empty.

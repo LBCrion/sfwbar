@@ -252,7 +252,7 @@ void config_scanner_source ( GScanner *scanner, gint source )
   else
     g_scanner_get_next_token(scanner);
 
-  if(!fname==NULL)
+  if(!fname)
     return;
 
   if(scanner->max_parse_errors)
@@ -674,6 +674,14 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
         }
         pager_set_preview(config_assign_boolean(scanner,FALSE,"preview"));
         break;
+      case G_TOKEN_NUMERIC:
+        if(lw->wtype != G_TOKEN_PAGER)
+        {
+          g_scanner_error(scanner,"this widget has no property 'numeric'");
+          break;
+        }
+        pager_set_numeric(config_assign_boolean(scanner,TRUE,"numeric"));
+        break;
       case G_TOKEN_COLS:
         config_widget_cols(scanner, lw);
         break;
@@ -781,6 +789,7 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
       case G_TOKEN_PAGER:
         scanner->max_parse_errors=FALSE;
         lw->widget = flow_grid_new(TRUE);
+        pager_set_numeric(TRUE);
         break;
       case G_TOKEN_TRAY:
         scanner->max_parse_errors=FALSE;
@@ -1098,7 +1107,8 @@ void config_function ( GScanner *scanner )
   action_function_add(name,actions);
 }
 
-struct layout_widget *config_parse_toplevel ( GScanner *scanner )
+struct layout_widget *config_parse_toplevel ( GScanner *scanner,
+    gboolean layout)
 {
   struct layout_widget *w=NULL;
 
@@ -1110,8 +1120,13 @@ struct layout_widget *config_parse_toplevel ( GScanner *scanner )
         config_scanner(scanner);
         break;
       case G_TOKEN_LAYOUT:
-        layout_widget_free(w);
-        w = config_layout(scanner);
+        if(layout)
+        {
+          layout_widget_free(w);
+          w = config_layout(scanner);
+        }
+        else
+          g_scanner_error(scanner,"layout not supported in dynamic config");
         break;
       case G_TOKEN_PLACER:
         config_placer(scanner);
@@ -1132,7 +1147,8 @@ struct layout_widget *config_parse_toplevel ( GScanner *scanner )
   }
   return w;
 }
-struct layout_widget *config_parse_file ( gchar *fname, gchar *data )
+struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
+    gboolean layout )
 {
   GScanner *scanner;
   struct layout_widget *w;
@@ -1194,6 +1210,7 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data )
   g_scanner_scope_add_symbol(scanner,0, "Icons", (gpointer)G_TOKEN_ICONS );
   g_scanner_scope_add_symbol(scanner,0, "Labels", (gpointer)G_TOKEN_LABELS );
   g_scanner_scope_add_symbol(scanner,0, "Loc", (gpointer)G_TOKEN_LOC );
+  g_scanner_scope_add_symbol(scanner,0, "Numeric", (gpointer)G_TOKEN_NUMERIC );
   g_scanner_scope_add_symbol(scanner,0, "XStep", (gpointer)G_TOKEN_XSTEP );
   g_scanner_scope_add_symbol(scanner,0, "YStep", (gpointer)G_TOKEN_YSTEP );
   g_scanner_scope_add_symbol(scanner,0, "XOrigin", (gpointer)G_TOKEN_XORIGIN );
@@ -1227,7 +1244,7 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data )
   scanner->input_name = fname;
   g_scanner_input_text( scanner, data, -1 );
 
-  w = config_parse_toplevel ( scanner );
+  w = config_parse_toplevel ( scanner, layout );
   g_free(scanner->config->cset_identifier_first);
   g_free(scanner->config->cset_identifier_nth);
   g_scanner_destroy(scanner);
@@ -1238,17 +1255,13 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data )
 void config_string ( gchar *string )
 {
   gchar *conf;
-  struct layout_widget *lw;
 
   if(!string)
     return;
 
   conf = g_strdup(string);
-  lw = config_parse_file("config string",conf);
+  config_parse_file("config string",conf,FALSE);
   g_free(conf);
-
-  if(lw)
-    g_object_unref(lw);
 }
 
 void config_pipe_read ( gchar *command )
@@ -1256,7 +1269,6 @@ void config_pipe_read ( gchar *command )
   FILE *fp;
   gchar *conf;
   GIOChannel *chan;
-  struct layout_widget *lw;
 
   fp = popen(command, "r");
   if(!fp)
@@ -1265,10 +1277,8 @@ void config_pipe_read ( gchar *command )
   chan = g_io_channel_unix_new( fileno(fp) );
   if(chan)
   {
-    g_io_channel_read_to_end( chan , &conf, NULL, NULL );
-    lw = config_parse_file(command,conf);
-    if(lw)
-      g_object_unref(lw);
+    if(g_io_channel_read_to_end( chan , &conf,NULL,NULL)==G_IO_STATUS_NORMAL)
+      config_parse_file(command,conf,FALSE);
     g_free(conf);
     g_io_channel_unref(chan);
   }
@@ -1295,7 +1305,7 @@ struct layout_widget *config_parse ( gchar *file )
       exit(1);
     }
 
-  w = config_parse_file (fname, conf);
+  w = config_parse_file (fname, conf,TRUE);
 
   g_free(conf);
   g_free(fname);

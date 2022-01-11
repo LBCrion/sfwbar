@@ -9,12 +9,18 @@
 static GtkWidget *pager;
 static GList *pager_pins;
 static gboolean preview;
+static gboolean sort_numeric;
 
 void pager_init ( GtkWidget *widget )
 {
   if(!pager)
     pager = widget;
   pager_update();
+}
+
+void pager_set_numeric ( gboolean pn )
+{
+  sort_numeric = pn;
 }
 
 void pager_set_preview ( gboolean pv )
@@ -123,6 +129,14 @@ gboolean pager_draw_tooltip ( GtkWidget *widget, gint x, gint y,
   return TRUE;
 }
 
+gint pager_compare ( gchar *str1, gchar *str2 )
+{
+  if(sort_numeric)
+    return strtoll(str1,NULL,10)-strtoll(str2,NULL,10);
+  else
+    return g_strcmp0(str1,str2);
+}
+
 void pager_update ( void )
 {
   gint sock;
@@ -172,7 +186,7 @@ void pager_update ( void )
   for(node=pager_pins;node!=NULL;node=g_list_next(node))
     if(!g_list_find_custom(wslist,node->data,(GCompareFunc)g_strcmp0))
       wslist = g_list_append(wslist,g_strdup(node->data));
-  wslist = g_list_sort(wslist,(GCompareFunc)g_strcmp0);
+  wslist = g_list_sort(wslist,(GCompareFunc)pager_compare);
 
   if(wslist)
   {
