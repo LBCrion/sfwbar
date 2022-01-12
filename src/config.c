@@ -582,6 +582,24 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
       case G_TOKEN_FUNCTION:
         type = ACT_FUNC;
         break;
+      case G_TOKEN_FOCUS:
+        type = ACT_FOCUS;
+        break;
+      case G_TOKEN_CLOSE:
+        type = ACT_CLOSE;
+        break;
+      case G_TOKEN_MINIMIZE:
+        type = ACT_MIN;
+        break;
+      case G_TOKEN_MAXIMIZE:
+        type = ACT_MAX;
+        break;
+      case G_TOKEN_UNMINIMIZE:
+        type = ACT_UNMIN;
+        break;
+      case G_TOKEN_UNMAXIMIZE:
+        type = ACT_UNMAX;
+        break;
       default:
         return FALSE;
     }
@@ -589,11 +607,19 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
   else
     type = ACT_EXEC;
 
-  if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
-    return FALSE;
+  if(type <= ACT_FUNC)
+  {
+    if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
+      return FALSE;
 
-  g_free(action->command);
-  action->command = g_strdup(scanner->value.v_string);
+    g_free(action->command);
+    action->command = g_strdup(scanner->value.v_string);
+  }
+  else
+  {
+    g_free(action->command);
+    action->command = NULL;
+  }
   action->type = type;
 
   return TRUE;
@@ -1224,6 +1250,12 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "Config", (gpointer)G_TOKEN_CONFIG );
   g_scanner_scope_add_symbol(scanner,0, "SwayCmd", (gpointer)G_TOKEN_SWAYCMD );
   g_scanner_scope_add_symbol(scanner,0, "Function", (gpointer)G_TOKEN_FUNCTION );
+  g_scanner_scope_add_symbol(scanner,0, "Focus", (gpointer)G_TOKEN_FOCUS );
+  g_scanner_scope_add_symbol(scanner,0, "Close", (gpointer)G_TOKEN_CLOSE );
+  g_scanner_scope_add_symbol(scanner,0, "Minimize", (gpointer)G_TOKEN_MINIMIZE );
+  g_scanner_scope_add_symbol(scanner,0, "Maximize", (gpointer)G_TOKEN_MAXIMIZE );
+  g_scanner_scope_add_symbol(scanner,0, "UnMinimize", (gpointer)G_TOKEN_UNMINIMIZE );
+  g_scanner_scope_add_symbol(scanner,0, "UnMaximize", (gpointer)G_TOKEN_UNMAXIMIZE );
   g_scanner_scope_add_symbol(scanner,0, "Item", (gpointer)G_TOKEN_ITEM );
   g_scanner_scope_add_symbol(scanner,0, "Separator", (gpointer)G_TOKEN_SEPARATOR );
   g_scanner_scope_add_symbol(scanner,0, "SubMenu", (gpointer)G_TOKEN_SUBMENU );

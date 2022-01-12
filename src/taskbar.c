@@ -12,10 +12,12 @@
 static GtkWidget *taskbar;
 static gboolean icons, labels;
 static gboolean invalid;
+static struct layout_widget *taskbar_lw;
 
-void taskbar_init ( GtkWidget *widget )
+void taskbar_init ( struct layout_widget *lw )
 {
-  taskbar = widget;
+  taskbar = lw->widget;
+  taskbar_lw = lw;
 }
 
 void taskbar_invalidate ( void )
@@ -32,33 +34,64 @@ void taskbar_set_visual ( gboolean nicons, gboolean nlabels )
     labels = TRUE;
 }
 
-void taskbar_button_click( GtkWidget *widget, gpointer data )
+gboolean taskbar_click_cb ( GtkWidget *widget, GdkEventButton *ev,
+    gpointer wid )
+{
+  if(GTK_IS_BUTTON(widget) && ev->button != 1)
+    return FALSE;
+
+  if(ev->type == GDK_BUTTON_PRESS && ev->button >= 1 && ev->button <= 3)
+    action_exec(gtk_bin_get_child(GTK_BIN(widget)),
+          &(taskbar_lw->action[ev->button-1]),(GdkEvent *)ev, wid);
+  return TRUE;
+}
+
+gboolean taskbar_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
+    gpointer wid )
+{
+  gint button;
+  switch(event->direction)
+  {
+    case GDK_SCROLL_UP:
+      button = 4;
+      break;
+    case GDK_SCROLL_DOWN:
+      button = 5;
+      break;
+    case GDK_SCROLL_LEFT:
+      button = 6;
+      break;
+    case GDK_SCROLL_RIGHT:
+      button = 7;
+      break;
+    default:
+      button = 0;
+  }
+  if(button)
+    action_exec(gtk_bin_get_child(GTK_BIN(w)),
+        &(taskbar_lw->action[button-1]), (GdkEvent *)event, wid);
+
+  return TRUE;
+}
+
+void taskbar_button_cb( GtkWidget *widget, gpointer data )
 {
   struct wt_window *button = g_object_get_data(G_OBJECT(widget),"parent");
 
   if(button == NULL)
     return;
 
-  if(sway_ipc_active())
-  {
-    if ( wintree_is_focused(button->uid) )
-      sway_ipc_command("[con_id=%ld] move window to scratchpad",button->wid);
-    else
-      sway_ipc_command("[con_id=%ld] focus",button->wid);
-    return;
-  }
-
-  if ( wintree_is_focused(button->uid) )
-  {
-    zwlr_foreign_toplevel_handle_v1_set_minimized(button->uid);
-    wintree_set_focus(NULL);
-    taskbar_invalidate();
-  }
+  if(taskbar_lw->action[0].type)
+    action_exec(widget,&(taskbar_lw->action[0]),NULL,button->uid);
   else
   {
-    zwlr_foreign_toplevel_handle_v1_unset_minimized(button->uid);
-    foreign_toplevel_activate(button->uid);
+    if ( wintree_is_focused(button->uid) )
+      wintree_minimize(button->uid);
+    else
+      wintree_focus(button->uid);
   }
+
+  taskbar_invalidate();
 }
 
 gint win_compare ( struct wt_window *a, struct wt_window *b)
@@ -72,17 +105,19 @@ gint win_compare ( struct wt_window *a, struct wt_window *b)
 
 void taskbar_window_init ( struct wt_window *win )
 {
-  GtkWidget *box,*icon,*label;
+  GtkWidget *box,*icon,*label,*button;
   gint dir;
 
   if(!taskbar)
     return;
 
-  win->button = gtk_button_new();
-  gtk_widget_set_name(win->button, "taskbar_normal");
-  gtk_widget_style_get(win->button,"direction",&dir,NULL);
+  win->button = gtk_event_box_new();
+  button = gtk_button_new();
+  gtk_container_add(GTK_CONTAINER(win->button),button);
+  gtk_widget_set_name(button, "taskbar_normal");
+  gtk_widget_style_get(button,"direction",&dir,NULL);
   box = gtk_grid_new();
-  gtk_container_add(GTK_CONTAINER(win->button),box);
+  gtk_container_add(GTK_CONTAINER(button),box);
   if(icons)
   {
     icon = scale_image_new();
@@ -100,12 +135,19 @@ void taskbar_window_init ( struct wt_window *win )
   }
 
   g_object_set_data(G_OBJECT(win->button),"parent",win);
+  g_object_set_data(G_OBJECT(button),"parent",win);
   g_object_ref(G_OBJECT(win->button));
-  g_signal_connect(win->button,"clicked",G_CALLBACK(taskbar_button_click),NULL);
+  g_signal_connect(button,"clicked",G_CALLBACK(taskbar_button_cb),NULL);
+  g_signal_connect(win->button,"button_press_event",
+        G_CALLBACK(taskbar_click_cb),win->uid);
+  gtk_widget_add_events(GTK_WIDGET(win->button),GDK_SCROLL_MASK);
+  g_signal_connect(win->button,"scroll-event",
+    G_CALLBACK(taskbar_scroll_cb),win->uid);
 }
 
 void taskbar_set_label ( struct wt_window *win, gchar *title )
 {
+  GtkWidget *button;
   GList *blist, *glist, *iter;
 
   if(!taskbar || !labels)
@@ -114,7 +156,9 @@ void taskbar_set_label ( struct wt_window *win, gchar *title )
   if(!win->button)
     return;
 
-  blist = gtk_container_get_children(GTK_CONTAINER(win->button));
+  button = gtk_bin_get_child(GTK_BIN(win->button));
+
+  blist = gtk_container_get_children(GTK_CONTAINER(button));
 
   if(!blist)
     return;
@@ -141,10 +185,13 @@ void taskbar_update( void )
   {
     win = item->data;
     if ( wintree_is_focused(win->uid) )
-      gtk_widget_set_name(win->button, "taskbar_active");
+      gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(win->button)),
+          "taskbar_active");
     else
-      gtk_widget_set_name(win->button, "taskbar_normal");
-    gtk_widget_unset_state_flags(win->button, GTK_STATE_FLAG_PRELIGHT);
+      gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(win->button)),
+          "taskbar_normal");
+    gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(win->button)),
+        GTK_STATE_FLAG_PRELIGHT);
 
     widget_set_css(win->button);
     flow_grid_attach(taskbar,win->button);

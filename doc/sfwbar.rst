@@ -305,33 +305,54 @@ submenu
 Actions
 -------
 Actions can be attached to mouse click and scroll events for any widget or
-attached to menu items. Actions are defined as ``<type> <command>``. Where
-type specifies how to handle the action and command is the action to perform.
-The following action types are supported:
+attached to menu items. Some actions don't take any parameters, others require
+a parameter. Parameters are specified as strings immediately following the
+relevant action. I.e. ``Menu "WindowOps"``. Some actions apply to a window, if
+the action is attached to taskbar button, the action will be applied to a
+window referenced by the button, otherwise, it will apply to the currently
+focused window. The following action types are supported:
 
-Config
+Config <string>
   Process a snippet of configuration file. This action permits changing the
   bar configuration on the fly
 
-Exec
+Exec <string>
   execute a shell comand
 
-Function
+Function <string>
   Execute a function
 
-Menu
+Menu <string>
   open a menu with a given name
 
-MenuClear
+MenuClear <string>
   delete a menu with a given name (This is useful if you want to generate
   menues dynamically via PipeRead and would like to delete a previously
   generated menu)
 
-PipeRead
+PipeRead <string>
   Process a snippet of configuration sourced from an output of a shell command
 
-SwayCmd
+SwayCmd <string>
   send a command over Sway IPC
+
+Focus
+  set window to focused
+
+Close
+  close a window
+
+Minimize
+  minimize a window (send to scratchpad in sway)
+
+UnMinimize
+  unset a minimized state for the window
+
+Maximize
+  maximize a window (set fullscreen in sway)
+
+UnMaximize
+  unset a maximized state for the window
 
 Functions
 ---------

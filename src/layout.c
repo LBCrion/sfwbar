@@ -38,12 +38,15 @@ void layout_menu_add ( gchar *name, GtkWidget *menu )
     g_free(name);
 }
 
-void layout_menu_popup ( GtkWidget *widget, GtkWidget *menu, GdkEvent *event )
+void layout_menu_popup ( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
+    gpointer wid )
 {
   GdkGravity wanchor, manchor;
 
   if(!menu || !widget)
     return;
+
+  g_object_set_data( G_OBJECT(menu), "wid", wid );
 
   switch(get_toplevel_dir())
   {
@@ -76,13 +79,24 @@ gboolean layout_widget_has_actions ( struct layout_widget * lw )
 
 gboolean widget_menu_action ( GtkWidget *w ,struct layout_action *action )
 {
-  action_exec(w,action,NULL);
+  GtkWidget *parent = gtk_widget_get_ancestor(w,GTK_TYPE_MENU);
+  gpointer wid;
+
+  if(parent)
+    wid = g_object_get_data ( G_OBJECT(parent), "wid" );
+  else
+    wid = NULL;
+
+  if(!wid)
+    wid = wintree_get_focus();
+
+  action_exec(w,action,NULL,wid);
   return TRUE;
 }
 
 gboolean layout_widget_button_cb ( GtkWidget *widget, struct layout_widget *lw )
 {
-  action_exec(lw->widget,&(lw->action[0]),NULL);
+  action_exec(lw->widget,&(lw->action[0]),NULL,wintree_get_focus());
   return TRUE;
 }
 
@@ -93,7 +107,8 @@ gboolean layout_widget_click_cb ( GtkWidget *w, GdkEventButton *ev,
     return FALSE;
 
   if(ev->type == GDK_BUTTON_PRESS && ev->button >= 1 && ev->button <= 3)
-    action_exec(lw->widget,&(lw->action[ev->button-1]),(GdkEvent *)ev);
+    action_exec(lw->widget,&(lw->action[ev->button-1]),(GdkEvent *)ev,
+        wintree_get_focus);
   return TRUE;
 }
 
@@ -119,7 +134,8 @@ gboolean layout_widget_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
       button = 0;
   }
   if(button)
-    action_exec(lw->widget,&(lw->action[button-1]),(GdkEvent *)event);
+    action_exec(lw->widget,&(lw->action[button-1]),(GdkEvent *)event,
+        wintree_get_focus());
 
   return TRUE;
 }
@@ -194,7 +210,7 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
   }
 
   if(lw->wtype==G_TOKEN_TASKBAR)
-    taskbar_init(lw->widget);
+    taskbar_init(lw);
 
   if(lw->wtype==G_TOKEN_PAGER)
     pager_init(lw->widget);

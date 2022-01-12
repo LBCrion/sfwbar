@@ -179,11 +179,6 @@ void switcher_update ( void )
   {
     gtk_widget_hide(switcher);
     win = focus->data;
-    if(sway_ipc_active())
-    {
-      sway_ipc_command("[con_id=%ld] focus",win->wid);
-    }
-    else
-      foreign_toplevel_activate(win->uid);
+    wintree_focus(win->uid);
   }
 }

@@ -16,6 +16,7 @@ struct wt_window {
   gint64 pid;
   gint64 wid;
   gpointer uid;
+  guchar state;
 };
 
 struct rect {
@@ -67,7 +68,7 @@ struct layout_widget {
 
 extern gchar *expr_token[];
 
-void action_exec ( GtkWidget *, struct layout_action *, GdkEvent *);
+void action_exec ( GtkWidget *, struct layout_action *, GdkEvent *, gpointer);
 void action_free ( struct layout_action *action, GObject *old );
 void action_function_add ( gchar *name, GList *actions );
 
@@ -83,7 +84,7 @@ gboolean sway_ipc_event ( GIOChannel *, GIOCondition , gpointer );
 void place_window ( gint64 wid, gint64 pid );
 void placer_config ( gint xs, gint ys, gint xo, gint yo, gboolean pid );
 
-void taskbar_init ( GtkWidget * );
+void taskbar_init ( struct layout_widget * );
 void taskbar_invalidate ( void );
 void taskbar_set_visual ( gboolean nicons, gboolean nlabels );
 void taskbar_update ( void );
@@ -98,7 +99,12 @@ void wintree_window_delete ( gpointer id );
 void wintree_set_focus ( gpointer id );
 void wintree_set_active ( gchar *title );
 void wintree_focus ( gpointer id );
+void wintree_close ( gpointer id );
 void wintree_minimize ( gpointer id );
+void wintree_maximize ( gpointer id );
+void wintree_unminimize ( gpointer id );
+void wintree_unmaximize ( gpointer id );
+gpointer wintree_get_focus ( void );
 gchar *wintree_get_active ( void );
 gboolean wintree_is_focused ( gpointer id );
 GList *wintree_get_list ( void );
@@ -134,7 +140,7 @@ GtkWidget *layout_menu_get ( gchar *name );
 void layout_menu_add ( gchar *name, GtkWidget *menu );
 void layout_menu_remove ( gchar *name );
 struct layout_widget *layout_widget_new ( void );
-void layout_menu_popup ( GtkWidget *, GtkWidget *, GdkEvent *);
+void layout_menu_popup ( GtkWidget *, GtkWidget *, GdkEvent *, gpointer );
 gpointer layout_scanner_thread ( gpointer data );
 GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     GtkWidget *sibling );
@@ -181,6 +187,13 @@ void scale_image_set_pixbuf ( GtkWidget *widget, GdkPixbuf * );
 #define AS_WINDOW(x) ((struct wt_window *)(x))
 
 enum {
+  WS_ACTIVE =     1<<0,
+  WS_MINIMIZED =  1<<1,
+  WS_MAXIMIZED =  1<<2,
+  WS_FULLSCREEN = 1<<3
+};
+
+enum {
   SV_ADD = 1,
   SV_PRODUCT = 2,
   SV_REPLACE = 3,
@@ -210,7 +223,13 @@ enum {
   ACT_PIPE = 4,
   ACT_SWAY = 5,
   ACT_CONF = 6,
-  ACT_FUNC = 7
+  ACT_FUNC = 7,
+  ACT_FOCUS = 8,
+  ACT_CLOSE = 9,
+  ACT_MIN = 10,
+  ACT_MAX = 11,
+  ACT_UNMIN = 12,
+  ACT_UNMAX = 13
 };
 
 enum {

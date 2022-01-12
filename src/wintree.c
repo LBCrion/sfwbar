@@ -46,6 +46,11 @@ void wintree_set_focus ( gpointer id )
   wt_focus = id;
 }
 
+gpointer wintree_get_focus ( void )
+{
+  return wt_focus;
+}
+
 gboolean wintree_is_focused ( gpointer id )
 {
   return ( id == wt_focus );
@@ -120,4 +125,77 @@ GList *wintree_get_list ( void )
 {
   wt_list = g_list_sort(wt_list, (GCompareFunc)wintree_compare);
   return wt_list;
+}
+
+void wintree_focus ( gpointer id )
+{
+  if(!id)
+    return;
+
+  if(sway_ipc_active())
+    sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
+  else
+  {
+    zwlr_foreign_toplevel_handle_v1_unset_minimized(id);
+    foreign_toplevel_activate(id);
+  }
+}
+
+void wintree_minimize ( gpointer id )
+{
+  if(!id)
+    return;
+
+  if(sway_ipc_active())
+    sway_ipc_command("[con_id=%ld] move window to scratchpad",GPOINTER_TO_INT(id));
+  else
+    zwlr_foreign_toplevel_handle_v1_set_minimized(id);
+  wintree_set_focus(NULL);
+}
+
+void wintree_unminimize ( gpointer id )
+{
+  if(!id)
+    return;
+
+  if(sway_ipc_active())
+    sway_ipc_command("[con_id=%ld] scratchpad show",GPOINTER_TO_INT(id));
+  else
+    zwlr_foreign_toplevel_handle_v1_unset_minimized(id);
+  wintree_set_focus(NULL);
+}
+
+void wintree_maximize ( gpointer id )
+{
+  if(!id)
+    return;
+
+  if(sway_ipc_active())
+    sway_ipc_command("[con_id=%ld] fullscreen enable",GPOINTER_TO_INT(id));
+  else
+    zwlr_foreign_toplevel_handle_v1_set_maximized(id);
+  wintree_set_focus(NULL);
+}
+
+void wintree_unmaximize ( gpointer id )
+{
+  if(!id)
+    return;
+
+  if(sway_ipc_active())
+    sway_ipc_command("[con_id=%ld] fullscreen disable",GPOINTER_TO_INT(id));
+  else
+    zwlr_foreign_toplevel_handle_v1_unset_maximized(id);
+  wintree_set_focus(NULL);
+}
+
+void wintree_close ( gpointer id )
+{
+  if(!id)
+    return;
+
+  if(sway_ipc_active())
+    sway_ipc_command("[con_id=%ld] kill",GPOINTER_TO_INT(id));
+  else
+    zwlr_foreign_toplevel_handle_v1_close(id);
 }
