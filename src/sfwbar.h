@@ -187,7 +187,6 @@ void scale_image_set_pixbuf ( GtkWidget *widget, GdkPixbuf * );
 #define AS_WINDOW(x) ((struct wt_window *)(x))
 
 enum {
-  WS_ACTIVE =     1<<0,
   WS_MINIMIZED =  1<<1,
   WS_MAXIMIZED =  1<<2,
   WS_FULLSCREEN = 1<<3
@@ -222,14 +221,15 @@ enum {
   ACT_CLEAR = 3,
   ACT_PIPE = 4,
   ACT_SWAY = 5,
-  ACT_CONF = 6,
-  ACT_FUNC = 7,
-  ACT_FOCUS = 8,
-  ACT_CLOSE = 9,
-  ACT_MIN = 10,
-  ACT_MAX = 11,
-  ACT_UNMIN = 12,
-  ACT_UNMAX = 13
+  ACT_SWIN = 6,
+  ACT_CONF = 7,
+  ACT_FUNC = 8,
+  ACT_FOCUS = 9,
+  ACT_CLOSE = 10,
+  ACT_MIN = 11,
+  ACT_MAX = 12,
+  ACT_UNMIN = 13,
+  ACT_UNMAX = 14
 };
 
 enum {
