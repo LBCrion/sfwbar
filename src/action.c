@@ -71,7 +71,12 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
       break;
     case ACT_SWAY:
       if(action->command)
-        sway_ipc_command(action->command);
+        sway_ipc_command("%s",action->command);
+      break;
+    case ACT_SWIN:
+      if(action->command)
+        sway_ipc_command("[con_id=%ld] %s",GPOINTER_TO_INT(wid),
+            action->command);
       break;
     case ACT_CONF:
       if(action->command)

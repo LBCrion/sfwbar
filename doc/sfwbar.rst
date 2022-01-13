@@ -336,6 +336,9 @@ PipeRead <string>
 SwayCmd <string>
   send a command over Sway IPC
 
+SwayWinCmd <string>
+  send a command over Sway IPC applicable to a current window
+
 Focus
   set window to focused
 

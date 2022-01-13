@@ -576,6 +576,9 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
       case G_TOKEN_SWAYCMD:
         type = ACT_SWAY;
         break;
+      case G_TOKEN_SWAYWIN:
+        type = ACT_SWIN;
+        break;
       case G_TOKEN_CONFIG:
         type = ACT_CONF;
         break;
@@ -1249,6 +1252,7 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "PipeRead", (gpointer)G_TOKEN_PIPEREAD );
   g_scanner_scope_add_symbol(scanner,0, "Config", (gpointer)G_TOKEN_CONFIG );
   g_scanner_scope_add_symbol(scanner,0, "SwayCmd", (gpointer)G_TOKEN_SWAYCMD );
+  g_scanner_scope_add_symbol(scanner,0, "SwayWinCmd", (gpointer)G_TOKEN_SWAYWIN );
   g_scanner_scope_add_symbol(scanner,0, "Function", (gpointer)G_TOKEN_FUNCTION );
   g_scanner_scope_add_symbol(scanner,0, "Focus", (gpointer)G_TOKEN_FOCUS );
   g_scanner_scope_add_symbol(scanner,0, "Close", (gpointer)G_TOKEN_CLOSE );
