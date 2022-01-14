@@ -42,6 +42,23 @@ void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
 void action_exec ( GtkWidget *widget, struct layout_action *action,
     GdkEvent *event, gpointer wid )
 {
+  struct wt_window *win;
+
+  if(action->cond || action->ncond)
+  {
+    win = wintree_from_id(wid);
+    if(!win)
+      return;
+    if(wintree_is_focused(wid))
+      win->state |= WS_FOCUSED;
+    else
+      win->state &= ~WS_FOCUSED;
+    if((win->state & action->cond) != action->cond)
+      return;
+    if(((~win->state) & action->ncond) != action->ncond)
+      return;
+  }
+
   if(action->command)
     g_debug("widget action: (%d) %s",action->type, action->command);
   else

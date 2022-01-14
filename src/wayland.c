@@ -71,20 +71,29 @@ static void toplevel_handle_state(void *data, wlr_fth *tl,
   uint32_t *entry;
   struct wt_window *win;
 
+  win = wintree_from_id(tl);
+  if(!win)
+    return;
+
+  win->state = 0;
+
   wl_array_for_each(entry, state)
-    if(*entry == ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_MINIMIZED)
-      return;
-  wl_array_for_each(entry, state)
-    if(*entry == ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_ACTIVATED)
+    switch(*entry)
     {
-      win = wintree_from_id(tl);
-      if(win)
-      {
-        wintree_set_active(win->title);
-        wintree_set_focus(win->uid);
-        taskbar_invalidate();
-        switcher_invalidate();
-      }
+    case ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_MINIMIZED:
+      win->state |= WS_MINIMIZED;
+      break;
+    case ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_MAXIMIZED:
+      win->state |= WS_MAXIMIZED;
+      break;
+    case ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_FULLSCREEN:
+      win->state |= WS_FULLSCREEN;
+      break;
+    case ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_ACTIVATED:
+      wintree_set_active(win->title);
+      wintree_set_focus(win->uid);
+      taskbar_invalidate();
+      break;
     }
 }
 

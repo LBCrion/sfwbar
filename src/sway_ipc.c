@@ -125,6 +125,22 @@ int sway_ipc_subscribe ( gint sock )
   return sock;
 }
 
+void sway_set_state ( struct json_object *container)
+{
+  struct wt_window *win;
+  gint64 wid;
+
+  wid = json_int_by_name(container,"id",G_MININT64);
+  win = wintree_from_id(GINT_TO_POINTER(wid));
+  if(win)
+  {
+    if(json_int_by_name(container,"fullscreen_mode",0))
+      win->state |= WS_FULLSCREEN | WS_MAXIMIZED;
+    else
+      win->state &= ~ (WS_FULLSCREEN | WS_MAXIMIZED);
+  }
+}
+
 void sway_window_new ( struct json_object *container )
 {
   struct wt_window *win;
@@ -237,14 +253,16 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
         if(change!=NULL)
         {
           json_object_object_get_ex(obj,"container",&container);
-          if(g_strcmp0(change,"new")==0)
+          if(!g_strcmp0(change,"new"))
             sway_window_new (container);
-          if(g_strcmp0(change,"close")==0)
+          if(!g_strcmp0(change,"close"))
             sway_window_close(container);
-          if(g_strcmp0(change,"title")==0)
+          if(!g_strcmp0(change,"title"))
             sway_window_title(container);
-          if(g_strcmp0(change,"focus")==0)
+          if(!g_strcmp0(change,"focus"))
             sway_set_focus(container);
+          if(!g_strcmp0(change,"fullscreen_mode"))
+            sway_set_state(container);
           taskbar_invalidate();
           switcher_invalidate();
         }

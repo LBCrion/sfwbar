@@ -47,6 +47,8 @@ struct scan_file {
 };
 
 struct layout_action {
+  guchar cond;
+  guchar ncond;
   guchar type;
   gchar *command;
 };
@@ -187,6 +189,7 @@ void scale_image_set_pixbuf ( GtkWidget *widget, GdkPixbuf * );
 #define AS_WINDOW(x) ((struct wt_window *)(x))
 
 enum {
+  WS_FOCUSED =    1<<0,
   WS_MINIMIZED =  1<<1,
   WS_MAXIMIZED =  1<<2,
   WS_FULLSCREEN = 1<<3

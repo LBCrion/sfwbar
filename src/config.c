@@ -556,6 +556,46 @@ void config_widget_rows ( GScanner *scanner, struct layout_widget *lw )
 gboolean config_action ( GScanner *scanner, struct layout_action *action )
 {
   guchar type;
+  guchar cond = 0;
+  guchar ncond = 0;
+  guchar *ptr;
+
+  if(g_scanner_peek_next_token(scanner) == '[')
+  {
+    do
+    {
+      g_scanner_get_next_token(scanner);
+
+      if(g_scanner_peek_next_token(scanner)=='!')
+      {
+        g_scanner_get_next_token(scanner);
+        ptr = &ncond;
+      }
+      else
+        ptr = &cond;
+
+      switch((gint)g_scanner_get_next_token(scanner))
+      {
+        case G_TOKEN_FOCUSED:
+          *ptr |= WS_FOCUSED;
+          break;
+        case G_TOKEN_MINIMIZED:
+          *ptr |= WS_MINIMIZED;
+          break;
+        case G_TOKEN_MAXIMIZED:
+          *ptr |= WS_MAXIMIZED;
+          break;
+        case G_TOKEN_FULLSCREEN:
+          *ptr |= WS_FULLSCREEN;
+          break;
+        default:
+          g_scanner_error(scanner,"invalid condition in action");
+          break;
+      }
+    } while (g_scanner_peek_next_token(scanner)=='|');
+    if(g_scanner_get_next_token(scanner) != ']')
+      g_scanner_error(scanner,"missing ']' in conditional action");
+  }
 
   if(g_scanner_peek_next_token(scanner) != G_TOKEN_STRING)
   {
@@ -624,6 +664,8 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
     action->command = NULL;
   }
   action->type = type;
+  action->cond = cond;
+  action->ncond = ncond;
 
   return TRUE;
 }
@@ -1263,6 +1305,10 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "Item", (gpointer)G_TOKEN_ITEM );
   g_scanner_scope_add_symbol(scanner,0, "Separator", (gpointer)G_TOKEN_SEPARATOR );
   g_scanner_scope_add_symbol(scanner,0, "SubMenu", (gpointer)G_TOKEN_SUBMENU );
+  g_scanner_scope_add_symbol(scanner,0, "Minimized", (gpointer)G_TOKEN_MINIMIZED );
+  g_scanner_scope_add_symbol(scanner,0, "Maximized", (gpointer)G_TOKEN_MAXIMIZED );
+  g_scanner_scope_add_symbol(scanner,0, "FullScreen", (gpointer)G_TOKEN_FULLSCREEN );
+  g_scanner_scope_add_symbol(scanner,0, "Focused", (gpointer)G_TOKEN_FOCUSED );
   g_scanner_scope_add_symbol(scanner,0, "RegEx", (gpointer)G_TOKEN_REGEX );
   g_scanner_scope_add_symbol(scanner,0, "Json", (gpointer)G_TOKEN_JSON );
   g_scanner_scope_add_symbol(scanner,0, "Grab", (gpointer)G_TOKEN_GRAB );
