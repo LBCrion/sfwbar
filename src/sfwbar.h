@@ -70,9 +70,12 @@ struct layout_widget {
 
 extern gchar *expr_token[];
 
-void action_exec ( GtkWidget *, struct layout_action *, GdkEvent *, gpointer);
+void action_exec ( GtkWidget *, struct layout_action *, GdkEvent *,
+    struct wt_window *);
 void action_free ( struct layout_action *action, GObject *old );
 void action_function_add ( gchar *name, GList *actions );
+void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
+    struct wt_window *win );
 
 void sway_ipc_init ( void );
 gboolean sway_ipc_active ( void );
@@ -167,6 +170,8 @@ char *scanner_get_string ( gchar *name );
 double scanner_get_numeric ( gchar *name );
 
 gchar *gdk_monitor_get_xdg_name ( GdkMonitor *monitor );
+void set_monitor ( gchar *mon_name );
+void set_layer ( gchar *layer );
 
 gchar *get_xdg_config_file ( gchar *fname, gchar *extra );
 gchar *json_string_by_name ( struct json_object *obj, gchar *name );
@@ -226,13 +231,15 @@ enum {
   ACT_SWAY = 5,
   ACT_SWIN = 6,
   ACT_CONF = 7,
-  ACT_FUNC = 8,
-  ACT_FOCUS = 9,
-  ACT_CLOSE = 10,
-  ACT_MIN = 11,
-  ACT_MAX = 12,
-  ACT_UNMIN = 13,
-  ACT_UNMAX = 14
+  ACT_MONITOR = 8,
+  ACT_LAYER = 9,
+  ACT_FUNC = 10,
+  ACT_FOCUS = 101,
+  ACT_CLOSE = 102,
+  ACT_MIN = 103,
+  ACT_MAX = 104,
+  ACT_UNMIN = 105,
+  ACT_UNMAX = 106,
 };
 
 enum {

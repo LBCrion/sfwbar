@@ -28,28 +28,36 @@ void action_function_add ( gchar *name, GList *actions )
 }
 
 void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
-    gpointer wid )
+    struct wt_window *win )
 {
   GList *l;
+  struct wt_window *stat_win;
 
   if(!name)
     return;
+ 
+  if(win)
+  {
+    stat_win = g_malloc(sizeof(struct wt_window));
+    memcpy(stat_win,win,sizeof(struct wt_window));
+  }
+  else
+    stat_win = NULL;
 
   for(l = g_hash_table_lookup(functions, name); l; l = g_list_next(l))
-    action_exec(w,l->data,ev,wid);
+    action_exec(w,l->data,ev,stat_win);
+
+  g_free(stat_win);
 }
 
 void action_exec ( GtkWidget *widget, struct layout_action *action,
-    GdkEvent *event, gpointer wid )
+    GdkEvent *event, struct wt_window *win )
 {
-  struct wt_window *win;
-
   if(action->cond || action->ncond)
   {
-    win = wintree_from_id(wid);
     if(!win)
       return;
-    if(wintree_is_focused(wid))
+    if(wintree_is_focused(win->uid))
       win->state |= WS_FOCUSED;
     else
       win->state &= ~WS_FOCUSED;
@@ -62,7 +70,8 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
   if(action->command)
     g_debug("widget action: (%d) %s",action->type, action->command);
   else
-    g_debug("widget action: (%d) on %d",action->type,GPOINTER_TO_INT(wid));
+    if(win)
+      g_debug("widget action: (%d) on %d",action->type,GPOINTER_TO_INT(win->uid));
 
   switch(action->type)
   {
@@ -71,8 +80,8 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
         g_spawn_command_line_async(action->command,NULL);
       break;
     case ACT_MENU:
-      if(action->command)
-        layout_menu_popup(widget, layout_menu_get(action->command), event, wid);
+      if(action->command && win)
+        layout_menu_popup(widget, layout_menu_get(action->command), event, win->uid);
       break;
     case ACT_CLEAR:
       if(action->command)
@@ -84,38 +93,52 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
       break;
     case ACT_FUNC:
       if(action->command)
-        action_function_exec(action->command,widget,event,wid);
+        action_function_exec(action->command,widget,event,win);
       break;
     case ACT_SWAY:
       if(action->command)
         sway_ipc_command("%s",action->command);
       break;
     case ACT_SWIN:
-      if(action->command)
-        sway_ipc_command("[con_id=%ld] %s",GPOINTER_TO_INT(wid),
+      if(action->command && win)
+        sway_ipc_command("[con_id=%ld] %s",GPOINTER_TO_INT(win->uid),
             action->command);
       break;
     case ACT_CONF:
       if(action->command)
         config_string(action->command);
       break;
+    case ACT_MONITOR:
+      if(action->command)
+        set_monitor(action->command);
+      break;
+    case ACT_LAYER:
+      if(action->command)
+        set_layer(action->command);
+      break;
     case ACT_FOCUS:
-      wintree_focus(wid);
+      if(win)
+        wintree_focus(win->uid);
       break;
     case ACT_CLOSE:
-      wintree_close(wid);
+      if(win)
+        wintree_close(win->uid);
       break;
     case ACT_MIN:
-      wintree_minimize(wid);
+      if(win)
+        wintree_minimize(win->uid);
       break;
     case ACT_MAX:
-      wintree_maximize(wid);
+      if(win)
+        wintree_maximize(win->uid);
       break;
     case ACT_UNMIN:
-      wintree_unminimize(wid);
+      if(win)
+        wintree_unminimize(win->uid);
       break;
     case ACT_UNMAX:
-      wintree_unmaximize(wid);
+      if(win)
+        wintree_unmaximize(win->uid);
       break;
   }
 }

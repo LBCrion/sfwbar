@@ -39,7 +39,19 @@ gint get_toplevel_dir ( void )
   return toplevel_dir;
 }
 
-void set_monitor ( void )
+void set_layer ( gchar *layer )
+{
+  if(!g_ascii_strcasecmp(layer,"background"))
+    gtk_layer_set_layer(bar_window,GTK_LAYER_SHELL_LAYER_BACKGROUND);
+  if(!g_ascii_strcasecmp(layer,"bottom"))
+    gtk_layer_set_layer(bar_window,GTK_LAYER_SHELL_LAYER_BOTTOM);
+  if(!g_ascii_strcasecmp(layer,"top"))
+    gtk_layer_set_layer(bar_window,GTK_LAYER_SHELL_LAYER_TOP);
+  if(!g_ascii_strcasecmp(layer,"overlay"))
+    gtk_layer_set_layer(bar_window,GTK_LAYER_SHELL_LAYER_OVERLAY);
+}
+
+void set_monitor ( gchar *mon_name )
 {
   GdkDisplay *gdisp;
   GdkDisplayManager *gdman;
@@ -50,6 +62,12 @@ void set_monitor ( void )
   gboolean list;
 
   list = !g_strcmp0(monitor,"list");
+
+  if(g_strcmp0(mon_name,"list"))
+  {
+    g_free(monitor);
+    monitor = g_strdup(mon_name);
+  }
 
   gdman = gdk_display_manager_get();
   gdisp = gdk_display_get_default();
@@ -76,14 +94,14 @@ void set_monitor ( void )
   if(list)
     exit(0);
 
+  gtk_widget_hide ((GtkWidget *)bar_window);
   gtk_layer_set_monitor(bar_window, match);
+  gtk_widget_show ((GtkWidget *)bar_window);
 }
 
 void monitor_change_cb ( void )
 {
-  gtk_widget_hide ((GtkWidget *)bar_window);
-  set_monitor();
-  gtk_widget_show ((GtkWidget *)bar_window);
+  set_monitor(monitor);
 }
 
 gboolean window_hide_event ( struct json_object *obj )
@@ -225,7 +243,7 @@ static void activate (GtkApplication* app, gpointer data )
     wayland_init(bar_window,FALSE);
 
   if(monitor)
-    set_monitor();
+    set_monitor(monitor);
 
   gdisp = gdk_screen_get_display(gtk_window_get_screen(bar_window)),
         gtk_widget_get_window(GTK_WIDGET(bar_window));
@@ -234,6 +252,8 @@ static void activate (GtkApplication* app, gpointer data )
 
   g_thread_unref(g_thread_new("scanner",layout_scanner_thread,
         g_main_context_get_thread_default()));
+
+  action_function_exec("SfwBarInit",NULL,NULL,NULL);
 
   g_timeout_add (100,(GSourceFunc )shell_timer,NULL);
   g_unix_signal_add(10,(GSourceFunc)switcher_event,NULL);

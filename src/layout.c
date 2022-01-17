@@ -90,13 +90,14 @@ gboolean widget_menu_action ( GtkWidget *w ,struct layout_action *action )
   if(!wid)
     wid = wintree_get_focus();
 
-  action_exec(w,action,NULL,wid);
+  action_exec(w,action,NULL,wintree_from_id(wid));
   return TRUE;
 }
 
 gboolean layout_widget_button_cb ( GtkWidget *widget, struct layout_widget *lw )
 {
-  action_exec(lw->widget,&(lw->action[0]),NULL,wintree_get_focus());
+  action_exec(lw->widget,&(lw->action[0]),NULL,
+      wintree_from_id(wintree_get_focus()));
   return TRUE;
 }
 
@@ -108,7 +109,7 @@ gboolean layout_widget_click_cb ( GtkWidget *w, GdkEventButton *ev,
 
   if(ev->type == GDK_BUTTON_PRESS && ev->button >= 1 && ev->button <= 3)
     action_exec(lw->widget,&(lw->action[ev->button-1]),(GdkEvent *)ev,
-        wintree_get_focus);
+        wintree_from_id(wintree_get_focus()));
   return TRUE;
 }
 
@@ -135,7 +136,7 @@ gboolean layout_widget_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
   }
   if(button)
     action_exec(lw->widget,&(lw->action[button-1]),(GdkEvent *)event,
-        wintree_get_focus());
+        wintree_from_id(wintree_get_focus()));
 
   return TRUE;
 }
@@ -156,7 +157,7 @@ gpointer layout_scanner_thread ( gpointer data )
       timer = MIN(timer,((struct layout_widget *)iter->data)->next_poll);
     timer -= g_get_monotonic_time();
     if(timer>0)
-      usleep(timer);
+      usleep(timer*1000);
   }
 }
 

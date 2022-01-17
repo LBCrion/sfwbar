@@ -42,7 +42,8 @@ gboolean taskbar_click_cb ( GtkWidget *widget, GdkEventButton *ev,
 
   if(ev->type == GDK_BUTTON_PRESS && ev->button >= 1 && ev->button <= 3)
     action_exec(gtk_bin_get_child(GTK_BIN(widget)),
-          &(taskbar_lw->action[ev->button-1]),(GdkEvent *)ev, wid);
+        &(taskbar_lw->action[ev->button-1]),(GdkEvent *)ev,
+        wintree_from_id(wid));
   return TRUE;
 }
 
@@ -69,7 +70,8 @@ gboolean taskbar_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
   }
   if(button)
     action_exec(gtk_bin_get_child(GTK_BIN(w)),
-        &(taskbar_lw->action[button-1]), (GdkEvent *)event, wid);
+        &(taskbar_lw->action[button-1]), (GdkEvent *)event,
+        wintree_from_id(wid));
 
   return TRUE;
 }
@@ -82,7 +84,7 @@ void taskbar_button_cb( GtkWidget *widget, gpointer data )
     return;
 
   if(taskbar_lw->action[0].type)
-    action_exec(widget,&(taskbar_lw->action[0]),NULL,button->uid);
+    action_exec(widget,&(taskbar_lw->action[0]),NULL,button);
   else
   {
     if ( wintree_is_focused(button->uid) )

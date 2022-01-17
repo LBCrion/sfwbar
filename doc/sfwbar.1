@@ -422,6 +422,13 @@ send a command over Sway IPC
 .B SwayWinCmd <string>
 send a command over Sway IPC applicable to a current window
 .TP
+.B SetMonitor <string>
+move bar to a given monitor
+.TP
+.B SetLayer
+move bar to a specified layer (supported parameters are "top", "bottom",
+"background" and "overlay"
+.TP
 .B Focus
 set window to focused
 .TP
@@ -462,6 +469,9 @@ function("fancy_menu") {
 .sp
 The above example clears a menu, executes a script that builds a menu again
 and opens the resulting menu.
+.sp
+Function "SfwBarInit" executed on startup. You can use this functions to set
+initial parameters for the bar, such as default monitor and layer.
 .SS Scanner
 .sp
 SFWBar widgets display data obtained from various sources. These can be files

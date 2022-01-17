@@ -129,17 +129,11 @@ GList *wintree_get_list ( void )
 
 void wintree_focus ( gpointer id )
 {
-  struct wt_window *win;
   if(!id)
     return;
 
   if(sway_ipc_active())
-  {
     sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
-    win = wintree_from_id(id);
-    if(win)
-      win->state &= ~WS_MINIMIZED;
-  }
   else
   {
     zwlr_foreign_toplevel_handle_v1_unset_minimized(id);
@@ -149,17 +143,11 @@ void wintree_focus ( gpointer id )
 
 void wintree_minimize ( gpointer id )
 {
-  struct wt_window *win;
   if(!id)
     return;
 
   if(sway_ipc_active())
-  {
     sway_ipc_command("[con_id=%ld] move window to scratchpad",GPOINTER_TO_INT(id));
-    win = wintree_from_id(id);
-    if(win)
-      win->state |= WS_MINIMIZED;
-  }
   else
     zwlr_foreign_toplevel_handle_v1_set_minimized(id);
   wintree_set_focus(NULL);
@@ -167,17 +155,11 @@ void wintree_minimize ( gpointer id )
 
 void wintree_unminimize ( gpointer id )
 {
-  struct wt_window *win;
   if(!id)
     return;
 
   if(sway_ipc_active())
-  {
     sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
-    win = wintree_from_id(id);
-    if(win)
-      win->state &= ~WS_MINIMIZED;
-  }
   else
     zwlr_foreign_toplevel_handle_v1_unset_minimized(id);
 }

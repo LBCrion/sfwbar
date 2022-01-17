@@ -125,6 +125,21 @@ int sway_ipc_subscribe ( gint sock )
   return sock;
 }
 
+void sway_minimized_set ( struct json_object *obj, const gchar *parent )
+{
+  struct wt_window *win;
+  gint64 wid;
+
+  wid = json_int_by_name(obj,"id",G_MININT64);
+  win = wintree_from_id(GINT_TO_POINTER(wid));
+  if(!win)
+    return;
+  if(!g_strcmp0(parent,"__i3_scratch"))
+    win->state |= WS_MINIMIZED;
+  else
+    win->state &= ~WS_MINIMIZED;
+}
+
 void sway_set_state ( struct json_object *container)
 {
   struct wt_window *win;
@@ -220,6 +235,42 @@ void sway_set_focus ( struct json_object *container)
   win = wintree_from_id(GINT_TO_POINTER(wid));
   if(win)
     wintree_set_active(win->title);
+  sway_ipc_send(main_ipc,4,"");
+}
+
+void sway_traverse_tree ( struct json_object *obj, const gchar *parent,
+    gboolean init)
+{
+  struct json_object *iter,*arr,*ptr;
+  gint i;
+
+  json_object_object_get_ex(obj,"floating_nodes",&arr);
+  if( arr && json_object_is_type(arr, json_type_array) )
+    for(i=0;i<json_object_array_length(arr);i++)
+    {
+      iter = json_object_array_get_idx(arr,i);
+      if(init)
+        sway_window_new (iter);
+      sway_minimized_set(iter,parent);
+    }
+
+  json_object_object_get_ex(obj,"nodes",&arr);
+  if( arr && json_object_is_type(arr, json_type_array) )
+    for(i=0;i<json_object_array_length(arr);i++)
+    {
+      iter = json_object_array_get_idx(arr,i);
+      if( json_int_by_name(iter,"app_id",G_MININT64) != G_MININT64 )
+      {
+        if(init)
+          sway_window_new (iter);
+        sway_minimized_set(iter,parent);
+      }
+      else
+      {
+        json_object_object_get_ex(iter,"name",&ptr);
+        sway_traverse_tree(iter,json_object_get_string(ptr),init);
+      }
+    }
 }
 
 gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
@@ -235,6 +286,9 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
   while (response != NULL)
   { 
     obj = json_tokener_parse(response);
+
+    if(etype==0x00000004)
+      sway_traverse_tree(obj,NULL,FALSE);
 
     if(etype==0x80000000)
       pager_update();
@@ -263,6 +317,8 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
             sway_set_focus(container);
           if(!g_strcmp0(change,"fullscreen_mode"))
             sway_set_state(container);
+          if(!g_strcmp0(change,"move"))
+            sway_ipc_send(main_ipc,4,"");
           taskbar_invalidate();
           switcher_invalidate();
         }
@@ -274,31 +330,6 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
     response = sway_ipc_poll(main_ipc,&etype);
   }
   return TRUE;
-}
-
-void sway_traverse_tree ( struct json_object *obj)
-{
-  struct json_object *iter,*arr;
-  gint i;
-
-  json_object_object_get_ex(obj,"floating_nodes",&arr);
-  if( arr && json_object_is_type(arr, json_type_array) )
-    for(i=0;i<json_object_array_length(arr);i++)
-    {
-      iter = json_object_array_get_idx(arr,i);
-      sway_window_new (iter);
-    }
-
-  json_object_object_get_ex(obj,"nodes",&arr);
-  if( arr && json_object_is_type(arr, json_type_array) )
-    for(i=0;i<json_object_array_length(arr);i++)
-    {
-      iter = json_object_array_get_idx(arr,i);
-      if( json_int_by_name(iter,"id",G_MININT64) == G_MININT64 )
-        sway_window_new (iter);
-      else
-        sway_traverse_tree(iter);
-    }
 }
 
 void sway_ipc_init ( void )
@@ -322,7 +353,7 @@ void sway_ipc_init ( void )
   obj = json_tokener_parse(response);
   if(obj!=NULL)
   {
-    sway_traverse_tree(obj);
+    sway_traverse_tree(obj,NULL,TRUE);
     json_object_put(obj);
   }
   g_free(response);
