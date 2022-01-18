@@ -157,7 +157,7 @@ gpointer layout_scanner_thread ( gpointer data )
       timer = MIN(timer,((struct layout_widget *)iter->data)->next_poll);
     timer -= g_get_monotonic_time();
     if(timer>0)
-      usleep(timer*1000);
+      usleep(timer);
   }
 }
 
@@ -165,7 +165,7 @@ struct layout_widget *layout_widget_new ( void )
 {
   struct layout_widget *lw;
   lw = g_malloc0(sizeof(struct layout_widget));
-  lw->interval = 1000;
+  lw->interval = 1000000;
   lw->dir = GTK_POS_RIGHT;
   lw->rect.w = 1;
   lw->rect.h = 1;
@@ -342,6 +342,12 @@ void layout_widget_attach ( struct layout_widget *lw )
     {
       layout_widget_draw(lw);
       return layout_widget_free(lw);
+    }
+    if(!vcount)
+    {
+      layout_widget_draw(lw);
+      g_free(lw->value);
+      lw->value = NULL;
     }
     g_free(lw->eval);
     lw->eval = NULL;
