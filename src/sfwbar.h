@@ -172,6 +172,7 @@ double scanner_get_numeric ( gchar *name );
 gchar *gdk_monitor_get_xdg_name ( GdkMonitor *monitor );
 void set_monitor ( gchar *mon_name );
 void set_layer ( gchar *layer );
+void bar_set_size ( gchar *size );
 
 gchar *get_xdg_config_file ( gchar *fname, gchar *extra );
 gchar *json_string_by_name ( struct json_object *obj, gchar *name );
@@ -233,7 +234,8 @@ enum {
   ACT_CONF = 7,
   ACT_MONITOR = 8,
   ACT_LAYER = 9,
-  ACT_FUNC = 10,
+  ACT_BARSIZE = 10,
+  ACT_FUNC = 90,
   ACT_FOCUS = 101,
   ACT_CLOSE = 102,
   ACT_MIN = 103,

@@ -104,6 +104,52 @@ void monitor_change_cb ( void )
   set_monitor(monitor);
 }
 
+void bar_set_size ( gchar *size )
+{
+  gdouble number;
+  gchar *end;
+  GdkRectangle rect;
+  GdkWindow *win;
+
+  number = g_ascii_strtod(size, &end);
+  win = gtk_widget_get_window(GTK_WIDGET(bar_window));
+  gdk_monitor_get_geometry( gdk_display_get_monitor_at_window(
+      gdk_window_get_display(win),win), &rect );
+
+  if ( toplevel_dir == GTK_POS_BOTTOM || toplevel_dir == GTK_POS_TOP )
+  {
+    if(*end == '%')
+      number = number * rect.width / 100;
+    if ( number >= rect.width )
+    {
+      gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_LEFT, TRUE );
+      gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_RIGHT, TRUE );
+    }
+    else
+    {
+      gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_LEFT, FALSE );
+      gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_RIGHT, FALSE );
+      gtk_widget_set_size_request(GTK_WIDGET(bar_window),(gint)number,-1);
+    }
+  }
+  else
+  {
+    if(*end == '%')
+      number = number * rect.height / 100;
+    if ( number >= rect.height )
+    {
+      gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_TOP, TRUE );
+      gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_BOTTOM, TRUE );
+    }
+    else
+    {
+      gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_TOP, FALSE );
+      gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_BOTTOM, FALSE );
+      gtk_widget_set_size_request(GTK_WIDGET(bar_window),-1,(gint)number);
+    }
+  }
+}
+
 gboolean window_hide_event ( struct json_object *obj )
 {
   gchar *mode, state;

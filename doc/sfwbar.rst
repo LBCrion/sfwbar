@@ -349,6 +349,11 @@ SetLayer
   move bar to a specified layer (supported parameters are "top", "bottom",
   "background" and "overlay"
 
+SetBarSize <string>
+  set size of the bar (width for top or bottom bar, height for left or right
+  bar). The argument is a string. I.e. "800" for 800 pixels or "50%" for 
+  50% of screen size;
+
 Focus
   set window to focused
 

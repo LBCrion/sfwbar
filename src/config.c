@@ -649,6 +649,9 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
       case G_TOKEN_SETLAYER:
         type = ACT_LAYER;
         break;
+      case G_TOKEN_SETBARSIZE:
+        type = ACT_BARSIZE;
+        break;
       default:
         return FALSE;
     }
@@ -1310,6 +1313,7 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "UnMaximize", (gpointer)G_TOKEN_UNMAXIMIZE );
   g_scanner_scope_add_symbol(scanner,0, "SetMonitor", (gpointer)G_TOKEN_SETMONITOR );
   g_scanner_scope_add_symbol(scanner,0, "SetLayer", (gpointer)G_TOKEN_SETLAYER );
+  g_scanner_scope_add_symbol(scanner,0, "SetBarSize", (gpointer)G_TOKEN_SETBARSIZE );
   g_scanner_scope_add_symbol(scanner,0, "Item", (gpointer)G_TOKEN_ITEM );
   g_scanner_scope_add_symbol(scanner,0, "Separator", (gpointer)G_TOKEN_SEPARATOR );
   g_scanner_scope_add_symbol(scanner,0, "SubMenu", (gpointer)G_TOKEN_SUBMENU );

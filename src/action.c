@@ -116,6 +116,11 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
       if(action->command)
         set_layer(action->command);
       break;
+    case ACT_BARSIZE:
+      if(action->command)
+        bar_set_size(action->command);
+      break;
+
     case ACT_FOCUS:
       if(win)
         wintree_focus(win->uid);
