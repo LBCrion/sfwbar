@@ -158,6 +158,7 @@ void sway_set_state ( struct json_object *container)
 
 void sway_window_new ( struct json_object *container )
 {
+  struct json_object *ptr;
   struct wt_window *win;
   gint64 wid;
 
@@ -179,8 +180,14 @@ void sway_window_new ( struct json_object *container )
   win->appid = json_string_by_name(container,"app_id");
   if(win->appid==NULL)
   {
-    g_free(win);
-    return;
+    json_object_object_get_ex(container,"window_properties",&ptr);
+    if(!ptr)
+    {
+      g_free(win);
+      return;
+    }
+    else
+      win->appid = json_string_by_name(ptr,"instance");
   }
 
   win->title = json_string_by_name(container,"name");
