@@ -63,7 +63,7 @@ void set_monitor ( gchar *mon_name )
 
   list = !g_strcmp0(monitor,"list");
 
-  if(g_strcmp0(mon_name,"list"))
+  if(!list && monitor != mon_name)
   {
     g_free(monitor);
     monitor = g_strdup(mon_name);
