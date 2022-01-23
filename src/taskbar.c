@@ -12,6 +12,7 @@
 static GtkWidget *taskbar;
 static gboolean icons, labels;
 static gboolean invalid;
+static gboolean filter_output;
 static struct layout_widget *taskbar_lw;
 
 void taskbar_init ( struct layout_widget *lw )
@@ -25,10 +26,11 @@ void taskbar_invalidate ( void )
   invalid = TRUE;
 }
 
-void taskbar_set_visual ( gboolean nicons, gboolean nlabels )
+void taskbar_set_options ( gboolean nicons, gboolean nlabels, gboolean filter )
 {
   icons = nicons;
   labels = nlabels;
+  filter_output = filter;
 
   if(!icons)
     labels = TRUE;
@@ -178,25 +180,30 @@ void taskbar_update( void )
 {
   GList *item;
   struct wt_window *win;
+  gchar *output;
 
   if(!taskbar || !invalid)
     return;
 
+  output = bar_get_output();
   flow_grid_clean(taskbar);
   for (item = wintree_get_list(); item; item = g_list_next(item) )
   {
     win = item->data;
-    if ( wintree_is_focused(win->uid) )
-      gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(win->button)),
-          "taskbar_active");
-    else
-      gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(win->button)),
-          "taskbar_normal");
-    gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(win->button)),
-        GTK_STATE_FLAG_PRELIGHT);
+    if( !filter_output || !g_strcmp0(win->output,output) || !win->output )
+    {
+      if ( wintree_is_focused(win->uid) )
+        gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(win->button)),
+            "taskbar_active");
+      else
+        gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(win->button)),
+            "taskbar_normal");
+      gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(win->button)),
+          GTK_STATE_FLAG_PRELIGHT);
 
-    widget_set_css(win->button);
-    flow_grid_attach(taskbar,win->button);
+      widget_set_css(win->button);
+      flow_grid_attach(taskbar,win->button);
+    }
   }
   flow_grid_pad(taskbar);
   gtk_widget_show_all(taskbar);

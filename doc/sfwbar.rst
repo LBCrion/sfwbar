@@ -226,6 +226,10 @@ labels [true|false]
 icons [true|false]
   an indicator whether to display application icons within the taskbar.
 
+filter_output [true|false]
+  specifies whether taskbar should only list windows present on the same
+  output as the taskbar
+
 rows
   a number of rows in a taskbar.
 

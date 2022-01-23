@@ -13,6 +13,7 @@ struct wt_window {
   GtkWidget *switcher;
   gchar *title;
   gchar *appid;
+  gchar *output;
   gint64 pid;
   gint64 wid;
   gpointer uid;
@@ -85,13 +86,14 @@ int sway_ipc_send ( gint sock, gint32 type, gchar *command );
 void sway_ipc_command ( gchar *cmd, ... );
 int sway_ipc_subscribe ( gint sock );
 gboolean sway_ipc_event ( GIOChannel *, GIOCondition , gpointer );
+void sway_ipc_rescan ( void );
 
 void place_window ( gint64 wid, gint64 pid );
 void placer_config ( gint xs, gint ys, gint xo, gint yo, gboolean pid );
 
 void taskbar_init ( struct layout_widget * );
 void taskbar_invalidate ( void );
-void taskbar_set_visual ( gboolean nicons, gboolean nlabels );
+void taskbar_set_options ( gboolean, gboolean, gboolean );
 void taskbar_update ( void );
 void taskbar_window_init ( struct wt_window *win );
 void taskbar_set_label ( struct wt_window *win, gchar *title );
@@ -114,7 +116,7 @@ gchar *wintree_get_active ( void );
 gboolean wintree_is_focused ( gpointer id );
 GList *wintree_get_list ( void );
 
-void wayland_init ( GtkWindow *, gboolean );
+void wayland_init ( GtkWindow * );
 void foreign_toplevel_activate ( gpointer tl );
 
 gboolean window_hide_event ( struct json_object *obj );
@@ -173,6 +175,7 @@ gchar *gdk_monitor_get_xdg_name ( GdkMonitor *monitor );
 void set_monitor ( gchar *mon_name );
 void set_layer ( gchar *layer );
 void bar_set_size ( gchar *size );
+gchar *bar_get_output ( void );
 
 gchar *get_xdg_config_file ( gchar *fname, gchar *extra );
 gchar *json_string_by_name ( struct json_object *obj, gchar *name );

@@ -17,6 +17,9 @@ static void toplevel_handle_app_id(void *data, wlr_fth *tl, const gchar *app_id)
 {
   struct wt_window *win;
 
+  if(sway_ipc_active())
+    return;
+
   win = wintree_from_id(tl);
   if(!win)
     return;
@@ -28,6 +31,9 @@ static void toplevel_handle_app_id(void *data, wlr_fth *tl, const gchar *app_id)
 static void toplevel_handle_title(void *data, wlr_fth *tl, const gchar *title)
 {
   struct wt_window *win;
+
+  if(sway_ipc_active())
+    return;
 
   win = wintree_from_id(tl);
   if(!win)
@@ -42,13 +48,17 @@ static void toplevel_handle_title(void *data, wlr_fth *tl, const gchar *title)
 
 static void toplevel_handle_closed(void *data, wlr_fth *tl)
 {
-  wintree_window_delete(tl);
+  if(!sway_ipc_active())
+    wintree_window_delete(tl);
   zwlr_foreign_toplevel_handle_v1_destroy(tl);
 }
 
 static void toplevel_handle_done(void *data, wlr_fth *tl)
 {
   struct wt_window *win;
+
+  if(sway_ipc_active())
+    return;
 
   win = wintree_from_id(tl);
   if(!win)
@@ -70,6 +80,9 @@ static void toplevel_handle_state(void *data, wlr_fth *tl,
 {
   uint32_t *entry;
   struct wt_window *win;
+
+  if(sway_ipc_active())
+    return;
 
   win = wintree_from_id(tl);
   if(!win)
@@ -98,7 +111,12 @@ static void toplevel_handle_state(void *data, wlr_fth *tl,
 }
 
 static void toplevel_handle_parent(void *data, wlr_fth *tl, wlr_fth *pt) {}
-static void toplevel_handle_output_leave(void *data, wlr_fth *toplevel, struct wl_output *output) {}
+static void toplevel_handle_output_leave(void *data, wlr_fth *toplevel, struct wl_output *output) 
+{
+  if(sway_ipc_active())
+    sway_ipc_rescan();
+}
+
 static void toplevel_handle_output_enter(void *data, wlr_fth *toplevel, struct wl_output *output) {}
 
 static const struct zwlr_foreign_toplevel_handle_v1_listener toplevel_impl = {
@@ -117,16 +135,22 @@ static void toplevel_manager_handle_toplevel(void *data,
 {
   struct wt_window *win;
 
-  win = wintree_window_init();
-  win->uid = tl;
-  win->wid = wt_counter++;
-  wintree_window_append(win);
+  if(!sway_ipc_active())
+  {
+    win = wintree_window_init();
+    win->uid = tl;
+    win->wid = wt_counter++;
+    wintree_window_append(win);
+  }
 
   zwlr_foreign_toplevel_handle_v1_add_listener(tl, &toplevel_impl, NULL);
 }
 
 void foreign_toplevel_activate ( gpointer tl )
 {
+  if(sway_ipc_active())
+    return;
+
   zwlr_foreign_toplevel_handle_v1_unset_minimized(tl);
   zwlr_foreign_toplevel_handle_v1_activate(tl,seat);
 }
@@ -187,9 +211,7 @@ gchar *gdk_monitor_get_xdg_name ( GdkMonitor *monitor )
 static void handle_global(void *data, struct wl_registry *registry,
                 uint32_t name, const gchar *interface, uint32_t version)
 {
-  gboolean *wlr_ft = data;
-  if ( *wlr_ft && 
-      g_strcmp0(interface,zwlr_foreign_toplevel_manager_v1_interface.name)==0)
+  if (g_strcmp0(interface,zwlr_foreign_toplevel_manager_v1_interface.name)==0)
   {
     toplevel_manager = wl_registry_bind(registry, name,
       &zwlr_foreign_toplevel_manager_v1_interface,
@@ -211,7 +233,7 @@ static const struct wl_registry_listener registry_listener = {
   .global = handle_global,
 };
 
-void wayland_init ( GtkWindow *window, gboolean wlr_ft )
+void wayland_init ( GtkWindow *window )
 {
   GdkDisplay *gdisp;
   struct wl_display *wdisp;
@@ -223,10 +245,10 @@ void wayland_init ( GtkWindow *window, gboolean wlr_ft )
     g_error("Can't get wayland display\n");
 
   registry = wl_display_get_registry(wdisp);
-  wl_registry_add_listener(registry, &registry_listener, &wlr_ft);
+  wl_registry_add_listener(registry, &registry_listener, NULL);
   wl_display_roundtrip(wdisp);
 
-  if (wlr_ft && toplevel_manager == NULL)
+  if (toplevel_manager == NULL)
     g_error("wlr-foreign-toplevel not available\n");
 
   wl_display_roundtrip(wdisp);

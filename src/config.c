@@ -707,7 +707,7 @@ void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
 
 gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
 {
-  gboolean labels = FALSE, icons = FALSE;
+  gboolean labels = FALSE, icons = FALSE, filter = FALSE;
 
   scanner->max_parse_errors = FALSE;
 
@@ -762,6 +762,13 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
         }
         pager_set_numeric(config_assign_boolean(scanner,TRUE,"numeric"));
         break;
+      case G_TOKEN_PEROUTPUT:
+        if(lw->wtype == G_TOKEN_TASKBAR)
+          filter = config_assign_boolean(scanner,FALSE,"filter_output");
+        else
+          g_scanner_error(scanner,
+              "this widget has no property 'filter_output'");
+        break;
       case G_TOKEN_COLS:
         config_widget_cols(scanner, lw);
         break;
@@ -786,7 +793,7 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
     g_scanner_peek_next_token( scanner );
   }
   if(lw->wtype == G_TOKEN_TASKBAR)
-    taskbar_set_visual(icons,labels);
+    taskbar_set_options(icons,labels,filter);
   if((gint)g_scanner_peek_next_token(scanner) == '}' &&
       lw->wtype != G_TOKEN_GRID )
     g_scanner_get_next_token(scanner);
@@ -1291,6 +1298,7 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "Labels", (gpointer)G_TOKEN_LABELS );
   g_scanner_scope_add_symbol(scanner,0, "Loc", (gpointer)G_TOKEN_LOC );
   g_scanner_scope_add_symbol(scanner,0, "Numeric", (gpointer)G_TOKEN_NUMERIC );
+  g_scanner_scope_add_symbol(scanner,0, "Filter_output", (gpointer)G_TOKEN_PEROUTPUT );
   g_scanner_scope_add_symbol(scanner,0, "XStep", (gpointer)G_TOKEN_XSTEP );
   g_scanner_scope_add_symbol(scanner,0, "YStep", (gpointer)G_TOKEN_YSTEP );
   g_scanner_scope_add_symbol(scanner,0, "XOrigin", (gpointer)G_TOKEN_XORIGIN );

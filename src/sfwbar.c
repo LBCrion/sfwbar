@@ -51,6 +51,15 @@ void set_layer ( gchar *layer )
     gtk_layer_set_layer(bar_window,GTK_LAYER_SHELL_LAYER_OVERLAY);
 }
 
+gchar *bar_get_output ( void )
+{
+  GdkWindow *win;
+
+  win = gtk_widget_get_window(GTK_WIDGET(bar_window));
+  return gdk_monitor_get_xdg_name( gdk_display_get_monitor_at_window(
+        gdk_window_get_display(win),win) );
+}
+
 void set_monitor ( gchar *mon_name )
 {
   GdkDisplay *gdisp;
@@ -284,10 +293,7 @@ static void activate (GtkApplication* app, gpointer data )
   }
 
   sway_ipc_init();
-  if(!sway_ipc_active())
-    wayland_init(bar_window,TRUE);
-  else
-    wayland_init(bar_window,FALSE);
+  wayland_init(bar_window);
 
   if(monitor)
     set_monitor(monitor);
