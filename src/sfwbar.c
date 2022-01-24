@@ -212,7 +212,7 @@ void css_init ( void )
 
   gtk_widget_class_install_style_property( widget_class,
     g_param_spec_double("align","text alignment","text alignment",
-      0.0,1.0,0.0, G_PARAM_READABLE));
+      0.0,1.0,0.5, G_PARAM_READABLE));
 
   gtk_widget_class_install_style_property( widget_class,
     g_param_spec_boolean("hexpand","horizonal expansion","horizontal expansion",

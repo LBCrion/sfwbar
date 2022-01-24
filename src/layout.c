@@ -219,13 +219,6 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
   if(lw->wtype==G_TOKEN_TRAY)
     sni_init(lw->widget);
 
-  if(GTK_IS_LABEL(lw->widget))
-  {
-    gdouble xalign;
-    gtk_widget_style_get(lw->widget,"align",&xalign,NULL);
-    gtk_label_set_xalign(GTK_LABEL(lw->widget),xalign);
-  }
-
   if(layout_widget_has_actions(lw))
   {
     lw->lobject = gtk_event_box_new();
@@ -278,7 +271,7 @@ void layout_widget_free ( struct layout_widget *lw )
 
 gboolean layout_widget_draw ( struct layout_widget *lw )
 {
-  if(GTK_IS_LABEL(GTK_WIDGET(lw->widget)))
+  if(GTK_IS_LABEL(lw->widget))
     gtk_label_set_markup(GTK_LABEL(lw->widget),lw->eval);
 
   if(GTK_IS_PROGRESS_BAR(lw->widget))
@@ -295,12 +288,29 @@ gboolean layout_widget_draw ( struct layout_widget *lw )
   return FALSE;
 }
 
+gboolean layout_widget_cache ( gchar *expr, gchar **cache )
+{
+  gchar *eval;
+
+  if(!expr)
+    return FALSE;
+
+  eval = expr_parse(expr, NULL);
+  if(g_strcmp0(eval,*cache))
+  {
+    g_free(*cache);
+    *cache = eval;
+    return TRUE;
+  }
+  g_free(eval);
+  return FALSE;
+}
+
 void layout_widgets_update ( GMainContext *gmc )
 {
   GList *iter;
   gint64 ctime;
   struct layout_widget *lw;
-  gchar *eval;
 
   ctime = g_get_monotonic_time();
 
@@ -311,26 +321,15 @@ void layout_widgets_update ( GMainContext *gmc )
     if(lw->next_poll > ctime)
       continue;
     lw->next_poll = ctime+lw->interval;
-    if((lw->value!=NULL)&&(GTK_IS_LABEL(lw->widget)||
-        GTK_IS_PROGRESS_BAR(lw->widget)||GTK_IS_IMAGE(lw->widget)))
-    {
-      eval = expr_parse(lw->value, NULL);
-      if(g_strcmp0(eval,lw->eval))
-      {
-        g_free(lw->eval);
-        lw->eval = eval;
-
+      if(layout_widget_cache(lw->value,&lw->eval))
         g_main_context_invoke(gmc,(GSourceFunc)layout_widget_draw,lw);
-      }
-      else
-        g_free(eval);
-    }
   }
 }
 
 void layout_widget_attach ( struct layout_widget *lw )
 {
   guint vcount;
+  gboolean updatable;
 
   if(!lw->value && !layout_widget_has_actions(lw))
     return layout_widget_free(lw);
@@ -338,14 +337,16 @@ void layout_widget_attach ( struct layout_widget *lw )
   if(lw->value)
   {
     lw->eval = expr_parse(lw->value, &vcount);
+    layout_widget_draw(lw);
+    updatable = GTK_IS_LABEL(lw->widget) ||
+      GTK_IS_PROGRESS_BAR(lw->widget) ||
+      GTK_IS_IMAGE(lw->widget);
+
     if(!vcount && !layout_widget_has_actions(lw))
-    {
-      layout_widget_draw(lw);
       return layout_widget_free(lw);
-    }
-    if(!vcount)
+
+    if(!updatable || !vcount)
     {
-      layout_widget_draw(lw);
       g_free(lw->value);
       lw->value = NULL;
     }
@@ -359,7 +360,9 @@ void layout_widget_attach ( struct layout_widget *lw )
 void widget_set_css ( GtkWidget *widget )
 {
   gboolean expand;
+  gdouble xalign;
   GList *l;
+
   gtk_widget_style_get(widget,"hexpand",&expand,NULL);
   gtk_widget_set_hexpand(GTK_WIDGET(widget),expand);
   gtk_widget_style_get(widget,"vexpand",&expand,NULL);
@@ -369,6 +372,12 @@ void widget_set_css ( GtkWidget *widget )
     l = gtk_container_get_children(GTK_CONTAINER(widget));
     for(;l!=NULL;l=g_list_next(l))
       widget_set_css(l->data);
+  }
+
+  if(GTK_IS_LABEL(widget))
+  {
+    gtk_widget_style_get(widget,"align",&xalign,NULL);
+    gtk_label_set_xalign(GTK_LABEL(widget),xalign);
   }
 
 }
