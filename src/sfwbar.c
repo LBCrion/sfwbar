@@ -181,7 +181,8 @@ gboolean window_hide_event ( struct json_object *obj )
   if(state=='h')
     gtk_widget_hide(GTK_WIDGET(bar_window));
   else
-    gtk_widget_show(GTK_WIDGET(bar_window));
+    if(!gtk_widget_is_visible(GTK_WIDGET(bar_window)))
+      set_monitor(monitor);
   return TRUE;
 }
 
