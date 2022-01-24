@@ -13,6 +13,7 @@ static GtkWidget *taskbar;
 static gboolean icons, labels;
 static gboolean invalid;
 static gboolean filter_output;
+static gint title_width = -1;
 static struct layout_widget *taskbar_lw;
 
 void taskbar_init ( struct layout_widget *lw )
@@ -26,11 +27,13 @@ void taskbar_invalidate ( void )
   invalid = TRUE;
 }
 
-void taskbar_set_options ( gboolean nicons, gboolean nlabels, gboolean filter )
+void taskbar_set_options ( gboolean nicons, gboolean nlabels, gboolean filter,
+    gint twidth )
 {
   icons = nicons;
   labels = nlabels;
   filter_output = filter;
+  title_width = twidth;
 
   if(!icons)
     labels = TRUE;
@@ -98,15 +101,6 @@ void taskbar_button_cb( GtkWidget *widget, gpointer data )
   taskbar_invalidate();
 }
 
-gint win_compare ( struct wt_window *a, struct wt_window *b)
-{
-  gint s;
-  s = g_strcmp0(a->title,b->title);
-  if(s==0)
-    return (a->wid - b->wid);
-  return s;
-}
-
 void taskbar_window_init ( struct wt_window *win )
 {
   GtkWidget *box,*icon,*label,*button;
@@ -134,6 +128,7 @@ void taskbar_window_init ( struct wt_window *win )
   {
     label = gtk_label_new(win->title);
     gtk_label_set_ellipsize (GTK_LABEL(label),PANGO_ELLIPSIZE_END);
+    gtk_label_set_max_width_chars(GTK_LABEL(label),title_width);
     widget_set_css(label);
     gtk_grid_attach_next_to(GTK_GRID(box),label,icon,dir,1,1);
   }

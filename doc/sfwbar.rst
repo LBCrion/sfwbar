@@ -221,14 +221,17 @@ action
 ``Taskbar`` widget may contain the following options
 
 labels [true|false]
-  an indicator whether to display an application title within the taskbar.
+  an indicator whether to display an application title within the taskbar
 
 icons [true|false]
-  an indicator whether to display application icons within the taskbar.
+  an indicator whether to display application icons within the taskbar
 
 filter_output [true|false]
   specifies whether taskbar should only list windows present on the same
   output as the taskbar
+
+title_width
+  set maximum width of an application title in characters
 
 rows
   a number of rows in a taskbar.

@@ -708,6 +708,7 @@ void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
 gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
 {
   gboolean labels = FALSE, icons = FALSE, filter = FALSE;
+  gint twidth = -1;
 
   scanner->max_parse_errors = FALSE;
 
@@ -769,6 +770,13 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
           g_scanner_error(scanner,
               "this widget has no property 'filter_output'");
         break;
+      case G_TOKEN_TITLEWIDTH:
+        if(lw->wtype == G_TOKEN_TASKBAR)
+          twidth = config_assign_number(scanner,"title_width");
+        else
+          g_scanner_error(scanner,
+              "this widget has no property 'title_width'");
+        break;
       case G_TOKEN_COLS:
         config_widget_cols(scanner, lw);
         break;
@@ -793,7 +801,7 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
     g_scanner_peek_next_token( scanner );
   }
   if(lw->wtype == G_TOKEN_TASKBAR)
-    taskbar_set_options(icons,labels,filter);
+    taskbar_set_options(icons,labels,filter,twidth);
   if((gint)g_scanner_peek_next_token(scanner) == '}' &&
       lw->wtype != G_TOKEN_GRID )
     g_scanner_get_next_token(scanner);
@@ -928,7 +936,7 @@ struct layout_widget *config_layout ( GScanner *scanner )
 void config_switcher ( GScanner *scanner )
 {
   gchar *css=NULL;
-  gint interval = 1, cols = 1;
+  gint interval = 1, cols = 1, twidth = -1;
   gboolean icons = FALSE, labels = FALSE;
   scanner->max_parse_errors = FALSE;
 
@@ -957,6 +965,9 @@ void config_switcher ( GScanner *scanner )
       case G_TOKEN_LABELS:
         labels = config_assign_boolean(scanner,FALSE,"labels");
         break;
+      case G_TOKEN_TITLEWIDTH:
+        twidth = config_assign_number(scanner,"title_width");
+        break;
       default:
         g_scanner_error(scanner,"Unexpected token in 'switcher'");
         break;
@@ -968,7 +979,7 @@ void config_switcher ( GScanner *scanner )
   if(g_scanner_peek_next_token(scanner) == ';')
     g_scanner_get_next_token(scanner);
 
-  switcher_config(cols,css,interval,icons,labels);
+  switcher_config(cols,css,interval,icons,labels,twidth);
 }
 
 void config_placer ( GScanner *scanner )
@@ -1299,6 +1310,7 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "Loc", (gpointer)G_TOKEN_LOC );
   g_scanner_scope_add_symbol(scanner,0, "Numeric", (gpointer)G_TOKEN_NUMERIC );
   g_scanner_scope_add_symbol(scanner,0, "Filter_output", (gpointer)G_TOKEN_PEROUTPUT );
+  g_scanner_scope_add_symbol(scanner,0, "Title_width", (gpointer)G_TOKEN_TITLEWIDTH );
   g_scanner_scope_add_symbol(scanner,0, "XStep", (gpointer)G_TOKEN_XSTEP );
   g_scanner_scope_add_symbol(scanner,0, "YStep", (gpointer)G_TOKEN_YSTEP );
   g_scanner_scope_add_symbol(scanner,0, "XOrigin", (gpointer)G_TOKEN_XORIGIN );

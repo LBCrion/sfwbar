@@ -93,7 +93,7 @@ void placer_config ( gint xs, gint ys, gint xo, gint yo, gboolean pid );
 
 void taskbar_init ( struct layout_widget * );
 void taskbar_invalidate ( void );
-void taskbar_set_options ( gboolean, gboolean, gboolean );
+void taskbar_set_options ( gboolean, gboolean, gboolean, gint );
 void taskbar_update ( void );
 void taskbar_window_init ( struct wt_window *win );
 void taskbar_set_label ( struct wt_window *win, gchar *title );
@@ -132,7 +132,7 @@ void switcher_invalidate ( void );
 void switcher_update ( void );
 void switcher_set_label ( struct wt_window *win, gchar *title );
 void switcher_window_init ( struct wt_window *win);
-void switcher_config ( gint, gchar *, gint, gboolean, gboolean);
+void switcher_config ( gint, gchar *, gint, gboolean, gboolean, gint );
 
 void pager_init ( GtkWidget * );
 void pager_set_preview ( gboolean pv );
