@@ -200,7 +200,14 @@ value
 style 
   a style name for the widget. Styles can be used in CSS to theme widgets.
   Multiple widgets can have the same style. A style name can be used in css
-  using gtk+ named widget convention, i.e. ``label#mystyle``
+  using gtk+ named widget convention, i.e. ``label#mystyle``. Style property
+  can be set to an expression to change styles in response to changes in
+  system parameters.
+
+tooltip
+  sets a tooltip for a widget. A tooltip can be a static value or an
+  expression. In case of the latter, the tooltip will be dynamically
+  updated every time it pops up.
 
 interval
   widget update frequency in milliseconds 

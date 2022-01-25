@@ -141,26 +141,6 @@ gboolean layout_widget_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
   return TRUE;
 }
 
-gpointer layout_scanner_thread ( gpointer data )
-{
-  GList *iter;
-  gint64 timer;
-
-  while ( TRUE )
-  {
-    scanner_expire();
-    layout_widgets_update(data);
-    if(!widget_list)
-      g_thread_exit(NULL);
-    timer = G_MAXINT64;
-    for(iter=widget_list;iter!=NULL;iter=g_list_next(iter))
-      timer = MIN(timer,((struct layout_widget *)iter->data)->next_poll);
-    timer -= g_get_monotonic_time();
-    if(timer>0)
-      usleep(timer);
-  }
-}
-
 struct layout_widget *layout_widget_new ( void )
 {
   struct layout_widget *lw;
@@ -172,18 +152,76 @@ struct layout_widget *layout_widget_new ( void )
   return lw;
 }
 
+gboolean layout_widget_draw ( struct layout_widget *lw )
+{
+  if(GTK_IS_LABEL(lw->widget))
+    gtk_label_set_markup(GTK_LABEL(lw->widget),lw->evalue);
+
+  if(GTK_IS_PROGRESS_BAR(lw->widget))
+    if(!g_strrstr(lw->evalue,"nan"))
+      gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(lw->widget),
+          g_ascii_strtod(lw->evalue,NULL));
+
+  if(GTK_IS_IMAGE(lw->widget))
+  {
+    scale_image_set_image(GTK_WIDGET(lw->widget),lw->evalue,NULL);
+    scale_image_update(GTK_WIDGET(lw->widget));
+  }
+
+  return FALSE;
+}
+
+gboolean layout_tooltip_update ( GtkWidget *widget, gint x, gint y,
+    gboolean kbmode, GtkTooltip *tooltip, struct layout_widget *lw )
+{
+  gchar *eval;
+
+  eval = expr_parse(lw->tooltip, NULL);
+  if(eval)
+    gtk_tooltip_set_markup(tooltip,eval);
+
+  return TRUE;
+}
+
 GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     GtkWidget *sibling )
 {
   gint dir;
+  guint vcount;
+  gchar *eval;
   GtkWidget *tmp;
   lw->lobject = lw->widget;
 
   if(lw->style)
   {
-    gtk_widget_set_name(lw->widget,lw->style);
-    g_free(lw->style);
-    lw->style = NULL;
+    lw->estyle = expr_parse(lw->style, &vcount);
+    gtk_widget_set_name(lw->widget,lw->estyle);
+    if(!vcount)
+    {
+      g_free(lw->style);
+      g_free(lw->estyle);
+      lw->style = NULL;
+      lw->estyle = NULL;
+    }
+  }
+
+  if(lw->tooltip)
+  {
+    eval = expr_parse(lw->tooltip, &vcount);
+    if(eval)
+    {
+      gtk_widget_set_has_tooltip(lw->widget,TRUE);
+      gtk_widget_set_tooltip_markup(lw->widget,eval);
+      g_free(eval);
+    }
+    if(!vcount)
+    {
+      g_free(lw->tooltip);
+      lw->tooltip = NULL;
+    }
+    else
+      g_signal_connect(lw->widget,"query-tooltip",
+          G_CALLBACK(layout_tooltip_update),lw);
   }
 
   if(lw->css)
@@ -242,6 +280,20 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     gtk_container_add(GTK_CONTAINER(tmp),lw->widget);
   }
 
+  if(lw->value)
+  {
+    lw->evalue = expr_parse(lw->value, &vcount);
+    layout_widget_draw(lw);
+    if((!GTK_IS_LABEL(lw->widget) && !GTK_IS_PROGRESS_BAR(lw->widget) &&
+          !GTK_IS_IMAGE(lw->widget)) || !vcount)
+    {
+      g_free(lw->value);
+      g_free(lw->evalue);
+      lw->value = NULL;
+      lw->evalue = NULL;
+    }
+  }
+
   if(parent)
   {
     gtk_widget_style_get(parent,"direction",&dir,NULL);
@@ -258,34 +310,19 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
 void layout_widget_free ( struct layout_widget *lw )
 {
   gint i;
+
   if(!lw)
     return;
+
   g_free(lw->style);
   g_free(lw->css);
   g_free(lw->value);
+  g_free(lw->tooltip);
   for(i=0;i<MAX_BUTTON;i++)
     g_free(lw->action[i].command);
-  g_free(lw->eval);
+  g_free(lw->evalue);
+  g_free(lw->estyle);
   g_free(lw);
-}
-
-gboolean layout_widget_draw ( struct layout_widget *lw )
-{
-  if(GTK_IS_LABEL(lw->widget))
-    gtk_label_set_markup(GTK_LABEL(lw->widget),lw->eval);
-
-  if(GTK_IS_PROGRESS_BAR(lw->widget))
-    if(!g_strrstr(lw->eval,"nan"))
-      gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(lw->widget),
-          g_ascii_strtod(lw->eval,NULL));
-
-  if(GTK_IS_IMAGE(lw->widget))
-  {
-    scale_image_set_image(GTK_WIDGET(lw->widget),lw->eval,NULL);
-    scale_image_update(GTK_WIDGET(lw->widget));
-  }
-
-  return FALSE;
 }
 
 gboolean layout_widget_cache ( gchar *expr, gchar **cache )
@@ -320,41 +357,24 @@ void layout_widgets_update ( GMainContext *gmc )
 
     if(lw->next_poll > ctime)
       continue;
-    lw->next_poll = ctime+lw->interval;
-      if(layout_widget_cache(lw->value,&lw->eval))
-        g_main_context_invoke(gmc,(GSourceFunc)layout_widget_draw,lw);
+
+    while(lw->next_poll <= ctime)
+      lw->next_poll += lw->interval;
+
+    if(layout_widget_cache(lw->value,&lw->evalue))
+      g_main_context_invoke(gmc,(GSourceFunc)layout_widget_draw,lw);
+    if(layout_widget_cache(lw->style,&lw->estyle))
+      gtk_widget_set_name(lw->widget,lw->estyle);
   }
 }
 
 void layout_widget_attach ( struct layout_widget *lw )
 {
-  guint vcount;
-  gboolean updatable;
-
-  if(!lw->value && !layout_widget_has_actions(lw))
+  if(!lw->value && !lw->tooltip && !lw->style && !layout_widget_has_actions(lw))
     return layout_widget_free(lw);
 
-  if(lw->value)
-  {
-    lw->eval = expr_parse(lw->value, &vcount);
-    layout_widget_draw(lw);
-    updatable = GTK_IS_LABEL(lw->widget) ||
-      GTK_IS_PROGRESS_BAR(lw->widget) ||
-      GTK_IS_IMAGE(lw->widget);
-
-    if(!vcount && !layout_widget_has_actions(lw))
-      return layout_widget_free(lw);
-
-    if(!updatable || !vcount)
-    {
-      g_free(lw->value);
-      lw->value = NULL;
-    }
-    g_free(lw->eval);
-    lw->eval = NULL;
-  }
-
-  widget_list = g_list_append(widget_list,lw);
+  if(lw->value || lw->style)
+    widget_list = g_list_append(widget_list,lw);
 }
 
 void widget_set_css ( GtkWidget *widget )
@@ -379,5 +399,24 @@ void widget_set_css ( GtkWidget *widget )
     gtk_widget_style_get(widget,"align",&xalign,NULL);
     gtk_label_set_xalign(GTK_LABEL(widget),xalign);
   }
+}
 
+gpointer layout_scanner_thread ( gpointer data )
+{
+  GList *iter;
+  gint64 timer;
+
+  while ( TRUE )
+  {
+    scanner_expire();
+    layout_widgets_update(data);
+    if(!widget_list)
+      g_thread_exit(NULL);
+    timer = G_MAXINT64;
+    for(iter=widget_list;iter!=NULL;iter=g_list_next(iter))
+      timer = MIN(timer,((struct layout_widget *)iter->data)->next_poll);
+    timer -= g_get_monotonic_time();
+    if(timer>0)
+      usleep(timer);
+  }
 }

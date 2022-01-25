@@ -57,11 +57,13 @@ struct layout_action {
 struct layout_widget {
   GtkWidget *widget;
   GtkWidget *lobject;
-  gchar *style;
   gchar *css;
+  gchar *style;
+  gchar *estyle;
   gchar *value;
+  gchar *evalue;
+  gchar *tooltip;
   struct layout_action action[MAX_BUTTON];
-  gchar *eval;
   gint64 interval;
   gint64 next_poll;
   gint wtype;
@@ -153,7 +155,6 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     GtkWidget *sibling );
 void layout_widget_attach ( struct layout_widget *lw );
 void layout_widget_free ( struct layout_widget *lw );
-void layout_widgets_update ( GMainContext * );
 void widget_set_css ( GtkWidget * );
 gboolean widget_menu_action ( GtkWidget *widget, struct layout_action *action );
 

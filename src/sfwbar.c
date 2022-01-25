@@ -288,7 +288,7 @@ static void activate (GtkApplication* app, gpointer data )
   if((lw != NULL)&&(lw->widget!=NULL))
   {
     gtk_container_add(GTK_CONTAINER(bar_window), lw->widget);
-    layout_widget_free(lw);
+    layout_widget_attach(lw);
 
     gtk_widget_show_all ((GtkWidget *)bar_window);
   }

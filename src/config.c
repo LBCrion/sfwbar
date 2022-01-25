@@ -436,7 +436,7 @@ gchar *config_value_string ( gchar *dest, gchar *string )
   return result;
 }
 
-gchar *config_get_value ( GScanner *scanner )
+gchar *config_get_value ( GScanner *scanner, gchar *prop )
 {
   gchar *value, *temp;
   static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
@@ -444,7 +444,7 @@ gchar *config_get_value ( GScanner *scanner )
   scanner->max_parse_errors = FALSE;
   if(g_scanner_peek_next_token(scanner)!='=')
   {
-    g_scanner_error(scanner,"expecting value = expression");
+    g_scanner_error(scanner,"expecting %s = expression",prop);
     return NULL;
   }
   g_scanner_get_next_token(scanner);
@@ -727,7 +727,7 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
     switch ((gint)g_scanner_get_next_token ( scanner ) )
     {
       case G_TOKEN_STYLE:
-        lw->style = config_assign_string(scanner,"style");
+        lw->style = config_get_value(scanner,"style");
         break;
       case G_TOKEN_CSS:
         lw->css = config_assign_string(scanner,"css");
@@ -742,7 +742,13 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
         if(GTK_IS_GRID(lw->widget))
           g_scanner_error(scanner,"this widget has no property 'value'");
         else
-          lw->value = config_get_value(scanner);
+          lw->value = config_get_value(scanner,"value");
+        break;
+      case G_TOKEN_TOOLTIP:
+        if(GTK_IS_GRID(lw->widget))
+          g_scanner_error(scanner,"this widget has no property 'tooltip'");
+        else
+          lw->tooltip = config_get_value(scanner,"tooltip");
         break;
       case G_TOKEN_PINS:
         config_get_pins( scanner, lw );
@@ -1311,6 +1317,7 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "Numeric", (gpointer)G_TOKEN_NUMERIC );
   g_scanner_scope_add_symbol(scanner,0, "Filter_output", (gpointer)G_TOKEN_PEROUTPUT );
   g_scanner_scope_add_symbol(scanner,0, "Title_width", (gpointer)G_TOKEN_TITLEWIDTH );
+  g_scanner_scope_add_symbol(scanner,0, "Tooltip", (gpointer)G_TOKEN_TOOLTIP );
   g_scanner_scope_add_symbol(scanner,0, "XStep", (gpointer)G_TOKEN_XSTEP );
   g_scanner_scope_add_symbol(scanner,0, "YStep", (gpointer)G_TOKEN_YSTEP );
   g_scanner_scope_add_symbol(scanner,0, "XOrigin", (gpointer)G_TOKEN_XORIGIN );
