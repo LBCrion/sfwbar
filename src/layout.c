@@ -178,7 +178,10 @@ gboolean layout_tooltip_update ( GtkWidget *widget, gint x, gint y,
 
   eval = expr_parse(lw->tooltip, NULL);
   if(eval)
+  {
     gtk_tooltip_set_markup(tooltip,eval);
+    g_free(eval);
+  }
 
   return TRUE;
 }
