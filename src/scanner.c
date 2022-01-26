@@ -136,6 +136,7 @@ int scanner_update_file ( GIOChannel *in, struct scan_file *file )
           strlen(read_buff));
     g_free(read_buff);
   }
+  g_free(read_buff);
   if(json)
   {
     for(node=file->vars;node!=NULL;node=g_list_next(node))
