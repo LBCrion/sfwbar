@@ -21,6 +21,7 @@ void scanner_var_attach ( gchar *name, struct scan_var *var )
 
 void scanner_expire_var ( void *key, struct scan_var *var, void *data )
 {
+  if( var->file->source != SO_CLIENT )
   var->status=0;
 }
 
@@ -98,55 +99,53 @@ gchar *scanner_extract_json ( struct json_object *obj, gchar *expr )
   return result;
 }
 
-#define SCANNER_BUFF_LEN 1024
-
 /* update variables in a specific file (or pipe) */
-int scanner_update_file ( FILE *in, struct scan_file *file )
+int scanner_update_file ( GIOChannel *in, struct scan_file *file )
 {
   struct scan_var *var;
   GList *node;
   GMatchInfo *match;
   struct json_tokener *json = NULL;
   struct json_object *obj;
-  static gchar read_buff[SCANNER_BUFF_LEN];
+  gchar *read_buff;
 
-  while((!feof(in))&&(!ferror(in)))
-    if(fgets(read_buff,SCANNER_BUFF_LEN,in)!=NULL)
+  while(g_io_channel_read_line(in,&read_buff,NULL,NULL,NULL)==G_IO_STATUS_NORMAL)
+  {
+    for(node=file->vars;node!=NULL;node=g_list_next(node))
     {
-      for(node=file->vars;node!=NULL;node=g_list_next(node))
+      var=node->data;
+      switch(var->type)
       {
-        var=node->data;
-        switch(var->type)
-        {
-          case VP_REGEX:
-            g_regex_match (var->regex, read_buff, 0, &match);
-            if(g_match_info_matches (match))
-              scanner_update_var(var,g_match_info_fetch (match, 1));
-            g_match_info_free (match);
-            break;
-          case VP_GRAB:
-            scanner_update_var(var,g_strdup(read_buff));
-            break;
-          case VP_JSON:
-            if(!json)
-              json = json_tokener_new();
-            break;
-        }
+        case VP_REGEX:
+          g_regex_match (var->regex, read_buff, 0, &match);
+          if(g_match_info_matches (match))
+            scanner_update_var(var,g_match_info_fetch (match, 1));
+          g_match_info_free (match);
+          break;
+        case VP_GRAB:
+          scanner_update_var(var,g_strdup(read_buff));
+          break;
+        case VP_JSON:
+          if(!json)
+            json = json_tokener_new();
+          break;
       }
-      if(json)
-        obj = json_tokener_parse_ex(json,read_buff,
-            strlen(read_buff));
     }
+    if(json)
+      obj = json_tokener_parse_ex(json,read_buff,
+          strlen(read_buff));
+    g_free(read_buff);
+  }
   if(json)
   {
     for(node=file->vars;node!=NULL;node=g_list_next(node))
-      scanner_update_var(SCAN_VAR(node->data),
-          scanner_extract_json(obj,SCAN_VAR(node->data)->json));
+      scanner_update_var(((struct scan_var *)node->data),
+          scanner_extract_json(obj,((struct scan_var *)node->data)->json));
     json_object_put(obj);
     json_tokener_free(json);
   }
   for(node=file->vars;node!=NULL;node=g_list_next(node))
-    SCAN_VAR(node->data)->status=1;
+    ((struct scan_var *)node->data)->status=1;
   return 0;
 }
 
@@ -188,6 +187,7 @@ int scanner_update_file_glob ( struct scan_file *file )
   struct stat stattr;
   gint i;
   FILE *in;
+  GIOChannel *chan;
   gboolean reset=FALSE;
 
   if(file==NULL)
@@ -221,7 +221,10 @@ int scanner_update_file_glob ( struct scan_file *file )
           reset=TRUE;
           scanner_reset_vars(file->vars);
         }
-        scanner_update_file(in,file);
+
+        chan = g_io_channel_unix_new(fileno(in));
+        scanner_update_file(chan,file);
+        g_io_channel_unref(chan);
 
         if(file->source == SO_EXEC)
           pclose(in);
