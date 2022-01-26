@@ -555,7 +555,7 @@ void config_widget_rows ( GScanner *scanner, struct layout_widget *lw )
 
 gboolean config_action ( GScanner *scanner, struct layout_action *action )
 {
-  guchar type;
+  guint type;
   guchar cond = 0;
   guchar ncond = 0;
   guchar *ptr;
@@ -602,64 +602,33 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
     switch ((gint)g_scanner_get_next_token(scanner))
     {
       case G_TOKEN_EXEC:
-        type = ACT_EXEC;
-        break;
       case G_TOKEN_MENU:
-        type = ACT_MENU;
-        break;
       case G_TOKEN_MENUCLEAR:
-        type = ACT_CLEAR;
-        break;
       case G_TOKEN_PIPEREAD:
-        type = ACT_PIPE;
-        break;
       case G_TOKEN_SWAYCMD:
-        type = ACT_SWAY;
-        break;
       case G_TOKEN_SWAYWIN:
-        type = ACT_SWIN;
-        break;
       case G_TOKEN_CONFIG:
-        type = ACT_CONF;
-        break;
       case G_TOKEN_FUNCTION:
-        type = ACT_FUNC;
-        break;
       case G_TOKEN_FOCUS:
-        type = ACT_FOCUS;
-        break;
       case G_TOKEN_CLOSE:
-        type = ACT_CLOSE;
-        break;
       case G_TOKEN_MINIMIZE:
-        type = ACT_MIN;
-        break;
       case G_TOKEN_MAXIMIZE:
-        type = ACT_MAX;
-        break;
       case G_TOKEN_UNMINIMIZE:
-        type = ACT_UNMIN;
-        break;
       case G_TOKEN_UNMAXIMIZE:
-        type = ACT_UNMAX;
-        break;
       case G_TOKEN_SETMONITOR:
-        type = ACT_MONITOR;
-        break;
       case G_TOKEN_SETLAYER:
-        type = ACT_LAYER;
-        break;
       case G_TOKEN_SETBARSIZE:
-        type = ACT_BARSIZE;
+      case G_TOKEN_SETBARID:
+        type = scanner->token;
         break;
       default:
         return FALSE;
     }
   }
   else
-    type = ACT_EXEC;
+    type = G_TOKEN_EXEC;
 
-  if(type <= ACT_FUNC)
+  if(type <= G_TOKEN_FUNCTION)
   {
     if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
       return FALSE;
@@ -1341,6 +1310,7 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "SetMonitor", (gpointer)G_TOKEN_SETMONITOR );
   g_scanner_scope_add_symbol(scanner,0, "SetLayer", (gpointer)G_TOKEN_SETLAYER );
   g_scanner_scope_add_symbol(scanner,0, "SetBarSize", (gpointer)G_TOKEN_SETBARSIZE );
+  g_scanner_scope_add_symbol(scanner,0, "SetBarID", (gpointer)G_TOKEN_SETBARID );
   g_scanner_scope_add_symbol(scanner,0, "Item", (gpointer)G_TOKEN_ITEM );
   g_scanner_scope_add_symbol(scanner,0, "Separator", (gpointer)G_TOKEN_SEPARATOR );
   g_scanner_scope_add_symbol(scanner,0, "SubMenu", (gpointer)G_TOKEN_SUBMENU );

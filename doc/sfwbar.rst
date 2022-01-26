@@ -366,7 +366,11 @@ SetLayer
 SetBarSize <string>
   set size of the bar (width for top or bottom bar, height for left or right
   bar). The argument is a string. I.e. "800" for 800 pixels or "50%" for 
-  50% of screen size;
+  50% of screen size
+
+SetBarID <string>
+  specify bar ID to listen on for mode and hidden_state signals. If no
+  bar ID is specified, SfwBar will listen to signals on all IDs
 
 Focus
   set window to focused

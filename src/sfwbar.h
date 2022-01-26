@@ -50,7 +50,7 @@ struct scan_file {
 struct layout_action {
   guchar cond;
   guchar ncond;
-  guchar type;
+  guint type;
   gchar *command;
 };
 
@@ -89,6 +89,7 @@ void sway_ipc_command ( gchar *cmd, ... );
 int sway_ipc_subscribe ( gint sock );
 gboolean sway_ipc_event ( GIOChannel *, GIOCondition , gpointer );
 void sway_ipc_rescan ( void );
+void sway_ipc_bar_id ( gchar *id );
 
 void place_window ( gint64 wid, gint64 pid );
 void placer_config ( gint xs, gint ys, gint xo, gint yo, gboolean pid );
@@ -195,9 +196,6 @@ GtkWidget *scale_image_new();
 int scale_image_update ( GtkWidget *widget );
 void scale_image_set_pixbuf ( GtkWidget *widget, GdkPixbuf * );
 
-#define SCAN_VAR(x) ((struct scan_var *)x)
-#define AS_WINDOW(x) ((struct wt_window *)(x))
-
 enum {
   WS_FOCUSED =    1<<0,
   WS_MINIMIZED =  1<<1,
@@ -214,7 +212,8 @@ enum {
 
 enum {
   SO_FILE = 0,
-  SO_EXEC = 1
+  SO_EXEC = 1,
+  SO_CLIENT = 2
 };
 
 enum {
@@ -226,26 +225,6 @@ enum {
 enum {
   VF_CHTIME = 1,
   VF_NOGLOB = 2
-};
-
-enum {
-  ACT_EXEC = 1,
-  ACT_MENU = 2,
-  ACT_CLEAR = 3,
-  ACT_PIPE = 4,
-  ACT_SWAY = 5,
-  ACT_SWIN = 6,
-  ACT_CONF = 7,
-  ACT_MONITOR = 8,
-  ACT_LAYER = 9,
-  ACT_BARSIZE = 10,
-  ACT_FUNC = 90,
-  ACT_FOCUS = 101,
-  ACT_CLOSE = 102,
-  ACT_MIN = 103,
-  ACT_MAX = 104,
-  ACT_UNMIN = 105,
-  ACT_UNMAX = 106,
 };
 
 enum {

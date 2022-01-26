@@ -75,73 +75,76 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
 
   switch(action->type)
   {
-    case ACT_EXEC:
+    case G_TOKEN_EXEC:
       if(action->command)
         g_spawn_command_line_async(action->command,NULL);
       break;
-    case ACT_MENU:
+    case G_TOKEN_MENU:
       if(action->command && win)
         layout_menu_popup(widget, layout_menu_get(action->command), event, win->uid);
       break;
-    case ACT_CLEAR:
+    case G_TOKEN_MENUCLEAR:
       if(action->command)
         layout_menu_remove(action->command);
       break;
-    case ACT_PIPE:
+    case G_TOKEN_PIPEREAD:
       if(action->command)
         config_pipe_read(action->command);
       break;
-    case ACT_FUNC:
+    case G_TOKEN_FUNCTION:
       if(action->command)
         action_function_exec(action->command,widget,event,win);
       break;
-    case ACT_SWAY:
+    case G_TOKEN_SWAYCMD:
       if(action->command)
         sway_ipc_command("%s",action->command);
       break;
-    case ACT_SWIN:
+    case G_TOKEN_SWAYWIN:
       if(action->command && win)
         sway_ipc_command("[con_id=%ld] %s",GPOINTER_TO_INT(win->uid),
             action->command);
       break;
-    case ACT_CONF:
+    case G_TOKEN_CONFIG:
       if(action->command)
         config_string(action->command);
       break;
-    case ACT_MONITOR:
+    case G_TOKEN_SETMONITOR:
       if(action->command)
         set_monitor(action->command);
       break;
-    case ACT_LAYER:
+    case G_TOKEN_SETLAYER:
       if(action->command)
         set_layer(action->command);
       break;
-    case ACT_BARSIZE:
+    case G_TOKEN_SETBARSIZE:
       if(action->command)
         bar_set_size(action->command);
       break;
-
-    case ACT_FOCUS:
+    case G_TOKEN_SETBARID:
+      if(action->command)
+        sway_ipc_bar_id(action->command);
+      break;
+    case G_TOKEN_FOCUS:
       if(win)
         wintree_focus(win->uid);
       break;
-    case ACT_CLOSE:
+    case G_TOKEN_CLOSE:
       if(win)
         wintree_close(win->uid);
       break;
-    case ACT_MIN:
+    case G_TOKEN_MINIMIZE:
       if(win)
         wintree_minimize(win->uid);
       break;
-    case ACT_MAX:
+    case G_TOKEN_MAXIMIZE:
       if(win)
         wintree_maximize(win->uid);
       break;
-    case ACT_UNMIN:
+    case G_TOKEN_UNMINIMIZE:
       if(win)
         wintree_unminimize(win->uid);
       break;
-    case ACT_UNMAX:
+    case G_TOKEN_UNMAXIMIZE:
       if(win)
         wintree_unmaximize(win->uid);
       break;

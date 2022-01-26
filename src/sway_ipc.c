@@ -11,8 +11,11 @@
 #include <sys/un.h>
 #include "sfwbar.h"
 
+static gchar *bar_id;
 static gint main_ipc;
 static const  gint8 magic[6] = {0x69, 0x33, 0x2d, 0x69, 0x70, 0x63};
+
+extern gchar *sockname;
 
 gboolean sway_ipc_active ( void )
 {
@@ -64,8 +67,6 @@ gchar *sway_ipc_poll ( gint sock, gint32 *etype )
   }
   return response;
 }
-
-extern gchar *sockname;
 
 int sway_ipc_open (int to)
 {
@@ -308,7 +309,7 @@ void sway_ipc_rescan ( void )
 gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 {
   struct json_object *obj,*container;
-  gchar *response,*change;
+  gchar *response,*change,*id;
   gint32 etype;
 
   if(main_ipc==-1)
@@ -327,8 +328,13 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 
     if(etype==0x80000004)
     {
-      window_hide_event(obj);
-      switcher_event(obj);
+      id = json_string_by_name(obj,"id");
+      if ( !bar_id || !g_strcmp0(id,bar_id) )
+      {
+        window_hide_event(obj);
+        switcher_event(obj);
+      }
+      g_free(id);
     }
 
     if(etype==0x80000003)
@@ -353,6 +359,7 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
             sway_ipc_rescan();
           taskbar_invalidate();
           switcher_invalidate();
+          g_free(change);
         }
       }
     }
@@ -400,4 +407,7 @@ void sway_ipc_init ( void )
   GIOChannel *chan = g_io_channel_unix_new(main_ipc);
   g_io_add_watch(chan,G_IO_IN,sway_ipc_event,NULL);
 }
-
+void sway_ipc_bar_id ( gchar *id )
+{
+  bar_id = strdup(id);
+}

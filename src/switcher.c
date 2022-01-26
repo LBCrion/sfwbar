@@ -84,12 +84,12 @@ gboolean switcher_event ( struct json_object *obj )
     counter = interval;
     focus = NULL;
     for (item = wintree_get_list(); item; item = g_list_next(item) )
-      if ( wintree_is_focused(AS_WINDOW(item->data)->uid) )
+      if ( wintree_is_focused(((struct wt_window *)item->data)->uid) )
         focus = g_list_next(item);
     if(focus==NULL)
       focus=wintree_get_list();
     if(focus!=NULL)
-      wintree_set_focus(AS_WINDOW(focus->data)->uid);
+      wintree_set_focus(((struct wt_window *)focus->data)->uid);
     switcher_invalidate();
   }
 
