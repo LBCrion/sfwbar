@@ -3,15 +3,17 @@
 #include <gtk/gtk.h>
 #include <gdk/gdkwayland.h>
 #include "xdg-output-unstable-v1.h"
+#include "idle-inhibit-unstable-v1.h"
 
 #define WLR_FOREIGN_TOPLEVEL_MANAGEMENT_VERSION 3
 
 typedef struct zwlr_foreign_toplevel_handle_v1 wlr_fth;
 
-static struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager = NULL;
-static struct zxdg_output_manager_v1 *xdg_output_manager = NULL;
+static struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager;
+static struct zxdg_output_manager_v1 *xdg_output_manager;
+static struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
 static gint64 wt_counter;
-static struct wl_seat *seat = NULL;
+static struct wl_seat *seat;
 
 static void toplevel_handle_app_id(void *data, wlr_fth *tl, const gchar *app_id)
 {
@@ -208,10 +210,35 @@ gchar *gdk_monitor_get_xdg_name ( GdkMonitor *monitor )
   return name;
 }
 
+void wayland_set_idle_inhibitor ( GtkWidget *widget, gboolean inhibit )
+{
+  struct wl_surface *surface;
+  struct zwp_idle_inhibitor_v1 *inhibitor;
+
+  surface = gdk_wayland_window_get_wl_surface(
+      gtk_widget_get_window(widget));
+  inhibitor = g_object_get_data(G_OBJECT(widget),"inhibitor");
+
+  if(!surface)
+    return;
+
+  if(inhibit && !inhibitor)
+  {
+    inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(
+        idle_inhibit_manager, surface );
+    g_object_set_data(G_OBJECT(widget),"inhibitor",inhibitor);
+  }
+  else if( !inhibit && inhibitor )
+  {
+    g_object_set_data(G_OBJECT(widget),"inhibitor",NULL);
+    zwp_idle_inhibitor_v1_destroy(inhibitor);
+  }
+}
+
 static void handle_global(void *data, struct wl_registry *registry,
                 uint32_t name, const gchar *interface, uint32_t version)
 {
-  if (g_strcmp0(interface,zwlr_foreign_toplevel_manager_v1_interface.name)==0)
+  if (!g_strcmp0(interface,zwlr_foreign_toplevel_manager_v1_interface.name))
   {
     toplevel_manager = wl_registry_bind(registry, name,
       &zwlr_foreign_toplevel_manager_v1_interface,
@@ -220,12 +247,17 @@ static void handle_global(void *data, struct wl_registry *registry,
     zwlr_foreign_toplevel_manager_v1_add_listener(toplevel_manager,
       &toplevel_manager_impl, data);
   } 
-  else if (g_strcmp0(interface,zxdg_output_manager_v1_interface.name)==0)
+  else if (!g_strcmp0(interface,zwp_idle_inhibit_manager_v1_interface.name))
+  {
+    idle_inhibit_manager = wl_registry_bind(registry,name,
+        &zwp_idle_inhibit_manager_v1_interface,1);
+  }
+  else if (!g_strcmp0(interface,zxdg_output_manager_v1_interface.name))
   {
     xdg_output_manager = wl_registry_bind(registry, name,
         &zxdg_output_manager_v1_interface, ZXDG_OUTPUT_V1_NAME_SINCE_VERSION);
   }
-  else if (g_strcmp0(interface, wl_seat_interface.name) == 0 && seat == NULL)
+  else if (!g_strcmp0(interface, wl_seat_interface.name) && !seat)
     seat = wl_registry_bind(registry, name, &wl_seat_interface, version);
 }
 
