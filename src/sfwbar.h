@@ -169,6 +169,7 @@ void flow_grid_clean ( GtkWidget *cgrid );
 void scanner_var_attach ( gchar *name, struct scan_var *var );
 void scanner_expire ( void );
 int scanner_reset_vars ( GList *var_list );
+int scanner_update_file ( GIOChannel *in, struct scan_file *file );
 int scanner_glob_file ( struct scan_file *file );
 char *scanner_get_string ( gchar *name );
 double scanner_get_numeric ( gchar *name );
@@ -178,6 +179,9 @@ void set_monitor ( gchar *mon_name );
 void set_layer ( gchar *layer );
 void bar_set_size ( gchar *size );
 gchar *bar_get_output ( void );
+
+void mpd_ipc_init ( struct scan_file *file );
+void mpd_ipc_command ( gchar *command );
 
 gchar *get_xdg_config_file ( gchar *fname, gchar *extra );
 gchar *json_string_by_name ( struct json_object *obj, gchar *name );

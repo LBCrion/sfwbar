@@ -205,7 +205,7 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
   scanner_var_attach(vname,var);
 }
 
-void config_scanner_source ( GScanner *scanner, gint source )
+struct scan_file *config_scanner_source ( GScanner *scanner, gint source )
 {
   gchar *fname=NULL;
   gint flags=0;
@@ -215,11 +215,17 @@ void config_scanner_source ( GScanner *scanner, gint source )
 
   scanner->max_parse_errors = FALSE;
   if(g_scanner_peek_next_token(scanner) != '(')
-    return g_scanner_error(scanner, "Missing '(' after <source>");
+  {
+    g_scanner_error(scanner, "Missing '(' after <source>");
+    return NULL;
+  }
   g_scanner_get_next_token(scanner);
 
   if(g_scanner_peek_next_token(scanner)!=G_TOKEN_STRING)
-    return g_scanner_error(scanner,"Missing <string> in source(<string>)");
+  {
+    g_scanner_error(scanner,"Missing <string> in source(<string>)");
+    return NULL;
+  }
 
   g_scanner_get_next_token(scanner);
   fname = g_strdup(scanner->value.v_string);
@@ -253,12 +259,12 @@ void config_scanner_source ( GScanner *scanner, gint source )
     g_scanner_get_next_token(scanner);
 
   if(!fname)
-    return;
+    return NULL;
 
   if(scanner->max_parse_errors)
   {
     g_free(fname);
-    return;
+    return NULL;
   }
 
   for(find=file_list;find;find=g_list_next(find))
@@ -294,10 +300,13 @@ void config_scanner_source ( GScanner *scanner, gint source )
   }
   if((gint)scanner->next_token == '}')
     g_scanner_get_next_token(scanner);
+
+  return file;
 }
 
 void config_scanner ( GScanner *scanner )
 {
+  struct scan_file *file;
   scanner->max_parse_errors = FALSE;
 
   if(g_scanner_peek_next_token(scanner) != '{')
@@ -314,6 +323,10 @@ void config_scanner ( GScanner *scanner )
         break;
       case G_TOKEN_EXEC:
         config_scanner_source(scanner,SO_EXEC);
+        break;
+      case G_TOKEN_MPDCLIENT:
+        file = config_scanner_source(scanner,SO_CLIENT);
+        mpd_ipc_init(file);
         break;
       default:
         g_scanner_error(scanner, "Unexpected declaration in scanner");
@@ -607,6 +620,7 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
       case G_TOKEN_PIPEREAD:
       case G_TOKEN_SWAYCMD:
       case G_TOKEN_SWAYWIN:
+      case G_TOKEN_MPDCMD:
       case G_TOKEN_CONFIG:
       case G_TOKEN_FUNCTION:
       case G_TOKEN_FOCUS:
@@ -1253,6 +1267,7 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "End", (gpointer)G_TOKEN_END );
   g_scanner_scope_add_symbol(scanner,0, "File", (gpointer)G_TOKEN_FILE );
   g_scanner_scope_add_symbol(scanner,0, "Exec", (gpointer)G_TOKEN_EXEC );
+  g_scanner_scope_add_symbol(scanner,0, "MpdClient", (gpointer)G_TOKEN_MPDCLIENT );
   g_scanner_scope_add_symbol(scanner,0, "Number", (gpointer)G_TOKEN_NUMBERW );
   g_scanner_scope_add_symbol(scanner,0, "String", (gpointer)G_TOKEN_STRINGW );
   g_scanner_scope_add_symbol(scanner,0, "NoGlob", (gpointer)G_TOKEN_NOGLOB );
@@ -1300,6 +1315,7 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "Config", (gpointer)G_TOKEN_CONFIG );
   g_scanner_scope_add_symbol(scanner,0, "SwayCmd", (gpointer)G_TOKEN_SWAYCMD );
   g_scanner_scope_add_symbol(scanner,0, "SwayWinCmd", (gpointer)G_TOKEN_SWAYWIN );
+  g_scanner_scope_add_symbol(scanner,0, "MpdCmd", (gpointer)G_TOKEN_MPDCMD );
   g_scanner_scope_add_symbol(scanner,0, "Function", (gpointer)G_TOKEN_FUNCTION );
   g_scanner_scope_add_symbol(scanner,0, "Focus", (gpointer)G_TOKEN_FOCUS );
   g_scanner_scope_add_symbol(scanner,0, "Close", (gpointer)G_TOKEN_CLOSE );

@@ -356,6 +356,9 @@ SwayCmd <string>
 SwayWinCmd <string>
   send a command over Sway IPC applicable to a current window
 
+MpdCmd <string>
+  send a command to Music Player Daemon
+
 SetMonitor <string>
   move bar to a given monitor
 
@@ -429,9 +432,18 @@ and variables linked to them as configured in the section ``scanner`` ::
   }
 
 Each declaration within the ``scanner`` section specifies a source. This can
-be either ``file`` or ``exec`` specifying whether to read a file or an output
-of a command respectively. The first parameter of a ``file`` source specifies
-a file to read, for an ``exec`` source, this specifies command to run.
+be one of the following:
+
+File
+        Read data from a file
+
+Exec
+        Read data from an output of a shell command
+
+MpdClient
+        Read data from Music Player Daemon IPC (data is polled whenever MPD
+        responds to an 'idle player' event).
+
 The file source also accepts further optional argumens specifying how
 scanner should handle the source, these can be:
 

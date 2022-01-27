@@ -436,6 +436,9 @@ send a command over Sway IPC
 .B SwayWinCmd <string>
 send a command over Sway IPC applicable to a current window
 .TP
+.B MpdCmd <string>
+send a command to Music Player Daemon
+.TP
 .B SetMonitor <string>
 move bar to a given monitor
 .TP
@@ -523,9 +526,20 @@ scanner {
 .UNINDENT
 .sp
 Each declaration within the \fBscanner\fP section specifies a source. This can
-be either \fBfile\fP or \fBexec\fP specifying whether to read a file or an output
-of a command respectively. The first parameter of a \fBfile\fP source specifies
-a file to read, for an \fBexec\fP source, this specifies command to run.
+be one of the following:
+.INDENT 0.0
+.TP
+.B File
+Read data from a file
+.TP
+.B Exec
+Read data from an output of a shell command
+.TP
+.B MpdClient
+Read data from Music Player Daemon IPC (data is polled whenever MPD
+responds to an \(aqidle player\(aq event).
+.UNINDENT
+.sp
 The file source also accepts further optional argumens specifying how
 scanner should handle the source, these can be:
 .INDENT 0.0

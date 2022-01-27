@@ -99,6 +99,10 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
       if(action->command)
         sway_ipc_command("%s",action->command);
       break;
+    case G_TOKEN_MPDCMD:
+      if(action->command)
+        mpd_ipc_command(action->command);
+      break;
     case G_TOKEN_SWAYWIN:
       if(action->command && win)
         sway_ipc_command("[con_id=%ld] %s",GPOINTER_TO_INT(win->uid),
