@@ -8,27 +8,37 @@
 #include <gio/gunixsocketaddress.h>
 #include "sfwbar.h"
 
-static gchar *mpd_socket;
+static GSocketConnection *mpd_ipc_sock;
+static GSocketConnection *mpd_cmd_sock;
 
 gboolean mpd_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer file )
 {
   static gboolean r;
 
-  if ( cond == G_IO_ERR || cond == G_IO_HUP )
+  if ( cond & G_IO_ERR || cond & G_IO_HUP )
   {
     g_io_channel_shutdown(chan,FALSE,NULL);
     g_io_channel_unref(chan);
+    if(mpd_ipc_sock)
+    {
+      g_object_unref(mpd_ipc_sock);
+      mpd_ipc_sock = NULL;
+    }
     return FALSE;
   }
 
-  scanner_update_file( chan, file );
+  if( cond & G_IO_IN )
+  {
+    if( file )
+      scanner_update_file( chan, file );
 
-  if(!r)
-    g_io_channel_write_chars(chan,"status\ncurrentsong\n",-1,NULL,NULL);
-  else
-    g_io_channel_write_chars(chan,"idle player\n",-1,NULL,NULL);
-  g_io_channel_flush(chan,NULL);
-  r= !r;
+    if(!r)
+      g_io_channel_write_chars(chan,"status\ncurrentsong\n",-1,NULL,NULL);
+    else
+      g_io_channel_write_chars(chan,"idle player\n",-1,NULL,NULL);
+    g_io_channel_flush(chan,NULL);
+    r= !r;
+  }
   return TRUE;
 }
 
@@ -85,9 +95,9 @@ GSocketConnection *mpd_ipc_connect ( GSocketClient *client, gchar *path )
   return scon;
 }
 
-GIOChannel *mpd_ipc_open ( gchar *user )
+GIOChannel *mpd_ipc_open ( gchar *user, gpointer *addr )
 {
-  GSocketConnection*scon;
+  GSocketConnection *scon;
   GSocket *sock;
   GSocketClient *client;
 
@@ -95,61 +105,73 @@ GIOChannel *mpd_ipc_open ( gchar *user )
   scon = mpd_ipc_connect ( client, user );
 
   if(!scon)
+  {
+    g_object_unref(client);
     return NULL;
+  }
 
-  if(g_socket_connection_is_connected(scon))
-    sock = g_socket_connection_get_socket(scon);
-  else
-    sock = NULL;
+  g_object_weak_ref(G_OBJECT(scon),(GWeakNotify)g_object_unref,client);
+  sock = g_socket_connection_get_socket(scon);
 
-  if(!sock)
+  if(!sock || !g_socket_connection_is_connected(scon))
+  {
+    g_object_unref(scon);
     return NULL;
+  }
 
+  *addr = scon;
   return g_io_channel_unix_new(g_socket_get_fd(sock));
+}
+
+gboolean mpd_ipc_reconnect ( gpointer file )
+{
+  if(mpd_ipc_sock)
+    return TRUE;
+
+  mpd_ipc_init(file);
+  return FALSE;
 }
 
 void mpd_ipc_init ( struct scan_file *file )
 {
   static GIOChannel *chan;
 
-  if(!mpd_socket)
-    mpd_socket = g_strdup(file->fname);
+  chan = mpd_ipc_open ( file->fname, (gpointer *) &mpd_ipc_sock );
+  if(!chan)
+    return;
 
-  chan = mpd_ipc_open ( file->fname );
   g_io_add_watch(chan,G_IO_IN | G_IO_ERR | G_IO_HUP,mpd_ipc_event,file);
+  g_timeout_add (1000,(GSourceFunc )mpd_ipc_reconnect,file);
 }
 
-
-gboolean mpd_ipc_reset ( GIOChannel *chan, GIOCondition cond, gpointer *ptr  )
+gboolean mpd_ipc_command_cb ( GIOChannel *chan, GIOCondition cond, gpointer command )
 {
-  if ( cond != G_IO_IN )
-  {
-    g_io_channel_shutdown(chan,FALSE,NULL);
-    g_io_channel_unref(chan);
-    *ptr = NULL;
-    return FALSE;
-  }
-  return TRUE;
+  gchar *str;
+
+  g_io_channel_read_to_end(chan, &str, NULL, NULL);
+  g_free(str);
+  str = g_strconcat( command, "\n", NULL );
+  g_io_channel_write_chars ( chan, str, -1, NULL, NULL );
+  g_io_channel_flush( chan, NULL );
+  g_free(str);
+
+  g_io_channel_shutdown(chan, FALSE, NULL);
+  g_io_channel_unref(chan);
+
+  g_object_unref(mpd_cmd_sock);
+
+  return FALSE;
 }
 
 void mpd_ipc_command ( gchar *command )
 {
-  static GIOChannel *chan;
-  gchar *str;
+  GIOChannel *chan;
 
-  if(!chan)
-  {
-    chan = mpd_ipc_open(mpd_socket);
-    g_io_add_watch(chan,0,(GIOFunc)mpd_ipc_reset,&chan);
-  }
+  chan = mpd_ipc_open ( NULL, (gpointer *) &mpd_cmd_sock );
 
   if(!chan)
     return;
 
-  str = g_strconcat( "noidle\n", command, "\nidle\n", NULL );
-
-  g_io_channel_write_chars ( chan, str, -1, NULL, NULL );
-  g_io_channel_flush( chan, NULL );
-
-  g_free(str);
+  g_io_add_watch(chan,G_IO_IN | G_IO_ERR | G_IO_HUP,
+      mpd_ipc_command_cb,command);
 }
