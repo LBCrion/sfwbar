@@ -350,7 +350,7 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
   {
     g_object_ref_sink(G_OBJECT(menu));
     g_signal_connect(G_OBJECT(menu),"unmap",G_CALLBACK(g_object_unref),NULL);
-    layout_menu_popup(wrap->sni->image,menu,wrap->event,NULL);
+    layout_menu_popup(wrap->sni->image,menu,wrap->event,NULL,NULL);
   }
 
   gdk_event_free(wrap->event);

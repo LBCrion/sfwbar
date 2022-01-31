@@ -449,23 +449,27 @@ gchar *config_value_string ( gchar *dest, gchar *string )
   return result;
 }
 
-gchar *config_get_value ( GScanner *scanner, gchar *prop )
+gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign )
 {
   gchar *value, *temp;
   static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
 
   scanner->max_parse_errors = FALSE;
-  if(g_scanner_peek_next_token(scanner)!='=')
+  if(assign)
   {
-    g_scanner_error(scanner,"expecting %s = expression",prop);
-    return NULL;
+    if(g_scanner_peek_next_token(scanner)!='=')
+    {
+      g_scanner_error(scanner,"expecting %s = expression",prop);
+      return NULL;
+    }
+    g_scanner_get_next_token(scanner);
   }
-  g_scanner_get_next_token(scanner);
   value = g_strdup("");;
   g_scanner_peek_next_token(scanner);
   while(((gint)scanner->next_token<=G_TOKEN_SCANNER)&&
       (scanner->next_token!='}')&&
       (scanner->next_token!=';')&&
+      (scanner->next_token!='[')&&
       (scanner->next_token!=G_TOKEN_EOF))
   {
     switch((gint)g_scanner_get_next_token(scanner))
@@ -601,6 +605,9 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
         case G_TOKEN_FULLSCREEN:
           *ptr |= WS_FULLSCREEN;
           break;
+        case G_TOKEN_IDLEINHIBIT:
+          *ptr |= WS_INHIBIT;
+          break;
         default:
           g_scanner_error(scanner,"invalid condition in action");
           break;
@@ -621,6 +628,7 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
       case G_TOKEN_SWAYCMD:
       case G_TOKEN_SWAYWIN:
       case G_TOKEN_MPDCMD:
+      case G_TOKEN_IDLEINHIBIT:
       case G_TOKEN_CONFIG:
       case G_TOKEN_FUNCTION:
       case G_TOKEN_FOCUS:
@@ -633,6 +641,8 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
       case G_TOKEN_SETLAYER:
       case G_TOKEN_SETBARSIZE:
       case G_TOKEN_SETBARID:
+      case G_TOKEN_SETVALUE:
+      case G_TOKEN_SETSTYLE:
         type = scanner->token;
         break;
       default:
@@ -642,19 +652,40 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
   else
     type = G_TOKEN_EXEC;
 
-  if(type <= G_TOKEN_FUNCTION)
-  {
-    if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
-      return FALSE;
 
-    g_free(action->command);
-    action->command = g_strdup(scanner->value.v_string);
-  }
-  else
+  switch(type)
   {
-    g_free(action->command);
-    action->command = NULL;
+    case G_TOKEN_EXEC:
+    case G_TOKEN_MENU:
+    case G_TOKEN_MENUCLEAR:
+    case G_TOKEN_PIPEREAD:
+    case G_TOKEN_SWAYCMD:
+    case G_TOKEN_SWAYWIN:
+    case G_TOKEN_MPDCMD:
+    case G_TOKEN_IDLEINHIBIT:
+    case G_TOKEN_CONFIG:
+    case G_TOKEN_FUNCTION:
+    case G_TOKEN_SETMONITOR:
+    case G_TOKEN_SETLAYER:
+    case G_TOKEN_SETBARSIZE:
+    case G_TOKEN_SETBARID:
+      if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
+        return FALSE;
+      g_free(action->command);
+      action->command = g_strdup(scanner->value.v_string);
+      break;
+    case G_TOKEN_SETVALUE:
+      action->command = config_get_value(scanner,"action value",FALSE);
+      break;
+    case G_TOKEN_SETSTYLE:
+      action->command = config_get_value(scanner,"action style",FALSE);
+      break;
+    default:
+      g_free(action->command);
+      action->command = NULL;
+      break;
   }
+
   action->type = type;
   action->cond = cond;
   action->ncond = ncond;
@@ -676,12 +707,12 @@ void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
   }
   else
     button = 1;
-  if( button<1 || button >MAX_BUTTON )
+  if( button<0 || button >MAX_BUTTON )
     return g_scanner_error(scanner,"invalid action index %d",button);
   if(g_scanner_get_next_token(scanner) != '=')
     return g_scanner_error(scanner,"expecting a '=' after 'action'");
 
-  if(!config_action(scanner,&(lw->action[button-1])))
+  if(!config_action(scanner,&(lw->action[button])))
     return g_scanner_error(scanner,"invalid action");
 
   if(g_scanner_peek_next_token(scanner) == ';')
@@ -710,7 +741,7 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
     switch ((gint)g_scanner_get_next_token ( scanner ) )
     {
       case G_TOKEN_STYLE:
-        lw->style = config_get_value(scanner,"style");
+        lw->style = config_get_value(scanner,"style",TRUE);
         break;
       case G_TOKEN_CSS:
         lw->css = config_assign_string(scanner,"css");
@@ -725,13 +756,13 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
         if(GTK_IS_GRID(lw->widget))
           g_scanner_error(scanner,"this widget has no property 'value'");
         else
-          lw->value = config_get_value(scanner,"value");
+          lw->value = config_get_value(scanner,"value",TRUE);
         break;
       case G_TOKEN_TOOLTIP:
         if(GTK_IS_GRID(lw->widget))
           g_scanner_error(scanner,"this widget has no property 'tooltip'");
         else
-          lw->tooltip = config_get_value(scanner,"tooltip");
+          lw->tooltip = config_get_value(scanner,"tooltip",TRUE);
         break;
       case G_TOKEN_PINS:
         config_get_pins( scanner, lw );
@@ -1316,6 +1347,9 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "SwayCmd", (gpointer)G_TOKEN_SWAYCMD );
   g_scanner_scope_add_symbol(scanner,0, "SwayWinCmd", (gpointer)G_TOKEN_SWAYWIN );
   g_scanner_scope_add_symbol(scanner,0, "MpdCmd", (gpointer)G_TOKEN_MPDCMD );
+  g_scanner_scope_add_symbol(scanner,0, "IdleInhibit", (gpointer)G_TOKEN_IDLEINHIBIT );
+  g_scanner_scope_add_symbol(scanner,0, "SetValue", (gpointer)G_TOKEN_SETVALUE );
+  g_scanner_scope_add_symbol(scanner,0, "SetStyle", (gpointer)G_TOKEN_SETSTYLE );
   g_scanner_scope_add_symbol(scanner,0, "Function", (gpointer)G_TOKEN_FUNCTION );
   g_scanner_scope_add_symbol(scanner,0, "Focus", (gpointer)G_TOKEN_FOCUS );
   g_scanner_scope_add_symbol(scanner,0, "Close", (gpointer)G_TOKEN_CLOSE );

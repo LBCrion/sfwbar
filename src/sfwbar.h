@@ -6,7 +6,7 @@
 #include <json.h>
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
-#define MAX_BUTTON 7
+#define MAX_BUTTON 8
 
 struct wt_window {
   GtkWidget *button;
@@ -17,7 +17,7 @@ struct wt_window {
   gint64 pid;
   gint64 wid;
   gpointer uid;
-  guchar state;
+  guint16 state;
 };
 
 struct rect {
@@ -74,11 +74,11 @@ struct layout_widget {
 extern gchar *expr_token[];
 
 void action_exec ( GtkWidget *, struct layout_action *, GdkEvent *,
-    struct wt_window *);
+    struct wt_window *, guint16 *);
 void action_free ( struct layout_action *action, GObject *old );
 void action_function_add ( gchar *name, GList *actions );
 void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
-    struct wt_window *win );
+    struct wt_window *win, guint16 *state );
 
 void sway_ipc_init ( void );
 gboolean sway_ipc_active ( void );
@@ -120,6 +120,7 @@ gboolean wintree_is_focused ( gpointer id );
 GList *wintree_get_list ( void );
 
 void wayland_init ( GtkWindow * );
+void wayland_set_idle_inhibitor ( GtkWidget *widget, gboolean inhibit );
 void foreign_toplevel_activate ( gpointer tl );
 
 gboolean window_hide_event ( struct json_object *obj );
@@ -150,14 +151,16 @@ GtkWidget *layout_menu_get ( gchar *name );
 void layout_menu_add ( gchar *name, GtkWidget *menu );
 void layout_menu_remove ( gchar *name );
 struct layout_widget *layout_widget_new ( void );
-void layout_menu_popup ( GtkWidget *, GtkWidget *, GdkEvent *, gpointer );
+void layout_menu_popup ( GtkWidget *, GtkWidget *, GdkEvent *, gpointer, guint16 * );
 gpointer layout_scanner_thread ( gpointer data );
 GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     GtkWidget *sibling );
+gboolean layout_widget_draw ( struct layout_widget *lw );
 void layout_widget_attach ( struct layout_widget *lw );
 void layout_widget_free ( struct layout_widget *lw );
 void widget_set_css ( GtkWidget * );
 gboolean widget_menu_action ( GtkWidget *widget, struct layout_action *action );
+void layout_widgets_autoexec ( GtkWidget *widget, gpointer data );
 
 GtkWidget *flow_grid_new( gboolean limit );
 void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );
@@ -204,7 +207,8 @@ enum {
   WS_FOCUSED =    1<<0,
   WS_MINIMIZED =  1<<1,
   WS_MAXIMIZED =  1<<2,
-  WS_FULLSCREEN = 1<<3
+  WS_FULLSCREEN = 1<<3,
+  WS_INHIBIT =    1<<4
 };
 
 enum {

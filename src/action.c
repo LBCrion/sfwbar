@@ -28,7 +28,7 @@ void action_function_add ( gchar *name, GList *actions )
 }
 
 void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
-    struct wt_window *win )
+    struct wt_window *win, guint16 *state )
 {
   GList *l;
   struct wt_window *stat_win;
@@ -45,27 +45,96 @@ void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
     stat_win = NULL;
 
   for(l = g_hash_table_lookup(functions, name); l; l = g_list_next(l))
-    action_exec(w,l->data,ev,stat_win);
+    action_exec(w,l->data,ev,stat_win,state);
 
   g_free(stat_win);
 }
 
-void action_exec ( GtkWidget *widget, struct layout_action *action,
-    GdkEvent *event, struct wt_window *win )
+void action_idle_inhibit ( GtkWidget *widget, gchar *command )
 {
-  if(action->cond || action->ncond)
+  if(!g_ascii_strcasecmp(command,"on"))
+    wayland_set_idle_inhibitor(widget,TRUE);
+  if(!g_ascii_strcasecmp(command,"off"))
+    wayland_set_idle_inhibitor(widget,FALSE);
+}
+
+void action_set_value ( GtkWidget *widget, gchar *value )
+{
+  struct layout_widget *lw;
+  guint vcount;
+
+  lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
+  if(!lw)
+    return;
+  g_free(lw->value);
+  g_free(lw->evalue);
+  lw->value = g_strdup(value);
+  lw->evalue = expr_parse(lw->value, &vcount);
+  vcount = 0;
+  layout_widget_draw(lw);
+  if(!vcount)
   {
-    if(!win)
-      return;
-    if(wintree_is_focused(win->uid))
-      win->state |= WS_FOCUSED;
-    else
-      win->state &= ~WS_FOCUSED;
-    if((win->state & action->cond) != action->cond)
-      return;
-    if(((~win->state) & action->ncond) != action->ncond)
-      return;
+    g_free(lw->value);
+    lw->value = NULL;
   }
+  layout_widget_attach(lw);
+}
+
+void action_set_style ( GtkWidget *widget, gchar *style )
+{
+  struct layout_widget *lw;
+  guint vcount;
+
+  lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
+  if(!lw)
+    return;
+  g_free(lw->estyle);
+  lw->estyle = g_strdup(style);
+  vcount = 0;
+  gtk_widget_set_name(lw->widget,lw->estyle);
+  if(!vcount)
+  {
+    g_free(lw->style);
+    lw->style = NULL;
+  }
+  layout_widget_attach(lw);
+}
+
+guint16 action_state_build ( GtkWidget *widget, struct wt_window *win )
+{
+  guint16 state = 0;
+
+  if(win)
+  {
+    state = win->state;
+    if(wintree_is_focused(win->uid))
+      state |= WS_FOCUSED;
+  }
+  if(widget)
+  {
+    if(g_object_get_data(G_OBJECT(widget),"inhibitor"))
+      state |= WS_INHIBIT;
+  }
+  return state;
+}
+
+void action_exec ( GtkWidget *widget, struct layout_action *action,
+    GdkEvent *event, struct wt_window *win, guint16 *istate )
+{
+  guint16 state;
+
+  if(istate)
+    state = *istate;
+  else
+    state = action_state_build ( widget, win );
+  if(((action->cond & 0x0f) || (action->ncond & 0x0f)) && !win)
+      return;
+  if(((action->cond & 0xf0) || (action->ncond & 0xf0)) && !widget )
+      return;
+  if((state & action->cond) != action->cond)
+    return;
+  if((~state & action->ncond) != action->ncond)
+    return;
 
   if(action->command)
     g_debug("widget action: (%d) %s",action->type, action->command);
@@ -81,7 +150,8 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
       break;
     case G_TOKEN_MENU:
       if(action->command && win)
-        layout_menu_popup(widget, layout_menu_get(action->command), event, win->uid);
+        layout_menu_popup(widget, layout_menu_get(action->command), event,
+            win->uid, &state);
       break;
     case G_TOKEN_MENUCLEAR:
       if(action->command)
@@ -93,7 +163,7 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
       break;
     case G_TOKEN_FUNCTION:
       if(action->command)
-        action_function_exec(action->command,widget,event,win);
+        action_function_exec(action->command,widget,event,win,&state);
       break;
     case G_TOKEN_SWAYCMD:
       if(action->command)
@@ -127,6 +197,18 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
     case G_TOKEN_SETBARID:
       if(action->command)
         sway_ipc_bar_id(action->command);
+      break;
+    case G_TOKEN_SETVALUE:
+      if(action->command && widget)
+        action_set_value(widget,action->command);
+      break;
+    case G_TOKEN_SETSTYLE:
+      if(action->command && widget)
+        action_set_style(widget,action->command);
+      break;
+    case G_TOKEN_IDLEINHIBIT:
+      if(action->command && widget)
+        action_idle_inhibit(widget, action->command);
       break;
     case G_TOKEN_FOCUS:
       if(win)

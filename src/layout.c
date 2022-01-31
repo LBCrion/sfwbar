@@ -39,7 +39,7 @@ void layout_menu_add ( gchar *name, GtkWidget *menu )
 }
 
 void layout_menu_popup ( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
-    gpointer wid )
+    gpointer wid, guint16 *state )
 {
   GdkGravity wanchor, manchor;
 
@@ -47,6 +47,8 @@ void layout_menu_popup ( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
     return;
 
   g_object_set_data( G_OBJECT(menu), "wid", wid );
+  g_object_set_data( G_OBJECT(menu), "state", GUINT_TO_POINTER(*state) );
+  g_object_set_data( G_OBJECT(menu), "caller", widget );
 
   switch(get_toplevel_dir())
   {
@@ -81,23 +83,33 @@ gboolean widget_menu_action ( GtkWidget *w ,struct layout_action *action )
 {
   GtkWidget *parent = gtk_widget_get_ancestor(w,GTK_TYPE_MENU);
   gpointer wid;
+  guint16 state;
+  GtkWidget *widget;
 
   if(parent)
+  {
     wid = g_object_get_data ( G_OBJECT(parent), "wid" );
+    state = GPOINTER_TO_UINT(g_object_get_data ( G_OBJECT(parent), "state" ));
+    widget = g_object_get_data ( G_OBJECT(parent),"caller" );
+  }
   else
+  {
     wid = NULL;
+    state = 0;
+    widget = NULL;
+  }
 
   if(!wid)
     wid = wintree_get_focus();
 
-  action_exec(w,action,NULL,wintree_from_id(wid));
+  action_exec(widget,action,NULL,wintree_from_id(wid),&state);
   return TRUE;
 }
 
 gboolean layout_widget_button_cb ( GtkWidget *widget, struct layout_widget *lw )
 {
-  action_exec(lw->widget,&(lw->action[0]),NULL,
-      wintree_from_id(wintree_get_focus()));
+  action_exec(lw->widget,&(lw->action[1]),NULL,
+      wintree_from_id(wintree_get_focus()),NULL);
   return TRUE;
 }
 
@@ -108,8 +120,8 @@ gboolean layout_widget_click_cb ( GtkWidget *w, GdkEventButton *ev,
     return FALSE;
 
   if(ev->type == GDK_BUTTON_PRESS && ev->button >= 1 && ev->button <= 3)
-    action_exec(lw->widget,&(lw->action[ev->button-1]),(GdkEvent *)ev,
-        wintree_from_id(wintree_get_focus()));
+    action_exec(lw->widget,&(lw->action[ev->button]),(GdkEvent *)ev,
+        wintree_from_id(wintree_get_focus()),NULL);
   return TRUE;
 }
 
@@ -135,8 +147,8 @@ gboolean layout_widget_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
       button = 0;
   }
   if(button)
-    action_exec(lw->widget,&(lw->action[button-1]),(GdkEvent *)event,
-        wintree_from_id(wintree_get_focus()));
+    action_exec(lw->widget,&(lw->action[button]),(GdkEvent *)event,
+        wintree_from_id(wintree_get_focus()),NULL);
 
   return TRUE;
 }
@@ -346,6 +358,21 @@ gboolean layout_widget_cache ( gchar *expr, gchar **cache )
   return FALSE;
 }
 
+void layout_widgets_autoexec ( GtkWidget *widget, gpointer data )
+{
+  struct layout_widget *lw;
+
+  if(GTK_IS_CONTAINER(widget))
+    gtk_container_forall(GTK_CONTAINER(widget),layout_widgets_autoexec,data);
+
+  lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
+
+  if(lw)
+    action_exec(lw->widget,&(lw->action[0]),NULL,
+        wintree_from_id(wintree_get_focus()),NULL);
+
+}
+
 void layout_widgets_update ( GMainContext *gmc )
 {
   GList *iter;
@@ -376,8 +403,12 @@ void layout_widget_attach ( struct layout_widget *lw )
   if(!lw->value && !lw->tooltip && !lw->style && !layout_widget_has_actions(lw))
     return layout_widget_free(lw);
 
+  g_object_set_data(G_OBJECT(lw->widget),"layout_widget",lw);
+
   if(lw->value || lw->style)
     widget_list = g_list_append(widget_list,lw);
+  else
+    widget_list = g_list_remove(widget_list,lw);
 }
 
 void widget_set_css ( GtkWidget *widget )

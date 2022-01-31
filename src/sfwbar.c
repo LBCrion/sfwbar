@@ -285,16 +285,17 @@ static void activate (GtkApplication* app, gpointer data )
   gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_TOP,
       !(toplevel_dir==GTK_POS_BOTTOM));
 
+  sway_ipc_init();
+  wayland_init(bar_window);
+
   if((lw != NULL)&&(lw->widget!=NULL))
   {
     gtk_container_add(GTK_CONTAINER(bar_window), lw->widget);
     layout_widget_attach(lw);
 
     gtk_widget_show_all ((GtkWidget *)bar_window);
+    layout_widgets_autoexec(GTK_WIDGET(bar_window),NULL);
   }
-
-  sway_ipc_init();
-  wayland_init(bar_window);
 
   if(monitor)
     set_monitor(monitor);
@@ -307,7 +308,7 @@ static void activate (GtkApplication* app, gpointer data )
   g_thread_unref(g_thread_new("scanner",layout_scanner_thread,
         g_main_context_get_thread_default()));
 
-  action_function_exec("SfwBarInit",NULL,NULL,NULL);
+  action_function_exec("SfwBarInit",NULL,NULL,NULL,NULL);
 
   g_timeout_add (100,(GSourceFunc )shell_timer,NULL);
   g_unix_signal_add(10,(GSourceFunc)switcher_event,NULL);
