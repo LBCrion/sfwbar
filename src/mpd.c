@@ -14,6 +14,7 @@ static GSocketConnection *mpd_cmd_sock;
 gboolean mpd_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer file )
 {
   static gboolean r;
+  GIOStatus s;
 
   if ( cond & G_IO_ERR || cond & G_IO_HUP )
   {
@@ -33,10 +34,12 @@ gboolean mpd_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer file )
       scanner_update_file( chan, file );
 
     if(!r)
-      g_io_channel_write_chars(chan,"status\ncurrentsong\n",-1,NULL,NULL);
+      s = g_io_channel_write_chars(chan,"status\ncurrentsong\n",-1,NULL,NULL);
     else
-      g_io_channel_write_chars(chan,"idle player\n",-1,NULL,NULL);
+      s = g_io_channel_write_chars(chan,"idle player\n",-1,NULL,NULL);
     g_io_channel_flush(chan,NULL);
+    if(s != G_IO_STATUS_NORMAL)
+      g_debug("mpd: failed to write to mpd socket");
     r= !r;
   }
   return TRUE;
@@ -80,6 +83,7 @@ GSocketConnection *mpd_ipc_connect ( GSocketClient *client, gchar *path )
   addr = g_strconcat( host, ":", port, NULL );
   g_free(host);
   g_free(port);
+  g_debug("mpd: attempting to connect to: %s",addr);
   scon = g_socket_client_connect_to_host(client,addr,0,NULL,NULL);
   g_free(addr);
   if(scon)
@@ -89,8 +93,13 @@ GSocketConnection *mpd_ipc_connect ( GSocketClient *client, gchar *path )
   if(!dir)
     dir = "/run";
   addr = g_build_filename(dir,"/mpd/socket",NULL);
+  g_debug("mpd: attempting to connect to: %s",addr);
+  scon = g_socket_client_connect_to_host(client,addr,0,NULL,NULL);
   scon = mpd_ipc_connect_unix(client, addr);
   g_free(addr);
+
+  if(!scon)
+    g_debug("mpd: failed to connect to server");
 
   return scon;
 }
@@ -148,10 +157,14 @@ gboolean mpd_ipc_command_cb ( GIOChannel *chan, GIOCondition cond, gpointer comm
 {
   gchar *str;
 
-  g_io_channel_read_to_end(chan, &str, NULL, NULL);
+  if(g_io_channel_read_to_end(chan, &str, NULL, NULL) != G_IO_STATUS_NORMAL )
+    g_debug("mpd: Failed to read from socket");
   g_free(str);
   str = g_strconcat( command, "\n", NULL );
-  g_io_channel_write_chars ( chan, str, -1, NULL, NULL );
+  if( g_io_channel_write_chars ( chan, str, -1, NULL, NULL ) != 
+      G_IO_STATUS_NORMAL )
+    g_debug("mpd: Command \"%s\". Failed to write to socket",
+        (gchar *)command);
   g_io_channel_flush( chan, NULL );
   g_free(str);
 
