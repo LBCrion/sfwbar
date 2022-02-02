@@ -286,7 +286,7 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
         G_CALLBACK(layout_widget_button_cb),lw);
   }
 
-  widget_set_css(lw->widget);
+  widget_set_css(lw->widget,FALSE);
 
   if(GTK_IS_BUTTON(lw->widget))
   {
@@ -411,7 +411,7 @@ void layout_widget_attach ( struct layout_widget *lw )
     widget_list = g_list_remove(widget_list,lw);
 }
 
-void widget_set_css ( GtkWidget *widget )
+void widget_set_css ( GtkWidget *widget, gboolean propagate )
 {
   gboolean expand;
   gdouble xalign;
@@ -421,11 +421,13 @@ void widget_set_css ( GtkWidget *widget )
   gtk_widget_set_hexpand(GTK_WIDGET(widget),expand);
   gtk_widget_style_get(widget,"vexpand",&expand,NULL);
   gtk_widget_set_vexpand(GTK_WIDGET(widget),expand);
-  if(GTK_IS_CONTAINER(widget))
+
+  if(GTK_IS_CONTAINER(widget) && propagate)
   {
     l = gtk_container_get_children(GTK_CONTAINER(widget));
     for(;l!=NULL;l=g_list_next(l))
-      widget_set_css(l->data);
+      widget_set_css(l->data,propagate);
+    g_list_free(l);
   }
 
   if(GTK_IS_LABEL(widget))

@@ -158,9 +158,11 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
 gboolean layout_widget_draw ( struct layout_widget *lw );
 void layout_widget_attach ( struct layout_widget *lw );
 void layout_widget_free ( struct layout_widget *lw );
-void widget_set_css ( GtkWidget * );
+void widget_set_css ( GtkWidget *, gboolean );
 gboolean widget_menu_action ( GtkWidget *widget, struct layout_action *action );
 void layout_widgets_autoexec ( GtkWidget *widget, gpointer data );
+gboolean layout_tooltip_update ( GtkWidget *widget, gint x, gint y,
+    gboolean kbmode, GtkTooltip *tooltip, struct layout_widget *lw );
 
 GtkWidget *flow_grid_new( gboolean limit );
 void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );

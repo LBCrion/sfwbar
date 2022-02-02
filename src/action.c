@@ -100,6 +100,21 @@ void action_set_style ( GtkWidget *widget, gchar *style )
   layout_widget_attach(lw);
 }
 
+void action_set_tooltip ( GtkWidget *widget, gchar *tooltip )
+{
+  struct layout_widget *lw;
+
+  lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
+  if(!lw)
+    return;
+  g_free(lw->tooltip);
+  lw->tooltip = g_strdup(tooltip);
+  gtk_widget_set_has_tooltip(lw->lobject,(lw->tooltip!=NULL));
+  if(lw->tooltip)
+    g_signal_connect(lw->lobject,"query-tooltip",
+        G_CALLBACK(layout_tooltip_update),lw);
+}
+
 guint16 action_state_build ( GtkWidget *widget, struct wt_window *win )
 {
   guint16 state = 0;
@@ -205,6 +220,10 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
     case G_TOKEN_SETSTYLE:
       if(action->command && widget)
         action_set_style(widget,action->command);
+      break;
+    case G_TOKEN_SETTOOLTIP:
+      if(action->command && widget)
+        action_set_tooltip(widget,action->command);
       break;
     case G_TOKEN_IDLEINHIBIT:
       if(action->command && widget)

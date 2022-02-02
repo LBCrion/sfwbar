@@ -138,14 +138,17 @@ void flow_grid_set_rows ( GtkWidget *cgrid, gint rows )
 void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w )
 {
   FlowGridPrivate *priv;
+  GList *children;
 
   g_return_if_fail(cgrid != NULL);
   g_return_if_fail(IS_FLOW_GRID(cgrid));
 
   priv = flow_grid_get_instance_private(FLOW_GRID(cgrid));
 
-  if(!gtk_container_get_children(GTK_CONTAINER(cgrid)))
+  children = gtk_container_get_children(GTK_CONTAINER(cgrid));
+  if(!children)
     priv->i=0;
+  g_list_free(children);
 
   if(priv->rows>0)
     gtk_grid_attach(GTK_GRID(cgrid),w,

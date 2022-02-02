@@ -207,7 +207,7 @@ void pager_update ( void )
         if(focus==label)
           gtk_widget_set_name(widget, "pager_focused");
         g_signal_connect(widget,"clicked",G_CALLBACK(pager_button_click),NULL);
-        widget_set_css(widget);
+        widget_set_css(widget,TRUE);
         flow_grid_attach(pager,widget);
       }
     flow_grid_pad(pager);

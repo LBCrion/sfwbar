@@ -643,6 +643,7 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
       case G_TOKEN_SETBARID:
       case G_TOKEN_SETVALUE:
       case G_TOKEN_SETSTYLE:
+      case G_TOKEN_SETTOOLTIP:
         type = scanner->token;
         break;
       default:
@@ -679,6 +680,9 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
       break;
     case G_TOKEN_SETSTYLE:
       action->command = config_get_value(scanner,"action style",FALSE);
+      break;
+    case G_TOKEN_SETTOOLTIP:
+      action->command = config_get_value(scanner,"action tooltip",FALSE);
       break;
     default:
       g_free(action->command);
@@ -912,6 +916,7 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
         break;
       default:
         g_scanner_error(scanner,"Unexpected token in 'layout'");
+        layout_widget_free(lw);
         continue;
     }
     if(!lw)
@@ -1350,6 +1355,7 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "IdleInhibit", (gpointer)G_TOKEN_IDLEINHIBIT );
   g_scanner_scope_add_symbol(scanner,0, "SetValue", (gpointer)G_TOKEN_SETVALUE );
   g_scanner_scope_add_symbol(scanner,0, "SetStyle", (gpointer)G_TOKEN_SETSTYLE );
+  g_scanner_scope_add_symbol(scanner,0, "SetTooltip", (gpointer)G_TOKEN_SETTOOLTIP );
   g_scanner_scope_add_symbol(scanner,0, "Function", (gpointer)G_TOKEN_FUNCTION );
   g_scanner_scope_add_symbol(scanner,0, "Focus", (gpointer)G_TOKEN_FOCUS );
   g_scanner_scope_add_symbol(scanner,0, "Close", (gpointer)G_TOKEN_CLOSE );
