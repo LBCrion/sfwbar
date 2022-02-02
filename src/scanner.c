@@ -22,7 +22,7 @@ void scanner_var_attach ( gchar *name, struct scan_var *var )
 void scanner_expire_var ( void *key, struct scan_var *var, void *data )
 {
   if( var->file->source != SO_CLIENT )
-  var->status=0;
+    var->status=0;
 }
 
 /* expire all variables in the tree */
@@ -264,9 +264,7 @@ char *scanner_parse_identifier ( gchar *id, gchar **fname )
     }
   *fname=g_strdup(ptr);
   *ptr='\0';
-  ptr=g_strdup(temp);
-  g_free(temp);
-  return ptr;
+  return temp;
 }
 
 /* get string value of a variable by name */
