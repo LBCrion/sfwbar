@@ -118,13 +118,6 @@ void sway_ipc_command ( gchar *cmd, ... )
   g_free(buf);
   va_end(args);
 }
-int sway_ipc_subscribe ( gint sock )
-{
-  if ( sway_ipc_send(sock, 2, "['workspace','window','barconfig_update']") == -1)
-    return -1;
-
-  return sock;
-}
 
 void sway_minimized_set ( struct json_object *obj, const gchar *parent,
     const gchar *monitor )
@@ -403,7 +396,7 @@ void sway_ipc_init ( void )
   if(main_ipc<0)
     return;
 
-  sway_ipc_subscribe(main_ipc);
+  sway_ipc_send(main_ipc, 2, "['workspace','window','barconfig_update']");
   GIOChannel *chan = g_io_channel_unix_new(main_ipc);
   g_io_add_watch(chan,G_IO_IN,sway_ipc_event,NULL);
 }
