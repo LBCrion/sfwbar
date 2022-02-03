@@ -46,8 +46,9 @@ void layout_menu_popup ( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
   if(!menu || !widget)
     return;
 
+  if(state)
+    g_object_set_data( G_OBJECT(menu), "state", GUINT_TO_POINTER(*state) );
   g_object_set_data( G_OBJECT(menu), "wid", wid );
-  g_object_set_data( G_OBJECT(menu), "state", GUINT_TO_POINTER(*state) );
   g_object_set_data( G_OBJECT(menu), "caller", widget );
 
   switch(get_toplevel_dir())
