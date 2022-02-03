@@ -51,6 +51,37 @@ void set_layer ( gchar *layer )
     gtk_layer_set_layer(bar_window,GTK_LAYER_SHELL_LAYER_OVERLAY);
 }
 
+GtkWindow *sfwbar_new ( GtkApplication *app )
+{
+  GtkWindow *win;
+  static GtkApplication *napp;
+
+  if(app)
+    napp = app;
+
+  if(!napp)
+    return NULL;
+
+  win = (GtkWindow *)gtk_application_window_new (napp);
+  gtk_widget_set_name(GTK_WIDGET(win),"sfwbar");
+  gtk_layer_init_for_window (win);
+  gtk_layer_auto_exclusive_zone_enable (win);
+  gtk_layer_set_keyboard_interactivity(win,FALSE);
+  gtk_layer_set_layer(win,GTK_LAYER_SHELL_LAYER_OVERLAY);
+
+  gtk_widget_style_get(GTK_WIDGET(win),"direction",&toplevel_dir,NULL);
+  gtk_layer_set_anchor (win,GTK_LAYER_SHELL_EDGE_LEFT,
+      !(toplevel_dir==GTK_POS_RIGHT));
+  gtk_layer_set_anchor (win,GTK_LAYER_SHELL_EDGE_RIGHT,
+      !(toplevel_dir==GTK_POS_LEFT));
+  gtk_layer_set_anchor (win,GTK_LAYER_SHELL_EDGE_BOTTOM,
+      !(toplevel_dir==GTK_POS_TOP));
+  gtk_layer_set_anchor (win,GTK_LAYER_SHELL_EDGE_TOP,
+      !(toplevel_dir==GTK_POS_BOTTOM));
+
+  return win;
+}
+
 gchar *bar_get_output ( void )
 {
   GdkWindow *win;
@@ -103,9 +134,16 @@ void set_monitor ( gchar *mon_name )
   if(list)
     exit(0);
 
-  gtk_widget_hide ((GtkWidget *)bar_window);
+  GtkWidget *g = gtk_bin_get_child(GTK_BIN(bar_window));
+  g_object_ref(g);
+  gtk_container_remove(GTK_CONTAINER(bar_window),g);
+  gtk_window_close(bar_window);
+  bar_window = sfwbar_new(NULL);
   gtk_layer_set_monitor(bar_window, match);
-  gtk_widget_show ((GtkWidget *)bar_window);
+  gtk_container_add(GTK_CONTAINER(bar_window),g);
+  g_object_unref(g);
+  gtk_widget_show_all ((GtkWidget *)bar_window);
+  wayland_reset_inhibitors(g,NULL);
 }
 
 void monitor_change_cb ( void )
@@ -264,26 +302,10 @@ static void activate (GtkApplication* app, gpointer data )
   struct layout_widget *lw;
   GdkDisplay *gdisp;
 
-  bar_window = (GtkWindow *)gtk_application_window_new (app);
-  gtk_widget_set_name(GTK_WIDGET(bar_window),"sfwbar");
-  gtk_layer_init_for_window (bar_window);
-  gtk_layer_auto_exclusive_zone_enable (bar_window);
-  gtk_layer_set_keyboard_interactivity(bar_window,FALSE);
-  gtk_layer_set_layer(bar_window,GTK_LAYER_SHELL_LAYER_OVERLAY);
-
   css_init();
-
   lw = config_parse(confname?confname:"sfwbar.config");
 
-  gtk_widget_style_get(GTK_WIDGET(bar_window),"direction",&toplevel_dir,NULL);
-  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_LEFT,
-      !(toplevel_dir==GTK_POS_RIGHT));
-  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_RIGHT,
-      !(toplevel_dir==GTK_POS_LEFT));
-  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_BOTTOM,
-      !(toplevel_dir==GTK_POS_TOP));
-  gtk_layer_set_anchor (bar_window,GTK_LAYER_SHELL_EDGE_TOP,
-      !(toplevel_dir==GTK_POS_BOTTOM));
+  bar_window = sfwbar_new(app);
 
   sway_ipc_init();
   wayland_init(bar_window);

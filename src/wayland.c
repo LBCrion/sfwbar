@@ -235,6 +235,19 @@ void wayland_set_idle_inhibitor ( GtkWidget *widget, gboolean inhibit )
   }
 }
 
+void wayland_reset_inhibitors ( GtkWidget *w, gpointer data )
+{
+  if(GTK_IS_CONTAINER(w))
+    gtk_container_foreach(GTK_CONTAINER(w),wayland_reset_inhibitors,data);
+
+  if(g_object_get_data(G_OBJECT(w),"inhibitor"))
+  {
+    wayland_set_idle_inhibitor(w,FALSE);
+    wayland_set_idle_inhibitor(w,TRUE);
+  }
+
+}
+
 static void handle_global(void *data, struct wl_registry *registry,
                 uint32_t name, const gchar *interface, uint32_t version)
 {

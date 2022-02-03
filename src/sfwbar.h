@@ -121,6 +121,7 @@ GList *wintree_get_list ( void );
 
 void wayland_init ( GtkWindow * );
 void wayland_set_idle_inhibitor ( GtkWidget *widget, gboolean inhibit );
+void wayland_reset_inhibitors ( GtkWidget *w, gpointer data );
 void foreign_toplevel_activate ( gpointer tl );
 
 gboolean window_hide_event ( struct json_object *obj );
