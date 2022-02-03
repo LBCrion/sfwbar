@@ -51,6 +51,7 @@ int scale_image_update ( GtkWidget *widget );
 
 void scale_image_resize ( GtkWidget *widget, GdkRectangle *alloc )
 {
+  gint w,h;
   ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
   GtkBorder border,padding;
   GtkStyleContext *style = gtk_widget_get_style_context(widget);
@@ -59,12 +60,13 @@ void scale_image_resize ( GtkWidget *widget, GdkRectangle *alloc )
   gtk_style_context_get_border(style, flags, &border );
   gtk_style_context_get_padding(style, flags, &padding );
 
-  if((alloc->width!=priv->w)||(alloc->height!=priv->h))
+  w = alloc->width-border.left-border.right-padding.left-padding.right;
+  h = alloc->height-border.top-border.bottom-padding.top-padding.bottom;
+
+  if((w!=priv->w)||(h!=priv->h))
   {
-    priv->w = alloc->width - border.left - border.right -
-      padding.left - padding.right;
-    priv->h = alloc->height  - border.top - border.bottom -
-      padding.top - padding.bottom;
+    priv->w = w;
+    priv->h = h;
     scale_image_update(widget);
   }
 
