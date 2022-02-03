@@ -627,11 +627,13 @@ gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data)
     }
 
     // call event at 0,0 to avoid menu popping up under the bar
-    g_debug("sni: calling %s on %s at ( %d, %d )",method,sni->dest,x,y);
     if(method)
+    {
+      g_debug("sni: calling %s on %s at ( %d, %d )",method,sni->dest,x,y);
       g_dbus_connection_call(con, sni->dest, sni->path,
         sni->iface, method, g_variant_new("(ii)", 0, 0),
         NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+    }
     g_object_unref(con);
   }
   return TRUE;
