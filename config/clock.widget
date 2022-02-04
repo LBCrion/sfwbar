@@ -4,7 +4,7 @@ layout {
   label {
     style = "time"
     interval = 1000
-    css = "label { font: 0.5cm Sans; font-weight: 700; -GtkWidget-align: 0.5; -GtkWidget-hexpand: true; -GtkWidget-vexpand: true;}"
+    css = "* { font: 0.5cm Sans; font-weight: 700; -GtkWidget-align: 0.5; -GtkWidget-hexpand: true; -GtkWidget-vexpand: true; }"
     value = Time("%k:%M")
   }
 

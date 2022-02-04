@@ -1,0 +1,46 @@
+Scanner {
+  MpdClient("") {
+    MpdTitle = RegEx("Title: (.*)")
+    MpdArtist = RegEx("Artist: (.*)")
+  }
+}
+
+layout {
+    style = "frame"
+    label {
+      style = "mpd"
+      interval = 100
+      value = $MpdTitle
+      loc(1,1,4,1)
+    }
+    label {
+      style = "mpd"
+      interval = 100
+      value = $MpdArtist
+      loc(1,2,4,1)
+    }
+    image {
+      style="mpd"
+      value = "icons/misc/rewind.svg"
+      loc(1,3,1,1)
+      action = MpdCmd "previous"
+    }
+    image {
+      style="mpd"
+      value = "icons/misc/play.svg"
+      loc(2,3,1,1)
+      action = MpdCmd "play"
+    }
+    image {
+      style="mpd"
+      value = "icons/misc/stop.svg"
+      loc(3,3,1,1)
+      action = MpdCmd "stop"
+    }
+    image {
+      style="mpd"
+      value = "icons/misc/fforward.svg"
+      loc(4,3,1,1)
+      action = MpdCmd "next"
+    }
+}

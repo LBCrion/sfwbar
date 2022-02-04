@@ -28,24 +28,26 @@ scanner {
   file("/sys/class/power_supply/BAT0/charge_now") {
     BatteryLeft = Grab(Sum)
   }
+  file("/sys/class/power_supply/AC/online") {
+    ACOnline = Grab(Sum)
+  }
 }
 
 layout {
   # add a sub-grid to house scales
   style = "scales"
   scale { 
-    interval = 1000
     css = "progressbar progress { background-color: #0000ff;}"
     value = (CpuUser-CpuUser.pval)/(CpuUser+CpuNice+CpuSystem+CpuIdle-CpuUser.pval-CpuNice.pval-CpuSystem.pval-CpuIdle.pval)
   }
   scale {
-    interval = 1000
     css = "progressbar progress { background-color: #00ff00;}"
     value= (MemTotal-MemFree-MemCache-MemBuff)/MemTotal
   }
   scale {
-    interval = 1000
-    css = "progressbar progress { background-color: #ff0000;}"
     value = BatteryLeft/BatteryTotal
+    style = ACOnline
+    css = "progressbar#1 progress { background-color: #ff0000;} \
+           progressbar#0 progress { background-color: #ffff00;}"
   }
 }

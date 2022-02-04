@@ -1,0 +1,35 @@
+Scanner {
+  MpdClient("") {
+    MpdTitle = RegEx("Title: (.*)")
+    MpdArtist = RegEx("Artist: (.*)")
+  }
+}
+
+layout {
+    style = "frame"
+    css = "* { -GtkWidget-direction: right; }"
+    image {
+      style="mpd"
+      value = "icons/misc/rewind.svg"
+      action = MpdCmd "previous"
+      tooltip = $MpdArtist + "\n" + $MpdTitle
+    }
+    image {
+      style="mpd"
+      value = "icons/misc/play.svg"
+      action = MpdCmd "play"
+      tooltip = $MpdArtist + "\n" + $MpdTitle
+    }
+    image {
+      style="mpd"
+      value = "icons/misc/stop.svg"
+      action = MpdCmd "stop"
+      tooltip = $MpdArtist + "\n" + $MpdTitle
+    }
+    image {
+      style="mpd"
+      value = "icons/misc/fforward.svg"
+      action = MpdCmd "next"
+      tooltip = $MpdArtist + "\n" + $MpdTitle
+    }
+}

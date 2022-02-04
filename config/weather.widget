@@ -1,6 +1,7 @@
 # Parse yr.no weather forecast
 scanner {
-  Exec("wget -O - \"https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=51.8711&lon=0.1587\" 2>/dev/null") {
+#  Exec("wget -O - \"https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=51.8711&lon=0.1587\"") {
+  file("/home/crion/weather.tmp") {
     WthrTemp= Json(".properties.timeseries.1.data.instant.details.air_temperature")
     WthrCond= Json(".properties.timeseries.1.data.next_12_hours.summary.symbol_code")
   }
@@ -10,12 +11,12 @@ layout {
   style = "frame"
   label {
     interval = 300000
-    css = "* { font: 0.5cm Sans; font-weight: 700; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; -GtkWidget-align: 0.5;}"
+    css = "* { font: 0.5cm Sans; font-weight: 700; -GtkWidget-align: 0.5; padding-left: 1mm; padding-right: 1mm; }"
     value = Str(WthrTemp.val,1)
   }
   image {
     interval = 300000
-    css = "* { min-width: 0.3cm; min-height: 0.3cm; -GtkWidget-vexpand: true; }"
+    css = "* { -GtkWidget-hexpand: true; -GtkWidget-vexpand: true; padding-left: 1mm; padding-right: 1mm; }"
     value = 'icons/weather/'+$WthrCond+'.svg'
   }
 }
