@@ -1,0 +1,24 @@
+function("ToggleInhibitor") {
+  [!IdleInhibit] IdleInhibit "on"
+  [!IdleInhibit] SetValue "icons/misc/lock.svg"
+  [!IdleInhibit] SetTooltip "Idle Inhibit: On"
+  [IdleInhibit] IdleInhibit "off"
+  [IdleInhibit] SetValue "icons/misc/unlock.svg"
+  [IdleInhibit] SetTooltip "Idle Inhibit: Off"
+}
+
+layout {
+  button {
+    style = "idle_inhibit"
+    value = "icons/misc/unlock.svg"
+    action[0] = Function "ToggleInhibitor"
+    action[1] = Function "ToggleInhibitor"
+  }
+}
+
+#CSS
+
+button#mpd, button#mpd *, button#mpd ** {
+  -GtkWidget-hexpand: true;
+  -GtkWidget-vexpand: true;
+}
