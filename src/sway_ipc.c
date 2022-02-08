@@ -421,7 +421,9 @@ void sway_ipc_init ( void )
   if(main_ipc<0)
     return;
 
-  sway_ipc_send(main_ipc, 2, "['workspace','window','barconfig_update']");
+  sway_ipc_send(main_ipc, 2, "['workspace','mode','window',\
+      'barconfig_update','binding','shutdown','tick',\
+      'bar_state_update','input']");
   GIOChannel *chan = g_io_channel_unix_new(main_ipc);
   g_io_add_watch(chan,G_IO_IN,sway_ipc_event,NULL);
 }
