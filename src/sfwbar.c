@@ -207,7 +207,12 @@ gboolean window_hide_event ( struct json_object *obj )
     if(mode!=NULL)
       state = *mode;
     else
-      state ='s';
+    {
+      if(json_bool_by_name(obj,"visible_by_modifier",TRUE))
+        state = 's';
+      else
+        state = 'h';
+    }
     g_free(mode);
   }
   else

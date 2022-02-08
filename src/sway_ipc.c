@@ -382,6 +382,14 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
       }
     }
 
+    if(etype==0x80000014)
+    {
+      id = json_string_by_name(obj,"id");
+      if ( !bar_id || !g_strcmp0(id,bar_id) )
+        window_hide_event(obj);
+      g_free(id);
+    }
+
     json_object_put(obj);
     g_free(response);
     response = sway_ipc_poll(main_ipc,&etype);
