@@ -99,6 +99,15 @@ gchar *scanner_extract_json ( struct json_object *obj, gchar *expr )
   return result;
 }
 
+void scanner_update_json ( struct json_object *obj, struct scan_file *file )
+{
+  GList *node;
+
+  for(node=file->vars;node!=NULL;node=g_list_next(node))
+    scanner_update_var(((struct scan_var *)node->data),
+        scanner_extract_json(obj,((struct scan_var *)node->data)->json));
+}
+
 /* update variables in a specific file (or pipe) */
 int scanner_update_file ( GIOChannel *in, struct scan_file *file )
 {
@@ -137,16 +146,17 @@ int scanner_update_file ( GIOChannel *in, struct scan_file *file )
     g_free(read_buff);
   }
   g_free(read_buff);
+
   if(json)
   {
-    for(node=file->vars;node!=NULL;node=g_list_next(node))
-      scanner_update_var(((struct scan_var *)node->data),
-          scanner_extract_json(obj,((struct scan_var *)node->data)->json));
+    scanner_update_json(obj,file);
     json_object_put(obj);
     json_tokener_free(json);
   }
+
   for(node=file->vars;node!=NULL;node=g_list_next(node))
     ((struct scan_var *)node->data)->status=1;
+
   return 0;
 }
 
@@ -192,6 +202,8 @@ int scanner_update_file_glob ( struct scan_file *file )
   gboolean reset=FALSE;
 
   if(file==NULL)
+    return -1;
+  if(file->source == SO_CLIENT)
     return -1;
   if(file->fname==NULL)
     return -1;

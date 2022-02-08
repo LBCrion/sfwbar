@@ -460,6 +460,11 @@ MpdClient
         Read data from Music Player Daemon IPC (data is polled whenever MPD
         responds to an 'idle player' event).
 
+SwayClient
+        Receive updates on Sway state, updates are the json objects sent by sway,
+        wrapped into an object with a name of the event i.e.
+        ``window: { sway window change object }``
+
 The file source also accepts further optional argumens specifying how
 scanner should handle the source, these can be:
 

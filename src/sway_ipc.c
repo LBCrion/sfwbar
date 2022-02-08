@@ -14,6 +14,7 @@
 static gchar *bar_id;
 static gint main_ipc;
 static const  gint8 magic[6] = {0x69, 0x33, 0x2d, 0x69, 0x70, 0x63};
+static struct scan_file *sway_file;
 
 extern gchar *sockname;
 
@@ -299,9 +300,27 @@ void sway_ipc_rescan ( void )
   sway_ipc_send(main_ipc,4,"");
 }
 
+void sway_ipc_client_init ( struct scan_file *file )
+{
+  sway_file = file;
+}
+
 gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 {
+  static gchar *ename[] = {
+    "workspace",
+    "",
+    "mode",
+    "window",
+    "barconfig_update",
+    "binding",
+    "shutdown",
+    "tick",
+    "","","","","","","","","","","","","",
+    "bar_state_update",
+    "input" };
   struct json_object *obj,*container;
+  struct json_object *scan;
   gchar *response,*change,*id;
   gint32 etype;
 
@@ -313,8 +332,14 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
   { 
     obj = json_tokener_parse(response);
 
-    if(etype==0x00000004)
-      sway_traverse_tree(obj,NULL,NULL,FALSE);
+    if(sway_file && etype>=0x80000000 && etype<=0x80000015)
+    {
+      scan = json_object_new_object();
+      json_object_object_add_ex(scan,ename[etype-0x80000000],obj,0);
+      scanner_update_json (scan,sway_file);
+      json_object_get(obj);
+      json_object_put(scan);
+    }
 
     if(etype==0x80000000)
       pager_update();

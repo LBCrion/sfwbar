@@ -90,6 +90,7 @@ int sway_ipc_subscribe ( gint sock );
 gboolean sway_ipc_event ( GIOChannel *, GIOCondition , gpointer );
 void sway_ipc_rescan ( void );
 void sway_ipc_bar_id ( gchar *id );
+void sway_ipc_client_init ( struct scan_file *file );
 
 void place_window ( gint64 wid, gint64 pid );
 void placer_config ( gint xs, gint ys, gint xo, gint yo, gboolean pid );
@@ -175,6 +176,7 @@ void flow_grid_clean ( GtkWidget *cgrid );
 void scanner_var_attach ( gchar *name, struct scan_var *var );
 void scanner_expire ( void );
 int scanner_reset_vars ( GList *var_list );
+void scanner_update_json ( struct json_object *obj, struct scan_file *file );
 int scanner_update_file ( GIOChannel *in, struct scan_file *file );
 int scanner_glob_file ( struct scan_file *file );
 char *scanner_get_string ( gchar *name );

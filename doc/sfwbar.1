@@ -554,6 +554,11 @@ Read data from an output of a shell command
 .B MpdClient
 Read data from Music Player Daemon IPC (data is polled whenever MPD
 responds to an \(aqidle player\(aq event).
+.TP
+.B SwayClient
+Receive updates on Sway state, updates are the json objects sent by sway,
+wrapped into an object with a name of the event i.e.
+\fBwindow: { sway window change object }\fP
 .UNINDENT
 .sp
 The file source also accepts further optional argumens specifying how

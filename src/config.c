@@ -267,9 +267,12 @@ struct scan_file *config_scanner_source ( GScanner *scanner, gint source )
     return NULL;
   }
 
-  for(find=file_list;find;find=g_list_next(find))
-    if(!g_strcmp0(fname,((struct scan_file *)(find->data))->fname))
-      break;
+  if(source == SO_CLIENT)
+    find = NULL;
+  else
+    for(find=file_list;find;find=g_list_next(find))
+      if(!g_strcmp0(fname,((struct scan_file *)(find->data))->fname))
+        break;
 
   if(find!=NULL)
     file = find->data;
@@ -327,6 +330,10 @@ void config_scanner ( GScanner *scanner )
       case G_TOKEN_MPDCLIENT:
         file = config_scanner_source(scanner,SO_CLIENT);
         mpd_ipc_init(file);
+        break;
+      case G_TOKEN_SWAYCLIENT:
+        file = config_scanner_source(scanner,SO_CLIENT);
+        sway_ipc_client_init(file);
         break;
       default:
         g_scanner_error(scanner, "Unexpected declaration in scanner");
@@ -1304,6 +1311,7 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "File", (gpointer)G_TOKEN_FILE );
   g_scanner_scope_add_symbol(scanner,0, "Exec", (gpointer)G_TOKEN_EXEC );
   g_scanner_scope_add_symbol(scanner,0, "MpdClient", (gpointer)G_TOKEN_MPDCLIENT );
+  g_scanner_scope_add_symbol(scanner,0, "SwayClient", (gpointer)G_TOKEN_SWAYCLIENT );
   g_scanner_scope_add_symbol(scanner,0, "Number", (gpointer)G_TOKEN_NUMBERW );
   g_scanner_scope_add_symbol(scanner,0, "String", (gpointer)G_TOKEN_STRINGW );
   g_scanner_scope_add_symbol(scanner,0, "NoGlob", (gpointer)G_TOKEN_NOGLOB );
