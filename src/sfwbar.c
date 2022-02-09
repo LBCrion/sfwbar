@@ -141,9 +141,9 @@ void set_monitor ( gchar *mon_name )
   bar_window = sfwbar_new(NULL);
   gtk_layer_set_monitor(bar_window, match);
   gtk_container_add(GTK_CONTAINER(bar_window),g);
-  g_object_unref(g);
   gtk_widget_show_all ((GtkWidget *)bar_window);
   wayland_reset_inhibitors(g,NULL);
+  g_object_unref(g);
 }
 
 void monitor_change_cb ( void )
