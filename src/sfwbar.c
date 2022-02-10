@@ -200,26 +200,32 @@ void bar_set_size ( gchar *size )
 gboolean window_hide_event ( struct json_object *obj )
 {
   gchar *mode, state;
+  struct json_object *visible;
+  static gchar pstate;
 
   if ( obj )
   {
     mode = json_string_by_name(obj,"mode");
-    if(mode!=NULL)
-      state = *mode;
-    else
+    if(mode)
     {
-      if(json_bool_by_name(obj,"visible_by_modifier",TRUE))
+      pstate = *mode;
+      state = pstate;
+      g_free(mode);
+    }
+
+    if(json_object_object_get_ex(obj,"visible_by_modifier",&visible))
+    {
+      if(json_object_get_boolean(visible))
         state = 's';
       else
-        state = 'h';
+        state = pstate;
     }
-    g_free(mode);
   }
   else
     if( gtk_widget_is_visible (GTK_WIDGET(bar_window)) )
-      state = 'h';
+      pstate = state = 'h';
     else
-      state = 's';
+      pstate = state = 's';
 
   if(state=='h')
     gtk_widget_hide(GTK_WIDGET(bar_window));
