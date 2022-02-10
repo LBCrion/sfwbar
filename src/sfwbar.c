@@ -201,7 +201,7 @@ gboolean window_hide_event ( struct json_object *obj )
 {
   gchar *mode, state;
   struct json_object *visible;
-  static gchar pstate;
+  static gchar pstate = 's';
 
   if ( obj )
   {
@@ -209,17 +209,13 @@ gboolean window_hide_event ( struct json_object *obj )
     if(mode)
     {
       pstate = *mode;
-      state = pstate;
       g_free(mode);
     }
+    state = pstate;
 
     if(json_object_object_get_ex(obj,"visible_by_modifier",&visible))
-    {
       if(json_object_get_boolean(visible))
         state = 's';
-      else
-        state = pstate;
-    }
   }
   else
     if( gtk_widget_is_visible (GTK_WIDGET(bar_window)) )

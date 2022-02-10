@@ -33,6 +33,7 @@ void switcher_init ( void )
   switcher = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_layer_init_for_window (GTK_WINDOW(switcher));
   gtk_layer_set_layer(GTK_WINDOW(switcher),GTK_LAYER_SHELL_LAYER_OVERLAY);
+  gtk_widget_set_name(switcher, "switcher");
   gtk_container_add(GTK_CONTAINER(switcher),grid);
   g_object_unref(grid);
 }
@@ -44,7 +45,6 @@ void switcher_config ( gint ncols, gchar *css, gint nmax,
   {
     grid = flow_grid_new(FALSE);
     gtk_widget_set_name(grid, "switcher");
-    gtk_widget_set_name(switcher, "switcher");
     switcher_init();
   }
   flow_grid_set_cols(grid,ncols);
@@ -73,24 +73,29 @@ void switcher_invalidate ( void )
 
 gboolean switcher_event ( struct json_object *obj )
 {
-  gchar *mode;
+  gchar *state,*id;
   GList *item;
   gboolean event = FALSE;
 
   if(!switcher)
     return TRUE;
 
-  if(obj!=NULL)
+  if(obj)
   {
-    mode = json_string_by_name(obj,"hidden_state");
-    if(mode!=NULL)
-      if(*mode!=hstate)
+    state = json_string_by_name(obj,"hidden_state");
+    if(state)
+    {
+      if(*state!='h')
       {
-        if(hstate!=0)
-          event=TRUE;
-        hstate = *mode;
+        event=TRUE;
+        id = json_string_by_name(obj,"id");
+        if(id)
+          sway_ipc_command("bar %s hidden_state hide",id);
+        g_free(id);
       }
-    g_free(mode);
+      g_free(state);
+
+    }
   }
   else
     event = TRUE;
