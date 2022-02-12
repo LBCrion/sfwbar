@@ -336,6 +336,9 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
   result = g_dbus_connection_call_finish(G_DBUS_CONNECTION(src),res,NULL);
   if(result)
   {
+    gchar *tmp = g_variant_print(result,TRUE);
+    g_debug("sni %s: menu: %s",wrap->sni->dest,tmp);
+    g_free(tmp);
     layout = g_variant_get_child_value(result, 1);
     if(layout)
     {
@@ -366,6 +369,8 @@ void sni_get_menu ( struct sni_item *sni, GdkEvent *event )
 
   wrap->event = gdk_event_copy(event);
   wrap->sni = sni;
+
+  g_debug("sni %s: requesting menu",wrap->sni->dest);
 
   g_dbus_connection_call(con, sni->dest, sni->menu_path, "com.canonical.dbusmenu",
       "GetLayout", g_variant_new("(iias)", 0, -1, NULL),
@@ -467,6 +472,8 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
       g_free(wrap->sni->menu_path);
       g_variant_get(inner,"o",&param);
       wrap->sni->menu_path = g_strdup(param);
+      g_debug("sni %s: property %s = %s",wrap->sni->dest,
+          sni_properties[wrap->prop],wrap->sni->menu_path);
     }
   if(wrap->prop == SNI_PROP_ISMENU)
     g_variant_get(inner,"b",&(wrap->sni->menu));
@@ -583,6 +590,7 @@ gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data)
   if(event->type == GDK_BUTTON_PRESS)
   {
     con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
+    g_debug("sni %s: button: %d",sni->dest,event->button);
     if(event->button == 1)
     {
       if(sni->menu_path)
