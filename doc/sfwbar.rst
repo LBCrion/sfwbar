@@ -490,8 +490,9 @@ RegEx(Pattern[,Aggregator])
 Json(Path[,Aggregator])
   extracts data from a json structure. The path starts with a separator
   character, which is followed by a path with elements separated by the
-  same character. The path can contain numbers to indicate array indices.
-  I.e. ".data.node.1.string".
+  same character. The path can contain numbers to indicate array indices
+  i.e. ``.data.node.1.string`` and key checks to filter arrays, i.e.
+  ``.data.node.[key="blah"].value``
 
 Optional aggregators specify how multiple occurences of numeric data are treated.
 The following aggregators are supported:

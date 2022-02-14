@@ -589,8 +589,9 @@ data from the first capture buffer
 .B Json(Path[,Aggregator])
 extracts data from a json structure. The path starts with a separator
 character, which is followed by a path with elements separated by the
-same character. The path can contain numbers to indicate array indices.
-I.e. ".data.node.1.string".
+same character. The path can contain numbers to indicate array indices
+i.e. \fB\&.data.node.1.string\fP and key checks to filter arrays, i.e.
+\fB\&.data.node.[key="blah"].value\fP
 .UNINDENT
 .sp
 Optional aggregators specify how multiple occurences of numeric data are treated.

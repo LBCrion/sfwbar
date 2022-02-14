@@ -60,52 +60,22 @@ void scanner_update_var ( struct scan_var *var, gchar *value)
   var->status=1;
 }
 
-gchar *scanner_extract_json ( struct json_object *obj, gchar *expr )
-{
-  struct json_object *iter;
-  gchar **evect;
-  gchar *result;
-  gchar *sep;
-  gint i,n;
-
-  if(!expr || !obj)
-    return NULL;
-
-  if(strlen(expr)<2)
-    return NULL;
-
-  sep = g_strndup(expr,1);
-  evect = g_strsplit(expr+1,sep,64);
-  g_free(sep);
-  iter = obj;
-
-  for(i=0;evect[i];i++)
-    if(iter)
-    {
-      n = g_ascii_strtoull(evect[i],&sep,10);
-      if(*sep)
-        json_object_object_get_ex(iter,evect[i],&iter);
-      else
-        if(json_object_is_type(iter,json_type_array))
-          iter = json_object_array_get_idx(iter,n);
-        else
-          iter = NULL;
-    }
-
-  result = g_strdup(json_object_get_string(iter));
-
-  g_strfreev(evect);
-
-  return result;
-}
-
 void scanner_update_json ( struct json_object *obj, struct scan_file *file )
 {
   GList *node;
+  struct json_object *ptr;
+  gint i;
 
   for(node=file->vars;node!=NULL;node=g_list_next(node))
-    scanner_update_var(((struct scan_var *)node->data),
-        scanner_extract_json(obj,((struct scan_var *)node->data)->json));
+  {
+    ptr = jpath_parse(((struct scan_var *)node->data)->json,obj);
+    for(i=0;i<json_object_array_length(ptr);i++)
+    {
+      scanner_update_var(((struct scan_var *)node->data),
+        g_strdup(json_object_get_string(json_object_array_get_idx(ptr,i))));
+    }
+    json_object_put(ptr);
+  }
 }
 
 /* update variables in a specific file (or pipe) */

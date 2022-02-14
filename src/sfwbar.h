@@ -132,6 +132,7 @@ void config_pipe_read ( gchar *command );
 void config_string ( gchar *string );
 
 char *expr_parse ( gchar *expr_str, guint * );
+struct json_object *jpath_parse ( gchar *path, struct json_object *obj );
 
 gboolean switcher_event ( struct json_object *obj );
 void switcher_invalidate ( void );
