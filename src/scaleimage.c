@@ -149,39 +149,31 @@ void scale_image_set_pixbuf ( GtkWidget *widget, GdkPixbuf *pb )
   priv->ftype = SI_BUFF;
 }
 
-void scale_image_set_image ( GtkWidget *widget, gchar *image, gchar *extra )
+void scale_image_check_icon ( GtkWidget *widget, gchar *file )
 {
-  static gchar *exts[4] = {"", ".svg", ".png", ".xpm"};
-  ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
-  GtkIconTheme *theme;
   GdkPixbuf *buf;
+  GtkIconTheme *theme;
   GDesktopAppInfo *app;
   gint i;
+  gchar *temp;
   gchar ***desktop;
-  gchar *temp,*test;
-
-  if(g_strcmp0(priv->file,image)==0 && !extra)
-    return;
-  g_free(priv->file);
-  priv->file = g_strdup(image);
-
-  priv->ftype = SI_NONE;
+  ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
 
   theme = gtk_icon_theme_get_default();
   if(theme)
   {
-    buf = gtk_icon_theme_load_icon(theme,priv->file,10,0,NULL);
-    if(buf!=NULL)
+    buf = gtk_icon_theme_load_icon(theme,file,10,0,NULL);
+    if(buf)
     {
       g_free(priv->fname);
-      priv->fname = g_strdup(priv->file);
+      priv->fname = g_strdup(file);
       priv->ftype = SI_ICON;
       g_object_unref(G_OBJECT(buf));
       return;
     }
   }
 
-  desktop = g_desktop_app_info_search(priv->file);
+  desktop = g_desktop_app_info_search(file);
   if(*desktop)
   {
     if(*desktop[0])
@@ -214,7 +206,30 @@ void scale_image_set_image ( GtkWidget *widget, gchar *image, gchar *extra )
       g_strfreev(desktop[i]);
   }
   g_free(desktop);
+}
 
+void scale_image_set_image ( GtkWidget *widget, gchar *image, gchar *extra )
+{
+  static gchar *exts[4] = {"", ".svg", ".png", ".xpm"};
+  ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
+  GdkPixbuf *buf;
+  gint i;
+  gchar *temp,*test;
+
+  if(g_strcmp0(priv->file,image)==0 && !extra)
+    return;
+  g_free(priv->file);
+  priv->file = g_strdup(image);
+
+  priv->ftype = SI_NONE;
+
+  scale_image_check_icon(widget,image);
+  if(priv->ftype == SI_ICON)
+    return;
+
+  temp = g_ascii_strdown(image,-1);
+  scale_image_check_icon(widget,temp);
+  g_free(temp);
   if(priv->ftype == SI_ICON)
     return;
 
@@ -223,10 +238,10 @@ void scale_image_set_image ( GtkWidget *widget, gchar *image, gchar *extra )
     test = g_strconcat(priv->file,exts[i],NULL);
     temp = get_xdg_config_file(test,extra);
     g_free(test);
-    if(temp!=NULL)
+    if(temp)
     {
       buf = gdk_pixbuf_new_from_file_at_scale(temp,10,10,TRUE,NULL);
-      if(buf!=NULL)
+      if(buf)
       {
         g_object_unref(G_OBJECT(buf));
         g_free(priv->fname);
@@ -270,6 +285,7 @@ int scale_image_update ( GtkWidget *widget )
     if(theme)
     {
       tmp = gtk_icon_theme_load_icon(theme,priv->file,size,0,NULL);
+
       if(tmp)
       {
         buf = gdk_pixbuf_scale_simple(tmp,size,size, GDK_INTERP_BILINEAR);
