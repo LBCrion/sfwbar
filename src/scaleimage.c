@@ -279,12 +279,12 @@ int scale_image_update ( GtkWidget *widget )
   if(size<1)
     return -1;
 
-  if(priv->ftype == SI_ICON && priv->file)
+  if(priv->ftype == SI_ICON && priv->fname)
   {
     theme = gtk_icon_theme_get_default();
     if(theme)
     {
-      tmp = gtk_icon_theme_load_icon(theme,priv->file,size,0,NULL);
+      tmp = gtk_icon_theme_load_icon(theme,priv->fname,size,0,NULL);
 
       if(tmp)
       {
