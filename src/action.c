@@ -88,9 +88,10 @@ void action_set_style ( GtkWidget *widget, gchar *style )
   lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
   if(!lw)
     return;
+  g_free(lw->style);
   g_free(lw->estyle);
-  lw->estyle = g_strdup(style);
-  vcount = 0;
+  lw->style = g_strdup(style);
+  lw->estyle = expr_parse(lw->style, &vcount);
   gtk_widget_set_name(lw->widget,lw->estyle);
   if(!vcount)
   {
