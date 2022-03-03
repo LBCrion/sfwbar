@@ -961,6 +961,10 @@ void sni_register ( gchar *name )
   gchar *xml;
   GDBusConnection *con;
 
+  con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
+  if(!con)
+    return;
+
   iface = g_malloc0(sizeof(struct sni_iface));
 
   xml = g_strdup_printf(sni_watcher_xml,name);
@@ -985,7 +989,6 @@ void sni_register ( gchar *name )
   g_bus_watch_name(G_BUS_TYPE_SESSION,iface->watcher_iface,
       G_BUS_NAME_WATCHER_FLAGS_NONE,sni_host_register_cb,NULL,iface,NULL);
 
-  con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
   g_dbus_connection_signal_subscribe(con,NULL,iface->watcher_iface,
       "StatusNotifierItemRegistered","/StatusNotifierWatcher",NULL,
       G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_registered_cb,NULL,NULL);
