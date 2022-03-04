@@ -8,6 +8,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+static GHashTable *defines;
+
 void config_log_error ( GScanner *scanner, gchar *message, gboolean error )
 {
   if(error)
@@ -486,7 +488,11 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign )
         break;
       case G_TOKEN_IDENTIFIER:
         temp = value;
-        value = g_strconcat(value, scanner->value.v_identifier, NULL);
+        if(defines&&g_hash_table_contains(defines,scanner->value.v_identifier))
+          value = g_strconcat(value, 
+              g_hash_table_lookup(defines,scanner->value.v_identifier), NULL);
+        else
+          value = g_strconcat(value, scanner->value.v_identifier, NULL);
         g_free(temp);
         break;
       case G_TOKEN_TIME:
@@ -1237,6 +1243,30 @@ void config_function ( GScanner *scanner )
   action_function_add(name,actions);
 }
 
+void config_define ( GScanner *scanner )
+{
+  gchar *ident;
+  gchar *value;
+
+  if(g_scanner_peek_next_token(scanner)!=G_TOKEN_IDENTIFIER)
+    return g_scanner_error(scanner,"Missing identifier after 'define'");
+  g_scanner_get_next_token(scanner);
+  ident = g_strdup(scanner->value.v_identifier);  
+
+  value = config_get_value(scanner,"define",TRUE);
+  if(!value)
+  {
+    g_free(ident);
+    return;
+  }
+
+  if(!defines)
+    defines = g_hash_table_new_full((GHashFunc)str_nhash,
+        (GEqualFunc)str_nequal,g_free,g_free);
+
+  g_hash_table_insert(defines,ident,value);
+}
+
 struct layout_widget *config_parse_toplevel ( GScanner *scanner,
     gboolean layout)
 {
@@ -1266,6 +1296,9 @@ struct layout_widget *config_parse_toplevel ( GScanner *scanner,
         break;
       case G_TOKEN_MENU:
         config_menu(scanner,NULL);
+        break;
+      case G_TOKEN_DEFINE:
+        config_define(scanner);
         break;
       case G_TOKEN_FUNCTION:
         config_function(scanner);
@@ -1307,6 +1340,7 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "Layout", (gpointer)G_TOKEN_LAYOUT );
   g_scanner_scope_add_symbol(scanner,0, "Placer", (gpointer)G_TOKEN_PLACER );
   g_scanner_scope_add_symbol(scanner,0, "Switcher", (gpointer)G_TOKEN_SWITCHER );
+  g_scanner_scope_add_symbol(scanner,0, "Define", (gpointer)G_TOKEN_DEFINE );
   g_scanner_scope_add_symbol(scanner,0, "End", (gpointer)G_TOKEN_END );
   g_scanner_scope_add_symbol(scanner,0, "File", (gpointer)G_TOKEN_FILE );
   g_scanner_scope_add_symbol(scanner,0, "Exec", (gpointer)G_TOKEN_EXEC );
