@@ -784,6 +784,21 @@ $MyString + Str((MyValue \- MyValue.pval)/MyValue.time),2)
 .fi
 .UNINDENT
 .UNINDENT
+.sp
+User defines expressions are supported via top\-level \fBdefine\fP
+keyword. I.e.
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+define MyExpr = VarA + VarB * VarC + Val($Complex)
+\&...
+value = Str(MyExpr,2)
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
 .SH CSS STYLE
 .sp
 SFWBar uses gtk+ widgets and can accept all css properties supported by

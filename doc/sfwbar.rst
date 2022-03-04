@@ -583,6 +583,12 @@ The following string operation are supported. For example: ::
 
   $MyString + Str((MyValue - MyValue.pval)/MyValue.time),2)
 
+User defines expressions are supported via top-level ``define``
+keyword. I.e. ::
+  
+  define MyExpr = VarA + VarB * VarC + Val($Complex)
+  ...
+  value = Str(MyExpr,2)
 
 CSS Style
 =========
