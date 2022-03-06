@@ -15,6 +15,7 @@ static gchar *cssname;
 static gchar *monitor;
 static gboolean debug = FALSE;
 static gint toplevel_dir;
+static GtkLayerShellLayer layer = GTK_LAYER_SHELL_LAYER_OVERLAY;
 
 static GOptionEntry entries[] = {
   {"config",'f',0,G_OPTION_ARG_FILENAME,&confname,"Specify config file"},
@@ -39,16 +40,17 @@ gint get_toplevel_dir ( void )
   return toplevel_dir;
 }
 
-void set_layer ( gchar *layer )
+void set_layer ( gchar *layer_str )
 {
-  if(!g_ascii_strcasecmp(layer,"background"))
-    gtk_layer_set_layer(bar_window,GTK_LAYER_SHELL_LAYER_BACKGROUND);
-  if(!g_ascii_strcasecmp(layer,"bottom"))
-    gtk_layer_set_layer(bar_window,GTK_LAYER_SHELL_LAYER_BOTTOM);
-  if(!g_ascii_strcasecmp(layer,"top"))
-    gtk_layer_set_layer(bar_window,GTK_LAYER_SHELL_LAYER_TOP);
-  if(!g_ascii_strcasecmp(layer,"overlay"))
-    gtk_layer_set_layer(bar_window,GTK_LAYER_SHELL_LAYER_OVERLAY);
+  if(!g_ascii_strcasecmp(layer_str,"background"))
+    layer = GTK_LAYER_SHELL_LAYER_BACKGROUND;
+  if(!g_ascii_strcasecmp(layer_str,"bottom"))
+    layer = GTK_LAYER_SHELL_LAYER_BOTTOM;
+  if(!g_ascii_strcasecmp(layer_str,"top"))
+    layer = GTK_LAYER_SHELL_LAYER_TOP;
+  if(!g_ascii_strcasecmp(layer_str,"overlay"))
+    layer = GTK_LAYER_SHELL_LAYER_OVERLAY;
+  gtk_layer_set_layer(bar_window,layer);
 }
 
 GtkWindow *sfwbar_new ( GtkApplication *app )
@@ -67,7 +69,7 @@ GtkWindow *sfwbar_new ( GtkApplication *app )
   gtk_layer_init_for_window (win);
   gtk_layer_auto_exclusive_zone_enable (win);
   gtk_layer_set_keyboard_interactivity(win,FALSE);
-  gtk_layer_set_layer(win,GTK_LAYER_SHELL_LAYER_OVERLAY);
+  gtk_layer_set_layer(win,layer);
 
   gtk_widget_style_get(GTK_WIDGET(win),"direction",&toplevel_dir,NULL);
   gtk_layer_set_anchor (win,GTK_LAYER_SHELL_EDGE_LEFT,
