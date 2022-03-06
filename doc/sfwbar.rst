@@ -529,8 +529,14 @@ Operation   Description
 ``*``       multiplication
 ``/``       division
 ``%``       remainder of an integer division
+``>``       greater than
+``>=``      greater than or equal
+``<``       less than
+``>=``      less than or equal
+``=``       equal
 ``Val``     convert a string into a number, the argument is a string or a
             string expression to convert.
+``If``      conditional: If(condition,expr1,expr2)
 =========== ==================================================================
 
 The string operations are:
@@ -548,6 +554,7 @@ Operation   Description
             string to pad, the second is the desired number of characters,
             if the number is negative, the string is padded at the end, if
             positive, the string is padded at the front.
+``If``      conditional: If(condition,expr1,expr2)
 =========== ==================================================================
 
 In addition the following query functions are supported

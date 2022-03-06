@@ -249,7 +249,8 @@ enum {
   G_TOKEN_VAL     = G_TOKEN_LAST + 5,
   G_TOKEN_STRW    = G_TOKEN_LAST + 6,
   G_TOKEN_ACTIVE  = G_TOKEN_LAST + 7,
-  G_TOKEN_PAD     = G_TOKEN_LAST + 8
+  G_TOKEN_PAD     = G_TOKEN_LAST + 8,
+  G_TOKEN_IF      = G_TOKEN_LAST + 9
 };
 
 #endif

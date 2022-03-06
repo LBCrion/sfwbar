@@ -35,6 +35,17 @@ gboolean parser_expect_symbol ( GScanner *scanner, gchar symbol, gchar *expr )
   return TRUE;
 }
 
+gboolean expr_is_numeric ( GScanner *scanner )
+{
+  g_scanner_peek_next_token(scanner);
+  return ((scanner->next_token == G_TOKEN_FLOAT)||
+      (scanner->next_token == (GTokenType)G_TOKEN_DISK)||
+      (scanner->next_token == (GTokenType)G_TOKEN_VAL)||
+      (scanner->next_token == (GTokenType)G_TOKEN_LEFT_PAREN)||
+      ((scanner->next_token == G_TOKEN_IDENTIFIER)&&
+       (*(scanner->next_value.v_identifier)!='$')));
+}
+
 /* convert a number to a string with specified number of decimals */
 gchar *expr_dtostr ( double num, gint dec )
 {
@@ -50,6 +61,47 @@ gchar *expr_dtostr ( double num, gint dec )
 
   g_ascii_formatd(fbuf,16,format,(gdouble)dec);
   return g_strdup(g_ascii_formatd(buf,G_ASCII_DTOSTR_BUF_SIZE,fbuf,num));
+}
+
+gchar *expr_parse_if ( GScanner *scanner )
+{
+  gboolean condition;
+  gchar *str, *str2;
+
+  parser_expect_symbol(scanner,'(',"If(Condition,Expression,Expression)");
+  if(expr_is_numeric(scanner))
+    condition = (gboolean)expr_parse_num ( scanner );
+  else
+  {
+    str = expr_parse_str(scanner);
+    condition = (gboolean)strtod(str,NULL);
+    g_free(str);
+  }
+
+  parser_expect_symbol(scanner,',',"If(Condition,Expression,Expression)");
+  if(expr_is_numeric(scanner))
+    str = expr_dtostr(expr_parse_num ( scanner ),-1);
+  else
+    str = expr_parse_str(scanner);
+
+  parser_expect_symbol(scanner,',',"If(Condition,Expression,Expression)");
+  if(expr_is_numeric(scanner))
+    str2 = expr_dtostr(expr_parse_num ( scanner ),-1);
+  else
+    str2 = expr_parse_str(scanner);
+
+  parser_expect_symbol(scanner,')',"If(Condition,Expression,Expression)");
+
+  if(condition)
+  {
+    g_free(str2);
+    return str;
+  }
+  else
+  {
+    g_free(str);
+    return str2;
+  }
 }
 
 /* extract a substring */
@@ -266,6 +318,9 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
       str = expr_parse_time ( scanner );
       *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       break;
+    case G_TOKEN_IF:
+      str = expr_parse_if ( scanner );
+      break;
     case G_TOKEN_IDENTIFIER:
       str = scanner_get_string(scanner->value.v_identifier);
       *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
@@ -284,19 +339,36 @@ gchar *expr_parse_str ( GScanner *scanner )
   gchar *str,*next,*tmp;
 
   str = expr_parse_str_l1( scanner );
-  while(g_scanner_peek_next_token( scanner )=='+')
+
+  while(g_scanner_peek_next_token( scanner )=='+' ||
+      g_scanner_peek_next_token( scanner )=='=')
   {
     g_scanner_get_next_token( scanner );
-    next = expr_parse_str_l1( scanner );
-    tmp = g_strconcat(str,next,NULL);
-    g_free(str);
-    g_free(next);
-    str=tmp;
+    switch((gint)scanner->token)
+    {
+      case '+':
+        next = expr_parse_str_l1( scanner );
+        tmp = g_strconcat(str,next,NULL);
+        g_free(str);
+        g_free(next);
+        str=tmp;
+        break;
+      case '=':
+        next = expr_parse_str_l1( scanner );
+        tmp = str;
+        if(!g_strcmp0(tmp,next))
+          str = g_strdup("1");
+        else
+          str = g_strdup("0");
+        g_free(tmp);
+        g_free(next);
+        break;
+    }
   }
   return str;
 }
 
-gdouble expr_parse_num_l2 ( GScanner *scanner )
+gdouble expr_parse_num_l3 ( GScanner *scanner )
 {
   gdouble val;
   gchar *str;
@@ -304,10 +376,10 @@ gdouble expr_parse_num_l2 ( GScanner *scanner )
   switch((gint)g_scanner_get_next_token(scanner) )
   {
     case '+':
-      val = expr_parse_num_l2 ( scanner );
+      val = expr_parse_num_l3 ( scanner );
       break;
     case '-':
-      val = -expr_parse_num_l2 ( scanner );
+      val = -expr_parse_num_l3 ( scanner );
       break;
     case G_TOKEN_FLOAT: 
       val = scanner->value.v_float;
@@ -327,6 +399,11 @@ gdouble expr_parse_num_l2 ( GScanner *scanner )
       g_free(str);
       parser_expect_symbol(scanner,')',"Val(String)");
       break;
+    case G_TOKEN_IF:
+      str = expr_parse_if(scanner);
+      val = strtod(str,NULL);
+      g_free(str);
+      break;
     case G_TOKEN_IDENTIFIER:
       val = scanner_get_numeric( scanner->value.v_identifier );
       *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
@@ -341,38 +418,76 @@ gdouble expr_parse_num_l2 ( GScanner *scanner )
   return val;
 }
 
-gdouble expr_parse_num_l1 ( GScanner *scanner )
+
+gdouble expr_parse_num_l2 ( GScanner *scanner )
 {
   gdouble val;
 
-  val = expr_parse_num_l2 ( scanner );
+  val = expr_parse_num_l3 ( scanner );
   while(strchr("*/%",g_scanner_peek_next_token ( scanner )))
   {
     g_scanner_get_next_token ( scanner );
     if(scanner->token == '*')
-      val *= expr_parse_num_l2( scanner );
+      val *= expr_parse_num_l3( scanner );
     if(scanner->token == '/')
-      val /= expr_parse_num_l2( scanner );
+      val /= expr_parse_num_l3( scanner );
     if(scanner->token == '%')
-      val = (gint)val % (gint)expr_parse_num_l2( scanner );
+      val = (gint)val % (gint)expr_parse_num_l3( scanner );
     if(g_scanner_eof(scanner))
       break;
   }
   return val;
 }
 
-gdouble expr_parse_num ( GScanner *scanner )
+gdouble expr_parse_num_l1 ( GScanner *scanner )
 {
   gdouble val;
 
-  val = expr_parse_num_l1 ( scanner );
+  val = expr_parse_num_l2 ( scanner );
   while(strchr("+-",g_scanner_peek_next_token( scanner )))
   {
     g_scanner_get_next_token (scanner );
     if(scanner->token == '+')
-      val+=expr_parse_num_l1( scanner );
+      val+=expr_parse_num_l2( scanner );
     if(scanner->token == '-')
-      val-=expr_parse_num_l1( scanner );
+      val-=expr_parse_num_l2( scanner );
+    if(g_scanner_eof(scanner))
+      break;
+  }
+  return val;
+}
+
+gdouble expr_parse_num( GScanner *scanner )
+{
+  gdouble val;
+
+  val = expr_parse_num_l1 ( scanner );
+  while(strchr("<>=",g_scanner_peek_next_token ( scanner )))
+  {
+    switch((gint)g_scanner_get_next_token ( scanner ))
+    {
+      case '>':
+        if( g_scanner_peek_next_token( scanner ) == '=' )
+        {
+          g_scanner_get_next_token( scanner );
+          val = (gdouble)(val >= expr_parse_num_l1 ( scanner ));
+        }
+        else
+          val = (gdouble)(val > expr_parse_num_l1 ( scanner ));
+        break;
+      case '<':
+        if( g_scanner_peek_next_token( scanner ) == '=' )
+        {
+          g_scanner_get_next_token( scanner );
+          val = (gdouble)(val <= expr_parse_num_l1 ( scanner ));
+        }
+        else
+          val = (gdouble)(val < expr_parse_num_l1 ( scanner ));
+        break;
+      case '=':
+        val = (gdouble)(val == expr_parse_num_l1 ( scanner ));
+        break;
+    }
     if(g_scanner_eof(scanner))
       break;
   }
@@ -403,6 +518,7 @@ static GScanner *expr_scanner_new ( void )
   g_scanner_scope_add_symbol(scanner,0, "Disk", (gpointer)G_TOKEN_DISK );
   g_scanner_scope_add_symbol(scanner,0, "ActiveWin", (gpointer)G_TOKEN_ACTIVE );
   g_scanner_scope_add_symbol(scanner,0, "Pad", (gpointer)G_TOKEN_PAD );
+  g_scanner_scope_add_symbol(scanner,0, "If", (gpointer)G_TOKEN_IF );
   g_scanner_set_scope(scanner,0);
 
   return scanner;
@@ -425,13 +541,7 @@ gchar *expr_parse( gchar *expr, guint *vcount )
  
   g_scanner_input_text(scanner, expr, strlen(expr));
 
-  g_scanner_peek_next_token(scanner);
-  if((scanner->next_token == G_TOKEN_FLOAT)||
-      (scanner->next_token == (GTokenType)G_TOKEN_DISK)||
-      (scanner->next_token == (GTokenType)G_TOKEN_VAL)||
-      (scanner->next_token == (GTokenType)G_TOKEN_LEFT_PAREN)||
-      ((scanner->next_token == G_TOKEN_IDENTIFIER)&&
-       (*(scanner->next_value.v_identifier)!='$')))
+  if( expr_is_numeric(scanner) )
     result = expr_dtostr(expr_parse_num(scanner),-1);
   else
     result = expr_parse_str(scanner);
