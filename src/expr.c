@@ -39,6 +39,7 @@ gboolean expr_is_numeric ( GScanner *scanner )
 {
   g_scanner_peek_next_token(scanner);
   return ((scanner->next_token == G_TOKEN_FLOAT)||
+      (scanner->next_token == '!')||
       (scanner->next_token == (GTokenType)G_TOKEN_DISK)||
       (scanner->next_token == (GTokenType)G_TOKEN_VAL)||
       (scanner->next_token == (GTokenType)G_TOKEN_LEFT_PAREN)||
@@ -368,7 +369,7 @@ gchar *expr_parse_str ( GScanner *scanner )
   return str;
 }
 
-gdouble expr_parse_num_l3 ( GScanner *scanner )
+gdouble expr_parse_num_value ( GScanner *scanner )
 {
   gdouble val;
   gchar *str;
@@ -376,10 +377,13 @@ gdouble expr_parse_num_l3 ( GScanner *scanner )
   switch((gint)g_scanner_get_next_token(scanner) )
   {
     case '+':
-      val = expr_parse_num_l3 ( scanner );
+      val = expr_parse_num_value ( scanner );
       break;
     case '-':
-      val = -expr_parse_num_l3 ( scanner );
+      val = -expr_parse_num_value ( scanner );
+      break;
+    case '!':
+      val = !expr_parse_num ( scanner );
       break;
     case G_TOKEN_FLOAT: 
       val = scanner->value.v_float;
@@ -419,38 +423,75 @@ gdouble expr_parse_num_l3 ( GScanner *scanner )
 }
 
 
-gdouble expr_parse_num_l2 ( GScanner *scanner )
+gdouble expr_parse_num_factor ( GScanner *scanner )
 {
   gdouble val;
 
-  val = expr_parse_num_l3 ( scanner );
+  val = expr_parse_num_value ( scanner );
   while(strchr("*/%",g_scanner_peek_next_token ( scanner )))
   {
     g_scanner_get_next_token ( scanner );
     if(scanner->token == '*')
-      val *= expr_parse_num_l3( scanner );
+      val *= expr_parse_num_value( scanner );
     if(scanner->token == '/')
-      val /= expr_parse_num_l3( scanner );
+      val /= expr_parse_num_value( scanner );
     if(scanner->token == '%')
-      val = (gint)val % (gint)expr_parse_num_l3( scanner );
+      val = (gint)val % (gint)expr_parse_num_value( scanner );
     if(g_scanner_eof(scanner))
       break;
   }
   return val;
 }
 
-gdouble expr_parse_num_l1 ( GScanner *scanner )
+gdouble expr_parse_num_sum ( GScanner *scanner )
 {
   gdouble val;
 
-  val = expr_parse_num_l2 ( scanner );
+  val = expr_parse_num_factor ( scanner );
   while(strchr("+-",g_scanner_peek_next_token( scanner )))
   {
     g_scanner_get_next_token (scanner );
     if(scanner->token == '+')
-      val+=expr_parse_num_l2( scanner );
+      val+=expr_parse_num_factor( scanner );
     if(scanner->token == '-')
-      val-=expr_parse_num_l2( scanner );
+      val-=expr_parse_num_factor( scanner );
+    if(g_scanner_eof(scanner))
+      break;
+  }
+  return val;
+}
+
+gdouble expr_parse_num_compare ( GScanner *scanner )
+{
+  gdouble val;
+
+  val = expr_parse_num_sum ( scanner );
+  while(strchr("<>=",g_scanner_peek_next_token ( scanner )))
+  {
+    switch((gint)g_scanner_get_next_token ( scanner ))
+    {
+      case '>':
+        if( g_scanner_peek_next_token( scanner ) == '=' )
+        {
+          g_scanner_get_next_token( scanner );
+          val = (gdouble)(val >= expr_parse_num_sum ( scanner ));
+        }
+        else
+          val = (gdouble)(val > expr_parse_num_sum ( scanner ));
+        break;
+      case '<':
+        if( g_scanner_peek_next_token( scanner ) == '=' )
+        {
+          g_scanner_get_next_token( scanner );
+          val = (gdouble)(val <= expr_parse_num_sum ( scanner ));
+        }
+        else
+          val = (gdouble)(val < expr_parse_num_sum ( scanner ));
+        break;
+      case '=':
+        val = (gdouble)(val == expr_parse_num_sum ( scanner ));
+        break;
+    }
     if(g_scanner_eof(scanner))
       break;
   }
@@ -461,31 +502,16 @@ gdouble expr_parse_num( GScanner *scanner )
 {
   gdouble val;
 
-  val = expr_parse_num_l1 ( scanner );
-  while(strchr("<>=",g_scanner_peek_next_token ( scanner )))
+  val = expr_parse_num_compare ( scanner );
+  while(strchr("&|",g_scanner_peek_next_token ( scanner )))
   {
     switch((gint)g_scanner_get_next_token ( scanner ))
     {
-      case '>':
-        if( g_scanner_peek_next_token( scanner ) == '=' )
-        {
-          g_scanner_get_next_token( scanner );
-          val = (gdouble)(val >= expr_parse_num_l1 ( scanner ));
-        }
-        else
-          val = (gdouble)(val > expr_parse_num_l1 ( scanner ));
+      case '&':
+        val = val && expr_parse_num_compare ( scanner );
         break;
-      case '<':
-        if( g_scanner_peek_next_token( scanner ) == '=' )
-        {
-          g_scanner_get_next_token( scanner );
-          val = (gdouble)(val <= expr_parse_num_l1 ( scanner ));
-        }
-        else
-          val = (gdouble)(val < expr_parse_num_l1 ( scanner ));
-        break;
-      case '=':
-        val = (gdouble)(val == expr_parse_num_l1 ( scanner ));
+      case '|':
+        val = val || expr_parse_num_compare ( scanner );
         break;
     }
     if(g_scanner_eof(scanner))
