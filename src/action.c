@@ -214,6 +214,10 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
       if(action->command)
         sway_ipc_bar_id(action->command);
       break;
+    case G_TOKEN_SETEXCLUSIVEZONE:
+      if(action->command)
+        bar_set_exclusive_zone(action->command);
+      break;
     case G_TOKEN_SETVALUE:
       if(action->command && widget)
         action_set_value(widget,action->command);

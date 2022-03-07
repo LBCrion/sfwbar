@@ -377,6 +377,11 @@ SetBarID <string>
   specify bar ID to listen on for mode and hidden_state signals. If no
   bar ID is specified, SfwBar will listen to signals on all IDs
 
+SetExclusiveZone <string>
+  specify exclusive zone policy for the bar window. Acceptable values are
+  "auto", "-1", "0" or positive integers. These have meanings in line with
+  exclusive zone setting in the layer shell protocol. Default value is "auto"
+
 SetValue <string>
   set the value of the widget. This action applies to the widget from which
   the action chain has been invoked. I.e. a widget may popup a menu, which

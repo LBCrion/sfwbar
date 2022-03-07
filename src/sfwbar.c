@@ -15,6 +15,7 @@ static gchar *cssname;
 static gchar *monitor;
 static gboolean debug = FALSE;
 static gint toplevel_dir;
+static gint exclusive_zone = -2;
 static GtkLayerShellLayer layer = GTK_LAYER_SHELL_LAYER_OVERLAY;
 
 static GOptionEntry entries[] = {
@@ -53,6 +54,20 @@ void set_layer ( gchar *layer_str )
   gtk_layer_set_layer(bar_window,layer);
 }
 
+void bar_set_exclusive_zone ( gchar *zone )
+{
+  if(!g_ascii_strcasecmp(zone,"auto"))
+  {
+    exclusive_zone = -2;
+    gtk_layer_auto_exclusive_zone_enable ( bar_window );
+  }
+  else
+  {
+    exclusive_zone = MAX(-1,g_ascii_strtoll(zone,NULL,10));
+    gtk_layer_set_exclusive_zone ( bar_window, exclusive_zone );
+  }
+}
+
 GtkWindow *sfwbar_new ( GtkApplication *app )
 {
   GtkWindow *win;
@@ -67,7 +82,10 @@ GtkWindow *sfwbar_new ( GtkApplication *app )
   win = (GtkWindow *)gtk_application_window_new (napp);
   gtk_widget_set_name(GTK_WIDGET(win),"sfwbar");
   gtk_layer_init_for_window (win);
-  gtk_layer_auto_exclusive_zone_enable (win);
+  if( exclusive_zone < -1 )
+    gtk_layer_auto_exclusive_zone_enable ( win );
+  else
+    gtk_layer_set_exclusive_zone ( win, exclusive_zone );
   gtk_layer_set_keyboard_interactivity(win,FALSE);
   gtk_layer_set_layer(win,layer);
 

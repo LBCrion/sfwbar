@@ -654,6 +654,7 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
       case G_TOKEN_SETLAYER:
       case G_TOKEN_SETBARSIZE:
       case G_TOKEN_SETBARID:
+      case G_TOKEN_SETEXCLUSIVEZONE:
       case G_TOKEN_SETVALUE:
       case G_TOKEN_SETSTYLE:
       case G_TOKEN_SETTOOLTIP:
@@ -683,6 +684,7 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
     case G_TOKEN_SETLAYER:
     case G_TOKEN_SETBARSIZE:
     case G_TOKEN_SETBARID:
+    case G_TOKEN_SETEXCLUSIVEZONE:
       if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
         return FALSE;
       g_free(action->command);
@@ -1339,17 +1341,21 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "Scanner", (gpointer)G_TOKEN_SCANNER );
   g_scanner_scope_add_symbol(scanner,0, "Layout", (gpointer)G_TOKEN_LAYOUT );
   g_scanner_scope_add_symbol(scanner,0, "Placer", (gpointer)G_TOKEN_PLACER );
-  g_scanner_scope_add_symbol(scanner,0, "Switcher", (gpointer)G_TOKEN_SWITCHER );
+  g_scanner_scope_add_symbol(scanner,0, "Switcher",
+      (gpointer)G_TOKEN_SWITCHER );
   g_scanner_scope_add_symbol(scanner,0, "Define", (gpointer)G_TOKEN_DEFINE );
   g_scanner_scope_add_symbol(scanner,0, "End", (gpointer)G_TOKEN_END );
   g_scanner_scope_add_symbol(scanner,0, "File", (gpointer)G_TOKEN_FILE );
   g_scanner_scope_add_symbol(scanner,0, "Exec", (gpointer)G_TOKEN_EXEC );
-  g_scanner_scope_add_symbol(scanner,0, "MpdClient", (gpointer)G_TOKEN_MPDCLIENT );
-  g_scanner_scope_add_symbol(scanner,0, "SwayClient", (gpointer)G_TOKEN_SWAYCLIENT );
+  g_scanner_scope_add_symbol(scanner,0, "MpdClient",
+      (gpointer)G_TOKEN_MPDCLIENT );
+  g_scanner_scope_add_symbol(scanner,0, "SwayClient",
+      (gpointer)G_TOKEN_SWAYCLIENT );
   g_scanner_scope_add_symbol(scanner,0, "Number", (gpointer)G_TOKEN_NUMBERW );
   g_scanner_scope_add_symbol(scanner,0, "String", (gpointer)G_TOKEN_STRINGW );
   g_scanner_scope_add_symbol(scanner,0, "NoGlob", (gpointer)G_TOKEN_NOGLOB );
-  g_scanner_scope_add_symbol(scanner,0, "CheckTime", (gpointer)G_TOKEN_CHTIME );
+  g_scanner_scope_add_symbol(scanner,0, "CheckTime",
+      (gpointer)G_TOKEN_CHTIME );
   g_scanner_scope_add_symbol(scanner,0, "Sum", (gpointer)G_TOKEN_SUM );
   g_scanner_scope_add_symbol(scanner,0, "Product", (gpointer)G_TOKEN_PRODUCT );
   g_scanner_scope_add_symbol(scanner,0, "Last", (gpointer)G_TOKEN_LASTW );
@@ -1365,7 +1371,8 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "Tray", (gpointer)G_TOKEN_TRAY );
   g_scanner_scope_add_symbol(scanner,0, "Style", (gpointer)G_TOKEN_STYLE );
   g_scanner_scope_add_symbol(scanner,0, "Css", (gpointer)G_TOKEN_CSS );
-  g_scanner_scope_add_symbol(scanner,0, "Interval", (gpointer)G_TOKEN_INTERVAL );
+  g_scanner_scope_add_symbol(scanner,0, "Interval",
+      (gpointer)G_TOKEN_INTERVAL );
   g_scanner_scope_add_symbol(scanner,0, "Value", (gpointer)G_TOKEN_VALUE );
   g_scanner_scope_add_symbol(scanner,0, "Pins", (gpointer)G_TOKEN_PINS );
   g_scanner_scope_add_symbol(scanner,0, "Preview", (gpointer)G_TOKEN_PREVIEW );
@@ -1377,44 +1384,69 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "Labels", (gpointer)G_TOKEN_LABELS );
   g_scanner_scope_add_symbol(scanner,0, "Loc", (gpointer)G_TOKEN_LOC );
   g_scanner_scope_add_symbol(scanner,0, "Numeric", (gpointer)G_TOKEN_NUMERIC );
-  g_scanner_scope_add_symbol(scanner,0, "Filter_output", (gpointer)G_TOKEN_PEROUTPUT );
-  g_scanner_scope_add_symbol(scanner,0, "Title_width", (gpointer)G_TOKEN_TITLEWIDTH );
+  g_scanner_scope_add_symbol(scanner,0, "Filter_output", 
+      (gpointer)G_TOKEN_PEROUTPUT );
+  g_scanner_scope_add_symbol(scanner,0, "Title_width", 
+      (gpointer)G_TOKEN_TITLEWIDTH );
   g_scanner_scope_add_symbol(scanner,0, "Tooltip", (gpointer)G_TOKEN_TOOLTIP );
   g_scanner_scope_add_symbol(scanner,0, "XStep", (gpointer)G_TOKEN_XSTEP );
   g_scanner_scope_add_symbol(scanner,0, "YStep", (gpointer)G_TOKEN_YSTEP );
   g_scanner_scope_add_symbol(scanner,0, "XOrigin", (gpointer)G_TOKEN_XORIGIN );
   g_scanner_scope_add_symbol(scanner,0, "YOrigin", (gpointer)G_TOKEN_YORIGIN );
-  g_scanner_scope_add_symbol(scanner,0, "Children", (gpointer)G_TOKEN_CHILDREN );
+  g_scanner_scope_add_symbol(scanner,0, "Children", 
+      (gpointer)G_TOKEN_CHILDREN );
   g_scanner_scope_add_symbol(scanner,0, "True", (gpointer)G_TOKEN_TRUE );
   g_scanner_scope_add_symbol(scanner,0, "False", (gpointer)G_TOKEN_FALSE );
   g_scanner_scope_add_symbol(scanner,0, "Menu", (gpointer)G_TOKEN_MENU );
-  g_scanner_scope_add_symbol(scanner,0, "MenuClear", (gpointer)G_TOKEN_MENUCLEAR );
-  g_scanner_scope_add_symbol(scanner,0, "PipeRead", (gpointer)G_TOKEN_PIPEREAD );
+  g_scanner_scope_add_symbol(scanner,0, "MenuClear", 
+      (gpointer)G_TOKEN_MENUCLEAR );
+  g_scanner_scope_add_symbol(scanner,0, "PipeRead",
+      (gpointer)G_TOKEN_PIPEREAD );
   g_scanner_scope_add_symbol(scanner,0, "Config", (gpointer)G_TOKEN_CONFIG );
   g_scanner_scope_add_symbol(scanner,0, "SwayCmd", (gpointer)G_TOKEN_SWAYCMD );
-  g_scanner_scope_add_symbol(scanner,0, "SwayWinCmd", (gpointer)G_TOKEN_SWAYWIN );
+  g_scanner_scope_add_symbol(scanner,0, "SwayWinCmd",
+      (gpointer)G_TOKEN_SWAYWIN );
   g_scanner_scope_add_symbol(scanner,0, "MpdCmd", (gpointer)G_TOKEN_MPDCMD );
-  g_scanner_scope_add_symbol(scanner,0, "IdleInhibit", (gpointer)G_TOKEN_IDLEINHIBIT );
-  g_scanner_scope_add_symbol(scanner,0, "SetValue", (gpointer)G_TOKEN_SETVALUE );
-  g_scanner_scope_add_symbol(scanner,0, "SetStyle", (gpointer)G_TOKEN_SETSTYLE );
-  g_scanner_scope_add_symbol(scanner,0, "SetTooltip", (gpointer)G_TOKEN_SETTOOLTIP );
-  g_scanner_scope_add_symbol(scanner,0, "Function", (gpointer)G_TOKEN_FUNCTION );
+  g_scanner_scope_add_symbol(scanner,0, "IdleInhibit",
+      (gpointer)G_TOKEN_IDLEINHIBIT );
+  g_scanner_scope_add_symbol(scanner,0, "SetValue",
+      (gpointer)G_TOKEN_SETVALUE );
+  g_scanner_scope_add_symbol(scanner,0, "SetStyle",
+      (gpointer)G_TOKEN_SETSTYLE );
+  g_scanner_scope_add_symbol(scanner,0, "SetTooltip",
+      (gpointer)G_TOKEN_SETTOOLTIP );
+  g_scanner_scope_add_symbol(scanner,0, "Function",
+      (gpointer)G_TOKEN_FUNCTION );
   g_scanner_scope_add_symbol(scanner,0, "Focus", (gpointer)G_TOKEN_FOCUS );
   g_scanner_scope_add_symbol(scanner,0, "Close", (gpointer)G_TOKEN_CLOSE );
-  g_scanner_scope_add_symbol(scanner,0, "Minimize", (gpointer)G_TOKEN_MINIMIZE );
-  g_scanner_scope_add_symbol(scanner,0, "Maximize", (gpointer)G_TOKEN_MAXIMIZE );
-  g_scanner_scope_add_symbol(scanner,0, "UnMinimize", (gpointer)G_TOKEN_UNMINIMIZE );
-  g_scanner_scope_add_symbol(scanner,0, "UnMaximize", (gpointer)G_TOKEN_UNMAXIMIZE );
-  g_scanner_scope_add_symbol(scanner,0, "SetMonitor", (gpointer)G_TOKEN_SETMONITOR );
-  g_scanner_scope_add_symbol(scanner,0, "SetLayer", (gpointer)G_TOKEN_SETLAYER );
-  g_scanner_scope_add_symbol(scanner,0, "SetBarSize", (gpointer)G_TOKEN_SETBARSIZE );
-  g_scanner_scope_add_symbol(scanner,0, "SetBarID", (gpointer)G_TOKEN_SETBARID );
+  g_scanner_scope_add_symbol(scanner,0, "Minimize",
+      (gpointer)G_TOKEN_MINIMIZE );
+  g_scanner_scope_add_symbol(scanner,0, "Maximize",
+      (gpointer)G_TOKEN_MAXIMIZE );
+  g_scanner_scope_add_symbol(scanner,0, "UnMinimize",
+      (gpointer)G_TOKEN_UNMINIMIZE );
+  g_scanner_scope_add_symbol(scanner,0, "UnMaximize",
+      (gpointer)G_TOKEN_UNMAXIMIZE );
+  g_scanner_scope_add_symbol(scanner,0, "SetMonitor",
+      (gpointer)G_TOKEN_SETMONITOR );
+  g_scanner_scope_add_symbol(scanner,0, "SetLayer",
+      (gpointer)G_TOKEN_SETLAYER );
+  g_scanner_scope_add_symbol(scanner,0, "SetBarSize", 
+      (gpointer)G_TOKEN_SETBARSIZE );
+  g_scanner_scope_add_symbol(scanner,0, "SetExclusiveZone", 
+      (gpointer)G_TOKEN_SETEXCLUSIVEZONE );
+  g_scanner_scope_add_symbol(scanner,0, "SetBarID",
+      (gpointer)G_TOKEN_SETBARID );
   g_scanner_scope_add_symbol(scanner,0, "Item", (gpointer)G_TOKEN_ITEM );
-  g_scanner_scope_add_symbol(scanner,0, "Separator", (gpointer)G_TOKEN_SEPARATOR );
+  g_scanner_scope_add_symbol(scanner,0, "Separator",
+      (gpointer)G_TOKEN_SEPARATOR );
   g_scanner_scope_add_symbol(scanner,0, "SubMenu", (gpointer)G_TOKEN_SUBMENU );
-  g_scanner_scope_add_symbol(scanner,0, "Minimized", (gpointer)G_TOKEN_MINIMIZED );
-  g_scanner_scope_add_symbol(scanner,0, "Maximized", (gpointer)G_TOKEN_MAXIMIZED );
-  g_scanner_scope_add_symbol(scanner,0, "FullScreen", (gpointer)G_TOKEN_FULLSCREEN );
+  g_scanner_scope_add_symbol(scanner,0, "Minimized",
+      (gpointer)G_TOKEN_MINIMIZED );
+  g_scanner_scope_add_symbol(scanner,0, "Maximized",
+      (gpointer)G_TOKEN_MAXIMIZED );
+  g_scanner_scope_add_symbol(scanner,0, "FullScreen",
+      (gpointer)G_TOKEN_FULLSCREEN );
   g_scanner_scope_add_symbol(scanner,0, "Focused", (gpointer)G_TOKEN_FOCUSED );
   g_scanner_scope_add_symbol(scanner,0, "RegEx", (gpointer)G_TOKEN_REGEX );
   g_scanner_scope_add_symbol(scanner,0, "Json", (gpointer)G_TOKEN_JSON );

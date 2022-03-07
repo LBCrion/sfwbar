@@ -187,6 +187,7 @@ gchar *gdk_monitor_get_xdg_name ( GdkMonitor *monitor );
 void set_monitor ( gchar *mon_name );
 void set_layer ( gchar *layer );
 void bar_set_size ( gchar *size );
+void bar_set_exclusive_zone ( gchar *zone );
 gchar *bar_get_output ( void );
 
 void mpd_ipc_init ( struct scan_file *file );
