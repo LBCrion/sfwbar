@@ -16,7 +16,7 @@ static gchar *monitor;
 static gboolean debug = FALSE;
 static gint toplevel_dir;
 static gint exclusive_zone = -2;
-static GtkLayerShellLayer layer = GTK_LAYER_SHELL_LAYER_OVERLAY;
+static GtkLayerShellLayer layer = GTK_LAYER_SHELL_LAYER_TOP;
 
 static GOptionEntry entries[] = {
   {"config",'f',0,G_OPTION_ARG_FILENAME,&confname,"Specify config file"},
