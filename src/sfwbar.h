@@ -68,6 +68,7 @@ struct layout_widget {
   gint64 next_poll;
   gint wtype;
   gint dir;
+  gboolean user_state;
   struct rect rect;
 };
 
@@ -215,7 +216,8 @@ enum {
   WS_MINIMIZED =  1<<1,
   WS_MAXIMIZED =  1<<2,
   WS_FULLSCREEN = 1<<3,
-  WS_INHIBIT =    1<<4
+  WS_INHIBIT =    1<<4,
+  WS_USERSTATE =  1<<5
 };
 
 enum {

@@ -321,15 +321,19 @@ submenu
 Actions
 -------
 Actions can be attached to click and scroll events for any widget or to items
-within a menu. Actions can be conditional on a state of a window they refer
-to and some actions may require a prameter. Conditions are specified in square
-brackets prior to the action i.e. ``[Minimized]`` and can be inverted using 
-``!`` or joined using ``|`` i.e. ``[!Minimized | Focused]``. All conditions on
-the list must be satisfied. Parameters are specified as strings immediately
-following the relevant action. I.e. ``Menu "WindowOps"``. Some actions apply
-to a window, if the action is attached to taskbar button, the action will be
-applied to a window referenced by the button, otherwise, it will apply to the
-currently focused window. The following action types are supported:
+within a menu. Actions can be conditional on a state of a window or a widget
+they refer to and some actions may require a prameter. Conditions are specified
+in square brackets prior to the action i.e. ``[Minimized]`` and can be inverted
+using ``!`` or joined using ``|`` i.e. ``[!Minimized | Focused]``. All
+conditions on the list must be satisfied. Supported conditions are: 
+``Minimized``, ``Maximized``, ``Focused``, ``FullScreen``, ``IdleInhibit`` and
+``UserState``
+
+Parameters are specified as strings immediately following the relevant action.
+I.e. ``Menu "WindowOps"``. Some actions apply to a window, if the action is
+attached to taskbar button, the action will be applied to a window referenced
+by the button, otherwise, it will apply to the currently focused window. The
+following action types are supported:
 
 Config <string>
   Process a snippet of configuration file. This action permits changing the
@@ -395,6 +399,9 @@ IdleInhibit <string>
   set idle inhibitor for a given widget. The string parameters accepted are
   "or" and "off. You can toggle this action by using IconInhibit condition
   in your action. I.e. [!IdleInhibit] IdleInhibit "on"
+
+UserState <string>
+  Set boolean user state on a widget. Valid values are "On" or "Off".
 
 Focus
   set window to focused

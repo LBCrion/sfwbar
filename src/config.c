@@ -621,6 +621,9 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
         case G_TOKEN_IDLEINHIBIT:
           *ptr |= WS_INHIBIT;
           break;
+        case G_TOKEN_USERSTATE:
+          *ptr |= WS_USERSTATE;
+          break;
         default:
           g_scanner_error(scanner,"invalid condition in action");
           break;
@@ -642,6 +645,7 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
       case G_TOKEN_SWAYWIN:
       case G_TOKEN_MPDCMD:
       case G_TOKEN_IDLEINHIBIT:
+      case G_TOKEN_USERSTATE:
       case G_TOKEN_CONFIG:
       case G_TOKEN_FUNCTION:
       case G_TOKEN_FOCUS:
@@ -678,6 +682,7 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
     case G_TOKEN_SWAYWIN:
     case G_TOKEN_MPDCMD:
     case G_TOKEN_IDLEINHIBIT:
+    case G_TOKEN_USERSTATE:
     case G_TOKEN_CONFIG:
     case G_TOKEN_FUNCTION:
     case G_TOKEN_SETMONITOR:
@@ -1407,6 +1412,8 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "SwayWinCmd",
       (gpointer)G_TOKEN_SWAYWIN );
   g_scanner_scope_add_symbol(scanner,0, "MpdCmd", (gpointer)G_TOKEN_MPDCMD );
+  g_scanner_scope_add_symbol(scanner,0, "UserState",
+      (gpointer)G_TOKEN_USERSTATE );
   g_scanner_scope_add_symbol(scanner,0, "IdleInhibit",
       (gpointer)G_TOKEN_IDLEINHIBIT );
   g_scanner_scope_add_symbol(scanner,0, "SetValue",

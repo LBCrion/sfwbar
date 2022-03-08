@@ -58,6 +58,17 @@ void action_idle_inhibit ( GtkWidget *widget, gchar *command )
     wayland_set_idle_inhibitor(widget,FALSE);
 }
 
+void action_set_user_state ( GtkWidget *widget, gchar *value )
+{
+  struct layout_widget *lw;
+
+  lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
+  if(!g_ascii_strcasecmp(value,"on"))
+    lw->user_state = TRUE;
+  else
+    lw->user_state = FALSE;
+}
+
 void action_set_value ( GtkWidget *widget, gchar *value )
 {
   struct layout_widget *lw;
@@ -118,6 +129,7 @@ void action_set_tooltip ( GtkWidget *widget, gchar *tooltip )
 
 guint16 action_state_build ( GtkWidget *widget, struct wt_window *win )
 {
+  struct layout_widget *lw;
   guint16 state = 0;
 
   if(win)
@@ -130,6 +142,10 @@ guint16 action_state_build ( GtkWidget *widget, struct wt_window *win )
   {
     if(g_object_get_data(G_OBJECT(widget),"inhibitor"))
       state |= WS_INHIBIT;
+
+    lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
+    if(lw && lw->user_state)
+      state |= WS_USERSTATE;
   }
   return state;
 }
@@ -233,6 +249,10 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
     case G_TOKEN_IDLEINHIBIT:
       if(action->command && widget)
         action_idle_inhibit(widget, action->command);
+      break;
+    case G_TOKEN_USERSTATE:
+      if(action->command && widget)
+        action_set_user_state(widget, action->command);
       break;
     case G_TOKEN_FOCUS:
       if(win)

@@ -400,15 +400,19 @@ into it.
 .SS Actions
 .sp
 Actions can be attached to click and scroll events for any widget or to items
-within a menu. Actions can be conditional on a state of a window they refer
-to and some actions may require a prameter. Conditions are specified in square
-brackets prior to the action i.e. \fB[Minimized]\fP and can be inverted using
-\fB!\fP or joined using \fB|\fP i.e. \fB[!Minimized | Focused]\fP\&. All conditions on
-the list must be satisfied. Parameters are specified as strings immediately
-following the relevant action. I.e. \fBMenu "WindowOps"\fP\&. Some actions apply
-to a window, if the action is attached to taskbar button, the action will be
-applied to a window referenced by the button, otherwise, it will apply to the
-currently focused window. The following action types are supported:
+within a menu. Actions can be conditional on a state of a window or a widget
+they refer to and some actions may require a prameter. Conditions are specified
+in square brackets prior to the action i.e. \fB[Minimized]\fP and can be inverted
+using \fB!\fP or joined using \fB|\fP i.e. \fB[!Minimized | Focused]\fP\&. All
+conditions on the list must be satisfied. Supported conditions are:
+\fBMinimized\fP, \fBMaximized\fP, \fBFocused\fP, \fBFullScreen\fP, \fBIdleInhibit\fP and
+\fBUserState\fP
+.sp
+Parameters are specified as strings immediately following the relevant action.
+I.e. \fBMenu "WindowOps"\fP\&. Some actions apply to a window, if the action is
+attached to taskbar button, the action will be applied to a window referenced
+by the button, otherwise, it will apply to the currently focused window. The
+following action types are supported:
 .INDENT 0.0
 .TP
 .B Config <string>
@@ -475,6 +479,9 @@ set style name for a widget
 set idle inhibitor for a given widget. The string parameters accepted are
 "or" and "off. You can toggle this action by using IconInhibit condition
 in your action. I.e. [!IdleInhibit] IdleInhibit "on"
+.TP
+.B UserState <string>
+Set boolean user state on a widget. Valid values are "On" or "Off".
 .TP
 .B Focus
 set window to focused
