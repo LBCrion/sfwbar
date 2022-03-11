@@ -194,12 +194,16 @@ struct json_object *jpath_parse ( gchar *path, struct json_object *obj )
         break;
       default:
         g_scanner_error(scanner,"invalid token in json path %d %d",scanner->token,G_TOKEN_ERROR);
+        next = NULL;
         break;
     }
-    for(i=0;i<json_object_array_length(next);i++)
-      json_object_get(json_object_array_get_idx(next,i));
-    json_object_put(cur);
-    cur = next;
+    if(next)
+    {
+      for(i=0;i<json_object_array_length(next);i++)
+        json_object_get(json_object_array_get_idx(next,i));
+      json_object_put(cur);
+      cur = next;
+    }
   } while ( g_scanner_get_next_token(scanner) == sep );
 
   g_scanner_destroy( scanner );
