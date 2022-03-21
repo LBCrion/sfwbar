@@ -124,11 +124,17 @@ static void scale_image_class_init ( ScaleImageClass *kclass )
   widget_class->map = scale_image_map;
   widget_class->get_preferred_width = scale_image_get_preferred_width;
   widget_class->get_preferred_height = scale_image_get_preferred_height;
+
+  gtk_widget_class_install_style_property( widget_class,
+    g_param_spec_boxed("color","image color",
+      "draw image in this color using it's alpha channel as a mask",
+      GDK_TYPE_RGBA,G_PARAM_READABLE));
 }
 
 static void scale_image_init ( ScaleImage *widget )
 {
-  ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
+  ScaleImagePrivate *priv = scale_image_get_instance_private(
+      SCALE_IMAGE(widget));
   priv->w = -1;
   priv->h = -1;
   priv->file = NULL;
@@ -144,7 +150,8 @@ GtkWidget *scale_image_new()
 
 void scale_image_set_pixbuf ( GtkWidget *widget, GdkPixbuf *pb )
 {
-  ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
+  ScaleImagePrivate *priv = scale_image_get_instance_private(
+      SCALE_IMAGE(widget));
   priv->pixbuf = pb;
   priv->ftype = SI_BUFF;
 }
@@ -157,7 +164,8 @@ void scale_image_check_icon ( GtkWidget *widget, gchar *file )
   gint i;
   gchar *temp;
   gchar ***desktop;
-  ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
+  ScaleImagePrivate *priv = scale_image_get_instance_private(
+      SCALE_IMAGE(widget));
 
   theme = gtk_icon_theme_get_default();
   if(theme)
@@ -211,7 +219,8 @@ void scale_image_check_icon ( GtkWidget *widget, gchar *file )
 void scale_image_set_image ( GtkWidget *widget, gchar *image, gchar *extra )
 {
   static gchar *exts[4] = {"", ".svg", ".png", ".xpm"};
-  ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
+  ScaleImagePrivate *priv = scale_image_get_instance_private(
+      SCALE_IMAGE(widget));
   GdkPixbuf *buf;
   gint i;
   gchar *temp,*test;
@@ -257,10 +266,13 @@ void scale_image_set_image ( GtkWidget *widget, gchar *image, gchar *extra )
 
 int scale_image_update ( GtkWidget *widget )
 {
-  ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
+  ScaleImagePrivate *priv = scale_image_get_instance_private(
+      SCALE_IMAGE(widget));
   GtkIconTheme *theme;
-  GdkPixbuf *buf=NULL,*tmp=NULL;
+  GdkPixbuf *buf = NULL, *tmp = NULL;
+  GdkRGBA *color = NULL;
   cairo_surface_t *cs;
+  cairo_t *cr;
   gchar *fallback;
   gint w,h;
   gint size;
@@ -315,6 +327,15 @@ int scale_image_update ( GtkWidget *widget )
 
   cs = gdk_cairo_surface_create_from_pixbuf(buf,0,
       gtk_widget_get_window(widget));
+
+  gtk_widget_style_get(widget,"color",&color,NULL);
+  if(color)
+  {
+    cr = cairo_create(cs);
+    cairo_set_source_rgba(cr,color->red,color->green,color->blue,color->alpha);
+    cairo_mask_surface(cr,cs,0,0);
+    cairo_destroy(cr);
+  }
 
   if(cs != NULL)
   {
