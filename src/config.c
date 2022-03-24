@@ -30,7 +30,9 @@ gboolean config_expect_token ( GScanner *scanner, gint token, gchar *fmt, ...)
   if( g_scanner_peek_next_token(scanner) == token )
     return TRUE;
  
+  va_start(args,fmt);
   errmsg = g_strdup_vprintf(fmt,args);
+  va_end(args);
   g_scanner_error(scanner,errmsg);
   g_free(errmsg);
 
@@ -182,7 +184,10 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
   }
 
   if(!config_expect_token(scanner,')', "Missing ')' in parser"))
+  {
     g_free(vname);
+    return;
+  }
   g_scanner_get_next_token(scanner);
 
   config_optional_semicolon(scanner);
