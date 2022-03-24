@@ -22,16 +22,34 @@ void config_log_error ( GScanner *scanner, gchar *message, gboolean error )
     g_message("%s:%d: %s",scanner->input_name,scanner->line,message);
 }
 
+gboolean config_expect_token ( GScanner *scanner, gint token, gchar *fmt, ...)
+{
+  gchar *errmsg;
+  va_list args;
+
+  if( g_scanner_peek_next_token(scanner) == token )
+    return TRUE;
+ 
+  errmsg = g_strdup_vprintf(fmt,args);
+  g_scanner_error(scanner,errmsg);
+  g_free(errmsg);
+
+  return FALSE;
+}
+
+void config_optional_semicolon ( GScanner *scanner )
+{
+  if(g_scanner_peek_next_token(scanner) == ';')
+    g_scanner_get_next_token(scanner);
+}
+
 gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr)
 {
   gboolean result = def;
 
   scanner->max_parse_errors = FALSE;
-  if(g_scanner_peek_next_token(scanner) != '=')
-  {
-    g_scanner_error(scanner, "Missing '=' in %s = <boolean>",expr);
+  if(!config_expect_token(scanner, '=', "Missing '=' in %s = <boolean>",expr))
     return FALSE;
-  }
   g_scanner_get_next_token(scanner);
 
   switch((gint)g_scanner_get_next_token(scanner))
@@ -47,8 +65,7 @@ gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr)
       break;
   }
 
-  if(g_scanner_peek_next_token(scanner) == ';')
-    g_scanner_get_next_token(scanner);
+  config_optional_semicolon(scanner);
 
   return result;
 }
@@ -57,24 +74,21 @@ gchar *config_assign_string ( GScanner *scanner, gchar *expr )
 {
   gchar *result;
   scanner->max_parse_errors = FALSE;
-  if(g_scanner_peek_next_token(scanner) != '=')
-  {
-    g_scanner_error(scanner, "Missing '=' in %s = <string>",expr);
+
+  if(!config_expect_token(scanner, '=', "Missing '=' in %s = <string>",expr))
     return NULL;
-  }
+
   g_scanner_get_next_token(scanner);
 
-  if(g_scanner_peek_next_token(scanner) != G_TOKEN_STRING)
-  {
-    g_scanner_error(scanner, "Missing <string> in %s = <string>",expr);
+  if(!config_expect_token(scanner, G_TOKEN_STRING,
+        "Missing <string> in %s = <string>",expr))
     return NULL;
-  }
+
   g_scanner_get_next_token(scanner);
 
   result = g_strdup(scanner->value.v_string);
 
-  if(g_scanner_peek_next_token(scanner) == ';')
-    g_scanner_get_next_token(scanner);
+  config_optional_semicolon(scanner);
 
   return result;
 }
@@ -84,23 +98,19 @@ gdouble config_assign_number ( GScanner *scanner, gchar *expr )
   gdouble result;
 
   scanner->max_parse_errors = FALSE;
-  if(g_scanner_peek_next_token(scanner) != '=')
-  {
-    g_scanner_error(scanner, "Missing '=' in %s = <number>",expr);
+  if(!config_expect_token(scanner, '=', "Missing '=' in %s = <number>",expr))
     return 0;
-  }
+
   g_scanner_get_next_token(scanner);
 
-  if(g_scanner_peek_next_token(scanner) != G_TOKEN_FLOAT)
-  {
-    g_scanner_error(scanner, "Missing <number> in %s = <number>",expr);
+  if(!config_expect_token(scanner, G_TOKEN_FLOAT,
+        "Missing <number> in %s = <number>",expr))
     return 0;
-  }
   g_scanner_get_next_token(scanner);
+
   result = scanner->value.v_float;
 
-  if(g_scanner_peek_next_token(scanner) == ';')
-    g_scanner_get_next_token(scanner);
+  config_optional_semicolon(scanner);
 
   return result;
 }
@@ -116,9 +126,8 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
   g_scanner_get_next_token(scanner);
   vname = g_strdup(scanner->value.v_identifier);
 
-  if(g_scanner_peek_next_token(scanner) != '=')
+  if(!config_expect_token(scanner, '=', "Missing '=' in %s = <parser>",vname))
   {
-    g_scanner_error(scanner, "Missing '=' in %s = <parser>",vname);
     g_free(vname);
     return;
   }
@@ -134,9 +143,8 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
   }
 
   type = scanner->token - G_TOKEN_REGEX;
-  if(g_scanner_peek_next_token(scanner) != '(')
+  if(!config_expect_token(scanner, '(', "Missing '(' in parser"))
   {
-    g_scanner_error(scanner, "Missing '(' in parser");
     g_free(vname);
     return;
   }
@@ -173,15 +181,11 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
       }
   }
 
-  if(g_scanner_peek_next_token(scanner) != ')')
-  {
-    g_scanner_error(scanner, "Missing ')' in parser");
+  if(!config_expect_token(scanner,')', "Missing ')' in parser"))
     g_free(vname);
-  }
   g_scanner_get_next_token(scanner);
 
-  if(g_scanner_peek_next_token(scanner) == ';')
-    g_scanner_get_next_token(scanner);
+  config_optional_semicolon(scanner);
 
   var = g_malloc0(sizeof(struct scan_var));
 
@@ -216,20 +220,15 @@ struct scan_file *config_scanner_source ( GScanner *scanner, gint source )
   static GList *file_list = NULL;
 
   scanner->max_parse_errors = FALSE;
-  if(g_scanner_peek_next_token(scanner) != '(')
-  {
-    g_scanner_error(scanner, "Missing '(' after <source>");
+  if(!config_expect_token(scanner, '(', "Missing '(' after <source>"))
     return NULL;
-  }
   g_scanner_get_next_token(scanner);
 
-  if(g_scanner_peek_next_token(scanner)!=G_TOKEN_STRING)
-  {
-    g_scanner_error(scanner,"Missing <string> in source(<string>)");
+  if(!config_expect_token(scanner, G_TOKEN_STRING,
+        "Missing <string> in source(<string>)"))
     return NULL;
-  }
-
   g_scanner_get_next_token(scanner);
+
   fname = g_strdup(scanner->value.v_string);
 
   if(source == SO_FILE)
@@ -250,14 +249,10 @@ struct scan_file *config_scanner_source ( GScanner *scanner, gint source )
       }
     } 
 
-  if(g_scanner_peek_next_token(scanner)!=')')
-    g_scanner_error(scanner,"Missing ')' in source");
-  else
+  if(config_expect_token(scanner,')',"Missing ')' in source"))
     g_scanner_get_next_token(scanner);
 
-  if(g_scanner_peek_next_token(scanner)!='{')
-    g_scanner_error(scanner,"Missing '{' after <source>");
-  else
+  if(config_expect_token(scanner,'{',"Missing '{' after <source>"))
     g_scanner_get_next_token(scanner);
 
   if(!fname)
@@ -314,8 +309,8 @@ void config_scanner ( GScanner *scanner )
   struct scan_file *file;
   scanner->max_parse_errors = FALSE;
 
-  if(g_scanner_peek_next_token(scanner) != '{')
-    return g_scanner_error(scanner, "Missing '{' after 'scanner'");
+  if(!config_expect_token(scanner, '{', "Missing '{' after 'scanner'"))
+    return;
   g_scanner_get_next_token(scanner);
 
   while(((gint)g_scanner_peek_next_token(scanner) != '}' )&&
@@ -355,78 +350,53 @@ struct rect config_get_loc ( GScanner *scanner )
   rect.h = 1;
 
   scanner->max_parse_errors = FALSE;
-  if(g_scanner_peek_next_token(scanner) != '(')
-  {
-    g_scanner_error(scanner, "Missing '(' after loc");
+  if(!config_expect_token(scanner, '(', "Missing '(' after loc"))
     return rect;
-  }
   g_scanner_get_next_token(scanner);
 
-  if(g_scanner_peek_next_token(scanner)!=G_TOKEN_FLOAT)
-  {
-    g_scanner_error(scanner,"Expecting x to be a <number> in loc(x,y[,w,h])");
+  if(!config_expect_token(scanner, G_TOKEN_FLOAT,
+        "Expecting x to be a <number> in loc(x,y[,w,h])"))
     return rect;
-  }
   g_scanner_get_next_token(scanner);
   rect.x = scanner->value.v_float;
 
-  if(g_scanner_peek_next_token(scanner) != ',')
-  {
-    g_scanner_error(scanner, "Missing ',' in loc");
+  if(!config_expect_token(scanner, ',', "Missing ',' in loc"))
     return rect;
-  }
   g_scanner_get_next_token(scanner);
 
-  if(g_scanner_peek_next_token(scanner)!=G_TOKEN_FLOAT)
-  {
-    g_scanner_error(scanner,"Expecting y to be a <number> in loc(x,y[,w,h])");
+  if(!config_expect_token(scanner, G_TOKEN_FLOAT, 
+        "Expecting y to be a <number> in loc(x,y[,w,h])"))
     return rect;
-  }
   g_scanner_get_next_token(scanner);
   rect.y = scanner->value.v_float;
 
   if(g_scanner_peek_next_token(scanner)!=')')
   {
-    if(g_scanner_peek_next_token(scanner) != ',')
-    {
-      g_scanner_error(scanner, "Missing ',' in loc");
+    if(!config_expect_token(scanner, ',', "Missing ',' in loc"))
       return rect;
-    }
     g_scanner_get_next_token(scanner);
 
-    if(g_scanner_peek_next_token(scanner)!=G_TOKEN_FLOAT)
-    {
-      g_scanner_error(scanner,"Expecting w to be a <number> in loc(x,y[,w,h])");
+    if(!config_expect_token(scanner, G_TOKEN_FLOAT,
+          "Expecting w to be a <number> in loc(x,y[,w,h])"))
       return rect;
-    }
     g_scanner_get_next_token(scanner);
     rect.w = MAX(1,scanner->value.v_float);
 
-    if(g_scanner_peek_next_token(scanner) != ',')
-    {
-      g_scanner_error(scanner, "Missing ',' in loc");
+    if(!config_expect_token(scanner, ',', "Missing ',' in loc"))
       return rect;
-    }
     g_scanner_get_next_token(scanner);
 
-    if(g_scanner_peek_next_token(scanner)!=G_TOKEN_FLOAT)
-    {
-      g_scanner_error(scanner,"Expecting h to be a <number> in loc(x,y[,w,h])");
+    if(!config_expect_token(scanner, G_TOKEN_FLOAT,
+          "Expecting h to be a <number> in loc(x,y[,w,h])"))
       return rect;
-    }
     g_scanner_get_next_token(scanner);
     rect.h = MAX(1,scanner->value.v_float);
   }
-  if(g_scanner_peek_next_token(scanner) != ')')
-  {
-    g_scanner_error(scanner, "Missing ')' after loc");
+  if(!config_expect_token(scanner, ')', "Missing ')' after loc"))
     return rect;
-  }
   g_scanner_get_next_token(scanner);
 
-
-  if(g_scanner_peek_next_token(scanner) == ';')
-    g_scanner_get_next_token(scanner);
+  config_optional_semicolon(scanner);
 
   return rect;
 }
@@ -466,11 +436,8 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign )
   scanner->max_parse_errors = FALSE;
   if(assign)
   {
-    if(g_scanner_peek_next_token(scanner)!='=')
-    {
-      g_scanner_error(scanner,"expecting %s = expression",prop);
+    if(!config_expect_token(scanner, '=',"expecting %s = expression",prop))
       return NULL;
-    }
     g_scanner_get_next_token(scanner);
   }
   value = g_strdup("");;
@@ -521,8 +488,7 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign )
     }
     g_scanner_peek_next_token(scanner);
   }
-  if(g_scanner_peek_next_token(scanner) == ';')
-    g_scanner_get_next_token(scanner);
+  config_optional_semicolon(scanner);
   return value;
 }
 
@@ -535,24 +501,18 @@ void config_get_pins ( GScanner *scanner, struct layout_widget *lw )
     g_scanner_error(scanner,"this widget has no property 'pins'");
     return;
   }
-  if(g_scanner_peek_next_token(scanner)!='=')
-  {
-    g_scanner_error(scanner,"expecting pins = string [,string]");
+  if(!config_expect_token(scanner, '=',"expecting pins = string [,string]"))
     return;
-  }
   do
   {
     g_scanner_get_next_token(scanner);
-    if(g_scanner_peek_next_token(scanner)!=G_TOKEN_STRING)
-    {
-      g_scanner_error(scanner,"expecting a string in pins = string [,string]");
+    if(!config_expect_token(scanner, G_TOKEN_STRING,
+          "expecting a string in pins = string [,string]"))
       break;
-    }
     g_scanner_get_next_token(scanner);
     pager_add_pin(g_strdup(scanner->value.v_string));
   } while ( g_scanner_peek_next_token(scanner)==',');
-  if(g_scanner_peek_next_token(scanner) == ';')
-    g_scanner_get_next_token(scanner);
+  config_optional_semicolon(scanner);
 }
 
 void config_widget_cols ( GScanner *scanner, struct layout_widget *lw )
@@ -739,8 +699,7 @@ void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
   if(!config_action(scanner,&(lw->action[button])))
     return g_scanner_error(scanner,"invalid action");
 
-  if(g_scanner_peek_next_token(scanner) == ';')
-    g_scanner_get_next_token(scanner);
+  config_optional_semicolon(scanner);
 }
 
 gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
@@ -858,28 +817,21 @@ struct layout_widget *config_include ( GScanner *scanner )
   struct layout_widget *lw;
 
   scanner->max_parse_errors = FALSE;
-  if(g_scanner_peek_next_token(scanner) != '(')
-  {
-    g_scanner_error(scanner, "Missing '(' after include");
+  if(!config_expect_token(scanner, '(', "Missing '(' after include"))
     return NULL;
-  }
   g_scanner_get_next_token(scanner);
 
-  if(g_scanner_peek_next_token(scanner)!=G_TOKEN_STRING)
-  {
-    g_scanner_error(scanner, "Missing <string> in include(<string>)");
+  if(!config_expect_token(scanner, G_TOKEN_STRING,
+        "Missing <string> in include(<string>)"))
     return NULL;
-  }
   g_scanner_get_next_token(scanner);
   lw = config_parse(scanner->value.v_string);
   lw->wtype = G_TOKEN_INCLUDE;
 
-  if(g_scanner_peek_next_token(scanner) != ')')
-    g_scanner_error(scanner, "Missing ')' after include");
-  g_scanner_get_next_token(scanner);
-
-  if(g_scanner_peek_next_token(scanner) == ';')
+  if(config_expect_token(scanner, ')', "Missing ')' after include"))
     g_scanner_get_next_token(scanner);
+
+  config_optional_semicolon(scanner);
 
   return lw;
 }
@@ -985,8 +937,8 @@ void config_switcher ( GScanner *scanner )
   gboolean icons = FALSE, labels = FALSE;
   scanner->max_parse_errors = FALSE;
 
-  if(g_scanner_peek_next_token(scanner)!='{')
-    return g_scanner_error(scanner,"Missing '{' after 'switcher'");
+  if(!config_expect_token(scanner, '{',"Missing '{' after 'switcher'"))
+    return;
   g_scanner_get_next_token(scanner);
 
   while (( (gint)g_scanner_peek_next_token ( scanner ) != '}' )&&
@@ -1021,8 +973,7 @@ void config_switcher ( GScanner *scanner )
   if((gint)scanner->next_token == '}')
     g_scanner_get_next_token(scanner);
 
-  if(g_scanner_peek_next_token(scanner) == ';')
-    g_scanner_get_next_token(scanner);
+  config_optional_semicolon(scanner);
 
   switcher_config(cols,css,interval,icons,labels,twidth);
 }
@@ -1036,8 +987,8 @@ void config_placer ( GScanner *scanner )
   gboolean pid = FALSE;
   scanner->max_parse_errors = FALSE;
 
-  if(g_scanner_peek_next_token(scanner)!='{')
-    return g_scanner_error(scanner,"Missing '{' after 'placer'");
+  if(!config_expect_token(scanner,'{',"Missing '{' after 'placer'"))
+    return;
   g_scanner_get_next_token(scanner);
 
   while (( (gint)g_scanner_peek_next_token ( scanner ) != '}' )&&
@@ -1068,8 +1019,7 @@ void config_placer ( GScanner *scanner )
   if((gint)scanner->next_token == '}')
     g_scanner_get_next_token(scanner);
 
-  if(g_scanner_peek_next_token(scanner) == ';')
-    g_scanner_get_next_token(scanner);
+  config_optional_semicolon(scanner);
 
   if(wp_x<1)
     wp_x=1;
@@ -1123,8 +1073,7 @@ GtkWidget *config_menu_item ( GScanner *scanner )
     return NULL;
   }
 
-  if(g_scanner_peek_next_token(scanner) == ';')
-    g_scanner_get_next_token(scanner);
+  config_optional_semicolon(scanner);
 
   item = gtk_menu_item_new_with_label(label);
   g_free(label);
@@ -1171,8 +1120,7 @@ void config_menu ( GScanner *scanner, GtkWidget *parent )
         break;
       case G_TOKEN_SEPARATOR:
         item = gtk_separator_menu_item_new();
-        if(g_scanner_peek_next_token(scanner) == ';')
-          g_scanner_get_next_token(scanner);
+        config_optional_semicolon(scanner);
         break;
       case G_TOKEN_SUBMENU:
         config_menu(scanner,menu);
@@ -1198,8 +1146,7 @@ void config_menu ( GScanner *scanner, GtkWidget *parent )
     gtk_container_add(GTK_CONTAINER(parent),item);
   }
 
-  if(g_scanner_peek_next_token(scanner) == ';')
-    g_scanner_get_next_token(scanner);
+  config_optional_semicolon(scanner);
 }
 
 void config_function ( GScanner *scanner )
@@ -1244,8 +1191,7 @@ void config_function ( GScanner *scanner )
   if(scanner->next_token == '}')
     g_scanner_get_next_token(scanner);
 
-  if(g_scanner_peek_next_token(scanner) == ';')
-    g_scanner_get_next_token(scanner);
+  config_optional_semicolon(scanner);
 
   action_function_add(name,actions);
 }
@@ -1255,8 +1201,9 @@ void config_define ( GScanner *scanner )
   gchar *ident;
   gchar *value;
 
-  if(g_scanner_peek_next_token(scanner)!=G_TOKEN_IDENTIFIER)
-    return g_scanner_error(scanner,"Missing identifier after 'define'");
+  if(!config_expect_token(scanner, G_TOKEN_IDENTIFIER,
+        "Missing identifier after 'define'"))
+    return;
   g_scanner_get_next_token(scanner);
   ident = g_strdup(scanner->value.v_identifier);  
 
