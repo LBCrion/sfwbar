@@ -134,7 +134,7 @@ int scanner_update_file ( GIOChannel *in, struct scan_file *file )
 int scanner_reset_vars ( GList *var_list )
 {
   GList *node;
-  gint tv = g_get_monotonic_time();
+  gint64 tv = g_get_monotonic_time();
   for(node=var_list;node!=NULL;node=g_list_next(node))
     {
     ((struct scan_var *)node->data)->pval = ((struct scan_var *)node->data)->val;
@@ -291,6 +291,8 @@ double scanner_get_numeric ( gchar *name )
       retval=scan->count;
     else if(!g_strcmp0(fname,".time"))
       retval=scan->time;
+    else if(!g_strcmp0(fname,".age"))
+      retval=(g_get_monotonic_time() - scan->ptime);
     }
   g_free(id);
   g_free(fname);

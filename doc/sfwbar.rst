@@ -592,6 +592,8 @@ Each numeric variable contains four values
   previous value of the variable
 .time
   time elapsed between observing .pval and .val
+.age
+  time elapsed since variable was last updated
 .count
   a number of time the pattern has been matched
   during the last scan
