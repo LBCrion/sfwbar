@@ -16,6 +16,8 @@ gboolean mpd_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer file )
   static gboolean r;
   GIOStatus s;
 
+  scanner_reset_vars(((struct scan_file *)file)->vars);
+
   if ( cond & G_IO_ERR || cond & G_IO_HUP )
   {
     g_io_channel_shutdown(chan,FALSE,NULL);
@@ -24,6 +26,7 @@ gboolean mpd_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer file )
     {
       g_object_unref(mpd_ipc_sock);
       mpd_ipc_sock = NULL;
+      r = 0;
     }
     return FALSE;
   }
@@ -146,10 +149,9 @@ void mpd_ipc_init ( struct scan_file *file )
   static GIOChannel *chan;
 
   chan = mpd_ipc_open ( file->fname, (gpointer *) &mpd_ipc_sock );
-  if(!chan)
-    return;
+  if(chan)
+    g_io_add_watch(chan,G_IO_IN | G_IO_ERR | G_IO_HUP,mpd_ipc_event,file);
 
-  g_io_add_watch(chan,G_IO_IN | G_IO_ERR | G_IO_HUP,mpd_ipc_event,file);
   g_timeout_add (1000,(GSourceFunc )mpd_ipc_reconnect,file);
 }
 

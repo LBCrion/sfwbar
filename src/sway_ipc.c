@@ -336,6 +336,7 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
     {
       scan = json_object_new_object();
       json_object_object_add_ex(scan,ename[etype-0x80000000],obj,0);
+      scanner_reset_vars(sway_file->vars);
       scanner_update_json (scan,sway_file);
       json_object_get(obj);
       json_object_put(scan);
