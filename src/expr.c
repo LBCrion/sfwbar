@@ -10,9 +10,6 @@
 #include <glib.h>
 #include "sfwbar.h"
 
-gchar *expr_token[] = {"Time","Mid","Extract","Disk","Val","Str","ActiveWin",
-                      "Pad","If"};
-
 gdouble expr_parse_num ( GScanner *scanner );
 gchar *expr_parse_str ( GScanner *scanner );
 

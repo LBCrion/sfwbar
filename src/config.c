@@ -467,16 +467,6 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign )
           value = g_strconcat(value, scanner->value.v_identifier, NULL);
         g_free(temp);
         break;
-      case G_TOKEN_TIME:
-      case G_TOKEN_MIDW:
-      case G_TOKEN_EXTRACT:
-      case G_TOKEN_DISK:
-      case G_TOKEN_VAL:
-      case G_TOKEN_STRW:
-        temp = value;
-        value = g_strconcat(value,expr_token[scanner->token], NULL);
-        g_free(temp);
-        break;
       case G_TOKEN_FLOAT:
         temp = value;
         value = g_strconcat(temp,g_ascii_dtostr(buf,G_ASCII_DTOSTR_BUF_SIZE,

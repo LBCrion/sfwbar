@@ -73,8 +73,6 @@ struct layout_widget {
   struct rect rect;
 };
 
-extern gchar *expr_token[];
-
 void action_exec ( GtkWidget *, struct layout_action *, GdkEvent *,
     struct wt_window *, guint16 *);
 void action_free ( struct layout_action *action, GObject *old );
