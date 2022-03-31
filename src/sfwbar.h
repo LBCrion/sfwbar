@@ -63,6 +63,7 @@ struct layout_widget {
   gchar *value;
   gchar *evalue;
   gchar *tooltip;
+  gulong tooltip_h;
   struct layout_action action[MAX_BUTTON];
   gint64 interval;
   gint64 next_poll;
@@ -160,6 +161,7 @@ gpointer layout_scanner_thread ( gpointer data );
 GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     GtkWidget *sibling );
 gboolean layout_widget_draw ( struct layout_widget *lw );
+void layout_widget_set_tooltip ( struct layout_widget *lw );
 void layout_widget_attach ( struct layout_widget *lw );
 void layout_widget_free ( struct layout_widget *lw );
 void widget_set_css ( GtkWidget *, gboolean );

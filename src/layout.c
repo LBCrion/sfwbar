@@ -199,27 +199,13 @@ gboolean layout_tooltip_update ( GtkWidget *widget, gint x, gint y,
   return TRUE;
 }
 
-GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
-    GtkWidget *sibling )
+void layout_widget_set_tooltip ( struct layout_widget *lw )
 {
-  gint dir;
-  guint vcount;
   gchar *eval;
-  GtkWidget *tmp;
-  lw->lobject = lw->widget;
+  guint vcount;
 
-  if(lw->style)
-  {
-    lw->estyle = expr_parse(lw->style, &vcount);
-    gtk_widget_set_name(lw->widget,lw->estyle);
-    if(!vcount)
-    {
-      g_free(lw->style);
-      g_free(lw->estyle);
-      lw->style = NULL;
-      lw->estyle = NULL;
-    }
-  }
+  if(!lw)
+    return;
 
   if(lw->tooltip)
   {
@@ -236,9 +222,42 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
       lw->tooltip = NULL;
     }
     else
-      g_signal_connect(lw->widget,"query-tooltip",
+      lw->tooltip_h = g_signal_connect(lw->widget,"query-tooltip",
           G_CALLBACK(layout_tooltip_update),lw);
   }
+  else
+    gtk_widget_set_has_tooltip(lw->widget,FALSE);
+
+
+  if(!lw->tooltip && lw->tooltip_h)
+  {
+    g_signal_handler_disconnect(lw->widget,lw->tooltip_h);
+    lw->tooltip_h = 0;
+  }
+}
+
+GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
+    GtkWidget *sibling )
+{
+  gint dir;
+  guint vcount;
+  GtkWidget *tmp;
+  lw->lobject = lw->widget;
+
+  if(lw->style)
+  {
+    lw->estyle = expr_parse(lw->style, &vcount);
+    gtk_widget_set_name(lw->widget,lw->estyle);
+    if(!vcount)
+    {
+      g_free(lw->style);
+      g_free(lw->estyle);
+      lw->style = NULL;
+      lw->estyle = NULL;
+    }
+  }
+
+  layout_widget_set_tooltip(lw);
 
   if(lw->css)
   {
