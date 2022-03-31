@@ -21,7 +21,6 @@ gboolean parser_expect_symbol ( GScanner *scanner, gchar symbol, gchar *expr )
   if(g_scanner_peek_next_token(scanner)==symbol)
   {
     g_scanner_get_next_token(scanner);
-    scanner->max_parse_errors = FALSE;
     return FALSE;
   }
   if(!expr)
@@ -69,6 +68,7 @@ gchar *expr_parse_if ( GScanner *scanner )
 {
   gboolean condition;
   gchar *str, *str2;
+  guint vstate = scanner->max_parse_errors;
 
   parser_expect_symbol(scanner,'(',"If(Condition,Expression,Expression)");
   if(expr_is_numeric(scanner))
@@ -80,18 +80,25 @@ gchar *expr_parse_if ( GScanner *scanner )
     g_free(str);
   }
 
+  if(!condition)
+    scanner->max_parse_errors = 1;
   parser_expect_symbol(scanner,',',"If(Condition,Expression,Expression)");
   if(expr_is_numeric(scanner))
     str = expr_dtostr(expr_parse_num ( scanner ),-1);
   else
     str = expr_parse_str(scanner);
 
+  if(condition)
+    scanner->max_parse_errors = 1;
+  else
+    scanner->max_parse_errors = vstate;
   parser_expect_symbol(scanner,',',"If(Condition,Expression,Expression)");
   if(expr_is_numeric(scanner))
     str2 = expr_dtostr(expr_parse_num ( scanner ),-1);
   else
     str2 = expr_parse_str(scanner);
 
+  scanner->max_parse_errors = vstate;
   parser_expect_symbol(scanner,')',"If(Condition,Expression,Expression)");
 
   if(condition)
@@ -324,8 +331,13 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
       str = expr_parse_if ( scanner );
       break;
     case G_TOKEN_IDENTIFIER:
-      str = scanner_get_string(scanner->value.v_identifier);
-      *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
+      if(scanner->max_parse_errors)
+        str = g_strdup("");
+      else
+      {
+        str = scanner_get_string(scanner->value.v_identifier);
+        *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
+      }
       break;
     default:
       g_scanner_warn(scanner,
@@ -410,8 +422,13 @@ gdouble expr_parse_num_value ( GScanner *scanner )
       g_free(str);
       break;
     case G_TOKEN_IDENTIFIER:
-      val = scanner_get_numeric( scanner->value.v_identifier );
-      *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
+      if(scanner->max_parse_errors)
+        val = 0;
+      else
+      {
+        val = scanner_get_numeric( scanner->value.v_identifier );
+        *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
+      }
       break;
     default:
       g_scanner_warn(scanner,
@@ -560,6 +577,7 @@ gchar *expr_parse( gchar *expr, guint *vcount )
   scanner = expr_scanner_new();
 
   scanner->input_name = expr;
+  scanner->max_parse_errors = 0;
 
   if(!vcount)
     vcount = &vholder;
