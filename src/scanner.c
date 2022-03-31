@@ -250,7 +250,7 @@ char *scanner_parse_identifier ( gchar *id, gchar **fname )
 }
 
 /* get string value of a variable by name */
-char *scanner_get_string ( gchar *name )
+char *scanner_get_string ( gchar *name, gboolean update )
 {
   struct scan_var *scan;
   gchar *fname,*id,*res=NULL;
@@ -259,7 +259,7 @@ char *scanner_get_string ( gchar *name )
   g_free(fname);
   if((scan=g_hash_table_lookup(scan_list,id))!=NULL)
     {
-    if(!scan->status)
+    if(!scan->status && update)
       scanner_update_file_glob(scan->file);
     res = g_strdup(scan->str);
     }
@@ -271,7 +271,7 @@ char *scanner_get_string ( gchar *name )
 }
 
 /* get numeric value of a variable by name */
-double scanner_get_numeric ( gchar *name )
+double scanner_get_numeric ( gchar *name, gboolean update )
 {
   struct scan_var *scan;
   double retval=0;
@@ -281,7 +281,7 @@ double scanner_get_numeric ( gchar *name )
 
   if((scan=g_hash_table_lookup(scan_list,id))!=NULL)
     {
-    if(!scan->status)
+    if(!scan->status && update)
       scanner_update_file_glob(scan->file);
     if(!g_strcmp0(fname,".val"))
       retval=scan->val;

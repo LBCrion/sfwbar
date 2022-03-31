@@ -181,8 +181,8 @@ int scanner_reset_vars ( GList *var_list );
 void scanner_update_json ( struct json_object *obj, struct scan_file *file );
 int scanner_update_file ( GIOChannel *in, struct scan_file *file );
 int scanner_glob_file ( struct scan_file *file );
-char *scanner_get_string ( gchar *name );
-double scanner_get_numeric ( gchar *name );
+char *scanner_get_string ( gchar *name, gboolean update );
+double scanner_get_numeric ( gchar *name, gboolean update );
 
 gchar *gdk_monitor_get_xdg_name ( GdkMonitor *monitor );
 void set_monitor ( gchar *mon_name );
@@ -242,18 +242,6 @@ enum {
 enum {
   VF_CHTIME = 1,
   VF_NOGLOB = 2
-};
-
-enum {
-  G_TOKEN_TIME    = G_TOKEN_LAST + 1,
-  G_TOKEN_MIDW    = G_TOKEN_LAST + 2,
-  G_TOKEN_EXTRACT = G_TOKEN_LAST + 3,
-  G_TOKEN_DISK    = G_TOKEN_LAST + 4,
-  G_TOKEN_VAL     = G_TOKEN_LAST + 5,
-  G_TOKEN_STRW    = G_TOKEN_LAST + 6,
-  G_TOKEN_ACTIVE  = G_TOKEN_LAST + 7,
-  G_TOKEN_PAD     = G_TOKEN_LAST + 8,
-  G_TOKEN_IF      = G_TOKEN_LAST + 9
 };
 
 #endif

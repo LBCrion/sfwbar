@@ -10,10 +10,23 @@
 #include <glib.h>
 #include "sfwbar.h"
 
+enum {
+  G_TOKEN_TIME    = G_TOKEN_LAST + 1,
+  G_TOKEN_MIDW    = G_TOKEN_LAST + 2,
+  G_TOKEN_EXTRACT = G_TOKEN_LAST + 3,
+  G_TOKEN_DISK    = G_TOKEN_LAST + 4,
+  G_TOKEN_VAL     = G_TOKEN_LAST + 5,
+  G_TOKEN_STRW    = G_TOKEN_LAST + 6,
+  G_TOKEN_ACTIVE  = G_TOKEN_LAST + 7,
+  G_TOKEN_PAD     = G_TOKEN_LAST + 8,
+  G_TOKEN_IF      = G_TOKEN_LAST + 9,
+  G_TOKEN_CACHED  = G_TOKEN_LAST + 10
+};
+
 gdouble expr_parse_num ( GScanner *scanner );
 gchar *expr_parse_str ( GScanner *scanner );
 
-gboolean parser_expect_symbol ( GScanner *scanner, gchar symbol, gchar *expr )
+gboolean parser_expect_symbol ( GScanner *scanner, gint symbol, gchar *expr )
 {
   if(g_scanner_peek_next_token(scanner)==symbol)
   {
@@ -61,6 +74,25 @@ gchar *expr_dtostr ( double num, gint dec )
   return g_strdup(g_ascii_formatd(buf,G_ASCII_DTOSTR_BUF_SIZE,fbuf,num));
 }
 
+gchar *expr_parse_cached ( GScanner *scanner )
+{
+  gchar *ret;
+  
+  parser_expect_symbol(scanner,'(',"Cached(Identifier)");
+  if(parser_expect_symbol(scanner,G_TOKEN_IDENTIFIER,"Cached(Identifier)"))
+    return g_strdup("");
+
+  *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
+  if(*(scanner->value.v_identifier)=='$')
+    ret = scanner_get_string(scanner->value.v_identifier,FALSE);
+  else
+    ret = expr_dtostr(
+        scanner_get_numeric(scanner->value.v_identifier,FALSE),-1);
+
+  parser_expect_symbol(scanner,')',"Cached(Identifier)");
+  return ret;
+}
+  
 gchar *expr_parse_if ( GScanner *scanner )
 {
   gboolean condition;
@@ -324,6 +356,9 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
       str = expr_parse_time ( scanner );
       *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       break;
+    case G_TOKEN_CACHED:
+      str = expr_parse_cached ( scanner );
+      break;
     case G_TOKEN_IF:
       str = expr_parse_if ( scanner );
       break;
@@ -332,7 +367,7 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
         str = g_strdup("");
       else
       {
-        str = scanner_get_string(scanner->value.v_identifier);
+        str = scanner_get_string(scanner->value.v_identifier,TRUE);
         *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       }
       break;
@@ -413,6 +448,11 @@ gdouble expr_parse_num_value ( GScanner *scanner )
       g_free(str);
       parser_expect_symbol(scanner,')',"Val(String)");
       break;
+    case G_TOKEN_CACHED:
+      str = expr_parse_cached(scanner);
+      val = strtod(str,NULL);
+      g_free(str);
+      break;
     case G_TOKEN_IF:
       str = expr_parse_if(scanner);
       val = strtod(str,NULL);
@@ -423,7 +463,7 @@ gdouble expr_parse_num_value ( GScanner *scanner )
         val = 0;
       else
       {
-        val = scanner_get_numeric( scanner->value.v_identifier );
+        val = scanner_get_numeric( scanner->value.v_identifier,TRUE );
         *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
       }
       break;
@@ -557,9 +597,10 @@ static GScanner *expr_scanner_new ( void )
   g_scanner_scope_add_symbol(scanner,0, "Val", (gpointer)G_TOKEN_VAL );
   g_scanner_scope_add_symbol(scanner,0, "Time", (gpointer)G_TOKEN_TIME );
   g_scanner_scope_add_symbol(scanner,0, "Disk", (gpointer)G_TOKEN_DISK );
-  g_scanner_scope_add_symbol(scanner,0, "ActiveWin", (gpointer)G_TOKEN_ACTIVE );
+  g_scanner_scope_add_symbol(scanner,0, "ActiveWin", (gpointer)G_TOKEN_ACTIVE);
   g_scanner_scope_add_symbol(scanner,0, "Pad", (gpointer)G_TOKEN_PAD );
   g_scanner_scope_add_symbol(scanner,0, "If", (gpointer)G_TOKEN_IF );
+  g_scanner_scope_add_symbol(scanner,0, "Cached", (gpointer)G_TOKEN_CACHED );
   g_scanner_set_scope(scanner,0);
 
   return scanner;

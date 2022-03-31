@@ -549,6 +549,8 @@ Operation   Description
 ``Val``     convert a string into a number, the argument is a string or a
             string expression to convert.
 ``If``      conditional: If(condition,expr1,expr2)
+``Cached``  get last value from a variable without updating it:
+            Cached(identifier)
 =========== ==================================================================
 
 The string operations are:
@@ -567,6 +569,8 @@ Operation   Description
             if the number is negative, the string is padded at the end, if
             positive, the string is padded at the front.
 ``If``      conditional: If(condition,expr1,expr2)
+``Cached``  get last value from a variable without updating it:
+            Cached(identifier)
 =========== ==================================================================
 
 In addition the following query functions are supported
