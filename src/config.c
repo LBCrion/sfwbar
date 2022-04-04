@@ -851,6 +851,7 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
       case G_TOKEN_LABEL:
         scanner->max_parse_errors=FALSE;
         lw->widget = gtk_label_new("");
+        gtk_label_set_ellipsize(GTK_LABEL(lw->widget),PANGO_ELLIPSIZE_END);
         break;
       case G_TOKEN_IMAGE:
         scanner->max_parse_errors=FALSE;
