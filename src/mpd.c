@@ -37,6 +37,8 @@ gboolean mpd_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer file )
     if( file )
       scanner_update_file( chan, file );
 
+    layout_emit_trigger("mpd");
+
     if(!r)
       s = g_io_channel_write_chars(chan,"status\ncurrentsong\n",-1,NULL,NULL);
     else

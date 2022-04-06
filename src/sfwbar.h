@@ -66,6 +66,7 @@ struct layout_widget {
   gulong tooltip_h;
   struct layout_action action[MAX_BUTTON];
   gint64 interval;
+  gchar *trigger;
   gint64 next_poll;
   gint wtype;
   gint dir;
@@ -167,6 +168,7 @@ gboolean widget_menu_action ( GtkWidget *widget, struct layout_action *action );
 void layout_widgets_autoexec ( GtkWidget *widget, gpointer data );
 gboolean layout_tooltip_update ( GtkWidget *widget, gint x, gint y,
     gboolean kbmode, GtkTooltip *tooltip, struct layout_widget *lw );
+void layout_emit_trigger ( gchar *trigger );
 
 GtkWidget *flow_grid_new( gboolean limit );
 void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );

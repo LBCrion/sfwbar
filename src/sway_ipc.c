@@ -340,6 +340,7 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
       scanner_update_json (scan,sway_file);
       json_object_get(obj);
       json_object_put(scan);
+      layout_emit_trigger("sway");
     }
 
     if(etype==0x80000000)

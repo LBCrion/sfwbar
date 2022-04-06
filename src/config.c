@@ -728,7 +728,16 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
         if(GTK_IS_GRID(lw->widget))
           g_scanner_error(scanner,"this widget has no property 'interval'");
         else
-          lw->interval = 1000*config_assign_number(scanner, "interval");
+        {
+          if(!lw->interval)
+            g_scanner_error(scanner,"this widget already has a trigger");
+          else
+            lw->interval = 1000*config_assign_number(scanner, "interval");
+        }
+        break;
+      case G_TOKEN_TRIGGER:
+        lw->interval = 0;
+        lw->trigger = config_assign_string(scanner, "trigger");
         break;
       case G_TOKEN_VALUE:
         if(GTK_IS_GRID(lw->widget))
@@ -1337,6 +1346,7 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "Title_width", 
       (gpointer)G_TOKEN_TITLEWIDTH );
   g_scanner_scope_add_symbol(scanner,0, "Tooltip", (gpointer)G_TOKEN_TOOLTIP );
+  g_scanner_scope_add_symbol(scanner,0, "Trigger", (gpointer)G_TOKEN_TRIGGER );
   g_scanner_scope_add_symbol(scanner,0, "XStep", (gpointer)G_TOKEN_XSTEP );
   g_scanner_scope_add_symbol(scanner,0, "YStep", (gpointer)G_TOKEN_YSTEP );
   g_scanner_scope_add_symbol(scanner,0, "XOrigin", (gpointer)G_TOKEN_XORIGIN );

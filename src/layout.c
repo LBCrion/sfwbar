@@ -405,7 +405,7 @@ void layout_widgets_update ( GMainContext *gmc )
   {
     lw = iter->data;
 
-    if(lw->next_poll > ctime)
+    if(lw->interval == 0 || lw->next_poll > ctime)
       continue;
 
     while(lw->next_poll <= ctime)
@@ -413,6 +413,24 @@ void layout_widgets_update ( GMainContext *gmc )
 
     if(layout_widget_cache(lw->value,&lw->evalue))
       g_main_context_invoke(gmc,(GSourceFunc)layout_widget_draw,lw);
+    if(layout_widget_cache(lw->style,&lw->estyle))
+      gtk_widget_set_name(lw->widget,lw->estyle);
+  }
+}
+
+void layout_emit_trigger ( gchar *trigger )
+{
+  GList *iter;
+  struct layout_widget *lw;
+
+  for(iter=widget_list;iter!=NULL;iter=g_list_next(iter))
+  {
+    lw = iter->data;
+    if(!lw->trigger || g_strcasecmp(trigger,lw->trigger))
+      continue;
+    
+    if(layout_widget_cache(lw->value,&lw->evalue))
+      layout_widget_draw(lw);
     if(layout_widget_cache(lw->style,&lw->estyle))
       gtk_widget_set_name(lw->widget,lw->estyle);
   }

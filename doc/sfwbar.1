@@ -275,7 +275,11 @@ expression. In case of the latter, the tooltip will be dynamically
 updated every time it pops up.
 .TP
 .B interval
-widget update frequency in milliseconds
+widget update frequency in milliseconds..
+.TP
+.B trigger
+trigger on which event updates. Triggers are emitted by Client sources
+a widget should not have both an interval and a trigger specified.
 .TP
 .B css
 additional css properties for the widget. These propertes will only apply to

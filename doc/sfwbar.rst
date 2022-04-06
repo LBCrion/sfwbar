@@ -210,7 +210,11 @@ tooltip
   updated every time it pops up.
 
 interval
-  widget update frequency in milliseconds 
+  widget update frequency in milliseconds.. 
+
+trigger 
+  trigger on which event updates. Triggers are emitted by Client sources
+  a widget should not have both an interval and a trigger specified.
 
 css
   additional css properties for the widget. These propertes will only apply to
