@@ -405,7 +405,7 @@ void layout_widgets_update ( GMainContext *gmc )
   {
     lw = iter->data;
 
-    if(lw->interval == 0 || lw->next_poll > ctime)
+    if( !lw->trigger || lw->next_poll > ctime)
       continue;
 
     while(lw->next_poll <= ctime)
@@ -422,6 +422,9 @@ void layout_emit_trigger ( gchar *trigger )
 {
   GList *iter;
   struct layout_widget *lw;
+
+  if(!trigger)
+    return;
 
   for(iter=widget_list;iter!=NULL;iter=g_list_next(iter))
   {
@@ -488,7 +491,8 @@ gpointer layout_scanner_thread ( gpointer data )
       g_thread_exit(NULL);
     timer = G_MAXINT64;
     for(iter=widget_list;iter!=NULL;iter=g_list_next(iter))
-      timer = MIN(timer,((struct layout_widget *)iter->data)->next_poll);
+      if(!((struct layout_widget *)iter->data)->trigger)
+        timer = MIN(timer,((struct layout_widget *)iter->data)->next_poll);
     timer -= g_get_monotonic_time();
     if(timer>0)
       usleep(timer);
