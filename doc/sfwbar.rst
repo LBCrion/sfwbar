@@ -472,14 +472,28 @@ File
 Exec
         Read data from an output of a shell command
 
+ExecClient
+        Read data from an executable, this source will read a bust of data
+        using it to populate the variables and emit a trigger event once done.
+        This source accepts two parameters, command to execute and a trigger 
+        to emit.
+
+SocketClient
+        Read data from a socket, this source will read a bust of data
+        using it to populate the variables and emit a trigger event once done.
+        This source accepts two parameters, a socket address and a trigger 
+        to emit.
+
 MpdClient
         Read data from Music Player Daemon IPC (data is polled whenever MPD
         responds to an 'idle player' event).
+        MpdClient emits trigger "mpd"
 
 SwayClient
         Receive updates on Sway state, updates are the json objects sent by sway,
         wrapped into an object with a name of the event i.e.
         ``window: { sway window change object }``
+        SwayClient emits trigger "sway"
 
 The file source also accepts further optional argumens specifying how
 scanner should handle the source, these can be:

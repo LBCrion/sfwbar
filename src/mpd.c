@@ -117,6 +117,7 @@ GIOChannel *mpd_ipc_open ( gchar *user, gpointer *addr )
   GSocketClient *client;
 
   client = g_socket_client_new();
+
   scon = mpd_ipc_connect ( client, user );
 
   if(!scon)

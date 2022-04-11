@@ -405,7 +405,7 @@ void layout_widgets_update ( GMainContext *gmc )
   {
     lw = iter->data;
 
-    if( !lw->trigger || lw->next_poll > ctime)
+    if( lw->trigger || lw->next_poll > ctime)
       continue;
 
     while(lw->next_poll <= ctime)

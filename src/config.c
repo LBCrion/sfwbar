@@ -218,8 +218,9 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
 
 struct scan_file *config_scanner_source ( GScanner *scanner, gint source )
 {
-  gchar *fname=NULL;
-  gint flags=0;
+  gchar *fname = NULL;
+  gchar *trigger = NULL;
+  gint flags = 0;
   struct scan_file *file;
   GList *find;
   static GList *file_list = NULL;
@@ -254,6 +255,19 @@ struct scan_file *config_scanner_source ( GScanner *scanner, gint source )
       }
     } 
 
+  if(source == SO_CLIENT)
+    if((gint)g_scanner_peek_next_token(scanner)==',')
+    {
+      g_scanner_get_next_token(scanner);
+      if(g_scanner_peek_next_token(scanner)!=G_TOKEN_STRING)
+        g_scanner_error(scanner,"Invalid trigger in client declaration");
+      else
+      {
+        g_scanner_get_next_token(scanner);
+        trigger = g_strdup(scanner->value.v_string);
+      }
+    }
+
   if(config_expect_token(scanner,')',"Missing ')' in source"))
     g_scanner_get_next_token(scanner);
 
@@ -281,6 +295,7 @@ struct scan_file *config_scanner_source ( GScanner *scanner, gint source )
   else
     file = g_malloc(sizeof(struct scan_file));
   file->fname = fname;
+  file->trigger = trigger;
   file->source = source;
   file->mtime = 0;
   file->flags = flags;
@@ -336,6 +351,14 @@ void config_scanner ( GScanner *scanner )
       case G_TOKEN_SWAYCLIENT:
         file = config_scanner_source(scanner,SO_CLIENT);
         sway_ipc_client_init(file);
+        break;
+      case G_TOKEN_EXECCLIENT:
+        file = config_scanner_source(scanner,SO_CLIENT);
+        client_exec(file);
+        break;
+      case G_TOKEN_SOCKETCLIENT:
+        file = config_scanner_source(scanner,SO_CLIENT);
+        client_socket(file);
         break;
       default:
         g_scanner_error(scanner, "Unexpected declaration in scanner");
@@ -1308,6 +1331,10 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
       (gpointer)G_TOKEN_MPDCLIENT );
   g_scanner_scope_add_symbol(scanner,0, "SwayClient",
       (gpointer)G_TOKEN_SWAYCLIENT );
+  g_scanner_scope_add_symbol(scanner,0, "ExecClient",
+      (gpointer)G_TOKEN_EXECCLIENT );
+  g_scanner_scope_add_symbol(scanner,0, "SOcketClient",
+      (gpointer)G_TOKEN_SOCKETCLIENT );
   g_scanner_scope_add_symbol(scanner,0, "Number", (gpointer)G_TOKEN_NUMBERW );
   g_scanner_scope_add_symbol(scanner,0, "String", (gpointer)G_TOKEN_STRINGW );
   g_scanner_scope_add_symbol(scanner,0, "NoGlob", (gpointer)G_TOKEN_NOGLOB );

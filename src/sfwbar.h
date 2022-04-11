@@ -41,10 +41,12 @@ struct scan_var {
 
 struct scan_file {
   gchar *fname;
+  gchar *trigger;
   gint flags;
   guchar source;
   time_t mtime;
   GList *vars;
+  GSocketConnection *scon;
 };
 
 struct layout_action {
@@ -80,6 +82,9 @@ void action_free ( struct layout_action *action, GObject *old );
 void action_function_add ( gchar *name, GList *actions );
 void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
     struct wt_window *win, guint16 *state );
+
+void client_exec ( struct scan_file *file );
+void client_socket ( struct scan_file *file );
 
 void sway_ipc_init ( void );
 gboolean sway_ipc_active ( void );

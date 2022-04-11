@@ -88,6 +88,7 @@ int scanner_update_file ( GIOChannel *in, struct scan_file *file )
   struct json_object *obj;
   gchar *read_buff;
 
+
   while(g_io_channel_read_line(in,&read_buff,NULL,NULL,NULL)==G_IO_STATUS_NORMAL)
   {
     for(node=file->vars;node!=NULL;node=g_list_next(node))
