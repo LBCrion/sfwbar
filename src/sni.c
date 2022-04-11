@@ -389,7 +389,14 @@ GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
   GdkPixbuf *res;
   gint i=0;
 
+  if(!v)
+    return NULL;
   g_variant_get(v,"a(iiay)",&iter);
+  if(!g_variant_iter_n_children(iter))
+  {
+    g_variant_iter_free(iter);
+    return NULL;
+  }
   g_variant_get(g_variant_iter_next_value(iter),"(iiay)",&x,&y,&rgba);
   if((x*y>0)&&(x*y*4 == g_variant_iter_n_children(rgba)))
   {
@@ -775,7 +782,7 @@ static void sni_watcher_method(GDBusConnection *con, const gchar *sender,
 
   if(g_strcmp0(method,"RegisterStatusNotifierItem")==0)
   {
-    if(*parameter==':')
+    if(*parameter!='/')
       name = g_strdup(parameter);
     else
       name = g_strconcat(sender,parameter,NULL);
