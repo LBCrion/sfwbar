@@ -8,6 +8,7 @@
 #include <gtk/gtk.h>
 
 static GHashTable *functions;
+static GHashTable *trigger_actions;
 
 void action_function_add ( gchar *name, GList *actions )
 {
@@ -147,6 +148,19 @@ guint16 action_state_build ( GtkWidget *widget, struct wt_window *win )
   return state;
 }
 
+void action_client_send ( struct layout_action *action )
+{
+  struct scan_file *file;
+
+  if(!action->addr || !action->command )
+    return;
+
+  file = scanner_file_get ( action->addr );
+
+  if(file)
+    g_io_channel_write_chars(file->out,action->command,-1,NULL,NULL);
+}
+
 void action_exec ( GtkWidget *widget, struct layout_action *action,
     GdkEvent *event, struct wt_window *win, guint16 *istate )
 {
@@ -251,6 +265,9 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
       if(action->command && widget)
         action_set_user_state(widget, action->command);
       break;
+    case G_TOKEN_CLIENTSEND:
+      action_client_send(action);
+      break;
     case G_TOKEN_FOCUS:
       if(win)
         wintree_focus(win->uid);
@@ -284,5 +301,33 @@ void action_free ( struct layout_action *action, GObject *old )
     return;
 
   g_free(action->command);
+  g_free(action->addr);
   g_free(action);
+}
+
+void action_trigger_add ( struct layout_action *action, gchar *trigger )
+{
+  void *old;
+
+  if(!trigger_actions)
+    trigger_actions = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
+
+  old = g_hash_table_lookup(trigger_actions,trigger);
+  if(old)
+  {
+    g_message("Action for trigger '%s' is already defined",trigger);
+    g_free(trigger);
+    action_free(action,NULL);
+    return;
+  }
+
+  g_hash_table_insert(trigger_actions, trigger, action);
+}
+
+struct layout_action *action_trigger_lookup ( gchar *trigger )
+{
+  if(!trigger_actions)
+    return NULL;
+
+  return g_hash_table_lookup(trigger_actions,trigger);
 }

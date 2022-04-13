@@ -303,6 +303,8 @@ struct scan_file *config_scanner_source ( GScanner *scanner, gint source )
   if( !strchr(fname,'*') && !strchr(fname,'?') )
     file->flags |= VF_NOGLOB;
   file_list = g_list_append(file_list,file);
+  if(file->trigger)
+    scanner_file_attach(trigger,file);
 
   while(((gint)g_scanner_peek_next_token(scanner)!='}')&&
       ( (gint)g_scanner_peek_next_token ( scanner ) != G_TOKEN_EOF ))
@@ -640,6 +642,7 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
       case G_TOKEN_SETVALUE:
       case G_TOKEN_SETSTYLE:
       case G_TOKEN_SETTOOLTIP:
+      case G_TOKEN_CLIENTSEND:
         type = scanner->token;
         break;
       default:
@@ -668,8 +671,31 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
     case G_TOKEN_SETBARSIZE:
     case G_TOKEN_SETBARID:
     case G_TOKEN_SETEXCLUSIVEZONE:
-      if(g_scanner_get_next_token(scanner) != G_TOKEN_STRING)
+      if(!config_expect_token(scanner, G_TOKEN_STRING,
+            "Missing argument in action"))
         return FALSE;
+      g_scanner_get_next_token(scanner);
+      g_free(action->command);
+      action->command = g_strdup(scanner->value.v_string);
+      break;
+    case G_TOKEN_CLIENTSEND:
+      if(!config_expect_token(scanner, G_TOKEN_STRING,
+            "Missing argument in action"))
+        return FALSE;
+      g_scanner_get_next_token(scanner);
+      g_free(action->addr);
+      action->addr = g_strdup(scanner->value.v_string);
+      if(!config_expect_token(scanner, ',' ,
+            "Missing second argument in action"))
+      {
+        g_free(action->addr);
+        return FALSE;
+      }
+      g_scanner_get_next_token(scanner);
+      if(!config_expect_token(scanner, G_TOKEN_STRING,
+            "Missing second argument in action"))
+        return FALSE;
+      g_scanner_get_next_token(scanner);
       g_free(action->command);
       action->command = g_strdup(scanner->value.v_string);
       break;
@@ -1249,6 +1275,38 @@ void config_define ( GScanner *scanner )
   g_hash_table_insert(defines,ident,value);
 }
 
+void config_trigger_action ( GScanner *scanner )
+{
+  gchar *trigger;
+  struct layout_action *action;
+
+  if(!config_expect_token(scanner, G_TOKEN_STRING,
+        "missing trigger in TriggerAction"))
+    return;
+  g_scanner_get_next_token(scanner);
+  trigger = g_strdup(scanner->value.v_string);
+  if(!config_expect_token(scanner, ',',
+        "missing ',' in TriggerAction"))
+  {
+    g_free(trigger);
+    return;
+  }
+
+  g_scanner_get_next_token(scanner);
+  action = g_malloc0(sizeof(struct layout_action));
+
+  if(!config_action(scanner,action))
+  {
+    g_free(trigger);
+    g_free(action);
+    g_scanner_error(scanner, "TriggerAction: invalid action");
+    return;
+  }
+
+  action_trigger_add(action,trigger);
+  config_optional_semicolon(scanner);
+}
+
 struct layout_widget *config_parse_toplevel ( GScanner *scanner,
     gboolean layout)
 {
@@ -1281,6 +1339,9 @@ struct layout_widget *config_parse_toplevel ( GScanner *scanner,
         break;
       case G_TOKEN_DEFINE:
         config_define(scanner);
+        break;
+      case G_TOKEN_TRIGGERACTION:
+        config_trigger_action(scanner);
         break;
       case G_TOKEN_FUNCTION:
         config_function(scanner);
@@ -1324,6 +1385,8 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   g_scanner_scope_add_symbol(scanner,0, "Switcher",
       (gpointer)G_TOKEN_SWITCHER );
   g_scanner_scope_add_symbol(scanner,0, "Define", (gpointer)G_TOKEN_DEFINE );
+  g_scanner_scope_add_symbol(scanner,0, "TriggerAction",
+      (gpointer)G_TOKEN_TRIGGERACTION );
   g_scanner_scope_add_symbol(scanner,0, "End", (gpointer)G_TOKEN_END );
   g_scanner_scope_add_symbol(scanner,0, "File", (gpointer)G_TOKEN_FILE );
   g_scanner_scope_add_symbol(scanner,0, "Exec", (gpointer)G_TOKEN_EXEC );
@@ -1424,6 +1487,8 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
       (gpointer)G_TOKEN_SETEXCLUSIVEZONE );
   g_scanner_scope_add_symbol(scanner,0, "SetBarID",
       (gpointer)G_TOKEN_SETBARID );
+  g_scanner_scope_add_symbol(scanner,0, "ClientSend",
+      (gpointer)G_TOKEN_CLIENTSEND );
   g_scanner_scope_add_symbol(scanner,0, "Item", (gpointer)G_TOKEN_ITEM );
   g_scanner_scope_add_symbol(scanner,0, "Separator",
       (gpointer)G_TOKEN_SEPARATOR );

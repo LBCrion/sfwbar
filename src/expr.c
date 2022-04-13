@@ -563,10 +563,10 @@ gdouble expr_parse_num( GScanner *scanner )
     switch((gint)g_scanner_get_next_token ( scanner ))
     {
       case '&':
-        val = val && expr_parse_num_compare ( scanner );
+        val = expr_parse_num_compare ( scanner ) && val;
         break;
       case '|':
-        val = val || expr_parse_num_compare ( scanner );
+        val = expr_parse_num_compare ( scanner ) || val;
         break;
     }
     if(g_scanner_eof(scanner))

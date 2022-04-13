@@ -333,6 +333,11 @@ conditions on the list must be satisfied. Supported conditions are:
 ``Minimized``, ``Maximized``, ``Focused``, ``FullScreen``, ``IdleInhibit`` and
 ``UserState``
 
+Actions can be activated upon receipt of a trigger from one of the client type
+sources, using TriggerAction top-level keyword. I.e. ::
+
+  TriggerAction "mytrigger", Exec "MyCommand"
+
 Parameters are specified as strings immediately following the relevant action.
 I.e. ``Menu "WindowOps"``. Some actions apply to a window, if the action is
 attached to taskbar button, the action will be applied to a window referenced
@@ -368,6 +373,11 @@ SwayWinCmd <string>
 
 MpdCmd <string>
   send a command to Music Player Daemon
+
+ClientSend <string>, <string>
+  send a string to a client. The string will be written to client's standard
+  input for execClient clients or written into a socket for socketClient's.
+  The first parameter is the client id, the second is the string to send.
 
 SetMonitor <string>
   move bar to a given monitor
@@ -475,14 +485,22 @@ Exec
 ExecClient
         Read data from an executable, this source will read a bust of data
         using it to populate the variables and emit a trigger event once done.
-        This source accepts two parameters, command to execute and a trigger 
-        to emit.
+        This source accepts two parameters, command to execute and an id. The
+        id is used to address the socket via ClientSend and to identify a
+        trigger emitted upon variable updates.
+        USE RESPONSIBLY: If a trigger causes the client to receive new data
+        (i.e. by triggering a ClientSend command that in turn triggers response
+        from the source, you can end up with an infinite loop.
 
 SocketClient
         Read data from a socket, this source will read a bust of data
         using it to populate the variables and emit a trigger event once done.
-        This source accepts two parameters, a socket address and a trigger 
-        to emit.
+        This source accepts two parameters, a socket address and an id. The
+        id is used to address the socket via ClientSend and to identify a
+        trigger emitted upon variable updates.
+        USE RESPONSIBLY: If a trigger causes the client to receive new data
+        (i.e. by triggering a ClientSend command that in turn triggers response
+        from the source, you can end up with an infinite loop.
 
 MpdClient
         Read data from Music Player Daemon IPC (data is polled whenever MPD

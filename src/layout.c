@@ -76,8 +76,8 @@ void layout_menu_popup ( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
 
 gboolean layout_widget_has_actions ( struct layout_widget * lw )
 {
-  static const gchar *act_check[MAX_BUTTON];
-  return memcmp(lw->action,act_check,sizeof(gchar *)*MAX_BUTTON);
+  static const gint8 act_check[MAX_BUTTON*sizeof(struct layout_action)];
+  return memcmp(lw->action,act_check,sizeof(struct layout_action)*MAX_BUTTON);
 }
 
 gboolean widget_menu_action ( GtkWidget *w ,struct layout_action *action )
@@ -297,7 +297,7 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     lw->lobject = gtk_event_box_new();
     gtk_container_add(GTK_CONTAINER(lw->lobject),lw->widget);
     gtk_widget_add_events(GTK_WIDGET(lw->lobject),GDK_SCROLL_MASK);
-    g_signal_connect(G_OBJECT(lw->lobject),"button_press_event",
+    g_signal_connect(G_OBJECT(lw->lobject),"button-press-event",
         G_CALLBACK(layout_widget_click_cb),lw);
     g_signal_connect(G_OBJECT(lw->lobject),"scroll-event",
       G_CALLBACK(layout_widget_scroll_cb),lw);
@@ -422,10 +422,12 @@ void layout_emit_trigger ( gchar *trigger )
 {
   GList *iter;
   struct layout_widget *lw;
+  struct layout_action *action;
 
   if(!trigger)
     return;
 
+  scanner_expire();
   for(iter=widget_list;iter!=NULL;iter=g_list_next(iter))
   {
     lw = iter->data;
@@ -437,6 +439,9 @@ void layout_emit_trigger ( gchar *trigger )
     if(layout_widget_cache(lw->style,&lw->estyle))
       gtk_widget_set_name(lw->widget,lw->estyle);
   }
+  action = action_trigger_lookup(trigger);
+  if(action)
+    action_exec(NULL,action,NULL,NULL,NULL);
 }
 
 void layout_widget_attach ( struct layout_widget *lw )

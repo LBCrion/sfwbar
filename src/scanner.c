@@ -10,6 +10,23 @@
 #include "sfwbar.h"
 
 static GHashTable *scan_list;
+static GHashTable *trigger_list;
+
+void scanner_file_attach ( gchar *trigger, struct scan_file *file )
+{
+  if(!trigger_list)
+    trigger_list = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
+
+  g_hash_table_insert(trigger_list,trigger,file);
+}
+
+struct scan_file *scanner_file_get ( gchar *trigger )
+{
+  if(!trigger_list)
+    return NULL;
+
+  return g_hash_table_lookup(trigger_list,trigger);
+}
 
 void scanner_var_attach ( gchar *name, struct scan_var *var )
 {
@@ -87,7 +104,6 @@ int scanner_update_file ( GIOChannel *in, struct scan_file *file )
   struct json_tokener *json = NULL;
   struct json_object *obj;
   gchar *read_buff;
-
 
   while(g_io_channel_read_line(in,&read_buff,NULL,NULL,NULL)==G_IO_STATUS_NORMAL)
   {

@@ -47,6 +47,7 @@ struct scan_file {
   time_t mtime;
   GList *vars;
   GSocketConnection *scon;
+  GIOChannel *out;
 };
 
 struct layout_action {
@@ -54,6 +55,7 @@ struct layout_action {
   guchar ncond;
   guint type;
   gchar *command;
+  gchar *addr;
 };
 
 struct layout_widget {
@@ -82,6 +84,8 @@ void action_free ( struct layout_action *action, GObject *old );
 void action_function_add ( gchar *name, GList *actions );
 void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
     struct wt_window *win, guint16 *state );
+void action_trigger_add ( struct layout_action *action, gchar *trigger );
+struct layout_action *action_trigger_lookup ( gchar *trigger );
 
 void client_exec ( struct scan_file *file );
 void client_socket ( struct scan_file *file );
@@ -190,6 +194,8 @@ int scanner_update_file ( GIOChannel *in, struct scan_file *file );
 int scanner_glob_file ( struct scan_file *file );
 char *scanner_get_string ( gchar *name, gboolean update );
 double scanner_get_numeric ( gchar *name, gboolean update );
+void scanner_file_attach ( gchar *trigger, struct scan_file *file );
+struct scan_file *scanner_file_get ( gchar *trigger );
 
 gchar *gdk_monitor_get_xdg_name ( GdkMonitor *monitor );
 void set_monitor ( gchar *mon_name );

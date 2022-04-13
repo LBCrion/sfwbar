@@ -11,10 +11,9 @@
 gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 {
   struct scan_file *file = data;
-  if(!file)
-    return FALSE;
 
-  g_io_channel_write_chars(chan,"\n",1,NULL,NULL);
+  if(file->scon)
+    g_io_channel_write_chars(chan,"\n",1,NULL,NULL);
 
   if( cond & G_IO_ERR || cond & G_IO_HUP )
   {
@@ -71,17 +70,20 @@ void client_socket ( struct scan_file *file )
   file->scon = scon;
 
   chan = g_io_channel_unix_new(g_socket_get_fd(sock));
-  g_io_channel_set_flags(chan,G_IO_FLAG_NONBLOCK,NULL);
 
   if(chan)
+  {
+    g_io_channel_set_flags(chan,G_IO_FLAG_NONBLOCK,NULL);
     g_io_add_watch(chan, G_IO_IN | G_IO_HUP | G_IO_ERR, client_event, file);
+    file->out = chan;
+  }
   else
     g_object_unref(scon);
 }
 
 void client_exec ( struct scan_file *file )
 {
-  gint out;
+  gint in, out, err;
   gchar **argv;
   gint argc;
   GIOChannel *chan;
@@ -90,13 +92,20 @@ void client_exec ( struct scan_file *file )
     return;
 
   if(!g_spawn_async_with_pipes(NULL,argv,NULL,G_SPAWN_SEARCH_PATH,NULL,NULL,NULL,
-      NULL, &out, NULL, NULL))
+      &in, &out, &err, NULL))
   {
     g_strfreev(argv);
     return;
   }
+  g_strfreev(argv);
 
   chan = g_io_channel_unix_new(out);
   if(chan)
-    g_io_add_watch(chan, G_IO_IN, client_event, file);
+  {
+    g_io_channel_set_flags(chan,G_IO_FLAG_NONBLOCK,NULL);
+    g_io_add_watch(chan, G_IO_IN | G_IO_HUP | G_IO_ERR, client_event, file);
+    g_io_add_watch(g_io_channel_unix_new(err), G_IO_IN, client_event, file);
+    file->out = g_io_channel_unix_new(in);
+    g_io_channel_set_flags(file->out,G_IO_FLAG_NONBLOCK,NULL);
+  }
 }
