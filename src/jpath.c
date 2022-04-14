@@ -47,7 +47,7 @@ struct json_object *jpath_filter (GScanner *scanner, struct json_object *obj )
   gchar *key=NULL;
   GTokenType type;
   GTokenValue val;
-  gboolean eq;
+  gboolean eq = FALSE;
 
   next = json_object_new_array();
   type = g_scanner_get_next_token(scanner);

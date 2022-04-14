@@ -33,7 +33,7 @@ gboolean config_expect_token ( GScanner *scanner, gint token, gchar *fmt, ...)
   va_start(args,fmt);
   errmsg = g_strdup_vprintf(fmt,args);
   va_end(args);
-  g_scanner_error(scanner,errmsg);
+  g_scanner_error(scanner,"%s",errmsg);
   g_free(errmsg);
 
   return FALSE;
