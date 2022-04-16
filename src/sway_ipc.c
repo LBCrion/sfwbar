@@ -409,7 +409,7 @@ void sway_ipc_init ( void )
   sock=sway_ipc_open(3000);
   if(sock==-1)
     return;
-  sway_ipc_send(sock,0,"bar hidden_state show");
+  sway_ipc_send(sock,0,"bar hidden_state hide");
   response = sway_ipc_poll(sock,&etype);
   g_free(response);
   sway_ipc_send(sock,4,"");
