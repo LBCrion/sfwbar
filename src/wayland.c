@@ -284,7 +284,7 @@ void wayland_init ( GtkWindow *window )
   struct wl_display *wdisp;
   struct wl_registry *registry;
 
-  gdisp = gdk_screen_get_display(gtk_window_get_screen(window));
+  gdisp = gdk_display_get_default();
   wdisp = gdk_wayland_display_get_wl_display(gdisp);
   if(wdisp == NULL)
     g_error("Can't get wayland display\n");

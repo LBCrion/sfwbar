@@ -227,11 +227,11 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
       break;
     case G_TOKEN_SETMONITOR:
       if(action->command)
-        set_monitor(action->command);
+        bar_set_monitor(action->command);
       break;
     case G_TOKEN_SETLAYER:
       if(action->command)
-        set_layer(action->command);
+        bar_set_layer(action->command);
       break;
     case G_TOKEN_SETBARSIZE:
       if(action->command)

@@ -332,17 +332,6 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
   { 
     obj = json_tokener_parse(response);
 
-    if(sway_file && etype>=0x80000000 && etype<=0x80000015)
-    {
-      scan = json_object_new_object();
-      json_object_object_add_ex(scan,ename[etype-0x80000000],obj,0);
-      scanner_reset_vars(sway_file->vars);
-      scanner_update_json (scan,sway_file);
-      json_object_get(obj);
-      json_object_put(scan);
-      layout_emit_trigger("sway");
-    }
-
     if(etype==0x80000000)
       pager_update();
 
@@ -351,7 +340,7 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
       id = json_string_by_name(obj,"id");
       if ( !bar_id || !g_strcmp0(id,bar_id) )
       {
-        window_hide_event(obj);
+        bar_hide_event(obj);
         switcher_event(obj);
       }
       g_free(id);
@@ -388,8 +377,19 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
     {
       id = json_string_by_name(obj,"id");
       if ( !bar_id || !g_strcmp0(id,bar_id) )
-        window_hide_event(obj);
+        bar_hide_event(obj);
       g_free(id);
+    }
+
+    if(sway_file && etype>=0x80000000 && etype<=0x80000015)
+    {
+      scan = json_object_new_object();
+      json_object_object_add_ex(scan,ename[etype-0x80000000],obj,0);
+      scanner_reset_vars(sway_file->vars);
+      scanner_update_json (scan,sway_file);
+      json_object_get(obj);
+      json_object_put(scan);
+      layout_emit_trigger("sway");
     }
 
     json_object_put(obj);

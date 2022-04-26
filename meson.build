@@ -40,6 +40,7 @@ idle_h = custom_target('idle-inhibit-unstable-v1.h',
     command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'] )
 
 src = ['src/sfwbar.c',
+    'src/bar.c',
     'src/client.c',
     'src/sway_ipc.c',
     'src/placement.c',

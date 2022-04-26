@@ -135,8 +135,6 @@ void wayland_set_idle_inhibitor ( GtkWidget *widget, gboolean inhibit );
 void wayland_reset_inhibitors ( GtkWidget *w, gpointer data );
 void foreign_toplevel_activate ( gpointer tl );
 
-gboolean window_hide_event ( struct json_object *obj );
-
 struct layout_widget *config_parse ( gchar * );
 void config_pipe_read ( gchar *command );
 void config_string ( gchar *string );
@@ -198,11 +196,17 @@ void scanner_file_attach ( gchar *trigger, struct scan_file *file );
 struct scan_file *scanner_file_get ( gchar *trigger );
 
 gchar *gdk_monitor_get_xdg_name ( GdkMonitor *monitor );
-void set_monitor ( gchar *mon_name );
-void set_layer ( gchar *layer );
+
+GtkWindow *bar_new ( GtkApplication *app );
+void bar_set_monitor ( gchar *mon_name );
+void bar_set_layer ( gchar *layer );
 void bar_set_size ( gchar *size );
 void bar_set_exclusive_zone ( gchar *zone );
 gchar *bar_get_output ( void );
+gint bar_get_toplevel_dir ( void );
+gboolean bar_hide_event ( struct json_object *obj );
+void bar_monitor_change_cb ( void );
+void bar_update_monitor ( GtkWindow *win );
 
 void mpd_ipc_init ( struct scan_file *file );
 void mpd_ipc_command ( gchar *command );
@@ -215,7 +219,6 @@ gdouble json_double_by_name ( struct json_object *obj, gchar *name, gdouble defv
 int md5_file( gchar *path, guchar output[16] );
 void str_assign ( gchar **dest, gchar *source );
 struct rect parse_rect ( struct json_object *obj );
-gint get_toplevel_dir ( void );
 guint str_nhash ( gchar *str );
 gboolean str_nequal ( gchar *str1, gchar *str2 );
 
