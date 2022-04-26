@@ -51,7 +51,7 @@ void layout_menu_popup ( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
   g_object_set_data( G_OBJECT(menu), "wid", wid );
   g_object_set_data( G_OBJECT(menu), "caller", widget );
 
-  switch(get_toplevel_dir())
+  switch(bar_get_toplevel_dir())
   {
     case GTK_POS_TOP:
       wanchor = GDK_GRAVITY_SOUTH_WEST;
@@ -431,9 +431,9 @@ void layout_emit_trigger ( gchar *trigger )
   for(iter=widget_list;iter!=NULL;iter=g_list_next(iter))
   {
     lw = iter->data;
-    if(!lw->trigger || g_strcasecmp(trigger,lw->trigger))
+    if(!lw->trigger || g_ascii_strcasecmp(trigger,lw->trigger))
       continue;
-    
+
     if(layout_widget_cache(lw->value,&lw->evalue))
       layout_widget_draw(lw);
     if(layout_widget_cache(lw->style,&lw->estyle))
