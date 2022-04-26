@@ -137,7 +137,7 @@ static void activate (GtkApplication* app, gpointer data )
   bar_window = bar_new(app);
 
   sway_ipc_init();
-  wayland_init(bar_window);
+  wayland_init();
 
   if(monitor && !g_ascii_strcasecmp(monitor,"list"))
     list_monitors();

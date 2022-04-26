@@ -437,6 +437,7 @@ void sway_ipc_init ( void )
   GIOChannel *chan = g_io_channel_unix_new(main_ipc);
   g_io_add_watch(chan,G_IO_IN,sway_ipc_event,NULL);
 }
+
 void sway_ipc_bar_id ( gchar *id )
 {
   bar_id = strdup(id);

@@ -278,7 +278,7 @@ static const struct wl_registry_listener registry_listener = {
   .global = handle_global,
 };
 
-void wayland_init ( GtkWindow *window )
+void wayland_init ( void )
 {
   GdkDisplay *gdisp;
   struct wl_display *wdisp;
