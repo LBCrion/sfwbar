@@ -878,7 +878,7 @@ struct layout_widget *config_include ( GScanner *scanner )
         "Missing <string> in include(<string>)"))
     return NULL;
   g_scanner_get_next_token(scanner);
-  lw = config_parse(scanner->value.v_string);
+  lw = config_parse(scanner->value.v_string,NULL);
   lw->wtype = G_TOKEN_INCLUDE;
 
   if(config_expect_token(scanner, ')', "Missing ')' after include"))
@@ -1308,9 +1308,10 @@ void config_trigger_action ( GScanner *scanner )
 }
 
 struct layout_widget *config_parse_toplevel ( GScanner *scanner,
-    gboolean layout)
+    gboolean layout, GtkWidget *box)
 {
-  struct layout_widget *w=NULL;
+  struct layout_widget *w=NULL, *lw;
+  gchar *lloc;
 
   while(g_scanner_peek_next_token(scanner) != G_TOKEN_EOF)
   {
@@ -1322,8 +1323,27 @@ struct layout_widget *config_parse_toplevel ( GScanner *scanner,
       case G_TOKEN_LAYOUT:
         if(layout)
         {
-          layout_widget_free(w);
-          w = config_layout(scanner);
+          lloc = NULL;
+          if(g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
+          {
+            g_scanner_get_next_token(scanner);
+            lloc = scanner->value.v_string;
+          }
+          if(lloc && !g_ascii_strcasecmp(lloc,"center"))
+          {
+            lw = config_layout(scanner);
+            gtk_box_set_center_widget(GTK_BOX(box),lw->widget);
+          }
+          else if(lloc && !g_ascii_strcasecmp(lloc,"end"))
+          {
+            lw = config_layout(scanner);
+            gtk_box_pack_end(GTK_BOX(box),lw->widget,TRUE,TRUE,0);
+          }
+          else
+          {
+            layout_widget_free(w);
+            w = config_layout(scanner);
+          }
         }
         else
           g_scanner_error(scanner,"layout not supported in dynamic config");
@@ -1354,7 +1374,7 @@ struct layout_widget *config_parse_toplevel ( GScanner *scanner,
   return w;
 }
 struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
-    gboolean layout )
+    gboolean layout, GtkWidget *box )
 {
   GScanner *scanner;
   struct layout_widget *w;
@@ -1517,7 +1537,7 @@ struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
   scanner->input_name = fname;
   g_scanner_input_text( scanner, data, -1 );
 
-  w = config_parse_toplevel ( scanner, layout );
+  w = config_parse_toplevel ( scanner, layout, box );
   g_free(scanner->config->cset_identifier_first);
   g_free(scanner->config->cset_identifier_nth);
   g_scanner_destroy(scanner);
@@ -1533,7 +1553,7 @@ void config_string ( gchar *string )
     return;
 
   conf = g_strdup(string);
-  config_parse_file("config string",conf,FALSE);
+  config_parse_file("config string",conf,FALSE,NULL);
   g_free(conf);
 }
 
@@ -1551,7 +1571,7 @@ void config_pipe_read ( gchar *command )
   if(chan)
   {
     if(g_io_channel_read_to_end( chan , &conf,NULL,NULL)==G_IO_STATUS_NORMAL)
-      config_parse_file(command,conf,FALSE);
+      config_parse_file(command,conf,FALSE,NULL);
     g_free(conf);
     g_io_channel_unref(chan);
   }
@@ -1559,7 +1579,7 @@ void config_pipe_read ( gchar *command )
   pclose(fp);
 }
 
-struct layout_widget *config_parse ( gchar *file )
+struct layout_widget *config_parse ( gchar *file, GtkWidget *box )
 {
   gchar *fname;
   gchar *conf=NULL;
@@ -1578,7 +1598,7 @@ struct layout_widget *config_parse ( gchar *file )
       exit(1);
     }
 
-  w = config_parse_file (fname, conf,TRUE);
+  w = config_parse_file (fname, conf,TRUE,box);
 
   g_free(conf);
   g_free(fname);

@@ -130,11 +130,17 @@ static void activate (GtkApplication* app, gpointer data )
   struct layout_widget *lw;
   GtkWindow *bar_window;
   GdkDisplay *gdisp;
+  GtkWidget *box;
 
   css_init();
-  lw = config_parse(confname?confname:"sfwbar.config");
+  box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
+  lw = config_parse(confname?confname:"sfwbar.config",box);
 
   bar_window = bar_new(app);
+  if(bar_get_toplevel_dir() == GTK_POS_LEFT || 
+      bar_get_toplevel_dir() == GTK_POS_RIGHT)
+    gtk_orientable_set_orientation(GTK_ORIENTABLE(box),
+        GTK_ORIENTATION_VERTICAL);
 
   sway_ipc_init();
   wayland_init();
@@ -144,7 +150,8 @@ static void activate (GtkApplication* app, gpointer data )
 
   if((lw != NULL)&&(lw->widget!=NULL))
   {
-    gtk_container_add(GTK_CONTAINER(bar_window), lw->widget);
+    gtk_box_pack_start(GTK_BOX(box),lw->widget,TRUE,TRUE,0);
+    gtk_container_add(GTK_CONTAINER(bar_window), box);
     layout_widget_attach(lw);
 
     gtk_widget_show_all ((GtkWidget *)bar_window);

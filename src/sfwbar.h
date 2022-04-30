@@ -135,7 +135,7 @@ void wayland_set_idle_inhibitor ( GtkWidget *widget, gboolean inhibit );
 void wayland_reset_inhibitors ( GtkWidget *w, gpointer data );
 void foreign_toplevel_activate ( gpointer tl );
 
-struct layout_widget *config_parse ( gchar * );
+struct layout_widget *config_parse ( gchar *, GtkWidget * );
 void config_pipe_read ( gchar *command );
 void config_string ( gchar *string );
 
