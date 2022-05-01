@@ -63,7 +63,7 @@ gint bar_get_toplevel_dir ( GtkWidget *widget )
 
 void bar_set_layer ( gchar *layer_str )
 {
-  GtkLayerShellLayer layer;
+  GtkLayerShellLayer layer = GTK_LAYER_SHELL_LAYER_TOP;
 
   if(!g_ascii_strcasecmp(layer_str,"background"))
     layer = GTK_LAYER_SHELL_LAYER_BACKGROUND;
