@@ -175,8 +175,10 @@ static void noop ()
 static void xdg_output_handle_name ( void *data,
     struct zxdg_output_v1 *xdg_output, const gchar *name )
 {
-  gchar **dest = data;
-  *dest = strdup(name);
+  GdkMonitor *monitor = data;
+
+  g_free(g_object_get_data(G_OBJECT(monitor),"xdg_name"));
+  g_object_set_data(G_OBJECT(monitor),"xdg_name",strdup(name));
 }
 
 static const struct zxdg_output_v1_listener xdg_output_listener = {
@@ -186,29 +188,6 @@ static const struct zxdg_output_v1_listener xdg_output_listener = {
   .name = xdg_output_handle_name,
   .description = noop,
 };
-
-gchar *gdk_monitor_get_xdg_name ( GdkMonitor *monitor )
-{
-  GdkDisplay *gdisp;
-  struct wl_display *wdisp;
-  struct wl_output *output;
-  struct zxdg_output_v1 *xdg;
-  gchar *name;
-
-  if(!monitor || !GDK_IS_WAYLAND_MONITOR(monitor))
-    return NULL;
-
-  name = NULL;
-  output = gdk_wayland_monitor_get_wl_output(monitor);
-  gdisp = gdk_monitor_get_display(monitor);
-  wdisp = gdk_wayland_display_get_wl_display(gdisp);
-  xdg = zxdg_output_manager_v1_get_xdg_output(xdg_output_manager, output);
-  zxdg_output_v1_add_listener(xdg,&xdg_output_listener,&name);
-  wl_display_roundtrip(wdisp);
-  zxdg_output_v1_destroy(xdg);
-
-  return name;
-}
 
 void wayland_set_idle_inhibitor ( GtkWidget *widget, gboolean inhibit )
 {
@@ -278,11 +257,47 @@ static const struct wl_registry_listener registry_listener = {
   .global = handle_global,
 };
 
+void wayland_output_new ( GdkMonitor *gmon )
+{
+  struct wl_output *output;
+  struct zxdg_output_v1 *xdg;
+
+  if(!gmon)
+    return;
+
+  output = gdk_wayland_monitor_get_wl_output(gmon);
+
+  if(!output)
+    return;
+
+  xdg = zxdg_output_manager_v1_get_xdg_output(xdg_output_manager, output);
+
+  if(xdg)
+  {
+    zxdg_output_v1_add_listener(xdg,&xdg_output_listener,gmon);
+    g_object_set_data(G_OBJECT(gmon),"xdg_output",xdg);
+  }
+}
+
+void wayland_output_destroy ( GdkMonitor *gmon )
+{
+  struct zxdg_output_v1 *xdg;
+
+  if(!gmon)
+    return;
+
+  xdg = g_object_get_data(G_OBJECT(gmon),"xdg_output");
+
+  if(xdg)
+    zxdg_output_v1_destroy(xdg);
+}
+
 void wayland_init ( void )
 {
   GdkDisplay *gdisp;
   struct wl_display *wdisp;
   struct wl_registry *registry;
+  gint nmon,i;
 
   gdisp = gdk_display_get_default();
   wdisp = gdk_wayland_display_get_wl_display(gdisp);
@@ -297,5 +312,13 @@ void wayland_init ( void )
     g_error("wlr-foreign-toplevel not available\n");
 
   wl_display_roundtrip(wdisp);
+  wl_display_roundtrip(wdisp);
+
+  if(!xdg_output_manager)
+    return;
+
+  nmon = gdk_display_get_n_monitors(gdisp);
+  for(i=0;i<nmon;i++)
+    wayland_output_new(gdk_display_get_monitor(gdisp,i));
   wl_display_roundtrip(wdisp);
 }

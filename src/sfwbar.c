@@ -44,10 +44,9 @@ void list_monitors ( void )
   for(i=0;i<nmon;i++)
   {
     gmon = gdk_display_get_monitor(gdisp,i);
-    name = gdk_monitor_get_xdg_name(gmon);
+    name = g_object_get_data(G_OBJECT(gmon),"xdg_name");
     printf("%s: %s %s\n",name,gdk_monitor_get_manufacturer(gmon),
         gdk_monitor_get_model(gmon));
-    g_free(name);
   }
   exit(0);
 }
@@ -136,17 +135,17 @@ static void activate (GtkApplication* app, gpointer data )
   box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
   lw = config_parse(confname?confname:"sfwbar.config",box);
 
-  bar_window = bar_new(app);
-  if(bar_get_toplevel_dir() == GTK_POS_LEFT || 
-      bar_get_toplevel_dir() == GTK_POS_RIGHT)
-    gtk_orientable_set_orientation(GTK_ORIENTABLE(box),
-        GTK_ORIENTATION_VERTICAL);
-
   sway_ipc_init();
   wayland_init();
 
-  if(monitor && !g_ascii_strcasecmp(monitor,"list"))
+  if( monitor && !g_ascii_strcasecmp(monitor,"list") )
     list_monitors();
+
+  bar_window = bar_new(app);
+  if(bar_get_toplevel_dir(bar_window) == GTK_POS_LEFT || 
+      bar_get_toplevel_dir(bar_window) == GTK_POS_RIGHT)
+    gtk_orientable_set_orientation(GTK_ORIENTABLE(box),
+        GTK_ORIENTATION_VERTICAL);
 
   if((lw != NULL)&&(lw->widget!=NULL))
   {
@@ -162,8 +161,10 @@ static void activate (GtkApplication* app, gpointer data )
     bar_set_monitor(monitor);
 
   gdisp = gdk_display_get_default();
-  g_signal_connect(gdisp, "monitor-added",bar_monitor_change_cb,NULL);
-  g_signal_connect(gdisp, "monitor-removed",bar_monitor_change_cb,NULL);
+  g_signal_connect(gdisp, "monitor-added",
+      G_CALLBACK(bar_monitor_added_cb),NULL);
+  g_signal_connect(gdisp, "monitor-removed",
+      G_CALLBACK(bar_monitor_removed_cb),NULL);
 
   g_thread_unref(g_thread_new("scanner",layout_scanner_thread,
         g_main_context_get_thread_default()));

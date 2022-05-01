@@ -51,7 +51,7 @@ void layout_menu_popup ( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
   g_object_set_data( G_OBJECT(menu), "wid", wid );
   g_object_set_data( G_OBJECT(menu), "caller", widget );
 
-  switch(bar_get_toplevel_dir())
+  switch(bar_get_toplevel_dir(widget))
   {
     case GTK_POS_TOP:
       wanchor = GDK_GRAVITY_SOUTH_WEST;

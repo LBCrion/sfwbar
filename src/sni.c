@@ -621,21 +621,21 @@ gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data)
     gtk_widget_get_allocation(w,&alloc);
     gtk_widget_get_allocation(gtk_widget_get_toplevel(w),&walloc);
 
-    if(bar_get_toplevel_dir() == GTK_POS_RIGHT)
+    if(bar_get_toplevel_dir(w) == GTK_POS_RIGHT)
       x = geo.width - walloc.width + event->x + alloc.x;
     else
     {
-      if(bar_get_toplevel_dir() == GTK_POS_LEFT)
+      if(bar_get_toplevel_dir(w) == GTK_POS_LEFT)
         x = walloc.width;
       else
         x = event->x + alloc.x;
     }
 
-    if(bar_get_toplevel_dir() == GTK_POS_BOTTOM)
+    if(bar_get_toplevel_dir(w) == GTK_POS_BOTTOM)
       y = geo.height - walloc.height;
     else
     {
-      if(bar_get_toplevel_dir() == GTK_POS_TOP)
+      if(bar_get_toplevel_dir(w) == GTK_POS_TOP)
         y = walloc.height;
       else
         y = event->y + alloc.y;
