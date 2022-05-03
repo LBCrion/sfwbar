@@ -202,7 +202,7 @@ void bar_set_monitor ( gchar *mon_name );
 void bar_set_layer ( gchar *layer );
 void bar_set_size ( gchar *size );
 void bar_set_exclusive_zone ( gchar *zone );
-gchar *bar_get_output ( void );
+gchar *bar_get_output ( GtkWidget * );
 gint bar_get_toplevel_dir ( GtkWidget * );
 gboolean bar_hide_event ( struct json_object *obj );
 void bar_monitor_added_cb ( GdkDisplay *, GdkMonitor * );

@@ -180,7 +180,7 @@ void taskbar_update( void )
   if(!taskbar || !invalid)
     return;
 
-  output = bar_get_output();
+  output = bar_get_output( taskbar );
   flow_grid_clean(taskbar);
   for (item = wintree_get_list(); item; item = g_list_next(item) )
   {

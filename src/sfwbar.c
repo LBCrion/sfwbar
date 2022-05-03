@@ -127,9 +127,10 @@ gboolean shell_timer ( gpointer data )
 static void activate (GtkApplication* app, gpointer data )
 {
   struct layout_widget *lw;
-  GtkWindow *bar_window;
+  GtkWindow *win;
   GdkDisplay *gdisp;
   GtkWidget *box;
+  GList *clist;
 
   css_init();
   box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
@@ -141,20 +142,24 @@ static void activate (GtkApplication* app, gpointer data )
   if( monitor && !g_ascii_strcasecmp(monitor,"list") )
     list_monitors();
 
-  bar_window = bar_new(app);
-  if(bar_get_toplevel_dir(bar_window) == GTK_POS_LEFT || 
-      bar_get_toplevel_dir(bar_window) == GTK_POS_RIGHT)
+  win = bar_new(app);
+  if(bar_get_toplevel_dir(GTK_WIDGET(win)) == GTK_POS_LEFT || 
+      bar_get_toplevel_dir(GTK_WIDGET(win)) == GTK_POS_RIGHT)
     gtk_orientable_set_orientation(GTK_ORIENTABLE(box),
         GTK_ORIENTATION_VERTICAL);
 
-  if((lw != NULL)&&(lw->widget!=NULL))
+  if( lw && lw->widget )
   {
     gtk_box_pack_start(GTK_BOX(box),lw->widget,TRUE,TRUE,0);
-    gtk_container_add(GTK_CONTAINER(bar_window), box);
     layout_widget_attach(lw);
+  }
 
-    gtk_widget_show_all ((GtkWidget *)bar_window);
-    layout_widgets_autoexec(GTK_WIDGET(bar_window),NULL);
+  if((clist = gtk_container_get_children(GTK_CONTAINER(box))))
+  {
+    g_list_free(clist);
+    gtk_container_add(GTK_CONTAINER(win), box);
+    gtk_widget_show_all (GTK_WIDGET(win));
+    layout_widgets_autoexec(GTK_WIDGET(win),NULL);
   }
 
   if(monitor)
@@ -174,7 +179,6 @@ static void activate (GtkApplication* app, gpointer data )
   g_timeout_add (100,(GSourceFunc )shell_timer,NULL);
   g_unix_signal_add(10,(GSourceFunc)switcher_event,NULL);
   g_unix_signal_add(12,(GSourceFunc)bar_hide_event,NULL);
-  gtk_widget_show_all ((GtkWidget *)bar_window);
 }
 
 int main (int argc, gchar **argv)

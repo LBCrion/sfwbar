@@ -10,6 +10,13 @@
 
 static GtkWindow *bar_window;
 
+GtkWidget *bar_get_from_widget ( GtkWidget *widget )
+{
+  if(!widget)
+    return GTK_WIDGET(bar_window);
+  return gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
+}
+
 gboolean bar_hide_event ( struct json_object *obj )
 {
   gchar *mode, state;
@@ -52,7 +59,7 @@ gint bar_get_toplevel_dir ( GtkWidget *widget )
   if(!widget)
     return GTK_POS_RIGHT;
 
-  toplevel = gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
+  toplevel = bar_get_from_widget(widget);
 
   if(!toplevel)
     return GTK_POS_RIGHT;
@@ -93,11 +100,14 @@ void bar_set_exclusive_zone ( gchar *zone )
   }
 }
 
-gchar *bar_get_output ( void )
+gchar *bar_get_output ( GtkWidget *widget )
 {
   GdkWindow *win;
+  GtkWidget *toplevel;
 
-  win = gtk_widget_get_window(GTK_WIDGET(bar_window));
+  toplevel = bar_get_from_widget(widget);
+
+  win = gtk_widget_get_window(GTK_WIDGET(toplevel));
   return g_object_get_data( G_OBJECT(gdk_display_get_monitor_at_window(
         gdk_window_get_display(win),win)), "xdg_name" );
 }
@@ -129,9 +139,9 @@ void bar_update_monitor ( GtkWindow *win )
     }
   }
 
-  gtk_widget_hide(GTK_WIDGET(bar_window));
-  gtk_layer_set_monitor(bar_window, match);
-  gtk_widget_show(GTK_WIDGET(bar_window));
+  gtk_widget_hide(GTK_WIDGET(win));
+  gtk_layer_set_monitor(win, match);
+  gtk_widget_show(GTK_WIDGET(win));
 }
 
 void bar_set_monitor ( gchar *mon_name )
