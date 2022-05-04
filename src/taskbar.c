@@ -9,34 +9,17 @@
 #include <gtk/gtk.h>
 #include "sfwbar.h"
 
-static GtkWidget *taskbar;
-static gboolean icons, labels;
 static gboolean invalid;
-static gboolean filter_output;
-static gint title_width = -1;
 static struct layout_widget *taskbar_lw;
 
 void taskbar_init ( struct layout_widget *lw )
 {
-  taskbar = lw->widget;
   taskbar_lw = lw;
 }
 
 void taskbar_invalidate ( void )
 {
   invalid = TRUE;
-}
-
-void taskbar_set_options ( gboolean nicons, gboolean nlabels, gboolean filter,
-    gint twidth )
-{
-  icons = nicons;
-  labels = nlabels;
-  filter_output = filter;
-  title_width = twidth;
-
-  if(!icons)
-    labels = TRUE;
 }
 
 gboolean taskbar_click_cb ( GtkWidget *widget, GdkEventButton *ev,
@@ -105,9 +88,19 @@ void taskbar_window_init ( struct wt_window *win )
 {
   GtkWidget *box,*icon,*label,*button;
   gint dir;
+  gboolean icons, labels;
+  gint title_width;
 
-  if(!taskbar)
+  if(!taskbar_lw || !taskbar_lw->widget)
     return;
+
+  icons = GPOINTER_TO_INT(
+      g_object_get_data(G_OBJECT(taskbar_lw->widget),"icons"));
+  labels = GPOINTER_TO_INT(
+      g_object_get_data(G_OBJECT(taskbar_lw->widget),"labels"));
+
+  if(!icons)
+    labels = TRUE;
 
   win->button = gtk_event_box_new();
   button = gtk_button_new();
@@ -116,6 +109,11 @@ void taskbar_window_init ( struct wt_window *win )
   gtk_widget_style_get(button,"direction",&dir,NULL);
   box = gtk_grid_new();
   gtk_container_add(GTK_CONTAINER(button),box);
+  title_width = GPOINTER_TO_INT(
+      g_object_get_data(G_OBJECT(taskbar_lw->widget),"title_width"));
+  if(!title_width)
+    title_width = -1;
+
   if(icons)
   {
     icon = scale_image_new();
@@ -149,7 +147,11 @@ void taskbar_set_label ( struct wt_window *win, gchar *title )
   GtkWidget *button;
   GList *blist, *glist, *iter;
 
-  if(!taskbar || !labels)
+  if(!taskbar_lw || !taskbar_lw->widget)
+    return;
+
+  if(!GPOINTER_TO_INT(
+      g_object_get_data(G_OBJECT(taskbar_lw->widget),"labels")))
     return;
 
   if(!win->button)
@@ -176,12 +178,15 @@ void taskbar_update( void )
   GList *item;
   struct wt_window *win;
   gchar *output;
+  gboolean filter_output;
 
-  if(!taskbar || !invalid)
+  if(!taskbar_lw || !taskbar_lw->widget || !invalid)
     return;
 
-  output = bar_get_output( taskbar );
-  flow_grid_clean(taskbar);
+  output = bar_get_output( taskbar_lw->widget );
+  flow_grid_clean(taskbar_lw->widget);
+  filter_output = GPOINTER_TO_INT(
+      g_object_get_data(G_OBJECT(taskbar_lw->widget),"filter_output"));
   for (item = wintree_get_list(); item; item = g_list_next(item) )
   {
     win = item->data;
@@ -197,10 +202,10 @@ void taskbar_update( void )
           GTK_STATE_FLAG_PRELIGHT);
 
       widget_set_css(win->button,TRUE);
-      flow_grid_attach(taskbar,win->button);
+      flow_grid_attach(taskbar_lw->widget,win->button);
     }
   }
-  flow_grid_pad(taskbar);
-  gtk_widget_show_all(taskbar);
+  flow_grid_pad(taskbar_lw->widget);
+  gtk_widget_show_all(taskbar_lw->widget);
   invalid = FALSE;
 }

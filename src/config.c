@@ -748,9 +748,6 @@ void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
 
 gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
 {
-  gboolean labels = FALSE, icons = FALSE, filter = FALSE;
-  gint twidth = -1;
-
   scanner->max_parse_errors = FALSE;
 
   if( g_scanner_peek_next_token( scanner ) != '{')
@@ -821,14 +818,16 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
         break;
       case G_TOKEN_PEROUTPUT:
         if(lw->wtype == G_TOKEN_TASKBAR)
-          filter = config_assign_boolean(scanner,FALSE,"filter_output");
+          g_object_set_data(G_OBJECT(lw->widget),"filter_output",
+            GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"filter_output")));
         else
           g_scanner_error(scanner,
               "this widget has no property 'filter_output'");
         break;
       case G_TOKEN_TITLEWIDTH:
         if(lw->wtype == G_TOKEN_TASKBAR)
-          twidth = config_assign_number(scanner,"title_width");
+          g_object_set_data(G_OBJECT(lw->widget),"title_width",
+              GINT_TO_POINTER(config_assign_number(scanner,"title_width")));
         else
           g_scanner_error(scanner,
               "this widget has no property 'title_width'");
@@ -843,10 +842,12 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
         config_widget_action(scanner, lw);
         break;
       case G_TOKEN_ICONS:
-        icons = config_assign_boolean(scanner,FALSE,"icons");
+        g_object_set_data(G_OBJECT(lw->widget),"icons",
+          GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"icons")));
         break;
       case G_TOKEN_LABELS:
-        labels = config_assign_boolean(scanner,FALSE,"labels");
+        g_object_set_data(G_OBJECT(lw->widget),"labels",
+          GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"labels")));
         break;
       case G_TOKEN_LOC:
         lw->rect = config_get_loc(scanner);
@@ -856,8 +857,6 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
     }
     g_scanner_peek_next_token( scanner );
   }
-  if(lw->wtype == G_TOKEN_TASKBAR)
-    taskbar_set_options(icons,labels,filter,twidth);
   if((gint)g_scanner_peek_next_token(scanner) == '}' &&
       lw->wtype != G_TOKEN_GRID )
     g_scanner_get_next_token(scanner);
