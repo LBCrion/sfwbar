@@ -242,21 +242,23 @@ void taskbar_update( GtkWidget *taskbar )
   for (; iter; iter = g_list_next(iter) )
   {
     item = iter->data;
-    win = g_object_get_data(G_OBJECT(item->widget),"parent");
-    if(( !filter_output || !!win->output || g_strcmp0(win->output,output)) &&
-        item )
+    if(item)
     {
-      if ( wintree_is_focused(win->uid) )
-        gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(item->widget)),
-            "taskbar_active");
-      else
-        gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(item->widget)),
-            "taskbar_normal");
-      gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(item->widget)),
-          GTK_STATE_FLAG_PRELIGHT);
+      win = g_object_get_data(G_OBJECT(item->widget),"parent");
+      if( !filter_output || !!win->output || g_strcmp0(win->output,output))
+      {
+        if ( wintree_is_focused(win->uid) )
+          gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(item->widget)),
+              "taskbar_active");
+        else
+          gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(item->widget)),
+              "taskbar_normal");
+        gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(item->widget)),
+            GTK_STATE_FLAG_PRELIGHT);
 
-      widget_set_css(item->widget,TRUE);
-      flow_grid_attach(taskbar,item->widget);
+        widget_set_css(item->widget,TRUE);
+        flow_grid_attach(taskbar,item->widget);
+      }
     }
   }
   flow_grid_pad(taskbar);
