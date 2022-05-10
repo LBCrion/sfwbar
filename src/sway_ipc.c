@@ -141,7 +141,7 @@ void sway_minimized_set ( struct json_object *obj, const gchar *parent,
   {
     g_free(win->output);
     win->output = g_strdup(monitor);
-    taskbar_invalidate();
+    taskbar_invalidate_all();
   }
 }
 
@@ -366,7 +366,7 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
             sway_set_state(container);
           if(!g_strcmp0(change,"move"))
             sway_ipc_rescan();
-          taskbar_invalidate();
+          taskbar_invalidate_all();
           switcher_invalidate();
           g_free(change);
         }
@@ -425,7 +425,7 @@ void sway_ipc_init ( void )
   }
   g_free(response);
 
-  taskbar_invalidate();
+  taskbar_invalidate_all();
 
   main_ipc = sway_ipc_open(10);
   if(main_ipc<0)

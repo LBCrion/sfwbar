@@ -106,7 +106,8 @@ void place_window ( gint64 wid, gint64 pid );
 void placer_config ( gint xs, gint ys, gint xo, gint yo, gboolean pid );
 
 void taskbar_init ( struct layout_widget * );
-void taskbar_invalidate ( void );
+void taskbar_invalidate ( GtkWidget * );
+void taskbar_invalidate_all ( void );
 void taskbar_set_options ( gboolean, gboolean, gboolean, gint );
 void taskbar_update ( void );
 void taskbar_window_init ( struct wt_window *win );

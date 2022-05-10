@@ -89,7 +89,7 @@ void wintree_window_append ( struct wt_window *win )
     switcher_window_init(win);
   if(g_list_find(wt_list,win)==NULL)
     wt_list = g_list_append (wt_list,win);
-  taskbar_invalidate();
+  taskbar_invalidate_all();
   switcher_invalidate();
 }
 

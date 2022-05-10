@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020-2021 Lev Babiev
+ * Copyright 2020-2022 Lev Babiev
  */
 
 
@@ -9,7 +9,6 @@
 #include <gtk/gtk.h>
 #include "sfwbar.h"
 
-static gboolean invalid;
 static struct layout_widget *taskbar_lw;
 
 void taskbar_init ( struct layout_widget *lw )
@@ -17,9 +16,14 @@ void taskbar_init ( struct layout_widget *lw )
   taskbar_lw = lw;
 }
 
-void taskbar_invalidate ( void )
+void taskbar_invalidate ( GtkWidget *taskbar )
 {
-  invalid = TRUE;
+  g_object_set_data(G_OBJECT(taskbar),"invalid",GINT_TO_POINTER(TRUE));
+}
+
+void taskbar_invalidate_all ( void )
+{
+  taskbar_invalidate(taskbar_lw->widget);
 }
 
 gboolean taskbar_click_cb ( GtkWidget *widget, GdkEventButton *ev,
@@ -81,7 +85,7 @@ void taskbar_button_cb( GtkWidget *widget, gpointer data )
       wintree_focus(button->uid);
   }
 
-  taskbar_invalidate();
+  taskbar_invalidate(taskbar_lw->widget);
 }
 
 void taskbar_window_init ( struct wt_window *win )
@@ -179,8 +183,13 @@ void taskbar_update( void )
   struct wt_window *win;
   gchar *output;
   gboolean filter_output;
+  gboolean invalid;
 
-  if(!taskbar_lw || !taskbar_lw->widget || !invalid)
+  if(!taskbar_lw || !taskbar_lw->widget)
+    return;
+
+  if(!GPOINTER_TO_INT(g_object_get_data(
+          G_OBJECT(taskbar_lw->widget),"invalid")))
     return;
 
   output = bar_get_output( taskbar_lw->widget );
@@ -207,5 +216,7 @@ void taskbar_update( void )
   }
   flow_grid_pad(taskbar_lw->widget);
   gtk_widget_show_all(taskbar_lw->widget);
-  invalid = FALSE;
+
+  g_object_set_data(G_OBJECT(taskbar_lw->widget),"invalid",
+      GINT_TO_POINTER(FALSE));
 }
