@@ -84,7 +84,7 @@ void wintree_window_append ( struct wt_window *win )
     return;
 
   if( !win->button && (win->title || win->appid) )
-    taskbar_window_init(win);
+    taskbar_item_init_for_all(win);
   if( !win->switcher && (win->title || win->appid) )
     switcher_window_init(win);
   if(g_list_find(wt_list,win)==NULL)

@@ -223,7 +223,7 @@ void sway_window_title ( struct json_object *container )
   if(win)
   {
     str_assign(&(win->title),title);
-    taskbar_set_label(win,title);
+    taskbar_set_label_for_all(win,title);
     switcher_set_label(win,title);
     wintree_set_active(title);
   }

@@ -117,7 +117,7 @@ void css_init ( void )
 
 gboolean shell_timer ( gpointer data )
 {
-  taskbar_update();
+  taskbar_update_all();
   switcher_update();
   sni_update();
 

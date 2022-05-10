@@ -109,9 +109,9 @@ void taskbar_init ( struct layout_widget * );
 void taskbar_invalidate ( GtkWidget * );
 void taskbar_invalidate_all ( void );
 void taskbar_set_options ( gboolean, gboolean, gboolean, gint );
-void taskbar_update ( void );
-void taskbar_window_init ( struct wt_window *win );
-void taskbar_set_label ( struct wt_window *win, gchar *title );
+void taskbar_update_all ( void );
+void taskbar_item_init_for_all ( struct wt_window *win );
+void taskbar_set_label_for_all ( struct wt_window *, gchar *);
 
 struct wt_window *wintree_window_init ( void );
 struct wt_window *wintree_from_id ( gpointer id );
