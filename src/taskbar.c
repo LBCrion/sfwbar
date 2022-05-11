@@ -11,7 +11,6 @@
 
 struct taskbar_item {
   GtkWidget *widget;
-  void *parent;
   struct wt_window *win;
   struct layout_action *actions;
 };
@@ -44,7 +43,7 @@ struct taskbar_item *taskbar_item_lookup ( GtkWidget *taskbar, void *parent )
 
   iter = g_object_get_data(G_OBJECT(taskbar),"items");
   for(;iter;iter=g_list_next(iter))
-    if(((struct taskbar_item *)iter->data)->parent == parent)
+    if(((struct taskbar_item *)iter->data)->win == parent)
       return iter->data;
 
   return NULL;
@@ -233,7 +232,6 @@ void taskbar_set_label_for_all ( struct wt_window *win, gchar *title )
 
 void taskbar_update( GtkWidget *taskbar )
 {
-  struct wt_window *win;
   struct taskbar_item *item;
   GList *iter;
   gchar *output;
@@ -256,10 +254,10 @@ void taskbar_update( GtkWidget *taskbar )
     item = iter->data;
     if(item)
     {
-      win = g_object_get_data(G_OBJECT(item->widget),"parent");
-      if( !filter_output || !!win->output || g_strcmp0(win->output,output))
+      if( !filter_output || !!item->win->output ||
+          g_strcmp0(item->win->output,output))
       {
-        if ( wintree_is_focused(win->uid) )
+        if ( wintree_is_focused(item->win->uid) )
           gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(item->widget)),
               "taskbar_active");
         else
