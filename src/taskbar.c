@@ -14,12 +14,12 @@ struct taskbar_item {
   void *parent;
 };
 
-
 static struct layout_widget *taskbar_lw;
 
 void taskbar_init ( struct layout_widget *lw )
 {
   taskbar_lw = lw;
+  g_object_set_data(G_OBJECT(lw->widget),"actions",lw->action);
 }
 
 void taskbar_invalidate ( GtkWidget *taskbar )
@@ -47,12 +47,16 @@ struct taskbar_item *taskbar_item_lookup ( GtkWidget *taskbar, void *parent )
 gboolean taskbar_click_cb ( GtkWidget *widget, GdkEventButton *ev,
     gpointer wid )
 {
+  struct layout_action *actions;
+
   if(GTK_IS_BUTTON(widget) && ev->button != 1)
     return FALSE;
 
+  actions = g_object_get_data(G_OBJECT(widget),"actions");
+
   if(ev->type == GDK_BUTTON_PRESS && ev->button >= 1 && ev->button <= 3)
     action_exec(gtk_bin_get_child(GTK_BIN(widget)),
-        &(taskbar_lw->action[ev->button]),(GdkEvent *)ev,
+        &actions[ev->button],(GdkEvent *)ev,
         wintree_from_id(wid),NULL);
   return TRUE;
 }
@@ -160,6 +164,8 @@ void taskbar_item_init ( GtkWidget *taskbar, struct wt_window *win )
   }
 
   g_object_set_data(G_OBJECT(item->widget),"parent",win);
+  g_object_set_data(G_OBJECT(item->widget),"actions",
+      g_object_get_data(G_OBJECT(taskbar),"actions"));
   g_object_set_data(G_OBJECT(button),"parent",win);
   g_object_ref(G_OBJECT(item->widget));
   g_signal_connect(button,"clicked",G_CALLBACK(taskbar_button_cb),NULL);
