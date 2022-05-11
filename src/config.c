@@ -689,7 +689,10 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
         g_scanner_get_next_token(scanner);
         if(!config_expect_token(scanner, G_TOKEN_STRING,
             "Missing second argument in action"))
+        {
+          g_free(action->command);
           return FALSE;
+        }
         g_scanner_get_next_token(scanner);
         g_free(action->addr);
         action->addr = action->command;
