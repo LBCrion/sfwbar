@@ -12,6 +12,8 @@
 struct taskbar_item {
   GtkWidget *widget;
   void *parent;
+  struct wt_window *win;
+  struct layout_action *actions;
 };
 
 static GList *taskbars;
@@ -49,27 +51,25 @@ struct taskbar_item *taskbar_item_lookup ( GtkWidget *taskbar, void *parent )
 }
 
 gboolean taskbar_click_cb ( GtkWidget *widget, GdkEventButton *ev,
-    gpointer wid )
+    gpointer data )
 {
-  struct layout_action *actions;
+  struct taskbar_item *item = data;
 
   if(GTK_IS_BUTTON(widget) && ev->button != 1)
     return FALSE;
 
-  actions = g_object_get_data(G_OBJECT(widget),"actions");
-
   if(ev->type == GDK_BUTTON_PRESS && ev->button >= 1 && ev->button <= 3)
     action_exec(gtk_bin_get_child(GTK_BIN(widget)),
-        &actions[ev->button],(GdkEvent *)ev,
-        wintree_from_id(wid),NULL);
+        &item->actions[ev->button],(GdkEvent *)ev,
+        wintree_from_id(item->win->uid),NULL);
   return TRUE;
 }
 
 gboolean taskbar_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
-    gpointer wid )
+    gpointer data )
 {
+  struct taskbar_item *item = data;
   gint button;
-  struct layout_action *actions;
 
   switch(event->direction)
   {
@@ -89,34 +89,26 @@ gboolean taskbar_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
       button = 0;
   }
   if(button)
-  {
-    actions = g_object_get_data(G_OBJECT(w),"actions");
     action_exec(gtk_bin_get_child(GTK_BIN(w)),
-        &actions[button], (GdkEvent *)event,
-        wintree_from_id(wid),NULL);
-  }
+        &item->actions[button], (GdkEvent *)event,
+        wintree_from_id(item->win->uid),NULL);
 
   return TRUE;
 }
 
 void taskbar_button_cb( GtkWidget *widget, gpointer data )
 {
-  struct wt_window *button = g_object_get_data(G_OBJECT(widget),"parent");
-  struct layout_action *actions;
+  struct taskbar_item *item = data;
 
-  if(button == NULL)
-    return;
 
-  actions = g_object_get_data(G_OBJECT(widget),"actions");
-
-  if(actions[1].type)
-    action_exec(widget,&actions[1],NULL,button,NULL);
+  if(item->actions[1].type)
+    action_exec(widget,&item->actions[1],NULL,item->win,NULL);
   else
   {
-    if ( wintree_is_focused(button->uid) )
-      wintree_minimize(button->uid);
+    if ( wintree_is_focused(item->win->uid) )
+      wintree_minimize(item->win->uid);
     else
-      wintree_focus(button->uid);
+      wintree_focus(item->win->uid);
   }
 
   taskbar_invalidate_all();
@@ -175,19 +167,15 @@ void taskbar_item_init ( GtkWidget *taskbar, struct wt_window *win )
     gtk_grid_attach_next_to(GTK_GRID(box),label,icon,dir,1,1);
   }
 
-  g_object_set_data(G_OBJECT(item->widget),"parent",win);
-  g_object_set_data(G_OBJECT(item->widget),"actions",
-      g_object_get_data(G_OBJECT(taskbar),"actions"));
-  g_object_set_data(G_OBJECT(button),"parent",win);
-  g_object_set_data(G_OBJECT(button),"actions",
-      g_object_get_data(G_OBJECT(taskbar),"actions"));
+  item->win = win;
+  item->actions = g_object_get_data(G_OBJECT(taskbar),"actions");
   g_object_ref(G_OBJECT(item->widget));
-  g_signal_connect(button,"clicked",G_CALLBACK(taskbar_button_cb),NULL);
+  g_signal_connect(button,"clicked",G_CALLBACK(taskbar_button_cb),item);
   g_signal_connect(item->widget,"button_press_event",
-      G_CALLBACK(taskbar_click_cb),win->uid);
+      G_CALLBACK(taskbar_click_cb),item);
   gtk_widget_add_events(GTK_WIDGET(item->widget),GDK_SCROLL_MASK);
   g_signal_connect(item->widget,"scroll-event",
-      G_CALLBACK(taskbar_scroll_cb),win->uid);
+      G_CALLBACK(taskbar_scroll_cb),item);
   g_object_set_data(G_OBJECT(taskbar),"items", g_list_append(
       g_object_get_data(G_OBJECT(taskbar),"items"), item));
 }
@@ -220,7 +208,6 @@ void taskbar_set_label ( GtkWidget *taskbar, struct wt_window *win, gchar *title
     return;
 
   button = gtk_bin_get_child(GTK_BIN(item->widget));
-
   blist = gtk_container_get_children(GTK_CONTAINER(button));
 
   if(!blist)
