@@ -14,11 +14,11 @@ struct taskbar_item {
   void *parent;
 };
 
-static struct layout_widget *taskbar_lw;
+static GList *taskbars;
 
 void taskbar_init ( struct layout_widget *lw )
 {
-  taskbar_lw = lw;
+  taskbars = g_list_append(taskbars,lw);
   g_object_set_data(G_OBJECT(lw->widget),"actions",lw->action);
 }
 
@@ -29,7 +29,11 @@ void taskbar_invalidate ( GtkWidget *taskbar )
 
 void taskbar_invalidate_all ( void )
 {
-  taskbar_invalidate(taskbar_lw->widget);
+  GList *iter;
+
+  for(iter=taskbars; iter; iter=g_list_next(iter))
+    if(iter->data)
+      taskbar_invalidate(((struct layout_widget *)iter->data)->widget);
 }
 
 struct taskbar_item *taskbar_item_lookup ( GtkWidget *taskbar, void *parent )
@@ -65,6 +69,8 @@ gboolean taskbar_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
     gpointer wid )
 {
   gint button;
+  struct layout_action *actions;
+
   switch(event->direction)
   {
     case GDK_SCROLL_UP:
@@ -83,9 +89,12 @@ gboolean taskbar_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
       button = 0;
   }
   if(button)
+  {
+    actions = g_object_get_data(G_OBJECT(w),"actions");
     action_exec(gtk_bin_get_child(GTK_BIN(w)),
-        &(taskbar_lw->action[button]), (GdkEvent *)event,
+        &actions[button], (GdkEvent *)event,
         wintree_from_id(wid),NULL);
+  }
 
   return TRUE;
 }
@@ -93,12 +102,15 @@ gboolean taskbar_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
 void taskbar_button_cb( GtkWidget *widget, gpointer data )
 {
   struct wt_window *button = g_object_get_data(G_OBJECT(widget),"parent");
+  struct layout_action *actions;
 
   if(button == NULL)
     return;
 
-  if(taskbar_lw->action[1].type)
-    action_exec(widget,&(taskbar_lw->action[1]),NULL,button,NULL);
+  actions = g_object_get_data(G_OBJECT(widget),"actions");
+
+  if(actions[1].type)
+    action_exec(widget,&actions[1],NULL,button,NULL);
   else
   {
     if ( wintree_is_focused(button->uid) )
@@ -107,7 +119,7 @@ void taskbar_button_cb( GtkWidget *widget, gpointer data )
       wintree_focus(button->uid);
   }
 
-  taskbar_invalidate(taskbar_lw->widget);
+  taskbar_invalidate_all();
 }
 
 void taskbar_item_init ( GtkWidget *taskbar, struct wt_window *win )
@@ -118,7 +130,7 @@ void taskbar_item_init ( GtkWidget *taskbar, struct wt_window *win )
   gboolean icons, labels;
   gint title_width;
 
-  if(!taskbar_lw || !taskbar_lw->widget)
+  if(!taskbar)
     return;
 
   item = taskbar_item_lookup(taskbar, win);
@@ -167,6 +179,8 @@ void taskbar_item_init ( GtkWidget *taskbar, struct wt_window *win )
   g_object_set_data(G_OBJECT(item->widget),"actions",
       g_object_get_data(G_OBJECT(taskbar),"actions"));
   g_object_set_data(G_OBJECT(button),"parent",win);
+  g_object_set_data(G_OBJECT(button),"actions",
+      g_object_get_data(G_OBJECT(taskbar),"actions"));
   g_object_ref(G_OBJECT(item->widget));
   g_signal_connect(button,"clicked",G_CALLBACK(taskbar_button_cb),NULL);
   g_signal_connect(item->widget,"button_press_event",
@@ -180,7 +194,11 @@ void taskbar_item_init ( GtkWidget *taskbar, struct wt_window *win )
 
 void taskbar_item_init_for_all ( struct wt_window *win )
 {
-  taskbar_item_init( taskbar_lw->widget, win );
+  GList *iter;
+
+  for(iter=taskbars; iter; iter=g_list_next(iter))
+    if(iter->data)
+      taskbar_item_init(((struct layout_widget *)iter->data)->widget, win );
 }
 
 void taskbar_set_label ( GtkWidget *taskbar, struct wt_window *win, gchar *title )
@@ -219,10 +237,11 @@ void taskbar_set_label ( GtkWidget *taskbar, struct wt_window *win, gchar *title
 
 void taskbar_set_label_for_all ( struct wt_window *win, gchar *title )
 {
-  if(!taskbar_lw)
-    return;
+  GList *iter;
 
-  taskbar_set_label(taskbar_lw->widget, win, title);
+  for(iter=taskbars; iter; iter=g_list_next(iter))
+    if(iter->data)
+      taskbar_set_label(((struct layout_widget *)iter->data)->widget,win,title);
 }
 
 void taskbar_update( GtkWidget *taskbar )
@@ -275,8 +294,9 @@ void taskbar_update( GtkWidget *taskbar )
 
 void taskbar_update_all ( void )
 {
-  if(!taskbar_lw)
-    return;
+  GList *iter;
 
-  taskbar_update(taskbar_lw->widget);
+  for(iter=taskbars; iter; iter=g_list_next(iter))
+    if(iter->data)
+      taskbar_update(((struct layout_widget *)iter->data)->widget);
 }
