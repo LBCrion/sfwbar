@@ -163,7 +163,7 @@ static void activate (GtkApplication* app, gpointer data )
   }
 
   if(monitor)
-    bar_set_monitor(monitor);
+    bar_set_monitor(monitor,"sfwbar");
 
   gdisp = gdk_display_get_default();
   g_signal_connect(gdisp, "monitor-added",

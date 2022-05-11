@@ -199,10 +199,10 @@ void scanner_file_attach ( gchar *trigger, struct scan_file *file );
 struct scan_file *scanner_file_get ( gchar *trigger );
 
 GtkWindow *bar_new ( GtkApplication *app );
-void bar_set_monitor ( gchar *mon_name );
-void bar_set_layer ( gchar *layer );
-void bar_set_size ( gchar *size );
-void bar_set_exclusive_zone ( gchar *zone );
+void bar_set_monitor ( gchar *, gchar * );
+void bar_set_layer ( gchar *, gchar *);
+void bar_set_size ( gchar *, gchar * );
+void bar_set_exclusive_zone ( gchar *, gchar * );
 gchar *bar_get_output ( GtkWidget * );
 gint bar_get_toplevel_dir ( GtkWidget * );
 gboolean bar_hide_event ( struct json_object *obj );

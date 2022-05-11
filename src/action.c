@@ -227,15 +227,15 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
       break;
     case G_TOKEN_SETMONITOR:
       if(action->command)
-        bar_set_monitor(action->command);
+        bar_set_monitor(action->command,action->addr);
       break;
     case G_TOKEN_SETLAYER:
       if(action->command)
-        bar_set_layer(action->command);
+        bar_set_layer(action->command,action->addr);
       break;
     case G_TOKEN_SETBARSIZE:
       if(action->command)
-        bar_set_size(action->command);
+        bar_set_size(action->command,action->addr);
       break;
     case G_TOKEN_SETBARID:
       if(action->command)
@@ -243,7 +243,7 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
       break;
     case G_TOKEN_SETEXCLUSIVEZONE:
       if(action->command)
-        bar_set_exclusive_zone(action->command);
+        bar_set_exclusive_zone(action->command,action->addr);
       break;
     case G_TOKEN_SETVALUE:
       if(action->command && widget)
