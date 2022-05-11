@@ -666,10 +666,17 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
     case G_TOKEN_USERSTATE:
     case G_TOKEN_CONFIG:
     case G_TOKEN_FUNCTION:
+    case G_TOKEN_SETBARID:
+      if(!config_expect_token(scanner, G_TOKEN_STRING,
+            "Missing argument in action"))
+        return FALSE;
+      g_scanner_get_next_token(scanner);
+      g_free(action->command);
+      action->command = g_strdup(scanner->value.v_string);
+      break;
     case G_TOKEN_SETMONITOR:
     case G_TOKEN_SETLAYER:
     case G_TOKEN_SETBARSIZE:
-    case G_TOKEN_SETBARID:
     case G_TOKEN_SETEXCLUSIVEZONE:
       if(!config_expect_token(scanner, G_TOKEN_STRING,
             "Missing argument in action"))
@@ -677,6 +684,17 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
       g_scanner_get_next_token(scanner);
       g_free(action->command);
       action->command = g_strdup(scanner->value.v_string);
+      if(g_scanner_peek_next_token(scanner) == ',')
+      {
+        g_scanner_get_next_token(scanner);
+        if(!config_expect_token(scanner, G_TOKEN_STRING,
+            "Missing second argument in action"))
+          return FALSE;
+        g_scanner_get_next_token(scanner);
+        g_free(action->addr);
+        action->addr = action->command;
+        action->command = g_strdup(scanner->value.v_string);
+      }
       break;
     case G_TOKEN_CLIENTSEND:
       if(!config_expect_token(scanner, G_TOKEN_STRING,
