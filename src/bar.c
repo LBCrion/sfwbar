@@ -226,19 +226,12 @@ void bar_set_size ( gchar *size, gchar *addr )
   }
 }
 
-GtkWindow *bar_new ( GtkApplication *app )
+GtkWindow *bar_new ( void )
 {
   GtkWindow *win;
-  static GtkApplication *napp;
   gint toplevel_dir;
 
-  if(app)
-    napp = app;
-
-  if(!napp)
-    return NULL;
-
-  win = (GtkWindow *)gtk_application_window_new (napp);
+  win = (GtkWindow *)gtk_window_new (GTK_WINDOW_TOPLEVEL);
   gtk_widget_set_name(GTK_WIDGET(win),"sfwbar");
   gtk_layer_init_for_window (win);
   gtk_layer_auto_exclusive_zone_enable ( win );

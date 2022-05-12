@@ -1393,7 +1393,7 @@ struct layout_widget *config_parse_toplevel ( GScanner *scanner,
   }
   return w;
 }
-struct layout_widget *config_parse_file ( gchar *fname, gchar *data,
+struct layout_widget *config_parse_data ( gchar *fname, gchar *data,
     gboolean layout, GtkWidget *box )
 {
   GScanner *scanner;
@@ -1573,7 +1573,7 @@ void config_string ( gchar *string )
     return;
 
   conf = g_strdup(string);
-  config_parse_file("config string",conf,FALSE,NULL);
+  config_parse_data("config string",conf,FALSE,NULL);
   g_free(conf);
 }
 
@@ -1591,7 +1591,7 @@ void config_pipe_read ( gchar *command )
   if(chan)
   {
     if(g_io_channel_read_to_end( chan , &conf,NULL,NULL)==G_IO_STATUS_NORMAL)
-      config_parse_file(command,conf,FALSE,NULL);
+      config_parse_data(command,conf,FALSE,NULL);
     g_free(conf);
     g_io_channel_unref(chan);
   }
@@ -1618,7 +1618,7 @@ struct layout_widget *config_parse ( gchar *file, GtkWidget *box )
       exit(1);
     }
 
-  w = config_parse_file (fname, conf,TRUE,box);
+  w = config_parse_data (fname, conf,TRUE,box);
 
   g_free(conf);
   g_free(fname);

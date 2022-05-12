@@ -133,21 +133,19 @@ static void activate (GtkApplication* app, gpointer data )
   GList *clist;
 
   css_init();
-  box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
-  lw = config_parse(confname?confname:"sfwbar.config",box);
-
   sway_ipc_init();
   wayland_init();
 
   if( monitor && !g_ascii_strcasecmp(monitor,"list") )
     list_monitors();
 
-  win = bar_new(app);
+  box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
+  lw = config_parse(confname?confname:"sfwbar.config",box);
+  win = bar_new();
   if(bar_get_toplevel_dir(GTK_WIDGET(win)) == GTK_POS_LEFT || 
       bar_get_toplevel_dir(GTK_WIDGET(win)) == GTK_POS_RIGHT)
     gtk_orientable_set_orientation(GTK_ORIENTABLE(box),
         GTK_ORIENTATION_VERTICAL);
-
   if( lw && lw->widget )
   {
     gtk_box_pack_start(GTK_BOX(box),lw->widget,TRUE,TRUE,0);
@@ -161,6 +159,10 @@ static void activate (GtkApplication* app, gpointer data )
     gtk_widget_show_all (GTK_WIDGET(win));
     layout_widgets_autoexec(GTK_WIDGET(win),NULL);
   }
+
+  for(clist = gtk_window_list_toplevels(); clist; clist = g_list_next(clist) )
+    gtk_application_add_window(app,GTK_WINDOW(clist->data));
+  g_list_free(clist);
 
   if(monitor)
     bar_set_monitor(monitor,"sfwbar");

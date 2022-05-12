@@ -17,12 +17,6 @@ struct taskbar_item {
 
 static GList *taskbars;
 
-void taskbar_init ( struct layout_widget *lw )
-{
-  taskbars = g_list_append(taskbars,lw);
-  g_object_set_data(G_OBJECT(lw->widget),"actions",lw->action);
-}
-
 void taskbar_invalidate ( GtkWidget *taskbar )
 {
   g_object_set_data(G_OBJECT(taskbar),"invalid",GINT_TO_POINTER(TRUE));
@@ -285,3 +279,17 @@ void taskbar_update_all ( void )
     if(iter->data)
       taskbar_update(((struct layout_widget *)iter->data)->widget);
 }
+
+void taskbar_init ( struct layout_widget *lw )
+{
+  GList *iter;
+
+  taskbars = g_list_append(taskbars,lw);
+  g_object_set_data(G_OBJECT(lw->widget),"actions",lw->action);
+
+  for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
+    taskbar_item_init(lw->widget,iter->data);
+
+  taskbar_invalidate(lw->widget);
+}
+
