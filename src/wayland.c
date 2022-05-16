@@ -194,6 +194,9 @@ void wayland_set_idle_inhibitor ( GtkWidget *widget, gboolean inhibit )
   struct wl_surface *surface;
   struct zwp_idle_inhibitor_v1 *inhibitor;
 
+  if(!idle_inhibit_manager)
+    return;
+
   surface = gdk_wayland_window_get_wl_surface(
       gtk_widget_get_window(widget));
   inhibitor = g_object_get_data(G_OBJECT(widget),"inhibitor");
@@ -216,6 +219,9 @@ void wayland_set_idle_inhibitor ( GtkWidget *widget, gboolean inhibit )
 
 void wayland_reset_inhibitors ( GtkWidget *w, gpointer data )
 {
+  if(!idle_inhibit_manager)
+    return;
+
   if(GTK_IS_CONTAINER(w))
     gtk_container_foreach(GTK_CONTAINER(w),wayland_reset_inhibitors,data);
 
