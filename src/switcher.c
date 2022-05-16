@@ -41,6 +41,8 @@ void switcher_init ( void )
 void switcher_config ( gint ncols, gchar *css, gint nmax,
     gboolean nicons, gboolean nlabels, gint twidth )
 {
+  GList *iter;
+
   if(!switcher)
   {
     grid = flow_grid_new(FALSE);
@@ -64,6 +66,9 @@ void switcher_config ( gint ncols, gchar *css, gint nmax,
   title_width = twidth;
   if(!icons)
     labels = TRUE;
+
+  for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
+    switcher_window_init(iter->data);
 }
 
 void switcher_invalidate ( void )

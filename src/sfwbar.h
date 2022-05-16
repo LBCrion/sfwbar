@@ -138,7 +138,7 @@ void wayland_output_new ( GdkMonitor *gmon );
 void wayland_output_destroy ( GdkMonitor *gmon );
 void foreign_toplevel_activate ( gpointer tl );
 
-struct layout_widget *config_parse ( gchar *, GtkWidget * );
+struct layout_widget *config_parse ( gchar *, gboolean );
 void config_pipe_read ( gchar *command );
 void config_string ( gchar *string );
 
@@ -198,7 +198,7 @@ double scanner_get_numeric ( gchar *name, gboolean update );
 void scanner_file_attach ( gchar *trigger, struct scan_file *file );
 struct scan_file *scanner_file_get ( gchar *trigger );
 
-GtkWindow *bar_new ( void );
+GtkWindow *bar_new ( gchar * );
 void bar_set_monitor ( gchar *, gchar * );
 void bar_set_layer ( gchar *, gchar *);
 void bar_set_size ( gchar *, gchar * );
@@ -209,6 +209,8 @@ gboolean bar_hide_event ( struct json_object *obj );
 void bar_monitor_added_cb ( GdkDisplay *, GdkMonitor * );
 void bar_monitor_removed_cb ( GdkDisplay *, GdkMonitor * );
 void bar_update_monitor ( GtkWindow *win );
+struct layout_widget *bar_grid_by_name ( gchar *addr );
+void bar_grid_attach ( gchar *addr, struct layout_widget *lw );
 
 void mpd_ipc_init ( struct scan_file *file );
 void mpd_ipc_command ( gchar *command );

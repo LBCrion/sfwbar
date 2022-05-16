@@ -9,15 +9,91 @@
 #include "sfwbar.h"
 
 static GtkWindow *bar_window;
+GHashTable *bar_list;
 
 GtkWidget *bar_get_from_widget ( GtkWidget *widget )
 {
+
   return gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
 }
 
 GtkWidget *bar_get_by_name ( gchar *name )
 {
-  return GTK_WIDGET(bar_window);
+  if(!bar_list)
+    return NULL;
+  if(!name)
+    name = "sfwbar";
+
+  return g_hash_table_lookup(bar_list,name);
+}
+
+GtkWidget *bar_addr_split ( char *addr, gchar **grid )
+{
+  gchar *ptr,*name;
+  GtkWidget *bar;
+
+  if(!addr)
+    addr = "sfwbar";
+
+  ptr = strchr(addr,':');
+
+  if(ptr)
+  {
+    *grid = ptr + 1;
+    name = g_strndup(addr,ptr-addr-1);
+  }
+  else
+  {
+    *grid = NULL;
+    name = g_strdup(addr);
+  }
+
+  bar = bar_get_by_name (name);
+  if(!bar)
+    bar = GTK_WIDGET(bar_new(name));
+  g_free(name);
+
+  return bar;
+}
+
+struct layout_widget *bar_grid_by_name ( gchar *addr )
+{
+  GtkWidget *bar;
+  gchar *grid;
+
+  bar = bar_addr_split(addr, &grid);
+
+  if(grid && !g_ascii_strcasecmp(grid,"center"))
+    return g_object_get_data(G_OBJECT(bar),"center");
+  if(grid && !g_ascii_strcasecmp(grid,"right"))
+    return g_object_get_data(G_OBJECT(bar),"right");
+  return g_object_get_data(G_OBJECT(bar),"left");
+}
+
+void bar_grid_attach ( gchar *addr, struct layout_widget *lw )
+{
+  GtkWidget *bar;
+  gchar *gname;
+  GtkWidget *box;
+
+  bar = bar_addr_split(addr, &gname);
+  box = gtk_bin_get_child(GTK_BIN(bar));
+
+  if(gname && !g_ascii_strcasecmp(gname,"center"))
+  {
+    gtk_box_set_center_widget(GTK_BOX(box),lw->widget);
+    g_object_set_data(G_OBJECT(bar),"center",lw);
+  }
+  else if(gname && !g_ascii_strcasecmp(gname,"right"))
+  {
+    gtk_box_pack_end(GTK_BOX(box),lw->widget,TRUE,TRUE,0);
+    g_object_set_data(G_OBJECT(bar),"right",lw);
+  }
+  else
+  {
+    gtk_box_pack_start(GTK_BOX(box),lw->widget,TRUE,TRUE,0);
+    g_object_set_data(G_OBJECT(bar),"left",lw);
+  }
 }
 
 gboolean bar_hide_event ( struct json_object *obj )
@@ -74,6 +150,11 @@ gint bar_get_toplevel_dir ( GtkWidget *widget )
 void bar_set_layer ( gchar *layer_str, gchar *addr )
 {
   GtkLayerShellLayer layer = GTK_LAYER_SHELL_LAYER_TOP;
+  GtkWidget *bar;
+
+  bar = bar_get_by_name(addr);
+  if(!bar)
+    return;
 
   if(!g_ascii_strcasecmp(layer_str,"background"))
     layer = GTK_LAYER_SHELL_LAYER_BACKGROUND;
@@ -84,23 +165,27 @@ void bar_set_layer ( gchar *layer_str, gchar *addr )
   if(!g_ascii_strcasecmp(layer_str,"overlay"))
     layer = GTK_LAYER_SHELL_LAYER_OVERLAY;
 
-  gtk_layer_set_layer(GTK_WINDOW(bar_get_by_name(addr)),layer);
+  gtk_layer_set_layer(GTK_WINDOW(bar),layer);
 }
 
 void bar_set_exclusive_zone ( gchar *zone, gchar *addr )
 {
   gint exclusive_zone;
+  GtkWidget *bar;
+
+  bar = bar_get_by_name(addr);
+  if(!bar)
+    return;
 
   if(!g_ascii_strcasecmp(zone,"auto"))
   {
     exclusive_zone = -2;
-    gtk_layer_auto_exclusive_zone_enable (GTK_WINDOW(bar_get_by_name(addr)));
+    gtk_layer_auto_exclusive_zone_enable (GTK_WINDOW(bar));
   }
   else
   {
     exclusive_zone = MAX(-1,g_ascii_strtoll(zone,NULL,10));
-    gtk_layer_set_exclusive_zone (GTK_WINDOW(bar_get_by_name(addr)),
-        exclusive_zone );
+    gtk_layer_set_exclusive_zone (GTK_WINDOW(bar), exclusive_zone );
   }
 }
 
@@ -154,6 +239,8 @@ void bar_set_monitor ( gchar *mon_name, gchar *addr )
   GtkWidget *bar;
 
   bar = bar_get_by_name(addr);
+  if(!bar)
+    return;
   monitor = g_object_get_data(G_OBJECT(bar),"monitor");
 
   if(!monitor || g_ascii_strcasecmp(monitor, mon_name))
@@ -166,14 +253,24 @@ void bar_set_monitor ( gchar *mon_name, gchar *addr )
 
 void bar_monitor_added_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 {
+  GHashTableIter iter;
+  void *key, *bar;
   wayland_output_new(gmon);
-  bar_update_monitor(bar_window);
+
+  g_hash_table_iter_init(&iter,bar_list);
+  while(g_hash_table_iter_next(&iter,&key,&bar))
+    bar_update_monitor(bar);
 }
 
 void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 {
+  GHashTableIter iter;
+  void *key, *bar;
   wayland_output_destroy(gmon);
-  bar_update_monitor(bar_window);
+
+  g_hash_table_iter_init(&iter,bar_list);
+  while(g_hash_table_iter_next(&iter,&key,&bar))
+    bar_update_monitor(bar);
 }
 
 void bar_set_size ( gchar *size, gchar *addr )
@@ -186,6 +283,8 @@ void bar_set_size ( gchar *size, gchar *addr )
   GtkWindow *bar;
 
   bar = GTK_WINDOW(bar_get_by_name(addr));
+  if(!bar)
+    return;
   number = g_ascii_strtod(size, &end);
   win = gtk_widget_get_window(GTK_WIDGET(bar));
   gdk_monitor_get_geometry( gdk_display_get_monitor_at_window(
@@ -226,14 +325,15 @@ void bar_set_size ( gchar *size, gchar *addr )
   }
 }
 
-GtkWindow *bar_new ( void )
+GtkWindow *bar_new ( gchar *name )
 {
   GtkWindow *win;
+  GtkWidget *box;
   gint toplevel_dir;
 
   win = (GtkWindow *)gtk_window_new (GTK_WINDOW_TOPLEVEL);
-  gtk_widget_set_name(GTK_WIDGET(win),"sfwbar");
   gtk_layer_init_for_window (win);
+  gtk_widget_set_name(GTK_WIDGET(win),name);
   gtk_layer_auto_exclusive_zone_enable ( win );
   gtk_layer_set_keyboard_interactivity(win,FALSE);
   gtk_layer_set_layer(win,GTK_LAYER_SHELL_LAYER_TOP);
@@ -248,8 +348,17 @@ GtkWindow *bar_new ( void )
   gtk_layer_set_anchor (win,GTK_LAYER_SHELL_EDGE_TOP,
       !(toplevel_dir==GTK_POS_BOTTOM));
 
+  box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
+  if(toplevel_dir == GTK_POS_LEFT || toplevel_dir == GTK_POS_RIGHT)
+    gtk_orientable_set_orientation(GTK_ORIENTABLE(box),
+        GTK_ORIENTATION_VERTICAL);
+  gtk_container_add(GTK_CONTAINER(win), box);
+
+  if(!bar_list)
+    bar_list = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
+
+  g_hash_table_insert(bar_list, name, win);
   bar_window = win;
 
   return win;
 }
-
