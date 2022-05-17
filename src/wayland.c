@@ -217,22 +217,6 @@ void wayland_set_idle_inhibitor ( GtkWidget *widget, gboolean inhibit )
   }
 }
 
-void wayland_reset_inhibitors ( GtkWidget *w, gpointer data )
-{
-  if(!idle_inhibit_manager)
-    return;
-
-  if(GTK_IS_CONTAINER(w))
-    gtk_container_foreach(GTK_CONTAINER(w),wayland_reset_inhibitors,data);
-
-  if(g_object_get_data(G_OBJECT(w),"inhibitor"))
-  {
-    wayland_set_idle_inhibitor(w,FALSE);
-    wayland_set_idle_inhibitor(w,TRUE);
-  }
-
-}
-
 static void handle_global(void *data, struct wl_registry *registry,
                 uint32_t name, const gchar *interface, uint32_t version)
 {
@@ -268,7 +252,7 @@ void wayland_output_new ( GdkMonitor *gmon )
   struct wl_output *output;
   struct zxdg_output_v1 *xdg;
 
-  if(!gmon)
+  if(!gmon || !xdg_output_manager)
     return;
 
   output = gdk_wayland_monitor_get_wl_output(gmon);
@@ -289,7 +273,7 @@ void wayland_output_destroy ( GdkMonitor *gmon )
 {
   struct zxdg_output_v1 *xdg;
 
-  if(!gmon)
+  if(!gmon || !xdg_output_manager)
     return;
 
   xdg = g_object_get_data(G_OBJECT(gmon),"xdg_output");
