@@ -1347,7 +1347,7 @@ struct layout_widget *config_parse_toplevel ( GScanner *scanner,
         {
           if(!toplevel)
           {
-            w = config_layout(scanner,NULL);
+            w = config_layout(scanner,w);
             break;
           }
           if(g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
@@ -1356,12 +1356,8 @@ struct layout_widget *config_parse_toplevel ( GScanner *scanner,
             dest = bar_grid_by_name(scanner->value.v_string);
           }
           else
-            dest = NULL;
-          if(dest)
-            config_layout(scanner,dest);
-          else
-            bar_grid_attach(scanner->value.v_string,
-                config_layout(scanner,NULL));
+            dest = bar_grid_by_name("sfwbar");
+          config_layout(scanner,dest);
         }
         else
           g_scanner_error(scanner,"layout not supported in dynamic config");

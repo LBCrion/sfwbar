@@ -7,6 +7,7 @@
 #include <glib-unix.h>
 #include <gtk-layer-shell.h>
 #include "sfwbar.h"
+#include "config.h"
 
 GHashTable *bar_list;
 
@@ -26,10 +27,11 @@ GtkWidget *bar_get_by_name ( gchar *name )
   return g_hash_table_lookup(bar_list,name);
 }
 
-GtkWidget *bar_addr_split ( char *addr, gchar **grid )
+struct layout_widget *bar_grid_by_name ( gchar *addr )
 {
-  gchar *ptr,*name;
-  GtkWidget *bar;
+  GtkWidget *bar, *box;
+  struct layout_widget *lw = NULL;
+  gchar *grid, *ptr, *name;
 
   if(!addr)
     addr = "sfwbar";
@@ -38,12 +40,12 @@ GtkWidget *bar_addr_split ( char *addr, gchar **grid )
 
   if(ptr)
   {
-    *grid = ptr + 1;
+    grid = ptr + 1;
     name = g_strndup(addr,ptr-addr-1);
   }
   else
   {
-    *grid = NULL;
+    grid = NULL;
     name = g_strdup(addr);
   }
 
@@ -52,38 +54,24 @@ GtkWidget *bar_addr_split ( char *addr, gchar **grid )
     bar = GTK_WIDGET(bar_new(name));
   g_free(name);
 
-  return bar;
-}
+  if(grid)
+    lw = g_object_get_data(G_OBJECT(bar),grid);
 
-struct layout_widget *bar_grid_by_name ( gchar *addr )
-{
-  GtkWidget *bar;
-  gchar *grid;
+  if(lw)
+    return lw;
 
-  bar = bar_addr_split(addr, &grid);
+  lw = layout_widget_new();
+  lw->wtype = G_TOKEN_GRID;
+  lw->widget = gtk_grid_new();
+  gtk_widget_set_name(lw->widget,"layout");
 
-  if(grid && !g_ascii_strcasecmp(grid,"center"))
-    return g_object_get_data(G_OBJECT(bar),"center");
-  if(grid && !g_ascii_strcasecmp(grid,"right"))
-    return g_object_get_data(G_OBJECT(bar),"right");
-  return g_object_get_data(G_OBJECT(bar),"left");
-}
-
-void bar_grid_attach ( gchar *addr, struct layout_widget *lw )
-{
-  GtkWidget *bar;
-  gchar *gname;
-  GtkWidget *box;
-
-  bar = bar_addr_split(addr, &gname);
   box = gtk_bin_get_child(GTK_BIN(bar));
-
-  if(gname && !g_ascii_strcasecmp(gname,"center"))
+  if(grid && !g_ascii_strcasecmp(grid,"center"))
   {
     gtk_box_set_center_widget(GTK_BOX(box),lw->widget);
     g_object_set_data(G_OBJECT(bar),"center",lw);
   }
-  else if(gname && !g_ascii_strcasecmp(gname,"right"))
+  else if(grid && !g_ascii_strcasecmp(grid,"right"))
   {
     gtk_box_pack_end(GTK_BOX(box),lw->widget,TRUE,TRUE,0);
     g_object_set_data(G_OBJECT(bar),"right",lw);
@@ -93,6 +81,7 @@ void bar_grid_attach ( gchar *addr, struct layout_widget *lw )
     gtk_box_pack_start(GTK_BOX(box),lw->widget,TRUE,TRUE,0);
     g_object_set_data(G_OBJECT(bar),"left",lw);
   }
+  return lw;
 }
 
 gboolean bar_hide_event ( struct json_object *obj )
