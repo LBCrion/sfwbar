@@ -9,7 +9,6 @@
 #define MAX_BUTTON 8
 
 struct wt_window {
-  GtkWidget *button;
   GtkWidget *switcher;
   gchar *title;
   gchar *appid;
@@ -18,6 +17,7 @@ struct wt_window {
   gint64 wid;
   gpointer uid;
   guint16 state;
+  gboolean valid;
 };
 
 struct rect {

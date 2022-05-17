@@ -68,13 +68,13 @@ static void toplevel_handle_done(void *data, wlr_fth *tl)
   if(win->title == NULL)
     str_assign(&(win->title), win->appid);
   wintree_set_active(win->title);
-  if(win->button!=NULL)
+  if(win->valid)
   {
     taskbar_set_label_for_all(win,win->title);
     switcher_set_label(win,win->title);
-    return;
   }
-  wintree_window_append(win);
+  else
+    wintree_window_append(win);
 }
 
 static void toplevel_handle_state(void *data, wlr_fth *tl,

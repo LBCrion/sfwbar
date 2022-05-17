@@ -83,7 +83,7 @@ void wintree_window_append ( struct wt_window *win )
   if(!win)
     return;
 
-  if( !win->button && (win->title || win->appid) )
+  if( !win->valid && (win->title || win->appid) )
     taskbar_item_init_for_all(win);
   if( !win->switcher && (win->title || win->appid) )
     switcher_window_init(win);
@@ -91,6 +91,7 @@ void wintree_window_append ( struct wt_window *win )
     wt_list = g_list_append (wt_list,win);
   taskbar_invalidate_all();
   switcher_invalidate();
+  win->valid = TRUE;
 }
 
 void wintree_window_delete ( gpointer id )
@@ -107,11 +108,6 @@ void wintree_window_delete ( gpointer id )
   if(!win)
     return;
   taskbar_item_destroy_for_all(win);
-  if(win->button)
-  {
-    gtk_widget_destroy(win->button);
-    g_object_unref(G_OBJECT(win->button));
-  }
   if(win->switcher)
   {
     gtk_widget_destroy(win->switcher);
