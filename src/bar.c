@@ -8,7 +8,6 @@
 #include <gtk-layer-shell.h>
 #include "sfwbar.h"
 
-static GtkWindow *bar_window;
 GHashTable *bar_list;
 
 GtkWidget *bar_get_from_widget ( GtkWidget *widget )
@@ -99,8 +98,10 @@ void bar_grid_attach ( gchar *addr, struct layout_widget *lw )
 gboolean bar_hide_event ( struct json_object *obj )
 {
   gchar *mode, state;
+  void *key,*bar;
   struct json_object *visible;
   static gchar pstate = 's';
+  GHashTableIter iter;
 
   if ( obj )
   {
@@ -117,16 +118,18 @@ gboolean bar_hide_event ( struct json_object *obj )
         state = 's';
   }
   else
-    if( gtk_widget_is_visible (GTK_WIDGET(bar_window)) )
+    if( pstate == 's' )
       pstate = state = 'h';
     else
       pstate = state = 's';
 
-  if(state=='h')
-    gtk_widget_hide(GTK_WIDGET(bar_window));
-  else
-    if(!gtk_widget_is_visible(GTK_WIDGET(bar_window)))
-      bar_update_monitor(bar_window);
+  g_hash_table_iter_init(&iter,bar_list);
+  while(g_hash_table_iter_next(&iter,&key,&bar))
+    if(state=='h')
+      gtk_widget_hide(GTK_WIDGET(bar));
+    else
+      if(!gtk_widget_is_visible(GTK_WIDGET(bar)))
+        bar_update_monitor(GTK_WINDOW(bar));
   return TRUE;
 }
 
@@ -358,7 +361,6 @@ GtkWindow *bar_new ( gchar *name )
     bar_list = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
 
   g_hash_table_insert(bar_list, name, win);
-  bar_window = win;
 
   return win;
 }
