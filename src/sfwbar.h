@@ -111,6 +111,7 @@ void taskbar_invalidate_all ( void );
 void taskbar_set_options ( gboolean, gboolean, gboolean, gint );
 void taskbar_update_all ( void );
 void taskbar_item_init_for_all ( struct wt_window *win );
+void taskbar_item_destroy_for_all ( struct wt_window *win );
 void taskbar_set_label_for_all ( struct wt_window *, gchar *);
 
 struct wt_window *wintree_window_init ( void );

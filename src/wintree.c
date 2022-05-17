@@ -106,6 +106,7 @@ void wintree_window_delete ( gpointer id )
   win = item->data;
   if(!win)
     return;
+  taskbar_item_destroy_for_all(win);
   if(win->button)
   {
     gtk_widget_destroy(win->button);

@@ -182,6 +182,43 @@ void taskbar_item_init_for_all ( struct wt_window *win )
       taskbar_item_init(((struct layout_widget *)iter->data)->widget, win );
 }
 
+void taskbar_item_destroy ( GtkWidget *taskbar, struct wt_window *win )
+{
+  struct taskbar_item *item;
+  GList *iter;
+
+  if(!taskbar)
+    return;
+
+  iter = g_object_get_data(G_OBJECT(taskbar),"items");
+  for(;iter;iter=g_list_next(iter))
+    if(((struct taskbar_item *)iter->data)->win == win)
+      break;
+
+  if(!iter)
+    return;
+
+  item = iter->data;
+
+  if(item)
+  {
+    gtk_widget_destroy(item->widget);
+    g_object_unref(G_OBJECT(item->widget));
+    g_free(item);
+  }
+  g_object_set_data(G_OBJECT(taskbar),"items",g_list_delete_link(
+        g_object_get_data(G_OBJECT(taskbar),"items"),iter));
+}
+
+void taskbar_item_destroy_for_all ( struct wt_window *win )
+{
+  GList *iter;
+
+  for(iter=taskbars; iter; iter=g_list_next(iter))
+    if(iter->data)
+      taskbar_item_destroy(((struct layout_widget *)iter->data)->widget, win );
+}
+
 void taskbar_set_label ( GtkWidget *taskbar, struct wt_window *win, gchar *title )
 {
   struct taskbar_item *item;
