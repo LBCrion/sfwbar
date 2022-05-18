@@ -162,7 +162,6 @@ void bar_set_layer ( gchar *layer_str, gchar *addr )
 
 void bar_set_exclusive_zone ( gchar *zone, gchar *addr )
 {
-  gint exclusive_zone;
   GtkWidget *bar;
 
   bar = bar_get_by_name(addr);
@@ -170,15 +169,10 @@ void bar_set_exclusive_zone ( gchar *zone, gchar *addr )
     return;
 
   if(!g_ascii_strcasecmp(zone,"auto"))
-  {
-    exclusive_zone = -2;
     gtk_layer_auto_exclusive_zone_enable (GTK_WINDOW(bar));
-  }
   else
-  {
-    exclusive_zone = MAX(-1,g_ascii_strtoll(zone,NULL,10));
-    gtk_layer_set_exclusive_zone (GTK_WINDOW(bar), exclusive_zone );
-  }
+    gtk_layer_set_exclusive_zone (GTK_WINDOW(bar),
+        MAX(-1,g_ascii_strtoll(zone,NULL,10)));
 }
 
 gchar *bar_get_output ( GtkWidget *widget )
