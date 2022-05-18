@@ -101,7 +101,6 @@ GSocketConnection *mpd_ipc_connect ( GSocketClient *client, gchar *path )
     dir = "/run";
   addr = g_build_filename(dir,"/mpd/socket",NULL);
   g_debug("mpd: attempting to connect to: %s",addr);
-  scon = g_socket_client_connect_to_host(client,addr,0,NULL,NULL);
   scon = mpd_ipc_connect_unix(client, addr);
   g_free(addr);
 
