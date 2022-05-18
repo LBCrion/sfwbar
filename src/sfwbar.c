@@ -105,6 +105,7 @@ void css_init ( void )
   gtk_css_provider_load_from_data(css,css_str,strlen(css_str),NULL);
   gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
     GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
+  g_object_unref(css);
 
   if(cssname!=NULL)
   {
@@ -112,6 +113,7 @@ void css_init ( void )
     gtk_css_provider_load_from_path(css,cssname,NULL);
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
       GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
+    g_object_unref(css);
   }
 }
 

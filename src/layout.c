@@ -266,6 +266,7 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
     gtk_css_provider_load_from_data(provider,lw->css,strlen(lw->css),NULL);
     gtk_style_context_add_provider (context,
       GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+    g_object_unref(provider);
     g_free(lw->css);
     lw->css = NULL;
   }

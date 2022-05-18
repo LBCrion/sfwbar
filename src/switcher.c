@@ -57,6 +57,7 @@ void switcher_config ( gint ncols, gchar *css, gint nmax,
     gtk_css_provider_load_from_data(provider,css,strlen(css),NULL);
     gtk_style_context_add_provider (cont,
       GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+    g_object_unref(provider);
     g_free(css);
   }
   interval = nmax;
