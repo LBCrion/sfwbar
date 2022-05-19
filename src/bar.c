@@ -9,11 +9,10 @@
 #include "sfwbar.h"
 #include "config.h"
 
-GHashTable *bar_list;
+static GHashTable *bar_list;
 
 GtkWidget *bar_get_from_widget ( GtkWidget *widget )
 {
-
   return gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
 }
 
@@ -21,6 +20,7 @@ GtkWidget *bar_get_by_name ( gchar *name )
 {
   if(!bar_list)
     return NULL;
+
   if(!name)
     name = "sfwbar";
 
@@ -41,7 +41,10 @@ struct layout_widget *bar_grid_by_name ( gchar *addr )
   if(ptr)
   {
     grid = ptr + 1;
-    name = g_strndup(addr,ptr-addr-1);
+    if(ptr == addr)
+      name = g_strdup("sfwbar");
+    else
+      name = g_strndup(addr,ptr-addr);
   }
   else
   {
@@ -49,13 +52,17 @@ struct layout_widget *bar_grid_by_name ( gchar *addr )
     name = g_strdup(addr);
   }
 
-  bar = bar_get_by_name (name);
+  bar = bar_get_by_name(name);
   if(!bar)
     bar = GTK_WIDGET(bar_new(name));
   g_free(name);
 
-  if(grid)
-    lw = g_object_get_data(G_OBJECT(bar),grid);
+  if(grid && !g_ascii_strcasecmp(grid,"center"))
+    lw = g_object_get_data(G_OBJECT(bar),"center");
+  else if(grid && !g_ascii_strcasecmp(grid,"end"))
+    lw = g_object_get_data(G_OBJECT(bar),"end");
+  else
+    lw = g_object_get_data(G_OBJECT(bar),"start");
 
   if(lw)
     return lw;
@@ -71,15 +78,15 @@ struct layout_widget *bar_grid_by_name ( gchar *addr )
     gtk_box_set_center_widget(GTK_BOX(box),lw->widget);
     g_object_set_data(G_OBJECT(bar),"center",lw);
   }
-  else if(grid && !g_ascii_strcasecmp(grid,"right"))
+  else if(grid && !g_ascii_strcasecmp(grid,"end"))
   {
     gtk_box_pack_end(GTK_BOX(box),lw->widget,TRUE,TRUE,0);
-    g_object_set_data(G_OBJECT(bar),"right",lw);
+    g_object_set_data(G_OBJECT(bar),"end",lw);
   }
   else
   {
     gtk_box_pack_start(GTK_BOX(box),lw->widget,TRUE,TRUE,0);
-    g_object_set_data(G_OBJECT(bar),"left",lw);
+    g_object_set_data(G_OBJECT(bar),"start",lw);
   }
   return lw;
 }
@@ -334,16 +341,16 @@ GtkWindow *bar_new ( gchar *name )
   gtk_layer_set_anchor (win,GTK_LAYER_SHELL_EDGE_TOP,
       !(toplevel_dir==GTK_POS_BOTTOM));
 
-  box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
   if(toplevel_dir == GTK_POS_LEFT || toplevel_dir == GTK_POS_RIGHT)
-    gtk_orientable_set_orientation(GTK_ORIENTABLE(box),
-        GTK_ORIENTATION_VERTICAL);
+    box = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
+  else
+    box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
   gtk_container_add(GTK_CONTAINER(win), box);
 
   if(!bar_list)
     bar_list = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
 
-  g_hash_table_insert(bar_list, name, win);
+  g_hash_table_insert(bar_list, g_strdup(name), win);
 
   return win;
 }
