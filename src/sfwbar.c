@@ -139,20 +139,6 @@ static void activate (GtkApplication* app, gpointer data )
     list_monitors();
 
   config_parse(confname?confname:"sfwbar.config",TRUE);
-/*  win = bar_new("sfwbar");
-  if( lw && lw->widget )
-  {
-    gtk_box_pack_start(GTK_BOX(box),lw->widget,TRUE,TRUE,0);
-    layout_widget_attach(lw);
-  }
-
-  if((clist = gtk_container_get_children(GTK_CONTAINER(box))))
-  {
-    g_list_free(clist);
-    gtk_container_add(GTK_CONTAINER(win), box);
-    gtk_widget_show_all (GTK_WIDGET(win));
-    layout_widgets_autoexec(GTK_WIDGET(win),NULL);
-  }*/
 
   for(clist = gtk_window_list_toplevels(); clist; clist = g_list_next(clist) )
     if(GTK_IS_BOX(gtk_bin_get_child(GTK_BIN(clist->data))))
