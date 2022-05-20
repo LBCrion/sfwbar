@@ -544,7 +544,7 @@ void config_get_pins ( GScanner *scanner, struct layout_widget *lw )
   {
     g_scanner_get_next_token(scanner);
     if(!config_expect_token(scanner, G_TOKEN_STRING,
-          "expecting a string in pins = string [,string]"))
+          "missing string in pins = string [,string]"))
       break;
     g_scanner_get_next_token(scanner);
     pager_add_pin(g_strdup(scanner->value.v_string));
@@ -715,8 +715,8 @@ void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
   {
     config_parse_sequence(scanner,
         SEQ_REQ,'[',NULL,NULL,
-        SEQ_REQ,G_TOKEN_INT,&button,"expecting a number in action[<number>]",
-        SEQ_REQ,']',NULL,"expecting a ']' in action[<number>]",
+        SEQ_REQ,G_TOKEN_INT,&button,"missing in action[<index>]",
+        SEQ_REQ,']',NULL,"missing closing ']' in action[<index>]",
         SEQ_END);
     if(scanner->max_parse_errors)
       return;
@@ -726,8 +726,9 @@ void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
 
   if( button<0 || button >=MAX_BUTTON )
     return g_scanner_error(scanner,"invalid action index %d",button);
+
   if(g_scanner_get_next_token(scanner) != '=')
-    return g_scanner_error(scanner,"expecting a '=' after 'action'");
+    return g_scanner_error(scanner,"missing '=' after 'action'");
 
   action_free(lw->actions[button],NULL);
   lw->actions[button] = config_action(scanner);
