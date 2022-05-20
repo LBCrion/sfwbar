@@ -529,7 +529,7 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign )
   return value;
 }
 
-void config_get_pins ( GScanner *scanner, struct layout_widget *lw )
+void config_get_pins ( GScanner *scanner, widget_t *lw )
 {
   scanner->max_parse_errors = FALSE;
 
@@ -552,7 +552,7 @@ void config_get_pins ( GScanner *scanner, struct layout_widget *lw )
   config_optional_semicolon(scanner);
 }
 
-void config_widget_cols ( GScanner *scanner, struct layout_widget *lw )
+void config_widget_cols ( GScanner *scanner, widget_t *lw )
 {
   scanner->max_parse_errors = FALSE;
 
@@ -566,7 +566,7 @@ void config_widget_cols ( GScanner *scanner, struct layout_widget *lw )
   flow_grid_set_cols(lw->widget, config_assign_number(scanner, "cols"));
 }
 
-void config_widget_rows ( GScanner *scanner, struct layout_widget *lw )
+void config_widget_rows ( GScanner *scanner, widget_t *lw )
 {
   scanner->max_parse_errors = FALSE;
 
@@ -629,11 +629,11 @@ void config_action_conditions ( GScanner *scanner, guchar *cond,
   }
 }
 
-struct layout_action *config_action ( GScanner *scanner )
+action_t *config_action ( GScanner *scanner )
 {
-  struct layout_action *action;
+  action_t *action;
 
-  action = g_malloc0(sizeof(struct layout_action));
+  action = g_malloc0(sizeof(action_t));
   config_action_conditions ( scanner, &action->cond, &action->ncond );
 
   g_scanner_get_next_token(scanner);
@@ -707,7 +707,7 @@ struct layout_action *config_action ( GScanner *scanner )
   return action;
 }
 
-void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
+void config_widget_action ( GScanner *scanner, widget_t *lw )
 {
   gint button;
 
@@ -738,7 +738,7 @@ void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
   config_optional_semicolon(scanner);
 }
 
-gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
+gboolean config_widget_props ( GScanner *scanner, widget_t *lw )
 {
   scanner->max_parse_errors = FALSE;
 
@@ -856,9 +856,9 @@ gboolean config_widget_props ( GScanner *scanner, struct layout_widget *lw )
   return TRUE;
 }
 
-struct layout_widget *config_include ( GScanner *scanner )
+widget_t *config_include ( GScanner *scanner )
 {
-  struct layout_widget *lw;
+  widget_t *lw;
   gchar *fname = NULL;
 
   config_parse_sequence(scanner,
@@ -884,7 +884,7 @@ struct layout_widget *config_include ( GScanner *scanner )
 void config_widgets ( GScanner *scanner, GtkWidget *parent )
 {
   GtkWidget *sibling=NULL;
-  struct layout_widget *lw;
+  widget_t *lw;
   gboolean extra;
 
   while ( (gint)g_scanner_peek_next_token ( scanner ) != '}' &&
@@ -956,8 +956,8 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
     g_scanner_get_next_token(scanner);
 }
 
-struct layout_widget *config_layout ( GScanner *scanner,
-    struct layout_widget *lw )
+widget_t *config_layout ( GScanner *scanner,
+    widget_t *lw )
 {
   gboolean extra;
 
@@ -1080,7 +1080,7 @@ void config_placer ( GScanner *scanner )
 GtkWidget *config_menu_item ( GScanner *scanner )
 {
   gchar *label = NULL;
-  struct layout_action *action;
+  action_t *action;
   GtkWidget *item;
 
   config_parse_sequence(scanner,
@@ -1184,7 +1184,7 @@ void config_function ( GScanner *scanner )
 {
   gchar *name = NULL;
   GList *actions;
-  struct layout_action *action;
+  action_t *action;
 
   config_parse_sequence(scanner,
       SEQ_REQ,'(',NULL,"missing '(' after 'function'",
@@ -1244,7 +1244,7 @@ void config_define ( GScanner *scanner )
 void config_trigger_action ( GScanner *scanner )
 {
   gchar *trigger;
-  struct layout_action *action;
+  action_t *action;
 
   if(!config_expect_token(scanner, G_TOKEN_STRING,
         "missing trigger in TriggerAction"))
@@ -1271,10 +1271,10 @@ void config_trigger_action ( GScanner *scanner )
   config_optional_semicolon(scanner);
 }
 
-struct layout_widget *config_parse_toplevel ( GScanner *scanner,
+widget_t *config_parse_toplevel ( GScanner *scanner,
     gboolean layout, gboolean toplevel )
 {
-  struct layout_widget *w=NULL, *dest;
+  widget_t *w=NULL, *dest;
 
   while(g_scanner_peek_next_token(scanner) != G_TOKEN_EOF)
   {
@@ -1328,11 +1328,11 @@ struct layout_widget *config_parse_toplevel ( GScanner *scanner,
   }
   return w;
 }
-struct layout_widget *config_parse_data ( gchar *fname, gchar *data,
+widget_t *config_parse_data ( gchar *fname, gchar *data,
     gboolean layout, gboolean toplevel )
 {
   GScanner *scanner;
-  struct layout_widget *w;
+  widget_t *w;
   GtkCssProvider *css;
   gchar *tmp;
 
@@ -1535,12 +1535,12 @@ void config_pipe_read ( gchar *command )
   pclose(fp);
 }
 
-struct layout_widget *config_parse ( gchar *file, gboolean toplevel )
+widget_t *config_parse ( gchar *file, gboolean toplevel )
 {
   gchar *fname;
   gchar *conf=NULL;
   gsize size;
-  struct layout_widget *w=NULL;
+  widget_t *w=NULL;
 
   fname = get_xdg_config_file(file,NULL);
   g_debug("include: %s -> %s",file,fname);

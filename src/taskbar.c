@@ -12,7 +12,7 @@
 struct taskbar_item {
   GtkWidget *widget;
   struct wt_window *win;
-  struct layout_action **actions;
+  action_t **actions;
 };
 
 static GList *taskbars;
@@ -28,7 +28,7 @@ void taskbar_invalidate_all ( void )
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
     if(iter->data)
-      taskbar_invalidate(((struct layout_widget *)iter->data)->widget);
+      taskbar_invalidate(((widget_t *)iter->data)->widget);
 }
 
 struct taskbar_item *taskbar_item_lookup ( GtkWidget *taskbar, void *parent )
@@ -179,7 +179,7 @@ void taskbar_item_init_for_all ( struct wt_window *win )
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
     if(iter->data)
-      taskbar_item_init(((struct layout_widget *)iter->data)->widget, win );
+      taskbar_item_init(((widget_t *)iter->data)->widget, win );
 }
 
 void taskbar_item_destroy ( GtkWidget *taskbar, struct wt_window *win )
@@ -216,7 +216,7 @@ void taskbar_item_destroy_for_all ( struct wt_window *win )
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
     if(iter->data)
-      taskbar_item_destroy(((struct layout_widget *)iter->data)->widget, win );
+      taskbar_item_destroy(((widget_t *)iter->data)->widget, win );
 }
 
 void taskbar_set_label ( GtkWidget *taskbar, struct wt_window *win, gchar *title )
@@ -258,7 +258,7 @@ void taskbar_set_label_for_all ( struct wt_window *win, gchar *title )
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
     if(iter->data)
-      taskbar_set_label(((struct layout_widget *)iter->data)->widget,win,title);
+      taskbar_set_label(((widget_t *)iter->data)->widget,win,title);
 }
 
 void taskbar_update( GtkWidget *taskbar )
@@ -314,10 +314,10 @@ void taskbar_update_all ( void )
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
     if(iter->data)
-      taskbar_update(((struct layout_widget *)iter->data)->widget);
+      taskbar_update(((widget_t *)iter->data)->widget);
 }
 
-void taskbar_init ( struct layout_widget *lw )
+void taskbar_init ( widget_t *lw )
 {
   GList *iter;
 

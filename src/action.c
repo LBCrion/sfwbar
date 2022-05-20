@@ -61,7 +61,7 @@ void action_idle_inhibit ( GtkWidget *widget, gchar *command )
 
 void action_set_user_state ( GtkWidget *widget, gchar *value )
 {
-  struct layout_widget *lw;
+  widget_t *lw;
 
   lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
   if(!g_ascii_strcasecmp(value,"on"))
@@ -72,7 +72,7 @@ void action_set_user_state ( GtkWidget *widget, gchar *value )
 
 void action_set_value ( GtkWidget *widget, gchar *value )
 {
-  struct layout_widget *lw;
+  widget_t *lw;
   guint vcount;
 
   lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
@@ -94,7 +94,7 @@ void action_set_value ( GtkWidget *widget, gchar *value )
 
 void action_set_style ( GtkWidget *widget, gchar *style )
 {
-  struct layout_widget *lw;
+  widget_t *lw;
   guint vcount;
 
   lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
@@ -115,7 +115,7 @@ void action_set_style ( GtkWidget *widget, gchar *style )
 
 void action_set_tooltip ( GtkWidget *widget, gchar *tooltip )
 {
-  struct layout_widget *lw;
+  widget_t *lw;
 
   lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
   if(!lw)
@@ -127,7 +127,7 @@ void action_set_tooltip ( GtkWidget *widget, gchar *tooltip )
 
 guint16 action_state_build ( GtkWidget *widget, struct wt_window *win )
 {
-  struct layout_widget *lw;
+  widget_t *lw;
   guint16 state = 0;
 
   if(win)
@@ -148,7 +148,7 @@ guint16 action_state_build ( GtkWidget *widget, struct wt_window *win )
   return state;
 }
 
-void action_client_send ( struct layout_action *action )
+void action_client_send ( action_t *action )
 {
   struct scan_file *file;
 
@@ -161,7 +161,7 @@ void action_client_send ( struct layout_action *action )
     g_io_channel_write_chars(file->out,action->command,-1,NULL,NULL);
 }
 
-void action_exec ( GtkWidget *widget, struct layout_action *action,
+void action_exec ( GtkWidget *widget, action_t *action,
     GdkEvent *event, struct wt_window *win, guint16 *istate )
 {
   guint16 state;
@@ -298,7 +298,7 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
   }
 }
 
-void action_free ( struct layout_action *action, GObject *old )
+void action_free ( action_t *action, GObject *old )
 {
   if(!action)
     return;
@@ -308,7 +308,7 @@ void action_free ( struct layout_action *action, GObject *old )
   g_free(action);
 }
 
-void action_trigger_add ( struct layout_action *action, gchar *trigger )
+void action_trigger_add ( action_t *action, gchar *trigger )
 {
   void *old;
 
@@ -327,7 +327,7 @@ void action_trigger_add ( struct layout_action *action, gchar *trigger )
   g_hash_table_insert(trigger_actions, trigger, action);
 }
 
-struct layout_action *action_trigger_lookup ( gchar *trigger )
+action_t *action_trigger_lookup ( gchar *trigger )
 {
   if(!trigger_actions)
     return NULL;

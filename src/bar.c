@@ -27,10 +27,10 @@ GtkWidget *bar_get_by_name ( gchar *name )
   return g_hash_table_lookup(bar_list,name);
 }
 
-struct layout_widget *bar_grid_by_name ( gchar *addr )
+widget_t *bar_grid_by_name ( gchar *addr )
 {
   GtkWidget *bar, *box;
-  struct layout_widget *lw = NULL;
+  widget_t *lw = NULL;
   gchar *grid, *ptr, *name;
 
   if(!addr)

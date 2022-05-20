@@ -74,13 +74,13 @@ void layout_menu_popup ( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
   gtk_menu_popup_at_widget(GTK_MENU(menu),widget,wanchor,manchor,event);
 }
 
-gboolean layout_widget_has_actions ( struct layout_widget * lw )
+gboolean layout_widget_has_actions ( widget_t * lw )
 {
-  static const gint8 act_check[MAX_BUTTON*sizeof(struct layout_action *)];
-  return memcmp(lw->actions,act_check,sizeof(struct layout_action *)*MAX_BUTTON);
+  static const gint8 act_check[MAX_BUTTON*sizeof(action_t *)];
+  return memcmp(lw->actions,act_check,sizeof(action_t *)*MAX_BUTTON);
 }
 
-gboolean widget_menu_action ( GtkWidget *w ,struct layout_action *action )
+gboolean widget_menu_action ( GtkWidget *w ,action_t *action )
 {
   GtkWidget *parent = gtk_widget_get_ancestor(w,GTK_TYPE_MENU);
   gpointer wid;
@@ -107,7 +107,7 @@ gboolean widget_menu_action ( GtkWidget *w ,struct layout_action *action )
   return TRUE;
 }
 
-gboolean layout_widget_button_cb ( GtkWidget *widget, struct layout_widget *lw )
+gboolean layout_widget_button_cb ( GtkWidget *widget, widget_t *lw )
 {
   action_exec(lw->widget,lw->actions[1],NULL,
       wintree_from_id(wintree_get_focus()),NULL);
@@ -115,7 +115,7 @@ gboolean layout_widget_button_cb ( GtkWidget *widget, struct layout_widget *lw )
 }
 
 gboolean layout_widget_click_cb ( GtkWidget *w, GdkEventButton *ev,
-    struct layout_widget *lw )
+    widget_t *lw )
 {
   if(GTK_IS_BUTTON(w) && ev->button != 1)
     return FALSE;
@@ -127,7 +127,7 @@ gboolean layout_widget_click_cb ( GtkWidget *w, GdkEventButton *ev,
 }
 
 gboolean layout_widget_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
-    struct layout_widget *lw )
+    widget_t *lw )
 {
   gint button;
   switch(event->direction)
@@ -154,10 +154,10 @@ gboolean layout_widget_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
   return TRUE;
 }
 
-struct layout_widget *layout_widget_new ( void )
+widget_t *layout_widget_new ( void )
 {
-  struct layout_widget *lw;
-  lw = g_malloc0(sizeof(struct layout_widget));
+  widget_t *lw;
+  lw = g_malloc0(sizeof(widget_t));
   lw->interval = 1000000;
   lw->dir = GTK_POS_RIGHT;
   lw->rect.w = 1;
@@ -165,7 +165,7 @@ struct layout_widget *layout_widget_new ( void )
   return lw;
 }
 
-gboolean layout_widget_draw ( struct layout_widget *lw )
+gboolean layout_widget_draw ( widget_t *lw )
 {
   if(GTK_IS_LABEL(lw->widget))
     gtk_label_set_markup(GTK_LABEL(lw->widget),lw->evalue);
@@ -185,7 +185,7 @@ gboolean layout_widget_draw ( struct layout_widget *lw )
 }
 
 gboolean layout_tooltip_update ( GtkWidget *widget, gint x, gint y,
-    gboolean kbmode, GtkTooltip *tooltip, struct layout_widget *lw )
+    gboolean kbmode, GtkTooltip *tooltip, widget_t *lw )
 {
   gchar *eval;
 
@@ -199,7 +199,7 @@ gboolean layout_tooltip_update ( GtkWidget *widget, gint x, gint y,
   return TRUE;
 }
 
-void layout_widget_set_tooltip ( struct layout_widget *lw )
+void layout_widget_set_tooltip ( widget_t *lw )
 {
   gchar *eval;
   guint vcount;
@@ -236,7 +236,7 @@ void layout_widget_set_tooltip ( struct layout_widget *lw )
   }
 }
 
-GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
+GtkWidget *layout_widget_config ( widget_t *lw, GtkWidget *parent,
     GtkWidget *sibling )
 {
   gint dir;
@@ -343,7 +343,7 @@ GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
   return lw->lobject;
 }
 
-void layout_widget_free ( struct layout_widget *lw )
+void layout_widget_free ( widget_t *lw )
 {
   gint i;
 
@@ -381,7 +381,7 @@ gboolean layout_widget_cache ( gchar *expr, gchar **cache )
 
 void layout_widgets_autoexec ( GtkWidget *widget, gpointer data )
 {
-  struct layout_widget *lw;
+  widget_t *lw;
 
   if(GTK_IS_CONTAINER(widget))
     gtk_container_forall(GTK_CONTAINER(widget),layout_widgets_autoexec,data);
@@ -398,7 +398,7 @@ void layout_widgets_update ( GMainContext *gmc )
 {
   GList *iter;
   gint64 ctime;
-  struct layout_widget *lw;
+  widget_t *lw;
 
   ctime = g_get_monotonic_time();
 
@@ -422,8 +422,8 @@ void layout_widgets_update ( GMainContext *gmc )
 void layout_emit_trigger ( gchar *trigger )
 {
   GList *iter;
-  struct layout_widget *lw;
-  struct layout_action *action;
+  widget_t *lw;
+  action_t *action;
 
   if(!trigger)
     return;
@@ -445,7 +445,7 @@ void layout_emit_trigger ( gchar *trigger )
     action_exec(NULL,action,NULL,NULL,NULL);
 }
 
-void layout_widget_attach ( struct layout_widget *lw )
+void layout_widget_attach ( widget_t *lw )
 {
   if(!lw->value && !lw->tooltip && !lw->style && !layout_widget_has_actions(lw))
     return layout_widget_free(lw);
@@ -497,8 +497,8 @@ gpointer layout_scanner_thread ( gpointer data )
       g_thread_exit(NULL);
     timer = G_MAXINT64;
     for(iter=widget_list;iter!=NULL;iter=g_list_next(iter))
-      if(!((struct layout_widget *)iter->data)->trigger)
-        timer = MIN(timer,((struct layout_widget *)iter->data)->next_poll);
+      if(!((widget_t *)iter->data)->trigger)
+        timer = MIN(timer,((widget_t *)iter->data)->next_poll);
     timer -= g_get_monotonic_time();
     if(timer>0)
       usleep(timer);

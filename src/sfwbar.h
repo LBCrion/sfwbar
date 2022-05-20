@@ -58,6 +58,8 @@ struct layout_action {
   gchar *addr;
 };
 
+typedef struct layout_action action_t;
+
 struct layout_widget {
   GtkWidget *widget;
   GtkWidget *lobject;
@@ -68,7 +70,7 @@ struct layout_widget {
   gchar *evalue;
   gchar *tooltip;
   gulong tooltip_h;
-  struct layout_action *actions[MAX_BUTTON];
+  action_t *actions[MAX_BUTTON];
   gint64 interval;
   gchar *trigger;
   gint64 next_poll;
@@ -78,14 +80,16 @@ struct layout_widget {
   struct rect rect;
 };
 
-void action_exec ( GtkWidget *, struct layout_action *, GdkEvent *,
+typedef struct layout_widget widget_t;
+
+void action_exec ( GtkWidget *, action_t *, GdkEvent *,
     struct wt_window *, guint16 *);
-void action_free ( struct layout_action *action, GObject *old );
+void action_free ( action_t *action, GObject *old );
 void action_function_add ( gchar *name, GList *actions );
 void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
     struct wt_window *win, guint16 *state );
-void action_trigger_add ( struct layout_action *action, gchar *trigger );
-struct layout_action *action_trigger_lookup ( gchar *trigger );
+void action_trigger_add ( action_t *action, gchar *trigger );
+action_t *action_trigger_lookup ( gchar *trigger );
 
 void client_exec ( struct scan_file *file );
 void client_socket ( struct scan_file *file );
@@ -105,7 +109,7 @@ void sway_ipc_client_init ( struct scan_file *file );
 void place_window ( gint64 wid, gint64 pid );
 void placer_config ( gint xs, gint ys, gint xo, gint yo, gboolean pid );
 
-void taskbar_init ( struct layout_widget * );
+void taskbar_init ( widget_t * );
 void taskbar_invalidate ( GtkWidget * );
 void taskbar_invalidate_all ( void );
 void taskbar_set_options ( gboolean, gboolean, gboolean, gint );
@@ -139,7 +143,7 @@ void wayland_output_new ( GdkMonitor *gmon );
 void wayland_output_destroy ( GdkMonitor *gmon );
 void foreign_toplevel_activate ( gpointer tl );
 
-struct layout_widget *config_parse ( gchar *, gboolean );
+widget_t *config_parse ( gchar *, gboolean );
 void config_pipe_read ( gchar *command );
 void config_string ( gchar *string );
 
@@ -165,20 +169,20 @@ void sni_update ( void );
 GtkWidget *layout_menu_get ( gchar *name );
 void layout_menu_add ( gchar *name, GtkWidget *menu );
 void layout_menu_remove ( gchar *name );
-struct layout_widget *layout_widget_new ( void );
+widget_t *layout_widget_new ( void );
 void layout_menu_popup ( GtkWidget *, GtkWidget *, GdkEvent *, gpointer, guint16 * );
 gpointer layout_scanner_thread ( gpointer data );
-GtkWidget *layout_widget_config ( struct layout_widget *lw, GtkWidget *parent,
+GtkWidget *layout_widget_config ( widget_t *lw, GtkWidget *parent,
     GtkWidget *sibling );
-gboolean layout_widget_draw ( struct layout_widget *lw );
-void layout_widget_set_tooltip ( struct layout_widget *lw );
-void layout_widget_attach ( struct layout_widget *lw );
-void layout_widget_free ( struct layout_widget *lw );
+gboolean layout_widget_draw ( widget_t *lw );
+void layout_widget_set_tooltip ( widget_t *lw );
+void layout_widget_attach ( widget_t *lw );
+void layout_widget_free ( widget_t *lw );
 void widget_set_css ( GtkWidget *, gboolean );
-gboolean widget_menu_action ( GtkWidget *widget, struct layout_action *action );
+gboolean widget_menu_action ( GtkWidget *widget, action_t *action );
 void layout_widgets_autoexec ( GtkWidget *widget, gpointer data );
 gboolean layout_tooltip_update ( GtkWidget *widget, gint x, gint y,
-    gboolean kbmode, GtkTooltip *tooltip, struct layout_widget *lw );
+    gboolean kbmode, GtkTooltip *tooltip, widget_t *lw );
 void layout_emit_trigger ( gchar *trigger );
 
 GtkWidget *flow_grid_new( gboolean limit );
@@ -210,8 +214,8 @@ gboolean bar_hide_event ( struct json_object *obj );
 void bar_monitor_added_cb ( GdkDisplay *, GdkMonitor * );
 void bar_monitor_removed_cb ( GdkDisplay *, GdkMonitor * );
 void bar_update_monitor ( GtkWindow *win );
-struct layout_widget *bar_grid_by_name ( gchar *addr );
-void bar_grid_attach ( gchar *addr, struct layout_widget *lw );
+widget_t *bar_grid_by_name ( gchar *addr );
+void bar_grid_attach ( gchar *addr, widget_t *lw );
 
 void mpd_ipc_init ( struct scan_file *file );
 void mpd_ipc_command ( gchar *command );
