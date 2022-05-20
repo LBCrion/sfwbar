@@ -580,11 +580,9 @@ void config_widget_rows ( GScanner *scanner, struct layout_widget *lw )
   flow_grid_set_rows(lw->widget, config_assign_number(scanner, "rows"));
 }
 
-gboolean config_action ( GScanner *scanner, struct layout_action *action )
+void config_action_conditions ( GScanner *scanner, guchar *cond,
+    guchar *ncond )
 {
-  guint type;
-  guchar cond = 0;
-  guchar ncond = 0;
   guchar *ptr;
 
   if(g_scanner_peek_next_token(scanner) == '[')
@@ -596,10 +594,10 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
       if(g_scanner_peek_next_token(scanner)=='!')
       {
         g_scanner_get_next_token(scanner);
-        ptr = &ncond;
+        ptr = ncond;
       }
       else
-        ptr = &cond;
+        ptr = cond;
 
       switch((gint)g_scanner_get_next_token(scanner))
       {
@@ -629,49 +627,31 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
     if(g_scanner_get_next_token(scanner) != ']')
       g_scanner_error(scanner,"missing ']' in conditional action");
   }
+}
 
-  if(g_scanner_peek_next_token(scanner) != G_TOKEN_STRING)
+gboolean config_action ( GScanner *scanner, struct layout_action *action )
+{
+  g_free(action->command);
+  g_free(action->addr);
+  memset(action,0,sizeof(struct layout_action));
+
+  config_action_conditions ( scanner, &action->cond, &action->ncond );
+
+  g_scanner_get_next_token(scanner);
+  action->type = scanner->token;
+  switch ((gint)scanner->token)
   {
-    switch ((gint)g_scanner_get_next_token(scanner))
-    {
-      case G_TOKEN_EXEC:
-      case G_TOKEN_MENU:
-      case G_TOKEN_MENUCLEAR:
-      case G_TOKEN_PIPEREAD:
-      case G_TOKEN_SWAYCMD:
-      case G_TOKEN_SWAYWIN:
-      case G_TOKEN_MPDCMD:
-      case G_TOKEN_IDLEINHIBIT:
-      case G_TOKEN_USERSTATE:
-      case G_TOKEN_CONFIG:
-      case G_TOKEN_FUNCTION:
-      case G_TOKEN_FOCUS:
-      case G_TOKEN_CLOSE:
-      case G_TOKEN_MINIMIZE:
-      case G_TOKEN_MAXIMIZE:
-      case G_TOKEN_UNMINIMIZE:
-      case G_TOKEN_UNMAXIMIZE:
-      case G_TOKEN_SETMONITOR:
-      case G_TOKEN_SETLAYER:
-      case G_TOKEN_SETBARSIZE:
-      case G_TOKEN_SETBARID:
-      case G_TOKEN_SETEXCLUSIVEZONE:
-      case G_TOKEN_SETVALUE:
-      case G_TOKEN_SETSTYLE:
-      case G_TOKEN_SETTOOLTIP:
-      case G_TOKEN_CLIENTSEND:
-        type = scanner->token;
-        break;
-      default:
-        return FALSE;
-    }
-  }
-  else
-    type = G_TOKEN_EXEC;
-
-
-  switch(type)
-  {
+    case G_TOKEN_STRING:
+      action->command = g_strdup(scanner->value.v_string);
+      action->type = G_TOKEN_EXEC;
+      break;
+    case G_TOKEN_FOCUS:
+    case G_TOKEN_CLOSE:
+    case G_TOKEN_MINIMIZE:
+    case G_TOKEN_MAXIMIZE:
+    case G_TOKEN_UNMINIMIZE:
+    case G_TOKEN_UNMAXIMIZE:
+      break;
     case G_TOKEN_EXEC:
     case G_TOKEN_MENU:
     case G_TOKEN_MENUCLEAR:
@@ -684,58 +664,27 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
     case G_TOKEN_CONFIG:
     case G_TOKEN_FUNCTION:
     case G_TOKEN_SETBARID:
-      if(!config_expect_token(scanner, G_TOKEN_STRING,
-            "Missing argument in action"))
-        return FALSE;
-      g_scanner_get_next_token(scanner);
-      g_free(action->command);
-      action->command = g_strdup(scanner->value.v_string);
-      break;
     case G_TOKEN_SETMONITOR:
     case G_TOKEN_SETLAYER:
     case G_TOKEN_SETBARSIZE:
     case G_TOKEN_SETEXCLUSIVEZONE:
-      if(!config_expect_token(scanner, G_TOKEN_STRING,
-            "Missing argument in action"))
-        return FALSE;
-      g_scanner_get_next_token(scanner);
-      g_free(action->command);
-      action->command = g_strdup(scanner->value.v_string);
-      if(g_scanner_peek_next_token(scanner) == ',')
+      config_parse_sequence(scanner,
+          SEQ_REQ,G_TOKEN_STRING,&action->addr,"Missing argument in action",
+          SEQ_OPT,',',NULL,NULL,
+          SEQ_CON,G_TOKEN_STRING,&action->command,"Missing argument after ','",
+          SEQ_END);
+      if(!action->command)
       {
-        g_scanner_get_next_token(scanner);
-        if(!config_expect_token(scanner, G_TOKEN_STRING,
-            "Missing second argument in action"))
-        {
-          g_free(action->command);
-          return FALSE;
-        }
-        g_scanner_get_next_token(scanner);
-        g_free(action->addr);
-        action->addr = action->command;
-        action->command = g_strdup(scanner->value.v_string);
+        action->command = action->addr;
+        action->addr = NULL;
       }
       break;
     case G_TOKEN_CLIENTSEND:
-      if(!config_expect_token(scanner, G_TOKEN_STRING,
-            "Missing argument in action"))
-        return FALSE;
-      g_scanner_get_next_token(scanner);
-      g_free(action->addr);
-      action->addr = g_strdup(scanner->value.v_string);
-      if(!config_expect_token(scanner, ',' ,
-            "Missing second argument in action"))
-      {
-        g_free(action->addr);
-        return FALSE;
-      }
-      g_scanner_get_next_token(scanner);
-      if(!config_expect_token(scanner, G_TOKEN_STRING,
-            "Missing second argument in action"))
-        return FALSE;
-      g_scanner_get_next_token(scanner);
-      g_free(action->command);
-      action->command = g_strdup(scanner->value.v_string);
+      config_parse_sequence(scanner,
+          SEQ_REQ,G_TOKEN_STRING,&action->addr,"Missing address in action",
+          SEQ_OPT,',',NULL,NULL,
+          SEQ_CON,G_TOKEN_STRING,&action->command,"Missing command in action",
+          SEQ_END);
       break;
     case G_TOKEN_SETVALUE:
       action->command = config_get_value(scanner,"action value",FALSE);
@@ -747,14 +696,16 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
       action->command = config_get_value(scanner,"action tooltip",FALSE);
       break;
     default:
-      g_free(action->command);
-      action->command = NULL;
+      g_scanner_error(scanner,"invalid action");
       break;
   }
-
-  action->type = type;
-  action->cond = cond;
-  action->ncond = ncond;
+  if(scanner->max_parse_errors)
+  {
+    g_free(action->command);
+    g_free(action->addr);
+    memset(action,0,sizeof(struct layout_action));
+    return FALSE;
+  }
 
   return TRUE;
 }
@@ -764,12 +715,12 @@ void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
   gint button;
   if(g_scanner_peek_next_token(scanner)=='[')
   {
-    g_scanner_get_next_token(scanner);
-    if(g_scanner_get_next_token(scanner) != G_TOKEN_FLOAT)
-      return g_scanner_error(scanner,"expecting a number in action[<number>]");
-    button = (gint)scanner->value.v_float;
-    if(g_scanner_get_next_token(scanner) != ']')
-      return g_scanner_error(scanner,"expecting a ']' in action[<number>]");
+    config_parse_sequence(scanner,
+        SEQ_REQ,'[',NULL,NULL,
+        SEQ_REQ,G_TOKEN_INT,&button,"expecting a number in action[<number>]",
+        SEQ_REQ,']',NULL,"expecting a ']' in action[<number>]",
+        SEQ_END);
+    g_return_if_fail(!scanner->max_parse_errors);
   }
   else
     button = 1;
