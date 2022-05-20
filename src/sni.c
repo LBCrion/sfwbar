@@ -407,7 +407,7 @@ GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
     ptr=(guint32 *)buff;
     for(i=0;i<x*y;i++)
       ptr[i] = g_ntohl(ptr[i]);
-      
+
     cs = cairo_image_surface_create_for_data(buff,CAIRO_FORMAT_ARGB32,x,y,
         cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,x));
     res = gdk_pixbuf_get_from_surface(cs,0,0,x,y);

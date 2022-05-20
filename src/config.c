@@ -629,12 +629,11 @@ void config_action_conditions ( GScanner *scanner, guchar *cond,
   }
 }
 
-gboolean config_action ( GScanner *scanner, struct layout_action *action )
+struct layout_action *config_action ( GScanner *scanner )
 {
-  g_free(action->command);
-  g_free(action->addr);
-  memset(action,0,sizeof(struct layout_action));
+  struct layout_action *action;
 
+  action = g_malloc0(sizeof(struct layout_action));
   config_action_conditions ( scanner, &action->cond, &action->ncond );
 
   g_scanner_get_next_token(scanner);
@@ -701,18 +700,17 @@ gboolean config_action ( GScanner *scanner, struct layout_action *action )
   }
   if(scanner->max_parse_errors)
   {
-    g_free(action->command);
-    g_free(action->addr);
-    memset(action,0,sizeof(struct layout_action));
-    return FALSE;
+    action_free(action,NULL);
+    return NULL;
   }
 
-  return TRUE;
+  return action;
 }
 
 void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
 {
   gint button;
+
   if(g_scanner_peek_next_token(scanner)=='[')
   {
     config_parse_sequence(scanner,
@@ -720,16 +718,20 @@ void config_widget_action ( GScanner *scanner, struct layout_widget *lw )
         SEQ_REQ,G_TOKEN_INT,&button,"expecting a number in action[<number>]",
         SEQ_REQ,']',NULL,"expecting a ']' in action[<number>]",
         SEQ_END);
-    g_return_if_fail(!scanner->max_parse_errors);
+    if(scanner->max_parse_errors)
+      return;
   }
   else
     button = 1;
-  if( button<0 || button >MAX_BUTTON )
+
+  if( button<0 || button >=MAX_BUTTON )
     return g_scanner_error(scanner,"invalid action index %d",button);
   if(g_scanner_get_next_token(scanner) != '=')
     return g_scanner_error(scanner,"expecting a '=' after 'action'");
 
-  if(!config_action(scanner,&(lw->action[button])))
+  action_free(lw->actions[button],NULL);
+  lw->actions[button] = config_action(scanner);
+  if(!lw->actions[button])
     return g_scanner_error(scanner,"invalid action");
 
   config_optional_semicolon(scanner);
@@ -1091,12 +1093,10 @@ GtkWidget *config_menu_item ( GScanner *scanner )
     return NULL;
   }
 
-  action = g_malloc0(sizeof(struct layout_action));
+  action = config_action(scanner);
 
-  if(!config_action(scanner,action))
+  if(!action)
   {
-    g_free(label);
-    g_free(action);
     g_scanner_error(scanner, "menu item: invalid action");
     return NULL;
   }
@@ -1199,12 +1199,9 @@ void config_function ( GScanner *scanner )
   g_scanner_peek_next_token(scanner);
   while(scanner->next_token != G_TOKEN_EOF && scanner->next_token != '}')
   {
-    action = g_malloc0(sizeof(struct layout_action));
-    if(!config_action(scanner,action))
-    {
-      action_free(action,NULL);
+    action = config_action(scanner);
+    if(!action)
       g_scanner_error(scanner,"invalid action");
-    }
     else
       actions = g_list_append(actions, action);
   g_scanner_peek_next_token(scanner);
@@ -1261,12 +1258,10 @@ void config_trigger_action ( GScanner *scanner )
   }
 
   g_scanner_get_next_token(scanner);
-  action = g_malloc0(sizeof(struct layout_action));
-
-  if(!config_action(scanner,action))
+  action = config_action(scanner);
+  if(!action)
   {
     g_free(trigger);
-    g_free(action);
     g_scanner_error(scanner, "TriggerAction: invalid action");
     return;
   }

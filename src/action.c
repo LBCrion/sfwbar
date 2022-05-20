@@ -166,6 +166,9 @@ void action_exec ( GtkWidget *widget, struct layout_action *action,
 {
   guint16 state;
 
+  if(!action)
+    return;
+
   if(istate)
     state = *istate;
   else

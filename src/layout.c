@@ -76,8 +76,8 @@ void layout_menu_popup ( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
 
 gboolean layout_widget_has_actions ( struct layout_widget * lw )
 {
-  static const gint8 act_check[MAX_BUTTON*sizeof(struct layout_action)];
-  return memcmp(lw->action,act_check,sizeof(struct layout_action)*MAX_BUTTON);
+  static const gint8 act_check[MAX_BUTTON*sizeof(struct layout_action *)];
+  return memcmp(lw->actions,act_check,sizeof(struct layout_action *)*MAX_BUTTON);
 }
 
 gboolean widget_menu_action ( GtkWidget *w ,struct layout_action *action )
@@ -109,7 +109,7 @@ gboolean widget_menu_action ( GtkWidget *w ,struct layout_action *action )
 
 gboolean layout_widget_button_cb ( GtkWidget *widget, struct layout_widget *lw )
 {
-  action_exec(lw->widget,&(lw->action[1]),NULL,
+  action_exec(lw->widget,lw->actions[1],NULL,
       wintree_from_id(wintree_get_focus()),NULL);
   return TRUE;
 }
@@ -121,7 +121,7 @@ gboolean layout_widget_click_cb ( GtkWidget *w, GdkEventButton *ev,
     return FALSE;
 
   if(ev->type == GDK_BUTTON_PRESS && ev->button >= 1 && ev->button <= 3)
-    action_exec(lw->widget,&(lw->action[ev->button]),(GdkEvent *)ev,
+    action_exec(lw->widget,lw->actions[ev->button],(GdkEvent *)ev,
         wintree_from_id(wintree_get_focus()),NULL);
   return TRUE;
 }
@@ -148,7 +148,7 @@ gboolean layout_widget_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
       button = 0;
   }
   if(button)
-    action_exec(lw->widget,&(lw->action[button]),(GdkEvent *)event,
+    action_exec(lw->widget,lw->actions[button],(GdkEvent *)event,
         wintree_from_id(wintree_get_focus()),NULL);
 
   return TRUE;
@@ -355,7 +355,7 @@ void layout_widget_free ( struct layout_widget *lw )
   g_free(lw->value);
   g_free(lw->tooltip);
   for(i=0;i<MAX_BUTTON;i++)
-    g_free(lw->action[i].command);
+    action_free(lw->actions[i],NULL);
   g_free(lw->evalue);
   g_free(lw->estyle);
   g_free(lw);
@@ -389,7 +389,7 @@ void layout_widgets_autoexec ( GtkWidget *widget, gpointer data )
   lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
 
   if(lw)
-    action_exec(lw->widget,&(lw->action[0]),NULL,
+    action_exec(lw->widget,lw->actions[0],NULL,
         wintree_from_id(wintree_get_focus()),NULL);
 
 }

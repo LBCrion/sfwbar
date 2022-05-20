@@ -12,7 +12,7 @@
 struct taskbar_item {
   GtkWidget *widget;
   struct wt_window *win;
-  struct layout_action *actions;
+  struct layout_action **actions;
 };
 
 static GList *taskbars;
@@ -53,7 +53,7 @@ gboolean taskbar_click_cb ( GtkWidget *widget, GdkEventButton *ev,
 
   if(ev->type == GDK_BUTTON_PRESS && ev->button >= 1 && ev->button <= 3)
     action_exec(gtk_bin_get_child(GTK_BIN(widget)),
-        &item->actions[ev->button],(GdkEvent *)ev,
+        item->actions[ev->button],(GdkEvent *)ev,
         wintree_from_id(item->win->uid),NULL);
   return TRUE;
 }
@@ -83,7 +83,7 @@ gboolean taskbar_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
   }
   if(button)
     action_exec(gtk_bin_get_child(GTK_BIN(w)),
-        &item->actions[button], (GdkEvent *)event,
+        item->actions[button], (GdkEvent *)event,
         wintree_from_id(item->win->uid),NULL);
 
   return TRUE;
@@ -94,8 +94,8 @@ void taskbar_button_cb( GtkWidget *widget, gpointer data )
   struct taskbar_item *item = data;
 
 
-  if(item->actions[1].type)
-    action_exec(widget,&item->actions[1],NULL,item->win,NULL);
+  if(item->actions[1]->type)
+    action_exec(widget,item->actions[1],NULL,item->win,NULL);
   else
   {
     if ( wintree_is_focused(item->win->uid) )
@@ -322,7 +322,7 @@ void taskbar_init ( struct layout_widget *lw )
   GList *iter;
 
   taskbars = g_list_append(taskbars,lw);
-  g_object_set_data(G_OBJECT(lw->widget),"actions",lw->action);
+  g_object_set_data(G_OBJECT(lw->widget),"actions",lw->actions);
 
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
     taskbar_item_init(lw->widget,iter->data);

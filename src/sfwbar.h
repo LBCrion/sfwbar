@@ -68,7 +68,7 @@ struct layout_widget {
   gchar *evalue;
   gchar *tooltip;
   gulong tooltip_h;
-  struct layout_action action[MAX_BUTTON];
+  struct layout_action *actions[MAX_BUTTON];
   gint64 interval;
   gchar *trigger;
   gint64 next_poll;
