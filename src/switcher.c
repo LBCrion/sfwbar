@@ -111,19 +111,19 @@ gboolean switcher_event ( struct json_object *obj )
     counter = interval;
     focus = NULL;
     for (item = wintree_get_list(); item; item = g_list_next(item) )
-      if ( wintree_is_focused(((struct wt_window *)item->data)->uid) )
+      if ( wintree_is_focused(((window_t *)item->data)->uid) )
         focus = g_list_next(item);
     if(focus==NULL)
       focus=wintree_get_list();
     if(focus!=NULL)
-      wintree_set_focus(((struct wt_window *)focus->data)->uid);
+      wintree_set_focus(((window_t *)focus->data)->uid);
     switcher_invalidate();
   }
 
   return TRUE;
 }
 
-void switcher_window_init ( struct wt_window *win)
+void switcher_window_init ( window_t *win)
 {
   GtkWidget *icon,*label;
   gint dir;
@@ -156,7 +156,7 @@ void switcher_window_init ( struct wt_window *win)
   }
 }
 
-void switcher_set_label ( struct wt_window *win, gchar *title )
+void switcher_set_label ( window_t *win, gchar *title )
 {
   GList *glist, *iter;
 
@@ -177,7 +177,7 @@ void switcher_set_label ( struct wt_window *win, gchar *title )
 void switcher_update ( void )
 {
   GList *item;
-  struct wt_window *win;
+  window_t *win;
 
   if(!switcher)
     return;

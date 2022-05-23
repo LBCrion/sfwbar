@@ -556,28 +556,22 @@ void config_widget_cols ( GScanner *scanner, widget_t *lw )
 {
   scanner->max_parse_errors = FALSE;
 
-  if( (lw->wtype != G_TOKEN_TASKBAR) &&
-      (lw->wtype != G_TOKEN_PAGER) &&
+  if( (lw->wtype != G_TOKEN_TASKBAR) && (lw->wtype != G_TOKEN_PAGER) &&
       (lw->wtype != G_TOKEN_TRAY) )
-  {
     g_scanner_error(scanner,"this widget has no property 'cols'");
-    return;
-  }
-  flow_grid_set_cols(lw->widget, config_assign_number(scanner, "cols"));
+  else
+    flow_grid_set_cols(lw->widget, config_assign_number(scanner, "cols"));
 }
 
 void config_widget_rows ( GScanner *scanner, widget_t *lw )
 {
   scanner->max_parse_errors = FALSE;
 
-  if( (lw->wtype != G_TOKEN_TASKBAR) &&
-      (lw->wtype != G_TOKEN_PAGER) &&
+  if( (lw->wtype != G_TOKEN_TASKBAR) && (lw->wtype != G_TOKEN_PAGER) &&
       (lw->wtype != G_TOKEN_TRAY) )
-  {
     g_scanner_error(scanner,"this widget has no property 'rows'");
-    return;
-  }
-  flow_grid_set_rows(lw->widget, config_assign_number(scanner, "rows"));
+  else
+    flow_grid_set_rows(lw->widget, config_assign_number(scanner, "rows"));
 }
 
 void config_action_conditions ( GScanner *scanner, guchar *cond,
@@ -585,48 +579,48 @@ void config_action_conditions ( GScanner *scanner, guchar *cond,
 {
   guchar *ptr;
 
-  if(g_scanner_peek_next_token(scanner) == '[')
+  if(g_scanner_peek_next_token(scanner) != '[')
+    return;
+
+  do
   {
-    do
+    g_scanner_get_next_token(scanner);
+
+    if(g_scanner_peek_next_token(scanner)=='!')
     {
       g_scanner_get_next_token(scanner);
+      ptr = ncond;
+    }
+    else
+      ptr = cond;
 
-      if(g_scanner_peek_next_token(scanner)=='!')
-      {
-        g_scanner_get_next_token(scanner);
-        ptr = ncond;
-      }
-      else
-        ptr = cond;
-
-      switch((gint)g_scanner_get_next_token(scanner))
-      {
-        case G_TOKEN_FOCUSED:
-          *ptr |= WS_FOCUSED;
-          break;
-        case G_TOKEN_MINIMIZED:
-          *ptr |= WS_MINIMIZED;
-          break;
-        case G_TOKEN_MAXIMIZED:
-          *ptr |= WS_MAXIMIZED;
-          break;
-        case G_TOKEN_FULLSCREEN:
-          *ptr |= WS_FULLSCREEN;
-          break;
-        case G_TOKEN_IDLEINHIBIT:
-          *ptr |= WS_INHIBIT;
-          break;
-        case G_TOKEN_USERSTATE:
-          *ptr |= WS_USERSTATE;
-          break;
-        default:
-          g_scanner_error(scanner,"invalid condition in action");
-          break;
-      }
-    } while (g_scanner_peek_next_token(scanner)=='|');
-    if(g_scanner_get_next_token(scanner) != ']')
-      g_scanner_error(scanner,"missing ']' in conditional action");
-  }
+    switch((gint)g_scanner_get_next_token(scanner))
+    {
+      case G_TOKEN_FOCUSED:
+        *ptr |= WS_FOCUSED;
+        break;
+      case G_TOKEN_MINIMIZED:
+        *ptr |= WS_MINIMIZED;
+        break;
+      case G_TOKEN_MAXIMIZED:
+        *ptr |= WS_MAXIMIZED;
+        break;
+      case G_TOKEN_FULLSCREEN:
+        *ptr |= WS_FULLSCREEN;
+        break;
+      case G_TOKEN_IDLEINHIBIT:
+        *ptr |= WS_INHIBIT;
+        break;
+      case G_TOKEN_USERSTATE:
+        *ptr |= WS_USERSTATE;
+        break;
+      default:
+        g_scanner_error(scanner,"invalid condition in action");
+        break;
+    }
+  } while (g_scanner_peek_next_token(scanner)=='|');
+  if(g_scanner_get_next_token(scanner) != ']')
+    g_scanner_error(scanner,"missing ']' in conditional action");
 }
 
 action_t *config_action ( GScanner *scanner )
@@ -956,8 +950,7 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
     g_scanner_get_next_token(scanner);
 }
 
-widget_t *config_layout ( GScanner *scanner,
-    widget_t *lw )
+widget_t *config_layout ( GScanner *scanner, widget_t *lw )
 {
   gboolean extra;
 

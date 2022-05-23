@@ -29,18 +29,18 @@ void action_function_add ( gchar *name, GList *actions )
 }
 
 void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
-    struct wt_window *win, guint16 *state )
+    window_t *win, guint16 *state )
 {
   GList *l;
-  struct wt_window *stat_win;
+  window_t *stat_win;
 
   if(!name)
     return;
  
   if(win)
   {
-    stat_win = g_malloc(sizeof(struct wt_window));
-    memcpy(stat_win,win,sizeof(struct wt_window));
+    stat_win = g_malloc(sizeof(window_t));
+    memcpy(stat_win,win,sizeof(window_t));
   }
   else
     stat_win = NULL;
@@ -125,7 +125,7 @@ void action_set_tooltip ( GtkWidget *widget, gchar *tooltip )
   layout_widget_set_tooltip(lw);
 }
 
-guint16 action_state_build ( GtkWidget *widget, struct wt_window *win )
+guint16 action_state_build ( GtkWidget *widget, window_t *win )
 {
   widget_t *lw;
   guint16 state = 0;
@@ -162,7 +162,7 @@ void action_client_send ( action_t *action )
 }
 
 void action_exec ( GtkWidget *widget, action_t *action,
-    GdkEvent *event, struct wt_window *win, guint16 *istate )
+    GdkEvent *event, window_t *win, guint16 *istate )
 {
   guint16 state;
 

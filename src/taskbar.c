@@ -9,11 +9,13 @@
 #include <gtk/gtk.h>
 #include "sfwbar.h"
 
-struct taskbar_item {
+typedef struct taskbar_item {
   GtkWidget *widget;
-  struct wt_window *win;
+  GtkWidget *label;
+  GtkWidget *icon;
+  window_t *win;
   action_t **actions;
-};
+} item_t;
 
 static GList *taskbars;
 
@@ -31,13 +33,13 @@ void taskbar_invalidate_all ( void )
       taskbar_invalidate(((widget_t *)iter->data)->widget);
 }
 
-struct taskbar_item *taskbar_item_lookup ( GtkWidget *taskbar, void *parent )
+item_t *taskbar_item_lookup ( GtkWidget *taskbar, void *parent )
 {
   GList *iter;
 
   iter = g_object_get_data(G_OBJECT(taskbar),"items");
   for(;iter;iter=g_list_next(iter))
-    if(((struct taskbar_item *)iter->data)->win == parent)
+    if(((item_t *)iter->data)->win == parent)
       return iter->data;
 
   return NULL;
@@ -46,7 +48,7 @@ struct taskbar_item *taskbar_item_lookup ( GtkWidget *taskbar, void *parent )
 gboolean taskbar_click_cb ( GtkWidget *widget, GdkEventButton *ev,
     gpointer data )
 {
-  struct taskbar_item *item = data;
+  item_t *item = data;
 
   if(GTK_IS_BUTTON(widget) && ev->button != 1)
     return FALSE;
@@ -61,7 +63,7 @@ gboolean taskbar_click_cb ( GtkWidget *widget, GdkEventButton *ev,
 gboolean taskbar_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
     gpointer data )
 {
-  struct taskbar_item *item = data;
+  item_t *item = data;
   gint button;
 
   switch(event->direction)
@@ -91,10 +93,9 @@ gboolean taskbar_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
 
 void taskbar_button_cb( GtkWidget *widget, gpointer data )
 {
-  struct taskbar_item *item = data;
+  item_t *item = data;
 
-
-  if(item->actions[1]->type)
+  if(item->actions[1] && item->actions[1]->type)
     action_exec(widget,item->actions[1],NULL,item->win,NULL);
   else
   {
@@ -107,10 +108,10 @@ void taskbar_button_cb( GtkWidget *widget, gpointer data )
   taskbar_invalidate_all();
 }
 
-void taskbar_item_init ( GtkWidget *taskbar, struct wt_window *win )
+void taskbar_item_init ( GtkWidget *taskbar, window_t *win )
 {
-  struct taskbar_item *item;
-  GtkWidget *box,*icon,*label,*button;
+  item_t *item;
+  GtkWidget *box, *button;
   gint dir;
   gboolean icons, labels;
   gint title_width;
@@ -121,7 +122,7 @@ void taskbar_item_init ( GtkWidget *taskbar, struct wt_window *win )
   item = taskbar_item_lookup(taskbar, win);
   if(item)
     return;
-  item = g_malloc0(sizeof(struct taskbar_item));
+  item = g_malloc0(sizeof(item_t));
 
   icons = GPOINTER_TO_INT(
       g_object_get_data(G_OBJECT(taskbar),"icons"));
@@ -145,19 +146,19 @@ void taskbar_item_init ( GtkWidget *taskbar, struct wt_window *win )
 
   if(icons)
   {
-    icon = scale_image_new();
-    scale_image_set_image(icon,win->appid,NULL);
-    gtk_grid_attach_next_to(GTK_GRID(box),icon,NULL,dir,1,1);
+    item->icon = scale_image_new();
+    scale_image_set_image(item->icon,win->appid,NULL);
+    gtk_grid_attach_next_to(GTK_GRID(box),item->icon,NULL,dir,1,1);
   }
   else
-    icon = NULL;
+    item->icon = NULL;
   if(labels)
   {
-    label = gtk_label_new(win->title);
-    gtk_label_set_ellipsize (GTK_LABEL(label),PANGO_ELLIPSIZE_END);
-    gtk_label_set_max_width_chars(GTK_LABEL(label),title_width);
-    widget_set_css(label,FALSE);
-    gtk_grid_attach_next_to(GTK_GRID(box),label,icon,dir,1,1);
+    item->label = gtk_label_new(win->title);
+    gtk_label_set_ellipsize (GTK_LABEL(item->label),PANGO_ELLIPSIZE_END);
+    gtk_label_set_max_width_chars(GTK_LABEL(item->label),title_width);
+    widget_set_css(item->label,FALSE);
+    gtk_grid_attach_next_to(GTK_GRID(box),item->label,item->icon,dir,1,1);
   }
 
   item->win = win;
@@ -173,7 +174,7 @@ void taskbar_item_init ( GtkWidget *taskbar, struct wt_window *win )
       g_object_get_data(G_OBJECT(taskbar),"items"), item));
 }
 
-void taskbar_item_init_for_all ( struct wt_window *win )
+void taskbar_item_init_for_all ( window_t *win )
 {
   GList *iter;
 
@@ -182,9 +183,9 @@ void taskbar_item_init_for_all ( struct wt_window *win )
       taskbar_item_init(((widget_t *)iter->data)->widget, win );
 }
 
-void taskbar_item_destroy ( GtkWidget *taskbar, struct wt_window *win )
+void taskbar_item_destroy ( GtkWidget *taskbar, window_t *win )
 {
-  struct taskbar_item *item;
+  item_t *item;
   GList *iter;
 
   if(!taskbar)
@@ -192,7 +193,7 @@ void taskbar_item_destroy ( GtkWidget *taskbar, struct wt_window *win )
 
   iter = g_object_get_data(G_OBJECT(taskbar),"items");
   for(;iter;iter=g_list_next(iter))
-    if(((struct taskbar_item *)iter->data)->win == win)
+    if(((item_t *)iter->data)->win == win)
       break;
 
   if(!iter)
@@ -210,7 +211,7 @@ void taskbar_item_destroy ( GtkWidget *taskbar, struct wt_window *win )
         g_object_get_data(G_OBJECT(taskbar),"items"),iter));
 }
 
-void taskbar_item_destroy_for_all ( struct wt_window *win )
+void taskbar_item_destroy_for_all ( window_t *win )
 {
   GList *iter;
 
@@ -219,11 +220,9 @@ void taskbar_item_destroy_for_all ( struct wt_window *win )
       taskbar_item_destroy(((widget_t *)iter->data)->widget, win );
 }
 
-void taskbar_set_label ( GtkWidget *taskbar, struct wt_window *win, gchar *title )
+void taskbar_set_label ( GtkWidget *taskbar, window_t *win, gchar *title )
 {
-  struct taskbar_item *item;
-  GtkWidget *button;
-  GList *blist, *glist, *iter;
+  item_t *item;
 
   if(!taskbar)
     return;
@@ -237,22 +236,11 @@ void taskbar_set_label ( GtkWidget *taskbar, struct wt_window *win, gchar *title
   if(!item)
     return;
 
-  button = gtk_bin_get_child(GTK_BIN(item->widget));
-  blist = gtk_container_get_children(GTK_CONTAINER(button));
-
-  if(!blist)
-    return;
-
-  glist = gtk_container_get_children(GTK_CONTAINER((blist->data)));
-
-  for(iter = glist; iter; iter = g_list_next(iter))
-    if(GTK_IS_LABEL(iter->data))
-      gtk_label_set_text(GTK_LABEL(iter->data), title);
-  g_list_free(glist);
-  g_list_free(blist);
+  if(item->label)
+    gtk_label_set_text(GTK_LABEL(item->label), title);
 }
 
-void taskbar_set_label_for_all ( struct wt_window *win, gchar *title )
+void taskbar_set_label_for_all ( window_t *win, gchar *title )
 {
   GList *iter;
 
@@ -263,7 +251,7 @@ void taskbar_set_label_for_all ( struct wt_window *win, gchar *title )
 
 void taskbar_update( GtkWidget *taskbar )
 {
-  struct taskbar_item *item;
+  item_t *item;
   GList *iter;
   gchar *output;
   gboolean filter_output;

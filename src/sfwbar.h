@@ -8,7 +8,7 @@
 
 #define MAX_BUTTON 8
 
-struct wt_window {
+typedef struct wt_widdow {
   GtkWidget *switcher;
   gchar *title;
   gchar *appid;
@@ -18,7 +18,7 @@ struct wt_window {
   gpointer uid;
   guint16 state;
   gboolean valid;
-};
+} window_t;
 
 struct rect {
   guint x,y,w,h;
@@ -50,17 +50,15 @@ struct scan_file {
   GIOChannel *out;
 };
 
-struct layout_action {
+typedef struct layout_action {
   guchar cond;
   guchar ncond;
   guint type;
   gchar *command;
   gchar *addr;
-};
+} action_t;
 
-typedef struct layout_action action_t;
-
-struct layout_widget {
+typedef struct layout_widget {
   GtkWidget *widget;
   GtkWidget *lobject;
   gchar *css;
@@ -78,16 +76,13 @@ struct layout_widget {
   gint dir;
   gboolean user_state;
   struct rect rect;
-};
+} widget_t;
 
-typedef struct layout_widget widget_t;
-
-void action_exec ( GtkWidget *, action_t *, GdkEvent *,
-    struct wt_window *, guint16 *);
-void action_free ( action_t *action, GObject *old );
-void action_function_add ( gchar *name, GList *actions );
-void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
-    struct wt_window *win, guint16 *state );
+void action_exec ( GtkWidget *, action_t *, GdkEvent *, window_t *, guint16 *);
+void action_free ( action_t *, GObject *);
+void action_function_add ( gchar *, GList *);
+void action_function_exec ( gchar *, GtkWidget *, GdkEvent *, window_t *,
+    guint16 *);
 void action_trigger_add ( action_t *action, gchar *trigger );
 action_t *action_trigger_lookup ( gchar *trigger );
 
@@ -114,14 +109,14 @@ void taskbar_invalidate ( GtkWidget * );
 void taskbar_invalidate_all ( void );
 void taskbar_set_options ( gboolean, gboolean, gboolean, gint );
 void taskbar_update_all ( void );
-void taskbar_item_init_for_all ( struct wt_window *win );
-void taskbar_item_destroy_for_all ( struct wt_window *win );
-void taskbar_set_label_for_all ( struct wt_window *, gchar *);
+void taskbar_item_init_for_all ( window_t *win );
+void taskbar_item_destroy_for_all ( window_t *win );
+void taskbar_set_label_for_all ( window_t *, gchar *);
 
-struct wt_window *wintree_window_init ( void );
-struct wt_window *wintree_from_id ( gpointer id );
-struct wt_window *wintree_from_pid ( gint64 pid );
-void wintree_window_append ( struct wt_window *win );
+window_t *wintree_window_init ( void );
+window_t *wintree_from_id ( gpointer id );
+window_t *wintree_from_pid ( gint64 pid );
+void wintree_window_append ( window_t *win );
 void wintree_window_delete ( gpointer id );
 void wintree_set_focus ( gpointer id );
 void wintree_set_active ( gchar *title );
@@ -153,8 +148,8 @@ struct json_object *jpath_parse ( gchar *path, struct json_object *obj );
 gboolean switcher_event ( struct json_object *obj );
 void switcher_invalidate ( void );
 void switcher_update ( void );
-void switcher_set_label ( struct wt_window *win, gchar *title );
-void switcher_window_init ( struct wt_window *win);
+void switcher_set_label ( window_t *win, gchar *title );
+void switcher_window_init ( window_t *win);
 void switcher_config ( gint, gchar *, gint, gboolean, gboolean, gint );
 
 void pager_init ( GtkWidget * );

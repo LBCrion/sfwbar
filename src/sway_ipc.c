@@ -123,7 +123,7 @@ void sway_ipc_command ( gchar *cmd, ... )
 void sway_minimized_set ( struct json_object *obj, const gchar *parent,
     const gchar *monitor )
 {
-  struct wt_window *win;
+  window_t *win;
   gint64 wid;
 
   wid = json_int_by_name(obj,"id",G_MININT64);
@@ -147,7 +147,7 @@ void sway_minimized_set ( struct json_object *obj, const gchar *parent,
 
 void sway_set_state ( struct json_object *container)
 {
-  struct wt_window *win;
+  window_t *win;
   gint64 wid;
 
   wid = json_int_by_name(container,"id",G_MININT64);
@@ -164,7 +164,7 @@ void sway_set_state ( struct json_object *container)
 void sway_window_new ( struct json_object *container )
 {
   struct json_object *ptr;
-  struct wt_window *win;
+  window_t *win;
   gint64 wid;
 
   wid = json_int_by_name(container,"id",G_MININT64); 
@@ -208,7 +208,7 @@ void sway_window_new ( struct json_object *container )
 
 void sway_window_title ( struct json_object *container )
 {
-  struct wt_window *win;
+  window_t *win;
   gchar *title;
   gint64 wid;
 
@@ -239,7 +239,7 @@ void sway_window_close (struct json_object *container)
 
 void sway_set_focus ( struct json_object *container)
 {
-  struct wt_window *win;
+  window_t *win;
   gint64 wid;
 
   wid = json_int_by_name(container,"id",G_MININT64);

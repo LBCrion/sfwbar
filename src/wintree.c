@@ -23,16 +23,16 @@ gchar *wintree_get_active ( void )
   return wt_active;
 }
 
-struct wt_window *wintree_window_init ( void )
+window_t *wintree_window_init ( void )
 {
-  struct wt_window *w;
-  w = g_malloc0(sizeof(struct wt_window));
+  window_t *w;
+  w = g_malloc0(sizeof(window_t));
   w->pid=-1;
   w->wid=-1;
   return w;
 }
 
-gint wintree_compare ( struct wt_window *a, struct wt_window *b)
+gint wintree_compare ( window_t *a, window_t *b)
 {
   gint s;
   s = g_strcmp0(a->title,b->title);
@@ -56,29 +56,29 @@ gboolean wintree_is_focused ( gpointer id )
   return ( id == wt_focus );
 }
 
-struct wt_window *wintree_from_id ( gpointer id )
+window_t *wintree_from_id ( gpointer id )
 {
   GList *item;
   for(item = wt_list; item; item = g_list_next(item) )
-    if ( ((struct wt_window *)(item->data))->uid == id )
+    if ( ((window_t *)(item->data))->uid == id )
       break;
   if(!item)
     return NULL;
   return item->data;
 }
 
-struct wt_window *wintree_from_pid ( gint64 pid )
+window_t *wintree_from_pid ( gint64 pid )
 {
   GList *item;
   for(item = wt_list; item; item = g_list_next(item) )
-    if ( ((struct wt_window *)(item->data))->pid == pid )
+    if ( ((window_t *)(item->data))->pid == pid )
       break;
   if(!item)
     return NULL;
   return item->data;
 }
 
-void wintree_window_append ( struct wt_window *win )
+void wintree_window_append ( window_t *win )
 {
   if(!win)
     return;
@@ -97,10 +97,10 @@ void wintree_window_append ( struct wt_window *win )
 void wintree_window_delete ( gpointer id )
 {
   GList *item;
-  struct wt_window *win;
+  window_t *win;
 
   for(item = wt_list; item; item = g_list_next(item) )
-    if ( ((struct wt_window *)(item->data))->uid == id )
+    if ( ((window_t *)(item->data))->uid == id )
       break;
   if(!item)
     return;

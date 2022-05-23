@@ -17,7 +17,7 @@ static struct wl_seat *seat;
 
 static void toplevel_handle_app_id(void *data, wlr_fth *tl, const gchar *app_id)
 {
-  struct wt_window *win;
+  window_t *win;
 
   if(sway_ipc_active())
     return;
@@ -32,7 +32,7 @@ static void toplevel_handle_app_id(void *data, wlr_fth *tl, const gchar *app_id)
 
 static void toplevel_handle_title(void *data, wlr_fth *tl, const gchar *title)
 {
-  struct wt_window *win;
+  window_t *win;
 
   if(sway_ipc_active())
     return;
@@ -57,7 +57,7 @@ static void toplevel_handle_closed(void *data, wlr_fth *tl)
 
 static void toplevel_handle_done(void *data, wlr_fth *tl)
 {
-  struct wt_window *win;
+  window_t *win;
 
   if(sway_ipc_active())
     return;
@@ -81,7 +81,7 @@ static void toplevel_handle_state(void *data, wlr_fth *tl,
                 struct wl_array *state)
 {
   uint32_t *entry;
-  struct wt_window *win;
+  window_t *win;
 
   if(sway_ipc_active())
     return;
@@ -135,7 +135,7 @@ static const struct zwlr_foreign_toplevel_handle_v1_listener toplevel_impl = {
 static void toplevel_manager_handle_toplevel(void *data,
   struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager, wlr_fth *tl)
 {
-  struct wt_window *win;
+  window_t *win;
 
   if(!sway_ipc_active())
   {
