@@ -116,6 +116,8 @@ void wintree_window_delete ( gpointer id )
   str_assign(&(win->appid),NULL);
   str_assign(&(win->title),NULL);
   wt_list = g_list_delete_link(wt_list,item);
+  g_free(win->output);
+  g_free(win);
 }
 
 GList *wintree_get_list ( void )

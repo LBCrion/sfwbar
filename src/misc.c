@@ -48,6 +48,7 @@ gchar *get_xdg_config_file ( gchar *fname, gchar *extra )
     full = g_build_filename ( xdg_data[i], "sfwbar", fname, NULL );
     if( file_test_read(full) )
       return full;
+    g_free(full);
   }
 
   if(!extra)

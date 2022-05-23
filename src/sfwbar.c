@@ -30,6 +30,7 @@ void parse_command_line ( gint argc, gchar **argv)
   g_option_context_add_main_entries(optc,entries,NULL);
   g_option_context_add_group (optc, gtk_get_option_group (TRUE));
   g_option_context_parse(optc,&argc,&argv,NULL);
+  g_option_context_free(optc);
 }
 
 void list_monitors ( void )

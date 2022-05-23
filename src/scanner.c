@@ -57,6 +57,8 @@ void scanner_update_var ( struct scan_var *var, gchar *value)
     g_free(var->str);
     var->str=value;
   }
+  else
+    g_free(value);
   switch(var->multi)
   {
     case SV_ADD:

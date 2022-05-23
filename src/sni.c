@@ -453,7 +453,10 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
   wrap->sni->ref--;
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(result==NULL)
+  {
+    g_free(wrap);
     return;
+  }
   g_variant_get(result, "(v)",&inner);
   if(wrap->prop<=SNI_PROP_THEME)
   {
@@ -462,7 +465,7 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
       g_variant_get(inner,"s",&param);
     else
       param=NULL;
-    wrap->sni->string[wrap->prop] = g_strdup(param);
+    wrap->sni->string[wrap->prop] = param;
     g_debug("sni %s: property %s = %s",wrap->sni->dest,
         sni_properties[wrap->prop],wrap->sni->string[wrap->prop]);
   }
@@ -478,7 +481,7 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
     {
       g_free(wrap->sni->menu_path);
       g_variant_get(inner,"o",&param);
-      wrap->sni->menu_path = g_strdup(param);
+      wrap->sni->menu_path = param;
       g_debug("sni %s: property %s = %s",wrap->sni->dest,
           sni_properties[wrap->prop],wrap->sni->menu_path);
     }
@@ -897,6 +900,7 @@ void sni_host_list_cb ( GDBusConnection *con, GAsyncResult *res,
     sni_item_new(con, iface, g_variant_get_string(str,NULL));
     g_variant_unref(str);
   }
+  g_variant_iter_free(iter);
   if(inner)
     g_variant_unref(inner);
   if(result)

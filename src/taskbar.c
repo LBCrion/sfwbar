@@ -3,7 +3,6 @@
  * Copyright 2020-2022 Lev Babiev
  */
 
-
 #include <glib.h>
 #include <unistd.h>
 #include <gtk/gtk.h>
@@ -95,7 +94,7 @@ void taskbar_button_cb( GtkWidget *widget, gpointer data )
 {
   item_t *item = data;
 
-  if(item->actions[1] && item->actions[1]->type)
+  if(item->actions[1])
     action_exec(widget,item->actions[1],NULL,item->win,NULL);
   else
   {
