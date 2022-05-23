@@ -60,7 +60,7 @@ gboolean expr_is_numeric ( GScanner *scanner )
 /* convert a number to a string with specified number of decimals */
 gchar *expr_dtostr ( double num, gint dec )
 {
-  static const gchar *format = "%%0.%0.0ff";
+  static const gchar *format = "%%0.%df";
   static gchar fbuf[16];
   static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
 
@@ -70,7 +70,7 @@ gchar *expr_dtostr ( double num, gint dec )
   if(dec>99)
     dec = 99;
 
-  g_ascii_formatd(fbuf,16,format,(gdouble)dec);
+  g_snprintf(fbuf,16,format,dec);
   return g_strdup(g_ascii_formatd(buf,G_ASCII_DTOSTR_BUF_SIZE,fbuf,num));
 }
 
