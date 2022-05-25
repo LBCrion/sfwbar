@@ -197,6 +197,7 @@ char *scanner_get_string ( gchar *name, gboolean update );
 double scanner_get_numeric ( gchar *name, gboolean update );
 void scanner_file_attach ( gchar *trigger, struct scan_file *file );
 struct scan_file *scanner_file_get ( gchar *trigger );
+struct scan_file *scanner_file_new ( gint , gchar *, gchar *, gint );
 
 GtkWindow *bar_new ( gchar * );
 void bar_set_monitor ( gchar *, gchar * );

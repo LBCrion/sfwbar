@@ -69,7 +69,8 @@ void config_parse_sequence ( GScanner *scanner, ... )
     type = va_arg(args, gint );
     dest  = va_arg(args, void * );
     err = va_arg(args, char * );
-    if(g_scanner_peek_next_token(scanner) == type ||
+    if( (type == -1 && (matched || req != SEQ_CON)) || 
+        g_scanner_peek_next_token(scanner) == type || 
         ( scanner->next_token == G_TOKEN_FLOAT && type == G_TOKEN_INT) )
     {
       g_scanner_get_next_token(scanner);
@@ -80,12 +81,20 @@ void config_parse_sequence ( GScanner *scanner, ... )
           case G_TOKEN_STRING:
             *((gchar **)dest) = g_strdup(scanner->value.v_string);
             break;
+          case G_TOKEN_IDENTIFIER:
+            *((gchar **)dest) = g_strdup(scanner->value.v_identifier);
+            break;
           case G_TOKEN_FLOAT:
             *((gdouble *)dest) = scanner->value.v_float;
             break;
           case G_TOKEN_INT:
             *((gint *)dest) = (gint)scanner->value.v_float;
             break;
+          case -1:
+            *((gint *)dest) = scanner->token;
+            break;
+          default:
+            *((gboolean *)dest) = TRUE;
         }
     }
     else
@@ -173,81 +182,58 @@ gdouble config_assign_number ( GScanner *scanner, gchar *expr )
 void config_scanner_var ( GScanner *scanner, struct scan_file *file )
 {
   struct scan_var *var;
-  gchar *vname, *pattern = NULL;
-  guchar type;
-  gint flag = SV_REPLACE;
+  gchar *vname = NULL, *pattern = NULL;
+  guint type;
+  gint flag = G_TOKEN_LASTW;
 
-  scanner->max_parse_errors = FALSE;
-  g_scanner_get_next_token(scanner);
-  vname = g_strdup(scanner->value.v_identifier);
+  config_parse_sequence(scanner,
+      SEQ_REQ,G_TOKEN_IDENTIFIER,&vname,NULL,
+      SEQ_REQ,'=',NULL,"Missing '=' in variable declaration",
+      SEQ_REQ,-1,&type,NULL,
+      SEQ_REQ,'(',NULL,"Missing '(' after parser",
+      SEQ_END);
 
-  if(!config_expect_token(scanner, '=', "Missing '=' in %s = <parser>",vname))
+  if(scanner->max_parse_errors)
+    return g_free(vname);
+
+  switch(type)
   {
-    g_free(vname);
-    return;
-  }
-  g_scanner_get_next_token(scanner);
-
-  g_scanner_get_next_token(scanner);
-  if(((gint)scanner->token < G_TOKEN_REGEX)||
-      ((gint)scanner->token > G_TOKEN_GRAB))
-  {
-    g_scanner_error(scanner,"Missing <parser> in %s = <parser>",vname);
-    g_free(vname);
-    return;
-  }
-
-  type = scanner->token - G_TOKEN_REGEX;
-  if(!config_expect_token(scanner, '(', "Missing '(' in parser"))
-  {
-    g_free(vname);
-    return;
-  }
-  g_scanner_get_next_token(scanner);
-
-  if(type != VP_GRAB)
-  {
-    if(g_scanner_get_next_token(scanner)!=G_TOKEN_STRING)
-    {
-      g_scanner_error(scanner,
-            "Missing <string> parameter in parser");
-      g_free(vname);
-      return;
-    }
-    else
-      pattern = g_strdup(scanner->value.v_string);
-  }
-
-  if((g_scanner_peek_next_token(scanner)==',')||(type == VP_GRAB))
-  {
-    if(type != VP_GRAB)
-      g_scanner_get_next_token(scanner);
-    if(((gint)g_scanner_peek_next_token(scanner)>=G_TOKEN_SUM)&&
+    case G_TOKEN_REGEX:
+    case G_TOKEN_JSON:
+      config_parse_sequence(scanner,
+          SEQ_REQ,G_TOKEN_STRING,&pattern,"Missing pattern in parser",
+          SEQ_OPT,',',NULL,NULL,
+          SEQ_CON,-1,&flag,NULL,
+          SEQ_END);
+      break;
+    case G_TOKEN_GRAB:
+      if(((gint)g_scanner_peek_next_token(scanner)>=G_TOKEN_SUM)&&
         ((gint)g_scanner_peek_next_token(scanner)<=G_TOKEN_FIRST))
-    {
-      g_scanner_get_next_token(scanner);
-      flag = scanner->token - G_TOKEN_SUM + 1;
-    }
-    else
-      if(type != VP_GRAB)
-      {
-        g_scanner_get_next_token(scanner);
-        g_scanner_error(scanner,"Missing <aggregator> in parser");
-      }
+          flag = g_scanner_get_next_token(scanner);
+      break;
+    default:
+      g_scanner_error(scanner,"invalid parser for variable %s",vname);
   }
 
-  if(!config_expect_token(scanner,')', "Missing ')' in parser"))
+  if(scanner->max_parse_errors)
   {
     g_free(vname);
+    g_free(pattern);
     return;
   }
-  g_scanner_get_next_token(scanner);
 
-  config_optional_semicolon(scanner);
+  config_parse_sequence(scanner,
+    SEQ_REQ,')',NULL,"Missing ')' after parser",
+    SEQ_OPT,';',NULL,NULL,
+    SEQ_END);
 
   var = g_malloc0(sizeof(struct scan_var));
 
-  switch(type)
+  var->file = file;
+  var->type = type - G_TOKEN_REGEX;
+  var->multi = flag - G_TOKEN_SUM + 1;
+
+  switch(var->type)
   {
     case VP_JSON:
       var->json = pattern;
@@ -261,120 +247,70 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
       break;
   }
 
-  var->file = file;
-  var->type = type;
-  var->multi = flag;
-
   file->vars = g_list_append(file->vars,var);
   scanner_var_attach(vname,var);
 }
 
 struct scan_file *config_scanner_source ( GScanner *scanner, gint source )
 {
-  gchar *fname = NULL;
-  gchar *trigger = NULL;
-  gint flags = 0;
   struct scan_file *file;
-  GList *find;
-  static GList *file_list = NULL;
+  gchar *fname = NULL, *trigger = NULL;
+  gint flag1, flag2, flags = 0;
 
-  scanner->max_parse_errors = FALSE;
-  if(!config_expect_token(scanner, '(', "Missing '(' after <source>"))
-    return NULL;
-  g_scanner_get_next_token(scanner);
-
-  if(!config_expect_token(scanner, G_TOKEN_STRING,
-        "Missing <string> in source(<string>)"))
-    return NULL;
-  g_scanner_get_next_token(scanner);
-
-  fname = g_strdup(scanner->value.v_string);
-
-  if(source == SO_FILE)
-    while((gint)g_scanner_peek_next_token(scanner)==',')
-    {
-      g_scanner_get_next_token(scanner);
-      switch((gint)g_scanner_get_next_token(scanner))
-      {
-        case G_TOKEN_CHTIME:
-          flags |= VF_CHTIME;
-          break;
-        case G_TOKEN_NOGLOB:
-          flags |= VF_NOGLOB;
-          break;
-        default:
-          g_scanner_error(scanner,"Invalid <file_flag> in %s",fname);
-          break;
-      }
-    } 
-
-  if(source == SO_CLIENT)
-    if((gint)g_scanner_peek_next_token(scanner)==',')
-    {
-      g_scanner_get_next_token(scanner);
-      if(g_scanner_peek_next_token(scanner)!=G_TOKEN_STRING)
-        g_scanner_error(scanner,"Invalid trigger in client declaration");
-      else
-      {
-        g_scanner_get_next_token(scanner);
-        trigger = g_strdup(scanner->value.v_string);
-      }
-    }
-
-  if(config_expect_token(scanner,')',"Missing ')' in source"))
-    g_scanner_get_next_token(scanner);
-
-  if(config_expect_token(scanner,'{',"Missing '{' after <source>"))
-    g_scanner_get_next_token(scanner);
-
-  if(!fname)
-    return NULL;
+  switch(source)
+  {
+    case SO_FILE:
+      config_parse_sequence(scanner,
+          SEQ_REQ,'(',NULL,"Missing '(' after source",
+          SEQ_REQ,G_TOKEN_STRING,&fname,"Missing file in a source",
+          SEQ_OPT,',',NULL,NULL,
+          SEQ_CON,-1,&flag1,NULL,
+          SEQ_OPT,',',NULL,NULL,
+          SEQ_CON,-1,&flag2,NULL,
+          SEQ_REQ,')',NULL,"Missing ')' after source",
+          SEQ_REQ,'{',NULL,"Missing '{' after source",
+          SEQ_END);
+      break;
+    case SO_CLIENT:
+      config_parse_sequence(scanner,
+          SEQ_REQ,'(',NULL,"Missing '(' after source",
+          SEQ_REQ,G_TOKEN_STRING,&fname,"Missing file in a source",
+          SEQ_OPT,',',NULL,NULL,
+          SEQ_CON,G_TOKEN_STRING,&trigger,NULL,
+          SEQ_REQ,')',NULL,"Missing ')' after source",
+          SEQ_REQ,'{',NULL,"Missing '{' after source",
+          SEQ_END);
+      break;
+    default:
+      config_parse_sequence(scanner,
+          SEQ_REQ,'(',NULL,"Missing '(' after source",
+          SEQ_REQ,G_TOKEN_STRING,&fname,"Missing file in a source",
+          SEQ_REQ,')',NULL,"Missing ')' after source",
+          SEQ_REQ,'{',NULL,"Missing '{' after source",
+          SEQ_END);
+      break;
+  }
 
   if(scanner->max_parse_errors)
   {
     g_free(fname);
+    g_free(trigger);
     return NULL;
   }
 
-  if(source == SO_CLIENT)
-    find = NULL;
-  else
-    for(find=file_list;find;find=g_list_next(find))
-      if(!g_strcmp0(fname,((struct scan_file *)(find->data))->fname))
-        break;
+  if(flag1 == G_TOKEN_CHTIME || flag2 == G_TOKEN_CHTIME)
+    flags |= VF_CHTIME;
 
-  if(find!=NULL)
-    file = find->data;
-  else
-    file = g_malloc(sizeof(struct scan_file));
-  file->fname = fname;
-  file->trigger = trigger;
-  file->source = source;
-  file->mtime = 0;
-  file->flags = flags;
-  file->vars = NULL;
-  if( !strchr(fname,'*') && !strchr(fname,'?') )
-    file->flags |= VF_NOGLOB;
-  file_list = g_list_append(file_list,file);
-  if(file->trigger)
-    scanner_file_attach(trigger,file);
+  if(flag1 == G_TOKEN_NOGLOB || flag2 == G_TOKEN_NOGLOB)
+    flags |= VF_NOGLOB;
 
-  while(((gint)g_scanner_peek_next_token(scanner)!='}')&&
-      ( (gint)g_scanner_peek_next_token ( scanner ) != G_TOKEN_EOF ))
-  {
-    switch((gint)g_scanner_peek_next_token(scanner))
-    {
-      case G_TOKEN_IDENTIFIER:
-        config_scanner_var(scanner, file);
-        break;
-      default:
-        g_scanner_get_next_token(scanner);
-        g_scanner_error(scanner, "Expecting a variable declaration or End");
-        break;
-    }
-  }
-  if((gint)scanner->next_token == '}')
-    g_scanner_get_next_token(scanner);
+  file = scanner_file_new ( source, fname, trigger, flags );
+
+  while(g_scanner_peek_next_token(scanner) == G_TOKEN_IDENTIFIER)
+    config_scanner_var(scanner, file);
+
+  if(g_scanner_get_next_token(scanner) != '}')
+    g_scanner_error(scanner,"Expecting a variable declaration or '}'");
 
   return file;
 }
@@ -534,17 +470,16 @@ void config_get_pins ( GScanner *scanner, widget_t *lw )
   scanner->max_parse_errors = FALSE;
 
   if(lw->wtype != G_TOKEN_PAGER)
-  {
-    g_scanner_error(scanner,"this widget has no property 'pins'");
-    return;
-  }
+    return g_scanner_error(scanner,"this widget has no property 'pins'");
+
   if(!config_expect_token(scanner, '=',"expecting pins = string [,string]"))
     return;
+
   do
   {
     g_scanner_get_next_token(scanner);
     if(!config_expect_token(scanner, G_TOKEN_STRING,
-          "missing string in pins = string [,string]"))
+          "expecting a string in pins = string [,string]"))
       break;
     g_scanner_get_next_token(scanner);
     pager_add_pin(g_strdup(scanner->value.v_string));

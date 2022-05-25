@@ -9,13 +9,15 @@
 #include <glob.h>
 #include "sfwbar.h"
 
+static GList *file_list;
 static GHashTable *scan_list;
 static GHashTable *trigger_list;
 
 void scanner_file_attach ( gchar *trigger, struct scan_file *file )
 {
   if(!trigger_list)
-    trigger_list = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
+    trigger_list = g_hash_table_new((GHashFunc)str_nhash,
+        (GEqualFunc)str_nequal);
 
   g_hash_table_insert(trigger_list,trigger,file);
 }
@@ -26,6 +28,39 @@ struct scan_file *scanner_file_get ( gchar *trigger )
     return NULL;
 
   return g_hash_table_lookup(trigger_list,trigger);
+}
+
+struct scan_file *scanner_file_new ( gint source, gchar *fname,
+    gchar *trigger, gint flags )
+{
+  struct scan_file *file;
+  GList *iter;
+
+  if(source == SO_CLIENT)
+    iter = NULL;
+  else
+    for(iter=file_list;iter;iter=g_list_next(iter))
+      if(!g_strcmp0(fname,((struct scan_file *)(iter->data))->fname))
+        break;
+
+  if(iter)
+    file = iter->data;
+  else
+    file = g_malloc(sizeof(struct scan_file));
+
+  file->fname = fname;
+  file->trigger = trigger;
+  file->source = source;
+  file->mtime = 0;
+  file->flags = flags;
+  file->vars = NULL;
+  if( !strchr(fname,'*') && !strchr(fname,'?') )
+    file->flags |= VF_NOGLOB;
+  file_list = g_list_append(file_list,file);
+  if(file->trigger)
+    scanner_file_attach(trigger,file);
+
+  return file;
 }
 
 void scanner_var_attach ( gchar *name, struct scan_var *var )
