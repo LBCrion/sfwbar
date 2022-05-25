@@ -241,22 +241,9 @@ enum {
 };
 
 enum {
-  SV_ADD = 1,
-  SV_PRODUCT = 2,
-  SV_REPLACE = 3,
-  SV_FIRST = 4
-};
-
-enum {
   SO_FILE = 0,
   SO_EXEC = 1,
   SO_CLIENT = 2
-};
-
-enum {
-  VP_REGEX = 0,
-  VP_JSON = 1,
-  VP_GRAB = 2
 };
 
 enum {
