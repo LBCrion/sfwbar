@@ -233,7 +233,7 @@ scan_file_t *config_scanner_source ( GScanner *scanner, gint source )
 {
   scan_file_t *file;
   gchar *fname = NULL, *trigger = NULL;
-  gint flag1, flag2, flags = 0;
+  gint flag1 = 0, flag2 = 0, flags = 0;
 
   switch(source)
   {
@@ -287,8 +287,10 @@ scan_file_t *config_scanner_source ( GScanner *scanner, gint source )
   while(g_scanner_peek_next_token(scanner) == G_TOKEN_IDENTIFIER)
     config_scanner_var(scanner, file);
 
-  if(g_scanner_get_next_token(scanner) != '}')
-    g_scanner_error(scanner,"Expecting a variable declaration or '}'");
+  config_parse_sequence(scanner,
+      SEQ_REQ,'}',NULL,"Expecting a variable declaration or '}'",
+      SEQ_OPT,';',NULL,NULL,
+      SEQ_END);
 
   return file;
 }
@@ -976,10 +978,6 @@ void config_placer ( GScanner *scanner )
 
   config_optional_semicolon(scanner);
 
-  if(wp_x<1)
-    wp_x=1;
-  if(wp_y<1)
-    wp_y=1;
   placer_config(wp_x,wp_y,wo_x,wo_y,pid);
 }
 
@@ -1089,7 +1087,7 @@ void config_menu ( GScanner *scanner, GtkWidget *parent )
 void config_function ( GScanner *scanner )
 {
   gchar *name = NULL;
-  GList *actions;
+  GList *actions = NULL;
   action_t *action;
 
   config_parse_sequence(scanner,
@@ -1100,8 +1098,6 @@ void config_function ( GScanner *scanner )
       SEQ_END);
   if(scanner->max_parse_errors)
     return g_free(name);
-
-  actions = NULL;
 
   g_scanner_peek_next_token(scanner);
   while(scanner->next_token != G_TOKEN_EOF && scanner->next_token != '}')
@@ -1114,10 +1110,10 @@ void config_function ( GScanner *scanner )
   g_scanner_peek_next_token(scanner);
   }
 
-  if(scanner->next_token == '}')
-    g_scanner_get_next_token(scanner);
-
-  config_optional_semicolon(scanner);
+  config_parse_sequence(scanner,
+      SEQ_REQ,'}',NULL,"Expecting an action or '}'",
+      SEQ_OPT,';',NULL,NULL,
+      SEQ_END);
 
   action_function_add(name,actions);
 }
@@ -1152,26 +1148,16 @@ void config_trigger_action ( GScanner *scanner )
   gchar *trigger;
   action_t *action;
 
-  if(!config_expect_token(scanner, G_TOKEN_STRING,
-        "missing trigger in TriggerAction"))
-    return;
-  g_scanner_get_next_token(scanner);
-  trigger = g_strdup(scanner->value.v_string);
-  if(!config_expect_token(scanner, ',',
-        "missing ',' in TriggerAction"))
-  {
-    g_free(trigger);
-    return;
-  }
+  config_parse_sequence(scanner,
+      SEQ_REQ,G_TOKEN_STRING,&trigger,"missing trigger in TriggerAction",
+      SEQ_REQ,',',NULL,"missing ',' in TriggerAction",
+      SEQ_END);
+  if(scanner->max_parse_errors)
+    return g_free(trigger);
 
-  g_scanner_get_next_token(scanner);
   action = config_action(scanner);
   if(!action)
-  {
-    g_free(trigger);
-    g_scanner_error(scanner, "TriggerAction: invalid action");
-    return;
-  }
+    return g_free(trigger);
 
   action_trigger_add(action,trigger);
   config_optional_semicolon(scanner);
@@ -1455,10 +1441,10 @@ widget_t *config_parse ( gchar *file, gboolean toplevel )
       conf=NULL;
 
   if(!conf)
-    {
-      g_error("Error: can't read config file %s\n",file);
-      exit(1);
-    }
+  {
+    g_error("Error: can't read config file %s\n",file);
+    exit(1);
+  }
 
   w = config_parse_data (fname, conf,TRUE,toplevel);
 

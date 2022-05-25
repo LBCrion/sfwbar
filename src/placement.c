@@ -14,8 +14,8 @@ static gboolean placer;
 
 void placer_config ( gint xs, gint ys, gint xo, gint yo, gboolean pid )
 {
-  x_step = xs;
-  y_step = ys;
+  x_step = MAX(1,xs);
+  y_step = MAX(1,ys);
   x_origin = xo;
   y_origin = yo;
   check_pid = !pid;
