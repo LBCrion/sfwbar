@@ -13,7 +13,7 @@ static GList *file_list;
 static GHashTable *scan_list;
 static GHashTable *trigger_list;
 
-void scanner_file_attach ( gchar *trigger, struct scan_file *file )
+void scanner_file_attach ( gchar *trigger, scan_file_t *file )
 {
   if(!trigger_list)
     trigger_list = g_hash_table_new((GHashFunc)str_nhash,
@@ -22,7 +22,7 @@ void scanner_file_attach ( gchar *trigger, struct scan_file *file )
   g_hash_table_insert(trigger_list,trigger,file);
 }
 
-struct scan_file *scanner_file_get ( gchar *trigger )
+scan_file_t *scanner_file_get ( gchar *trigger )
 {
   if(!trigger_list)
     return NULL;
@@ -30,23 +30,23 @@ struct scan_file *scanner_file_get ( gchar *trigger )
   return g_hash_table_lookup(trigger_list,trigger);
 }
 
-struct scan_file *scanner_file_new ( gint source, gchar *fname,
+scan_file_t *scanner_file_new ( gint source, gchar *fname,
     gchar *trigger, gint flags )
 {
-  struct scan_file *file;
+  scan_file_t *file;
   GList *iter;
 
   if(source == SO_CLIENT)
     iter = NULL;
   else
     for(iter=file_list;iter;iter=g_list_next(iter))
-      if(!g_strcmp0(fname,((struct scan_file *)(iter->data))->fname))
+      if(!g_strcmp0(fname,((scan_file_t *)(iter->data))->fname))
         break;
 
   if(iter)
     file = iter->data;
   else
-    file = g_malloc(sizeof(struct scan_file));
+    file = g_malloc(sizeof(scan_file_t));
 
   file->fname = fname;
   file->trigger = trigger;
@@ -63,7 +63,7 @@ struct scan_file *scanner_file_new ( gint source, gchar *fname,
   return file;
 }
 
-void scanner_var_attach ( gchar *name, struct scan_var *var )
+void scanner_var_attach ( gchar *name, scan_var_t *var )
 {
   if(!scan_list)
     scan_list = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
@@ -71,7 +71,7 @@ void scanner_var_attach ( gchar *name, struct scan_var *var )
   g_hash_table_insert(scan_list,name,var);
 }
 
-void scanner_expire_var ( void *key, struct scan_var *var, void *data )
+void scanner_expire_var ( void *key, scan_var_t *var, void *data )
 {
   if( var->file->source != SO_CLIENT )
     var->status=0;
@@ -83,7 +83,7 @@ void scanner_expire ( void )
   g_hash_table_foreach(scan_list,(GHFunc)scanner_expire_var,NULL);
 }
 
-void scanner_update_var ( struct scan_var *var, gchar *value)
+void scanner_update_var ( scan_var_t *var, gchar *value)
 {
   if(!value)
     return;
@@ -114,7 +114,7 @@ void scanner_update_var ( struct scan_var *var, gchar *value)
   var->status=1;
 }
 
-void scanner_update_json ( struct json_object *obj, struct scan_file *file )
+void scanner_update_json ( struct json_object *obj, scan_file_t *file )
 {
   GList *node;
   struct json_object *ptr;
@@ -122,10 +122,10 @@ void scanner_update_json ( struct json_object *obj, struct scan_file *file )
 
   for(node=file->vars;node!=NULL;node=g_list_next(node))
   {
-    ptr = jpath_parse(((struct scan_var *)node->data)->json,obj);
+    ptr = jpath_parse(((scan_var_t *)node->data)->json,obj);
     for(i=0;i<json_object_array_length(ptr);i++)
     {
-      scanner_update_var(((struct scan_var *)node->data),
+      scanner_update_var(((scan_var_t *)node->data),
         g_strdup(json_object_get_string(json_object_array_get_idx(ptr,i))));
     }
     json_object_put(ptr);
@@ -133,9 +133,9 @@ void scanner_update_json ( struct json_object *obj, struct scan_file *file )
 }
 
 /* update variables in a specific file (or pipe) */
-int scanner_update_file ( GIOChannel *in, struct scan_file *file )
+int scanner_update_file ( GIOChannel *in, scan_file_t *file )
 {
-  struct scan_var *var;
+  scan_var_t *var;
   GList *node;
   GMatchInfo *match;
   struct json_tokener *json = NULL;
@@ -179,7 +179,7 @@ int scanner_update_file ( GIOChannel *in, struct scan_file *file )
   }
 
   for(node=file->vars;node!=NULL;node=g_list_next(node))
-    ((struct scan_var *)node->data)->status=1;
+    ((scan_var_t *)node->data)->status=1;
 
   return 0;
 }
@@ -191,11 +191,11 @@ int scanner_reset_vars ( GList *var_list )
   gint64 tv = g_get_monotonic_time();
   for(node=var_list;node!=NULL;node=g_list_next(node))
     {
-    ((struct scan_var *)node->data)->pval = ((struct scan_var *)node->data)->val;
-    ((struct scan_var *)node->data)->count = 0;
-    ((struct scan_var *)node->data)->val = 0;
-    ((struct scan_var *)node->data)->time=tv-((struct scan_var *)node->data)->ptime;
-    ((struct scan_var *)node->data)->ptime=tv;
+    ((scan_var_t *)node->data)->pval = ((scan_var_t *)node->data)->val;
+    ((scan_var_t *)node->data)->count = 0;
+    ((scan_var_t *)node->data)->val = 0;
+    ((scan_var_t *)node->data)->time=tv-((scan_var_t *)node->data)->ptime;
+    ((scan_var_t *)node->data)->ptime=tv;
     }
   return 0;
 }
@@ -215,7 +215,7 @@ time_t scanner_file_mtime ( glob_t *gbuf )
 }
 
 /* update all variables in a file (by glob) */
-int scanner_update_file_glob ( struct scan_file *file )
+int scanner_update_file_glob ( scan_file_t *file )
 {
   glob_t gbuf;
   gchar *dnames[2];
@@ -306,7 +306,7 @@ char *scanner_parse_identifier ( gchar *id, gchar **fname )
 /* get string value of a variable by name */
 char *scanner_get_string ( gchar *name, gboolean update )
 {
-  struct scan_var *scan;
+  scan_var_t *scan;
   gchar *fname,*id,*res=NULL;
 
   id = scanner_parse_identifier(name,&fname);
@@ -327,7 +327,7 @@ char *scanner_get_string ( gchar *name, gboolean update )
 /* get numeric value of a variable by name */
 double scanner_get_numeric ( gchar *name, gboolean update )
 {
-  struct scan_var *scan;
+  scan_var_t *scan;
   double retval=0;
   gchar *fname,*id;
 

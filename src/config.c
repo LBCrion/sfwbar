@@ -179,9 +179,9 @@ gdouble config_assign_number ( GScanner *scanner, gchar *expr )
   return result;
 }
 
-void config_scanner_var ( GScanner *scanner, struct scan_file *file )
+void config_scanner_var ( GScanner *scanner, scan_file_t *file )
 {
-  struct scan_var *var;
+  scan_var_t *var;
   gchar *vname = NULL, *pattern = NULL;
   guint type;
   gint flag = G_TOKEN_LASTW;
@@ -227,7 +227,7 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
     SEQ_OPT,';',NULL,NULL,
     SEQ_END);
 
-  var = g_malloc0(sizeof(struct scan_var));
+  var = g_malloc0(sizeof(scan_var_t));
 
   var->file = file;
   var->type = type - G_TOKEN_REGEX;
@@ -251,9 +251,9 @@ void config_scanner_var ( GScanner *scanner, struct scan_file *file )
   scanner_var_attach(vname,var);
 }
 
-struct scan_file *config_scanner_source ( GScanner *scanner, gint source )
+scan_file_t *config_scanner_source ( GScanner *scanner, gint source )
 {
-  struct scan_file *file;
+  scan_file_t *file;
   gchar *fname = NULL, *trigger = NULL;
   gint flag1, flag2, flags = 0;
 
@@ -317,7 +317,7 @@ struct scan_file *config_scanner_source ( GScanner *scanner, gint source )
 
 void config_scanner ( GScanner *scanner )
 {
-  struct scan_file *file;
+  scan_file_t *file;
   scanner->max_parse_errors = FALSE;
 
   if(!config_expect_token(scanner, '{', "Missing '{' after 'scanner'"))

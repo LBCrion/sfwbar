@@ -24,7 +24,18 @@ struct rect {
   guint x,y,w,h;
 };
 
-struct scan_var {
+typedef struct scan_file {
+  gchar *fname;
+  gchar *trigger;
+  gint flags;
+  guchar source;
+  time_t mtime;
+  GList *vars;
+  GSocketConnection *scon;
+  GIOChannel *out;
+} scan_file_t;
+
+typedef struct scan_var {
   GRegex *regex;
   gchar *json;
   gchar *str;
@@ -36,19 +47,8 @@ struct scan_var {
   gint multi;
   guchar type;
   guchar status;
-  struct scan_file *file;
-};
-
-struct scan_file {
-  gchar *fname;
-  gchar *trigger;
-  gint flags;
-  guchar source;
-  time_t mtime;
-  GList *vars;
-  GSocketConnection *scon;
-  GIOChannel *out;
-};
+  scan_file_t *file;
+} scan_var_t;
 
 typedef struct layout_action {
   guchar cond;
@@ -86,8 +86,8 @@ void action_function_exec ( gchar *, GtkWidget *, GdkEvent *, window_t *,
 void action_trigger_add ( action_t *action, gchar *trigger );
 action_t *action_trigger_lookup ( gchar *trigger );
 
-void client_exec ( struct scan_file *file );
-void client_socket ( struct scan_file *file );
+void client_exec ( scan_file_t *file );
+void client_socket ( scan_file_t *file );
 
 void sway_ipc_init ( void );
 gboolean sway_ipc_active ( void );
@@ -99,7 +99,7 @@ int sway_ipc_subscribe ( gint sock );
 gboolean sway_ipc_event ( GIOChannel *, GIOCondition , gpointer );
 void sway_ipc_rescan ( void );
 void sway_ipc_bar_id ( gchar *id );
-void sway_ipc_client_init ( struct scan_file *file );
+void sway_ipc_client_init ( scan_file_t *file );
 
 void place_window ( gint64 wid, gint64 pid );
 void placer_config ( gint xs, gint ys, gint xo, gint yo, gboolean pid );
@@ -187,17 +187,17 @@ void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w );
 void flow_grid_pad ( GtkWidget *cgrid );
 void flow_grid_clean ( GtkWidget *cgrid );
 
-void scanner_var_attach ( gchar *name, struct scan_var *var );
+void scanner_var_attach ( gchar *name, scan_var_t *var );
 void scanner_expire ( void );
 int scanner_reset_vars ( GList *var_list );
-void scanner_update_json ( struct json_object *obj, struct scan_file *file );
-int scanner_update_file ( GIOChannel *in, struct scan_file *file );
-int scanner_glob_file ( struct scan_file *file );
+void scanner_update_json ( struct json_object *obj, scan_file_t *file );
+int scanner_update_file ( GIOChannel *in, scan_file_t *file );
+int scanner_glob_file ( scan_file_t *file );
 char *scanner_get_string ( gchar *name, gboolean update );
 double scanner_get_numeric ( gchar *name, gboolean update );
-void scanner_file_attach ( gchar *trigger, struct scan_file *file );
-struct scan_file *scanner_file_get ( gchar *trigger );
-struct scan_file *scanner_file_new ( gint , gchar *, gchar *, gint );
+void scanner_file_attach ( gchar *trigger, scan_file_t *file );
+scan_file_t *scanner_file_get ( gchar *trigger );
+scan_file_t *scanner_file_new ( gint , gchar *, gchar *, gint );
 
 GtkWindow *bar_new ( gchar * );
 void bar_set_monitor ( gchar *, gchar * );
@@ -213,7 +213,7 @@ void bar_update_monitor ( GtkWindow *win );
 widget_t *bar_grid_by_name ( gchar *addr );
 void bar_grid_attach ( gchar *addr, widget_t *lw );
 
-void mpd_ipc_init ( struct scan_file *file );
+void mpd_ipc_init ( scan_file_t *file );
 void mpd_ipc_command ( gchar *command );
 
 gchar *get_xdg_config_file ( gchar *fname, gchar *extra );

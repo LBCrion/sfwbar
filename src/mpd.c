@@ -17,7 +17,7 @@ gboolean mpd_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer file )
   GIOStatus s;
 
   if(file)
-    scanner_reset_vars(((struct scan_file *)file)->vars);
+    scanner_reset_vars(((scan_file_t *)file)->vars);
 
   if ( cond & G_IO_ERR || cond & G_IO_HUP )
   {
@@ -148,7 +148,7 @@ gboolean mpd_ipc_reconnect ( gpointer file )
   return FALSE;
 }
 
-void mpd_ipc_init ( struct scan_file *file )
+void mpd_ipc_init ( scan_file_t *file )
 {
   static GIOChannel *chan;
 

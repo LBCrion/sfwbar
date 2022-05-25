@@ -150,7 +150,7 @@ guint16 action_state_build ( GtkWidget *widget, window_t *win )
 
 void action_client_send ( action_t *action )
 {
-  struct scan_file *file;
+  scan_file_t *file;
 
   if(!action->addr || !action->command )
     return;
