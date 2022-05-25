@@ -181,7 +181,6 @@ gdouble config_assign_number ( GScanner *scanner, gchar *expr )
 
 void config_scanner_var ( GScanner *scanner, scan_file_t *file )
 {
-  scan_var_t *var;
   gchar *vname = NULL, *pattern = NULL;
   guint type;
   gint flag = G_TOKEN_LASTW;
@@ -227,28 +226,7 @@ void config_scanner_var ( GScanner *scanner, scan_file_t *file )
     SEQ_OPT,';',NULL,NULL,
     SEQ_END);
 
-  var = g_malloc0(sizeof(scan_var_t));
-
-  var->file = file;
-  var->type = type - G_TOKEN_REGEX;
-  var->multi = flag - G_TOKEN_SUM + 1;
-
-  switch(var->type)
-  {
-    case VP_JSON:
-      var->json = pattern;
-      break;
-    case VP_REGEX:
-      var->regex = g_regex_new(pattern,0,0,NULL);
-      g_free(pattern);
-      break;
-    default:
-      g_free(pattern);
-      break;
-  }
-
-  file->vars = g_list_append(file->vars,var);
-  scanner_var_attach(vname,var);
+  scanner_var_attach(vname,file,pattern,type,flag);
 }
 
 scan_file_t *config_scanner_source ( GScanner *scanner, gint source )

@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <glob.h>
 #include "sfwbar.h"
+#include "config.h"
 
 static GList *file_list;
 static GHashTable *scan_list;
@@ -63,8 +64,31 @@ scan_file_t *scanner_file_new ( gint source, gchar *fname,
   return file;
 }
 
-void scanner_var_attach ( gchar *name, scan_var_t *var )
+void scanner_var_attach ( gchar *name, scan_file_t *file, gchar *pattern,
+    guint type, gint flag )
 {
+  scan_var_t *var = g_malloc0(sizeof(scan_var_t));
+
+  var->file = file;
+  var->type = type;
+  var->multi = flag;
+
+  switch(var->type)
+  {
+    case G_TOKEN_JSON:
+      var->json = pattern;
+      break;
+    case G_TOKEN_REGEX:
+      var->regex = g_regex_new(pattern,0,0,NULL);
+      g_free(pattern);
+      break;
+    default:
+      g_free(pattern);
+      break;
+  }
+
+  file->vars = g_list_append(file->vars,var);
+
   if(!scan_list)
     scan_list = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
 
@@ -87,7 +111,7 @@ void scanner_update_var ( scan_var_t *var, gchar *value)
 {
   if(!value)
     return;
-  if((var->multi!=SV_FIRST)||(!var->count))
+  if((var->multi!=G_TOKEN_FIRST)||(!var->count))
   {
     g_free(var->str);
     var->str=value;
@@ -96,16 +120,16 @@ void scanner_update_var ( scan_var_t *var, gchar *value)
     g_free(value);
   switch(var->multi)
   {
-    case SV_ADD:
+    case G_TOKEN_SUM:
       var->val+=g_ascii_strtod(value,NULL);
       break;
-    case SV_PRODUCT:
+    case G_TOKEN_PRODUCT:
       var->val*=g_ascii_strtod(value,NULL);
       break;
-    case SV_REPLACE:
+    case G_TOKEN_LASTW:
       var->val=g_ascii_strtod(value,NULL);
       break;
-    case SV_FIRST:
+    case G_TOKEN_FIRST:
       if(!var->count)
         var->val=g_ascii_strtod(value,NULL);
       break;
@@ -149,16 +173,16 @@ int scanner_update_file ( GIOChannel *in, scan_file_t *file )
       var=node->data;
       switch(var->type)
       {
-        case VP_REGEX:
+        case G_TOKEN_REGEX:
           g_regex_match (var->regex, read_buff, 0, &match);
           if(g_match_info_matches (match))
             scanner_update_var(var,g_match_info_fetch (match, 1));
           g_match_info_free (match);
           break;
-        case VP_GRAB:
+        case G_TOKEN_GRAB:
           scanner_update_var(var,g_strdup(read_buff));
           break;
-        case VP_JSON:
+        case G_TOKEN_JSON:
           if(!json)
             json = json_tokener_new();
           break;

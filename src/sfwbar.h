@@ -45,7 +45,7 @@ typedef struct scan_var {
   gint64 ptime;
   gint count;
   gint multi;
-  guchar type;
+  guint type;
   guchar status;
   scan_file_t *file;
 } scan_var_t;
@@ -187,15 +187,14 @@ void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w );
 void flow_grid_pad ( GtkWidget *cgrid );
 void flow_grid_clean ( GtkWidget *cgrid );
 
-void scanner_var_attach ( gchar *name, scan_var_t *var );
 void scanner_expire ( void );
-int scanner_reset_vars ( GList *var_list );
-void scanner_update_json ( struct json_object *obj, scan_file_t *file );
-int scanner_update_file ( GIOChannel *in, scan_file_t *file );
-int scanner_glob_file ( scan_file_t *file );
-char *scanner_get_string ( gchar *name, gboolean update );
-double scanner_get_numeric ( gchar *name, gboolean update );
-void scanner_file_attach ( gchar *trigger, scan_file_t *file );
+int scanner_reset_vars ( GList * );
+void scanner_update_json ( struct json_object *, scan_file_t * );
+int scanner_update_file ( GIOChannel *, scan_file_t * );
+int scanner_glob_file ( scan_file_t * );
+char *scanner_get_string ( gchar *, gboolean );
+double scanner_get_numeric ( gchar *, gboolean );
+void scanner_var_attach ( gchar *, scan_file_t *, gchar *, guint, gint );
 scan_file_t *scanner_file_get ( gchar *trigger );
 scan_file_t *scanner_file_new ( gint , gchar *, gchar *, gint );
 
