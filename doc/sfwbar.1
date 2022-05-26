@@ -61,7 +61,7 @@ Specify a filename of a css file
 Specify a location of sway ipc socket
 .TP
 .B \-m | \-\-monitor
-Specify a monitor to display the bar on ("\-m list" to list available monitors)
+Specify a monitor to display the bar on (\(dq\-m list\(dq to list available monitors)
 .UNINDENT
 .SH CONFIGURATION
 .sp
@@ -82,10 +82,10 @@ Placer section enables intelligent placement of new floating windows. If
 enabled the program will first attemp to place the window in a location, where
 it won\(aqt overlap with other windows. If such location doesn\(aqt exist, the window
 will be placed in a cascading pattern from top\-left to bottom\-right. The Placer
-declaration accepts parameters "xstep" and "ystep" that specify the
+declaration accepts parameters \(dqxstep\(dq and \(dqystep\(dq that specify the
 steps in the window cascade. These are specified in percentage of the desktop
-dimensions. The cascade placement will start at a location specified by "xorigin"
-"yorigin" parameters. I.e.:
+dimensions. The cascade placement will start at a location specified by \(dqxorigin\(dq
+\(dqyorigin\(dq parameters. I.e.:
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -103,7 +103,7 @@ placer {
 .UNINDENT
 .UNINDENT
 .sp
-"children" parameter specifies if new windows opened by a program with other
+\(dqchildren\(dq parameter specifies if new windows opened by a program with other
 windows already opened should be placed. These are usually dialog windows and
 SFWBar won\(aqt place them by default. If the placer section is not present in
 the file, SFWBar will let the compositor determine the locations for new windows.
@@ -128,7 +128,7 @@ bindsym Alt\-Tab exec killall \-SIGUSR1 sfwbar
 .sp
 (for non\-sway compositors, use SIGUSR1 trigger)
 .sp
-Task switcher is configured in the "switcher" section of the configuration file.
+Task switcher is configured in the \(dqswitcher\(dq section of the configuration file.
 The following parameters are accepted:
 .INDENT 0.0
 .TP
@@ -192,9 +192,9 @@ add a clickable button with an icon/image.
 .UNINDENT
 .sp
 Each widget is placed within the parent grid. By default, widgets are placed
-next to the previous widget along the "direction" of the grid (left to right
+next to the previous widget along the \(dqdirection\(dq of the grid (left to right
 by default). You can specify widget\(aqs positions within a grid by using a
-property "loc(x,y[,w,h])" with the first two parameters specifying the location
+property \(dqloc(x,y[,w,h])\(dq with the first two parameters specifying the location
 of the widget within the parent grid and the last two parameters specifying the
 widget dimensions in grid cells:
 .INDENT 0.0
@@ -204,8 +204,8 @@ widget dimensions in grid cells:
 .ft C
 layout {
   label {
-  style = "mystyle"
-  value = SwapUsed / SwapTotal + "%"
+  style = \(dqmystyle\(dq
+  value = SwapUsed / SwapTotal + \(dq%\(dq
   loc(2,1,1,1)
   }
 }
@@ -221,7 +221,7 @@ External widgets can be included in layout using the following syntax:
 .nf
 .ft C
 layout {
-  include("MyWidget.widget")
+  include(\(dqMyWidget.widget\(dq)
 }
 .ft P
 .fi
@@ -239,7 +239,7 @@ following the parent grid properties. i.e.
 .nf
 .ft C
 grid {
-  css = "* { border: none }"
+  css = \(dq* { border: none }\(dq
 
   label {
     ...
@@ -255,8 +255,8 @@ Widgets can have the following properties:
 .TP
 .B value
 an expression specifying the value to display. This can be a static value
-(i.e. \fB"string"\fP or \fB1\fP) or an expression (i.e.
-\fB"Value is:" + $MyString\fP or \fB2 * MyNumber.val\fP). See \fBexpressions\fP
+(i.e. \fB\(dqstring\(dq\fP or \fB1\fP) or an expression (i.e.
+\fB\(dqValue is:\(dq + $MyString\fP or \fB2 * MyNumber.val\fP). See \fBexpressions\fP
 section for more detail.
 For \fBLabel\fP widgets value tells text to display.
 For \fBScale\fP widgets it speficies a fraction to display.
@@ -334,7 +334,7 @@ if true, the workspaces will be sorted as numbers, otherwise they will be
 sorted as strings (defaults to true).
 .TP
 .B pins
-a list of "pinned" workspaces. These will show up in the pager even if the
+a list of \(dqpinned\(dq workspaces. These will show up in the pager even if the
 workspace is empty.
 .TP
 .B rows
@@ -367,11 +367,11 @@ The example syntax is as following:
 .sp
 .nf
 .ft C
-menu ("menu_name") {
-  item("item1", Exec "command")
+menu (\(dqmenu_name\(dq) {
+  item(\(dqitem1\(dq, Exec \(dqcommand\(dq)
   separator
-  submenu("sub") {
-    item("item2", SwayCmd "focus next")
+  submenu(\(dqsub\(dq) {
+    item(\(dqitem2\(dq, SwayCmd \(dqfocus next\(dq)
   }
 }
 .ft P
@@ -419,14 +419,14 @@ sources, using TriggerAction top\-level keyword. I.e.
 .sp
 .nf
 .ft C
-TriggerAction "mytrigger", Exec "MyCommand"
+TriggerAction \(dqmytrigger\(dq, Exec \(dqMyCommand\(dq
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
 Parameters are specified as strings immediately following the relevant action.
-I.e. \fBMenu "WindowOps"\fP\&. Some actions apply to a window, if the action is
+I.e. \fBMenu \(dqWindowOps\(dq\fP\&. Some actions apply to a window, if the action is
 attached to taskbar button, the action will be applied to a window referenced
 by the button, otherwise, it will apply to the currently focused window. The
 following action types are supported:
@@ -471,12 +471,12 @@ The first parameter is the client id, the second is the string to send.
 move bar to a given monitor
 .TP
 .B SetLayer
-move bar to a specified layer (supported parameters are "top", "bottom",
-"background" and "overlay"
+move bar to a specified layer (supported parameters are \(dqtop\(dq, \(dqbottom\(dq,
+\(dqbackground\(dq and \(dqoverlay\(dq
 .TP
 .B SetBarSize <string>
 set size of the bar (width for top or bottom bar, height for left or right
-bar). The argument is a string. I.e. "800" for 800 pixels or "50%" for
+bar). The argument is a string. I.e. \(dq800\(dq for 800 pixels or \(dq50%\(dq for
 50% of screen size
 .TP
 .B SetBarID <string>
@@ -485,8 +485,8 @@ bar ID is specified, SfwBar will listen to signals on all IDs
 .TP
 .B SetExclusiveZone <string>
 specify exclusive zone policy for the bar window. Acceptable values are
-"auto", "\-1", "0" or positive integers. These have meanings in line with
-exclusive zone setting in the layer shell protocol. Default value is "auto"
+\(dqauto\(dq, \(dq\-1\(dq, \(dq0\(dq or positive integers. These have meanings in line with
+exclusive zone setting in the layer shell protocol. Default value is \(dqauto\(dq
 .TP
 .B SetValue <string>
 set the value of the widget. This action applies to the widget from which
@@ -499,11 +499,11 @@ set style name for a widget
 .TP
 .B IdleInhibit <string>
 set idle inhibitor for a given widget. The string parameters accepted are
-"or" and "off. You can toggle this action by using IconInhibit condition
-in your action. I.e. [!IdleInhibit] IdleInhibit "on"
+\(dqor\(dq and \(dqoff. You can toggle this action by using IconInhibit condition
+in your action. I.e. [!IdleInhibit] IdleInhibit \(dqon\(dq
 .TP
 .B UserState <string>
-Set boolean user state on a widget. Valid values are "On" or "Off".
+Set boolean user state on a widget. Valid values are \(dqOn\(dq or \(dqOff\(dq.
 .TP
 .B Focus
 set window to focused
@@ -533,10 +533,10 @@ dynamically constructed menus generated by an external script:
 .sp
 .nf
 .ft C
-function("fancy_menu") {
-  MenuClear "dynamic_menu"
-  PipeRead "$HOME/bin/buildmenu.sh"
-  Menu "dynamic_menu"
+function(\(dqfancy_menu\(dq) {
+  MenuClear \(dqdynamic_menu\(dq
+  PipeRead \(dq$HOME/bin/buildmenu.sh\(dq
+  Menu \(dqdynamic_menu\(dq
 }
 .ft P
 .fi
@@ -546,7 +546,7 @@ function("fancy_menu") {
 The above example clears a menu, executes a script that builds a menu again
 and opens the resulting menu.
 .sp
-Function "SfwBarInit" executed on startup. You can use this functions to set
+Function \(dqSfwBarInit\(dq executed on startup. You can use this functions to set
 initial parameters for the bar, such as default monitor and layer.
 .SS Scanner
 .sp
@@ -562,12 +562,12 @@ and variables linked to them as configured in the section \fBscanner\fP
 .nf
 .ft C
 scanner {
-  file("/proc/swaps",NoGlob) {
-    SwapTotal = RegEx("[\et ]([0\-9]+)")
-    SwapUsed = RegEx("[\et ][0\-9]+[\et ]([0\-9]+)")
+  file(\(dq/proc/swaps\(dq,NoGlob) {
+    SwapTotal = RegEx(\(dq[\et ]([0\-9]+)\(dq)
+    SwapUsed = RegEx(\(dq[\et ][0\-9]+[\et ]([0\-9]+)\(dq)
   }
-  exec("getweather.sh") {
-    $WeatherTemp = Json(".forecast.today.degrees")
+  exec(\(dqgetweather.sh\(dq) {
+    $WeatherTemp = Json(\(dq.forecast.today.degrees\(dq)
   }
 }
 .ft P
@@ -586,7 +586,7 @@ Read data from a file
 Read data from an output of a shell command
 .TP
 .B ExecClient
-Read data from an executable, this source will read a bust of data
+Read data from an executable, this source will read a burst of data
 using it to populate the variables and emit a trigger event once done.
 This source accepts two parameters, command to execute and an id. The
 id is used to address the socket via ClientSend and to identify a
@@ -608,13 +608,13 @@ from the source, you can end up with an infinite loop.
 .B MpdClient
 Read data from Music Player Daemon IPC (data is polled whenever MPD
 responds to an \(aqidle player\(aq event).
-MpdClient emits trigger "mpd"
+MpdClient emits trigger \(dqmpd\(dq
 .TP
 .B SwayClient
 Receive updates on Sway state, updates are the json objects sent by sway,
 wrapped into an object with a name of the event i.e.
 \fBwindow: { sway window change object }\fP
-SwayClient emits trigger "sway"
+SwayClient emits trigger \(dqsway\(dq
 .UNINDENT
 .sp
 The file source also accepts further optional argumens specifying how
@@ -647,7 +647,7 @@ extracts data from a json structure. The path starts with a separator
 character, which is followed by a path with elements separated by the
 same character. The path can contain numbers to indicate array indices
 i.e. \fB\&.data.node.1.string\fP and key checks to filter arrays, i.e.
-\fB\&.data.node.[key="blah"].value\fP
+\fB\&.data.node.[key=\(dqblah\(dq].value\fP
 .UNINDENT
 .sp
 Optional aggregators specify how multiple occurences of numeric data are treated.
@@ -783,7 +783,7 @@ _
 T{
 \fB+\fP
 T}	T{
-concatenate strings i.e. \fB"\(aqString\(aq+$Var"\fP\&.
+concatenate strings i.e. \fB\(dq\(aqString\(aq+$Var\(dq\fP\&.
 T}
 _
 T{
@@ -854,7 +854,7 @@ Disk
 T}	T{
 get disk utilization data. You need to specify a mount point as a
 first argument and data field as a second. The supported data
-fields are "total", "avail", "free", "%avail", "%free". Returns a
+fields are \(dqtotal\(dq, \(dqavail\(dq, \(dqfree\(dq, \(dq%avail\(dq, \(dq%free\(dq. Returns a
 number.
 T}
 _

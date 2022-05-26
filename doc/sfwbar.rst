@@ -483,7 +483,7 @@ Exec
         Read data from an output of a shell command
 
 ExecClient
-        Read data from an executable, this source will read a bust of data
+        Read data from an executable, this source will read a burst of data
         using it to populate the variables and emit a trigger event once done.
         This source accepts two parameters, command to execute and an id. The
         id is used to address the socket via ClientSend and to identify a
