@@ -391,7 +391,6 @@ void layout_widgets_autoexec ( GtkWidget *widget, gpointer data )
   if(lw)
     action_exec(lw->widget,lw->actions[0],NULL,
         wintree_from_id(wintree_get_focus()),NULL);
-
 }
 
 void layout_widgets_update ( GMainContext *gmc )

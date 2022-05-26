@@ -618,26 +618,20 @@ action_t *config_action ( GScanner *scanner )
 
 void config_widget_action ( GScanner *scanner, widget_t *lw )
 {
-  gint button;
+  gint button = 1;
 
-  if(g_scanner_peek_next_token(scanner)=='[')
-  {
-    config_parse_sequence(scanner,
-        SEQ_REQ,'[',NULL,NULL,
-        SEQ_REQ,G_TOKEN_INT,&button,"missing in action[<index>]",
-        SEQ_REQ,']',NULL,"missing closing ']' in action[<index>]",
-        SEQ_END);
-    if(scanner->max_parse_errors)
-      return;
-  }
-  else
-    button = 1;
+  config_parse_sequence(scanner,
+    SEQ_OPT,'[',NULL,NULL,
+    SEQ_CON,G_TOKEN_INT,&button,"missing in action[<index>]",
+    SEQ_CON,']',NULL,"missing closing ']' in action[<index>]",
+    SEQ_REQ,'=',NULL,"missing '=' after action",
+    SEQ_END);
+
+  if(scanner->max_parse_errors)
+    return;
 
   if( button<0 || button >=MAX_BUTTON )
     return g_scanner_error(scanner,"invalid action index %d",button);
-
-  if(g_scanner_get_next_token(scanner) != '=')
-    return g_scanner_error(scanner,"missing '=' after 'action'");
 
   action_free(lw->actions[button],NULL);
   lw->actions[button] = config_action(scanner);
