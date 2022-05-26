@@ -146,6 +146,7 @@ static void activate (GtkApplication* app, gpointer data )
     {
       gtk_application_add_window(app,GTK_WINDOW(clist->data));
       gtk_widget_show_all(GTK_WIDGET(clist->data));
+      layout_widgets_autoexec(GTK_WIDGET(clist->data),NULL);
     }
   g_list_free(clist);
 
