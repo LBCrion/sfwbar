@@ -1429,6 +1429,9 @@ void config_pipe_read ( gchar *command )
   gchar *conf;
   GIOChannel *chan;
 
+  if(!command)
+    return;
+
   fp = popen(command, "r");
   if(!fp)
     return;

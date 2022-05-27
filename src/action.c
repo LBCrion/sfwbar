@@ -53,6 +53,9 @@ void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
 
 void action_idle_inhibit ( GtkWidget *widget, gchar *command )
 {
+  if(!widget)
+    return;
+
   if(!g_ascii_strcasecmp(command,"on"))
     wayland_set_idle_inhibitor(widget,TRUE);
   if(!g_ascii_strcasecmp(command,"off"))
@@ -62,6 +65,9 @@ void action_idle_inhibit ( GtkWidget *widget, gchar *command )
 void action_set_user_state ( GtkWidget *widget, gchar *value )
 {
   widget_t *lw;
+
+  if(!widget)
+    return;
 
   lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
   if(!g_ascii_strcasecmp(value,"on"))
@@ -74,6 +80,9 @@ void action_set_value ( GtkWidget *widget, gchar *value )
 {
   widget_t *lw;
   guint vcount;
+
+  if(!widget || !value)
+    return;
 
   lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
   if(!lw)
@@ -97,6 +106,9 @@ void action_set_style ( GtkWidget *widget, gchar *style )
   widget_t *lw;
   guint vcount;
 
+  if(!widget || !style)
+    return;
+
   lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
   if(!lw)
     return;
@@ -116,6 +128,9 @@ void action_set_style ( GtkWidget *widget, gchar *style )
 void action_set_tooltip ( GtkWidget *widget, gchar *tooltip )
 {
   widget_t *lw;
+
+  if(!widget || !tooltip)
+    return;
 
   lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
   if(!lw)
@@ -210,78 +225,63 @@ void action_exec ( GtkWidget *widget, action_t *action,
         g_spawn_command_line_async(action->command,NULL);
       break;
     case G_TOKEN_MENU:
-      if(action->command && win)
+      if(win)
         layout_menu_popup(widget, layout_menu_get(action->command), event,
             win->uid, &state);
       break;
     case G_TOKEN_MENUCLEAR:
-      if(action->command)
-        layout_menu_remove(action->command);
+      layout_menu_remove(action->command);
       break;
     case G_TOKEN_PIPEREAD:
-      if(action->command)
-        config_pipe_read(action->command);
+      config_pipe_read(action->command);
       break;
     case G_TOKEN_FUNCTION:
-      if(action->command)
-        action_function_exec(action->command,widget,event,win,&state);
+      action_function_exec(action->command,widget,event,win,&state);
       break;
     case G_TOKEN_SWAYCMD:
-      if(action->command)
-        sway_ipc_command("%s",action->command);
+      sway_ipc_command("%s",action->command);
       break;
     case G_TOKEN_MPDCMD:
-      if(action->command)
-        mpd_ipc_command(action->command);
+      mpd_ipc_command(action->command);
       break;
     case G_TOKEN_SWAYWIN:
-      if(action->command && win)
+      if(win)
         sway_ipc_command("[con_id=%ld] %s",GPOINTER_TO_INT(win->uid),
             action->command);
       break;
     case G_TOKEN_CONFIG:
-      if(action->command)
-        config_string(action->command);
+      config_string(action->command);
       break;
     case G_TOKEN_SETMONITOR:
-      if(action->command)
-        bar_set_monitor(action->command,action->addr);
+      bar_set_monitor(action->command,action->addr);
       break;
     case G_TOKEN_SETLAYER:
-      if(action->command)
-        bar_set_layer(action->command,action->addr);
+      bar_set_layer(action->command,action->addr);
       break;
     case G_TOKEN_SETBARSIZE:
-      if(action->command)
-        bar_set_size(action->command,action->addr);
+      bar_set_size(action->command,action->addr);
       break;
     case G_TOKEN_SETBARID:
-      if(action->command)
-        sway_ipc_bar_id(action->command);
+      sway_ipc_bar_id(action->command);
       break;
     case G_TOKEN_SETEXCLUSIVEZONE:
       if(action->command)
         bar_set_exclusive_zone(action->command,action->addr);
       break;
     case G_TOKEN_SETVALUE:
-      if(action->command && widget)
-        action_set_value(widget,action->command);
+      action_set_value(widget,action->command);
       break;
     case G_TOKEN_SETSTYLE:
-      if(action->command && widget)
-        action_set_style(widget,action->command);
+      action_set_style(widget,action->command);
       break;
     case G_TOKEN_SETTOOLTIP:
-      if(action->command && widget)
-        action_set_tooltip(widget,action->command);
+      action_set_tooltip(widget,action->command);
       break;
     case G_TOKEN_IDLEINHIBIT:
-      if(action->command && widget)
-        action_idle_inhibit(widget, action->command);
+      action_idle_inhibit(widget, action->command);
       break;
     case G_TOKEN_USERSTATE:
-      if(action->command && widget)
-        action_set_user_state(widget, action->command);
+      action_set_user_state(widget, action->command);
       break;
     case G_TOKEN_CLIENTSEND:
       action_client_send(action);

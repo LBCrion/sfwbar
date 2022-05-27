@@ -152,7 +152,7 @@ void bar_set_layer ( gchar *layer_str, gchar *addr )
   GtkWidget *bar;
 
   bar = bar_get_by_name(addr);
-  if(!bar)
+  if(!bar || !layer_str)
     return;
 
   if(!g_ascii_strcasecmp(layer_str,"background"))
@@ -172,7 +172,7 @@ void bar_set_exclusive_zone ( gchar *zone, gchar *addr )
   GtkWidget *bar;
 
   bar = bar_get_by_name(addr);
-  if(!bar)
+  if(!bar || !zone)
     return;
 
   if(!g_ascii_strcasecmp(zone,"auto"))
@@ -232,7 +232,7 @@ void bar_set_monitor ( gchar *mon_name, gchar *addr )
   GtkWidget *bar;
 
   bar = bar_get_by_name(addr);
-  if(!bar)
+  if(!bar || !mon_name)
     return;
   monitor = g_object_get_data(G_OBJECT(bar),"monitor");
 
@@ -276,7 +276,7 @@ void bar_set_size ( gchar *size, gchar *addr )
   GtkWindow *bar;
 
   bar = GTK_WINDOW(bar_get_by_name(addr));
-  if(!bar)
+  if(!bar || !size)
     return;
   number = g_ascii_strtod(size, &end);
   win = gtk_widget_get_window(GTK_WIDGET(bar));

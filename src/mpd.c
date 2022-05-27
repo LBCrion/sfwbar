@@ -186,6 +186,9 @@ void mpd_ipc_command ( gchar *command )
 {
   GIOChannel *chan;
 
+  if(!command)
+    return;
+
   chan = mpd_ipc_open ( NULL, (gpointer *) &mpd_cmd_sock );
 
   if(!chan)

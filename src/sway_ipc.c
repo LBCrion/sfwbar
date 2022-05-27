@@ -113,6 +113,10 @@ void sway_ipc_command ( gchar *cmd, ... )
 {
   va_list args;
   gchar *buf;
+  
+  if(!cmd)
+    return;
+
   va_start(args,cmd);
   buf = g_strdup_vprintf(cmd,args);
   sway_ipc_send ( main_ipc, 0, buf);
@@ -440,5 +444,6 @@ void sway_ipc_init ( void )
 
 void sway_ipc_bar_id ( gchar *id )
 {
-  bar_id = strdup(id);
+  if(id)
+    bar_id = strdup(id);
 }
