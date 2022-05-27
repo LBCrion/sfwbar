@@ -351,7 +351,7 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
 
   if(menu)
   {
-    widget_set_css(menu,GINT_TO_POINTER(TRUE));
+    widget_set_css(menu,NULL);
     g_object_ref_sink(G_OBJECT(menu));
     g_signal_connect(G_OBJECT(menu),"unmap",G_CALLBACK(g_object_unref),NULL);
     layout_menu_popup(wrap->sni->image,menu,wrap->event,NULL,NULL);
@@ -505,7 +505,6 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
       gtk_widget_set_name(wrap->sni->image,"tray_passive");
       sni_item_set_icon(wrap->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
     }
-    widget_set_css(wrap->sni->image,NULL);
   }
 
   if(inner)
@@ -1030,6 +1029,7 @@ void sni_update ( void )
   }
 
   flow_grid_pad(tray);
+  widget_set_css(tray,NULL);
   gtk_widget_show_all(tray);
   invalid = FALSE;
 }

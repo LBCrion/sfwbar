@@ -204,7 +204,7 @@ void switcher_update ( void )
     if(!gtk_widget_is_visible(switcher))
       switcher_init();
     gtk_widget_show_all(switcher);
-    widget_set_css(switcher,GINT_TO_POINTER(TRUE));
+    widget_set_css(switcher,NULL);
     invalid = FALSE;
   }
   else

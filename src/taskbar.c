@@ -156,7 +156,6 @@ void taskbar_item_init ( GtkWidget *taskbar, window_t *win )
     item->label = gtk_label_new(win->title);
     gtk_label_set_ellipsize (GTK_LABEL(item->label),PANGO_ELLIPSIZE_END);
     gtk_label_set_max_width_chars(GTK_LABEL(item->label),title_width);
-    widget_set_css(item->label,NULL);
     gtk_grid_attach_next_to(GTK_GRID(box),item->label,item->icon,dir,1,1);
   }
 
@@ -284,7 +283,7 @@ void taskbar_update( GtkWidget *taskbar )
         gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(item->widget)),
             GTK_STATE_FLAG_PRELIGHT);
 
-        widget_set_css(item->widget,GINT_TO_POINTER(TRUE));
+        widget_set_css(item->widget,NULL);
         flow_grid_attach(taskbar,item->widget);
       }
     }

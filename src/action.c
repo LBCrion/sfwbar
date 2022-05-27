@@ -99,7 +99,6 @@ void action_set_value ( GtkWidget *widget, gchar *value )
     lw->value = NULL;
   }
   layout_widget_attach(lw);
-  widget_set_css(lw->widget,GINT_TO_POINTER(TRUE));
 }
 
 void action_set_style ( GtkWidget *widget, gchar *style )

@@ -316,8 +316,6 @@ GtkWidget *layout_widget_config ( widget_t *lw, GtkWidget *parent,
         G_CALLBACK(layout_widget_button_cb),lw);
   }
 
-  widget_set_css(lw->widget,NULL);
-
   if(GTK_IS_BUTTON(lw->widget))
   {
     tmp = lw->widget;
@@ -426,7 +424,7 @@ void layout_widgets_update ( GMainContext *gmc )
     if(layout_widget_cache(lw->style,&lw->estyle))
     {
       gtk_widget_set_name(lw->widget,lw->estyle);
-      widget_set_css(lw->widget,GINT_TO_POINTER(TRUE));
+      widget_set_css(lw->widget,NULL);
     }
   }
 }
@@ -452,7 +450,7 @@ void layout_emit_trigger ( gchar *trigger )
     if(layout_widget_cache(lw->style,&lw->estyle))
     {
       gtk_widget_set_name(lw->widget,lw->estyle);
-      widget_set_css(lw->widget,GINT_TO_POINTER(TRUE));
+      widget_set_css(lw->widget,NULL);
     }
   }
   action = action_trigger_lookup(trigger);
@@ -482,7 +480,7 @@ void layout_widget_attach ( widget_t *lw )
     widget_list = g_list_remove(widget_list,lw);
 }
 
-void widget_set_css ( GtkWidget *widget, gpointer propagate )
+void widget_set_css ( GtkWidget *widget, gpointer data )
 {
   gboolean state;
   gdouble xalign;
@@ -503,8 +501,8 @@ void widget_set_css ( GtkWidget *widget, gpointer propagate )
     gtk_label_set_xalign(GTK_LABEL(widget),xalign);
   }
 
-  if(GTK_IS_CONTAINER(widget) && propagate)
-    gtk_container_forall(GTK_CONTAINER(widget),widget_set_css,propagate);
+  if(GTK_IS_CONTAINER(widget))
+    gtk_container_forall(GTK_CONTAINER(widget),widget_set_css,NULL);
 }
 
 gpointer layout_scanner_thread ( gpointer data )

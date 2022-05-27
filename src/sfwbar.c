@@ -148,7 +148,7 @@ static void activate (GtkApplication* app, gpointer data )
     if(GTK_IS_BOX(gtk_bin_get_child(GTK_BIN(clist->data))))
     {
       gtk_application_add_window(app,GTK_WINDOW(clist->data));
-      widget_set_css(GTK_WIDGET(clist->data),GINT_TO_POINTER(TRUE));
+      widget_set_css(GTK_WIDGET(clist->data),NULL);
       layout_widgets_autoexec(GTK_WIDGET(clist->data),NULL);
     }
   g_list_free(clist);
