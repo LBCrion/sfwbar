@@ -9,6 +9,7 @@
 
 static GList *widget_list;
 static GHashTable *menus;
+static GHashTable *widgets;
 
 GtkWidget *layout_menu_get ( gchar *name )
 {
@@ -105,6 +106,14 @@ gboolean widget_menu_action ( GtkWidget *w ,action_t *action )
 
   action_exec(widget,action,NULL,wintree_from_id(wid),&state);
   return TRUE;
+}
+
+widget_t *widget_from_id ( gchar *id )
+{
+  if(!widgets || !id)
+    return NULL;
+
+  return g_hash_table_lookup(widgets,id);
 }
 
 gboolean layout_widget_button_cb ( GtkWidget *widget, widget_t *lw )
@@ -350,6 +359,7 @@ void layout_widget_free ( widget_t *lw )
   if(!lw)
     return;
 
+  g_free(lw->id);
   g_free(lw->style);
   g_free(lw->css);
   g_free(lw->value);
@@ -446,8 +456,17 @@ void layout_emit_trigger ( gchar *trigger )
 
 void layout_widget_attach ( widget_t *lw )
 {
-  if(!lw->value && !lw->tooltip && !lw->style && !layout_widget_has_actions(lw))
+  if(!lw->id && !lw->value && !lw->tooltip && !lw->style &&
+      !layout_widget_has_actions(lw))
     return layout_widget_free(lw);
+
+  if(lw->id)
+  {
+    if(!widgets)
+      widgets = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
+    if(!g_hash_table_lookup(widgets,lw->id))
+      g_hash_table_insert(widgets,lw->id,lw);
+  }
 
   g_object_set_data(G_OBJECT(lw->widget),"layout_widget",lw);
 

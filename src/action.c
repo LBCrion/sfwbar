@@ -165,9 +165,23 @@ void action_exec ( GtkWidget *widget, action_t *action,
     GdkEvent *event, window_t *win, guint16 *istate )
 {
   guint16 state;
+  widget_t *lw;
 
   if(!action)
     return;
+
+  if(action->addr && (action->type == G_TOKEN_MENU ||
+        action->type == G_TOKEN_FUNCTION ||
+        action->type == G_TOKEN_SETVALUE ||
+        action->type == G_TOKEN_SETSTYLE ||
+        action->type == G_TOKEN_SETTOOLTIP ||
+        action->type == G_TOKEN_IDLEINHIBIT ||
+        action->type == G_TOKEN_USERSTATE ))
+  {
+    lw = widget_from_id(action->addr);
+    if(lw)
+      widget = lw->widget;
+  }
 
   if(istate)
     state = *istate;
@@ -186,7 +200,8 @@ void action_exec ( GtkWidget *widget, action_t *action,
     g_debug("widget action: (%d) %s",action->type, action->command);
   else
     if(win)
-      g_debug("widget action: (%d) on %d",action->type,GPOINTER_TO_INT(win->uid));
+      g_debug("widget action: (%d) on %d",action->type,
+          GPOINTER_TO_INT(win->uid));
 
   switch(action->type)
   {

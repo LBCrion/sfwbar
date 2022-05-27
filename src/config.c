@@ -391,7 +391,8 @@ gchar *config_value_string ( gchar *dest, gchar *string )
   return result;
 }
 
-gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign )
+gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign,
+    gchar **id )
 {
   gchar *value, *temp;
   static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
@@ -403,7 +404,24 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign )
       return NULL;
     g_scanner_get_next_token(scanner);
   }
-  value = g_strdup("");;
+  if(id && g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
+  {
+    g_scanner_get_next_token(scanner);
+    temp = g_strdup(scanner->value.v_string);
+    if(g_scanner_peek_next_token(scanner)==',')
+    {
+      g_scanner_get_next_token(scanner);
+      value = g_strdup("");;
+      *id = temp;
+    }
+    else
+    {
+      value = config_value_string(g_strdup(""),temp);
+      g_free(temp);
+    }
+  }
+  else
+    value = g_strdup("");;
   g_scanner_peek_next_token(scanner);
   while(((gint)scanner->next_token<=G_TOKEN_SCANNER)&&
       (scanner->next_token!='}')&&
@@ -595,13 +613,16 @@ action_t *config_action ( GScanner *scanner )
           SEQ_END);
       break;
     case G_TOKEN_SETVALUE:
-      action->command = config_get_value(scanner,"action value",FALSE);
+      action->command = config_get_value(scanner,"action value",FALSE,
+          &action->addr);
       break;
     case G_TOKEN_SETSTYLE:
-      action->command = config_get_value(scanner,"action style",FALSE);
+      action->command = config_get_value(scanner,"action style",FALSE,
+          &action->addr);
       break;
     case G_TOKEN_SETTOOLTIP:
-      action->command = config_get_value(scanner,"action tooltip",FALSE);
+      action->command = config_get_value(scanner,"action tooltip",FALSE,
+          &action->addr);
       break;
     default:
       g_scanner_error(scanner,"invalid action");
@@ -643,12 +664,15 @@ void config_widget_action ( GScanner *scanner, widget_t *lw )
 
 gboolean config_widget_props ( GScanner *scanner, widget_t *lw )
 {
-  scanner->max_parse_errors = FALSE;
+  gboolean curly = FALSE;
 
-  if( g_scanner_peek_next_token( scanner ) != '{')
+  config_parse_sequence(scanner,
+      SEQ_OPT,G_TOKEN_STRING,&lw->id,NULL,
+      SEQ_OPT,'{',&curly,NULL,
+      SEQ_END);
+
+  if(!curly)
     return FALSE;
-  else
-    g_scanner_get_next_token(scanner);
 
   g_scanner_peek_next_token( scanner );
   while (!( (gint)scanner->next_token >= G_TOKEN_GRID &&
@@ -660,7 +684,7 @@ gboolean config_widget_props ( GScanner *scanner, widget_t *lw )
     switch ((gint)g_scanner_get_next_token ( scanner ) )
     {
       case G_TOKEN_STYLE:
-        lw->style = config_get_value(scanner,"style",TRUE);
+        lw->style = config_get_value(scanner,"style",TRUE,NULL);
         break;
       case G_TOKEN_CSS:
         lw->css = config_assign_string(scanner,"css");
@@ -684,13 +708,13 @@ gboolean config_widget_props ( GScanner *scanner, widget_t *lw )
         if(GTK_IS_GRID(lw->widget))
           g_scanner_error(scanner,"this widget has no property 'value'");
         else
-          lw->value = config_get_value(scanner,"value",TRUE);
+          lw->value = config_get_value(scanner,"value",TRUE,NULL);
         break;
       case G_TOKEN_TOOLTIP:
         if(GTK_IS_GRID(lw->widget))
           g_scanner_error(scanner,"this widget has no property 'tooltip'");
         else
-          lw->tooltip = config_get_value(scanner,"tooltip",TRUE);
+          lw->tooltip = config_get_value(scanner,"tooltip",TRUE,NULL);
         break;
       case G_TOKEN_PINS:
         config_get_pins( scanner, lw );
@@ -1123,7 +1147,7 @@ void config_define ( GScanner *scanner )
   g_scanner_get_next_token(scanner);
   ident = g_strdup(scanner->value.v_identifier);  
 
-  value = config_get_value(scanner,"define",TRUE);
+  value = config_get_value(scanner,"define",TRUE,NULL);
   if(!value)
   {
     g_free(ident);
