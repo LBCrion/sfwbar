@@ -87,6 +87,9 @@ void css_init ( void )
     g_param_spec_boolean("vexpand","vertical expansion","vertical expansion",
       FALSE, G_PARAM_READABLE));
   gtk_widget_class_install_style_property( widget_class,
+    g_param_spec_boolean("visible","show/hide a widget","show/hide a widget",
+      TRUE, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property( widget_class,
     g_param_spec_int("icon-size","icon size","icon size",
       0,500,48, G_PARAM_READABLE));
 
@@ -145,7 +148,7 @@ static void activate (GtkApplication* app, gpointer data )
     if(GTK_IS_BOX(gtk_bin_get_child(GTK_BIN(clist->data))))
     {
       gtk_application_add_window(app,GTK_WINDOW(clist->data));
-      gtk_widget_show_all(GTK_WIDGET(clist->data));
+      widget_set_css(GTK_WIDGET(clist->data),GINT_TO_POINTER(TRUE));
       layout_widgets_autoexec(GTK_WIDGET(clist->data),NULL);
     }
   g_list_free(clist);

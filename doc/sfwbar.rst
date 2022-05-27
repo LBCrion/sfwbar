@@ -688,6 +688,8 @@ property              description
 -GtkWidget-hexpand    specify if a widget should expand horizontally to occupy
                       available space. [true|false]
 -GtkWidget-vexpand    as above, for vertical expansion.
+-GtkWidget-visible    Control visibility of a widget. If set to false, widget
+                      will be hidden.
 -ScaleImage-color     Specify a color to repaint an image with. The image will
                       be painted with this color using image's alpha channel as
                       a mask. The color's own alpha value can be used to tint

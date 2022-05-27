@@ -151,7 +151,6 @@ void switcher_window_init ( window_t *win)
     label = gtk_label_new(win->title);
     gtk_label_set_ellipsize (GTK_LABEL(label),PANGO_ELLIPSIZE_END);
     gtk_label_set_max_width_chars(GTK_LABEL(label),title_width);
-    widget_set_css(label,FALSE);
     gtk_grid_attach_next_to(GTK_GRID(win->switcher),label,icon,dir,1,1);
   }
 }
@@ -205,6 +204,7 @@ void switcher_update ( void )
     if(!gtk_widget_is_visible(switcher))
       switcher_init();
     gtk_widget_show_all(switcher);
+    widget_set_css(switcher,GINT_TO_POINTER(TRUE));
     invalid = FALSE;
   }
   else

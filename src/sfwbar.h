@@ -174,7 +174,7 @@ gboolean layout_widget_draw ( widget_t *lw );
 void layout_widget_set_tooltip ( widget_t *lw );
 void layout_widget_attach ( widget_t *lw );
 void layout_widget_free ( widget_t *lw );
-void widget_set_css ( GtkWidget *, gboolean );
+void widget_set_css ( GtkWidget *, gpointer );
 gboolean widget_menu_action ( GtkWidget *widget, action_t *action );
 void layout_widgets_autoexec ( GtkWidget *widget, gpointer data );
 gboolean layout_tooltip_update ( GtkWidget *widget, gint x, gint y,
