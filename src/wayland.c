@@ -137,13 +137,13 @@ static void toplevel_manager_handle_toplevel(void *data,
 {
   window_t *win;
 
-  if(!sway_ipc_active())
-  {
-    win = wintree_window_init();
-    win->uid = tl;
-    win->wid = wt_counter++;
-    wintree_window_append(win);
-  }
+  if(sway_ipc_active())
+    return;
+
+  win = wintree_window_init();
+  win->uid = tl;
+  win->wid = wt_counter++;
+  wintree_window_append(win);
 
   zwlr_foreign_toplevel_handle_v1_add_listener(tl, &toplevel_impl, NULL);
 }
