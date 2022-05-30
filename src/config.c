@@ -797,7 +797,7 @@ widget_t *config_include ( GScanner *scanner )
 
   if(!scanner->max_parse_errors) 
   {
-    lw = config_parse(fname,FALSE);
+    lw = config_parse(fname, FALSE);
     lw->wtype = G_TOKEN_INCLUDE;
   }
   else
@@ -1181,8 +1181,7 @@ void config_trigger_action ( GScanner *scanner )
   config_optional_semicolon(scanner);
 }
 
-widget_t *config_parse_toplevel ( GScanner *scanner,
-    gboolean layout, gboolean toplevel )
+widget_t *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
 {
   widget_t *w=NULL, *dest;
 
@@ -1194,24 +1193,20 @@ widget_t *config_parse_toplevel ( GScanner *scanner,
         config_scanner(scanner);
         break;
       case G_TOKEN_LAYOUT:
-        if(layout)
+        if(!toplevel)
         {
-          if(!toplevel)
-          {
-            w = config_layout(scanner,w);
-            break;
-          }
-          if(g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
-          {
-            g_scanner_get_next_token(scanner);
-            dest = bar_grid_by_name(scanner->value.v_string);
-          }
-          else
-            dest = bar_grid_by_name("sfwbar");
-          config_layout(scanner,dest);
+          w = config_layout(scanner,w);
+          break;
+        }
+        if(g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
+        {
+          g_scanner_get_next_token(scanner);
+          dest = bar_grid_by_name(scanner->value.v_string);
         }
         else
-          g_scanner_error(scanner,"layout not supported in dynamic config");
+          dest = bar_grid_by_name(NULL);
+        config_layout(scanner,dest);
+        widget_set_css(dest->widget,NULL);
         break;
       case G_TOKEN_PLACER:
         config_placer(scanner);
@@ -1238,8 +1233,7 @@ widget_t *config_parse_toplevel ( GScanner *scanner,
   }
   return w;
 }
-widget_t *config_parse_data ( gchar *fname, gchar *data,
-    gboolean layout, gboolean toplevel )
+widget_t *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
 {
   GScanner *scanner;
   widget_t *w;
@@ -1403,7 +1397,7 @@ widget_t *config_parse_data ( gchar *fname, gchar *data,
   scanner->input_name = fname;
   g_scanner_input_text( scanner, data, -1 );
 
-  w = config_parse_toplevel ( scanner, layout, toplevel );
+  w = config_parse_toplevel ( scanner, toplevel );
   g_free(scanner->config->cset_identifier_first);
   g_free(scanner->config->cset_identifier_nth);
   g_scanner_destroy(scanner);
@@ -1419,7 +1413,7 @@ void config_string ( gchar *string )
     return;
 
   conf = g_strdup(string);
-  config_parse_data("config string",conf,FALSE,FALSE);
+  config_parse_data("config string",conf,TRUE);
   g_free(conf);
 }
 
@@ -1440,7 +1434,7 @@ void config_pipe_read ( gchar *command )
   if(chan)
   {
     if(g_io_channel_read_to_end( chan , &conf,NULL,NULL)==G_IO_STATUS_NORMAL)
-      config_parse_data(command,conf,FALSE,FALSE);
+      config_parse_data(command,conf,TRUE);
     g_free(conf);
     g_io_channel_unref(chan);
   }
@@ -1467,7 +1461,7 @@ widget_t *config_parse ( gchar *file, gboolean toplevel )
     exit(1);
   }
 
-  w = config_parse_data (fname, conf,TRUE,toplevel);
+  w = config_parse_data (fname, conf,toplevel);
 
   g_free(conf);
   g_free(fname);
