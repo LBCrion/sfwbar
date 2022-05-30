@@ -295,7 +295,7 @@ void wayland_init ( void )
   wl_registry_add_listener(registry, &registry_listener, NULL);
   wl_display_roundtrip(wdisp);
 
-  if (toplevel_manager == NULL)
+  if (toplevel_manager == NULL && !sway_ipc_active())
     g_error("wlr-foreign-toplevel not available\n");
 
   wl_display_roundtrip(wdisp);
