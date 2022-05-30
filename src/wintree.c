@@ -84,14 +84,16 @@ void wintree_window_append ( window_t *win )
     return;
 
   if( !win->valid && (win->title || win->appid) )
+  {
     taskbar_item_init_for_all(win);
+    win->valid = TRUE;
+  }
   if( !win->switcher && (win->title || win->appid) )
     switcher_window_init(win);
   if(g_list_find(wt_list,win)==NULL)
     wt_list = g_list_append (wt_list,win);
   taskbar_invalidate_all();
   switcher_invalidate();
-  win->valid = TRUE;
 }
 
 void wintree_window_delete ( gpointer id )
