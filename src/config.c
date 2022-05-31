@@ -8,6 +8,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+typedef gboolean (*parse_func) ( GScanner *, void * );
+
 static GHashTable *defines;
 
 void config_log_error ( GScanner *scanner, gchar *message, gboolean error )
@@ -56,6 +58,7 @@ void config_parse_sequence ( GScanner *scanner, ... )
 {
   va_list args;
   void *dest;
+  parse_func func;
   gchar *err;
   gint type;
   gint req;
@@ -67,9 +70,10 @@ void config_parse_sequence ( GScanner *scanner, ... )
   while(req!=SEQ_END)
   {
     type = va_arg(args, gint );
+    func = va_arg(args, parse_func );
     dest  = va_arg(args, void * );
     err = va_arg(args, char * );
-    if( (type == -1 && (matched || req != SEQ_CON)) || 
+    if( (type < 0 && (matched || req != SEQ_CON)) || 
         g_scanner_peek_next_token(scanner) == type || 
         ( scanner->next_token == G_TOKEN_FLOAT && type == G_TOKEN_INT) )
     {
@@ -93,6 +97,10 @@ void config_parse_sequence ( GScanner *scanner, ... )
           case -1:
             *((gint *)dest) = scanner->token;
             break;
+          case -2:
+            if(func && !func(scanner,dest))
+              if(err)
+                g_scanner_error(scanner,"%s",err);
           default:
             *((gboolean *)dest) = TRUE;
         }
@@ -186,10 +194,10 @@ void config_scanner_var ( GScanner *scanner, scan_file_t *file )
   gint flag = G_TOKEN_LASTW;
 
   config_parse_sequence(scanner,
-      SEQ_REQ,G_TOKEN_IDENTIFIER,&vname,NULL,
-      SEQ_REQ,'=',NULL,"Missing '=' in variable declaration",
-      SEQ_REQ,-1,&type,NULL,
-      SEQ_REQ,'(',NULL,"Missing '(' after parser",
+      SEQ_REQ,G_TOKEN_IDENTIFIER,NULL,&vname,NULL,
+      SEQ_REQ,'=',NULL,NULL,"Missing '=' in variable declaration",
+      SEQ_REQ,-1,NULL,&type,NULL,
+      SEQ_REQ,'(',NULL,NULL,"Missing '(' after parser",
       SEQ_END);
 
   if(scanner->max_parse_errors)
@@ -200,9 +208,9 @@ void config_scanner_var ( GScanner *scanner, scan_file_t *file )
     case G_TOKEN_REGEX:
     case G_TOKEN_JSON:
       config_parse_sequence(scanner,
-          SEQ_REQ,G_TOKEN_STRING,&pattern,"Missing pattern in parser",
-          SEQ_OPT,',',NULL,NULL,
-          SEQ_CON,-1,&flag,NULL,
+          SEQ_REQ,G_TOKEN_STRING,NULL,&pattern,"Missing pattern in parser",
+          SEQ_OPT,',',NULL,NULL,NULL,
+          SEQ_CON,-1,NULL,&flag,NULL,
           SEQ_END);
       break;
     case G_TOKEN_GRAB:
@@ -222,8 +230,8 @@ void config_scanner_var ( GScanner *scanner, scan_file_t *file )
   }
 
   config_parse_sequence(scanner,
-    SEQ_REQ,')',NULL,"Missing ')' after parser",
-    SEQ_OPT,';',NULL,NULL,
+    SEQ_REQ,')',NULL,NULL,"Missing ')' after parser",
+    SEQ_OPT,';',NULL,NULL,NULL,
     SEQ_END);
 
   scanner_var_attach(vname,file,pattern,type,flag);
@@ -239,32 +247,32 @@ scan_file_t *config_scanner_source ( GScanner *scanner, gint source )
   {
     case SO_FILE:
       config_parse_sequence(scanner,
-          SEQ_REQ,'(',NULL,"Missing '(' after source",
-          SEQ_REQ,G_TOKEN_STRING,&fname,"Missing file in a source",
-          SEQ_OPT,',',NULL,NULL,
-          SEQ_CON,-1,&flag1,NULL,
-          SEQ_OPT,',',NULL,NULL,
-          SEQ_CON,-1,&flag2,NULL,
-          SEQ_REQ,')',NULL,"Missing ')' after source",
-          SEQ_REQ,'{',NULL,"Missing '{' after source",
+          SEQ_REQ,'(',NULL,NULL,"Missing '(' after source",
+          SEQ_REQ,G_TOKEN_STRING,NULL,&fname,"Missing file in a source",
+          SEQ_OPT,',',NULL,NULL,NULL,
+          SEQ_CON,-1,NULL,&flag1,NULL,
+          SEQ_OPT,',',NULL,NULL,NULL,
+          SEQ_CON,-1,NULL,&flag2,NULL,
+          SEQ_REQ,')',NULL,NULL,"Missing ')' after source",
+          SEQ_REQ,'{',NULL,NULL,"Missing '{' after source",
           SEQ_END);
       break;
     case SO_CLIENT:
       config_parse_sequence(scanner,
-          SEQ_REQ,'(',NULL,"Missing '(' after source",
-          SEQ_REQ,G_TOKEN_STRING,&fname,"Missing file in a source",
-          SEQ_OPT,',',NULL,NULL,
-          SEQ_CON,G_TOKEN_STRING,&trigger,NULL,
-          SEQ_REQ,')',NULL,"Missing ')' after source",
-          SEQ_REQ,'{',NULL,"Missing '{' after source",
+          SEQ_REQ,'(',NULL,NULL,"Missing '(' after source",
+          SEQ_REQ,G_TOKEN_STRING,NULL,&fname,"Missing file in a source",
+          SEQ_OPT,',',NULL,NULL,NULL,
+          SEQ_CON,G_TOKEN_STRING,NULL,&trigger,NULL,
+          SEQ_REQ,')',NULL,NULL,"Missing ')' after source",
+          SEQ_REQ,'{',NULL,NULL,"Missing '{' after source",
           SEQ_END);
       break;
     default:
       config_parse_sequence(scanner,
-          SEQ_REQ,'(',NULL,"Missing '(' after source",
-          SEQ_REQ,G_TOKEN_STRING,&fname,"Missing file in a source",
-          SEQ_REQ,')',NULL,"Missing ')' after source",
-          SEQ_REQ,'{',NULL,"Missing '{' after source",
+          SEQ_REQ,'(',NULL,NULL,"Missing '(' after source",
+          SEQ_REQ,G_TOKEN_STRING,NULL,&fname,"Missing file in a source",
+          SEQ_REQ,')',NULL,NULL,"Missing ')' after source",
+          SEQ_REQ,'{',NULL,NULL,"Missing '{' after source",
           SEQ_END);
       break;
   }
@@ -288,8 +296,8 @@ scan_file_t *config_scanner_source ( GScanner *scanner, gint source )
     config_scanner_var(scanner, file);
 
   config_parse_sequence(scanner,
-      SEQ_REQ,'}',NULL,"Expecting a variable declaration or '}'",
-      SEQ_OPT,';',NULL,NULL,
+      SEQ_REQ,'}',NULL,NULL,"Expecting a variable declaration or '}'",
+      SEQ_OPT,';',NULL,NULL,NULL,
       SEQ_END);
 
   return file;
@@ -349,16 +357,16 @@ struct rect config_get_loc ( GScanner *scanner )
   rect.h = 1;
 
   config_parse_sequence(scanner,
-      SEQ_REQ,'(',NULL,"missing '(' afer loc",
-      SEQ_REQ,G_TOKEN_INT,&rect.x,"missing x value in loc",
-      SEQ_REQ,',',NULL,"missing comma afer x value in loc",
-      SEQ_REQ,G_TOKEN_INT,&rect.y,"missing y value in loc",
-      SEQ_OPT,',',NULL,NULL,
-      SEQ_CON,G_TOKEN_INT,&rect.w,"missing w value in loc",
-      SEQ_OPT,',',NULL,NULL,
-      SEQ_CON,G_TOKEN_INT,&rect.h,"missing h value in loc",
-      SEQ_REQ,')',NULL,"missing ')' in loc statement",
-      SEQ_OPT,';',NULL,NULL,
+      SEQ_REQ,'(',NULL,NULL,"missing '(' afer loc",
+      SEQ_REQ,G_TOKEN_INT,NULL,&rect.x,"missing x value in loc",
+      SEQ_REQ,',',NULL,NULL,"missing comma afer x value in loc",
+      SEQ_REQ,G_TOKEN_INT,NULL,&rect.y,"missing y value in loc",
+      SEQ_OPT,',',NULL,NULL,NULL,
+      SEQ_CON,G_TOKEN_INT,NULL,&rect.w,"missing w value in loc",
+      SEQ_OPT,',',NULL,NULL,NULL,
+      SEQ_CON,G_TOKEN_INT,NULL,&rect.h,"missing h value in loc",
+      SEQ_REQ,')',NULL,NULL,"missing ')' in loc statement",
+      SEQ_OPT,';',NULL,NULL,NULL,
       SEQ_END );
 
   return rect;
@@ -595,9 +603,9 @@ action_t *config_action ( GScanner *scanner )
     case G_TOKEN_SETBARSIZE:
     case G_TOKEN_SETEXCLUSIVEZONE:
       config_parse_sequence(scanner,
-          SEQ_REQ,G_TOKEN_STRING,&action->addr,"Missing argument in action",
-          SEQ_OPT,',',NULL,NULL,
-          SEQ_CON,G_TOKEN_STRING,&action->command,"Missing argument after ','",
+          SEQ_REQ,G_TOKEN_STRING,NULL,&action->addr,"Missing argument in action",
+          SEQ_OPT,',',NULL,NULL,NULL,
+          SEQ_CON,G_TOKEN_STRING,NULL,&action->command,"Missing argument after ','",
           SEQ_END);
       if(!action->command)
       {
@@ -607,9 +615,9 @@ action_t *config_action ( GScanner *scanner )
       break;
     case G_TOKEN_CLIENTSEND:
       config_parse_sequence(scanner,
-          SEQ_REQ,G_TOKEN_STRING,&action->addr,"Missing address in action",
-          SEQ_OPT,',',NULL,NULL,
-          SEQ_CON,G_TOKEN_STRING,&action->command,"Missing command in action",
+          SEQ_REQ,G_TOKEN_STRING,NULL,&action->addr,"Missing address in action",
+          SEQ_OPT,',',NULL,NULL,NULL,
+          SEQ_CON,G_TOKEN_STRING,NULL,&action->command,"Missing command in action",
           SEQ_END);
       break;
     case G_TOKEN_SETVALUE:
@@ -642,10 +650,10 @@ void config_widget_action ( GScanner *scanner, widget_t *lw )
   gint button = 1;
 
   config_parse_sequence(scanner,
-    SEQ_OPT,'[',NULL,NULL,
-    SEQ_CON,G_TOKEN_INT,&button,"missing in action[<index>]",
-    SEQ_CON,']',NULL,"missing closing ']' in action[<index>]",
-    SEQ_REQ,'=',NULL,"missing '=' after action",
+    SEQ_OPT,'[',NULL,NULL,NULL,
+    SEQ_CON,G_TOKEN_INT,NULL,&button,"missing in action[<index>]",
+    SEQ_CON,']',NULL,NULL,"missing closing ']' in action[<index>]",
+    SEQ_REQ,'=',NULL,NULL,"missing '=' after action",
     SEQ_END);
 
   if(scanner->max_parse_errors)
@@ -667,8 +675,8 @@ gboolean config_widget_props ( GScanner *scanner, widget_t *lw )
   gboolean curly = FALSE;
 
   config_parse_sequence(scanner,
-      SEQ_OPT,G_TOKEN_STRING,&lw->id,NULL,
-      SEQ_OPT,'{',&curly,NULL,
+      SEQ_OPT,G_TOKEN_STRING,NULL,&lw->id,NULL,
+      SEQ_OPT,'{',NULL,&curly,NULL,
       SEQ_END);
 
   if(!curly)
@@ -789,10 +797,10 @@ widget_t *config_include ( GScanner *scanner )
   gchar *fname = NULL;
 
   config_parse_sequence(scanner,
-      SEQ_REQ,'(',NULL,"Missing '(' after include",
-      SEQ_REQ,G_TOKEN_STRING,&fname,"Missing filename in include",
-      SEQ_REQ,')',NULL,"Missing ')',after include",
-      SEQ_OPT,';',NULL,NULL,
+      SEQ_REQ,'(',NULL,NULL,"Missing '(' after include",
+      SEQ_REQ,G_TOKEN_STRING,NULL,&fname,"Missing filename in include",
+      SEQ_REQ,')',NULL,NULL,"Missing ')',after include",
+      SEQ_OPT,';',NULL,NULL,NULL,
       SEQ_END);
 
   if(!scanner->max_parse_errors) 
@@ -1006,9 +1014,9 @@ GtkWidget *config_menu_item ( GScanner *scanner )
   GtkWidget *item;
 
   config_parse_sequence(scanner,
-      SEQ_REQ,'(',NULL,"missing '(' after 'item'",
-      SEQ_REQ,G_TOKEN_STRING,&label,"missing label in 'item'",
-      SEQ_REQ,',',NULL,"missing ',' in 'item'",
+      SEQ_REQ,'(',NULL,NULL,"missing '(' after 'item'",
+      SEQ_REQ,G_TOKEN_STRING,NULL,&label,"missing label in 'item'",
+      SEQ_REQ,',',NULL,NULL,"missing ',' in 'item'",
       SEQ_END);
   if(scanner->max_parse_errors)
   {
@@ -1048,10 +1056,10 @@ void config_menu ( GScanner *scanner, GtkWidget *parent )
   GtkWidget *menu, *item;
 
   config_parse_sequence(scanner,
-      SEQ_REQ,'(',NULL,"missing '(' after 'menu'",
-      SEQ_REQ,G_TOKEN_STRING,&name,"missing menu name",
-      SEQ_REQ,')',NULL,"missing ')' afer 'menu'",
-      SEQ_REQ,'{',NULL,"missing '{' afer 'menu'",
+      SEQ_REQ,'(',NULL,NULL,"missing '(' after 'menu'",
+      SEQ_REQ,G_TOKEN_STRING,NULL,&name,"missing menu name",
+      SEQ_REQ,')',NULL,NULL,"missing ')' afer 'menu'",
+      SEQ_REQ,'{',NULL,NULL,"missing '{' afer 'menu'",
       SEQ_END);
 
   if(scanner->max_parse_errors)
@@ -1109,10 +1117,10 @@ void config_function ( GScanner *scanner )
   action_t *action;
 
   config_parse_sequence(scanner,
-      SEQ_REQ,'(',NULL,"missing '(' after 'function'",
-      SEQ_REQ,G_TOKEN_STRING,&name,"missing function name",
-      SEQ_REQ,')',NULL,"missing ')' afer 'function'",
-      SEQ_REQ,'{',NULL,"missing '{' afer 'function'",
+      SEQ_REQ,'(',NULL,NULL,"missing '(' after 'function'",
+      SEQ_REQ,G_TOKEN_STRING,NULL,&name,"missing function name",
+      SEQ_REQ,')',NULL,NULL,"missing ')' afer 'function'",
+      SEQ_REQ,'{',NULL,NULL,"missing '{' afer 'function'",
       SEQ_END);
   if(scanner->max_parse_errors)
     return g_free(name);
@@ -1129,8 +1137,8 @@ void config_function ( GScanner *scanner )
   }
 
   config_parse_sequence(scanner,
-      SEQ_REQ,'}',NULL,"Expecting an action or '}'",
-      SEQ_OPT,';',NULL,NULL,
+      SEQ_REQ,'}',NULL,NULL,"Expecting an action or '}'",
+      SEQ_OPT,';',NULL,NULL,NULL,
       SEQ_END);
 
   action_function_add(name,actions);
@@ -1167,8 +1175,8 @@ void config_trigger_action ( GScanner *scanner )
   action_t *action;
 
   config_parse_sequence(scanner,
-      SEQ_REQ,G_TOKEN_STRING,&trigger,"missing trigger in TriggerAction",
-      SEQ_REQ,',',NULL,"missing ',' in TriggerAction",
+      SEQ_REQ,G_TOKEN_STRING,NULL,&trigger,"missing trigger in TriggerAction",
+      SEQ_REQ,',',NULL,NULL,"missing ',' in TriggerAction",
       SEQ_END);
   if(scanner->max_parse_errors)
     return g_free(trigger);
