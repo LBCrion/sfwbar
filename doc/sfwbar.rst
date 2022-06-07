@@ -359,7 +359,7 @@ Exec <string>
 
 Function [<addr>,]<string>
   Execute a function. Accepts an optional address, to invoke a function on a
-  spefici widget.
+  specific widget.
 
 Menu <string>
   open a menu with a given name
@@ -413,8 +413,11 @@ SetValue [<widget>,]<string>
   in turn will call a function, which executed SetValue, the SetValue will
   still ac upon the widget that popped up the menu. 
 
-SetStyle <string>
+SetStyle [<widget>,]<string>
   set style name for a widget
+
+SetTooltip [<widget>,]<string>
+  set tooltip text for a widget
 
 IdleInhibit <string>
   set idle inhibitor for a given widget. The string parameters accepted are

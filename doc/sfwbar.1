@@ -447,7 +447,7 @@ execute a shell comand
 .TP
 .B Function [<addr>,]<string>
 Execute a function. Accepts an optional address, to invoke a function on a
-spefici widget.
+specific widget.
 .TP
 .B Menu <string>
 open a menu with a given name
@@ -501,8 +501,11 @@ the action chain has been invoked. I.e. a widget may popup a menu, which
 in turn will call a function, which executed SetValue, the SetValue will
 still ac upon the widget that popped up the menu.
 .TP
-.B SetStyle <string>
+.B SetStyle [<widget>,]<string>
 set style name for a widget
+.TP
+.B SetTooltip [<widget>,]<string>
+set tooltip text for a widget
 .TP
 .B IdleInhibit <string>
 set idle inhibitor for a given widget. The string parameters accepted are
