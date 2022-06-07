@@ -202,7 +202,7 @@ widget dimensions in grid cells:
 .sp
 .nf
 .ft C
-layout {
+layout \(dqid\(dq {
   label {
   style = \(dqmystyle\(dq
   value = SwapUsed / SwapTotal + \(dq%\(dq
@@ -214,6 +214,11 @@ layout {
 .UNINDENT
 .UNINDENT
 .sp
+The optional \(dqid\(dq string of the layout, specifies the bar to populate and can
+control positioning of the grid within a bar using syntax of \(dqname:position\(dq,
+valid positions are start, center and end. This allows placement of some
+widgets in the center of the bar. In case of a single bar, the name of a bar
+can be omitted, i.e. \(dq:center\(dq.
 External widgets can be included in layout using the following syntax:
 .INDENT 0.0
 .INDENT 3.5
@@ -231,8 +236,8 @@ layout {
 The above will include all scanner variables data and widget sub\-layout from
 file MyWidget.widget
 .sp
-Grid widgets can contain other widgets, these are declared within the grid definition
-following the parent grid properties. i.e.
+Grid widgets can contain other widgets, these are declared within the grid
+definition following the parent grid properties. i.e.
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -241,7 +246,7 @@ following the parent grid properties. i.e.
 grid {
   css = \(dq* { border: none }\(dq
 
-  label {
+  label \(dqid\(dq {
     ...
   }
 }
@@ -250,7 +255,8 @@ grid {
 .UNINDENT
 .UNINDENT
 .sp
-Widgets can have the following properties:
+Widgets can optionally have unique id\(aqs assigned to them in order to allow
+manipulating them in the future.  Widgets can have the following properties:
 .INDENT 0.0
 .TP
 .B value
@@ -439,8 +445,9 @@ bar configuration on the fly
 .B Exec <string>
 execute a shell comand
 .TP
-.B Function <string>
-Execute a function
+.B Function [<addr>,]<string>
+Execute a function. Accepts an optional address, to invoke a function on a
+spefici widget.
 .TP
 .B Menu <string>
 open a menu with a given name
@@ -467,14 +474,14 @@ send a string to a client. The string will be written to client\(aqs standard
 input for execClient clients or written into a socket for socketClient\(aqs.
 The first parameter is the client id, the second is the string to send.
 .TP
-.B SetMonitor <string>
-move bar to a given monitor
+.B SetMonitor [<bar_name>,]<string>
+move bar to a given monitor. Bar_name string specifies a bar to move.
 .TP
-.B SetLayer
+.B SetLayer [<bar_name>,]<string>
 move bar to a specified layer (supported parameters are \(dqtop\(dq, \(dqbottom\(dq,
-\(dqbackground\(dq and \(dqoverlay\(dq
+\(dqbackground\(dq and \(dqoverlay\(dq.
 .TP
-.B SetBarSize <string>
+.B SetBarSize [<bar_name>,]<string>
 set size of the bar (width for top or bottom bar, height for left or right
 bar). The argument is a string. I.e. \(dq800\(dq for 800 pixels or \(dq50%\(dq for
 50% of screen size
@@ -483,16 +490,16 @@ bar). The argument is a string. I.e. \(dq800\(dq for 800 pixels or \(dq50%\(dq f
 specify bar ID to listen on for mode and hidden_state signals. If no
 bar ID is specified, SfwBar will listen to signals on all IDs
 .TP
-.B SetExclusiveZone <string>
+.B SetExclusiveZone [<bar_name>,]<string>
 specify exclusive zone policy for the bar window. Acceptable values are
 \(dqauto\(dq, \(dq\-1\(dq, \(dq0\(dq or positive integers. These have meanings in line with
 exclusive zone setting in the layer shell protocol. Default value is \(dqauto\(dq
 .TP
-.B SetValue <string>
+.B SetValue [<widget>,]<string>
 set the value of the widget. This action applies to the widget from which
 the action chain has been invoked. I.e. a widget may popup a menu, which
 in turn will call a function, which executed SetValue, the SetValue will
-still ac upon the widget that popped up the menu
+still ac upon the widget that popped up the menu.
 .TP
 .B SetStyle <string>
 set style name for a widget

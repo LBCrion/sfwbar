@@ -158,7 +158,7 @@ property "loc(x,y[,w,h])" with the first two parameters specifying the location
 of the widget within the parent grid and the last two parameters specifying the
 widget dimensions in grid cells::
 
-  layout {
+  layout "id" {
     label {
     style = "mystyle"
     value = SwapUsed / SwapTotal + "%"
@@ -166,6 +166,11 @@ widget dimensions in grid cells::
     }
   }
 
+The optional "id" string of the layout, specifies the bar to populate and can
+control positioning of the grid within a bar using syntax of "name:position",
+valid positions are start, center and end. This allows placement of some
+widgets in the center of the bar. In case of a single bar, the name of a bar
+can be omitted, i.e. ":center".
 External widgets can be included in layout using the following syntax: ::
 
   layout {
@@ -175,18 +180,19 @@ External widgets can be included in layout using the following syntax: ::
 The above will include all scanner variables data and widget sub-layout from
 file MyWidget.widget
 
-Grid widgets can contain other widgets, these are declared within the grid definition
-following the parent grid properties. i.e. ::
+Grid widgets can contain other widgets, these are declared within the grid
+definition following the parent grid properties. i.e. ::
 
   grid {
     css = "* { border: none }"
 
-    label {
+    label "id" {
       ...
     }
   }
 
-Widgets can have the following properties:
+Widgets can optionally have unique id's assigned to them in order to allow
+manipulating them in the future.  Widgets can have the following properties:
 
 value 
   an expression specifying the value to display. This can be a static value
@@ -351,8 +357,9 @@ Config <string>
 Exec <string>
   execute a shell comand
 
-Function <string>
-  Execute a function
+Function [<addr>,]<string>
+  Execute a function. Accepts an optional address, to invoke a function on a
+  spefici widget.
 
 Menu <string>
   open a menu with a given name
@@ -379,14 +386,14 @@ ClientSend <string>, <string>
   input for execClient clients or written into a socket for socketClient's.
   The first parameter is the client id, the second is the string to send.
 
-SetMonitor <string>
-  move bar to a given monitor
+SetMonitor [<bar_name>,]<string>
+  move bar to a given monitor. Bar_name string specifies a bar to move.
 
-SetLayer
+SetLayer [<bar_name>,]<string>
   move bar to a specified layer (supported parameters are "top", "bottom",
-  "background" and "overlay"
+  "background" and "overlay". 
 
-SetBarSize <string>
+SetBarSize [<bar_name>,]<string>
   set size of the bar (width for top or bottom bar, height for left or right
   bar). The argument is a string. I.e. "800" for 800 pixels or "50%" for 
   50% of screen size
@@ -395,16 +402,16 @@ SetBarID <string>
   specify bar ID to listen on for mode and hidden_state signals. If no
   bar ID is specified, SfwBar will listen to signals on all IDs
 
-SetExclusiveZone <string>
+SetExclusiveZone [<bar_name>,]<string>
   specify exclusive zone policy for the bar window. Acceptable values are
   "auto", "-1", "0" or positive integers. These have meanings in line with
   exclusive zone setting in the layer shell protocol. Default value is "auto"
 
-SetValue <string>
+SetValue [<widget>,]<string>
   set the value of the widget. This action applies to the widget from which
   the action chain has been invoked. I.e. a widget may popup a menu, which
   in turn will call a function, which executed SetValue, the SetValue will
-  still ac upon the widget that popped up the menu
+  still ac upon the widget that popped up the menu. 
 
 SetStyle <string>
   set style name for a widget
