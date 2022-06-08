@@ -104,7 +104,8 @@ void scanner_expire_var ( void *key, scan_var_t *var, void *data )
 /* expire all variables in the tree */
 void scanner_expire ( void )
 {
-  g_hash_table_foreach(scan_list,(GHFunc)scanner_expire_var,NULL);
+  if(scan_list)
+    g_hash_table_foreach(scan_list,(GHFunc)scanner_expire_var,NULL);
 }
 
 void scanner_update_var ( scan_var_t *var, gchar *value)
