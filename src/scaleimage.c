@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2021 Lev Babiev
+ * Copyright 2021-2022 Lev Babiev
  */
 
 
@@ -79,11 +79,14 @@ static void scale_image_get_preferred_width ( GtkWidget *w, gint *m, gint *n )
   GtkBorder border,padding;
   GtkStyleContext *style = gtk_widget_get_style_context(w);
   GtkStateFlags flags = gtk_style_context_get_state(style);
+  gboolean expand;
 
+  gtk_widget_style_get(w,"hexpand",&expand,NULL);
   gtk_style_context_get_border(style, flags, &border );
   gtk_style_context_get_padding(style, flags, &padding );
   GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_width(w,m,n);
-  *n += border.left + border.right + padding.left + padding.right;
+  if(expand)
+    *n += border.left + border.right + padding.left + padding.right;
   *m=1;
 }
 
@@ -92,12 +95,16 @@ static void scale_image_get_preferred_height ( GtkWidget *w, gint *m, gint *n )
   GtkBorder border,padding;
   GtkStyleContext *style = gtk_widget_get_style_context(w);
   GtkStateFlags flags = gtk_style_context_get_state(style);
+  gboolean expand;
+
+  gtk_widget_style_get(w,"hexpand",&expand,NULL);
 
   gtk_style_context_get_border(style, flags, &border );
   gtk_style_context_get_padding(style, flags, &padding );
   GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_height(w,m,n);
+  if(expand)
+    *n += border.top + border.bottom + padding.top + padding.bottom;
   *m=1;
-  *n += border.top + border.bottom + padding.top + padding.bottom;
 }
 
 static void scale_image_destroy ( GtkWidget *w )
