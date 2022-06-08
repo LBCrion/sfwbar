@@ -144,6 +144,9 @@ label
 scale
   a progress bar with a progress value specified by an expression
 
+chart
+  a chart plotting the value of the expression over time
+
 image
   display an icon or an image from a file. The name of an icon or a file is
   specified by an expression and can change dynamically.

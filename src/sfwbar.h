@@ -5,6 +5,8 @@
 #include <gtk/gtk.h>
 #include <json.h>
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
+#include "scaleimage.h"
+#include "chart.h"
 
 #define MAX_BUTTON 8
 

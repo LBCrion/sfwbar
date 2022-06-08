@@ -184,11 +184,13 @@ gboolean layout_widget_draw ( widget_t *lw )
       gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(lw->widget),
           g_ascii_strtod(lw->evalue,NULL));
 
-  if(GTK_IS_IMAGE(lw->widget))
+  if(IS_SCALE_IMAGE(lw->widget))
   {
     scale_image_set_image(GTK_WIDGET(lw->widget),lw->evalue,NULL);
     scale_image_update(GTK_WIDGET(lw->widget));
   }
+  if(IS_CHART(lw->widget))
+    chart_update(lw->widget,g_ascii_strtod(lw->evalue,NULL));
 
   return FALSE;
 }
@@ -328,7 +330,8 @@ GtkWidget *layout_widget_config ( widget_t *lw, GtkWidget *parent,
     lw->evalue = expr_parse(lw->value, &vcount);
     layout_widget_draw(lw);
     if((!GTK_IS_LABEL(lw->widget) && !GTK_IS_PROGRESS_BAR(lw->widget) &&
-          !GTK_IS_IMAGE(lw->widget)) || !vcount)
+          !IS_SCALE_IMAGE(lw->widget) && !IS_CHART(lw->widget)) ||
+        !vcount)
     {
       g_free(lw->value);
       g_free(lw->evalue);

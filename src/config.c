@@ -909,6 +909,10 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
         scanner->max_parse_errors=FALSE;
         lw->widget = gtk_progress_bar_new();
         break;
+      case G_TOKEN_CHART:
+        scanner->max_parse_errors=FALSE;
+        lw->widget = chart_new();
+        break;
       case G_TOKEN_INCLUDE:
         layout_widget_free(lw);
         lw = config_include( scanner );
@@ -1358,6 +1362,7 @@ widget_t *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   g_scanner_scope_add_symbol(scanner,0, "Label", (gpointer)G_TOKEN_LABEL );
   g_scanner_scope_add_symbol(scanner,0, "Button", (gpointer)G_TOKEN_BUTTON );
   g_scanner_scope_add_symbol(scanner,0, "Image", (gpointer)G_TOKEN_IMAGE );
+  g_scanner_scope_add_symbol(scanner,0, "Chart", (gpointer)G_TOKEN_CHART );
   g_scanner_scope_add_symbol(scanner,0, "Include", (gpointer)G_TOKEN_INCLUDE );
   g_scanner_scope_add_symbol(scanner,0, "TaskBar", (gpointer)G_TOKEN_TASKBAR );
   g_scanner_scope_add_symbol(scanner,0, "Pager", (gpointer)G_TOKEN_PAGER );
