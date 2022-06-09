@@ -7,8 +7,36 @@
 
 G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, GTK_TYPE_GRID, G_ADD_PRIVATE (FlowGrid));
 
-static void flow_grid_get_preferred_width (GtkWidget *widget, gint *minimal, gint *natural);
-static void flow_grid_get_preferred_height (GtkWidget *widget, gint *minimal, gint *natural);
+static void flow_grid_get_preferred_width (GtkWidget *widget, gint *minimal, gint *natural)
+{
+  FlowGridPrivate *priv;
+
+  g_return_if_fail(widget != NULL);
+  g_return_if_fail(IS_FLOW_GRID(widget));
+
+  priv = flow_grid_get_instance_private(FLOW_GRID(widget));
+
+  GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_width(widget,minimal,natural);
+
+  if(priv->rows>0 && priv->limit )
+    *minimal = MIN(*natural,1);
+}
+
+static void flow_grid_get_preferred_height (GtkWidget *widget, gint *minimal, gint *natural)
+{
+  FlowGridPrivate *priv;
+
+  g_return_if_fail(widget != NULL);
+  g_return_if_fail(IS_FLOW_GRID(widget));
+
+  priv = flow_grid_get_instance_private(FLOW_GRID(widget));
+
+  GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_height(widget,minimal,natural);
+
+  if(priv->cols>0 && priv->limit)
+    *minimal = MIN(*natural,1);
+}
+
 
 static void flow_grid_class_init ( FlowGridClass *kclass )
 {
@@ -40,36 +68,6 @@ GtkWidget *flow_grid_new( gboolean limit )
   priv->limit = limit;
   
   return w;
-}
-
-static void flow_grid_get_preferred_width (GtkWidget *widget, gint *minimal, gint *natural)
-{
-  FlowGridPrivate *priv;
-
-  g_return_if_fail(widget != NULL);
-  g_return_if_fail(IS_FLOW_GRID(widget));
-
-  priv = flow_grid_get_instance_private(FLOW_GRID(widget));
-
-  GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_width(widget,minimal,natural);
-
-  if(priv->rows>0 && priv->limit )
-    *minimal = MIN(*natural,1);
-}
-
-static void flow_grid_get_preferred_height (GtkWidget *widget, gint *minimal, gint *natural)
-{
-  FlowGridPrivate *priv;
-
-  g_return_if_fail(widget != NULL);
-  g_return_if_fail(IS_FLOW_GRID(widget));
-
-  priv = flow_grid_get_instance_private(FLOW_GRID(widget));
-
-  GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_height(widget,minimal,natural);
-
-  if(priv->cols>0 && priv->limit)
-    *minimal = MIN(*natural,1);
 }
 
 void flow_grid_set_cols ( GtkWidget *cgrid, gint cols )
