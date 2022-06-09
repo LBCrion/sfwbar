@@ -1,0 +1,42 @@
+#ifndef __FLOWGRID_H__
+#define __FLOWGRID_H__
+
+#include <gtk/gtk.h>
+
+#define FLOW_GRID_TYPE            (flow_grid_get_type())
+#define FLOW_GRID(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), FLOW_GRID_TYPE, FlowGrid))
+#define FLOW_GRID_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), FLOW_GRID_TYPE, FlowGridClass))
+#define IS_FLOW_GRID(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj), FLOW_GRID_TYPE))
+#define IS_FLOW_GRIDCLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), FLOW_GRID_TYPE))
+
+typedef struct _FlowGrid FlowGrid;
+typedef struct _FlowGridClass FlowGridClass;
+
+struct _FlowGrid
+{
+  GtkGrid grid;
+};
+
+struct _FlowGridClass
+{
+  GtkGridClass parent_class;
+};
+
+typedef struct _FlowGridPrivate FlowGridPrivate;
+
+struct _FlowGridPrivate
+{
+  gint cols,rows,i;
+  gboolean limit;
+};
+
+GType flow_grid_get_type ( void );
+
+GtkWidget *flow_grid_new( gboolean limit );
+void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );
+void flow_grid_set_cols ( GtkWidget *cgrid, gint cols );
+void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w );
+void flow_grid_pad ( GtkWidget *cgrid );
+void flow_grid_clean ( GtkWidget *cgrid );
+
+#endif

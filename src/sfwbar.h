@@ -7,6 +7,7 @@
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 #include "scaleimage.h"
 #include "chart.h"
+#include "flowgrid.h"
 
 #define MAX_BUTTON 8
 
@@ -183,13 +184,6 @@ gboolean layout_tooltip_update ( GtkWidget *widget, gint x, gint y,
     gboolean kbmode, GtkTooltip *tooltip, widget_t *lw );
 void layout_emit_trigger ( gchar *trigger );
 widget_t *widget_from_id ( gchar *id );
-
-GtkWidget *flow_grid_new( gboolean limit );
-void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );
-void flow_grid_set_cols ( GtkWidget *cgrid, gint cols );
-void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w );
-void flow_grid_pad ( GtkWidget *cgrid );
-void flow_grid_clean ( GtkWidget *cgrid );
 
 void scanner_expire ( void );
 int scanner_reset_vars ( GList * );

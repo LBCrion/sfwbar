@@ -3,40 +3,12 @@
  * Copyright 2020-2021 Lev Babiev
  */
 
+#include "sfwbar.h"
 
-#include <gtk/gtk.h>
-
-#define FLOW_GRID_TYPE            (flow_grid_get_type())
-#define FLOW_GRID(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), FLOW_GRID_TYPE, FlowGrid))
-#define FLOW_GRID_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), FLOW_GRID_TYPE, FlowGridClass))
-#define IS_FLOW_GRID(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj), FLOW_GRID_TYPE))
-#define IS_FLOW_GRIDCLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), FLOW_GRID_TYPE))
+G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, GTK_TYPE_GRID, G_ADD_PRIVATE (FlowGrid));
 
 static void flow_grid_get_preferred_width (GtkWidget *widget, gint *minimal, gint *natural);
 static void flow_grid_get_preferred_height (GtkWidget *widget, gint *minimal, gint *natural);
-
-typedef struct _FlowGrid FlowGrid;
-typedef struct _FlowGridClass FlowGridClass;
-
-struct _FlowGrid
-{
-  GtkGrid grid;
-};
-
-struct _FlowGridClass
-{
-  GtkGridClass parent_class;
-};
-
-typedef struct _FlowGridPrivate FlowGridPrivate;
-
-struct _FlowGridPrivate
-{
-  gint cols,rows,i;
-  gboolean limit;
-};
-
-G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, GTK_TYPE_GRID, G_ADD_PRIVATE (FlowGrid));
 
 static void flow_grid_class_init ( FlowGridClass *kclass )
 {
