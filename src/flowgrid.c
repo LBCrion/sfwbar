@@ -57,7 +57,7 @@ static void flow_grid_init ( FlowGrid *cgrid )
   gtk_grid_set_column_homogeneous(GTK_GRID(cgrid),TRUE);
 }
 
-GtkWidget *flow_grid_new( gboolean limit )
+GtkWidget *flow_grid_new( gboolean limit, GCompareFunc comp_f )
 {
   GtkWidget *w;
   FlowGridPrivate *priv;
@@ -66,6 +66,7 @@ GtkWidget *flow_grid_new( gboolean limit )
   priv = flow_grid_get_instance_private(FLOW_GRID(w));
 
   priv->limit = limit;
+  priv->comp = comp_f;
   
   return w;
 }
@@ -159,4 +160,64 @@ void flow_grid_clean ( GtkWidget *cgrid )
 
   gtk_container_foreach(GTK_CONTAINER(cgrid),
       (GtkCallback)flow_grid_remove_widget,cgrid);
+}
+
+void flow_grid_invalidate ( GtkWidget *self )
+{
+  FlowGridPrivate *priv;
+  g_return_if_fail(IS_FLOW_GRID(self));
+
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  priv->invalid = TRUE;
+}
+
+void flow_grid_add_child ( GtkWidget *self, GtkWidget *child )
+{
+  FlowGridPrivate *priv;
+  g_return_if_fail(IS_FLOW_GRID(self));
+
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  priv->children = g_list_insert_sorted(priv->children,child,priv->comp);
+}
+
+void flow_grid_delete_child ( GtkWidget *self, void *parent )
+{
+  FlowGridPrivate *priv;
+  GList *iter;
+
+  g_return_if_fail(IS_FLOW_GRID(self));
+
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+  for(iter=priv->children;iter;iter=g_list_next(iter))
+    if(flow_item_get_parent(iter->data)==parent)
+    {
+      gtk_widget_destroy(iter->data);
+      priv->children = g_list_remove_link(priv->children,iter);
+    }
+}
+
+void flow_grid_update ( GtkWidget *self )
+{
+  FlowGridPrivate *priv;
+  GList *iter;
+
+  g_return_if_fail(IS_FLOW_GRID(self));
+
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  if(!priv->invalid)
+    return;
+  priv->invalid = FALSE;
+
+  flow_grid_clean(self);
+//  if(priv->comp)
+//    priv->children = g_list_sort(priv->children,priv->comp);
+  for(iter=priv->children;iter;iter=g_list_next(iter))
+  {
+    flow_item_update(iter->data);
+    flow_grid_attach(self,iter->data);
+  }
+  flow_grid_pad(self);
 }

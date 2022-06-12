@@ -17,6 +17,18 @@ struct _FlowItemClass
   void* (*get_parent) ( GtkWidget *self );
 };
 
+typedef struct _FlowItemPrivate FlowItemPrivate;
+
+struct _FlowItemPrivate
+{
+  gboolean active;
+};
+
 GType flow_item_get_type ( void );
+
+void flow_item_update ( GtkWidget *self );
+void *flow_item_get_parent ( GtkWidget *self );
+void flow_item_set_active ( GtkWidget *self, gboolean );
+gboolean flow_item_get_active ( GtkWidget *self );
 
 #endif

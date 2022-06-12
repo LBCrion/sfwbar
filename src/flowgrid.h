@@ -28,15 +28,22 @@ struct _FlowGridPrivate
 {
   gint cols,rows,i;
   gboolean limit;
+  gboolean invalid;
+  GList *children;
+  GCompareFunc comp;
 };
 
 GType flow_grid_get_type ( void );
 
-GtkWidget *flow_grid_new( gboolean limit );
+GtkWidget *flow_grid_new( gboolean limit, GCompareFunc );
 void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );
 void flow_grid_set_cols ( GtkWidget *cgrid, gint cols );
 void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w );
 void flow_grid_pad ( GtkWidget *cgrid );
 void flow_grid_clean ( GtkWidget *cgrid );
+void flow_grid_add_child ( GtkWidget *self, GtkWidget *child );
+void flow_grid_update ( GtkWidget *self );
+void flow_grid_invalidate ( GtkWidget *self );
+void flow_grid_delete_child ( GtkWidget *self, void *parent );
 
 #endif

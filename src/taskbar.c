@@ -10,30 +10,13 @@
 
 static GList *taskbars;
 
-void taskbar_invalidate ( GtkWidget *taskbar )
-{
-  g_object_set_data(G_OBJECT(taskbar),"invalid",GINT_TO_POINTER(TRUE));
-}
-
 void taskbar_invalidate_all ( void )
 {
   GList *iter;
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
     if(iter->data)
-      taskbar_invalidate(((widget_t *)iter->data)->widget);
-}
-
-GtkWidget *taskbar_item_lookup ( GtkWidget *taskbar, void *parent )
-{
-  GList *iter;
-
-  iter = g_object_get_data(G_OBJECT(taskbar),"items");
-  for(;iter;iter=g_list_next(iter))
-    if(taskbar_item_get_window(iter->data) == parent)
-      return iter->data;
-
-  return NULL;
+      flow_grid_invalidate(((widget_t *)iter->data)->widget);
 }
 
 void taskbar_item_init_for_all ( window_t *win )
@@ -47,15 +30,7 @@ void taskbar_item_init_for_all ( window_t *win )
 
 void taskbar_item_destroy ( GtkWidget *taskbar, window_t *win )
 {
-  GtkWidget *item;
-
-  if(!taskbar)
-    return;
-
-  item = taskbar_item_lookup(taskbar,win);
-
-  if(item)
-    gtk_widget_destroy(item);
+  flow_grid_delete_child(taskbar,win);
 }
 
 void taskbar_item_destroy_for_all ( window_t *win )
@@ -69,39 +44,10 @@ void taskbar_item_destroy_for_all ( window_t *win )
 
 void taskbar_update( GtkWidget *taskbar )
 {
-  GtkWidget *item;
-  GList *iter;
-  gchar *output;
-  gboolean filter_output;
-
   g_return_if_fail(taskbar);
 
-  if(!GPOINTER_TO_INT(g_object_get_data(
-          G_OBJECT(taskbar),"invalid")))
-    return;
-
-  output = bar_get_output(taskbar);
-  flow_grid_clean(taskbar);
-  filter_output = GPOINTER_TO_INT(
-      g_object_get_data(G_OBJECT(taskbar),"filter_output"));
-  iter = g_object_get_data(G_OBJECT(taskbar),"items");
-  for (; iter; iter = g_list_next(iter) )
-  {
-    item = iter->data;
-    if(item)
-    {
-      if( !filter_output || !!taskbar_item_get_window(item)->output ||
-          g_strcmp0(taskbar_item_get_window(item)->output,output))
-      {
-        taskbar_item_update(item);
-        flow_grid_attach(taskbar,item);
-      }
-    }
-  }
-  flow_grid_pad(taskbar);
+  flow_grid_update(taskbar);
   gtk_widget_show_all(taskbar);
-
-  g_object_set_data(G_OBJECT(taskbar),"invalid", GINT_TO_POINTER(FALSE));
 }
 
 void taskbar_update_all ( void )
@@ -123,5 +69,5 @@ void taskbar_init ( widget_t *lw )
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
     taskbar_item_new(iter->data,lw->widget);
 
-  taskbar_invalidate(lw->widget);
+  flow_grid_invalidate(lw->widget);
 }

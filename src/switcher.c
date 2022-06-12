@@ -15,7 +15,6 @@ static gchar hstate;
 static gint counter;
 static gint title_width = -1;
 static gboolean icons, labels;
-static gboolean invalid;
 static GList *focus;
 
 void switcher_init ( void )
@@ -45,7 +44,7 @@ void switcher_config ( gint ncols, gchar *css, gint nmax,
 
   if(!switcher)
   {
-    grid = flow_grid_new(FALSE);
+    grid = flow_grid_new(FALSE,(GCompareFunc)switcher_item_compare);
     gtk_widget_set_name(grid, "switcher");
     switcher_init();
   }
@@ -73,12 +72,13 @@ void switcher_config ( gint ncols, gchar *css, gint nmax,
     labels = TRUE;
 
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
-    switcher_item_new(iter->data,grid);
+    switcher_window_init(iter->data);
 }
 
 void switcher_invalidate ( void )
 {
-  invalid = TRUE;
+  if(grid)
+    flow_grid_invalidate(grid);
 }
 
 gboolean switcher_event ( struct json_object *obj )
@@ -104,7 +104,6 @@ gboolean switcher_event ( struct json_object *obj )
         g_free(id);
       }
       g_free(state);
-
     }
   }
   else
@@ -129,12 +128,13 @@ gboolean switcher_event ( struct json_object *obj )
 
 void switcher_window_init ( window_t *win)
 {
-  switcher_item_new(win,grid);
+  if(!grid)
+    return;
+  flow_grid_add_child(grid,switcher_item_new(win,grid));
 }
 
 void switcher_update ( void )
 {
-  GList *item;
   window_t *win;
 
   if(!switcher)
@@ -146,21 +146,11 @@ void switcher_update ( void )
 
   if(counter > 0)
   {
-    if(!invalid)
-      return;
-
-    flow_grid_clean(grid);
-    for (item = wintree_get_list(); item; item = g_list_next(item) )
-    {
-      win = item->data;
-      switcher_item_update(win->switcher);
-      flow_grid_attach(grid,win->switcher);
-    }
+    flow_grid_update(grid);
     if(!gtk_widget_is_visible(switcher))
       switcher_init();
     gtk_widget_show_all(switcher);
     widget_set_css(switcher,NULL);
-    invalid = FALSE;
   }
   else
   {

@@ -110,6 +110,10 @@ void taskbar_item_update ( GtkWidget *self )
       GTK_STATE_FLAG_PRELIGHT);
 
   widget_set_css(self,NULL);
+
+  flow_item_set_active(self, !priv->win->output ||
+      !g_object_get_data(G_OBJECT(priv->taskbar),"filter_output") ||
+      g_strcmp0(priv->win->output, bar_get_output(priv->taskbar)));
 }
 
 window_t *taskbar_item_get_window ( GtkWidget *self )
@@ -185,8 +189,7 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
 
   priv->actions = g_object_get_data(G_OBJECT(taskbar),"actions");
   g_object_ref(G_OBJECT(self));
-  g_object_set_data(G_OBJECT(taskbar),"items", g_list_append(
-      g_object_get_data(G_OBJECT(taskbar),"items"), self));
+  flow_grid_add_child(taskbar,self);
 
   g_signal_connect(button,"clicked",G_CALLBACK(taskbar_item_button_cb),self);
   g_signal_connect(self,"button_press_event",
@@ -197,3 +200,14 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   return self;
 }
 
+gint taskbar_item_compare ( GtkWidget *a, GtkWidget *b )
+{
+  TaskbarItemPrivate *p1,*p2;
+
+  g_return_val_if_fail(IS_TASKBAR_ITEM(a),0);
+  g_return_val_if_fail(IS_TASKBAR_ITEM(b),0);
+
+  p1 = taskbar_item_get_instance_private(TASKBAR_ITEM(a));
+  p2 = taskbar_item_get_instance_private(TASKBAR_ITEM(b));
+  return wintree_compare(p1->win,p2->win);
+}

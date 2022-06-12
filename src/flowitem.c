@@ -5,7 +5,8 @@
 
 #include "sfwbar.h"
 
-G_DEFINE_TYPE(FlowItem, flow_item, GTK_TYPE_EVENT_BOX);
+G_DEFINE_TYPE_WITH_CODE(FlowItem, flow_item, GTK_TYPE_EVENT_BOX,
+    G_ADD_PRIVATE(FlowItem));
 
 void test ( GtkWidget *w )
 {
@@ -16,6 +17,45 @@ static void flow_item_class_init ( FlowItemClass *kclass )
 {
 }
 
-static void flow_item_init ( FlowItem *item )
+void flow_item_set_active ( GtkWidget *self, gboolean active )
 {
+  FlowItemPrivate *priv;
+
+  g_return_if_fail(FLOW_IS_ITEM(self));
+
+  priv = flow_item_get_instance_private(FLOW_ITEM(self));
+  priv->active = active;
+}
+
+gboolean flow_item_get_active ( GtkWidget *self )
+{
+  FlowItemPrivate *priv;
+
+  g_return_val_if_fail(FLOW_IS_ITEM(self),FALSE);
+
+  priv = flow_item_get_instance_private(FLOW_ITEM(self));
+  return priv->active;
+}
+
+static void flow_item_init ( FlowItem *self )
+{
+  flow_item_set_active(GTK_WIDGET(self),TRUE);
+}
+
+void flow_item_update ( GtkWidget *self )
+{
+  g_return_if_fail(FLOW_IS_ITEM(self));
+
+  if(FLOW_ITEM_GET_CLASS(self)->update)
+    FLOW_ITEM_GET_CLASS(self)->update(self);
+}
+
+void *flow_item_get_parent ( GtkWidget *self )
+{
+  g_return_val_if_fail(FLOW_IS_ITEM(self),NULL);
+
+  if(FLOW_ITEM_GET_CLASS(self)->get_parent)
+    return FLOW_ITEM_GET_CLASS(self)->get_parent(self);
+  else
+    return NULL;
 }

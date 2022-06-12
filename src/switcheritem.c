@@ -126,3 +126,14 @@ GtkWidget *switcher_item_new( window_t *win, GtkWidget *switcher )
   return self;
 }
 
+gint switcher_item_compare ( GtkWidget *a, GtkWidget *b )
+{
+  SwitcherItemPrivate *p1,*p2;
+
+  g_return_val_if_fail(IS_SWITCHER_ITEM(a),0);
+  g_return_val_if_fail(IS_SWITCHER_ITEM(b),0);
+
+  p1 = switcher_item_get_instance_private(SWITCHER_ITEM(a));
+  p2 = switcher_item_get_instance_private(SWITCHER_ITEM(b));
+  return wintree_compare(p1->win,p2->win);
+}

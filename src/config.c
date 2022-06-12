@@ -919,16 +919,16 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
         break;
       case G_TOKEN_TASKBAR:
         scanner->max_parse_errors=FALSE;
-        lw->widget = flow_grid_new(TRUE);
+        lw->widget = flow_grid_new(TRUE,(GCompareFunc)taskbar_item_compare);
         break;
       case G_TOKEN_PAGER:
         scanner->max_parse_errors=FALSE;
-        lw->widget = flow_grid_new(TRUE);
+        lw->widget = flow_grid_new(TRUE,NULL);
         pager_set_numeric(TRUE);
         break;
       case G_TOKEN_TRAY:
         scanner->max_parse_errors=FALSE;
-        lw->widget = flow_grid_new(TRUE);
+        lw->widget = flow_grid_new(TRUE,NULL);
         break;
       default:
         g_scanner_error(scanner,"Unexpected token in 'layout'");

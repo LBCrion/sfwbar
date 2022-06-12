@@ -131,6 +131,7 @@ gpointer wintree_get_focus ( void );
 gchar *wintree_get_active ( void );
 gboolean wintree_is_focused ( gpointer id );
 GList *wintree_get_list ( void );
+gint wintree_compare ( window_t *a, window_t *b);
 
 void wayland_init ( void );
 void wayland_set_idle_inhibitor ( GtkWidget *widget, gboolean inhibit );
