@@ -42,8 +42,6 @@ static void toplevel_handle_title(void *data, wlr_fth *tl, const gchar *title)
     return;
   str_assign(&(win->title), (gchar *)title);
   wintree_set_active(win->title);
-  taskbar_set_label_for_all(win,win->title);
-  switcher_set_label(win,win->title);
   taskbar_invalidate_all();
   switcher_invalidate();
 }
@@ -70,8 +68,8 @@ static void toplevel_handle_done(void *data, wlr_fth *tl)
   wintree_set_active(win->title);
   if(win->valid)
   {
-    taskbar_set_label_for_all(win,win->title);
-    switcher_set_label(win,win->title);
+    taskbar_invalidate_all();
+    switcher_invalidate();
   }
   else
     wintree_window_append(win);

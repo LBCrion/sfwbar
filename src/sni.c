@@ -1030,7 +1030,6 @@ void sni_update ( void )
 
   flow_grid_pad(tray);
   widget_set_css(tray,NULL);
-  gtk_widget_show_all(tray);
   invalid = FALSE;
 }
 

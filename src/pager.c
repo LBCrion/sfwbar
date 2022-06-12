@@ -33,12 +33,12 @@ void pager_add_pin ( gchar *pin )
   pager_pins = g_list_append(pager_pins,pin);
 }
 
-void pager_button_click( GtkWidget *widget, gpointer data )
+static void pager_button_click( GtkWidget *self, gpointer data )
 {
   gchar *label;
   if(!sway_ipc_active())
     return;
-  label = (gchar *)gtk_button_get_label(GTK_BUTTON(widget));
+  label = (gchar *)gtk_button_get_label(GTK_BUTTON(self));
   if(label==NULL)
     return;
   sway_ipc_command("workspace '%s'",label);

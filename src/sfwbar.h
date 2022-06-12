@@ -5,9 +5,6 @@
 #include <gtk/gtk.h>
 #include <json.h>
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
-#include "scaleimage.h"
-#include "chart.h"
-#include "flowgrid.h"
 
 #define MAX_BUTTON 8
 
@@ -248,5 +245,13 @@ enum {
   VF_CHTIME = 1,
   VF_NOGLOB = 2
 };
+
+#include "scaleimage.h"
+#include "chart.h"
+#include "flowgrid.h"
+#include "flowitem.h"
+#include "taskbaritem.h"
+#include "switcheritem.h"
+#include "pageritem.h"
 
 #endif
