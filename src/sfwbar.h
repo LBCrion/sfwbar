@@ -79,6 +79,26 @@ typedef struct layout_widget {
   struct rect rect;
 } widget_t;
 
+#define MAX_STRING 9
+
+typedef struct sni_item {
+  gchar *uid;
+  gchar *udest;
+  gchar *dest;
+  gchar *path;
+  gchar *iface;
+  gchar *string[MAX_STRING];
+  gchar *menu_path;
+  GdkPixbuf *pixbuf[3];
+  gboolean menu;
+  gboolean dirty;
+  gint ref;
+  guint signal;
+  GCancellable *cancel;
+  GtkWidget *image;
+  GtkWidget *box;
+} sni_item_t;
+
 void action_exec ( GtkWidget *, action_t *, GdkEvent *, window_t *, guint16 *);
 void action_free ( action_t *, GObject *);
 void action_function_add ( gchar *, GList *);
@@ -162,6 +182,10 @@ void pager_update ( void );
 
 void sni_init ( GtkWidget *w );
 void sni_update ( void );
+gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data);
+gboolean sni_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
+    gpointer data );
+void sni_item_set_icon ( sni_item_t *sni, gint icon, gint pix );
 
 GtkWidget *layout_menu_get ( gchar *name );
 void layout_menu_add ( gchar *name, GtkWidget *menu );
@@ -247,6 +271,25 @@ enum {
   VF_NOGLOB = 2
 };
 
+enum {
+  SNI_PROP_CATEGORY = 0,
+  SNI_PROP_ID = 1,
+  SNI_PROP_TITLE = 2,
+  SNI_PROP_STATUS = 3,
+  SNI_PROP_ICON = 4,
+  SNI_PROP_OVLAY = 5,
+  SNI_PROP_ATTN = 6,
+  SNI_PROP_ATTNMOV = 7,
+  SNI_PROP_THEME = 8,
+  SNI_PROP_ICONPIX = 9,
+  SNI_PROP_OVLAYPIX = 10,
+  SNI_PROP_ATTNPIX = 11,
+  SNI_PROP_WINDOWID = 12,
+  SNI_PROP_TOOLTIP = 13,
+  SNI_PROP_ISMENU = 14,
+  SNI_PROP_MENU = 15
+};
+
 #include "scaleimage.h"
 #include "chart.h"
 #include "flowgrid.h"
@@ -254,5 +297,6 @@ enum {
 #include "taskbaritem.h"
 #include "switcheritem.h"
 #include "pageritem.h"
+#include "sniitem.h"
 
 #endif

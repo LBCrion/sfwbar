@@ -928,7 +928,7 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
         break;
       case G_TOKEN_TRAY:
         scanner->max_parse_errors=FALSE;
-        lw->widget = flow_grid_new(TRUE,NULL);
+        lw->widget = flow_grid_new(TRUE,(GCompareFunc)sni_item_compare);
         break;
       default:
         g_scanner_error(scanner,"Unexpected token in 'layout'");

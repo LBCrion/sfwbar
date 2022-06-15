@@ -72,18 +72,6 @@ static void taskbar_item_button_cb( GtkWidget *widget, gpointer self )
 
 static void taskbar_item_destroy ( GtkWidget *self )
 {
-  TaskbarItemPrivate *priv;
-  GList *iter;
-
-  g_return_if_fail(IS_TASKBAR_ITEM(self));
-
-  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
-  iter = g_list_find(g_object_get_data(G_OBJECT(priv->taskbar),"items"),self);
-
-  if(iter)
-    g_object_set_data(G_OBJECT(priv->taskbar),"items",g_list_delete_link(
-      g_object_get_data(G_OBJECT(priv->taskbar),"items"),iter));
-
 }
 
 void taskbar_item_update ( GtkWidget *self )

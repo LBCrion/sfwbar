@@ -26,26 +26,15 @@ typedef struct _SniItemPrivate SniItemPrivate;
 
 struct _SniItemPrivate
 {
-  gchar *uid;
-  gchar *udest;
-  gchar *dest;
-  gchar *path;
-  gchar *iface;
-  gchar *string[MAX_STRING];
-  gchar *menu_path;
-  GdkPixbuf *pixbuf[3];
-  gboolean menu;
-  gboolean dirty;
-  gint ref;
-  guint signal;
-  GCancellable *cancel;
-  GtkWidget *image;
+  sni_item_t *sni;
+  GtkWidget *icon;
 };
 
 GType sni_item_get_type ( void );
 
-GtkWidget *sni_item_new ( sni_item_t * );
+GtkWidget *sni_item_new( sni_item_t *win, GtkWidget *tray );
 sni_item_t*sni_item_get_sni ( GtkWidget *self );
 void sni_item_update ( GtkWidget *self );
+gint sni_item_compare ( GtkWidget *a, GtkWidget *b );
 
 #endif

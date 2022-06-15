@@ -9,58 +9,20 @@
 #include <unistd.h>
 #include "sfwbar.h"
 
-#define MAX_STRING 9
-
-enum {
-  SNI_PROP_CATEGORY = 0,
-  SNI_PROP_ID = 1,
-  SNI_PROP_TITLE = 2,
-  SNI_PROP_STATUS = 3,
-  SNI_PROP_ICON = 4,
-  SNI_PROP_OVLAY = 5,
-  SNI_PROP_ATTN = 6,
-  SNI_PROP_ATTNMOV = 7,
-  SNI_PROP_THEME = 8,
-  SNI_PROP_ICONPIX = 9,
-  SNI_PROP_OVLAYPIX = 10,
-  SNI_PROP_ATTNPIX = 11,
-  SNI_PROP_WINDOWID = 12,
-  SNI_PROP_TOOLTIP = 13,
-  SNI_PROP_ISMENU = 14,
-  SNI_PROP_MENU = 15
-};
-
 static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
   "IconName", "OverlayIconName", "AttentionIconName", "AttentionMovieName",
   "IconThemePath", "IconPixmap", "OverlayIconPixmap", "AttentionIconPixmap",
   "ToolTip", "WindowId", "ItemIsMenu", "Menu" };
 
-struct sni_item {
-  gchar *uid;
-  gchar *udest;
-  gchar *dest;
-  gchar *path;
-  gchar *iface;
-  gchar *string[MAX_STRING];
-  gchar *menu_path;
-  GdkPixbuf *pixbuf[3];
-  gboolean menu;
-  gboolean dirty;
-  gint ref;
-  guint signal;
-  GCancellable *cancel;
-  GtkWidget *image;
-  GtkWidget *box;
-};
 
 struct sni_prop_wrapper {
   guint prop;
-  struct sni_item *sni;
+  sni_item_t *sni;
 };
 
 struct sni_menu_wrapper {
   GdkEvent *event;
-  struct sni_item *sni;
+  sni_item_t *sni;
 };
 
 struct sni_iface_item {
@@ -186,7 +148,7 @@ GtkWidget *sni_variant_get_pixbuf ( GVariant *dict, gchar *key )
   return img;
 }
 
-void sni_menu_item_cb ( GtkWidget *item, struct sni_item *sni )
+void sni_menu_item_cb ( GtkWidget *item, sni_item_t *sni )
 {
   GDBusConnection *con;
   gint32 *id = g_object_get_data(G_OBJECT(item),"sni_id");
@@ -363,7 +325,7 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
     g_variant_unref(result);
 }
 
-void sni_get_menu ( struct sni_item *sni, GdkEvent *event )
+void sni_get_menu ( sni_item_t *sni, GdkEvent *event )
 {
   GDBusConnection *con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
   struct sni_menu_wrapper *wrap = g_malloc(sizeof(struct sni_menu_wrapper));
@@ -425,7 +387,7 @@ GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
   return res;
 }
 
-void sni_item_set_icon ( struct sni_item *sni, gint icon, gint pix )
+void sni_item_set_icon ( sni_item_t *sni, gint icon, gint pix )
 {
   if(icon==-1)
   {
@@ -515,7 +477,7 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
   invalid = TRUE;
 }
 
-void sni_item_get_prop ( GDBusConnection *con, struct sni_item *sni,
+void sni_item_get_prop ( GDBusConnection *con, sni_item_t *sni,
     guint prop )
 {
   struct sni_prop_wrapper *wrap;
@@ -565,7 +527,7 @@ void sni_item_signal_cb (GDBusConnection *con, const gchar *sender,
 gboolean sni_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
     gpointer data )
 {
-  struct sni_item *sni = data;
+  sni_item_t *sni = data;
   GDBusConnection *con;
   gchar *dir;
   gint32 delta;
@@ -591,7 +553,7 @@ gboolean sni_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
 
 gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data)
 {
-  struct sni_item *sni = data;
+  sni_item_t *sni = data;
   GDBusConnection *con;
   gchar *method=NULL;
   GtkAllocation alloc,walloc;
@@ -658,21 +620,21 @@ gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data)
   return TRUE;
 }
 
-void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
+void sni_item_newx (GDBusConnection *con, struct sni_iface *iface,
     const gchar *uid)
 {
-  struct sni_item *sni;
+  sni_item_t *sni;
   gchar *path;
   guint i;
   GList *iter;
 
   for(iter=sni_items;iter!=NULL;iter=g_list_next(iter))
-    if(g_strcmp0(((struct sni_item *)iter->data)->uid,uid)==0)
+    if(g_strcmp0(((sni_item_t *)iter->data)->uid,uid)==0)
       break;
   if(iter!=NULL)
     return;
 
-  sni = g_malloc0(sizeof(struct sni_item));
+  sni = g_malloc0(sizeof(sni_item_t));
   sni->uid = g_strdup(uid);
   sni->cancel = g_cancellable_new();
   path = strchr(uid,'/');
@@ -687,18 +649,10 @@ void sni_item_new (GDBusConnection *con, struct sni_iface *iface,
     sni->dest = g_strdup(uid);
   }
   sni->iface = g_strdup(iface->item_iface);
-  sni->image = scale_image_new();
-  sni->box = gtk_event_box_new();
-  gtk_container_add(GTK_CONTAINER(sni->box),sni->image);
-  gtk_widget_add_events(GTK_WIDGET(sni->box),GDK_SCROLL_MASK);
-  g_signal_connect(G_OBJECT(sni->box),"button-press-event",
-      G_CALLBACK(sni_item_click_cb),sni);
-  g_signal_connect(G_OBJECT(sni->box),"scroll-event",
-      G_CALLBACK(sni_item_scroll_cb),sni);
-  g_object_ref(sni->box);
   sni->signal = g_dbus_connection_signal_subscribe(con,sni->dest,
       sni->iface,NULL,sni->path,NULL,0,sni_item_signal_cb,sni,NULL);
   sni_items = g_list_append(sni_items,sni);
+  sni_item_new(sni,tray);
   for(i=0;i<16;i++)
     sni_item_get_prop(con,sni,i);
   g_debug("sni: host %s: item registered: %s %s",iface->host_iface,sni->dest,
@@ -719,7 +673,7 @@ void sni_host_item_registered_cb ( GDBusConnection* con, const gchar* sender,
     return;
 
   g_variant_get (parameters, "(&s)", &parameter);
-  sni_item_new(con,host->data,parameter);
+  sni_item_newx(con,host->data,parameter);
 }
 
 void sni_watcher_item_lost_cb ( GDBusConnection *con, const gchar *name,
@@ -862,8 +816,8 @@ void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
       &watcher_vtable, watcher, NULL, NULL);
 
   for(iter=sni_items;iter!=NULL;iter=g_list_next(iter))
-    if(!g_strcmp0(((struct sni_item *)iter->data)->iface,watcher->item_iface))
-      sni_watcher_item_add(watcher,((struct sni_item *)iter->data)->uid);
+    if(!g_strcmp0(((sni_item_t *)iter->data)->iface,watcher->item_iface))
+      sni_watcher_item_add(watcher,((sni_item_t *)iter->data)->uid);
 }
 
 void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,
@@ -898,7 +852,7 @@ void sni_host_list_cb ( GDBusConnection *con, GAsyncResult *res,
   iter = g_variant_iter_new(inner);
   while((str=g_variant_iter_next_value(iter)))
   {
-    sni_item_new(con, iface, g_variant_get_string(str,NULL));
+    sni_item_newx(con, iface, g_variant_get_string(str,NULL));
     g_variant_unref(str);
   }
   g_variant_iter_free(iter);
@@ -931,7 +885,7 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
   const gchar* path, const gchar* interface, const gchar* signal,
   GVariant* parameters, gpointer data)
 {
-  struct sni_item *sni;
+  sni_item_t *sni;
   const gchar *parameter;
   GList *item;
   gint i;
@@ -941,7 +895,7 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
   g_debug("sni host %s: unregister item %s",host->host_iface, parameter);
 
   for(item=sni_items;item!=NULL;item=g_list_next(item))
-    if(g_strcmp0(((struct sni_item *)item->data)->uid,parameter)==0)
+    if(g_strcmp0(((sni_item_t *)item->data)->uid,parameter)==0)
       break;
   if(item==NULL)
     return;
@@ -956,8 +910,7 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
       g_object_unref(sni->pixbuf[i]);
   for(i=0;i<MAX_STRING;i++)
     g_free(sni->string[i]);
-  if(sni->box!=NULL)
-    g_object_unref(sni->box);
+  flow_grid_delete_child(tray,sni);
   g_free(sni->menu_path);
   g_free(sni->uid);
   g_free(sni->path);
@@ -1012,25 +965,7 @@ void sni_register ( gchar *name )
 
 void sni_update ( void )
 {
-  GList *iter;
-  struct sni_item *sni;
-
-  if( !tray || !invalid )
-    return;
-
-  flow_grid_clean(tray);
-
-  for(iter = sni_items;iter!=NULL;iter=g_list_next(iter))
-  {
-    sni = iter->data;
-    if(sni)
-      if(sni->string[SNI_PROP_STATUS])
-        flow_grid_attach(tray,sni->box);
-  }
-
-  flow_grid_pad(tray);
-  widget_set_css(tray,NULL);
-  invalid = FALSE;
+  flow_grid_update(tray);
 }
 
 void sni_init ( GtkWidget *w )

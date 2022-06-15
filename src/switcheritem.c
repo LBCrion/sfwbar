@@ -9,18 +9,6 @@ G_DEFINE_TYPE_WITH_CODE (SwitcherItem, switcher_item, FLOW_ITEM_TYPE, G_ADD_PRIV
 
 static void switcher_item_destroy ( GtkWidget *self )
 {
-  SwitcherItemPrivate *priv;
-  GList *iter;
-
-  g_return_if_fail(IS_SWITCHER_ITEM(self));
-
-  priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
-  iter = g_list_find(g_object_get_data(G_OBJECT(priv->switcher),"items"),self);
-
-  if(iter)
-    g_object_set_data(G_OBJECT(priv->switcher),"items",g_list_delete_link(
-      g_object_get_data(G_OBJECT(priv->switcher),"items"),iter));
-
 }
 
 void switcher_item_update ( GtkWidget *self )

@@ -187,6 +187,7 @@ void flow_grid_add_child ( GtkWidget *self, GtkWidget *child )
   priv->children = g_list_insert_sorted(priv->children,child,priv->comp);
   g_object_weak_ref(G_OBJECT(child),(GWeakNotify)flow_grid_clean_child,
       &(priv->children));
+  flow_grid_invalidate(self);
 }
 
 void flow_grid_delete_child ( GtkWidget *self, void *parent )
@@ -200,6 +201,7 @@ void flow_grid_delete_child ( GtkWidget *self, void *parent )
   for(iter=priv->children;iter;iter=g_list_next(iter))
     if(flow_item_get_parent(iter->data)==parent)
       gtk_widget_destroy(iter->data);
+  flow_grid_invalidate(self);
 }
 
 void flow_grid_update ( GtkWidget *self )
