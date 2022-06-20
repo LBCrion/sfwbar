@@ -7,6 +7,7 @@
 #include <gtk/gtk.h>
 #include <gtk-layer-shell.h>
 #include "sfwbar.h"
+#include "switcheritem.h"
 
 static GtkWidget *switcher;
 static GtkWidget *grid;
@@ -44,7 +45,7 @@ void switcher_config ( gint ncols, gchar *css, gint nmax,
 
   if(!switcher)
   {
-    grid = flow_grid_new(FALSE,(GCompareFunc)switcher_item_compare);
+    grid = flow_grid_new(FALSE,switcher_item_compare);
     gtk_widget_set_name(grid, "switcher");
     switcher_init();
   }

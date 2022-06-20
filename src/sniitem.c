@@ -5,6 +5,7 @@
  */
 
 #include "sfwbar.h"
+#include "sniitem.h"
 
 G_DEFINE_TYPE_WITH_CODE (SniItem, sni_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (SniItem));
 
@@ -86,7 +87,7 @@ GtkWidget *sni_item_new( sni_item_t *sni, GtkWidget *tray )
   return self;
 }
 
-gint sni_item_compare ( GtkWidget *a, GtkWidget *b )
+gint sni_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
 {
   SniItemPrivate *p1,*p2;
 

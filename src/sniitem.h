@@ -35,6 +35,6 @@ GType sni_item_get_type ( void );
 GtkWidget *sni_item_new( sni_item_t *win, GtkWidget *tray );
 sni_item_t*sni_item_get_sni ( GtkWidget *self );
 void sni_item_update ( GtkWidget *self );
-gint sni_item_compare ( GtkWidget *a, GtkWidget *b );
+gint sni_item_compare ( GtkWidget *, GtkWidget *, GtkWidget * );
 
 #endif

@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <gtk/gtk.h>
 #include "sfwbar.h"
+#include "taskbaritem.h"
 
 static GList *taskbars;
 

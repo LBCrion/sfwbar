@@ -339,7 +339,10 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
     obj = json_tokener_parse(response);
 
     if(etype==0x80000000)
-      pager_update();
+    {
+      pager_event(obj);
+//      pager_update();
+    }
 
     if(etype==0x80000004)
     {

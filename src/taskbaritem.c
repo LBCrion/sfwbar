@@ -4,6 +4,7 @@
  */
 
 #include "sfwbar.h"
+#include "taskbaritem.h"
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarItem, taskbar_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (TaskbarItem));
 
@@ -188,7 +189,7 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   return self;
 }
 
-gint taskbar_item_compare ( GtkWidget *a, GtkWidget *b )
+gint taskbar_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
 {
   TaskbarItemPrivate *p1,*p2;
 

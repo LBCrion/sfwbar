@@ -24,21 +24,26 @@ struct _PagerItemClass
 
 typedef struct _PagerItemPrivate PagerItemPrivate;
 
+typedef struct workspace_s {
+  gint id;
+  gchar *name;
+  gboolean visible;
+  GtkWidget *pager;
+} workspace_t;
+
 struct _PagerItemPrivate
 {
   GtkWidget *button;
-  GtkWidget *label;
   GtkWidget *pager;
-  gboolean visible;
-  gboolean focused;
+  workspace_t *ws;
 };
 
 GType pager_item_get_type ( void );
 
-GtkWidget *pager_item_new( gchar * );
-gchar *pager_item_get_label ( GtkWidget *self );
+gboolean workspace_is_focused ( workspace_t *ws );
+GtkWidget *pager_item_new( workspace_t *ws, GtkWidget *pager );
+workspace_t *pager_item_get_workspace ( GtkWidget *self );
 void pager_item_update ( GtkWidget *self );
-void pager_item_set_visible ( GtkWidget *, gboolean );
-void pager_item_set_focused ( GtkWidget *, gboolean );
+gint pager_item_compare ( GtkWidget *, GtkWidget *, GtkWidget * );
 
 #endif

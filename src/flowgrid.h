@@ -30,12 +30,13 @@ struct _FlowGridPrivate
   gboolean limit;
   gboolean invalid;
   GList *children;
-  GCompareFunc comp;
+  gint (*comp)( GtkWidget *, GtkWidget *, GtkWidget * );
 };
 
 GType flow_grid_get_type ( void );
 
-GtkWidget *flow_grid_new( gboolean limit, GCompareFunc );
+GtkWidget *flow_grid_new( gboolean limit,
+    gint (*comp_f) ( GtkWidget *, GtkWidget *, GtkWidget *) );
 void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );
 void flow_grid_set_cols ( GtkWidget *cgrid, gint cols );
 void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w );

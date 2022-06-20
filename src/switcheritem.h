@@ -39,6 +39,6 @@ GType switcher_item_get_type ( void );
 GtkWidget *switcher_item_new( window_t *win, GtkWidget *switcher );
 window_t *switcher_item_get_window ( GtkWidget *self );
 void switcher_item_update ( GtkWidget *self );
-gint switcher_item_compare ( GtkWidget *a, GtkWidget *b );
+gint switcher_item_compare ( GtkWidget *, GtkWidget *, GtkWidget * );
 
 #endif

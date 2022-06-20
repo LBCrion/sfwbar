@@ -5,6 +5,10 @@
 
 #include "sfwbar.h"
 #include "config.h"
+#include "pageritem.h"
+#include "taskbaritem.h"
+#include "switcheritem.h"
+#include "sniitem.h"
 #include <fcntl.h>
 #include <sys/stat.h>
 
@@ -547,7 +551,7 @@ void config_get_pins ( GScanner *scanner, widget_t *lw )
           "expecting a string in pins = string [,string]"))
       break;
     g_scanner_get_next_token(scanner);
-    pager_add_pin(g_strdup(scanner->value.v_string));
+    pager_add_pin(lw->widget,g_strdup(scanner->value.v_string));
   } while ( g_scanner_peek_next_token(scanner)==',');
   config_optional_semicolon(scanner);
 }
@@ -792,7 +796,8 @@ gboolean config_widget_props ( GScanner *scanner, widget_t *lw )
           g_scanner_error(scanner,"this widget has no property 'preview'");
           break;
         }
-        pager_set_preview(config_assign_boolean(scanner,FALSE,"preview"));
+        g_object_set_data(G_OBJECT(lw->widget),"preview",
+            GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"preview")));
         break;
       case G_TOKEN_NUMERIC:
         if(lw->wtype != G_TOKEN_PAGER)
@@ -800,7 +805,8 @@ gboolean config_widget_props ( GScanner *scanner, widget_t *lw )
           g_scanner_error(scanner,"this widget has no property 'numeric'");
           break;
         }
-        pager_set_numeric(config_assign_boolean(scanner,TRUE,"numeric"));
+        g_object_set_data(G_OBJECT(lw->widget),"sort_numeric",
+            GINT_TO_POINTER(config_assign_boolean(scanner,TRUE,"numeric")));
         break;
       case G_TOKEN_PEROUTPUT:
         if(lw->wtype == G_TOKEN_TASKBAR)
@@ -919,16 +925,17 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
         break;
       case G_TOKEN_TASKBAR:
         scanner->max_parse_errors=FALSE;
-        lw->widget = flow_grid_new(TRUE,(GCompareFunc)taskbar_item_compare);
+        lw->widget = flow_grid_new(TRUE,taskbar_item_compare);
         break;
       case G_TOKEN_PAGER:
         scanner->max_parse_errors=FALSE;
-        lw->widget = flow_grid_new(TRUE,NULL);
-        pager_set_numeric(TRUE);
+        lw->widget = flow_grid_new(TRUE,pager_item_compare);
+        g_object_set_data(G_OBJECT(lw->widget),"sort_numeric",
+            GINT_TO_POINTER(TRUE));
         break;
       case G_TOKEN_TRAY:
         scanner->max_parse_errors=FALSE;
-        lw->widget = flow_grid_new(TRUE,(GCompareFunc)sni_item_compare);
+        lw->widget = flow_grid_new(TRUE,sni_item_compare);
         break;
       default:
         g_scanner_error(scanner,"Unexpected token in 'layout'");

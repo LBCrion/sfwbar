@@ -177,8 +177,9 @@ void switcher_config ( gint, gchar *, gint, gboolean, gboolean, gint );
 void pager_init ( GtkWidget * );
 void pager_set_preview ( gboolean pv );
 void pager_set_numeric ( gboolean pn );
-void pager_add_pin ( gchar *pin );
+void pager_add_pin ( GtkWidget *pager, gchar *pin );
 void pager_update ( void );
+void pager_event ( struct json_object *obj );
 
 void sni_init ( GtkWidget *w );
 void sni_update ( void );
@@ -294,9 +295,5 @@ enum {
 #include "chart.h"
 #include "flowgrid.h"
 #include "flowitem.h"
-#include "taskbaritem.h"
-#include "switcheritem.h"
-#include "pageritem.h"
-#include "sniitem.h"
 
 #endif

@@ -57,7 +57,8 @@ static void flow_grid_init ( FlowGrid *cgrid )
   gtk_grid_set_column_homogeneous(GTK_GRID(cgrid),TRUE);
 }
 
-GtkWidget *flow_grid_new( gboolean limit, GCompareFunc comp_f )
+GtkWidget *flow_grid_new( gboolean limit,
+    gint (*comp_f) ( GtkWidget *, GtkWidget *, GtkWidget *) )
 {
   GtkWidget *w;
   FlowGridPrivate *priv;
@@ -184,7 +185,7 @@ void flow_grid_add_child ( GtkWidget *self, GtkWidget *child )
 
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
-  priv->children = g_list_insert_sorted(priv->children,child,priv->comp);
+  priv->children = g_list_prepend(priv->children,child);
   g_object_weak_ref(G_OBJECT(child),(GWeakNotify)flow_grid_clean_child,
       &(priv->children));
   flow_grid_invalidate(self);
@@ -218,6 +219,8 @@ void flow_grid_update ( GtkWidget *self )
   priv->invalid = FALSE;
 
   flow_grid_clean(self);
+  priv->children = g_list_sort_with_data(priv->children,
+      (GCompareDataFunc)priv->comp,self);
   for(iter=priv->children;iter;iter=g_list_next(iter))
   {
     flow_item_update(iter->data);

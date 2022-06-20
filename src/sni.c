@@ -8,6 +8,7 @@
 #include <gio/gio.h>
 #include <unistd.h>
 #include "sfwbar.h"
+#include "sniitem.h"
 
 static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
   "IconName", "OverlayIconName", "AttentionIconName", "AttentionMovieName",

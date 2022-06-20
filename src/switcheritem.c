@@ -4,6 +4,7 @@
  */
 
 #include "sfwbar.h"
+#include "switcheritem.h"
 
 G_DEFINE_TYPE_WITH_CODE (SwitcherItem, switcher_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (SwitcherItem));
 
@@ -114,7 +115,7 @@ GtkWidget *switcher_item_new( window_t *win, GtkWidget *switcher )
   return self;
 }
 
-gint switcher_item_compare ( GtkWidget *a, GtkWidget *b )
+gint switcher_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
 {
   SwitcherItemPrivate *p1,*p2;
 
