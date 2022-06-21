@@ -174,6 +174,12 @@ widget_t *layout_widget_new ( void )
   return lw;
 }
 
+gboolean layout_widget_style ( struct layout_widget *lw )
+{
+  gtk_widget_set_name(lw->widget,lw->estyle);
+  return FALSE;
+}
+
 gboolean layout_widget_draw ( widget_t *lw )
 {
   if(GTK_IS_LABEL(lw->widget))
@@ -451,10 +457,7 @@ void layout_emit_trigger ( gchar *trigger )
     if(layout_widget_cache(lw->value,&lw->evalue))
       layout_widget_draw(lw);
     if(layout_widget_cache(lw->style,&lw->estyle))
-    {
-      gtk_widget_set_name(lw->widget,lw->estyle);
-      widget_set_css(lw->widget,NULL);
-    }
+      g_main_context_invoke(gmc,(GSourceFunc)layout_widget_style,lw);
   }
   action = action_trigger_lookup(trigger);
   if(action)
