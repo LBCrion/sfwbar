@@ -237,7 +237,7 @@ gpointer flow_grid_find_child ( GtkWidget *self, gpointer parent )
   FlowGridPrivate *priv;
   GList *iter;
 
-  g_return_if_fail(IS_FLOW_GRID(self));
+  g_return_val_if_fail(IS_FLOW_GRID(self),NULL);
 
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
