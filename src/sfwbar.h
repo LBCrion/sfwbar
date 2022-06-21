@@ -174,6 +174,7 @@ void switcher_set_label ( window_t *win, gchar *title );
 void switcher_window_init ( window_t *win);
 void switcher_config ( gint, gchar *, gint, gboolean, gboolean, gint );
 
+void pager_populate ( void );
 void pager_init ( GtkWidget * );
 void pager_set_preview ( gboolean pv );
 void pager_set_numeric ( gboolean pn );

@@ -102,7 +102,7 @@ void taskbar_item_update ( GtkWidget *self )
 
   flow_item_set_active(self, !priv->win->output ||
       !g_object_get_data(G_OBJECT(priv->taskbar),"filter_output") ||
-      g_strcmp0(priv->win->output, bar_get_output(priv->taskbar)));
+      !g_strcmp0(priv->win->output, bar_get_output(priv->taskbar)));
 }
 
 window_t *taskbar_item_get_window ( GtkWidget *self )

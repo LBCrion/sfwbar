@@ -8,11 +8,6 @@
 G_DEFINE_TYPE_WITH_CODE(FlowItem, flow_item, GTK_TYPE_EVENT_BOX,
     G_ADD_PRIVATE(FlowItem));
 
-void test ( GtkWidget *w )
-{
-  g_return_if_fail(FLOW_IS_ITEM(w));
-}
-
 static void flow_item_class_init ( FlowItemClass *kclass )
 {
 }

@@ -115,6 +115,9 @@ void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w )
   g_return_if_fail(cgrid != NULL);
   g_return_if_fail(IS_FLOW_GRID(cgrid));
 
+  if(!flow_item_get_active(w))
+    return;
+
   priv = flow_grid_get_instance_private(FLOW_GRID(cgrid));
 
   children = gtk_container_get_children(GTK_CONTAINER(cgrid));
@@ -227,4 +230,20 @@ void flow_grid_update ( GtkWidget *self )
     flow_grid_attach(self,iter->data);
   }
   flow_grid_pad(self);
+}
+
+gpointer flow_grid_find_child ( GtkWidget *self, gpointer parent )
+{
+  FlowGridPrivate *priv;
+  GList *iter;
+
+  g_return_if_fail(IS_FLOW_GRID(self));
+
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  for(iter=priv->children;iter;iter=g_list_next(iter))
+    if(flow_item_get_parent(iter->data)==parent)
+      return iter->data;
+
+  return NULL;
 }

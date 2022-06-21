@@ -143,6 +143,7 @@ static void activate (GtkApplication* app, gpointer data )
     list_monitors();
 
   config_parse(confname?confname:"sfwbar.config",TRUE);
+  pager_populate();
 
   for(clist = gtk_window_list_toplevels(); clist; clist = g_list_next(clist) )
     if(GTK_IS_BOX(gtk_bin_get_child(GTK_BIN(clist->data))))

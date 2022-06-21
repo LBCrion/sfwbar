@@ -30,6 +30,10 @@ void pager_item_update ( GtkWidget *self )
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
 
+  flow_item_set_active(self, priv->ws->id != -1 || g_list_find_custom(
+        g_object_get_data(G_OBJECT(priv->pager),"pins"),priv->ws->name,
+        (GCompareFunc)g_strcmp0)!=NULL);
+
   widget_set_css(self,NULL);
 }
 
@@ -153,10 +157,13 @@ static gboolean pager_item_draw_tooltip ( GtkWidget *widget, gint x, gint y,
   return TRUE;
 }
 
-GtkWidget *pager_item_new( workspace_t *ws, GtkWidget *pager )
+GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
 {
   GtkWidget *self;
   PagerItemPrivate *priv;
+
+  if(flow_grid_find_child(pager,ws))
+    return NULL;
 
   self = GTK_WIDGET(g_object_new(pager_item_get_type(), NULL));
   priv = pager_item_get_instance_private(PAGER_ITEM(self));
