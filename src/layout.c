@@ -276,18 +276,6 @@ GtkWidget *layout_widget_config ( widget_t *lw, GtkWidget *parent,
 
   layout_widget_set_tooltip(lw);
 
-  if(lw->css)
-  {
-    GtkStyleContext *context = gtk_widget_get_style_context (lw->widget);
-    GtkCssProvider *provider = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(provider,lw->css,strlen(lw->css),NULL);
-    gtk_style_context_add_provider (context,
-      GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-    g_object_unref(provider);
-    g_free(lw->css);
-    lw->css = NULL;
-  }
-
   if(GTK_IS_PROGRESS_BAR(lw->widget))
   {
     gtk_widget_style_get(lw->widget,"direction",&(lw->dir),NULL);
@@ -368,7 +356,6 @@ void layout_widget_free ( widget_t *lw )
 
   g_free(lw->id);
   g_free(lw->style);
-  g_free(lw->css);
   g_free(lw->value);
   g_free(lw->tooltip);
   for(i=0;i<MAX_BUTTON;i++)
@@ -484,6 +471,23 @@ void layout_widget_attach ( widget_t *lw )
     widget_list = g_list_append(widget_list,lw);
   else
     widget_list = g_list_remove(widget_list,lw);
+}
+
+void widget_parse_css ( GtkWidget *widget, gchar *css )
+{
+  GtkStyleContext *cont;
+  GtkCssProvider *provider;
+
+  if(!css)
+    return;
+
+  cont = gtk_widget_get_style_context (widget);
+  provider = gtk_css_provider_new();
+  gtk_css_provider_load_from_data(provider,css,strlen(css),NULL);
+  gtk_style_context_add_provider (cont,
+    GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+  g_object_unref(provider);
+  g_free(css);
 }
 
 void widget_set_css ( GtkWidget *widget, gpointer data )

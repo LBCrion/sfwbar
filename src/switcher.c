@@ -15,17 +15,15 @@ static gint interval;
 static gchar hstate;
 static gint counter;
 static gint title_width = -1;
-static gboolean icons, labels;
 static GList *focus;
 
-void switcher_config ( gint ncols, gchar *css, gint nmax,
-    gboolean nicons, gboolean nlabels, gint twidth )
+void switcher_config ( GtkWidget *ngrid )
 {
   GList *iter;
 
   if(!switcher)
   {
-    grid = flow_grid_new(FALSE,switcher_item_compare);
+    grid = ngrid;
     gtk_widget_set_name(grid, "switcher");
     switcher = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_layer_init_for_window (GTK_WINDOW(switcher));
@@ -33,28 +31,13 @@ void switcher_config ( gint ncols, gchar *css, gint nmax,
     gtk_widget_set_name(switcher, "switcher");
     gtk_container_add(GTK_CONTAINER(switcher),grid);
   }
-  flow_grid_set_cols(grid,ncols);
-  if(css!=NULL)
-  {
-    GtkStyleContext *cont = gtk_widget_get_style_context (grid);
-    GtkCssProvider *provider = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(provider,css,strlen(css),NULL);
-    gtk_style_context_add_provider (cont,
-      GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-    g_object_unref(provider);
-    g_free(css);
-  }
-  interval = nmax;
+
   hstate = 's';
-  icons = nicons;
-  labels = nlabels;
-  title_width = twidth;
-  g_object_set_data(G_OBJECT(grid),"title_width",
-      GINT_TO_POINTER(title_width));
-  g_object_set_data(G_OBJECT(grid),"icons", GINT_TO_POINTER(icons));
-  g_object_set_data(G_OBJECT(grid),"labels", GINT_TO_POINTER(labels));
-  if(!icons)
-    labels = TRUE;
+  interval = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(grid),"interval"));
+  title_width = GPOINTER_TO_INT(
+      g_object_get_data(G_OBJECT(grid),"title_width"));
+  if(!title_width)
+    title_width = -1;
 
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
     switcher_window_init(iter->data);

@@ -556,26 +556,24 @@ void config_get_pins ( GScanner *scanner, widget_t *lw )
   config_optional_semicolon(scanner);
 }
 
-void config_widget_cols ( GScanner *scanner, widget_t *lw )
+void config_widget_cols ( GScanner *scanner, GtkWidget *widget )
 {
   scanner->max_parse_errors = FALSE;
 
-  if( (lw->wtype != G_TOKEN_TASKBAR) && (lw->wtype != G_TOKEN_PAGER) &&
-      (lw->wtype != G_TOKEN_TRAY) )
+  if(!IS_FLOW_GRID(widget))
     g_scanner_error(scanner,"this widget has no property 'cols'");
   else
-    flow_grid_set_cols(lw->widget, config_assign_number(scanner, "cols"));
+    flow_grid_set_cols(widget, config_assign_number(scanner, "cols"));
 }
 
-void config_widget_rows ( GScanner *scanner, widget_t *lw )
+void config_widget_rows ( GScanner *scanner, GtkWidget *widget )
 {
   scanner->max_parse_errors = FALSE;
 
-  if( (lw->wtype != G_TOKEN_TASKBAR) && (lw->wtype != G_TOKEN_PAGER) &&
-      (lw->wtype != G_TOKEN_TRAY) )
+  if(!IS_FLOW_GRID(widget))
     g_scanner_error(scanner,"this widget has no property 'rows'");
   else
-    flow_grid_set_rows(lw->widget, config_assign_number(scanner, "rows"));
+    flow_grid_set_rows(widget, config_assign_number(scanner, "rows"));
 }
 
 void config_action_conditions ( GScanner *scanner, guchar *cond,
@@ -758,7 +756,7 @@ gboolean config_widget_props ( GScanner *scanner, widget_t *lw )
         lw->style = config_get_value(scanner,"style",TRUE,NULL);
         break;
       case G_TOKEN_CSS:
-        lw->css = config_assign_string(scanner,"css");
+        widget_parse_css(lw->widget,config_assign_string(scanner,"css"));
         break;
       case G_TOKEN_INTERVAL:
         if(GTK_IS_GRID(lw->widget))
@@ -825,10 +823,10 @@ gboolean config_widget_props ( GScanner *scanner, widget_t *lw )
               "this widget has no property 'title_width'");
         break;
       case G_TOKEN_COLS:
-        config_widget_cols(scanner, lw);
+        config_widget_cols(scanner, lw->widget);
         break;
       case G_TOKEN_ROWS:
-        config_widget_rows(scanner, lw);
+        config_widget_rows(scanner, lw->widget);
         break;
       case G_TOKEN_ACTION:
         config_widget_action(scanner, lw);
@@ -985,14 +983,14 @@ widget_t *config_layout ( GScanner *scanner, widget_t *lw )
 
 void config_switcher ( GScanner *scanner )
 {
-  gchar *css=NULL;
-  gint interval = 1, cols = 1, twidth = -1;
-  gboolean icons = FALSE, labels = FALSE;
+  GtkWidget *widget;
   scanner->max_parse_errors = FALSE;
 
   if(!config_expect_token(scanner, '{',"Missing '{' after 'switcher'"))
     return;
   g_scanner_get_next_token(scanner);
+
+  widget = flow_grid_new(FALSE,switcher_item_compare);
 
   while (( (gint)g_scanner_peek_next_token ( scanner ) != '}' )&&
       ( (gint)g_scanner_peek_next_token ( scanner ) != G_TOKEN_EOF ))
@@ -1000,23 +998,29 @@ void config_switcher ( GScanner *scanner )
     switch ((gint)g_scanner_get_next_token ( scanner ) )
     {
       case G_TOKEN_INTERVAL: 
-        interval = config_assign_number(scanner,"interval")/100;
+        g_object_set_data(G_OBJECT(widget),"interval",
+          GINT_TO_POINTER(config_assign_number(scanner,"interval")/100));
         break;
       case G_TOKEN_COLS: 
-        cols = config_assign_number(scanner,"cols");
+        config_widget_cols(scanner, widget);
+        break;
+      case G_TOKEN_ROWS:
+        config_widget_rows(scanner, widget);
         break;
       case G_TOKEN_CSS:
-        g_free(css);
-        css = config_assign_string(scanner,"css");
+        widget_parse_css(widget,config_assign_string(scanner,"css"));
         break;
       case G_TOKEN_ICONS:
-        icons = config_assign_boolean(scanner,FALSE,"icons");
+        g_object_set_data(G_OBJECT(widget),"icons",
+          GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"icons")));
         break;
       case G_TOKEN_LABELS:
-        labels = config_assign_boolean(scanner,FALSE,"labels");
+        g_object_set_data(G_OBJECT(widget),"labels",
+          GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"labels")));
         break;
       case G_TOKEN_TITLEWIDTH:
-        twidth = config_assign_number(scanner,"title_width");
+        g_object_set_data(G_OBJECT(widget),"title_width",
+          GINT_TO_POINTER(config_assign_number(scanner,"title_width")));
         break;
       default:
         g_scanner_error(scanner,"Unexpected token in 'switcher'");
@@ -1028,7 +1032,7 @@ void config_switcher ( GScanner *scanner )
 
   config_optional_semicolon(scanner);
 
-  switcher_config(cols,css,interval,icons,labels,twidth);
+  switcher_config(widget);
 }
 
 void config_placer ( GScanner *scanner )

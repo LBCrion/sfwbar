@@ -62,7 +62,6 @@ typedef struct layout_widget {
   GtkWidget *widget;
   GtkWidget *lobject;
   gchar *id;
-  gchar *css;
   gchar *style;
   gchar *estyle;
   gchar *value;
@@ -172,7 +171,7 @@ void switcher_invalidate ( void );
 void switcher_update ( void );
 void switcher_set_label ( window_t *win, gchar *title );
 void switcher_window_init ( window_t *win);
-void switcher_config ( gint, gchar *, gint, gboolean, gboolean, gint );
+void switcher_config ( GtkWidget *ngrid );
 
 void pager_populate ( void );
 void pager_init ( GtkWidget * );
@@ -208,6 +207,7 @@ gboolean layout_tooltip_update ( GtkWidget *widget, gint x, gint y,
     gboolean kbmode, GtkTooltip *tooltip, widget_t *lw );
 void layout_emit_trigger ( gchar *trigger );
 widget_t *widget_from_id ( gchar *id );
+void widget_parse_css ( GtkWidget *widget, gchar *css );
 
 void scanner_expire ( void );
 int scanner_reset_vars ( GList * );
