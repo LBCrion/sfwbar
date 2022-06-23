@@ -14,6 +14,9 @@ static GList *workspaces;
 
 void pager_add_pin ( GtkWidget *pager, gchar *pin )
 {
+  if(!sway_ipc_active())
+    return g_free(pin);
+
   global_pins = g_list_append(global_pins,pin);
   if(!g_list_find_custom(g_object_get_data(G_OBJECT(pager),"pins"),pin,
         (GCompareFunc)g_strcmp0))
@@ -147,7 +150,10 @@ void pager_event ( struct json_object *obj )
 
 void pager_init ( GtkWidget *widget )
 {
-  pagers = g_list_prepend(pagers,widget);
+  if(sway_ipc_active())
+    pagers = g_list_prepend(pagers,widget);
+  else
+    gtk_widget_destroy(widget);
 }
 
 void pager_populate ( void )
