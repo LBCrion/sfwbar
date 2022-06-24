@@ -52,6 +52,7 @@ static void pager_item_class_init ( PagerItemClass *kclass )
 {
   FLOW_ITEM_CLASS(kclass)->update = pager_item_update;
   FLOW_ITEM_CLASS(kclass)->get_parent = (void * (*)(GtkWidget *))pager_item_get_workspace;
+  FLOW_ITEM_CLASS(kclass)->compare = pager_item_compare;
 }
 
 static void pager_item_init ( PagerItem *self )

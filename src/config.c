@@ -923,17 +923,17 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
         break;
       case G_TOKEN_TASKBAR:
         scanner->max_parse_errors=FALSE;
-        lw->widget = flow_grid_new(TRUE,taskbar_item_compare);
+        lw->widget = flow_grid_new(TRUE);
         break;
       case G_TOKEN_PAGER:
         scanner->max_parse_errors=FALSE;
-        lw->widget = flow_grid_new(TRUE,pager_item_compare);
+        lw->widget = flow_grid_new(TRUE);
         g_object_set_data(G_OBJECT(lw->widget),"sort_numeric",
             GINT_TO_POINTER(TRUE));
         break;
       case G_TOKEN_TRAY:
         scanner->max_parse_errors=FALSE;
-        lw->widget = flow_grid_new(TRUE,sni_item_compare);
+        lw->widget = flow_grid_new(TRUE);
         break;
       default:
         g_scanner_error(scanner,"Unexpected token in 'layout'");
@@ -990,7 +990,7 @@ void config_switcher ( GScanner *scanner )
     return;
   g_scanner_get_next_token(scanner);
 
-  widget = flow_grid_new(FALSE,switcher_item_compare);
+  widget = flow_grid_new(FALSE);
 
   while (( (gint)g_scanner_peek_next_token ( scanner ) != '}' )&&
       ( (gint)g_scanner_peek_next_token ( scanner ) != G_TOKEN_EOF ))

@@ -117,6 +117,7 @@ static void taskbar_item_class_init ( TaskbarItemClass *kclass )
   GTK_WIDGET_CLASS(kclass)->destroy = taskbar_item_destroy;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_item_update;
   FLOW_ITEM_CLASS(kclass)->get_parent = (void * (*)(GtkWidget *))taskbar_item_get_window;
+  FLOW_ITEM_CLASS(kclass)->compare = taskbar_item_compare;
 }
 
 static void taskbar_item_init ( TaskbarItem *self )

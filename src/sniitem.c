@@ -54,7 +54,7 @@ static void sni_item_class_init ( SniItemClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = sni_item_destroy;
   FLOW_ITEM_CLASS(kclass)->update = sni_item_update;
-  FLOW_ITEM_CLASS(kclass)->get_parent = (void * (*)(GtkWidget *))sni_item_get_sni;
+  FLOW_ITEM_CLASS(kclass)->compare = sni_item_compare;
 }
 
 static void sni_item_init ( SniItem *self )

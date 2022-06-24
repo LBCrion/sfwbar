@@ -49,7 +49,7 @@ static void switcher_item_class_init ( SwitcherItemClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = switcher_item_destroy;
   FLOW_ITEM_CLASS(kclass)->update = switcher_item_update;
-  FLOW_ITEM_CLASS(kclass)->get_parent = (void * (*)(GtkWidget *))switcher_item_get_window;
+  FLOW_ITEM_CLASS(kclass)->compare = switcher_item_compare;
 }
 
 static void switcher_item_init ( SwitcherItem *cgrid )

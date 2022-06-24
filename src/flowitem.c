@@ -54,3 +54,14 @@ void *flow_item_get_parent ( GtkWidget *self )
   else
     return NULL;
 }
+
+gint flow_item_compare ( GtkWidget *p1, GtkWidget *p2, GtkWidget *parent )
+{
+  g_return_val_if_fail(FLOW_IS_ITEM(p1),0);
+  g_return_val_if_fail(FLOW_IS_ITEM(p2),0);
+
+  if(!FLOW_ITEM_GET_CLASS(p1)->compare)
+    return 0;
+
+  return FLOW_ITEM_GET_CLASS(p1)->compare(p1,p2,parent);
+}

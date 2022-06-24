@@ -35,8 +35,7 @@ struct _FlowGridPrivate
 
 GType flow_grid_get_type ( void );
 
-GtkWidget *flow_grid_new( gboolean limit,
-    gint (*comp_f) ( GtkWidget *, GtkWidget *, GtkWidget *) );
+GtkWidget *flow_grid_new( gboolean limit);
 void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );
 void flow_grid_set_cols ( GtkWidget *cgrid, gint cols );
 void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w );
