@@ -34,7 +34,7 @@ void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
   GList *l;
   window_t *stat_win;
 
-  if(!name)
+  if(!name || !functions)
     return;
  
   if(win)

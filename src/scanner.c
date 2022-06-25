@@ -336,7 +336,7 @@ char *scanner_get_string ( gchar *name, gboolean update )
 
   id = scanner_parse_identifier(name,&fname);
   g_free(fname);
-  if((scan=g_hash_table_lookup(scan_list,id))!=NULL)
+  if(scan_list && (scan=g_hash_table_lookup(scan_list,id))!=NULL)
     {
     if(!scan->status && update)
       scanner_update_file_glob(scan->file);
@@ -358,7 +358,7 @@ double scanner_get_numeric ( gchar *name, gboolean update )
 
   id = scanner_parse_identifier(name,&fname);
 
-  if((scan=g_hash_table_lookup(scan_list,id))!=NULL)
+  if(scan_list && (scan=g_hash_table_lookup(scan_list,id))!=NULL)
     {
     if(!scan->status && update)
       scanner_update_file_glob(scan->file);

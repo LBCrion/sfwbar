@@ -966,7 +966,8 @@ void sni_register ( gchar *name )
 
 void sni_update ( void )
 {
-  flow_grid_update(tray);
+  if(tray)
+    flow_grid_update(tray);
 }
 
 void sni_init ( GtkWidget *w )
