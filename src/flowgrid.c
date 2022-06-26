@@ -202,7 +202,10 @@ void flow_grid_delete_child ( GtkWidget *self, void *parent )
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
   for(iter=priv->children;iter;iter=g_list_next(iter))
     if(flow_item_get_parent(iter->data)==parent)
+    {
       gtk_widget_destroy(iter->data);
+      break;
+    }
   flow_grid_invalidate(self);
 }
 
