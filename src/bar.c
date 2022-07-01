@@ -8,6 +8,7 @@
 #include <gtk-layer-shell.h>
 #include "sfwbar.h"
 #include "config.h"
+#include "grid.h"
 
 static GHashTable *bar_list;
 
@@ -27,10 +28,10 @@ GtkWidget *bar_get_by_name ( gchar *name )
   return g_hash_table_lookup(bar_list,name);
 }
 
-widget_t *bar_grid_by_name ( gchar *addr )
+GtkWidget *bar_grid_by_name ( gchar *addr )
 {
   GtkWidget *bar, *box;
-  widget_t *lw = NULL;
+  GtkWidget *widget = NULL;
   gchar *grid, *ptr, *name;
 
   if(!addr)
@@ -58,37 +59,35 @@ widget_t *bar_grid_by_name ( gchar *addr )
   g_free(name);
 
   if(grid && !g_ascii_strcasecmp(grid,"center"))
-    lw = g_object_get_data(G_OBJECT(bar),"center");
+    widget = g_object_get_data(G_OBJECT(bar),"center");
   else if(grid && !g_ascii_strcasecmp(grid,"end"))
-    lw = g_object_get_data(G_OBJECT(bar),"end");
+    widget = g_object_get_data(G_OBJECT(bar),"end");
   else
-    lw = g_object_get_data(G_OBJECT(bar),"start");
+    widget = g_object_get_data(G_OBJECT(bar),"start");
 
-  if(lw)
-    return lw;
+  if(widget)
+    return widget;
 
-  lw = layout_widget_new();
-  lw->wtype = G_TOKEN_GRID;
-  lw->widget = gtk_grid_new();
-  gtk_widget_set_name(lw->widget,"layout");
+  widget = grid_new();
+  gtk_widget_set_name(base_widget_get_child(widget),"layout");
 
   box = gtk_bin_get_child(GTK_BIN(bar));
   if(grid && !g_ascii_strcasecmp(grid,"center"))
   {
-    gtk_box_set_center_widget(GTK_BOX(box),lw->widget);
-    g_object_set_data(G_OBJECT(bar),"center",lw);
+    gtk_box_set_center_widget(GTK_BOX(box),widget);
+    g_object_set_data(G_OBJECT(bar),"center",widget);
   }
   else if(grid && !g_ascii_strcasecmp(grid,"end"))
   {
-    gtk_box_pack_end(GTK_BOX(box),lw->widget,TRUE,TRUE,0);
-    g_object_set_data(G_OBJECT(bar),"end",lw);
+    gtk_box_pack_end(GTK_BOX(box),widget,TRUE,TRUE,0);
+    g_object_set_data(G_OBJECT(bar),"end",widget);
   }
   else
   {
-    gtk_box_pack_start(GTK_BOX(box),lw->widget,TRUE,TRUE,0);
-    g_object_set_data(G_OBJECT(bar),"start",lw);
+    gtk_box_pack_start(GTK_BOX(box),widget,TRUE,TRUE,0);
+    g_object_set_data(G_OBJECT(bar),"start",widget);
   }
-  return lw;
+  return widget;
 }
 
 gboolean bar_hide_event ( struct json_object *obj )

@@ -37,7 +37,7 @@ gboolean mpd_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer file )
     if( file )
     {
       scanner_update_file( chan, file );
-      layout_emit_trigger("mpd");
+      base_widget_emit_trigger("mpd");
     }
 
     if(!r)

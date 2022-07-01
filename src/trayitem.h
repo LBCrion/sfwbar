@@ -1,0 +1,40 @@
+#ifndef __SNIITEM_H__
+#define __SNIITEM_H__
+
+#include "sfwbar.h" 
+
+#define TRAY_ITEM_TYPE            (tray_item_get_type())
+#define TRAY_ITEM(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), TRAY_ITEM_TYPE, TrayItem))
+#define TRAY_ITEM_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), TRAY_ITEM_TYPE, TrayItemClass))
+#define IS_TRAY_ITEM(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj), TRAY_ITEM_TYPE))
+#define IS_TRAY_ITEMCLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), TRAY_ITEM_TYPE))
+
+typedef struct _TrayItem TrayItem;
+typedef struct _TrayItemClass TrayItemClass;
+
+struct _TrayItem
+{
+  FlowItem item;
+};
+
+struct _TrayItemClass
+{
+  FlowItemClass parent_class;
+};
+
+typedef struct _TrayItemPrivate TrayItemPrivate;
+
+struct _TrayItemPrivate
+{
+  sni_item_t *sni;
+  GtkWidget *icon;
+};
+
+GType tray_item_get_type ( void );
+
+GtkWidget *tray_item_new( sni_item_t *win, GtkWidget *tray );
+sni_item_t*tray_item_get_sni ( GtkWidget *self );
+void tray_item_update ( GtkWidget *self );
+gint tray_item_compare ( GtkWidget *, GtkWidget *, GtkWidget * );
+
+#endif

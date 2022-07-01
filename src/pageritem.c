@@ -21,18 +21,18 @@ void pager_item_update ( GtkWidget *self )
   gtk_widget_set_has_tooltip(priv->button,
       GPOINTER_TO_INT(g_object_get_data(G_OBJECT(priv->pager),"preview")));
   if ( workspace_is_focused(priv->ws) )
-    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "pager_focused");
+    gtk_widget_set_name(priv->button, "pager_focused");
   else if (priv->ws->visible)
-    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "pager_visible");
+    gtk_widget_set_name(priv->button, "pager_visible");
   else
-    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "pager_normal");
+    gtk_widget_set_name(priv->button, "pager_normal");
 
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
 
-  flow_item_set_active(self, priv->ws->id != -1 || g_list_find_custom(
-        g_object_get_data(G_OBJECT(priv->pager),"pins"),priv->ws->name,
-        (GCompareFunc)g_strcmp0)!=NULL);
+  flow_item_set_active(self, priv->ws->id != GINT_TO_POINTER(-1) ||
+      g_list_find_custom(g_object_get_data(G_OBJECT(priv->pager),"pins"),
+        priv->ws->name, (GCompareFunc)g_strcmp0)!=NULL);
 
   widget_set_css(self,NULL);
 }
@@ -163,8 +163,11 @@ GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
   GtkWidget *self;
   PagerItemPrivate *priv;
 
-  if(flow_grid_find_child(pager,ws))
+  if(flow_grid_find_child(base_widget_get_child(pager),ws))
     return NULL;
+
+  if(IS_BASE_WIDGET(pager))
+    pager = base_widget_get_child(pager);
 
   self = GTK_WIDGET(g_object_new(pager_item_get_type(), NULL));
   priv = pager_item_get_instance_private(PAGER_ITEM(self));

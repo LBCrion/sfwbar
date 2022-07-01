@@ -8,7 +8,8 @@
 #include <gio/gio.h>
 #include <unistd.h>
 #include "sfwbar.h"
-#include "sniitem.h"
+#include "trayitem.h"
+#include "tray.h"
 
 static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
   "IconName", "OverlayIconName", "AttentionIconName", "AttentionMovieName",
@@ -63,7 +64,6 @@ static const gchar sni_watcher_xml[] =
   " </interface>"
   "</node>";
 
-static GtkWidget *tray;
 static GList *sni_items;
 static GList *sni_ifaces;
 static gboolean invalid;
@@ -317,7 +317,7 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
     widget_set_css(menu,NULL);
     g_object_ref_sink(G_OBJECT(menu));
     g_signal_connect(G_OBJECT(menu),"unmap",G_CALLBACK(g_object_unref),NULL);
-    layout_menu_popup(wrap->sni->image,menu,wrap->event,NULL,NULL);
+    menu_popup(wrap->sni->image,menu,wrap->event,NULL,NULL);
   }
 
   gdk_event_free(wrap->event);
@@ -653,7 +653,7 @@ void sni_item_newx (GDBusConnection *con, struct sni_iface *iface,
   sni->signal = g_dbus_connection_signal_subscribe(con,sni->dest,
       sni->iface,NULL,sni->path,NULL,0,sni_item_signal_cb,sni,NULL);
   sni_items = g_list_append(sni_items,sni);
-  sni_item_new(sni,tray);
+  tray_item_init_for_all(sni);
   for(i=0;i<16;i++)
     sni_item_get_prop(con,sni,i);
   g_debug("sni: host %s: item registered: %s %s",iface->host_iface,sni->dest,
@@ -911,7 +911,8 @@ void sni_host_item_unregistered_cb ( GDBusConnection* con, const gchar* sender,
       g_object_unref(sni->pixbuf[i]);
   for(i=0;i<MAX_STRING;i++)
     g_free(sni->string[i]);
-  flow_grid_delete_child(tray,sni);
+  tray_item_destroy(sni);
+
   g_free(sni->menu_path);
   g_free(sni->uid);
   g_free(sni->path);
@@ -964,15 +965,8 @@ void sni_register ( gchar *name )
   g_object_unref(con);
 }
 
-void sni_update ( void )
+void sni_init ( void )
 {
-  if(tray)
-    flow_grid_update(tray);
-}
-
-void sni_init ( GtkWidget *w )
-{
-  tray = w;
   sni_register("kde");
   sni_register("freedesktop");
 }

@@ -5,31 +5,78 @@
 
 #include <gtk/gtk.h>
 #include "sfwbar.h"
+#include "pager.h"
 #include "pageritem.h"
+
+G_DEFINE_TYPE_WITH_CODE (Pager, pager, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Pager));
 
 static GList *pagers;
 static GList *global_pins;
 static workspace_t *focus;
 static GList *workspaces;
 
+static GtkWidget *pager_get_child ( GtkWidget *self )
+{
+  PagerPrivate *priv;
+
+  g_return_val_if_fail(IS_PAGER(self),NULL);
+  priv = pager_get_instance_private(PAGER(self));
+
+  return priv->pager;
+}
+
+static void pager_class_init ( PagerClass *kclass )
+{
+  BASE_WIDGET_CLASS(kclass)->get_child = pager_get_child;
+}
+
+static void pager_init ( Pager *self )
+{
+}
+
+GtkWidget *pager_new ( void )
+{
+  GtkWidget *self;
+  PagerPrivate *priv;
+
+  if(!sway_ipc_active())
+    return NULL;
+
+  self = GTK_WIDGET(g_object_new(pager_get_type(), NULL));
+  priv = pager_get_instance_private(PAGER(self));
+
+  priv->pager = flow_grid_new(TRUE);
+  gtk_container_add(GTK_CONTAINER(self),priv->pager);
+  pagers = g_list_prepend(pagers,self);
+
+  return self;
+}
+
 void pager_add_pin ( GtkWidget *pager, gchar *pin )
 {
+  GObject *child;
+
   if(!sway_ipc_active())
     return g_free(pin);
 
-  global_pins = g_list_append(global_pins,pin);
-  if(!g_list_find_custom(g_object_get_data(G_OBJECT(pager),"pins"),pin,
+  global_pins = g_list_prepend(global_pins,pin);
+
+  child = G_OBJECT(base_widget_get_child(pager));
+  if(!child)
+    return;
+
+  if(!g_list_find_custom(g_object_get_data(child,"pins"),pin,
         (GCompareFunc)g_strcmp0))
-    g_object_set_data(G_OBJECT(pager),"pins",
-        g_list_append(g_object_get_data(G_OBJECT(pager),"pins"),pin));
+    g_object_set_data(child,"pins",g_list_append(
+            g_object_get_data(child,"pins"),pin));
 }
 
-gint pager_comp_id ( workspace_t *a, gpointer id )
+static gint pager_comp_id ( workspace_t *a, gpointer id )
 {
-  return a->id - GPOINTER_TO_INT(id);
+  return GPOINTER_TO_INT(a->id) - GPOINTER_TO_INT(id);
 }
 
-gint pager_comp_name ( workspace_t *a, gchar * b)
+static gint pager_comp_name ( workspace_t *a, gchar * b)
 {
   return g_strcmp0(a->name,b);
 }
@@ -39,11 +86,25 @@ gboolean workspace_is_focused ( workspace_t *ws )
   return (ws == focus);
 }
 
-void workspace_delete ( GList *item )
+void pager_workspace_set_focus ( gpointer id )
 {
-  GList *iter;
+  GList *item;
+
+  item = g_list_find_custom(workspaces,id,(GCompareFunc)pager_comp_id);
+  if(item)
+  {
+    focus = item->data;
+    g_list_foreach(pagers,(GFunc)flow_grid_invalidate,NULL);
+  }
+}
+
+void pager_workspace_delete ( gpointer id )
+{
+  GList *iter, *item;
   workspace_t *ws;
 
+  item = g_list_find_custom(workspaces,id,
+          (GCompareFunc)pager_comp_id);
   if(!item)
     return;
 
@@ -52,10 +113,11 @@ void workspace_delete ( GList *item )
   for(iter=global_pins;iter;iter=g_list_next(iter))
     if(!g_strcmp0(iter->data,ws->name))
     {
-      ws->id = -1;
+      ws->id = GINT_TO_POINTER(-1);
       ws->visible = FALSE;
       for(iter=pagers;iter;iter=g_list_next(iter))
-        if(!g_list_find_custom(g_object_get_data(G_OBJECT(iter->data),"pins"),
+        if(!g_list_find_custom(g_object_get_data(
+                G_OBJECT(base_widget_get_child(iter->data)),"pins"),
               ws->name,(GCompareFunc)g_strcmp0))
             flow_grid_delete_child(iter->data,ws);
       return;
@@ -67,132 +129,56 @@ void workspace_delete ( GList *item )
   workspaces = g_list_delete_link(workspaces,item);
 }
 
-void workspace_new ( json_object *obj )
+void pager_workspace_new ( workspace_t *new )
 {
-  gchar *name;
-  gint id;
   GList *item;
   workspace_t *ws;
 
-  id = json_int_by_name(obj,"id",0);
-
-  item = g_list_find_custom(workspaces,GINT_TO_POINTER(id),
-      (GCompareFunc)pager_comp_id);
+  item = g_list_find_custom(workspaces,new->id,(GCompareFunc)pager_comp_id);
   if(item)
   {
     ws = item->data;
     g_free(ws->name);
-    ws->name = json_string_by_name(obj,"name");
+    ws->name = g_strdup(new->name);
     g_list_foreach(pagers,(GFunc)pager_item_new,ws);
     g_list_foreach(pagers,(GFunc)flow_grid_invalidate,NULL);
   }
   else
   {
-    name = json_string_by_name(obj,"name");
-    item = g_list_find_custom(workspaces,name,(GCompareFunc)pager_comp_name);
+    item = g_list_find_custom(workspaces,new->name,(GCompareFunc)pager_comp_name);
     if(item)
-    {
       ws = item->data;
-      g_free(name);
-    }
     else
     {
       ws = g_malloc0(sizeof(workspace_t));
-      ws->name = name;
+      ws->name = g_strdup(new->name);
       workspaces = g_list_prepend(workspaces,ws);
       g_list_foreach(pagers,(GFunc)pager_item_new,ws);
     }
-    ws->id = id;
+    ws->id = new->id;
   }
-  ws->visible = json_bool_by_name(obj,"visible",FALSE);
-  if(json_bool_by_name(obj,"focused",FALSE))
+  ws->visible = new->visible;
+  if(new->focused)
   {
     g_list_foreach(pagers,(GFunc)flow_grid_invalidate,NULL);
     focus = ws;
   }
 }
 
-void pager_event ( struct json_object *obj )
-{
-  gchar *change;
-  gint id;
-  struct json_object *current;
-  GList *item;
-
-  json_object_object_get_ex(obj,"current",&current);
-  if(!current)
-    return;
-
-  id = json_int_by_name(current,"id",0);
-  change = json_string_by_name(obj,"change");
-
-  if(!g_strcmp0(change,"empty"))
-    workspace_delete(g_list_find_custom(workspaces,GINT_TO_POINTER(id),
-          (GCompareFunc)pager_comp_id));
-  else
-    workspace_new(current);
-
-  if(!g_strcmp0(change,"focus"))
-  {
-    item = g_list_find_custom(workspaces,GINT_TO_POINTER(id),
-        (GCompareFunc)pager_comp_id);
-    if(item)
-    {
-      focus = item->data;
-      g_list_foreach(pagers,(GFunc)flow_grid_invalidate,NULL);
-    }
-  }
-  
-  g_free(change);
-  g_list_foreach(pagers,(GFunc)flow_grid_update,NULL);
-}
-
-
-void pager_init ( GtkWidget *widget )
-{
-  if(sway_ipc_active())
-    pagers = g_list_prepend(pagers,widget);
-  else
-    gtk_widget_destroy(widget);
-}
-
 void pager_populate ( void )
 {
-  gint sock;
-  gint32 etype;
-  struct json_object *robj = NULL;
-  gint i;
   GList *item;
   workspace_t *ws;
-  gchar *response;
 
-  if(!workspaces)
-  {
-    sock=sway_ipc_open(3000);
-    if(sock!=-1)
-    {
-      sway_ipc_send(sock,1,"");
-      response = sway_ipc_poll(sock,&etype);
-      close(sock);
-      if(response!=NULL)
-        robj = json_tokener_parse(response);
+  sway_ipc_pager_populate();
 
-      if(robj && json_object_is_type(robj,json_type_array))
-      {
-        for(i=0;i<json_object_array_length(robj);i++)
-          workspace_new(json_object_array_get_idx(robj,i));
-        json_object_put(robj);
-      }
-      g_free(response);
-    }
-  }
   for(item = global_pins;item;item=g_list_next(item))
     if(!g_list_find_custom(workspaces,item->data,
           (GCompareFunc)pager_comp_name))
 
     {
-      ws = g_malloc0(sizeof(workspace_t));
-      ws->id = -1;
+      ws = g_malloc(sizeof(workspace_t));
+      ws->id = GINT_TO_POINTER(-1);
       ws->name = g_strdup(item->data);
       ws->visible = FALSE;
       workspaces = g_list_prepend(workspaces,ws);
@@ -202,3 +188,7 @@ void pager_populate ( void )
   g_list_foreach(pagers,(GFunc)flow_grid_update,NULL);
 }
 
+void pager_update ( void )
+{
+  g_list_foreach(pagers,(GFunc)flow_grid_update,NULL);
+}

@@ -25,9 +25,10 @@ struct _PagerItemClass
 typedef struct _PagerItemPrivate PagerItemPrivate;
 
 typedef struct workspace_s {
-  gint id;
+  gpointer id;
   gchar *name;
   gboolean visible;
+  gboolean focused;
   GtkWidget *pager;
 } workspace_t;
 

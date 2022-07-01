@@ -7,6 +7,8 @@
 #include <glib-unix.h>
 #include <gtk-layer-shell.h>
 #include "sfwbar.h"
+#include "tray.h"
+#include "taskbar.h"
 
 gchar *confname;
 gchar *sockname;
@@ -125,7 +127,7 @@ gboolean shell_timer ( gpointer data )
 {
   taskbar_update_all();
   switcher_update();
-  sni_update();
+  tray_update();
 
   return TRUE;
 }
@@ -143,14 +145,15 @@ static void activate (GtkApplication* app, gpointer data )
     list_monitors();
 
   config_parse(confname?confname:"sfwbar.config",TRUE);
+  taskbar_populate();
   pager_populate();
+  switcher_populate();
 
   for(clist = gtk_window_list_toplevels(); clist; clist = g_list_next(clist) )
     if(GTK_IS_BOX(gtk_bin_get_child(GTK_BIN(clist->data))))
     {
       gtk_application_add_window(app,GTK_WINDOW(clist->data));
       widget_set_css(GTK_WIDGET(clist->data),NULL);
-      layout_widgets_autoexec(GTK_WIDGET(clist->data),NULL);
     }
   g_list_free(clist);
 
@@ -163,7 +166,8 @@ static void activate (GtkApplication* app, gpointer data )
   g_signal_connect(gdisp, "monitor-removed",
       G_CALLBACK(bar_monitor_removed_cb),NULL);
 
-  g_thread_unref(g_thread_new("scanner",layout_scanner_thread,
+  g_thread_unref(g_thread_new("scanner",
+        (GThreadFunc)base_widget_scanner_thread,
         g_main_context_get_thread_default()));
 
   action_function_exec("SfwBarInit",NULL,NULL,NULL,NULL);

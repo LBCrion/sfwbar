@@ -10,6 +10,11 @@
 
 extern gchar *confname;
 
+void list_remove_link ( GList **list, void *child )
+{
+  *list = g_list_delete_link(*list,g_list_find(*list,child));
+}
+
 gboolean file_test_read ( gchar *filename )
 {
   if( !g_file_test(filename, G_FILE_TEST_EXISTS) )

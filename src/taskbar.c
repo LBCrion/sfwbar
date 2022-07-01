@@ -3,21 +3,59 @@
  * Copyright 2020-2022 Lev Babiev
  */
 
-#include <glib.h>
-#include <unistd.h>
-#include <gtk/gtk.h>
 #include "sfwbar.h"
 #include "taskbaritem.h"
+#include "taskbar.h"
+
+G_DEFINE_TYPE_WITH_CODE (Taskbar, taskbar, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Taskbar));
 
 static GList *taskbars;
+
+static GtkWidget *taskbar_get_child ( GtkWidget *self )
+{
+  TaskbarPrivate *priv;
+
+  g_return_val_if_fail(IS_TASKBAR(self),NULL);
+  priv = taskbar_get_instance_private(TASKBAR(self));
+
+  return priv->taskbar;
+}
+
+static void taskbar_class_init ( TaskbarClass *kclass )
+{
+  BASE_WIDGET_CLASS(kclass)->get_child = taskbar_get_child;
+}
+
+static void taskbar_init ( Taskbar *self )
+{
+}
+
+GtkWidget *taskbar_new ( void )
+{
+  GtkWidget *self;
+  TaskbarPrivate *priv;
+//  GList *iter;
+
+  self = GTK_WIDGET(g_object_new(taskbar_get_type(), NULL));
+  priv = taskbar_get_instance_private(TASKBAR(self));
+
+  priv->taskbar = flow_grid_new(TRUE);
+  gtk_container_add(GTK_CONTAINER(self),priv->taskbar);
+  taskbars = g_list_append(taskbars,self);
+
+//  for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
+//    taskbar_item_new(iter->data,self);
+
+  flow_grid_invalidate(priv->taskbar);
+  return self;
+}
 
 void taskbar_invalidate_all ( void )
 {
   GList *iter;
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
-    if(iter->data)
-      flow_grid_invalidate(((widget_t *)iter->data)->widget);
+    flow_grid_invalidate(iter->data);
 }
 
 void taskbar_item_init_for_all ( window_t *win )
@@ -26,12 +64,20 @@ void taskbar_item_init_for_all ( window_t *win )
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
     if(iter->data)
-      taskbar_item_new(win,((widget_t *)iter->data)->widget);
+      taskbar_item_new(win,iter->data);
 }
 
-void taskbar_item_destroy ( GtkWidget *taskbar, window_t *win )
+void taskbar_populate ( void )
 {
-  flow_grid_delete_child(taskbar,win);
+  GList *iter;
+
+  if(!taskbars)
+    return;
+
+  for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
+    taskbar_item_init_for_all(iter->data);
+
+  taskbar_invalidate_all();
 }
 
 void taskbar_item_destroy_for_all ( window_t *win )
@@ -40,15 +86,7 @@ void taskbar_item_destroy_for_all ( window_t *win )
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
     if(iter->data)
-      taskbar_item_destroy(((widget_t *)iter->data)->widget, win );
-}
-
-void taskbar_update( GtkWidget *taskbar )
-{
-  g_return_if_fail(taskbar);
-
-  flow_grid_update(taskbar);
-  gtk_widget_show_all(taskbar);
+      flow_grid_delete_child(iter->data,win);
 }
 
 void taskbar_update_all ( void )
@@ -57,18 +95,8 @@ void taskbar_update_all ( void )
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
     if(iter->data)
-      taskbar_update(((widget_t *)iter->data)->widget);
-}
-
-void taskbar_init ( widget_t *lw )
-{
-  GList *iter;
-
-  taskbars = g_list_append(taskbars,lw);
-  g_object_set_data(G_OBJECT(lw->widget),"actions",lw->actions);
-
-  for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
-    taskbar_item_new(iter->data,lw->widget);
-
-  flow_grid_invalidate(lw->widget);
+    {
+      flow_grid_update(iter->data);
+      gtk_widget_show_all(iter->data);
+    }
 }

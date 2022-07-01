@@ -8,7 +8,7 @@
 
 #define MAX_BUTTON 8
 
-typedef struct wt_widdow {
+typedef struct wt_window {
   GtkWidget *switcher;
   gchar *title;
   gchar *appid;
@@ -50,33 +50,13 @@ typedef struct scan_var {
   scan_file_t *file;
 } scan_var_t;
 
-typedef struct layout_action {
+typedef struct user_action {
   guchar cond;
   guchar ncond;
   guint type;
   gchar *command;
   gchar *addr;
 } action_t;
-
-typedef struct layout_widget {
-  GtkWidget *widget;
-  GtkWidget *lobject;
-  gchar *id;
-  gchar *style;
-  gchar *estyle;
-  gchar *value;
-  gchar *evalue;
-  gchar *tooltip;
-  gulong tooltip_h;
-  action_t *actions[MAX_BUTTON];
-  gint64 interval;
-  gchar *trigger;
-  gint64 next_poll;
-  gint wtype;
-  gint dir;
-  gboolean user_state;
-  struct rect rect;
-} widget_t;
 
 #define MAX_STRING 9
 
@@ -120,11 +100,11 @@ gboolean sway_ipc_event ( GIOChannel *, GIOCondition , gpointer );
 void sway_ipc_rescan ( void );
 void sway_ipc_bar_id ( gchar *id );
 void sway_ipc_client_init ( scan_file_t *file );
+void sway_ipc_pager_populate ( void );
 
 void place_window ( gint64 wid, gint64 pid );
 void placer_config ( gint xs, gint ys, gint xo, gint yo, gboolean pid );
 
-void taskbar_init ( widget_t * );
 void taskbar_invalidate ( GtkWidget * );
 void taskbar_invalidate_all ( void );
 void taskbar_set_options ( gboolean, gboolean, gboolean, gint );
@@ -159,7 +139,7 @@ void wayland_output_new ( GdkMonitor *gmon );
 void wayland_output_destroy ( GdkMonitor *gmon );
 void foreign_toplevel_activate ( gpointer tl );
 
-widget_t *config_parse ( gchar *, gboolean );
+GtkWidget *config_parse ( gchar *, gboolean );
 void config_pipe_read ( gchar *command );
 void config_string ( gchar *string );
 
@@ -171,42 +151,29 @@ void switcher_invalidate ( void );
 void switcher_update ( void );
 void switcher_set_label ( window_t *win, gchar *title );
 void switcher_window_init ( window_t *win);
-void switcher_config ( GtkWidget *ngrid );
+void switcher_populate ( void );
 
 void pager_populate ( void );
-void pager_init ( GtkWidget * );
 void pager_set_preview ( gboolean pv );
 void pager_set_numeric ( gboolean pn );
 void pager_add_pin ( GtkWidget *pager, gchar *pin );
 void pager_update ( void );
 void pager_event ( struct json_object *obj );
 
-void sni_init ( GtkWidget *w );
+void sni_init ( void );
 void sni_update ( void );
 gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data);
 gboolean sni_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
     gpointer data );
 void sni_item_set_icon ( sni_item_t *sni, gint icon, gint pix );
 
-GtkWidget *layout_menu_get ( gchar *name );
-void layout_menu_add ( gchar *name, GtkWidget *menu );
-void layout_menu_remove ( gchar *name );
-widget_t *layout_widget_new ( void );
-void layout_menu_popup ( GtkWidget *, GtkWidget *, GdkEvent *, gpointer, guint16 * );
-gpointer layout_scanner_thread ( gpointer data );
-GtkWidget *layout_widget_config ( widget_t *lw, GtkWidget *parent,
-    GtkWidget *sibling );
-gboolean layout_widget_draw ( widget_t *lw );
-void layout_widget_set_tooltip ( widget_t *lw );
-void layout_widget_attach ( widget_t *lw );
-void layout_widget_free ( widget_t *lw );
+GtkWidget *menu_from_name ( gchar *name );
+void menu_add ( gchar *name, GtkWidget *menu );
+void menu_remove ( gchar *name );
+void menu_popup ( GtkWidget *, GtkWidget *, GdkEvent *, gpointer, guint16 * );
+gboolean menu_action_cb ( GtkWidget *widget, action_t *action );
+
 void widget_set_css ( GtkWidget *, gpointer );
-gboolean widget_menu_action ( GtkWidget *widget, action_t *action );
-void layout_widgets_autoexec ( GtkWidget *widget, gpointer data );
-gboolean layout_tooltip_update ( GtkWidget *widget, gint x, gint y,
-    gboolean kbmode, GtkTooltip *tooltip, widget_t *lw );
-void layout_emit_trigger ( gchar *trigger );
-widget_t *widget_from_id ( gchar *id );
 void widget_parse_css ( GtkWidget *widget, gchar *css );
 
 void scanner_expire ( void );
@@ -231,12 +198,12 @@ gboolean bar_hide_event ( struct json_object *obj );
 void bar_monitor_added_cb ( GdkDisplay *, GdkMonitor * );
 void bar_monitor_removed_cb ( GdkDisplay *, GdkMonitor * );
 void bar_update_monitor ( GtkWindow *win );
-widget_t *bar_grid_by_name ( gchar *addr );
-void bar_grid_attach ( gchar *addr, widget_t *lw );
+GtkWidget *bar_grid_by_name ( gchar *addr );
 
 void mpd_ipc_init ( scan_file_t *file );
 void mpd_ipc_command ( gchar *command );
 
+void list_remove_link ( GList **list, void *child );
 gchar *get_xdg_config_file ( gchar *fname, gchar *extra );
 gchar *json_string_by_name ( struct json_object *obj, gchar *name );
 gint64 json_int_by_name ( struct json_object *obj, gchar *name, gint64 defval);

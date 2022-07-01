@@ -10,6 +10,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include "sfwbar.h"
+#include "pager.h"
+#include "pageritem.h"
 
 static gchar *bar_id;
 static gint main_ipc;
@@ -311,6 +313,79 @@ void sway_ipc_client_init ( scan_file_t *file )
   sway_file = file;
 }
 
+workspace_t *sway_ipc_parse_workspace ( json_object *obj )
+{
+  workspace_t *ws;
+
+  ws = g_malloc0(sizeof(workspace_t));
+  ws->name = json_string_by_name(obj,"name");
+  ws->id = GINT_TO_POINTER(json_int_by_name(obj,"id",0));
+  ws->visible = json_bool_by_name(obj,"visible",FALSE);
+
+  return ws;
+}
+
+void sway_ipc_pager_event ( struct json_object *obj )
+{
+  gchar *change;
+  struct json_object *current;
+  workspace_t *ws;
+
+  json_object_object_get_ex(obj,"current",&current);
+  if(!current)
+    return;
+
+  ws = sway_ipc_parse_workspace(current);
+  change = json_string_by_name(obj,"change");
+
+  if(!g_strcmp0(change,"empty"))
+    pager_workspace_delete(ws->id);
+  else
+    pager_workspace_new(ws);
+
+  if(!g_strcmp0(change,"focus"))
+    pager_workspace_set_focus(ws->id);
+
+  pager_update();
+  g_free(ws->name);
+  g_free(ws);
+  g_free(change);
+}
+
+void sway_ipc_pager_populate ( void )
+{
+  gint sock;
+  gint32 etype;
+  struct json_object *robj;
+  gint i;
+  gchar *response;
+  workspace_t *ws;
+
+  sock=sway_ipc_open(3000);
+  if(sock==-1)
+    return;
+
+  sway_ipc_send(sock,1,"");
+  response = sway_ipc_poll(sock,&etype);
+  close(sock);
+  if(!response)
+    return;
+
+  robj = json_tokener_parse(response);
+  if(robj && json_object_is_type(robj,json_type_array))
+  {
+    for(i=0;i<json_object_array_length(robj);i++)
+    {
+      ws = sway_ipc_parse_workspace(json_object_array_get_idx(robj,i));
+      pager_workspace_new(ws);
+      g_free(ws->name);
+      g_free(ws);
+    }
+    json_object_put(robj);
+  }
+  g_free(response);
+}
+
 gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 {
   static gchar *ename[] = {
@@ -339,10 +414,7 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
     obj = json_tokener_parse(response);
 
     if(etype==0x80000000)
-    {
-      pager_event(obj);
-//      pager_update();
-    }
+      sway_ipc_pager_event(obj);
 
     if(etype==0x80000004)
     {
@@ -398,7 +470,7 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
       scanner_update_json (scan,sway_file);
       json_object_get(obj);
       json_object_put(scan);
-      layout_emit_trigger("sway");
+      base_widget_emit_trigger("sway");
     }
 
     json_object_put(obj);

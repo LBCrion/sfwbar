@@ -64,85 +64,17 @@ void action_idle_inhibit ( GtkWidget *widget, gchar *command )
 
 void action_set_user_state ( GtkWidget *widget, gchar *value )
 {
-  widget_t *lw;
-
   if(!widget)
     return;
 
-  lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
   if(!g_ascii_strcasecmp(value,"on"))
-    lw->user_state = TRUE;
+    base_widget_set_state(widget,TRUE);
   else
-    lw->user_state = FALSE;
-}
-
-void action_set_value ( GtkWidget *widget, gchar *value )
-{
-  widget_t *lw;
-  guint vcount;
-
-  if(!widget || !value)
-    return;
-
-  lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
-  if(!lw)
-    return;
-  g_free(lw->value);
-  g_free(lw->evalue);
-  lw->value = g_strdup(value);
-  lw->evalue = expr_parse(lw->value, &vcount);
-  vcount = 0;
-  layout_widget_draw(lw);
-  if(!vcount)
-  {
-    g_free(lw->value);
-    lw->value = NULL;
-  }
-  layout_widget_attach(lw);
-}
-
-void action_set_style ( GtkWidget *widget, gchar *style )
-{
-  widget_t *lw;
-  guint vcount;
-
-  if(!widget || !style)
-    return;
-
-  lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
-  if(!lw)
-    return;
-  g_free(lw->style);
-  g_free(lw->estyle);
-  lw->style = g_strdup(style);
-  lw->estyle = expr_parse(lw->style, &vcount);
-  gtk_widget_set_name(lw->widget,lw->estyle);
-  if(!vcount)
-  {
-    g_free(lw->style);
-    lw->style = NULL;
-  }
-  layout_widget_attach(lw);
-}
-
-void action_set_tooltip ( GtkWidget *widget, gchar *tooltip )
-{
-  widget_t *lw;
-
-  if(!widget || !tooltip)
-    return;
-
-  lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
-  if(!lw)
-    return;
-  g_free(lw->tooltip);
-  lw->tooltip = g_strdup(tooltip);
-  layout_widget_set_tooltip(lw);
+    base_widget_set_state(widget,FALSE);
 }
 
 guint16 action_state_build ( GtkWidget *widget, window_t *win )
 {
-  widget_t *lw;
   guint16 state = 0;
 
   if(win)
@@ -156,8 +88,7 @@ guint16 action_state_build ( GtkWidget *widget, window_t *win )
     if(g_object_get_data(G_OBJECT(widget),"inhibitor"))
       state |= WS_INHIBIT;
 
-    lw = g_object_get_data(G_OBJECT(widget),"layout_widget");
-    if(lw && lw->user_state)
+    if(base_widget_get_state(widget))
       state |= WS_USERSTATE;
   }
   return state;
@@ -180,7 +111,6 @@ void action_exec ( GtkWidget *widget, action_t *action,
     GdkEvent *event, window_t *win, guint16 *istate )
 {
   guint16 state;
-  widget_t *lw;
 
   if(!action)
     return;
@@ -192,11 +122,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
         action->type == G_TOKEN_SETTOOLTIP ||
         action->type == G_TOKEN_IDLEINHIBIT ||
         action->type == G_TOKEN_USERSTATE ))
-  {
-    lw = widget_from_id(action->addr);
-    if(lw)
-      widget = lw->widget;
-  }
+    widget = base_widget_from_id(action->addr);
 
   if(istate)
     state = *istate;
@@ -226,11 +152,11 @@ void action_exec ( GtkWidget *widget, action_t *action,
       break;
     case G_TOKEN_MENU:
       if(win)
-        layout_menu_popup(widget, layout_menu_get(action->command), event,
+        menu_popup(widget, menu_from_name(action->command), event,
             win->uid, &state);
       break;
     case G_TOKEN_MENUCLEAR:
-      layout_menu_remove(action->command);
+      menu_remove(action->command);
       break;
     case G_TOKEN_PIPEREAD:
       config_pipe_read(action->command);
@@ -269,13 +195,16 @@ void action_exec ( GtkWidget *widget, action_t *action,
         bar_set_exclusive_zone(action->command,action->addr);
       break;
     case G_TOKEN_SETVALUE:
-      action_set_value(widget,action->command);
+      if(widget && action->command)
+        base_widget_set_value(widget,g_strdup(action->command));
       break;
     case G_TOKEN_SETSTYLE:
-      action_set_style(widget,action->command);
+      if(widget && action->command)
+        base_widget_set_style(widget,g_strdup(action->command));
       break;
     case G_TOKEN_SETTOOLTIP:
-      action_set_tooltip(widget,action->command);
+      if(widget && action->command)
+        base_widget_set_tooltip(widget,g_strdup(action->command));
       break;
     case G_TOKEN_IDLEINHIBIT:
       action_idle_inhibit(widget, action->command);

@@ -8,6 +8,9 @@
 #include <gtk-layer-shell.h>
 #include "sfwbar.h"
 #include "switcheritem.h"
+#include "switcher.h"
+
+G_DEFINE_TYPE_WITH_CODE (Switcher, switcher, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Switcher));
 
 static GtkWidget *switcher;
 static GtkWidget *grid;
@@ -17,13 +20,42 @@ static gint counter;
 static gint title_width = -1;
 static GList *focus;
 
-void switcher_config ( GtkWidget *ngrid )
+static GtkWidget *switcher_get_child ( GtkWidget *self )
 {
-  GList *iter;
+  SwitcherPrivate *priv;
+
+  g_return_val_if_fail(IS_SWITCHER(self),NULL);
+  priv = switcher_get_instance_private(SWITCHER(self));
+
+  return priv->switcher;
+}
+
+static void switcher_class_init ( SwitcherClass *kclass )
+{
+  BASE_WIDGET_CLASS(kclass)->get_child = switcher_get_child;
+}
+
+static void switcher_init ( Switcher *self )
+{
+}
+
+GtkWidget *switcher_new ( void )
+{
+  GtkWidget *self;
+  SwitcherPrivate *priv;
+
+  if(grid)
+    return grid;
+
+  self = GTK_WIDGET(g_object_new(switcher_get_type(), NULL));
+  priv = switcher_get_instance_private(SWITCHER(self));
+
+  priv->switcher = flow_grid_new(FALSE);
+  gtk_container_add(GTK_CONTAINER(self),priv->switcher);
 
   if(!switcher)
   {
-    grid = ngrid;
+    grid = self;
     gtk_widget_set_name(grid, "switcher");
     switcher = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_layer_init_for_window (GTK_WINDOW(switcher));
@@ -33,6 +65,17 @@ void switcher_config ( GtkWidget *ngrid )
   }
 
   hstate = 's';
+
+  return self;
+}
+
+void switcher_populate ( void )
+{
+  GList *iter;
+
+  if(!grid)
+    return;
+
   interval = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(grid),"interval"));
   title_width = GPOINTER_TO_INT(
       g_object_get_data(G_OBJECT(grid),"title_width"));

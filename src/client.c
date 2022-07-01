@@ -26,7 +26,7 @@ gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 
   scanner_reset_vars(file->vars);
   scanner_update_file( chan, file );
-  layout_emit_trigger(file->trigger);
+  base_widget_emit_trigger(file->trigger);
   return TRUE;
 }
 

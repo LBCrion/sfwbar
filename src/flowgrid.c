@@ -157,7 +157,6 @@ void flow_grid_remove_widget ( GtkWidget *widget, GtkWidget *parent )
 
 void flow_grid_clean ( GtkWidget *cgrid )
 {
-  g_return_if_fail(cgrid != NULL);
   g_return_if_fail(IS_FLOW_GRID(cgrid));
 
   gtk_container_foreach(GTK_CONTAINER(cgrid),
@@ -167,27 +166,27 @@ void flow_grid_clean ( GtkWidget *cgrid )
 void flow_grid_invalidate ( GtkWidget *self )
 {
   FlowGridPrivate *priv;
-  g_return_if_fail(IS_FLOW_GRID(self));
 
+  if(IS_BASE_WIDGET(self))
+    self = base_widget_get_child(self);
+  g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   priv->invalid = TRUE;
 }
 
-static void flow_grid_clean_child ( GList **list, void *child )
-{
-  *list = g_list_delete_link(*list,g_list_find(*list,child));
-}
-
 void flow_grid_add_child ( GtkWidget *self, GtkWidget *child )
 {
   FlowGridPrivate *priv;
+
+  if(IS_BASE_WIDGET(self))
+    self = base_widget_get_child(self);
   g_return_if_fail(IS_FLOW_GRID(self));
 
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   priv->children = g_list_prepend(priv->children,child);
-  g_object_weak_ref(G_OBJECT(child),(GWeakNotify)flow_grid_clean_child,
+  g_object_weak_ref(G_OBJECT(child),(GWeakNotify)list_remove_link,
       &(priv->children));
   flow_grid_invalidate(self);
 }
@@ -197,6 +196,8 @@ void flow_grid_delete_child ( GtkWidget *self, void *parent )
   FlowGridPrivate *priv;
   GList *iter;
 
+  if(IS_BASE_WIDGET(self))
+    self = base_widget_get_child(self);
   g_return_if_fail(IS_FLOW_GRID(self));
 
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
@@ -214,6 +215,8 @@ void flow_grid_update ( GtkWidget *self )
   FlowGridPrivate *priv;
   GList *iter;
 
+  if(IS_BASE_WIDGET(self))
+    self = base_widget_get_child(self);
   g_return_if_fail(IS_FLOW_GRID(self));
 
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
@@ -238,6 +241,8 @@ gpointer flow_grid_find_child ( GtkWidget *self, gpointer parent )
   FlowGridPrivate *priv;
   GList *iter;
 
+  if(IS_BASE_WIDGET(self))
+    self = base_widget_get_child(self);
   g_return_val_if_fail(IS_FLOW_GRID(self),NULL);
 
   priv = flow_grid_get_instance_private(FLOW_GRID(self));

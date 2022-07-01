@@ -5,6 +5,7 @@
 
 #include "sfwbar.h"
 #include "taskbaritem.h"
+#include "taskbar.h"
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarItem, taskbar_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (TaskbarItem));
 
@@ -12,14 +13,19 @@ static gboolean taskbar_item_click_cb ( GtkWidget *widget, GdkEventButton *ev,
     gpointer self )
 {
   TaskbarItemPrivate *priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
+  action_t *action;
 
-  if(GTK_IS_BUTTON(widget) && ev->button != 1)
+  if(ev->type != GDK_BUTTON_PRESS || ev->button < 1 || ev->button > 3)
+    return FALSE;
+  if(GTK_IS_BUTTON(widget) && ev->button == 1)
     return FALSE;
 
-  if(ev->type == GDK_BUTTON_PRESS && ev->button >= 1 && ev->button <= 3)
-    action_exec(gtk_bin_get_child(GTK_BIN(widget)),
-        priv->actions[ev->button],(GdkEvent *)ev,
-        wintree_from_id(priv->win->uid),NULL);
+  action = base_widget_get_action(priv->taskbar,ev->button);
+  if(!action)
+    return FALSE;
+
+  action_exec(widget, action,(GdkEvent *)ev,
+      wintree_from_id(priv->win->uid),NULL);
   return TRUE;
 }
 
@@ -28,6 +34,7 @@ static gboolean taskbar_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
 {
   TaskbarItemPrivate *priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
   gint button;
+  action_t *action;
 
   switch(event->direction)
   {
@@ -44,22 +51,30 @@ static gboolean taskbar_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
       button = 7;
       break;
     default:
-      button = 0;
+      return FALSE;
   }
-  if(button)
-    action_exec(gtk_bin_get_child(GTK_BIN(w)),
-        priv->actions[button], (GdkEvent *)event,
-        wintree_from_id(priv->win->uid),NULL);
+  action = base_widget_get_action(priv->taskbar,button);
+  if(!action)
+    return FALSE;
+
+  action_exec(gtk_bin_get_child(GTK_BIN(w)), action, (GdkEvent *)event,
+      wintree_from_id(priv->win->uid),NULL);
 
   return TRUE;
 }
 
 static void taskbar_item_button_cb( GtkWidget *widget, gpointer self )
 {
-  TaskbarItemPrivate *priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
+  TaskbarItemPrivate *priv; 
+  action_t *action;
 
-  if(priv->actions[1])
-    action_exec(widget,priv->actions[1],NULL,priv->win,NULL);
+  g_return_if_fail(IS_TASKBAR_ITEM(self));
+  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
+
+  action = base_widget_get_action(priv->taskbar,1);
+
+  if(action)
+    action_exec(widget,action,NULL,priv->win,NULL);
   else
   {
     if ( wintree_is_focused(priv->win->uid) )
@@ -102,7 +117,8 @@ void taskbar_item_update ( GtkWidget *self )
 
   flow_item_set_active(self, !priv->win->output ||
       !g_object_get_data(G_OBJECT(priv->taskbar),"filter_output") ||
-      !g_strcmp0(priv->win->output, bar_get_output(priv->taskbar)));
+      !g_strcmp0(priv->win->output,
+        bar_get_output(base_widget_get_child(priv->taskbar))));
 }
 
 window_t *taskbar_item_get_window ( GtkWidget *self )
@@ -133,7 +149,7 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   gboolean icons, labels;
   gint title_width;
 
-  g_return_val_if_fail(taskbar,NULL);
+  g_return_val_if_fail(IS_TASKBAR(taskbar),NULL);
 
   self = GTK_WIDGET(g_object_new(taskbar_item_get_type(), NULL));
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));

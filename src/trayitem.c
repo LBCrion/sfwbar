@@ -5,21 +5,21 @@
  */
 
 #include "sfwbar.h"
-#include "sniitem.h"
+#include "trayitem.h"
 
-G_DEFINE_TYPE_WITH_CODE (SniItem, sni_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (SniItem));
+G_DEFINE_TYPE_WITH_CODE (TrayItem, tray_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (TrayItem));
 
-static void sni_item_destroy ( GtkWidget *self )
+static void tray_item_destroy ( GtkWidget *self )
 {
 }
 
-void sni_item_update ( GtkWidget *self )
+void tray_item_update ( GtkWidget *self )
 {
-  SniItemPrivate *priv;
+  TrayItemPrivate *priv;
 
-  g_return_if_fail(IS_SNI_ITEM(self));
+  g_return_if_fail(IS_TRAY_ITEM(self));
 
-  priv = sni_item_get_instance_private(SNI_ITEM(self));
+  priv = tray_item_get_instance_private(TRAY_ITEM(self));
 
   if(priv->sni->string[SNI_PROP_STATUS]!=NULL)
   {
@@ -43,33 +43,39 @@ void sni_item_update ( GtkWidget *self )
   widget_set_css(self,NULL);
 }
 
-sni_item_t *sni_item_get_sni ( GtkWidget *self )
+sni_item_t *tray_item_get_sni ( GtkWidget *self )
 {
-  SniItemPrivate *priv = sni_item_get_instance_private(SNI_ITEM(self));
+  TrayItemPrivate *priv;
+
+  g_return_val_if_fail(IS_TRAY_ITEM(self),NULL);
+  priv = tray_item_get_instance_private(TRAY_ITEM(self));
+
 
   return priv->sni;
 }
 
-static void sni_item_class_init ( SniItemClass *kclass )
+static void tray_item_class_init ( TrayItemClass *kclass )
 {
-  GTK_WIDGET_CLASS(kclass)->destroy = sni_item_destroy;
-  FLOW_ITEM_CLASS(kclass)->update = sni_item_update;
-  FLOW_ITEM_CLASS(kclass)->compare = sni_item_compare;
+  GTK_WIDGET_CLASS(kclass)->destroy = tray_item_destroy;
+  FLOW_ITEM_CLASS(kclass)->update = tray_item_update;
+  FLOW_ITEM_CLASS(kclass)->compare = tray_item_compare;
+  FLOW_ITEM_CLASS(kclass)->get_parent = 
+    (void *(*)(GtkWidget *))tray_item_get_sni;
 }
 
-static void sni_item_init ( SniItem *self )
+static void tray_item_init ( TrayItem *self )
 {
 }
 
-GtkWidget *sni_item_new( sni_item_t *sni, GtkWidget *tray )
+GtkWidget *tray_item_new( sni_item_t *sni, GtkWidget *tray )
 {
   GtkWidget *self;
-  SniItemPrivate *priv;
+  TrayItemPrivate *priv;
 
   g_return_val_if_fail(sni,NULL);
 
-  self = GTK_WIDGET(g_object_new(sni_item_get_type(), NULL));
-  priv = sni_item_get_instance_private(SNI_ITEM(self));
+  self = GTK_WIDGET(g_object_new(tray_item_get_type(), NULL));
+  priv = tray_item_get_instance_private(TRAY_ITEM(self));
 
   priv->icon = scale_image_new();
   priv->sni = sni;
@@ -87,14 +93,14 @@ GtkWidget *sni_item_new( sni_item_t *sni, GtkWidget *tray )
   return self;
 }
 
-gint sni_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
+gint tray_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
 {
-  SniItemPrivate *p1,*p2;
+  TrayItemPrivate *p1,*p2;
 
-  g_return_val_if_fail(IS_SNI_ITEM(a),0);
-  g_return_val_if_fail(IS_SNI_ITEM(b),0);
+  g_return_val_if_fail(IS_TRAY_ITEM(a),0);
+  g_return_val_if_fail(IS_TRAY_ITEM(b),0);
 
-  p1 = sni_item_get_instance_private(SNI_ITEM(a));
-  p2 = sni_item_get_instance_private(SNI_ITEM(b));
+  p1 = tray_item_get_instance_private(TRAY_ITEM(a));
+  p2 = tray_item_get_instance_private(TRAY_ITEM(b));
   return g_strcmp0(p1->sni->string[SNI_PROP_TITLE],p2->sni->string[SNI_PROP_TITLE]);
 }
