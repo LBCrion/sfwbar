@@ -544,8 +544,8 @@ void config_get_pins ( GScanner *scanner, GtkWidget *widget )
 {
   scanner->max_parse_errors = FALSE;
 
-//  if(lw->wtype != G_TOKEN_PAGER)
-//    return g_scanner_error(scanner,"this widget has no property 'pins'");
+  if(!IS_PAGER(widget))
+    return g_scanner_error(scanner,"this widget has no property 'pins'");
 
   if(!config_expect_token(scanner, '=',"expecting pins = string [,string]"))
     return;
@@ -894,15 +894,12 @@ GtkWidget *config_include ( GScanner *scanner )
 
 void config_widgets ( GScanner *scanner, GtkWidget *parent )
 {
-//  GtkWidget *sibling=NULL;
   GtkWidget *widget;
   gboolean extra;
 
   while ( (gint)g_scanner_peek_next_token ( scanner ) != '}' &&
       (gint)g_scanner_peek_next_token ( scanner ) != G_TOKEN_EOF )
   {
-//    lw = layout_widget_new();
-//    lw->wtype = g_scanner_get_next_token(scanner);
     switch ( (gint)g_scanner_get_next_token(scanner) )
     {
       case G_TOKEN_GRID:
@@ -949,7 +946,6 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
       default:
         g_scanner_error(scanner,"Unexpected token in 'layout'");
         widget = NULL;
-//        layout_widget_free(lw);
         continue;
     }
     if(!widget)
@@ -957,11 +953,9 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
     if(scanner->max_parse_errors)
     {
       gtk_widget_destroy(widget);
-//      layout_widget_free(lw);
       continue;
     }
     extra = config_widget_props( scanner, widget);
-//    sibling = layout_widget_config ( widget, parent, sibling );
     if(!IS_GRID(widget) && !IS_FLOW_GRID(base_widget_get_child(widget)))
       base_widget_connect_signals(widget);
     grid_attach(parent,widget);
@@ -969,7 +963,6 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
     if(IS_GRID(widget) && extra)
       config_widgets(scanner,widget);
 
-//    layout_widget_attach(lw);
   }
   if((gint)scanner->next_token == '}')
     g_scanner_get_next_token(scanner);
@@ -988,7 +981,6 @@ GtkWidget *config_layout ( GScanner *scanner, GtkWidget *widget )
   }
 
   extra = config_widget_props(scanner, widget);
-//  layout_widget_config(lw,NULL,NULL);
   if( widget && extra)
     config_widgets(scanner, widget);
 
