@@ -115,7 +115,8 @@ void action_exec ( GtkWidget *widget, action_t *action,
   if(!action)
     return;
 
-  if(action->addr && (action->type == G_TOKEN_MENU ||
+  if(action->addr && (
+        action->type == G_TOKEN_MENU ||
         action->type == G_TOKEN_FUNCTION ||
         action->type == G_TOKEN_SETVALUE ||
         action->type == G_TOKEN_SETSTYLE ||

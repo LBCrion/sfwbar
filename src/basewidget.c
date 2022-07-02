@@ -56,17 +56,6 @@ static void base_widget_init ( BaseWidget *self )
   priv->rect.h = 1;
 }
 
-static gboolean base_widget_has_actions ( GtkWidget *self )
-{
-  static const gint8 act_check[MAX_BUTTON*sizeof(action_t *)];
-  BaseWidgetPrivate *priv;
-
-  g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
-
-  return memcmp(priv->actions,act_check,sizeof(action_t *)*MAX_BUTTON);
-}
-
 static gboolean base_widget_button_cb ( GtkWidget *button, GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
@@ -75,7 +64,7 @@ static gboolean base_widget_button_cb ( GtkWidget *button, GtkWidget *self )
 
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  action_exec(button,priv->actions[1],NULL,
+  action_exec(self,priv->actions[1],NULL,
       wintree_from_id(wintree_get_focus()),NULL);
   return TRUE;
 }
@@ -105,7 +94,6 @@ static gboolean base_widget_scroll_cb ( GtkWidget *self,
   gint button;
 
   g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   switch(event->direction)
@@ -123,11 +111,10 @@ static gboolean base_widget_scroll_cb ( GtkWidget *self,
       button = 7;
       break;
     default:
-      button = 0;
+      return FALSE;
   }
-  if(button)
-    action_exec(base_widget_get_child(self),priv->actions[button],
-        (GdkEvent *)event, wintree_from_id(wintree_get_focus()),NULL);
+  action_exec(self,priv->actions[button],
+      (GdkEvent *)event, wintree_from_id(wintree_get_focus()),NULL);
 
   return TRUE;
 }
@@ -441,23 +428,6 @@ gint64 base_widget_get_next_poll ( GtkWidget *self )
   return priv->next_poll;
 }
 
-void base_widget_connect_signals ( GtkWidget *self )
-{
-  g_return_if_fail(IS_BASE_WIDGET(self));
-
-  if(!base_widget_has_actions(self))
-    return;
-
-  gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
-  g_signal_connect(G_OBJECT(self),"button-press-event",
-      G_CALLBACK(base_widget_click_cb),NULL);
-  g_signal_connect(G_OBJECT(self),"scroll-event",
-    G_CALLBACK(base_widget_scroll_cb),NULL);
-  if(GTK_IS_BUTTON(base_widget_get_child(self)))
-    g_signal_connect(G_OBJECT(base_widget_get_child(self)),"clicked",
-      G_CALLBACK(base_widget_button_cb),self);
-}
-
 gchar *base_widget_get_value ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
@@ -494,6 +464,25 @@ void base_widget_set_action ( GtkWidget *self, gint n, action_t *action )
 
   action_free(priv->actions[n],NULL);
   priv->actions[n] = action;
+
+
+  if(!priv->scroll_h && (priv->actions[4] || priv->actions[5] ||
+        priv->actions[6] || priv->actions[7]) )
+  {
+    gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
+    priv->scroll_h = g_signal_connect(G_OBJECT(self),"scroll-event",
+      G_CALLBACK(base_widget_scroll_cb),NULL);
+  }
+
+  if(!priv->click_h && (priv->actions[2] || priv->actions[3] ||
+        (priv->actions[1] && !GTK_IS_BUTTON(base_widget_get_child(self))) ) )
+    priv->click_h = g_signal_connect(G_OBJECT(self),"button-press-event",
+        G_CALLBACK(base_widget_click_cb),NULL);
+
+  if(!priv->button_h && GTK_IS_BUTTON(base_widget_get_child(self)) &&
+      priv->actions[1])
+    priv->button_h = g_signal_connect(G_OBJECT(base_widget_get_child(self)),
+        "clicked",G_CALLBACK(base_widget_button_cb),self);
 }
 
 void base_widget_parse_css ( GtkWidget *widget, gchar *css )

@@ -29,6 +29,9 @@ struct _BaseWidgetPrivate
   gchar *tooltip;
   gulong tooltip_h;
   action_t *actions[MAX_BUTTON];
+  gulong button_h;
+  gulong click_h;
+  gulong scroll_h;
   gint64 interval;
   gchar *trigger;
   gint64 next_poll;
@@ -48,7 +51,6 @@ void base_widget_set_interval ( GtkWidget *self, gint64 interval );
 void base_widget_set_state ( GtkWidget *self, gboolean state );
 void base_widget_set_action ( GtkWidget *self, gint n, action_t *action );
 gboolean base_widget_update_value ( GtkWidget *self );
-void base_widget_connect_signals ( GtkWidget *self );
 void base_widget_set_rect ( GtkWidget *self, struct rect rect );
 void base_widget_attach ( GtkWidget *, GtkWidget *, GtkWidget *);
 gboolean base_widget_get_state ( GtkWidget *self );

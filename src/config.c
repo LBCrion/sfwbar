@@ -956,8 +956,8 @@ void config_widgets ( GScanner *scanner, GtkWidget *parent )
       continue;
     }
     extra = config_widget_props( scanner, widget);
-    if(!IS_GRID(widget) && !IS_FLOW_GRID(base_widget_get_child(widget)))
-      base_widget_connect_signals(widget);
+//    if(!IS_GRID(widget) && !IS_FLOW_GRID(base_widget_get_child(widget)))
+//      base_widget_connect_signals(widget);
     grid_attach(parent,widget);
 
     if(IS_GRID(widget) && extra)
