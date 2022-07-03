@@ -17,7 +17,6 @@ void switcher_item_update ( GtkWidget *self )
   SwitcherItemPrivate *priv;
 
   g_return_if_fail(IS_SWITCHER_ITEM(self));
-
   priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
 
   if(priv->label)
@@ -40,7 +39,10 @@ void switcher_item_update ( GtkWidget *self )
 
 window_t *switcher_item_get_window ( GtkWidget *self )
 {
-  SwitcherItemPrivate *priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
+  SwitcherItemPrivate *priv;
+
+  g_return_val_if_fail(IS_SWITCHER_ITEM(self),NULL);
+  priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
 
   return priv->win;
 }

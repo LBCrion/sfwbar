@@ -13,7 +13,6 @@ void pager_item_update ( GtkWidget *self )
   PagerItemPrivate *priv;
 
   g_return_if_fail(IS_PAGER_ITEM(self));
-
   priv = pager_item_get_instance_private(PAGER_ITEM(self));
 
   if(g_strcmp0(gtk_button_get_label(GTK_BUTTON(priv->button)),priv->ws->name))
@@ -42,7 +41,6 @@ workspace_t *pager_item_get_workspace ( GtkWidget *self )
   PagerItemPrivate *priv;
 
   g_return_val_if_fail(IS_PAGER_ITEM(self),NULL);
-
   priv = pager_item_get_instance_private(PAGER_ITEM(self));
 
   return priv->ws;

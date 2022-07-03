@@ -18,7 +18,6 @@ void tray_item_update ( GtkWidget *self )
   TrayItemPrivate *priv;
 
   g_return_if_fail(IS_TRAY_ITEM(self));
-
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
 
   if(priv->sni->string[SNI_PROP_STATUS]!=NULL)
@@ -73,7 +72,6 @@ GtkWidget *tray_item_new( sni_item_t *sni, GtkWidget *tray )
   TrayItemPrivate *priv;
 
   g_return_val_if_fail(sni,NULL);
-
   self = GTK_WIDGET(g_object_new(tray_item_get_type(), NULL));
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
 

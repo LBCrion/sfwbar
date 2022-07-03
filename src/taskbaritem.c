@@ -12,8 +12,11 @@ G_DEFINE_TYPE_WITH_CODE (TaskbarItem, taskbar_item, FLOW_ITEM_TYPE, G_ADD_PRIVAT
 static gboolean taskbar_item_click_cb ( GtkWidget *widget, GdkEventButton *ev,
     gpointer self )
 {
-  TaskbarItemPrivate *priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
+  TaskbarItemPrivate *priv;
   action_t *action;
+
+  g_return_val_if_fail(IS_TASKBAR_ITEM(self),FALSE);
+  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
 
   if(ev->type != GDK_BUTTON_PRESS || ev->button < 1 || ev->button > 3)
     return FALSE;
@@ -32,9 +35,12 @@ static gboolean taskbar_item_click_cb ( GtkWidget *widget, GdkEventButton *ev,
 static gboolean taskbar_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
     gpointer self )
 {
-  TaskbarItemPrivate *priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
+  TaskbarItemPrivate *priv;
   gint button;
   action_t *action;
+
+  g_return_val_if_fail(IS_TASKBAR_ITEM(self),FALSE);
+  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
 
   switch(event->direction)
   {
@@ -95,7 +101,6 @@ void taskbar_item_update ( GtkWidget *self )
   TaskbarItemPrivate *priv;
 
   g_return_if_fail(IS_TASKBAR_ITEM(self));
-
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
 
   if(priv->label)
@@ -123,7 +128,10 @@ void taskbar_item_update ( GtkWidget *self )
 
 window_t *taskbar_item_get_window ( GtkWidget *self )
 {
-  TaskbarItemPrivate *priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
+  TaskbarItemPrivate *priv;
+
+  g_return_val_if_fail(IS_TASKBAR_ITEM(self),NULL);
+  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
 
   return priv->win;
 }
