@@ -88,7 +88,7 @@ guint16 action_state_build ( GtkWidget *widget, window_t *win )
     if(g_object_get_data(G_OBJECT(widget),"inhibitor"))
       state |= WS_INHIBIT;
 
-    if(base_widget_get_state(widget))
+    if(IS_BASE_WIDGET(widget) && base_widget_get_state(widget))
       state |= WS_USERSTATE;
   }
   return state;
