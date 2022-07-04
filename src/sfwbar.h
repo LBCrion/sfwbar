@@ -105,14 +105,6 @@ void sway_ipc_pager_populate ( void );
 void place_window ( gint64 wid, gint64 pid );
 void placer_config ( gint xs, gint ys, gint xo, gint yo, gboolean pid );
 
-void taskbar_invalidate ( GtkWidget * );
-void taskbar_invalidate_all ( void );
-void taskbar_set_options ( gboolean, gboolean, gboolean, gint );
-void taskbar_update_all ( void );
-void taskbar_item_init_for_all ( window_t *win );
-void taskbar_item_destroy_for_all ( window_t *win );
-void taskbar_set_label_for_all ( window_t *, gchar *);
-
 window_t *wintree_window_init ( void );
 window_t *wintree_from_id ( gpointer id );
 window_t *wintree_from_pid ( gint64 pid );

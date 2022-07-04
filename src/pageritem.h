@@ -41,7 +41,6 @@ struct _PagerItemPrivate
 
 GType pager_item_get_type ( void );
 
-gboolean workspace_is_focused ( workspace_t *ws );
 GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws );
 workspace_t *pager_item_get_workspace ( GtkWidget *self );
 void pager_item_update ( GtkWidget *self );

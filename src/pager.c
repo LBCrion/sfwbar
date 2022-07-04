@@ -82,7 +82,7 @@ static gint pager_comp_name ( workspace_t *a, gchar * b)
   return g_strcmp0(a->name,b);
 }
 
-gboolean workspace_is_focused ( workspace_t *ws )
+gboolean pager_workspace_is_focused ( workspace_t *ws )
 {
   return (ws == focus);
 }

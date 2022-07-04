@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <gtk/gtk.h>
 #include "sfwbar.h"
+#include "taskbar.h"
 
 static GList *wt_list;
 static gpointer wt_focus;
@@ -85,7 +86,7 @@ void wintree_window_append ( window_t *win )
 
   if( !win->valid && (win->title || win->appid) )
   {
-    taskbar_item_init_for_all(win);
+    taskbar_init_item  (win);
     win->valid = TRUE;
   }
   if( !win->switcher && (win->title || win->appid) )
@@ -109,7 +110,7 @@ void wintree_window_delete ( gpointer id )
   win = item->data;
   if(!win)
     return;
-  taskbar_item_destroy_for_all(win);
+  taskbar_destroy_item (win);
   if(win->switcher)
   {
     gtk_widget_destroy(win->switcher);

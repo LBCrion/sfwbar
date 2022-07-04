@@ -33,5 +33,11 @@ GType taskbar_get_type ( void );
 
 GtkWidget *taskbar_new();
 void taskbar_populate ( void );
+void taskbar_invalidate ( GtkWidget * );
+void taskbar_invalidate_all ( void );
+void taskbar_update_all ( void );
+void taskbar_init_item ( window_t *win );
+void taskbar_destroy_item ( window_t *win );
+
 
 #endif

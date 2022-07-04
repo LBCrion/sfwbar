@@ -4,6 +4,7 @@
  */
 
 #include "sfwbar.h"
+#include "pager.h"
 #include "pageritem.h"
 
 G_DEFINE_TYPE_WITH_CODE (PagerItem, pager_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (PagerItem));
@@ -19,7 +20,7 @@ void pager_item_update ( GtkWidget *self )
     gtk_button_set_label(GTK_BUTTON(priv->button),priv->ws->name);
   gtk_widget_set_has_tooltip(priv->button,
       GPOINTER_TO_INT(g_object_get_data(G_OBJECT(priv->pager),"preview")));
-  if ( workspace_is_focused(priv->ws) )
+  if ( pager_workspace_is_focused(priv->ws) )
     gtk_widget_set_name(priv->button, "pager_focused");
   else if (priv->ws->visible)
     gtk_widget_set_name(priv->button, "pager_visible");

@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include "sfwbar.h"
+#include "taskbar.h"
 #include "pager.h"
 #include "pageritem.h"
 

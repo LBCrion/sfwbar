@@ -9,16 +9,24 @@
 
 G_DEFINE_TYPE_WITH_CODE (Chart, chart, GTK_TYPE_BOX, G_ADD_PRIVATE (Chart));
 
-static void chart_destroy ( GtkWidget *w )
+static void chart_destroy ( GtkWidget *self )
 {
-  ChartPrivate *priv = chart_get_instance_private(CHART(w));
+  ChartPrivate *priv;
+  
+  g_return_if_fail(IS_CHART(self));
+  priv = chart_get_instance_private(CHART(self));
+
   g_queue_free(priv->data);
-  GTK_WIDGET_CLASS(chart_parent_class)->destroy(w);
+  GTK_WIDGET_CLASS(chart_parent_class)->destroy(self);
 }
 
-static gboolean chart_draw ( GtkWidget *w, cairo_t *cr )
+static gboolean chart_draw ( GtkWidget *self, cairo_t *cr )
 {
-  ChartPrivate *priv = chart_get_instance_private(CHART(w));
+  ChartPrivate *priv;
+
+  g_return_val_if_fail(IS_CHART(self),FALSE);
+  priv = chart_get_instance_private(CHART(self));
+
   GtkStyleContext *context;
   gint width,height;
   GtkBorder border;
@@ -26,10 +34,10 @@ static gboolean chart_draw ( GtkWidget *w, cairo_t *cr )
   GdkRGBA fg;
   gint n, i, offset, len, scale;
 
-  width = gtk_widget_get_allocated_width(w);
-  height = gtk_widget_get_allocated_height(w);
+  width = gtk_widget_get_allocated_width(self);
+  height = gtk_widget_get_allocated_height(self);
 
-  context = gtk_widget_get_style_context(w);
+  context = gtk_widget_get_style_context(self);
   flags = gtk_style_context_get_state(context);
   gtk_style_context_get_border(context,flags,&border);
   gtk_render_background(context,cr,0,0,width,height);
@@ -69,9 +77,13 @@ static void chart_class_init ( ChartClass *kclass )
   widget_class->draw = chart_draw;
 }
 
-static void chart_init ( Chart *widget )
+static void chart_init ( Chart *self )
 {
-  ChartPrivate *priv = chart_get_instance_private(CHART(widget));
+  ChartPrivate *priv;
+
+  g_return_if_fail(IS_CHART(self));
+  priv = chart_get_instance_private(CHART(self));
+
   priv->data = g_queue_new();
 }
 
@@ -80,12 +92,15 @@ GtkWidget *chart_new( void )
   return GTK_WIDGET(g_object_new(chart_get_type(), NULL));
 }
 
-int chart_update ( GtkWidget *widget, gdouble n )
+int chart_update ( GtkWidget *self, gdouble n )
 {
-  ChartPrivate *priv = chart_get_instance_private(CHART(widget));
+  ChartPrivate *priv;
+
+  g_return_val_if_fail(IS_CHART(self),0);
+  priv = chart_get_instance_private(CHART(self));
 
   g_queue_push_tail(priv->data,g_memdup(&n,sizeof(double)));
-  gtk_widget_queue_draw(widget);
+  gtk_widget_queue_draw(self);
 
   return 0;
 }

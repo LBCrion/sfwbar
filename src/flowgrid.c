@@ -45,16 +45,19 @@ static void flow_grid_class_init ( FlowGridClass *kclass )
   widget_class->get_preferred_height = flow_grid_get_preferred_height;
 }
 
-static void flow_grid_init ( FlowGrid *cgrid )
+static void flow_grid_init ( FlowGrid *self )
 {
-  FlowGridPrivate *priv = flow_grid_get_instance_private(FLOW_GRID(cgrid));
+  FlowGridPrivate *priv;
+
+  g_return_if_fail(IS_FLOW_GRID(self));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   priv->rows = 1;
   priv->cols = 0;
   priv->limit = TRUE;
 
-  gtk_grid_set_row_homogeneous(GTK_GRID(cgrid),TRUE);
-  gtk_grid_set_column_homogeneous(GTK_GRID(cgrid),TRUE);
+  gtk_grid_set_row_homogeneous(GTK_GRID(self),TRUE);
+  gtk_grid_set_column_homogeneous(GTK_GRID(self),TRUE);
 }
 
 GtkWidget *flow_grid_new( gboolean limit)
@@ -186,8 +189,8 @@ void flow_grid_add_child ( GtkWidget *self, GtkWidget *child )
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   priv->children = g_list_prepend(priv->children,child);
-  g_object_weak_ref(G_OBJECT(child),(GWeakNotify)list_remove_link,
-      &(priv->children));
+//  g_object_weak_ref(G_OBJECT(child),(GWeakNotify)list_remove_link,
+//      &(priv->children));
   flow_grid_invalidate(self);
 }
 
@@ -204,6 +207,7 @@ void flow_grid_delete_child ( GtkWidget *self, void *parent )
   for(iter=priv->children;iter;iter=g_list_next(iter))
     if(flow_item_get_parent(iter->data)==parent)
     {
+      priv->children = g_list_remove_link(priv->children,iter);
       gtk_widget_destroy(iter->data);
       break;
     }

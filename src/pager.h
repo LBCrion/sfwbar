@@ -36,6 +36,7 @@ GtkWidget *pager_new();
 void pager_workspace_new ( workspace_t *new );
 void pager_workspace_delete ( gpointer id );
 void pager_workspace_set_focus ( gpointer id );
+gboolean pager_workspace_is_focused ( workspace_t *ws );
 void pager_update ( void );
 
 #endif

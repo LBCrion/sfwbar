@@ -1,4 +1,5 @@
 #include "sfwbar.h"
+#include "taskbar.h"
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkwayland.h>
