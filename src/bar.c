@@ -12,20 +12,12 @@
 
 static GHashTable *bar_list;
 
-GtkWidget *bar_get_from_widget ( GtkWidget *widget )
-{
-  return gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
-}
-
 GtkWidget *bar_get_by_name ( gchar *name )
 {
   if(!bar_list)
     return NULL;
 
-  if(!name)
-    name = "sfwbar";
-
-  return g_hash_table_lookup(bar_list,name);
+  return g_hash_table_lookup(bar_list,name?name:"sfwbar");
 }
 
 GtkWidget *bar_grid_by_name ( gchar *addr )
@@ -136,7 +128,7 @@ gint bar_get_toplevel_dir ( GtkWidget *widget )
   if(!widget)
     return GTK_POS_RIGHT;
 
-  toplevel = bar_get_from_widget(widget);
+  toplevel = gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
 
   if(!toplevel)
     return GTK_POS_RIGHT;
@@ -186,8 +178,7 @@ gchar *bar_get_output ( GtkWidget *widget )
   GdkWindow *win;
   GtkWidget *toplevel;
 
-  toplevel = bar_get_from_widget(widget);
-
+  toplevel = gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
   win = gtk_widget_get_window(GTK_WIDGET(toplevel));
   return g_object_get_data( G_OBJECT(gdk_display_get_monitor_at_window(
         gdk_window_get_display(win),win)), "xdg_name" );
