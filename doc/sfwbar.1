@@ -240,7 +240,7 @@ The above will include all scanner variables data and widget sub\-layout from
 file MyWidget.widget
 .sp
 Grid widgets can contain other widgets, these are declared within the grid
-definition following the parent grid properties. i.e.
+definition i.e.
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -269,6 +269,7 @@ an expression specifying the value to display. This can be a static value
 section for more detail.
 For \fBLabel\fP widgets value tells text to display.
 For \fBScale\fP widgets it speficies a fraction to display.
+For \fBChart\fP widgets it specifies a fraction of the next datapoint.
 For \fBImage\fP widgets and buttons it provides an icon or an image file name.
 .TP
 .B style
@@ -289,6 +290,7 @@ widget update frequency in milliseconds..
 .B trigger
 trigger on which event updates. Triggers are emitted by Client sources
 a widget should not have both an interval and a trigger specified.
+(if both are specified, interval is ignored and trigger is used).
 .TP
 .B css
 additional css properties for the widget. These propertes will only apply to

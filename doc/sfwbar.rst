@@ -184,7 +184,7 @@ The above will include all scanner variables data and widget sub-layout from
 file MyWidget.widget
 
 Grid widgets can contain other widgets, these are declared within the grid
-definition following the parent grid properties. i.e. ::
+definition i.e. ::
 
   grid {
     css = "* { border: none }"
@@ -204,6 +204,7 @@ value
   section for more detail.
   For ``Label`` widgets value tells text to display.
   For ``Scale`` widgets it speficies a fraction to display.
+  For ``Chart`` widgets it specifies a fraction of the next datapoint.
   For ``Image`` widgets and buttons it provides an icon or an image file name.
 
 style 
@@ -224,6 +225,7 @@ interval
 trigger 
   trigger on which event updates. Triggers are emitted by Client sources
   a widget should not have both an interval and a trigger specified.
+  (if both are specified, interval is ignored and trigger is used).
 
 css
   additional css properties for the widget. These propertes will only apply to
