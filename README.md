@@ -46,6 +46,10 @@ sudo ninja -C build install
 
 ## Configuration
 Copy sfwbar.config from /usr/share/sfwbar/ to ~/.config/sfwbar/
+If you prefer to start with something more like tint2 bar, you can
+copy [t2.config](config/t2.config) into ~/.config/sfwbar/sfwbar.config
+instead. Or if want something like waybar, you can copy
+[wbar.config](config/wbar.config)
 For more information on the format of configuration file, please see the
 [man page](doc/sfwbar.rst)
 
