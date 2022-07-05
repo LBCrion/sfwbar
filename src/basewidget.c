@@ -585,3 +585,18 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
       usleep(timer);
   }
 }
+
+void base_widget_autoexec ( GtkWidget *self, gpointer data )
+{
+  action_t *action;
+
+  if(GTK_IS_CONTAINER(self))
+    gtk_container_forall(GTK_CONTAINER(self),base_widget_autoexec, data);
+
+  if(!IS_BASE_WIDGET(self))
+    return;
+
+  action = base_widget_get_action(self,0);
+  if(action)
+    action_exec(self,action,NULL,wintree_from_id(wintree_get_focus()),NULL);
+}

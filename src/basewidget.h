@@ -64,5 +64,6 @@ action_t *base_widget_get_action ( GtkWidget *self, gint n );
 gpointer base_widget_scanner_thread ( GMainContext *gmc );
 void base_widget_parse_css ( GtkWidget *widget, gchar *css );
 void base_widget_emit_trigger ( gchar *trigger );
+void base_widget_autoexec ( GtkWidget *self, gpointer data );
 
 #endif

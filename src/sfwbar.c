@@ -154,6 +154,7 @@ static void activate (GtkApplication* app, gpointer data )
     {
       gtk_application_add_window(app,GTK_WINDOW(clist->data));
       widget_set_css(GTK_WIDGET(clist->data),NULL);
+      base_widget_autoexec(clist->data,NULL);
     }
   g_list_free(clist);
 
