@@ -78,6 +78,17 @@ typedef struct sni_item {
   GtkWidget *box;
 } sni_item_t;
 
+struct sni_iface {
+  guint regid;
+  gboolean watcher_registered;
+  gchar *watcher_iface;
+  gchar *item_iface;
+  gchar *host_iface;
+  GList *item_list;
+  GDBusNodeInfo *idata;
+};
+
+
 void action_exec ( GtkWidget *, action_t *, GdkEvent *, window_t *, guint16 *);
 void action_free ( action_t *, GObject *);
 void action_function_add ( gchar *, GList *);
@@ -158,6 +169,9 @@ gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data);
 gboolean sni_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
     gpointer data );
 void sni_item_set_icon ( sni_item_t *sni, gint icon, gint pix );
+void sni_get_menu ( sni_item_t *sni, GdkEvent *event );
+sni_item_t *sni_item_new (GDBusConnection *con, struct sni_iface *iface,
+    const gchar *uid);
 
 GtkWidget *menu_from_name ( gchar *name );
 void menu_add ( gchar *name, GtkWidget *menu );

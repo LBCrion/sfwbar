@@ -35,5 +35,6 @@ GtkWidget *tray_new();
 void tray_item_init_for_all ( sni_item_t *sni );
 void tray_item_destroy ( sni_item_t *sni );
 void tray_update ( void );
+void tray_invalidate_all ( void );
 
 #endif
