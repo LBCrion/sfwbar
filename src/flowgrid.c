@@ -207,7 +207,7 @@ void flow_grid_delete_child ( GtkWidget *self, void *parent )
   for(iter=priv->children;iter;iter=g_list_next(iter))
     if(flow_item_get_parent(iter->data)==parent)
     {
-      priv->children = g_list_remove_link(priv->children,iter);
+      priv->children = g_list_delete_link(priv->children,iter);
       gtk_widget_destroy(iter->data);
       break;
     }

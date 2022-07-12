@@ -85,6 +85,7 @@ struct sni_iface {
   gchar *item_iface;
   gchar *host_iface;
   GList *item_list;
+//  GHashTable *items;
   GDBusNodeInfo *idata;
 };
 
