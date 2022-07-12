@@ -9,15 +9,20 @@
 
 G_DEFINE_TYPE_WITH_CODE (ScaleImage, scale_image, GTK_TYPE_IMAGE, G_ADD_PRIVATE (ScaleImage));
 
-int scale_image_update ( GtkWidget *widget );
+int scale_image_update ( GtkWidget *self );
 
-void scale_image_resize ( GtkWidget *widget, GdkRectangle *alloc )
+void scale_image_resize ( GtkWidget *self, GdkRectangle *alloc )
 {
   gint w,h;
-  ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(widget));
+  ScaleImagePrivate *priv;
   GtkBorder border,padding;
-  GtkStyleContext *style = gtk_widget_get_style_context(widget);
-  GtkStateFlags flags = gtk_style_context_get_state(style);
+  GtkStyleContext *style;
+  GtkStateFlags flags;
+
+  g_return_if_fail(IS_SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
+  style = gtk_widget_get_style_context(self);
+  flags = gtk_style_context_get_state(style);
 
   gtk_style_context_get_border(style, flags, &border );
   gtk_style_context_get_padding(style, flags, &padding );
@@ -29,11 +34,11 @@ void scale_image_resize ( GtkWidget *widget, GdkRectangle *alloc )
   {
     priv->w = w;
     priv->h = h;
-    scale_image_update(widget);
+    scale_image_update(self);
   }
 
-  gtk_widget_set_allocation(widget,alloc);
-  GTK_WIDGET_CLASS(scale_image_parent_class)->size_allocate(widget,alloc);
+  gtk_widget_set_allocation(self,alloc);
+  GTK_WIDGET_CLASS(scale_image_parent_class)->size_allocate(self,alloc);
 }
 
 static void scale_image_get_preferred_width ( GtkWidget *w, gint *m, gint *n )
@@ -69,14 +74,17 @@ static void scale_image_get_preferred_height ( GtkWidget *w, gint *m, gint *n )
   *m=1;
 }
 
-static void scale_image_destroy ( GtkWidget *w )
+static void scale_image_destroy ( GtkWidget *self )
 {
-  ScaleImagePrivate *priv = scale_image_get_instance_private(SCALE_IMAGE(w));
+  ScaleImagePrivate *priv;
+
+  g_return_if_fail(IS_SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
   g_free(priv->file);
   priv->file=NULL;
   g_free(priv->fname);
   priv->fname=NULL;
-  GTK_WIDGET_CLASS(scale_image_parent_class)->destroy(w);
+  GTK_WIDGET_CLASS(scale_image_parent_class)->destroy(self);
 }
 
 static void scale_image_map ( GtkWidget *w )
@@ -100,10 +108,12 @@ static void scale_image_class_init ( ScaleImageClass *kclass )
       GDK_TYPE_RGBA,G_PARAM_READABLE));
 }
 
-static void scale_image_init ( ScaleImage *widget )
+static void scale_image_init ( ScaleImage *self )
 {
-  ScaleImagePrivate *priv = scale_image_get_instance_private(
-      SCALE_IMAGE(widget));
+  ScaleImagePrivate *priv;
+
+  g_return_if_fail(IS_SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
   priv->w = -1;
   priv->h = -1;
   priv->file = NULL;
@@ -125,88 +135,103 @@ void scale_image_set_pixbuf ( GtkWidget *widget, GdkPixbuf *pb )
   priv->ftype = SI_BUFF;
 }
 
-void scale_image_check_icon ( GtkWidget *widget, gchar *file )
+static void scale_image_load_icon ( GtkWidget *self, gchar *icon )
 {
   GdkPixbuf *buf;
-  GtkIconTheme *theme;
+  ScaleImagePrivate *priv;
+
+  g_return_if_fail(IS_SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
+
+  if(!icon)
+    return;
+  buf = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(),icon,10,0,NULL);
+  if(buf)
+  {
+    g_free(priv->fname);
+    priv->fname = icon;
+    priv->ftype = SI_ICON;
+    g_object_unref(G_OBJECT(buf));
+  }
+  else
+    g_free(icon);
+}
+
+static void scale_image_check_appinfo ( GtkWidget *self, gchar *icon )
+{
+  ScaleImagePrivate *priv;
   GDesktopAppInfo *app;
-  gint i;
+
+  g_return_if_fail(IS_SCALE_IMAGE(self));
+  app = g_desktop_app_info_new(icon);
+  if(!app)
+    return;
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
+
+  if((!g_desktop_app_info_get_nodisplay(app))&&(priv->ftype==SI_NONE))
+    scale_image_load_icon(self,g_desktop_app_info_get_string(app,"Icon"));
+  g_object_unref(G_OBJECT(app));
+}
+
+static void scale_image_check_icon ( GtkWidget *self, gchar *file )
+{
+  gint i,j;
   gchar *temp;
   gchar ***desktop;
-  ScaleImagePrivate *priv = scale_image_get_instance_private(
-      SCALE_IMAGE(widget));
+  ScaleImagePrivate *priv;
 
-  theme = gtk_icon_theme_get_default();
-  if(theme)
-  {
-    buf = gtk_icon_theme_load_icon(theme,file,10,0,NULL);
-    if(buf)
-    {
-      g_free(priv->fname);
-      priv->fname = g_strdup(file);
-      priv->ftype = SI_ICON;
-      g_object_unref(G_OBJECT(buf));
-      return;
-    }
-  }
+  g_return_if_fail(IS_SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
+
+  scale_image_load_icon(self,g_strdup(file));
+  if(priv->ftype!=SI_NONE)
+    return;
 
   desktop = g_desktop_app_info_search(file);
   if(*desktop)
   {
-    if(*desktop[0])
-      for(i=0;desktop[0][i];i++)
-      {
-        app = g_desktop_app_info_new(desktop[0][i]);
-        if(app)
-        {
-          if((!g_desktop_app_info_get_nodisplay(app))&&(priv->ftype==SI_NONE))
-          {
-            temp = (gchar *)g_desktop_app_info_get_string(app,"Icon");
-            if(temp)
-            {
-              buf = gtk_icon_theme_load_icon(theme,temp,10,0,NULL);
-              if( buf != NULL )
-              {
-                g_free(priv->fname);
-                priv->fname = temp;
-                priv->ftype = SI_ICON;
-                g_object_unref(G_OBJECT(buf));
-              }
-              else
-                g_free(temp);
-            }
-          }
-          g_object_unref(G_OBJECT(app));
-        }
-      }
-    for(i=0;desktop[i];i++)
-      g_strfreev(desktop[i]);
+    for(j=0;desktop[j];j++)
+    {
+      for(i=0;desktop[j][i];i++)
+        scale_image_check_appinfo(self,desktop[j][i]);
+      g_strfreev(desktop[j]);
+    }
+    g_free(desktop);
   }
-  g_free(desktop);
+  
+  if(priv->ftype!=SI_NONE)
+    return;
+  temp = g_strconcat(file,".desktop",NULL);
+  scale_image_check_appinfo(self,temp);
+  g_free(temp);
 }
 
-void scale_image_set_image ( GtkWidget *widget, gchar *image, gchar *extra )
+void scale_image_set_image ( GtkWidget *self, gchar *image, gchar *extra )
 {
   static gchar *exts[4] = {"", ".svg", ".png", ".xpm"};
-  ScaleImagePrivate *priv = scale_image_get_instance_private(
-      SCALE_IMAGE(widget));
+  ScaleImagePrivate *priv;
   GdkPixbuf *buf;
   gint i;
   gchar *temp,*test;
 
-  if(g_strcmp0(priv->file,image)==0 && !extra)
+  g_return_if_fail(IS_SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private( SCALE_IMAGE(self));
+
+  if( !g_strcmp0(priv->file,image) && !g_strcmp0(priv->extra,extra) )
     return;
   g_free(priv->file);
   priv->file = g_strdup(image);
+  g_free(priv->extra);
+  priv->extra = g_strdup(extra);
 
   priv->ftype = SI_NONE;
 
-  scale_image_check_icon(widget,image);
+  scale_image_check_icon(self,image);
   if(priv->ftype == SI_ICON)
     return;
 
   temp = g_ascii_strdown(image,-1);
-  scale_image_check_icon(widget,temp);
+  scale_image_check_icon(self,temp);
   g_free(temp);
   if(priv->ftype == SI_ICON)
     return;
@@ -233,10 +258,9 @@ void scale_image_set_image ( GtkWidget *widget, gchar *image, gchar *extra )
   }
 }
 
-int scale_image_update ( GtkWidget *widget )
+int scale_image_update ( GtkWidget *self )
 {
-  ScaleImagePrivate *priv = scale_image_get_instance_private(
-      SCALE_IMAGE(widget));
+  ScaleImagePrivate *priv;
   GtkIconTheme *theme;
   GdkPixbuf *buf = NULL, *tmp = NULL;
   GdkRGBA *color = NULL;
@@ -246,8 +270,10 @@ int scale_image_update ( GtkWidget *widget )
   gint w,h;
   gint size;
 
-  w = priv->w * gtk_widget_get_scale_factor(widget);
-  h = priv->h * gtk_widget_get_scale_factor(widget);
+  g_return_val_if_fail(IS_SCALE_IMAGE(self),-1);
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
+  w = priv->w * gtk_widget_get_scale_factor(self);
+  h = priv->h * gtk_widget_get_scale_factor(self);
 
   if(w > h)
     size = h;
@@ -295,9 +321,9 @@ int scale_image_update ( GtkWidget *widget )
     return -1;
 
   cs = gdk_cairo_surface_create_from_pixbuf(buf,0,
-      gtk_widget_get_window(widget));
+      gtk_widget_get_window(self));
 
-  gtk_widget_style_get(widget,"color",&color,NULL);
+  gtk_widget_style_get(self,"color",&color,NULL);
   if(color)
   {
     cr = cairo_create(cs);
@@ -308,7 +334,7 @@ int scale_image_update ( GtkWidget *widget )
 
   if(cs != NULL)
   {
-    gtk_image_set_from_surface(GTK_IMAGE(widget), cs);
+    gtk_image_set_from_surface(GTK_IMAGE(self), cs);
     cairo_surface_destroy(cs); 
   }
 

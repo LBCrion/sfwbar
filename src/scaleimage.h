@@ -29,6 +29,7 @@ struct _ScaleImagePrivate
   gint w,h;
   gint ftype;
   gchar *file;
+  gchar *extra;
   gchar *fname;
   GdkPixbuf *pixbuf;
 };
