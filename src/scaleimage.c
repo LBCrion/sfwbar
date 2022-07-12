@@ -188,16 +188,13 @@ static void scale_image_check_icon ( GtkWidget *self, gchar *file )
     return;
 
   desktop = g_desktop_app_info_search(file);
-  if(*desktop)
+  for(j=0;desktop[j];j++)
   {
-    for(j=0;desktop[j];j++)
-    {
-      for(i=0;desktop[j][i];i++)
-        scale_image_check_appinfo(self,desktop[j][i]);
-      g_strfreev(desktop[j]);
-    }
-    g_free(desktop);
+    for(i=0;desktop[j][i];i++)
+      scale_image_check_appinfo(self,desktop[j][i]);
+    g_strfreev(desktop[j]);
   }
+  g_free(desktop);
   
   if(priv->ftype!=SI_NONE)
     return;
