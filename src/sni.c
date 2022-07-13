@@ -45,49 +45,41 @@ void sni_watcher_item_lost_cb ( GDBusConnection *con, const gchar *name,
     gpointer data )
 {
   struct sni_iface *watcher = data;
-  struct sni_iface_item *wsni;
-  GList *item;
+  GHashTableIter iter;
+  gchar *uid;
 
-  for(item=watcher->item_list;item!=NULL;item=g_list_next(item))
-    if(strncmp(name,((struct sni_iface_item *)item->data)->name,strlen(name))==0)
+  g_hash_table_iter_init(&iter,watcher->items);
+  while(g_hash_table_iter_next(&iter,(void **)&uid,NULL))
+    if(!strncmp(uid,name,strlen(name)))
+    {
+      g_debug("sni watcher %s: lost item: %s",watcher->watcher_iface,name);
+      g_dbus_connection_emit_signal(con,NULL,"/StatusNotifierWatcher",
+          watcher->watcher_iface,"StatusNotifierItemUnregistered",
+          g_variant_new("(s)",uid),NULL);
+      g_bus_unwatch_name(
+          GPOINTER_TO_UINT(g_hash_table_lookup(watcher->items,uid)));
+      g_hash_table_remove(watcher->items,uid);
       break;
-  if(item==NULL)
-    return;
-
-  wsni = item->data;
-  g_debug("sni watcher %s: lost item: %s",watcher->watcher_iface,name);
-  g_dbus_connection_emit_signal(con,NULL,"/StatusNotifierWatcher",
-      watcher->watcher_iface,"StatusNotifierItemUnregistered",
-      g_variant_new("(s)",wsni->name),NULL);
-  g_bus_unwatch_name(wsni->id);
-  g_free(wsni->name);
-  g_free(wsni);
-  watcher->item_list = g_list_delete_link(watcher->item_list,item);
+    }
 }
 
 gint sni_watcher_item_add ( struct sni_iface *watcher, gchar *uid )
 {
-  struct sni_iface_item *wsni;
-  GList *iter;
   gchar *name;
-  
-  for(iter=watcher->item_list;iter!=NULL;iter=g_list_next(iter))
-    if(!g_strcmp0(((struct sni_iface_item *)iter->data)->name,uid))
-      return -1;
 
-  wsni = g_malloc(sizeof(struct sni_iface_item));
-  wsni->name = g_strdup(uid);
+  if(g_hash_table_contains(watcher->items,uid))
+    return -1;
 
-  if(strchr(wsni->name,'/')!=NULL)
-    name = g_strndup(wsni->name,strchr(wsni->name,'/')-wsni->name);
+  if(strchr(uid,'/')!=NULL)
+    name = g_strndup(uid,strchr(uid,'/')-uid);
   else
-    name = g_strdup(wsni->name);
+    name = g_strdup(uid);
 
-  g_debug("watcher %s: watching item %s", watcher->watcher_iface, name);
-  wsni->id = g_bus_watch_name(G_BUS_TYPE_SESSION,name,
-      G_BUS_NAME_WATCHER_FLAGS_NONE,NULL,
-      sni_watcher_item_lost_cb,watcher,NULL);
-  watcher->item_list = g_list_append(watcher->item_list,wsni);
+  g_debug("sni watcher %s: watching item %s", watcher->watcher_iface, name);
+  g_hash_table_insert(watcher->items,g_strdup(uid),GUINT_TO_POINTER(
+        g_bus_watch_name(G_BUS_TYPE_SESSION,name,
+          G_BUS_NAME_WATCHER_FLAGS_NONE,NULL,
+          sni_watcher_item_lost_cb,watcher,NULL)));
   g_free(name);
   return 0;
 }
@@ -133,7 +125,8 @@ static GVariant *sni_watcher_get_prop (GDBusConnection *con,
   GVariant *ret = NULL;
   struct sni_iface *watcher = data;
   GVariantBuilder *builder;
-  GList *iter;
+  GHashTableIter iter;
+  gchar *name;
 
   if (g_strcmp0 (prop, "IsStatusNotifierHostRegistered") == 0)
     ret = g_variant_new_boolean(watcher->watcher_registered);
@@ -143,15 +136,15 @@ static GVariant *sni_watcher_get_prop (GDBusConnection *con,
 
   if (g_strcmp0 (prop, "RegisteredStatusNotifierItems") == 0)
   {
-    if(watcher->item_list==NULL)
+    if(!g_hash_table_size(watcher->items))
       ret = g_variant_new_array(G_VARIANT_TYPE_STRING,NULL,0);
     else
     {
       builder = g_variant_builder_new(G_VARIANT_TYPE_ARRAY); 
 
-      for(iter=watcher->item_list;iter!=NULL;iter=g_list_next(iter))
-        g_variant_builder_add_value(builder,
-            g_variant_new_string(((struct sni_iface_item *)iter->data)->name));
+      g_hash_table_iter_init(&iter,watcher->items);
+      while(g_hash_table_iter_next(&iter,(gpointer *)&name,NULL))
+        g_variant_builder_add_value(builder,g_variant_new_string(name));
       ret = g_variant_builder_end (builder);
 
       g_variant_builder_unref (builder);
@@ -188,20 +181,10 @@ void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
 void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,
     struct sni_iface *watcher)
 {
-  GList *iter;
-  struct sni_iface_item *wsni;
-
   if(watcher->regid != 0)
     g_dbus_connection_unregister_object(con, watcher->regid);
   watcher->regid = 0;
-  for(iter=watcher->item_list;iter!=NULL;iter=g_list_next(iter))
-  {
-    wsni=iter->data;
-    g_free(wsni->name);
-    g_free(iter->data);
-  }
-  g_list_free(watcher->item_list);
-  watcher->item_list = NULL;
+  g_hash_table_remove_all(watcher->items);
 }
 
 static void sni_host_item_new ( GDBusConnection *con, struct sni_iface *iface,
@@ -220,7 +203,7 @@ static void sni_host_item_new ( GDBusConnection *con, struct sni_iface *iface,
   if(sni)
     sni_items = g_list_append(sni_items,sni);
 
-  g_debug("sni: host %s: item registered: %s %s",iface->host_iface,sni->dest,
+  g_debug("sni host %s: item registered: %s %s",iface->host_iface,sni->dest,
       sni->path);
 }
 
@@ -346,7 +329,7 @@ void sni_register ( gchar *name )
   iface->item_iface = g_strdup_printf("org.%s.StatusNotifierItem",name);
   iface->host_iface = g_strdup_printf("org.%s.StatusNotifierHost-%d",name,
       getpid());
-//  iface->items = g_hash_table_new_full(g_str_hash,g_str_equal,g_free,NULL);
+  iface->items = g_hash_table_new_full(g_str_hash,g_str_equal,g_free,NULL);
   sni_ifaces = g_list_prepend(sni_ifaces,iface);
 
   g_bus_own_name(G_BUS_TYPE_SESSION,iface->watcher_iface,

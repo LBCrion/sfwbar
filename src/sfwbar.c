@@ -135,7 +135,7 @@ gboolean shell_timer ( gpointer data )
 static void activate (GtkApplication* app, gpointer data )
 {
   GdkDisplay *gdisp;
-  GList *clist;
+  GList *clist, *iter;
 
   css_init();
   sway_ipc_init();
@@ -149,12 +149,13 @@ static void activate (GtkApplication* app, gpointer data )
   pager_populate();
   switcher_populate();
 
-  for(clist = gtk_window_list_toplevels(); clist; clist = g_list_next(clist) )
-    if(GTK_IS_BOX(gtk_bin_get_child(GTK_BIN(clist->data))))
+  clist = gtk_window_list_toplevels();
+  for(iter = clist; iter; iter = g_list_next(iter) )
+    if(GTK_IS_BOX(gtk_bin_get_child(GTK_BIN(iter->data))))
     {
-      gtk_application_add_window(app,GTK_WINDOW(clist->data));
-      widget_set_css(GTK_WIDGET(clist->data),NULL);
-      base_widget_autoexec(clist->data,NULL);
+      gtk_application_add_window(app,GTK_WINDOW(iter->data));
+      widget_set_css(GTK_WIDGET(iter->data),NULL);
+      base_widget_autoexec(iter->data,NULL);
     }
   g_list_free(clist);
 
