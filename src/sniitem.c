@@ -169,7 +169,7 @@ void sni_item_get_prop ( GDBusConnection *con, sni_item_t *sni,
 
   g_dbus_connection_call(con, sni->dest, sni->path,
     "org.freedesktop.DBus.Properties", "Get",
-    g_variant_new("(ss)", sni->iface, sni_properties[prop]),NULL,
+    g_variant_new("(ss)", sni->host->item_iface, sni_properties[prop]),NULL,
     G_DBUS_CALL_FLAGS_NONE,-1,sni->cancel,
     (GAsyncReadyCallback)sni_item_prop_cb,wrap);
 }
@@ -225,7 +225,7 @@ gboolean sni_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
 
   con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
   g_dbus_connection_call(con, sni->dest, sni->path,
-    sni->iface, "Scroll", g_variant_new("(si)", dir, delta),
+    sni->host->item_iface, "Scroll", g_variant_new("(si)", dir, delta),
     NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
   g_object_unref(con);
   return TRUE;
@@ -292,7 +292,7 @@ gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data)
     {
       g_debug("sni: calling %s on %s at ( %d, %d )",method,sni->dest,x,y);
       g_dbus_connection_call(con, sni->dest, sni->path,
-        sni->iface, method, g_variant_new("(ii)", 0, 0),
+        sni->host->item_iface, method, g_variant_new("(ii)", 0, 0),
         NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
     }
     g_object_unref(con);
@@ -300,7 +300,7 @@ gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data)
   return TRUE;
 }
 
-sni_item_t *sni_item_new (GDBusConnection *con, struct sni_iface *iface,
+sni_item_t *sni_item_new (GDBusConnection *con, SniHost *host,
     const gchar *uid)
 {
   sni_item_t *sni;
@@ -321,9 +321,9 @@ sni_item_t *sni_item_new (GDBusConnection *con, struct sni_iface *iface,
     sni->path = g_strdup("/StatusNotifierItem");
     sni->dest = g_strdup(uid);
   }
-  sni->iface = g_strdup(iface->item_iface);
+  sni->host = host;
   sni->signal = g_dbus_connection_signal_subscribe(con,sni->dest,
-      sni->iface,NULL,sni->path,NULL,0,sni_item_signal_cb,sni,NULL);
+      sni->host->item_iface,NULL,sni->path,NULL,0,sni_item_signal_cb,sni,NULL);
   tray_item_init_for_all(sni);
   for(i=0;i<16;i++)
     sni_item_get_prop(con,sni,i);

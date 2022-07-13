@@ -60,12 +60,27 @@ typedef struct user_action {
 
 #define MAX_STRING 9
 
+typedef struct sni_host {
+  gchar *iface;
+  gchar *watcher;
+  gchar *item_iface;
+  GList *items;
+} SniHost;
+
+typedef struct sni_watcher {
+  guint regid;
+  gboolean watcher_registered;
+  gchar *iface;
+  GHashTable *items;
+  GDBusNodeInfo *idata;
+  SniHost *host;
+} SniWatcher;
+
 typedef struct sni_item {
   gchar *uid;
   gchar *udest;
   gchar *dest;
   gchar *path;
-  gchar *iface;
   gchar *string[MAX_STRING];
   gchar *menu_path;
   GdkPixbuf *pixbuf[3];
@@ -76,17 +91,8 @@ typedef struct sni_item {
   GCancellable *cancel;
   GtkWidget *image;
   GtkWidget *box;
+  SniHost *host;
 } sni_item_t;
-
-struct sni_iface {
-  guint regid;
-  gboolean watcher_registered;
-  gchar *watcher_iface;
-  gchar *item_iface;
-  gchar *host_iface;
-  GHashTable *items;
-  GDBusNodeInfo *idata;
-};
 
 void action_exec ( GtkWidget *, action_t *, GdkEvent *, window_t *, guint16 *);
 void action_free ( action_t *, GObject *);
@@ -164,13 +170,11 @@ void pager_event ( struct json_object *obj );
 
 void sni_init ( void );
 void sni_update ( void );
-gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data);
-gboolean sni_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
-    gpointer data );
+gboolean sni_item_click_cb (GtkWidget *, GdkEventButton *, gpointer );
+gboolean sni_item_scroll_cb ( GtkWidget *, GdkEventScroll *, gpointer );
 void sni_item_set_icon ( sni_item_t *sni, gint icon, gint pix );
 void sni_get_menu ( sni_item_t *sni, GdkEvent *event );
-sni_item_t *sni_item_new (GDBusConnection *con, struct sni_iface *iface,
-    const gchar *uid);
+sni_item_t *sni_item_new (GDBusConnection *, SniHost *, const gchar *);
 
 GtkWidget *menu_from_name ( gchar *name );
 void menu_add ( gchar *name, GtkWidget *menu );
