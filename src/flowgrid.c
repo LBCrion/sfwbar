@@ -150,7 +150,6 @@ void flow_grid_pad ( GtkWidget *cgrid )
   else
     for(;priv->i<priv->cols;priv->i++)
       gtk_grid_attach(GTK_GRID(cgrid),gtk_label_new(""),priv->i,0,1,1);
-
 }
 
 void flow_grid_remove_widget ( GtkWidget *widget, GtkWidget *parent )
@@ -189,8 +188,6 @@ void flow_grid_add_child ( GtkWidget *self, GtkWidget *child )
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   priv->children = g_list_prepend(priv->children,child);
-//  g_object_weak_ref(G_OBJECT(child),(GWeakNotify)list_remove_link,
-//      &(priv->children));
   flow_grid_invalidate(self);
 }
 
@@ -207,8 +204,8 @@ void flow_grid_delete_child ( GtkWidget *self, void *parent )
   for(iter=priv->children;iter;iter=g_list_next(iter))
     if(flow_item_get_parent(iter->data)==parent)
     {
-      priv->children = g_list_delete_link(priv->children,iter);
       gtk_widget_destroy(iter->data);
+      priv->children = g_list_delete_link(priv->children,iter);
       break;
     }
   flow_grid_invalidate(self);
