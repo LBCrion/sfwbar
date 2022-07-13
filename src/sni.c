@@ -11,13 +11,7 @@
 #include "trayitem.h"
 #include "tray.h"
 
-struct sni_iface_item {
-  guint id;
-  gchar *name;
-};
-
 static GList *sni_items;
-static GList *sni_ifaces;
 
 static const gchar sni_watcher_xml[] =
   "<node>"
@@ -194,9 +188,9 @@ static void sni_host_item_new ( GDBusConnection *con, struct sni_iface *iface,
   GList *iter;
 
   for(iter=sni_items;iter!=NULL;iter=g_list_next(iter))
-    if(g_strcmp0(((sni_item_t *)iter->data)->uid,uid)==0)
+    if(!g_strcmp0(((sni_item_t *)iter->data)->uid,uid))
       break;
-  if(iter!=NULL)
+  if(iter)
     return;
 
   sni = sni_item_new(con,iface,uid);
@@ -212,16 +206,9 @@ void sni_host_item_registered_cb ( GDBusConnection* con, const gchar* sender,
   GVariant* parameters, gpointer data)
 {
   const gchar *parameter;
-  GList *host;
-
-  for(host=sni_ifaces;host!=NULL;host=g_list_next(host))
-    if(g_strcmp0(((struct sni_iface *)host->data)->watcher_iface,iface)==0)
-      break;
-  if(host==NULL)
-    return;
 
   g_variant_get (parameters, "(&s)", &parameter);
-  sni_host_item_new(con,host->data,parameter);
+  sni_host_item_new(con,data,parameter);
 }
 
 static void sni_host_list_cb ( GDBusConnection *con, GAsyncResult *res,
@@ -231,7 +218,7 @@ static void sni_host_list_cb ( GDBusConnection *con, GAsyncResult *res,
   GVariantIter *iter;
 
   result = g_dbus_connection_call_finish(con, res, NULL);
-  if(result==NULL)
+  if(!result)
     return;
   g_variant_get(result, "(v)",&inner);
   iter = g_variant_iter_new(inner);
@@ -243,8 +230,7 @@ static void sni_host_list_cb ( GDBusConnection *con, GAsyncResult *res,
   g_variant_iter_free(iter);
   if(inner)
     g_variant_unref(inner);
-  if(result)
-    g_variant_unref(result);
+  g_variant_unref(result);
 }
 
 static void sni_host_register_cb ( GDBusConnection *con, const gchar *name,
@@ -330,7 +316,6 @@ void sni_register ( gchar *name )
   iface->host_iface = g_strdup_printf("org.%s.StatusNotifierHost-%d",name,
       getpid());
   iface->items = g_hash_table_new_full(g_str_hash,g_str_equal,g_free,NULL);
-  sni_ifaces = g_list_prepend(sni_ifaces,iface);
 
   g_bus_own_name(G_BUS_TYPE_SESSION,iface->watcher_iface,
       G_BUS_NAME_OWNER_FLAGS_NONE,NULL,
@@ -343,7 +328,7 @@ void sni_register ( gchar *name )
       G_BUS_NAME_WATCHER_FLAGS_NONE,sni_host_register_cb,NULL,iface,NULL);
   g_dbus_connection_signal_subscribe(con,NULL,iface->watcher_iface,
       "StatusNotifierItemRegistered","/StatusNotifierWatcher",NULL,
-      G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_registered_cb,NULL,NULL);
+      G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_registered_cb,iface,NULL);
   g_dbus_connection_signal_subscribe(con,NULL,iface->watcher_iface,
       "StatusNotifierItemUnregistered","/StatusNotifierWatcher",NULL,
       G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_unregistered_cb,iface,NULL);

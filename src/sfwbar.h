@@ -88,7 +88,6 @@ struct sni_iface {
   GDBusNodeInfo *idata;
 };
 
-
 void action_exec ( GtkWidget *, action_t *, GdkEvent *, window_t *, guint16 *);
 void action_free ( action_t *, GObject *);
 void action_function_add ( gchar *, GList *);
