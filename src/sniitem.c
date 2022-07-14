@@ -330,3 +330,30 @@ sni_item_t *sni_item_new (GDBusConnection *con, SniHost *host,
 
   return sni;
 }
+
+void sni_item_free ( sni_item_t *sni )
+{
+  gint i;
+  GDBusConnection *con;
+
+  con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
+  if(con)
+  {
+    g_dbus_connection_signal_unsubscribe(con,sni->signal);
+    g_object_unref(con);
+  }
+  g_cancellable_cancel(sni->cancel);
+  for(i=0;i<3;i++)
+    if(sni->pixbuf[i]!=NULL)
+      g_object_unref(sni->pixbuf[i]);
+  for(i=0;i<MAX_STRING;i++)
+    g_free(sni->string[i]);
+  tray_item_destroy(sni);
+
+  g_free(sni->menu_path);
+  g_free(sni->uid);
+  g_free(sni->path);
+  g_free(sni->dest);
+  g_free(sni);
+  tray_invalidate_all();
+}

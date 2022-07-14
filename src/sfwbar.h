@@ -175,6 +175,7 @@ gboolean sni_item_scroll_cb ( GtkWidget *, GdkEventScroll *, gpointer );
 void sni_item_set_icon ( sni_item_t *sni, gint icon, gint pix );
 void sni_get_menu ( sni_item_t *sni, GdkEvent *event );
 sni_item_t *sni_item_new (GDBusConnection *, SniHost *, const gchar *);
+void sni_item_free ( sni_item_t *sni );
 
 GtkWidget *menu_from_name ( gchar *name );
 void menu_add ( gchar *name, GtkWidget *menu );
