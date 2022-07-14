@@ -10,7 +10,7 @@
 
 struct sni_menu_wrapper {
   GdkEvent *event;
-  sni_item_t *sni;
+  SniItem *sni;
 };
 
 gint32 sni_variant_get_int32 ( GVariant *dict, gchar *key, gint def )
@@ -94,7 +94,7 @@ GtkWidget *sni_variant_get_pixbuf ( GVariant *dict, gchar *key )
   return img;
 }
 
-void sni_menu_item_cb ( GtkWidget *item, sni_item_t *sni )
+void sni_menu_item_cb ( GtkWidget *item, SniItem *sni )
 {
   GDBusConnection *con;
   gint32 *id = g_object_get_data(G_OBJECT(item),"sni_id");
@@ -271,7 +271,7 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
     g_variant_unref(result);
 }
 
-void sni_get_menu ( sni_item_t *sni, GdkEvent *event )
+void sni_get_menu ( SniItem *sni, GdkEvent *event )
 {
   GDBusConnection *con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
   struct sni_menu_wrapper *wrap = g_malloc(sizeof(struct sni_menu_wrapper));

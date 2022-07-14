@@ -32,8 +32,8 @@ struct _TrayPrivate
 GType tray_get_type ( void );
 
 GtkWidget *tray_new();
-void tray_item_init_for_all ( sni_item_t *sni );
-void tray_item_destroy ( sni_item_t *sni );
+void tray_item_init_for_all ( SniItem *sni );
+void tray_item_destroy ( SniItem *sni );
 void tray_update ( void );
 void tray_invalidate_all ( void );
 

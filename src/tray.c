@@ -57,7 +57,7 @@ void tray_invalidate_all ( void )
     flow_grid_invalidate(base_widget_get_child(iter->data));
 }
 
-void tray_item_init_for_all ( sni_item_t *sni )
+void tray_item_init_for_all ( SniItem *sni )
 {
   GList *iter;
 
@@ -66,7 +66,7 @@ void tray_item_init_for_all ( sni_item_t *sni )
       tray_item_new(sni,iter->data);
 }
 
-void tray_item_destroy ( sni_item_t *sni )
+void tray_item_destroy ( SniItem *sni )
 {
   GList *iter;
 

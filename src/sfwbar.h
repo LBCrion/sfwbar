@@ -92,7 +92,7 @@ typedef struct sni_item {
   GtkWidget *image;
   GtkWidget *box;
   SniHost *host;
-} sni_item_t;
+} SniItem;
 
 void action_exec ( GtkWidget *, action_t *, GdkEvent *, window_t *, guint16 *);
 void action_free ( action_t *, GObject *);
@@ -172,10 +172,10 @@ void sni_init ( void );
 void sni_update ( void );
 gboolean sni_item_click_cb (GtkWidget *, GdkEventButton *, gpointer );
 gboolean sni_item_scroll_cb ( GtkWidget *, GdkEventScroll *, gpointer );
-void sni_item_set_icon ( sni_item_t *sni, gint icon, gint pix );
-void sni_get_menu ( sni_item_t *sni, GdkEvent *event );
-sni_item_t *sni_item_new (GDBusConnection *, SniHost *, const gchar *);
-void sni_item_free ( sni_item_t *sni );
+void sni_item_set_icon ( SniItem *sni, gint icon, gint pix );
+void sni_get_menu ( SniItem *sni, GdkEvent *event );
+SniItem *sni_item_new (GDBusConnection *, SniHost *, const gchar *);
+void sni_item_free ( SniItem *sni );
 
 GtkWidget *menu_from_name ( gchar *name );
 void menu_add ( gchar *name, GtkWidget *menu );

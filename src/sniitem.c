@@ -13,7 +13,7 @@
 
 struct sni_prop_wrapper {
   guint prop;
-  sni_item_t *sni;
+  SniItem *sni;
 };
 
 static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
@@ -67,7 +67,7 @@ GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
   return res;
 }
 
-void sni_item_set_icon ( sni_item_t *sni, gint icon, gint pix )
+void sni_item_set_icon ( SniItem *sni, gint icon, gint pix )
 {
   if(icon==-1)
   {
@@ -157,7 +157,7 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
   tray_invalidate_all();
 }
 
-void sni_item_get_prop ( GDBusConnection *con, sni_item_t *sni,
+void sni_item_get_prop ( GDBusConnection *con, SniItem *sni,
     guint prop )
 {
   struct sni_prop_wrapper *wrap;
@@ -207,7 +207,7 @@ void sni_item_signal_cb (GDBusConnection *con, const gchar *sender,
 gboolean sni_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
     gpointer data )
 {
-  sni_item_t *sni = data;
+  SniItem *sni = data;
   GDBusConnection *con;
   gchar *dir;
   gint32 delta;
@@ -233,7 +233,7 @@ gboolean sni_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
 
 gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data)
 {
-  sni_item_t *sni = data;
+  SniItem *sni = data;
   GDBusConnection *con;
   gchar *method=NULL;
   GtkAllocation alloc,walloc;
@@ -300,14 +300,14 @@ gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data)
   return TRUE;
 }
 
-sni_item_t *sni_item_new (GDBusConnection *con, SniHost *host,
+SniItem *sni_item_new (GDBusConnection *con, SniHost *host,
     const gchar *uid)
 {
-  sni_item_t *sni;
+  SniItem *sni;
   gchar *path;
   guint i;
 
-  sni = g_malloc0(sizeof(sni_item_t));
+  sni = g_malloc0(sizeof(SniItem));
   sni->uid = g_strdup(uid);
   sni->cancel = g_cancellable_new();
   path = strchr(uid,'/');
@@ -331,7 +331,7 @@ sni_item_t *sni_item_new (GDBusConnection *con, SniHost *host,
   return sni;
 }
 
-void sni_item_free ( sni_item_t *sni )
+void sni_item_free ( SniItem *sni )
 {
   gint i;
   GDBusConnection *con;

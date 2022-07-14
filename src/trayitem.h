@@ -26,14 +26,14 @@ typedef struct _TrayItemPrivate TrayItemPrivate;
 
 struct _TrayItemPrivate
 {
-  sni_item_t *sni;
+  SniItem *sni;
   GtkWidget *icon;
 };
 
 GType tray_item_get_type ( void );
 
-GtkWidget *tray_item_new( sni_item_t *win, GtkWidget *tray );
-sni_item_t*tray_item_get_sni ( GtkWidget *self );
+GtkWidget *tray_item_new( SniItem *win, GtkWidget *tray );
+SniItem*tray_item_get_sni ( GtkWidget *self );
 void tray_item_update ( GtkWidget *self );
 gint tray_item_compare ( GtkWidget *, GtkWidget *, GtkWidget * );
 

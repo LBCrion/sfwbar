@@ -42,7 +42,7 @@ void tray_item_update ( GtkWidget *self )
   widget_set_css(self,NULL);
 }
 
-sni_item_t *tray_item_get_sni ( GtkWidget *self )
+SniItem *tray_item_get_sni ( GtkWidget *self )
 {
   TrayItemPrivate *priv;
 
@@ -66,7 +66,7 @@ static void tray_item_init ( TrayItem *self )
 {
 }
 
-GtkWidget *tray_item_new( sni_item_t *sni, GtkWidget *tray )
+GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
 {
   GtkWidget *self;
   TrayItemPrivate *priv;

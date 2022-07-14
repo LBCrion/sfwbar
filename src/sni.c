@@ -173,7 +173,7 @@ void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
       &watcher_vtable, watcher, NULL, NULL);
 
   for(iter=watcher->host->items;iter!=NULL;iter=g_list_next(iter))
-    sni_watcher_item_add(watcher,((sni_item_t *)iter->data)->uid);
+    sni_watcher_item_add(watcher,((SniItem *)iter->data)->uid);
 }
 
 void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,
@@ -188,11 +188,11 @@ void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,
 static void sni_host_item_new ( GDBusConnection *con, SniHost *host,
     const gchar *uid)
 {
-  sni_item_t *sni;
+  SniItem *sni;
   GList *iter;
 
   for(iter=host->items;iter!=NULL;iter=g_list_next(iter))
-    if(!g_strcmp0(((sni_item_t *)iter->data)->uid,uid))
+    if(!g_strcmp0(((SniItem *)iter->data)->uid,uid))
       return;
 
   sni = sni_item_new(con,host,uid);
@@ -263,7 +263,7 @@ static void sni_host_item_unregistered_cb ( GDBusConnection* con,
   g_debug("sni host %s: unregister item %s",host->iface, parameter);
 
   for(item=host->items;item!=NULL;item=g_list_next(item))
-    if(!g_strcmp0(((sni_item_t *)item->data)->uid,parameter))
+    if(!g_strcmp0(((SniItem *)item->data)->uid,parameter))
       break;
   if(!item)
     return;
