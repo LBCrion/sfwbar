@@ -71,7 +71,7 @@ typedef struct sni_watcher {
   guint regid;
   gboolean watcher_registered;
   gchar *iface;
-  GHashTable *items;
+  GList *items;
   GDBusNodeInfo *idata;
   SniHost *host;
 } SniWatcher;

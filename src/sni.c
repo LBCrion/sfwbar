@@ -11,6 +11,12 @@
 #include "trayitem.h"
 #include "tray.h"
 
+struct watcher_item {
+  SniWatcher *watcher;
+  gchar *uid;
+  guint id;
+};
+
 static const gchar sni_watcher_xml[] =
   "<node>"
   " <interface name='org.%s.StatusNotifierWatcher'>"
@@ -33,34 +39,38 @@ static const gchar sni_watcher_xml[] =
   " </interface>"
   "</node>";
 
-void sni_watcher_item_lost_cb ( GDBusConnection *con, const gchar *name,
-    gpointer data )
+static void sni_watcher_item_free ( struct watcher_item *item )
 {
-  SniWatcher *watcher = data;
-  GHashTableIter iter;
-  gchar *uid;
-
-  g_hash_table_iter_init(&iter,watcher->items);
-  while(g_hash_table_iter_next(&iter,(void **)&uid,NULL))
-    if(!strncmp(uid,name,strlen(name)))
-    {
-      g_debug("sni watcher %s: lost item: %s",watcher->iface,name);
-      g_dbus_connection_emit_signal(con,NULL,"/StatusNotifierWatcher",
-          watcher->iface,"StatusNotifierItemUnregistered",
-          g_variant_new("(s)",uid),NULL);
-      g_bus_unwatch_name(
-          GPOINTER_TO_UINT(g_hash_table_lookup(watcher->items,uid)));
-      g_hash_table_remove(watcher->items,uid);
-      break;
-    }
+  g_free(item->uid);
+  g_free(item);
 }
 
-gint sni_watcher_item_add ( SniWatcher *watcher, gchar *uid )
+static void sni_watcher_item_lost_cb ( GDBusConnection *con, const gchar *name,
+    struct watcher_item *item )
+{
+  g_debug("sni watcher %s: lost item: %s",item->watcher->iface,name);
+  g_dbus_connection_emit_signal(con,NULL,"/StatusNotifierWatcher",
+      item->watcher->iface,"StatusNotifierItemUnregistered",
+      g_variant_new("(s)",item->uid),NULL);
+  g_bus_unwatch_name(item->id);
+  item->watcher->items = g_list_delete_link(item->watcher->items,
+      g_list_find(item->watcher->items,item->uid));
+  sni_watcher_item_free(item);
+}
+
+static gint sni_watcher_item_add ( SniWatcher *watcher, gchar *uid )
 {
   gchar *name;
+  struct watcher_item *item;
+  GList *iter;
 
-  if(g_hash_table_contains(watcher->items,uid))
-    return -1;
+  for(iter=watcher->items;iter;iter=g_list_next(iter))
+    if(!g_strcmp0(((struct watcher_item *)iter->data)->uid,uid))
+      return -1;
+
+  item = g_malloc0(sizeof(struct watcher_item));
+  item->watcher = watcher;
+  item->uid = g_strdup(uid);
 
   if(strchr(uid,'/')!=NULL)
     name = g_strndup(uid,strchr(uid,'/')-uid);
@@ -68,26 +78,26 @@ gint sni_watcher_item_add ( SniWatcher *watcher, gchar *uid )
     name = g_strdup(uid);
 
   g_debug("sni watcher %s: watching item %s", watcher->iface, name);
-  g_hash_table_insert(watcher->items,g_strdup(uid),GUINT_TO_POINTER(
-        g_bus_watch_name(G_BUS_TYPE_SESSION,name,
-          G_BUS_NAME_WATCHER_FLAGS_NONE,NULL,
-          sni_watcher_item_lost_cb,watcher,NULL)));
+  
+  item->id = g_bus_watch_name(G_BUS_TYPE_SESSION,name,
+      G_BUS_NAME_WATCHER_FLAGS_NONE,NULL,
+      (GBusNameVanishedCallback)sni_watcher_item_lost_cb,item ,NULL);
+  watcher->items = g_list_prepend(watcher->items,item);
   g_free(name);
   return 0;
 }
 
 static void sni_watcher_method(GDBusConnection *con, const gchar *sender,
     const gchar *path, const gchar *iface, const gchar *method,
-    GVariant *parameters, GDBusMethodInvocation *invocation, void *data)
+    GVariant *parameters, GDBusMethodInvocation *invocation, SniWatcher *watcher)
 {
   const gchar *parameter;
-  SniWatcher *watcher = data;
   gchar *name;
 
   g_variant_get (parameters, "(&s)", &parameter);
   g_dbus_method_invocation_return_value(invocation,NULL);
 
-  if(g_strcmp0(method,"RegisterStatusNotifierItem")==0)
+  if(!g_strcmp0(method,"RegisterStatusNotifierItem"))
   {
     if(*parameter!='/')
       name = g_strdup(parameter);
@@ -112,13 +122,11 @@ static void sni_watcher_method(GDBusConnection *con, const gchar *sender,
 
 static GVariant *sni_watcher_get_prop (GDBusConnection *con,
     const gchar *sender, const gchar *path, const gchar *iface,
-    const gchar *prop,GError **error, void *data)
+    const gchar *prop,GError **error, SniWatcher *watcher )
 {
   GVariant *ret = NULL;
-  SniWatcher *watcher = data;
   GVariantBuilder *builder;
-  GHashTableIter iter;
-  gchar *name;
+  GList *iter;
 
   if (g_strcmp0 (prop, "IsStatusNotifierHostRegistered") == 0)
     ret = g_variant_new_boolean(watcher->watcher_registered);
@@ -128,28 +136,27 @@ static GVariant *sni_watcher_get_prop (GDBusConnection *con,
 
   if (g_strcmp0 (prop, "RegisteredStatusNotifierItems") == 0)
   {
-    if(!g_hash_table_size(watcher->items))
+    if(!watcher->items)
       ret = g_variant_new_array(G_VARIANT_TYPE_STRING,NULL,0);
     else
     {
       builder = g_variant_builder_new(G_VARIANT_TYPE_ARRAY); 
 
-      g_hash_table_iter_init(&iter,watcher->items);
-      while(g_hash_table_iter_next(&iter,(gpointer *)&name,NULL))
-        g_variant_builder_add_value(builder,g_variant_new_string(name));
+      for(iter=watcher->items;iter;iter=g_list_next(iter))
+        g_variant_builder_add_value(builder,
+            g_variant_new_string(((struct watcher_item*)iter->data)->uid));
       ret = g_variant_builder_end (builder);
 
       g_variant_builder_unref (builder);
     }
   }
-
   return ret;
 }
 
 static const GDBusInterfaceVTable watcher_vtable =
 {
-  sni_watcher_method,
-  sni_watcher_get_prop,
+  (GDBusInterfaceMethodCallFunc)sni_watcher_method,
+  (GDBusInterfaceGetPropertyFunc)sni_watcher_get_prop,
   NULL
 };
 
@@ -175,7 +182,7 @@ void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,
   if(watcher->regid != 0)
     g_dbus_connection_unregister_object(con, watcher->regid);
   watcher->regid = 0;
-  g_hash_table_remove_all(watcher->items);
+  g_list_free_full(watcher->items,(GDestroyNotify)sni_watcher_item_free);
 }
 
 static void sni_host_item_new ( GDBusConnection *con, SniHost *host,
@@ -311,7 +318,6 @@ void sni_register ( gchar *name )
   host->item_iface = g_strdup_printf("org.%s.StatusNotifierItem",name);
   host->iface = g_strdup_printf("org.%s.StatusNotifierHost-%d",name,getpid());
   host->watcher = watcher->iface;
-  watcher->items = g_hash_table_new_full(g_str_hash,g_str_equal,g_free,NULL);
   watcher->host = host;
 
   g_bus_own_name(G_BUS_TYPE_SESSION,watcher->iface,
