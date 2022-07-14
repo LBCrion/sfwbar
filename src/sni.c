@@ -211,19 +211,17 @@ void sni_host_item_registered_cb ( GDBusConnection* con, const gchar* sender,
 static void sni_host_list_cb ( GDBusConnection *con, GAsyncResult *res,
     SniHost *host)
 {
-  GVariant *result,*inner,*str;
+  GVariant *result,*inner;
   GVariantIter *iter;
+  gchar *str;
 
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(!result)
     return;
   g_variant_get(result, "(v)",&inner);
   iter = g_variant_iter_new(inner);
-  while((str=g_variant_iter_next_value(iter)))
-  {
-    sni_host_item_new(con, host, g_variant_get_string(str,NULL));
-    g_variant_unref(str);
-  }
+  while(g_variant_iter_next(iter,"&s",&str))
+    sni_host_item_new(con, host, str);
   g_variant_iter_free(iter);
   if(inner)
     g_variant_unref(inner);
