@@ -24,7 +24,7 @@ static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
 GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
 {
   gint32 x,y;
-  GVariantIter *iter,*rgba = NULL;
+  GVariantIter *iter,*rgba;
   guchar *buff;
   guint32 *ptr;
   guchar t;
@@ -36,32 +36,31 @@ GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
     return NULL;
   g_variant_get(v,"a(iiay)",&iter);
   if(!iter || !g_variant_iter_n_children(iter))
-    g_variant_get(g_variant_iter_next_value(iter),"(iiay)",&x,&y,&rgba);
-
-  if(!rgba && x*y*4 != g_variant_iter_n_children(rgba))
-  {
-    if(iter)
-      g_variant_iter_free(iter);
-    if(rgba)
-      g_variant_iter_free(rgba);
     return NULL;
+  g_variant_get(g_variant_iter_next_value(iter),"(iiay)",&x,&y,&rgba);
+  g_variant_iter_free(iter);
+  if(!rgba)
+    return NULL;
+  if(x*y != 0 && x*y*4 == g_variant_iter_n_children(rgba))
+  {
+    buff = g_malloc(x*y*4);
+    while(g_variant_iter_loop(rgba,"y",&t))
+      buff[i++]=t;
+
+    ptr=(guint32 *)buff;
+    for(i=0;i<x*y;i++)
+      ptr[i] = g_ntohl(ptr[i]);
+
+    cs = cairo_image_surface_create_for_data(buff,CAIRO_FORMAT_ARGB32,x,y,
+        cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,x));
+    res = gdk_pixbuf_get_from_surface(cs,0,0,x,y);
+
+    cairo_surface_destroy(cs);
+    g_free(buff);
   }
-
-  buff = g_malloc(x*y*4);
-  while(g_variant_iter_loop(rgba,"y",&t))
-    buff[i++]=t;
-
-  ptr=(guint32 *)buff;
-  for(i=0;i<x*y;i++)
-    ptr[i] = g_ntohl(ptr[i]);
-
-  cs = cairo_image_surface_create_for_data(buff,CAIRO_FORMAT_ARGB32,x,y,
-      cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,x));
-  res = gdk_pixbuf_get_from_surface(cs,0,0,x,y);
-
-  cairo_surface_destroy(cs);
-  g_free(buff);
-
+  else
+    res = NULL;
+  g_variant_iter_free(rgba);
   return res;
 }
 
@@ -92,7 +91,7 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
 
   wrap->sni->ref--;
   result = g_dbus_connection_call_finish(con, res, NULL);
-  if(result==NULL)
+  if(!result)
   {
     g_free(wrap);
     return;
@@ -108,14 +107,14 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
     g_debug("sni %s: property %s = %s",wrap->sni->dest,
         sni_properties[wrap->prop],wrap->sni->string[wrap->prop]);
   }
-  if((wrap->prop>=SNI_PROP_ICONPIX)&&(wrap->prop<=SNI_PROP_ATTNPIX))
+  else if((wrap->prop>=SNI_PROP_ICONPIX)&&(wrap->prop<=SNI_PROP_ATTNPIX))
   {
     if(wrap->sni->pixbuf[wrap->prop-SNI_PROP_ICONPIX]!=NULL)
       g_object_unref(wrap->sni->pixbuf[wrap->prop-SNI_PROP_ICONPIX]);
     wrap->sni->pixbuf[wrap->prop-SNI_PROP_ICONPIX] =
       sni_item_get_pixbuf(inner);
   }
-  if(wrap->prop == SNI_PROP_MENU && inner &&
+  else if(wrap->prop == SNI_PROP_MENU && inner &&
       g_variant_is_of_type(inner,G_VARIANT_TYPE_OBJECT_PATH))
     {
       g_free(wrap->sni->menu_path);
@@ -123,31 +122,31 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
       g_debug("sni %s: property %s = %s",wrap->sni->dest,
           sni_properties[wrap->prop],wrap->sni->menu_path);
     }
-  if(wrap->prop == SNI_PROP_ISMENU)
+  else if(wrap->prop == SNI_PROP_ISMENU)
     g_variant_get(inner,"b",&(wrap->sni->menu));
-  if(wrap->sni->string[SNI_PROP_STATUS]!=NULL)
-  {
-    if(wrap->sni->string[SNI_PROP_STATUS][0]=='A')
-    {
-      gtk_widget_set_name(wrap->sni->image,"tray_active");
-      sni_item_set_icon(wrap->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
-    }
-    if(wrap->sni->string[SNI_PROP_STATUS][0]=='N')
-    {
-      gtk_widget_set_name(wrap->sni->image,"tray_attention");
-      sni_item_set_icon(wrap->sni,SNI_PROP_ATTN,SNI_PROP_ATTNPIX);
-    }
-    if(wrap->sni->string[SNI_PROP_STATUS][0]=='P')
-    {
-      gtk_widget_set_name(wrap->sni->image,"tray_passive");
-      sni_item_set_icon(wrap->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
-    }
-  }
 
   if(inner)
     g_variant_unref(inner);
   if(result)
     g_variant_unref(result);
+
+  if(wrap->sni->string[SNI_PROP_STATUS])
+    switch(wrap->sni->string[SNI_PROP_STATUS][0])
+    {
+      case 'A':
+        gtk_widget_set_name(wrap->sni->image,"tray_active");
+        sni_item_set_icon(wrap->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
+        break;
+      case 'N':
+        gtk_widget_set_name(wrap->sni->image,"tray_attention");
+        sni_item_set_icon(wrap->sni,SNI_PROP_ATTN,SNI_PROP_ATTNPIX);
+        break;
+      case 'P':
+        gtk_widget_set_name(wrap->sni->image,"tray_passive");
+        sni_item_set_icon(wrap->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
+        break;
+    }
+
   g_free(wrap);
   tray_invalidate_all();
 }
@@ -242,6 +241,7 @@ void sni_item_free ( SniItem *sni )
     g_object_unref(con);
   }
   g_cancellable_cancel(sni->cancel);
+  g_object_unref(sni->cancel);
   for(i=0;i<3;i++)
     if(sni->pixbuf[i]!=NULL)
       g_object_unref(sni->pixbuf[i]);
