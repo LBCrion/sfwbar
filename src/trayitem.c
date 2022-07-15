@@ -143,10 +143,9 @@ gboolean tray_item_click_cb (GtkWidget *self, GdkEventButton *event, SniItem *sn
       y = walloc.height;
       x = event->x + alloc.x;
       break;
-    case GTK_POS_BOTTOM:
+    default:
       y = geo.height - walloc.height;
       x = event->x + alloc.x;
-      break;
   }
 
   // call event at 0,0 to avoid menu popping up under the bar

@@ -91,30 +91,28 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
 
   wrap->sni->ref--;
   result = g_dbus_connection_call_finish(con, res, NULL);
-  if(!result)
-  {
-    g_free(wrap);
-    return;
-  }
-  g_variant_get(result, "(v)",&inner);
-  if(wrap->prop<=SNI_PROP_THEME)
+  if(result)
+    g_variant_get(result, "(v)",&inner);
+  if(!result || !inner)
+    return g_free(wrap);
+  g_variant_unref(result);
+
+  if(wrap->prop<=SNI_PROP_THEME &&
+      g_variant_is_of_type(inner,G_VARIANT_TYPE_STRING))
   {
     g_free(wrap->sni->string[wrap->prop]);
-    if(inner && g_variant_is_of_type(inner,G_VARIANT_TYPE_STRING))
-      g_variant_get(inner,"s",&(wrap->sni->string[wrap->prop]));
-    else
-      wrap->sni->string[wrap->prop] = NULL;
+    g_variant_get(inner,"s",&(wrap->sni->string[wrap->prop]));
     g_debug("sni %s: property %s = %s",wrap->sni->dest,
         sni_properties[wrap->prop],wrap->sni->string[wrap->prop]);
   }
   else if((wrap->prop>=SNI_PROP_ICONPIX)&&(wrap->prop<=SNI_PROP_ATTNPIX))
   {
-    if(wrap->sni->pixbuf[wrap->prop-SNI_PROP_ICONPIX]!=NULL)
+    if(wrap->sni->pixbuf[wrap->prop-SNI_PROP_ICONPIX])
       g_object_unref(wrap->sni->pixbuf[wrap->prop-SNI_PROP_ICONPIX]);
     wrap->sni->pixbuf[wrap->prop-SNI_PROP_ICONPIX] =
       sni_item_get_pixbuf(inner);
   }
-  else if(wrap->prop == SNI_PROP_MENU && inner &&
+  else if(wrap->prop == SNI_PROP_MENU &&
       g_variant_is_of_type(inner,G_VARIANT_TYPE_OBJECT_PATH))
     {
       g_free(wrap->sni->menu_path);
@@ -125,10 +123,7 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
   else if(wrap->prop == SNI_PROP_ISMENU)
     g_variant_get(inner,"b",&(wrap->sni->menu));
 
-  if(inner)
-    g_variant_unref(inner);
-  if(result)
-    g_variant_unref(result);
+  g_variant_unref(inner);
 
   if(wrap->sni->string[SNI_PROP_STATUS])
     switch(wrap->sni->string[SNI_PROP_STATUS][0])
