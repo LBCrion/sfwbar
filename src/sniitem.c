@@ -89,7 +89,6 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
     struct sni_prop_wrapper *wrap)
 {
   GVariant *result, *inner;
-  gchar *param;
 
   wrap->sni->ref--;
   result = g_dbus_connection_call_finish(con, res, NULL);
@@ -103,10 +102,9 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
   {
     g_free(wrap->sni->string[wrap->prop]);
     if(inner && g_variant_is_of_type(inner,G_VARIANT_TYPE_STRING))
-      g_variant_get(inner,"s",&param);
+      g_variant_get(inner,"s",&(wrap->sni->string[wrap->prop]));
     else
-      param=NULL;
-    wrap->sni->string[wrap->prop] = param;
+      wrap->sni->string[wrap->prop] = NULL;
     g_debug("sni %s: property %s = %s",wrap->sni->dest,
         sni_properties[wrap->prop],wrap->sni->string[wrap->prop]);
   }
@@ -121,8 +119,7 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
       g_variant_is_of_type(inner,G_VARIANT_TYPE_OBJECT_PATH))
     {
       g_free(wrap->sni->menu_path);
-      g_variant_get(inner,"o",&param);
-      wrap->sni->menu_path = param;
+      g_variant_get(inner,"o",&(wrap->sni->menu_path));
       g_debug("sni %s: property %s = %s",wrap->sni->dest,
           sni_properties[wrap->prop],wrap->sni->menu_path);
     }
@@ -177,25 +174,25 @@ void sni_item_signal_cb (GDBusConnection *con, const gchar *sender,
          GVariant *parameters, gpointer data)
 {
   g_debug("sni: received signal %s from %s",signal,sender);
-  if(g_strcmp0(signal,"NewTitle")==0)
+  if(!g_strcmp0(signal,"NewTitle"))
     sni_item_get_prop(con,data,SNI_PROP_TITLE);
-  if(g_strcmp0(signal,"NewStatus")==0)
+  else if(!g_strcmp0(signal,"NewStatus"))
     sni_item_get_prop(con,data,SNI_PROP_STATUS);
-  if(g_strcmp0(signal,"NewToolTip")==0)
+  else if(!g_strcmp0(signal,"NewToolTip"))
     sni_item_get_prop(con,data,SNI_PROP_TOOLTIP);
-  if(g_strcmp0(signal,"NewIconThemePath")==0)
+  else if(!g_strcmp0(signal,"NewIconThemePath"))
     sni_item_get_prop(con,data,SNI_PROP_THEME);
-  if(g_strcmp0(signal,"NewIcon")==0)
+  else if(!g_strcmp0(signal,"NewIcon"))
   {
     sni_item_get_prop(con,data,SNI_PROP_ICON);
     sni_item_get_prop(con,data,SNI_PROP_ICONPIX);
   }
-  if(g_strcmp0(signal,"NewOverlayIcon")==0)
+  else if(!g_strcmp0(signal,"NewOverlayIcon"))
   {
     sni_item_get_prop(con,data,SNI_PROP_OVLAY);
     sni_item_get_prop(con,data,SNI_PROP_OVLAYPIX);
   }
-  if(g_strcmp0(signal,"NewAttentionIcon")==0)
+  else if(!g_strcmp0(signal,"NewAttentionIcon"))
   {
     sni_item_get_prop(con,data,SNI_PROP_ATTN);
     sni_item_get_prop(con,data,SNI_PROP_ATTNPIX);
