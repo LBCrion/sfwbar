@@ -24,7 +24,7 @@ static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
 GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
 {
   gint32 x,y;
-  GVariantIter *iter,*rgba;
+  GVariantIter *iter,*rgba = NULL;
   guchar *buff;
   guint32 *ptr;
   guchar t;
@@ -35,35 +35,33 @@ GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
   if(!v)
     return NULL;
   g_variant_get(v,"a(iiay)",&iter);
-  if(!g_variant_iter_n_children(iter))
+  if(!iter || !g_variant_iter_n_children(iter))
+    g_variant_get(g_variant_iter_next_value(iter),"(iiay)",&x,&y,&rgba);
+
+  if(!rgba && x*y*4 != g_variant_iter_n_children(rgba))
   {
-    g_variant_iter_free(iter);
+    if(iter)
+      g_variant_iter_free(iter);
+    if(rgba)
+      g_variant_iter_free(rgba);
     return NULL;
   }
-  g_variant_get(g_variant_iter_next_value(iter),"(iiay)",&x,&y,&rgba);
-  if((x*y>0)&&(x*y*4 == g_variant_iter_n_children(rgba)))
-  {
-    buff = g_malloc(x*y*4);
-    while(g_variant_iter_loop(rgba,"y",&t))
-      buff[i++]=t;
 
-    ptr=(guint32 *)buff;
-    for(i=0;i<x*y;i++)
-      ptr[i] = g_ntohl(ptr[i]);
+  buff = g_malloc(x*y*4);
+  while(g_variant_iter_loop(rgba,"y",&t))
+    buff[i++]=t;
 
-    cs = cairo_image_surface_create_for_data(buff,CAIRO_FORMAT_ARGB32,x,y,
-        cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,x));
-    res = gdk_pixbuf_get_from_surface(cs,0,0,x,y);
+  ptr=(guint32 *)buff;
+  for(i=0;i<x*y;i++)
+    ptr[i] = g_ntohl(ptr[i]);
 
-    cairo_surface_destroy(cs);
-    g_free(buff);
-  }
-  else
-    res = NULL;
-  if(iter)
-    g_variant_iter_free(iter);
-  if(rgba)
-    g_variant_iter_free(rgba);
+  cs = cairo_image_surface_create_for_data(buff,CAIRO_FORMAT_ARGB32,x,y,
+      cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,x));
+  res = gdk_pixbuf_get_from_surface(cs,0,0,x,y);
+
+  cairo_surface_destroy(cs);
+  g_free(buff);
+
   return res;
 }
 
@@ -202,102 +200,6 @@ void sni_item_signal_cb (GDBusConnection *con, const gchar *sender,
     sni_item_get_prop(con,data,SNI_PROP_ATTN);
     sni_item_get_prop(con,data,SNI_PROP_ATTNPIX);
   }
-}
-
-gboolean sni_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
-    gpointer data )
-{
-  SniItem *sni = data;
-  GDBusConnection *con;
-  gchar *dir;
-  gint32 delta;
-
-  if((event->direction == GDK_SCROLL_DOWN)||
-      (event->direction == GDK_SCROLL_RIGHT))
-    delta=1;
-  else
-    delta=-1;
-  if((event->direction == GDK_SCROLL_DOWN)||
-      (event->direction == GDK_SCROLL_UP))
-    dir = "vertical";
-  else
-    dir = "horizontal";
-
-  con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
-  g_dbus_connection_call(con, sni->dest, sni->path,
-    sni->host->item_iface, "Scroll", g_variant_new("(si)", dir, delta),
-    NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
-  g_object_unref(con);
-  return TRUE;
-}
-
-gboolean sni_item_click_cb (GtkWidget *w, GdkEventButton *event, gpointer data)
-{
-  SniItem *sni = data;
-  GDBusConnection *con;
-  gchar *method=NULL;
-  GtkAllocation alloc,walloc;
-  GdkRectangle geo;
-  gint32 x,y;
-
-  if(event->type == GDK_BUTTON_PRESS)
-  {
-    con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
-    g_debug("sni %s: button: %d",sni->dest,event->button);
-    if(event->button == 1)
-    {
-      if(sni->menu_path)
-        sni_get_menu(sni,(GdkEvent *)event);
-      else
-      {
-        if(sni->menu)
-          method = "ContextMenu";
-        else
-          method = "Activate";
-      }
-    }
-    if(event->button == 2)
-      method = "SecondaryActivate";
-    if(event->button == 3)
-      method = "ContextMenu";
-
-    gdk_monitor_get_geometry(gdk_display_get_monitor_at_window(
-        gtk_widget_get_display(gtk_widget_get_toplevel(w)),
-        gtk_widget_get_window(w)),&geo);
-    gtk_widget_get_allocation(w,&alloc);
-    gtk_widget_get_allocation(gtk_widget_get_toplevel(w),&walloc);
-
-    if(bar_get_toplevel_dir(w) == GTK_POS_RIGHT)
-      x = geo.width - walloc.width + event->x + alloc.x;
-    else
-    {
-      if(bar_get_toplevel_dir(w) == GTK_POS_LEFT)
-        x = walloc.width;
-      else
-        x = event->x + alloc.x;
-    }
-
-    if(bar_get_toplevel_dir(w) == GTK_POS_BOTTOM)
-      y = geo.height - walloc.height;
-    else
-    {
-      if(bar_get_toplevel_dir(w) == GTK_POS_TOP)
-        y = walloc.height;
-      else
-        y = event->y + alloc.y;
-    }
-
-    // call event at 0,0 to avoid menu popping up under the bar
-    if(method)
-    {
-      g_debug("sni: calling %s on %s at ( %d, %d )",method,sni->dest,x,y);
-      g_dbus_connection_call(con, sni->dest, sni->path,
-        sni->host->item_iface, method, g_variant_new("(ii)", 0, 0),
-        NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
-    }
-    g_object_unref(con);
-  }
-  return TRUE;
 }
 
 SniItem *sni_item_new (GDBusConnection *con, SniHost *host,

@@ -66,6 +66,100 @@ static void tray_item_init ( TrayItem *self )
 {
 }
 
+gboolean tray_item_scroll_cb ( GtkWidget *self, GdkEventScroll *event, SniItem *sni )
+{
+  GDBusConnection *con;
+  gchar *dir;
+  gint32 delta;
+
+  if((event->direction == GDK_SCROLL_DOWN)||
+      (event->direction == GDK_SCROLL_RIGHT))
+    delta=1;
+  else
+    delta=-1;
+  if((event->direction == GDK_SCROLL_DOWN)||
+      (event->direction == GDK_SCROLL_UP))
+    dir = "vertical";
+  else
+    dir = "horizontal";
+
+  con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
+  g_dbus_connection_call(con, sni->dest, sni->path,
+    sni->host->item_iface, "Scroll", g_variant_new("(si)", dir, delta),
+    NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+  g_object_unref(con);
+  return TRUE;
+}
+
+gboolean tray_item_click_cb (GtkWidget *self, GdkEventButton *event, SniItem *sni )
+{
+  GDBusConnection *con;
+  gchar *method=NULL;
+  GtkAllocation alloc,walloc;
+  GdkRectangle geo;
+  gint32 x,y;
+
+  if(event->type != GDK_BUTTON_PRESS)
+    return FALSE;
+
+  g_debug("sni %s: button: %d",sni->dest,event->button);
+  if(event->button == 1)
+  {
+    if(sni->menu_path)
+      sni_get_menu(sni,(GdkEvent *)event);
+    else
+    {
+      if(sni->menu)
+        method = "ContextMenu";
+      else
+        method = "Activate";
+    }
+  }
+  if(event->button == 2)
+    method = "SecondaryActivate";
+  if(event->button == 3)
+    method = "ContextMenu";
+
+  if(!method)
+    return FALSE;
+
+  gdk_monitor_get_geometry(gdk_display_get_monitor_at_window(
+      gtk_widget_get_display(gtk_widget_get_toplevel(self)),
+      gtk_widget_get_window(self)),&geo);
+  gtk_widget_get_allocation(self,&alloc);
+  gtk_widget_get_allocation(gtk_widget_get_toplevel(self),&walloc);
+
+  switch(bar_get_toplevel_dir(self))
+  {
+    case GTK_POS_RIGHT:
+      x = geo.width - walloc.width + event->x + alloc.x;
+      y = event->y + alloc.y;
+      break;
+    case GTK_POS_LEFT:
+      x = walloc.width;
+      y = event->y + alloc.y;
+      break;
+    case GTK_POS_TOP:
+      y = walloc.height;
+      x = event->x + alloc.x;
+      break;
+    case GTK_POS_BOTTOM:
+      y = geo.height - walloc.height;
+      x = event->x + alloc.x;
+      break;
+  }
+
+  // call event at 0,0 to avoid menu popping up under the bar
+  con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
+  g_debug("sni: calling %s on %s at ( %d, %d )",method,sni->dest,x,y);
+  g_dbus_connection_call(con, sni->dest, sni->path,
+    sni->host->item_iface, method, g_variant_new("(ii)", 0, 0),
+    NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+  g_object_unref(con);
+  
+  return TRUE;
+}
+
 GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
 {
   GtkWidget *self;
@@ -85,9 +179,9 @@ GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
   gtk_container_add(GTK_CONTAINER(self),priv->icon);
   gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
   g_signal_connect(G_OBJECT(self),"button-press-event",
-      G_CALLBACK(sni_item_click_cb),priv->sni);
+      G_CALLBACK(tray_item_click_cb),priv->sni);
   g_signal_connect(G_OBJECT(self),"scroll-event",
-      G_CALLBACK(sni_item_scroll_cb),priv->sni);
+      G_CALLBACK(tray_item_scroll_cb),priv->sni);
   return self;
 }
 
