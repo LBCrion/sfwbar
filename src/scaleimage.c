@@ -220,8 +220,13 @@ void scale_image_set_image ( GtkWidget *self, gchar *image, gchar *extra )
   priv->file = g_strdup(image);
   g_free(priv->extra);
   priv->extra = g_strdup(extra);
-
   priv->ftype = SI_NONE;
+
+  if(!g_ascii_strncasecmp(priv->file,"<?xml",5))
+  {
+    priv->ftype = SI_DATA;
+    return;
+  }
 
   scale_image_check_icon(self,image);
   if(priv->ftype == SI_ICON)
@@ -260,6 +265,7 @@ int scale_image_update ( GtkWidget *self )
   ScaleImagePrivate *priv;
   GtkIconTheme *theme;
   GdkPixbuf *buf = NULL, *tmp = NULL;
+  GdkPixbufLoader *loader;
   GdkRGBA *color = NULL;
   cairo_surface_t *cs;
   cairo_t *cr;
@@ -298,11 +304,22 @@ int scale_image_update ( GtkWidget *self )
     }
   }
 
-  if(priv->ftype == SI_FILE && priv->fname)
+  else if(priv->ftype == SI_FILE && priv->fname)
     buf = gdk_pixbuf_new_from_file_at_scale(priv->fname,size,size,TRUE,NULL);
 
-  if(priv->ftype == SI_BUFF && priv->pixbuf)
+  else if(priv->ftype == SI_BUFF && priv->pixbuf)
     buf = gdk_pixbuf_scale_simple(priv->pixbuf,size,size, GDK_INTERP_BILINEAR);
+
+  else if (priv->ftype == SI_DATA && priv->file)
+  {
+    loader = gdk_pixbuf_loader_new();
+    g_message("%s",priv->file);
+    gdk_pixbuf_loader_write(loader,(guchar *)priv->file,
+        strlen(priv->file), NULL);
+    gdk_pixbuf_loader_close(loader,NULL);
+    gdk_pixbuf_loader_set_size(loader,size,size);
+    buf = gdk_pixbuf_loader_get_pixbuf(loader);
+  }
 
   if(!buf)
   {

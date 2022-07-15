@@ -38,7 +38,8 @@ enum {
   SI_NONE,
   SI_ICON,
   SI_FILE,
-  SI_BUFF
+  SI_BUFF,
+  SI_DATA
 };
 
 GType scale_image_get_type ( void );
