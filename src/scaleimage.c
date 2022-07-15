@@ -265,7 +265,7 @@ int scale_image_update ( GtkWidget *self )
   ScaleImagePrivate *priv;
   GtkIconTheme *theme;
   GdkPixbuf *buf = NULL, *tmp = NULL;
-  GdkPixbufLoader *loader;
+  GdkPixbufLoader *loader = NULL;
   GdkRGBA *color = NULL;
   cairo_surface_t *cs;
   cairo_t *cr;
@@ -313,12 +313,12 @@ int scale_image_update ( GtkWidget *self )
   else if (priv->ftype == SI_DATA && priv->file)
   {
     loader = gdk_pixbuf_loader_new();
-    g_message("%s",priv->file);
     gdk_pixbuf_loader_write(loader,(guchar *)priv->file,
         strlen(priv->file), NULL);
     gdk_pixbuf_loader_close(loader,NULL);
     gdk_pixbuf_loader_set_size(loader,size,size);
-    buf = gdk_pixbuf_loader_get_pixbuf(loader);
+    buf = gdk_pixbuf_copy(gdk_pixbuf_loader_get_pixbuf(loader));
+    g_object_unref(G_OBJECT(loader));
   }
 
   if(!buf)
