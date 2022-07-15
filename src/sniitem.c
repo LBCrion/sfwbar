@@ -235,6 +235,7 @@ void sni_item_free ( SniItem *sni )
     g_dbus_connection_signal_unsubscribe(con,sni->signal);
     g_object_unref(con);
   }
+  tray_item_destroy(sni);
   g_cancellable_cancel(sni->cancel);
   g_object_unref(sni->cancel);
   for(i=0;i<3;i++)
@@ -242,7 +243,6 @@ void sni_item_free ( SniItem *sni )
       g_object_unref(sni->pixbuf[i]);
   for(i=0;i<MAX_STRING;i++)
     g_free(sni->string[i]);
-  tray_item_destroy(sni);
 
   g_free(sni->menu_path);
   g_free(sni->uid);
