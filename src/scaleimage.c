@@ -277,11 +277,7 @@ int scale_image_update ( GtkWidget *self )
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
   w = priv->w * gtk_widget_get_scale_factor(self);
   h = priv->h * gtk_widget_get_scale_factor(self);
-
-  if(w > h)
-    size = h;
-  else
-    size = w;
+  size = MIN(w,h);
 
   if(priv->file)
     g_debug("image: %s @ %d",priv->file,size);
