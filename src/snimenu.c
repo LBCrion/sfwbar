@@ -63,22 +63,23 @@ GtkWidget *sni_variant_get_pixbuf ( GVariant *dict, gchar *key )
   GdkPixbuf *pixbuf;
   GtkWidget *img = NULL;
   guchar *buff;
-  gint i=0;
+  gint i=0,len;
 
   ptr = g_variant_lookup_value(dict,key,G_VARIANT_TYPE_ARRAY);
   if(!ptr)
     return NULL;
 
   g_variant_iter_init(&iter,ptr);
-  buff = g_malloc(g_variant_iter_n_children(&iter));
-  while( (item = g_variant_iter_next_value(&iter)) )
+  len = g_variant_iter_n_children(&iter);
+  buff = g_malloc(len);
+  while( (item = g_variant_iter_next_value(&iter)) && i<len )
   {
     if(g_variant_is_of_type(item,G_VARIANT_TYPE_BYTE))
       buff[i++]=g_variant_get_byte(item);
     g_variant_unref(item);
   }
 
-  if( i == g_variant_iter_n_children(&iter) )
+  if( i == len )
   {
     loader = gdk_pixbuf_loader_new();
     gdk_pixbuf_loader_write(loader, buff, i, NULL);
@@ -96,23 +97,19 @@ GtkWidget *sni_variant_get_pixbuf ( GVariant *dict, gchar *key )
 
 void sni_menu_item_cb ( GtkWidget *item, SniItem *sni )
 {
-  GDBusConnection *con;
   gint32 *id = g_object_get_data(G_OBJECT(item),"sni_id");
 
   if(!id)
     return;
 
-  con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
-
   g_debug("sni menu call: %d (%s) %s",*id,
       gtk_menu_item_get_label(GTK_MENU_ITEM(item)),sni->dest);
 
-  g_dbus_connection_call(con, sni->dest, sni->menu_path,
+  g_dbus_connection_call(sni_get_connection(), sni->dest, sni->menu_path,
       "com.canonical.dbusmenu", "Event",
       g_variant_new("(isvu)", *id, "clicked", g_variant_new_int32(0),
         gtk_get_current_event_time()),
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
-  g_object_unref(con);
 }
 
 void sni_menu_item_decorate ( GtkWidget *item, GVariant *dict  )
@@ -273,7 +270,6 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
 
 void sni_get_menu ( SniItem *sni, GdkEvent *event )
 {
-  GDBusConnection *con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
   struct sni_menu_wrapper *wrap = g_malloc(sizeof(struct sni_menu_wrapper));
 
   wrap->event = gdk_event_copy(event);
@@ -281,8 +277,8 @@ void sni_get_menu ( SniItem *sni, GdkEvent *event )
 
   g_debug("sni %s: requesting menu",wrap->sni->dest);
 
-  g_dbus_connection_call(con, sni->dest, sni->menu_path, "com.canonical.dbusmenu",
-      "GetLayout", g_variant_new("(iias)", 0, -1, NULL),
+  g_dbus_connection_call(sni_get_connection(), sni->dest, sni->menu_path,
+      "com.canonical.dbusmenu", "GetLayout",
+      g_variant_new("(iias)", 0, -1, NULL),
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, sni_get_menu_cb, wrap);
-  g_object_unref(con);
 }

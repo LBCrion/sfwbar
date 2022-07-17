@@ -170,8 +170,7 @@ void pager_event ( struct json_object *obj );
 
 void sni_init ( void );
 void sni_update ( void );
-//gboolean sni_item_click_cb (GtkWidget *, GdkEventButton *, gpointer );
-//gboolean sni_item_scroll_cb ( GtkWidget *, GdkEventScroll *, gpointer );
+GDBusConnection *sni_get_connection ( void );
 void sni_item_set_icon ( SniItem *sni, gint icon, gint pix );
 void sni_get_menu ( SniItem *sni, GdkEvent *event );
 SniItem *sni_item_new (GDBusConnection *, SniHost *, const gchar *);

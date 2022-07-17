@@ -227,14 +227,8 @@ SniItem *sni_item_new (GDBusConnection *con, SniHost *host,
 void sni_item_free ( SniItem *sni )
 {
   gint i;
-  GDBusConnection *con;
 
-  con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
-  if(con)
-  {
-    g_dbus_connection_signal_unsubscribe(con,sni->signal);
-    g_object_unref(con);
-  }
+  g_dbus_connection_signal_unsubscribe(sni_get_connection(),sni->signal);
   tray_item_destroy(sni);
   g_cancellable_cancel(sni->cancel);
   g_object_unref(sni->cancel);

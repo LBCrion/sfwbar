@@ -68,7 +68,6 @@ static void tray_item_init ( TrayItem *self )
 
 gboolean tray_item_scroll_cb ( GtkWidget *self, GdkEventScroll *event, SniItem *sni )
 {
-  GDBusConnection *con;
   gchar *dir;
   gint32 delta;
 
@@ -83,17 +82,14 @@ gboolean tray_item_scroll_cb ( GtkWidget *self, GdkEventScroll *event, SniItem *
   else
     dir = "horizontal";
 
-  con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
-  g_dbus_connection_call(con, sni->dest, sni->path,
+  g_dbus_connection_call(sni_get_connection(), sni->dest, sni->path,
     sni->host->item_iface, "Scroll", g_variant_new("(si)", dir, delta),
     NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
-  g_object_unref(con);
   return TRUE;
 }
 
 gboolean tray_item_click_cb (GtkWidget *self, GdkEventButton *event, SniItem *sni )
 {
-  GDBusConnection *con;
   gchar *method=NULL;
   GtkAllocation alloc,walloc;
   GdkRectangle geo;
@@ -149,12 +145,10 @@ gboolean tray_item_click_cb (GtkWidget *self, GdkEventButton *event, SniItem *sn
   }
 
   // call event at 0,0 to avoid menu popping up under the bar
-  con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
   g_debug("sni: calling %s on %s at ( %d, %d )",method,sni->dest,x,y);
-  g_dbus_connection_call(con, sni->dest, sni->path,
+  g_dbus_connection_call(sni_get_connection(), sni->dest, sni->path,
     sni->host->item_iface, method, g_variant_new("(ii)", 0, 0),
     NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
-  g_object_unref(con);
   
   return TRUE;
 }

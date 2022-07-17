@@ -39,6 +39,17 @@ static const gchar sni_watcher_xml[] =
   " </interface>"
   "</node>";
 
+GDBusConnection *sni_get_connection ( void )
+{
+  static GDBusConnection *con;
+
+  if(con)
+    return con;
+
+  con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
+  return con;
+}
+
 static void sni_watcher_item_free ( struct watcher_item *item )
 {
   g_free(item->uid);
@@ -280,9 +291,7 @@ static void sni_register ( gchar *name )
   gchar *xml;
   GDBusConnection *con;
 
-  con = g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);
-  if(!con)
-    return;
+  con = sni_get_connection();
 
   watcher = g_malloc0(sizeof(SniWatcher));
   host = g_malloc0(sizeof(SniHost));
@@ -317,11 +326,12 @@ static void sni_register ( gchar *name )
       "StatusNotifierItemUnregistered","/StatusNotifierWatcher",NULL,
       G_DBUS_SIGNAL_FLAGS_NONE,
       (GDBusSignalCallback)sni_host_item_unregistered_cb,host,NULL);
-  g_object_unref(con);
 }
 
 void sni_init ( void )
 {
+  if(!sni_get_connection())
+    return;
   sni_register("kde");
   sni_register("freedesktop");
 }
