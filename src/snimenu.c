@@ -237,11 +237,12 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
   GVariant *result, *layout, *list=NULL;
   struct sni_menu_wrapper *wrap = data;
   GtkWidget *menu;
+  gchar *tmp;
 
   result = g_dbus_connection_call_finish(G_DBUS_CONNECTION(src),res,NULL);
   if(result)
   {
-    gchar *tmp = g_variant_print(result,TRUE);
+    tmp = g_variant_print(result,TRUE);
     g_debug("sni %s: menu: %s",wrap->sni->dest,tmp);
     g_free(tmp);
     layout = g_variant_get_child_value(result, 1);
