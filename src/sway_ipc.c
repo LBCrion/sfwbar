@@ -321,6 +321,7 @@ workspace_t *sway_ipc_parse_workspace ( json_object *obj )
   ws->name = json_string_by_name(obj,"name");
   ws->id = GINT_TO_POINTER(json_int_by_name(obj,"id",0));
   ws->visible = json_bool_by_name(obj,"visible",FALSE);
+  ws->focused = json_bool_by_name(obj,"focused",FALSE);
 
   return ws;
 }

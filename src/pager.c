@@ -72,6 +72,14 @@ void pager_add_pin ( GtkWidget *pager, gchar *pin )
             g_object_get_data(child,"pins"),pin));
 }
 
+void pager_invalidate_all ( workspace_t *ws )
+{
+  GList *iter;
+
+  for(iter=pagers; iter; iter=g_list_next(iter))
+    pager_item_invalidate(flow_grid_find_child(iter->data,ws));
+}
+
 static gint pager_comp_id ( workspace_t *a, gpointer id )
 {
   return GPOINTER_TO_INT(a->id) - GPOINTER_TO_INT(id);
@@ -94,8 +102,9 @@ void pager_workspace_set_focus ( gpointer id )
   item = g_list_find_custom(workspaces,id,(GCompareFunc)pager_comp_id);
   if(item)
   {
+    pager_invalidate_all(focus);
     focus = item->data;
-    g_list_foreach(pagers,(GFunc)flow_grid_invalidate,NULL);
+    pager_invalidate_all(focus);
   }
 }
 
@@ -142,7 +151,7 @@ void pager_workspace_new ( workspace_t *new )
     g_free(ws->name);
     ws->name = g_strdup(new->name);
     g_list_foreach(pagers,(GFunc)pager_item_new,ws);
-    g_list_foreach(pagers,(GFunc)flow_grid_invalidate,NULL);
+    pager_invalidate_all(ws);
   }
   else
   {
@@ -161,8 +170,9 @@ void pager_workspace_new ( workspace_t *new )
   ws->visible = new->visible;
   if(new->focused)
   {
-    g_list_foreach(pagers,(GFunc)flow_grid_invalidate,NULL);
+    pager_invalidate_all(focus);
     focus = ws;
+    pager_invalidate_all(focus);
   }
 }
 

@@ -16,6 +16,9 @@ void pager_item_update ( GtkWidget *self )
   g_return_if_fail(IS_PAGER_ITEM(self));
   priv = pager_item_get_instance_private(PAGER_ITEM(self));
 
+  if(!priv->invalid)
+    return;
+
   if(g_strcmp0(gtk_button_get_label(GTK_BUTTON(priv->button)),priv->ws->name))
     gtk_button_set_label(GTK_BUTTON(priv->button),priv->ws->name);
   gtk_widget_set_has_tooltip(priv->button,
@@ -182,6 +185,7 @@ GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
       G_CALLBACK(pager_item_draw_tooltip),NULL);
   g_object_ref(G_OBJECT(self));
   flow_grid_add_child(pager,self);
+  pager_item_invalidate(self);
 
   return self;
 }
@@ -200,4 +204,18 @@ gint pager_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
     return strtoll(p1->ws->name,NULL,10)-strtoll(p2->ws->name,NULL,10);
   else
     return g_strcmp0(p1->ws->name,p2->ws->name);
+}
+
+void pager_item_invalidate ( GtkWidget *self )
+{
+  PagerItemPrivate *priv;
+
+  if(!self)
+    return;
+
+  g_return_if_fail(IS_PAGER_ITEM(self));
+  priv = pager_item_get_instance_private(PAGER_ITEM(self));
+
+  flow_grid_invalidate(priv->pager);
+  priv->invalid = TRUE;
 }
