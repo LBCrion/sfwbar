@@ -27,7 +27,7 @@ static void toplevel_handle_app_id(void *data, wlr_fth *tl, const gchar *app_id)
   if(!win)
     return;
   str_assign(&(win->appid), (gchar *)app_id);
-  taskbar_invalidate_all();
+  taskbar_invalidate_all(win);
   switcher_invalidate();
 }
 
@@ -43,7 +43,7 @@ static void toplevel_handle_title(void *data, wlr_fth *tl, const gchar *title)
     return;
   str_assign(&(win->title), (gchar *)title);
   wintree_set_active(win->title);
-  taskbar_invalidate_all();
+  taskbar_invalidate_all(win);
   switcher_invalidate();
 }
 
@@ -69,7 +69,7 @@ static void toplevel_handle_done(void *data, wlr_fth *tl)
   wintree_set_active(win->title);
   if(win->valid)
   {
-    taskbar_invalidate_all();
+    taskbar_invalidate_all(win);
     switcher_invalidate();
   }
   else
@@ -104,9 +104,10 @@ static void toplevel_handle_state(void *data, wlr_fth *tl,
       win->state |= WS_FULLSCREEN;
       break;
     case ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_ACTIVATED:
+      taskbar_invalidate_all(wintree_get_focus());
       wintree_set_active(win->title);
       wintree_set_focus(win->uid);
-      taskbar_invalidate_all();
+      taskbar_invalidate_all(win);
       break;
     }
 }

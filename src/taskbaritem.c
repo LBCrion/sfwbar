@@ -89,19 +89,31 @@ static void taskbar_item_button_cb( GtkWidget *widget, gpointer self )
       wintree_focus(priv->win->uid);
   }
 
-  taskbar_invalidate_all();
+  taskbar_invalidate_all(priv->win);
 }
 
 static void taskbar_item_destroy ( GtkWidget *self )
 {
 }
 
-void taskbar_item_update ( GtkWidget *self )
+static window_t *taskbar_item_get_window ( GtkWidget *self )
+{
+  TaskbarItemPrivate *priv;
+
+  g_return_val_if_fail(IS_TASKBAR_ITEM(self),NULL);
+  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
+
+  return priv->win;
+}
+
+static void taskbar_item_update ( GtkWidget *self )
 {
   TaskbarItemPrivate *priv;
 
   g_return_if_fail(IS_TASKBAR_ITEM(self));
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
+  if(!priv->invalid)
+    return;
 
   if(priv->label)
     if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)),priv->win->title))
@@ -126,14 +138,16 @@ void taskbar_item_update ( GtkWidget *self )
         bar_get_output(base_widget_get_child(priv->taskbar))));
 }
 
-window_t *taskbar_item_get_window ( GtkWidget *self )
+static gint taskbar_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
 {
-  TaskbarItemPrivate *priv;
+  TaskbarItemPrivate *p1,*p2;
 
-  g_return_val_if_fail(IS_TASKBAR_ITEM(self),NULL);
-  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
+  g_return_val_if_fail(IS_TASKBAR_ITEM(a),0);
+  g_return_val_if_fail(IS_TASKBAR_ITEM(b),0);
 
-  return priv->win;
+  p1 = taskbar_item_get_instance_private(TASKBAR_ITEM(a));
+  p2 = taskbar_item_get_instance_private(TASKBAR_ITEM(b));
+  return wintree_compare(p1->win,p2->win);
 }
 
 static void taskbar_item_class_init ( TaskbarItemClass *kclass )
@@ -211,17 +225,20 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
   g_signal_connect(self,"scroll-event",
       G_CALLBACK(taskbar_item_scroll_cb),self);
+  taskbar_item_invalidate(self);
   return self;
 }
 
-gint taskbar_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
+void taskbar_item_invalidate ( GtkWidget *self )
 {
-  TaskbarItemPrivate *p1,*p2;
+  TaskbarItemPrivate *priv;
 
-  g_return_val_if_fail(IS_TASKBAR_ITEM(a),0);
-  g_return_val_if_fail(IS_TASKBAR_ITEM(b),0);
+  if(!self)
+    return;
 
-  p1 = taskbar_item_get_instance_private(TASKBAR_ITEM(a));
-  p2 = taskbar_item_get_instance_private(TASKBAR_ITEM(b));
-  return wintree_compare(p1->win,p2->win);
+  g_return_if_fail(IS_TASKBAR_ITEM(self));
+  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
+
+  flow_grid_invalidate(priv->taskbar);
+  priv->invalid = TRUE;
 }

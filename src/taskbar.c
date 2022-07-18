@@ -46,12 +46,12 @@ GtkWidget *taskbar_new ( void )
   return self;
 }
 
-void taskbar_invalidate_all ( void )
+void taskbar_invalidate_all ( window_t *win )
 {
   GList *iter;
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
-    flow_grid_invalidate(iter->data);
+    taskbar_item_invalidate(flow_grid_find_child(iter->data,win));
 }
 
 void taskbar_init_item ( window_t *win )
@@ -72,8 +72,6 @@ void taskbar_populate ( void )
 
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
     taskbar_init_item (iter->data);
-
-  taskbar_invalidate_all();
 }
 
 void taskbar_destroy_item ( window_t *win )

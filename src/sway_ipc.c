@@ -148,7 +148,7 @@ void sway_minimized_set ( struct json_object *obj, const gchar *parent,
   {
     g_free(win->output);
     win->output = g_strdup(monitor);
-    taskbar_invalidate_all();
+    taskbar_invalidate_all(win);
   }
 }
 
@@ -230,10 +230,8 @@ void sway_window_title ( struct json_object *container )
   if(win)
   {
     str_assign(&(win->title),title);
-    taskbar_invalidate_all();
+    taskbar_invalidate_all(win);
     switcher_invalidate();
-//    taskbar_set_label_for_all(win,title);
-//    switcher_set_label(win,title);
     wintree_set_active(title);
   }
 
@@ -253,6 +251,7 @@ void sway_set_focus ( struct json_object *container)
 
   wid = json_int_by_name(container,"id",G_MININT64);
   wintree_set_focus(GINT_TO_POINTER(wid));
+  taskbar_invalidate_all(wintree_get_focus());
   win = wintree_from_id(GINT_TO_POINTER(wid));
   if(win)
     wintree_set_active(win->title);
@@ -448,7 +447,6 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
             sway_set_state(container);
           if(!g_strcmp0(change,"move"))
             sway_ipc_rescan();
-          taskbar_invalidate_all();
           switcher_invalidate();
           g_free(change);
         }
@@ -506,8 +504,6 @@ void sway_ipc_init ( void )
     json_object_put(obj);
   }
   g_free(response);
-
-  taskbar_invalidate_all();
 
   main_ipc = sway_ipc_open(10);
   if(main_ipc<0)
