@@ -142,8 +142,8 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
         break;
     }
 
+  tray_invalidate_all(wrap->sni);
   g_free(wrap);
-  tray_invalidate_all();
 }
 
 void sni_item_get_prop ( GDBusConnection *con, SniItem *sni,
@@ -243,5 +243,5 @@ void sni_item_free ( SniItem *sni )
   g_free(sni->path);
   g_free(sni->dest);
   g_free(sni);
-  tray_invalidate_all();
+  tray_invalidate_all(sni);
 }
