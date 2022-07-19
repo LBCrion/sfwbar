@@ -385,7 +385,7 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
         bar_hide_event(obj);
         switcher_event(obj);
       }
-    if(etype==0x00000004)
+    if(etype==0x00000004) // This is to capture minimized state on sway
       sway_traverse_tree(obj,NULL,NULL,FALSE);
 
     if(etype==0x80000003 && obj)
