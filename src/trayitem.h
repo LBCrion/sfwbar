@@ -28,6 +28,8 @@ struct _TrayItemPrivate
 {
   SniItem *sni;
   GtkWidget *icon;
+  GtkWidget *tray;
+  gboolean invalid;
 };
 
 GType tray_item_get_type ( void );

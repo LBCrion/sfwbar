@@ -104,17 +104,12 @@ gboolean switcher_event ( struct json_object *obj )
   if(obj)
   {
     state = json_string_by_name(obj,"hidden_state");
-    if(state)
+    if(state && *state!='h')
     {
-      if(*state!='h')
-      {
-        event=TRUE;
-        id = json_string_by_name(obj,"id");
-        if(id)
-          sway_ipc_command("bar %s hidden_state hide",id);
-        g_free(id);
-      }
-      g_free(state);
+      event=TRUE;
+      id = json_string_by_name(obj,"id");
+      if(id)
+        sway_ipc_command("bar %s hidden_state hide",id);
     }
   }
   else

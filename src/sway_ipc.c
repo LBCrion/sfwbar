@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020-2021 Lev Babiev
+ * Copyright 2020-2022 Lev Babiev
  */
 
 #include <stdio.h>
@@ -131,10 +131,9 @@ void sway_minimized_set ( struct json_object *obj, const gchar *parent,
     const gchar *monitor )
 {
   window_t *win;
-  gint64 wid;
 
-  wid = json_int_by_name(obj,"id",G_MININT64);
-  win = wintree_from_id(GINT_TO_POINTER(wid));
+  win = wintree_from_id(
+      GINT_TO_POINTER(json_int_by_name(obj,"id",G_MININT64)));
 
   if(!win)
     return;
@@ -155,10 +154,9 @@ void sway_minimized_set ( struct json_object *obj, const gchar *parent,
 void sway_set_state ( struct json_object *container)
 {
   window_t *win;
-  gint64 wid;
 
-  wid = json_int_by_name(container,"id",G_MININT64);
-  win = wintree_from_id(GINT_TO_POINTER(wid));
+  win = wintree_from_id(
+      GINT_TO_POINTER(json_int_by_name(container,"id",G_MININT64)));
   if(win)
   {
     if(json_int_by_name(container,"fullscreen_mode",0))
@@ -172,89 +170,54 @@ void sway_window_new ( struct json_object *container )
 {
   struct json_object *ptr;
   window_t *win;
-  gint64 wid;
+  gpointer wid;
+  gchar *app_id;
 
-  wid = json_int_by_name(container,"id",G_MININT64); 
+  wid = GINT_TO_POINTER(json_int_by_name(container,"id",G_MININT64));
   win = wintree_from_id(GINT_TO_POINTER(wid));
   if(win)
     return;
   
-  win = wintree_window_init();
-  if(win==NULL)
-    return;
-
-  win->wid = wid;
-  win->uid = GINT_TO_POINTER(wid);
-  win->pid = json_int_by_name(container,"pid",G_MININT64); 
-
-  place_window(win->wid, win->pid );
-
-  win->appid = json_string_by_name(container,"app_id");
-  if(win->appid==NULL)
+  app_id = json_string_by_name(container,"app_id");
+  if(!app_id)
   {
     json_object_object_get_ex(container,"window_properties",&ptr);
-    if(!ptr)
-    {
-      g_free(win);
-      return;
-    }
-    else
-      win->appid = json_string_by_name(ptr,"instance");
+    if(ptr)
+      app_id = json_string_by_name(ptr,"instance");
   }
+  if(!app_id)
+    return;
 
-  win->title = json_string_by_name(container,"name");
-  if (win->title == NULL )
-    win->title = g_strdup(win->appid);
-  wintree_set_active(win->title);
+  win = wintree_window_init();
+  win->uid = wid;
+  win->pid = json_int_by_name(container,"pid",G_MININT64);
+  wintree_window_append(win);
+  wintree_set_app_id(wid,app_id);
+  wintree_set_title(wid,json_string_by_name(container,"name"));
 
-  if(json_bool_by_name(container,"focused",FALSE) == TRUE)
+  if(json_bool_by_name(container,"focused",FALSE))
     wintree_set_focus(win->uid);
 
-  wintree_window_append(win);
+  place_window(GPOINTER_TO_INT(wid), win->pid );
 }
 
 void sway_window_title ( struct json_object *container )
 {
-  window_t *win;
-  gchar *title;
-  gint64 wid;
-
-  wid = json_int_by_name(container,"id",G_MININT64);
-  title = json_string_by_name(container,"name");
-
-  if(title==NULL)
-    return;
-
-  win = wintree_from_id(GINT_TO_POINTER(wid));
-
-  if(win)
-  {
-    str_assign(&(win->title),title);
-    taskbar_invalidate_all(win);
-    switcher_invalidate();
-    wintree_set_active(title);
-  }
-
-  g_free(title);
+  wintree_set_title(
+      GINT_TO_POINTER(json_int_by_name(container,"id",G_MININT64)),
+      json_string_by_name(container,"name"));
 }
 
 void sway_window_close (struct json_object *container)
 {
-  wintree_window_delete(GINT_TO_POINTER(
-        json_int_by_name(container,"id",G_MININT64)));
+  wintree_window_delete(
+      GINT_TO_POINTER(json_int_by_name(container,"id",G_MININT64)));
 }
 
 void sway_set_focus ( struct json_object *container)
 {
-  window_t *win;
-  gint64 wid;
-
-  wid = json_int_by_name(container,"id",G_MININT64);
-  wintree_set_focus(GINT_TO_POINTER(wid));
-  taskbar_invalidate_all(wintree_get_focus());
-  win = wintree_from_id(GINT_TO_POINTER(wid));
-  if(win)
-    wintree_set_active(win->title);
+  wintree_set_focus(
+      GINT_TO_POINTER(json_int_by_name(container,"id",G_MININT64)));
   sway_ipc_rescan();
 }
 
@@ -318,7 +281,7 @@ workspace_t *sway_ipc_parse_workspace ( json_object *obj )
   workspace_t *ws;
 
   ws = g_malloc0(sizeof(workspace_t));
-  ws->name = json_string_by_name(obj,"name");
+  ws->name = g_strdup(json_string_by_name(obj,"name"));
   ws->id = GINT_TO_POINTER(json_int_by_name(obj,"id",0));
   ws->visible = json_bool_by_name(obj,"visible",FALSE);
   ws->focused = json_bool_by_name(obj,"focused",FALSE);
@@ -350,7 +313,6 @@ void sway_ipc_pager_event ( struct json_object *obj )
   pager_update();
   g_free(ws->name);
   g_free(ws);
-  g_free(change);
 }
 
 void sway_ipc_pager_populate ( void )
@@ -403,7 +365,7 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
     "input" };
   struct json_object *obj,*container;
   struct json_object *scan;
-  gchar *response,*change,*id;
+  gchar *response,*change;
   gint32 etype;
 
   if(main_ipc==-1)
@@ -418,49 +380,39 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
       sway_ipc_pager_event(obj);
 
     if(etype==0x80000004)
-    {
-      id = json_string_by_name(obj,"id");
-      if ( !bar_id || !g_strcmp0(id,bar_id) )
+      if ( !bar_id || !g_strcmp0(json_string_by_name(obj,"id"),bar_id) )
       {
         bar_hide_event(obj);
         switcher_event(obj);
       }
-      g_free(id);
-    }
+    if(etype==0x00000004)
+      sway_traverse_tree(obj,NULL,NULL,FALSE);
 
-    if(etype==0x80000003)
+    if(etype==0x80000003 && obj)
     {
-      if(obj!=NULL)
+      change = json_string_by_name(obj,"change");
+      if(change)
       {
-        change = json_string_by_name(obj,"change");
-        if(change!=NULL)
-        {
-          json_object_object_get_ex(obj,"container",&container);
-          if(!g_strcmp0(change,"new"))
-            sway_window_new (container);
-          if(!g_strcmp0(change,"close"))
-            sway_window_close(container);
-          if(!g_strcmp0(change,"title"))
-            sway_window_title(container);
-          if(!g_strcmp0(change,"focus"))
-            sway_set_focus(container);
-          if(!g_strcmp0(change,"fullscreen_mode"))
-            sway_set_state(container);
-          if(!g_strcmp0(change,"move"))
-            sway_ipc_rescan();
-          switcher_invalidate();
-          g_free(change);
-        }
+        json_object_object_get_ex(obj,"container",&container);
+        if(!g_strcmp0(change,"new"))
+          sway_window_new (container);
+        else if(!g_strcmp0(change,"close"))
+          sway_window_close(container);
+        else if(!g_strcmp0(change,"title"))
+          sway_window_title(container);
+        else if(!g_strcmp0(change,"focus"))
+          sway_set_focus(container);
+        else if(!g_strcmp0(change,"fullscreen_mode"))
+          sway_set_state(container);
+        else if(!g_strcmp0(change,"move"))
+          sway_ipc_rescan();
+        switcher_invalidate();
       }
     }
 
     if(etype==0x80000014)
-    {
-      id = json_string_by_name(obj,"id");
-      if ( !bar_id || !g_strcmp0(id,bar_id) )
+      if ( !bar_id || !g_strcmp0(json_string_by_name(obj,"id"),bar_id) )
         bar_hide_event(obj);
-      g_free(id);
-    }
 
     if(sway_file && etype>=0x80000000 && etype<=0x80000015)
     {

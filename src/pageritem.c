@@ -38,6 +38,7 @@ void pager_item_update ( GtkWidget *self )
         priv->ws->name, (GCompareFunc)g_strcmp0)!=NULL);
 
   widget_set_css(self,NULL);
+  priv->invalid = FALSE;
 }
 
 workspace_t *pager_item_get_workspace ( GtkWidget *self )

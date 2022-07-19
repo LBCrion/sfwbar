@@ -20,6 +20,9 @@ void tray_item_update ( GtkWidget *self )
   g_return_if_fail(IS_TRAY_ITEM(self));
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
 
+  if(!priv->invalid)
+    return;
+
   if(priv->sni->string[SNI_PROP_STATUS]!=NULL)
   {
     if(priv->sni->string[SNI_PROP_STATUS][0]=='A')
@@ -40,6 +43,7 @@ void tray_item_update ( GtkWidget *self )
   }
 
   widget_set_css(self,NULL);
+  priv->invalid = FALSE;
 }
 
 SniItem *tray_item_get_sni ( GtkWidget *self )
@@ -153,6 +157,20 @@ gboolean tray_item_click_cb (GtkWidget *self, GdkEventButton *event, SniItem *sn
   return TRUE;
 }
 
+void tray_item_invalidate ( GtkWidget *self )
+{
+  TrayItemPrivate *priv;
+
+  if(!self)
+    return;
+
+  g_return_if_fail(IS_TRAY_ITEM(self));
+  priv = tray_item_get_instance_private(TRAY_ITEM(self));
+
+  flow_grid_invalidate(priv->tray);
+  priv->invalid = TRUE;
+}
+
 GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
 {
   GtkWidget *self;
@@ -165,6 +183,7 @@ GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
   priv->icon = scale_image_new();
   priv->sni = sni;
   priv->sni->image = priv->icon;
+  priv->tray = tray;
 
   g_object_ref(self);
   flow_grid_add_child(tray,self);

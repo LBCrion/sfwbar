@@ -94,10 +94,7 @@ gboolean bar_hide_event ( struct json_object *obj )
   {
     mode = json_string_by_name(obj,"mode");
     if(mode)
-    {
       pstate = *mode;
-      g_free(mode);
-    }
     state = pstate;
 
     if(json_object_object_get_ex(obj,"visible_by_modifier",&visible))

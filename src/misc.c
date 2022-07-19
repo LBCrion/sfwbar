@@ -72,7 +72,7 @@ gchar *json_string_by_name ( struct json_object *obj, gchar *name )
   struct json_object *ptr;
 
   if(json_object_object_get_ex(obj,name,&ptr))
-    return g_strdup(json_object_get_string(ptr));
+    return json_object_get_string(ptr);
   return NULL;
 }
 

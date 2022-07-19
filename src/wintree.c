@@ -16,12 +16,13 @@ static gchar *wt_active;
 
 void wintree_set_active ( gchar *title )
 {
-  str_assign(&wt_active,title);
+  g_free(wt_active);
+  wt_active = g_strdup(title);
 }
 
 gchar *wintree_get_active ( void )
 {
-  return wt_active;
+  return wintree_from_id(wintree_get_focus())->title;
 }
 
 window_t *wintree_window_init ( void )
@@ -29,7 +30,6 @@ window_t *wintree_window_init ( void )
   window_t *w;
   w = g_malloc0(sizeof(window_t));
   w->pid=-1;
-  w->wid=-1;
   return w;
 }
 
@@ -37,14 +37,22 @@ gint wintree_compare ( window_t *a, window_t *b)
 {
   gint s;
   s = g_strcmp0(a->title,b->title);
-  if(s==0)
-    return a->wid-b->wid;
-  return s;
+  if(s)
+    return s;
+  return GPOINTER_TO_INT(a->uid)-GPOINTER_TO_INT(b->uid);
 }
 
 void wintree_set_focus ( gpointer id )
 {
+  window_t *win;
+
+  taskbar_invalidate_all(wintree_from_id(wt_focus));
   wt_focus = id;
+  win = wintree_from_id(id);
+  if(!win)
+    return;
+  taskbar_invalidate_all(win);
+  wintree_set_active(win->title);
 }
 
 gpointer wintree_get_focus ( void )
@@ -77,6 +85,42 @@ window_t *wintree_from_pid ( gint64 pid )
   if(!item)
     return NULL;
   return item->data;
+}
+
+void wintree_set_title ( gpointer wid, const gchar *title )
+{
+  window_t *win;
+
+  if(!title)
+    return;
+
+  win = wintree_from_id(wid);
+  if(!win)
+    return;
+
+  g_free(win->title);
+  win->title = g_strdup(title);
+  wintree_set_active(win->title);
+  taskbar_invalidate_all(win);
+  switcher_invalidate();
+}
+
+void wintree_set_app_id ( gpointer wid, const gchar *app_id)
+{
+  window_t *win;
+
+  if(!app_id)
+    return;
+
+  win = wintree_from_id(wid);
+  if(!win)
+    return;
+  g_free(win->appid);
+  win->appid = g_strdup(app_id);
+  if(!win->title)
+    win->title = g_strdup(app_id);
+  taskbar_invalidate_all(win);
+  switcher_invalidate();
 }
 
 void wintree_window_append ( window_t *win )
@@ -116,8 +160,8 @@ void wintree_window_delete ( gpointer id )
     gtk_widget_destroy(win->switcher);
     g_object_unref(G_OBJECT(win->switcher));
   }
-  str_assign(&(win->appid),NULL);
-  str_assign(&(win->title),NULL);
+  g_free(win->appid);
+  g_free(win->title);
   wt_list = g_list_delete_link(wt_list,item);
   g_free(win->output);
   g_free(win);

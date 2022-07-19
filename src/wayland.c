@@ -13,38 +13,18 @@ typedef struct zwlr_foreign_toplevel_handle_v1 wlr_fth;
 static struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager;
 static struct zxdg_output_manager_v1 *xdg_output_manager;
 static struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
-static gint64 wt_counter;
 static struct wl_seat *seat;
 
 static void toplevel_handle_app_id(void *data, wlr_fth *tl, const gchar *app_id)
 {
-  window_t *win;
-
-  if(sway_ipc_active())
-    return;
-
-  win = wintree_from_id(tl);
-  if(!win)
-    return;
-  str_assign(&(win->appid), (gchar *)app_id);
-  taskbar_invalidate_all(win);
-  switcher_invalidate();
+  if(!sway_ipc_active())
+    wintree_set_app_id(tl,app_id);
 }
 
 static void toplevel_handle_title(void *data, wlr_fth *tl, const gchar *title)
 {
-  window_t *win;
-
-  if(sway_ipc_active())
-    return;
-
-  win = wintree_from_id(tl);
-  if(!win)
-    return;
-  str_assign(&(win->title), (gchar *)title);
-  wintree_set_active(win->title);
-  taskbar_invalidate_all(win);
-  switcher_invalidate();
+  if(!sway_ipc_active())
+    wintree_set_title(tl,title);
 }
 
 static void toplevel_handle_closed(void *data, wlr_fth *tl)
@@ -64,14 +44,9 @@ static void toplevel_handle_done(void *data, wlr_fth *tl)
   win = wintree_from_id(tl);
   if(!win)
     return;
-  if(win->title == NULL)
-    str_assign(&(win->title), win->appid);
   wintree_set_active(win->title);
   if(win->valid)
-  {
-    taskbar_invalidate_all(win);
     switcher_invalidate();
-  }
   else
     wintree_window_append(win);
 }
@@ -104,10 +79,7 @@ static void toplevel_handle_state(void *data, wlr_fth *tl,
       win->state |= WS_FULLSCREEN;
       break;
     case ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_ACTIVATED:
-      taskbar_invalidate_all(wintree_get_focus());
-      wintree_set_active(win->title);
       wintree_set_focus(win->uid);
-      taskbar_invalidate_all(win);
       break;
     }
 }
@@ -142,7 +114,6 @@ static void toplevel_manager_handle_toplevel(void *data,
 
   win = wintree_window_init();
   win->uid = tl;
-  win->wid = wt_counter++;
   wintree_window_append(win);
 
   zwlr_foreign_toplevel_handle_v1_add_listener(tl, &toplevel_impl, NULL);

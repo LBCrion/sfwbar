@@ -14,7 +14,6 @@ typedef struct wt_window {
   gchar *appid;
   gchar *output;
   gint64 pid;
-  gint64 wid;
   gpointer uid;
   guint16 state;
   gboolean valid;
@@ -128,6 +127,8 @@ void wintree_window_append ( window_t *win );
 void wintree_window_delete ( gpointer id );
 void wintree_set_focus ( gpointer id );
 void wintree_set_active ( gchar *title );
+void wintree_set_title ( gpointer wid, const gchar *title );
+void wintree_set_app_id ( gpointer wid, const gchar *app_id);
 void wintree_focus ( gpointer id );
 void wintree_close ( gpointer id );
 void wintree_minimize ( gpointer id );
