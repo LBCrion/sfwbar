@@ -153,7 +153,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
       break;
     case G_TOKEN_MENU:
       menu_popup(widget, menu_from_name(action->command), event,
-          win->uid, &state);
+          win?win->uid:NULL, &state);
       break;
     case G_TOKEN_MENUCLEAR:
       menu_remove(action->command);
