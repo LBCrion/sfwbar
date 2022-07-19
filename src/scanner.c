@@ -64,6 +64,15 @@ scan_file_t *scanner_file_new ( gint source, gchar *fname,
   return file;
 }
 
+void scanner_var_free ( scan_var_t *var )
+{
+  g_free(var->json);
+  if(var->regex)
+    g_regex_unref(var->regex);
+  g_free(var->str);
+  g_free(var);
+}
+
 void scanner_var_attach ( gchar *name, scan_file_t *file, gchar *pattern,
     guint type, gint flag )
 {
@@ -90,7 +99,8 @@ void scanner_var_attach ( gchar *name, scan_file_t *file, gchar *pattern,
   file->vars = g_list_append(file->vars,var);
 
   if(!scan_list)
-    scan_list = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
+    scan_list = g_hash_table_new_full((GHashFunc)str_nhash,
+        (GEqualFunc)str_nequal,g_free,(GDestroyNotify)scanner_var_free);
 
   g_hash_table_insert(scan_list,name,var);
 }
