@@ -38,5 +38,6 @@ GtkWidget *tray_item_new( SniItem *win, GtkWidget *tray );
 SniItem*tray_item_get_sni ( GtkWidget *self );
 void tray_item_update ( GtkWidget *self );
 gint tray_item_compare ( GtkWidget *, GtkWidget *, GtkWidget * );
+void tray_item_invalidate ( GtkWidget *self );
 
 #endif
