@@ -634,8 +634,8 @@ Time        get current time as a string, the first optional argument specifies
             string
 Disk        get disk utilization data. You need to specify a mount point as a
             first argument and data field as a second. The supported data
-            fields are "total", "avail", "free", "%avail", "%free". Returns a
-            number.
+            fields are "total", "avail", "free", "%avail", "%free" or "%used".
+            Returns a number.
 ActiveWin   get the title of currently focused window. Returns a string.
 =========== ==================================================================
 
