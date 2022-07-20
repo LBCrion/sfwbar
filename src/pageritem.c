@@ -87,7 +87,8 @@ static gboolean pager_item_draw_preview ( GtkWidget *widget, cairo_t *cr,
   struct json_object *iter,*fiter,*arr;
   gint i,j;
   struct rect wr,cw;
-  gchar *response, *label;
+  gchar *response;
+  const gchar *label;
 
   w = gtk_widget_get_allocated_width (widget);
   h = gtk_widget_get_allocated_height (widget);
@@ -112,7 +113,7 @@ static gboolean pager_item_draw_preview ( GtkWidget *widget, cairo_t *cr,
       iter = json_object_array_get_idx(obj,i);
       label = json_string_by_name(iter,"name");
       wr = parse_rect(iter);
-      if(g_strcmp0(desk,label)==0)
+      if(!g_strcmp0(desk,label))
       {
         json_object_object_get_ex(iter,"floating_nodes",&arr);
         if(json_object_is_type(arr,json_type_array))
@@ -138,7 +139,6 @@ static gboolean pager_item_draw_preview ( GtkWidget *widget, cairo_t *cr,
             cairo_stroke(cr);
           }
       }
-      g_free(label);
     }
   }
 

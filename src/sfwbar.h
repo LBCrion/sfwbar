@@ -215,12 +215,11 @@ void mpd_ipc_command ( gchar *command );
 
 void list_remove_link ( GList **list, void *child );
 gchar *get_xdg_config_file ( gchar *fname, gchar *extra );
-gchar *json_string_by_name ( struct json_object *obj, gchar *name );
+const gchar *json_string_by_name ( struct json_object *obj, gchar *name );
 gint64 json_int_by_name ( struct json_object *obj, gchar *name, gint64 defval);
 gboolean json_bool_by_name ( struct json_object *obj, gchar *name, gboolean defval);
 gdouble json_double_by_name ( struct json_object *obj, gchar *name, gdouble defval);
 int md5_file( gchar *path, guchar output[16] );
-void str_assign ( gchar **dest, gchar *source );
 struct rect parse_rect ( struct json_object *obj );
 guint str_nhash ( gchar *str );
 gboolean str_nequal ( gchar *str1, gchar *str2 );

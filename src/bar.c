@@ -84,7 +84,8 @@ GtkWidget *bar_grid_by_name ( gchar *addr )
 
 gboolean bar_hide_event ( struct json_object *obj )
 {
-  gchar *mode, state;
+  const gchar *mode;
+  gchar state;
   void *key,*bar;
   struct json_object *visible;
   static gchar pstate = 's';

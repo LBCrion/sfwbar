@@ -171,7 +171,7 @@ void sway_window_new ( struct json_object *container )
   struct json_object *ptr;
   window_t *win;
   gpointer wid;
-  gchar *app_id;
+  const gchar *app_id;
 
   wid = GINT_TO_POINTER(json_int_by_name(container,"id",G_MININT64));
   win = wintree_from_id(GINT_TO_POINTER(wid));
@@ -291,7 +291,7 @@ workspace_t *sway_ipc_parse_workspace ( json_object *obj )
 
 void sway_ipc_pager_event ( struct json_object *obj )
 {
-  gchar *change;
+  const gchar *change;
   struct json_object *current;
   workspace_t *ws;
 
@@ -365,7 +365,8 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
     "input" };
   struct json_object *obj,*container;
   struct json_object *scan;
-  gchar *response,*change;
+  gchar *response;
+  const gchar *change;
   gint32 etype;
 
   if(main_ipc==-1)

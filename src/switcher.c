@@ -94,7 +94,7 @@ void switcher_invalidate ( void )
 
 gboolean switcher_event ( struct json_object *obj )
 {
-  gchar *state,*id;
+  const gchar *state,*id;
   GList *item;
   gboolean event = FALSE;
 
