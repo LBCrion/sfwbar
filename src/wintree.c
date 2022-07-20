@@ -46,12 +46,15 @@ void wintree_set_focus ( gpointer id )
 {
   window_t *win;
 
-  taskbar_invalidate_all(wintree_from_id(wt_focus));
+  win = wintree_from_id(wt_focus);
+  taskbar_invalidate_all(win);
+  switcher_invalidate(win);
   wt_focus = id;
   win = wintree_from_id(id);
   if(!win)
     return;
   taskbar_invalidate_all(win);
+  switcher_invalidate(win);
   wintree_set_active(win->title);
 }
 
@@ -102,7 +105,7 @@ void wintree_set_title ( gpointer wid, const gchar *title )
   win->title = g_strdup(title);
   wintree_set_active(win->title);
   taskbar_invalidate_all(win);
-  switcher_invalidate();
+  switcher_invalidate(win);
 }
 
 void wintree_set_app_id ( gpointer wid, const gchar *app_id)
@@ -120,7 +123,7 @@ void wintree_set_app_id ( gpointer wid, const gchar *app_id)
   if(!win->title)
     win->title = g_strdup(app_id);
   taskbar_invalidate_all(win);
-  switcher_invalidate();
+  switcher_invalidate(win);
 }
 
 void wintree_window_append ( window_t *win )
@@ -138,7 +141,7 @@ void wintree_window_append ( window_t *win )
   if(g_list_find(wt_list,win)==NULL)
     wt_list = g_list_append (wt_list,win);
   taskbar_invalidate_all(win);
-  switcher_invalidate();
+  switcher_invalidate(win);
 }
 
 void wintree_window_delete ( gpointer id )

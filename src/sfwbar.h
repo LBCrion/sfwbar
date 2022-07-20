@@ -156,7 +156,7 @@ char *expr_parse ( gchar *expr_str, guint * );
 struct json_object *jpath_parse ( gchar *path, struct json_object *obj );
 
 gboolean switcher_event ( struct json_object *obj );
-void switcher_invalidate ( void );
+void switcher_invalidate ( window_t *win );
 void switcher_update ( void );
 void switcher_set_label ( window_t *win, gchar *title );
 void switcher_window_init ( window_t *win);

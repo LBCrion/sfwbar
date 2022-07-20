@@ -19,6 +19,9 @@ void switcher_item_update ( GtkWidget *self )
   g_return_if_fail(IS_SWITCHER_ITEM(self));
   priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
 
+  if(!priv->invalid)
+    return;
+
   if(priv->label)
     if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)),priv->win->title))
       gtk_label_set_text(GTK_LABEL(priv->label), priv->win->title);
@@ -35,6 +38,7 @@ void switcher_item_update ( GtkWidget *self )
       GTK_STATE_FLAG_PRELIGHT);
 
   widget_set_css(self,NULL);
+  priv->invalid = FALSE;
 }
 
 window_t *switcher_item_get_window ( GtkWidget *self )
@@ -52,6 +56,8 @@ static void switcher_item_class_init ( SwitcherItemClass *kclass )
   GTK_WIDGET_CLASS(kclass)->destroy = switcher_item_destroy;
   FLOW_ITEM_CLASS(kclass)->update = switcher_item_update;
   FLOW_ITEM_CLASS(kclass)->compare = switcher_item_compare;
+  FLOW_ITEM_CLASS(kclass)->get_parent =
+    (void * (*)(GtkWidget *))switcher_item_get_window;
 }
 
 static void switcher_item_init ( SwitcherItem *cgrid )
@@ -113,6 +119,7 @@ GtkWidget *switcher_item_new( window_t *win, GtkWidget *switcher )
   }
   else
     priv->label = NULL;
+  switcher_item_invalidate(self);
 
   return self;
 }
@@ -127,4 +134,18 @@ gint switcher_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
   p1 = switcher_item_get_instance_private(SWITCHER_ITEM(a));
   p2 = switcher_item_get_instance_private(SWITCHER_ITEM(b));
   return wintree_compare(p1->win,p2->win);
+}
+
+void switcher_item_invalidate ( GtkWidget *self )
+{
+  SwitcherItemPrivate *priv;
+
+  if(!self)
+    return;
+
+  g_return_if_fail(IS_SWITCHER_ITEM(self));
+  priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
+
+  flow_grid_invalidate(priv->switcher);
+  priv->invalid = TRUE;
 }

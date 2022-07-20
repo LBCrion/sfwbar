@@ -45,9 +45,7 @@ static void toplevel_handle_done(void *data, wlr_fth *tl)
   if(!win)
     return;
   wintree_set_active(win->title);
-  if(win->valid)
-    switcher_invalidate();
-  else
+  if(!win->valid)
     wintree_window_append(win);
 }
 

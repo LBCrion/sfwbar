@@ -86,12 +86,6 @@ void switcher_populate ( void )
     switcher_window_init(iter->data);
 }
 
-void switcher_invalidate ( void )
-{
-  if(grid)
-    flow_grid_invalidate(grid);
-}
-
 gboolean switcher_event ( struct json_object *obj )
 {
   const gchar *state,*id;
@@ -126,7 +120,7 @@ gboolean switcher_event ( struct json_object *obj )
       focus=wintree_get_list();
     if(focus!=NULL)
       wintree_set_focus(((window_t *)focus->data)->uid);
-    switcher_invalidate();
+//    switcher_invalidate();
   }
 
   return TRUE;
@@ -163,3 +157,10 @@ void switcher_update ( void )
     wintree_focus(win->uid);
   }
 }
+
+void switcher_invalidate ( window_t *win )
+{
+  if(grid)
+    switcher_item_invalidate(flow_grid_find_child(grid,win));
+}
+
