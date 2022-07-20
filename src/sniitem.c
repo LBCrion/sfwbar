@@ -228,6 +228,7 @@ void sni_item_free ( SniItem *sni )
 {
   gint i;
 
+  tray_invalidate_all(sni);
   g_dbus_connection_signal_unsubscribe(sni_get_connection(),sni->signal);
   tray_item_destroy(sni);
   g_cancellable_cancel(sni->cancel);
@@ -243,5 +244,4 @@ void sni_item_free ( SniItem *sni )
   g_free(sni->path);
   g_free(sni->dest);
   g_free(sni);
-  tray_invalidate_all(sni);
 }
