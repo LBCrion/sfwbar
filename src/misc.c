@@ -67,7 +67,7 @@ gchar *get_xdg_config_file ( gchar *fname, gchar *extra )
 }
 
 /* get string value from an object within current object */
-gchar *json_string_by_name ( struct json_object *obj, gchar *name )
+const gchar *json_string_by_name ( struct json_object *obj, gchar *name )
 {
   struct json_object *ptr;
 
