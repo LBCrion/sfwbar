@@ -789,7 +789,7 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         config_get_pins( scanner, widget );
         return TRUE;
       case G_TOKEN_PREVIEW:
-        g_object_set_data(G_OBJECT(widget),"preview",
+        g_object_set_data(G_OBJECT(base_widget_get_child(widget)),"preview",
             GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"preview")));
         return TRUE;
       case G_TOKEN_NUMERIC:
