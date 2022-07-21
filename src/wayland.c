@@ -36,17 +36,6 @@ static void toplevel_handle_closed(void *data, wlr_fth *tl)
 
 static void toplevel_handle_done(void *data, wlr_fth *tl)
 {
-  window_t *win;
-
-  if(sway_ipc_active())
-    return;
-
-  win = wintree_from_id(tl);
-  if(!win)
-    return;
-  wintree_set_active(win->title);
-  if(!win->valid)
-    wintree_window_append(win);
 }
 
 static void toplevel_handle_state(void *data, wlr_fth *tl,
