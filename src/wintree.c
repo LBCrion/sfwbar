@@ -9,6 +9,7 @@
 #include <gtk/gtk.h>
 #include "sfwbar.h"
 #include "taskbar.h"
+#include "switcher.h"
 
 static GList *wt_list;
 static gpointer wt_focus;
@@ -131,7 +132,11 @@ void wintree_window_append ( window_t *win )
   if(!win)
     return;
 
-  if( !win->valid && (win->title || win->appid) )
+  if( !win->title )
+    win->title = g_strdup("");
+  if(! win->appid)
+    win->appid = g_strdup("");
+  if( !win->valid )
   {
     taskbar_init_item  (win);
     win->valid = TRUE;
@@ -158,15 +163,11 @@ void wintree_window_delete ( gpointer id )
   if(!win)
     return;
   taskbar_destroy_item (win);
-  if(win->switcher)
-  {
-    gtk_widget_destroy(win->switcher);
-    g_object_unref(G_OBJECT(win->switcher));
-  }
+  switcher_window_delete(win);
   g_free(win->appid);
   g_free(win->title);
-  wt_list = g_list_delete_link(wt_list,item);
   g_free(win->output);
+  wt_list = g_list_delete_link(wt_list,item);
   g_free(win);
 }
 

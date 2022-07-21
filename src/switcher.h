@@ -30,6 +30,7 @@ struct _SwitcherPrivate
 };
 
 GType switcher_get_type ( void );
+void switcher_window_delete ( window_t *win );
 
 GtkWidget *switcher_new();
 

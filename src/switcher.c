@@ -126,6 +126,14 @@ gboolean switcher_event ( struct json_object *obj )
   return TRUE;
 }
 
+void switcher_window_delete ( window_t *win )
+{
+  if(grid)
+    flow_grid_delete_child(grid,win);
+  if(win->switcher)
+    gtk_widget_destroy(win->switcher);
+}
+
 void switcher_window_init ( window_t *win)
 {
   if(!grid)

@@ -166,7 +166,6 @@ void pager_populate ( void );
 void pager_set_preview ( gboolean pv );
 void pager_set_numeric ( gboolean pn );
 void pager_add_pin ( GtkWidget *pager, gchar *pin );
-void pager_update ( void );
 void pager_event ( struct json_object *obj );
 
 void sni_init ( void );

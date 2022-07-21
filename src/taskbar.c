@@ -84,9 +84,5 @@ void taskbar_update_all ( void )
   GList *iter;
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
-    if(iter->data)
-    {
-      flow_grid_update(iter->data);
-      gtk_widget_show_all(iter->data);
-    }
+    flow_grid_update(iter->data);
 }

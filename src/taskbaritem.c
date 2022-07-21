@@ -130,12 +130,12 @@ static void taskbar_item_update ( GtkWidget *self )
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
 
-  widget_set_css(self,NULL);
-
   flow_item_set_active(self, !priv->win->output ||
       !g_object_get_data(G_OBJECT(priv->taskbar),"filter_output") ||
       !g_strcmp0(priv->win->output,
         bar_get_output(base_widget_get_child(priv->taskbar))));
+  widget_set_css(self,NULL);
+
   priv->invalid = FALSE;
 }
 
