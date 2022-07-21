@@ -202,24 +202,8 @@ void sway_window_new ( struct json_object *container )
   place_window(GPOINTER_TO_INT(wid), win->pid );
 }
 
-void sway_window_title ( struct json_object *container )
-{
-  wintree_set_title(
-      GINT_TO_POINTER(json_int_by_name(container,"id",G_MININT64)),
-      json_string_by_name(container,"name"));
-}
-
-void sway_window_close (struct json_object *container)
-{
-  wintree_window_delete(
-      GINT_TO_POINTER(json_int_by_name(container,"id",G_MININT64)));
-}
-
 void sway_set_focus ( struct json_object *container)
 {
-  wintree_set_focus(
-      GINT_TO_POINTER(json_int_by_name(container,"id",G_MININT64)));
-  sway_ipc_rescan();
 }
 
 void sway_traverse_tree ( struct json_object *obj, const gchar *parent,
@@ -369,6 +353,7 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
   gchar *response;
   const gchar *change;
   gint32 etype;
+  gpointer *wid;
 
   if(main_ipc==-1)
     return FALSE;
@@ -396,14 +381,16 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
       if(change)
       {
         json_object_object_get_ex(obj,"container",&container);
+        wid = GINT_TO_POINTER(json_int_by_name(container,"id",G_MININT64));
+
         if(!g_strcmp0(change,"new"))
           sway_window_new (container);
         else if(!g_strcmp0(change,"close"))
-          sway_window_close(container);
+          wintree_window_delete(wid);
         else if(!g_strcmp0(change,"title"))
-          sway_window_title(container);
+          wintree_set_title(wid,json_string_by_name(container,"name"));
         else if(!g_strcmp0(change,"focus"))
-          sway_set_focus(container);
+          wintree_set_focus(wid);
         else if(!g_strcmp0(change,"fullscreen_mode"))
           sway_set_state(container);
         else if(!g_strcmp0(change,"move"))
