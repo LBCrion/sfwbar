@@ -166,6 +166,9 @@ GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
   GtkWidget *self;
   PagerItemPrivate *priv;
 
+  if(!sway_ipc_active())
+    return NULL;
+
   if(flow_grid_find_child(base_widget_get_child(pager),ws))
     return NULL;
 

@@ -143,7 +143,7 @@ void flow_grid_pad ( GtkWidget *cgrid )
   g_return_if_fail(IS_FLOW_GRID(cgrid));
 
   priv = flow_grid_get_instance_private(FLOW_GRID(cgrid));
-  
+ 
   if(priv->rows>0)
     for(;priv->i<priv->rows;priv->i++)
       gtk_grid_attach(GTK_GRID(cgrid),gtk_label_new(""),0,priv->i,1,1);

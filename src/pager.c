@@ -39,9 +39,6 @@ GtkWidget *pager_new ( void )
   GtkWidget *self;
   PagerPrivate *priv;
 
-  if(!sway_ipc_active())
-    return NULL;
-
   self = GTK_WIDGET(g_object_new(pager_get_type(), NULL));
   priv = pager_get_instance_private(PAGER(self));
 
@@ -180,6 +177,9 @@ void pager_populate ( void )
 {
   GList *item;
   workspace_t *ws;
+  
+  if(!sway_ipc_active())
+    return;
 
   sway_ipc_pager_populate();
 
