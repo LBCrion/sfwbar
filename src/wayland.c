@@ -74,8 +74,6 @@ static void toplevel_handle_state(void *data, wlr_fth *tl,
 static void toplevel_handle_parent(void *data, wlr_fth *tl, wlr_fth *pt) {}
 static void toplevel_handle_output_leave(void *data, wlr_fth *toplevel, struct wl_output *output) 
 {
-  if(sway_ipc_active())
-    sway_ipc_rescan();
 }
 
 static void toplevel_handle_output_enter(void *data, wlr_fth *toplevel, struct wl_output *output) {}
