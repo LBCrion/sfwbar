@@ -112,7 +112,6 @@ int sway_ipc_send ( gint sock, gint32 type, gchar *command );
 void sway_ipc_command ( gchar *cmd, ... );
 int sway_ipc_subscribe ( gint sock );
 gboolean sway_ipc_event ( GIOChannel *, GIOCondition , gpointer );
-void sway_ipc_rescan ( void );
 void sway_ipc_bar_id ( gchar *id );
 void sway_ipc_client_init ( ScanFile *file );
 void sway_ipc_pager_populate ( void );
