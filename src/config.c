@@ -251,7 +251,7 @@ gboolean config_var_type (GScanner *scanner, gint *type )
   return !scanner->max_parse_errors;
 }
 
-void config_var ( GScanner *scanner, scan_file_t *file )
+void config_var ( GScanner *scanner, ScanFile *file )
 {
   gchar *vname = NULL, *pattern = NULL;
   guint type;
@@ -316,9 +316,9 @@ gboolean config_source_flags ( GScanner *scanner, gint *flags )
   return !scanner->max_parse_errors;
 }
 
-scan_file_t *config_source ( GScanner *scanner, gint source )
+ScanFile *config_source ( GScanner *scanner, gint source )
 {
-  scan_file_t *file;
+  ScanFile *file;
   gchar *fname = NULL, *trigger = NULL;
   gint flags = 0;
 
@@ -375,7 +375,7 @@ scan_file_t *config_source ( GScanner *scanner, gint source )
 
 void config_scanner ( GScanner *scanner )
 {
-  scan_file_t *file;
+  ScanFile *file;
   scanner->max_parse_errors = FALSE;
 
   if(!config_expect_token(scanner, '{', "Missing '{' after 'scanner'"))

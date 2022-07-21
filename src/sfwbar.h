@@ -32,7 +32,7 @@ typedef struct scan_file {
   GList *vars;
   GSocketConnection *scon;
   GIOChannel *out;
-} scan_file_t;
+} ScanFile;
 
 typedef struct scan_var {
   GRegex *regex;
@@ -46,7 +46,7 @@ typedef struct scan_var {
   gint multi;
   guint type;
   guchar status;
-  scan_file_t *file;
+  ScanFile *file;
 } scan_var_t;
 
 typedef struct user_action {
@@ -101,8 +101,8 @@ void action_function_exec ( gchar *, GtkWidget *, GdkEvent *, window_t *,
 void action_trigger_add ( action_t *action, gchar *trigger );
 action_t *action_trigger_lookup ( gchar *trigger );
 
-void client_exec ( scan_file_t *file );
-void client_socket ( scan_file_t *file );
+void client_exec ( ScanFile *file );
+void client_socket ( ScanFile *file );
 
 void sway_ipc_init ( void );
 gboolean sway_ipc_active ( void );
@@ -114,7 +114,7 @@ int sway_ipc_subscribe ( gint sock );
 gboolean sway_ipc_event ( GIOChannel *, GIOCondition , gpointer );
 void sway_ipc_rescan ( void );
 void sway_ipc_bar_id ( gchar *id );
-void sway_ipc_client_init ( scan_file_t *file );
+void sway_ipc_client_init ( ScanFile *file );
 void sway_ipc_pager_populate ( void );
 
 void place_window ( gint64 wid, gint64 pid );
@@ -187,14 +187,14 @@ void widget_parse_css ( GtkWidget *widget, gchar *css );
 
 void scanner_expire ( void );
 int scanner_reset_vars ( GList * );
-void scanner_update_json ( struct json_object *, scan_file_t * );
-int scanner_update_file ( GIOChannel *, scan_file_t * );
-int scanner_glob_file ( scan_file_t * );
+void scanner_update_json ( struct json_object *, ScanFile * );
+int scanner_update_file ( GIOChannel *, ScanFile * );
+int scanner_glob_file ( ScanFile * );
 char *scanner_get_string ( gchar *, gboolean );
 double scanner_get_numeric ( gchar *, gboolean );
-void scanner_var_attach ( gchar *, scan_file_t *, gchar *, guint, gint );
-scan_file_t *scanner_file_get ( gchar *trigger );
-scan_file_t *scanner_file_new ( gint , gchar *, gchar *, gint );
+void scanner_var_attach ( gchar *, ScanFile *, gchar *, guint, gint );
+ScanFile *scanner_file_get ( gchar *trigger );
+ScanFile *scanner_file_new ( gint , gchar *, gchar *, gint );
 
 GtkWindow *bar_new ( gchar * );
 void bar_set_monitor ( gchar *, gchar * );
@@ -209,7 +209,7 @@ void bar_monitor_removed_cb ( GdkDisplay *, GdkMonitor * );
 void bar_update_monitor ( GtkWindow *win );
 GtkWidget *bar_grid_by_name ( gchar *addr );
 
-void mpd_ipc_init ( scan_file_t *file );
+void mpd_ipc_init ( ScanFile *file );
 void mpd_ipc_command ( gchar *command );
 
 void list_remove_link ( GList **list, void *child );

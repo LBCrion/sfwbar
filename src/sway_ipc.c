@@ -17,7 +17,7 @@
 static gchar *bar_id;
 static gint main_ipc;
 static const  gint8 magic[6] = {0x69, 0x33, 0x2d, 0x69, 0x70, 0x63};
-static scan_file_t *sway_file;
+static ScanFile *sway_file;
 
 extern gchar *sockname;
 
@@ -272,7 +272,7 @@ void sway_ipc_rescan ( void )
   sway_ipc_send(main_ipc,4,"");
 }
 
-void sway_ipc_client_init ( scan_file_t *file )
+void sway_ipc_client_init ( ScanFile *file )
 {
   sway_file = file;
 }

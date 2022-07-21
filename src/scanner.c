@@ -14,7 +14,7 @@ static GList *file_list;
 static GHashTable *scan_list;
 static GHashTable *trigger_list;
 
-void scanner_file_attach ( gchar *trigger, scan_file_t *file )
+void scanner_file_attach ( gchar *trigger, ScanFile *file )
 {
   if(!trigger_list)
     trigger_list = g_hash_table_new((GHashFunc)str_nhash,
@@ -23,7 +23,7 @@ void scanner_file_attach ( gchar *trigger, scan_file_t *file )
   g_hash_table_insert(trigger_list,trigger,file);
 }
 
-scan_file_t *scanner_file_get ( gchar *trigger )
+ScanFile *scanner_file_get ( gchar *trigger )
 {
   if(!trigger_list)
     return NULL;
@@ -31,23 +31,23 @@ scan_file_t *scanner_file_get ( gchar *trigger )
   return g_hash_table_lookup(trigger_list,trigger);
 }
 
-scan_file_t *scanner_file_new ( gint source, gchar *fname,
+ScanFile *scanner_file_new ( gint source, gchar *fname,
     gchar *trigger, gint flags )
 {
-  scan_file_t *file;
+  ScanFile *file;
   GList *iter;
 
   if(source == SO_CLIENT)
     iter = NULL;
   else
     for(iter=file_list;iter;iter=g_list_next(iter))
-      if(!g_strcmp0(fname,((scan_file_t *)(iter->data))->fname))
+      if(!g_strcmp0(fname,((ScanFile *)(iter->data))->fname))
         break;
 
   if(iter)
     file = iter->data;
   else
-    file = g_malloc(sizeof(scan_file_t));
+    file = g_malloc(sizeof(ScanFile));
 
   file->fname = fname;
   file->trigger = trigger;
@@ -73,7 +73,7 @@ void scanner_var_free ( scan_var_t *var )
   g_free(var);
 }
 
-void scanner_var_attach ( gchar *name, scan_file_t *file, gchar *pattern,
+void scanner_var_attach ( gchar *name, ScanFile *file, gchar *pattern,
     guint type, gint flag )
 {
   scan_var_t *var = g_malloc0(sizeof(scan_var_t));
@@ -149,7 +149,7 @@ void scanner_update_var ( scan_var_t *var, gchar *value)
   var->status=1;
 }
 
-void scanner_update_json ( struct json_object *obj, scan_file_t *file )
+void scanner_update_json ( struct json_object *obj, ScanFile *file )
 {
   GList *node;
   struct json_object *ptr;
@@ -168,7 +168,7 @@ void scanner_update_json ( struct json_object *obj, scan_file_t *file )
 }
 
 /* update variables in a specific file (or pipe) */
-int scanner_update_file ( GIOChannel *in, scan_file_t *file )
+int scanner_update_file ( GIOChannel *in, ScanFile *file )
 {
   scan_var_t *var;
   GList *node;
@@ -250,7 +250,7 @@ time_t scanner_file_mtime ( glob_t *gbuf )
 }
 
 /* update all variables in a file (by glob) */
-int scanner_update_file_glob ( scan_file_t *file )
+int scanner_update_file_glob ( ScanFile *file )
 {
   glob_t gbuf;
   gchar *dnames[2];

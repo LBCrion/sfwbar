@@ -10,7 +10,7 @@
 
 gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 {
-  scan_file_t *file = data;
+  ScanFile *file = data;
 
   if(file->scon)
     g_io_channel_write_chars(chan,"\n",1,NULL,NULL);
@@ -30,7 +30,7 @@ gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
   return TRUE;
 }
 
-void client_socket ( scan_file_t *file )
+void client_socket ( ScanFile *file )
 {
   GSocketClient *client;
   GSocketAddress *addr;
@@ -81,7 +81,7 @@ void client_socket ( scan_file_t *file )
     g_object_unref(scon);
 }
 
-void client_exec ( scan_file_t *file )
+void client_exec ( ScanFile *file )
 {
   gint in, out, err;
   gchar **argv;
