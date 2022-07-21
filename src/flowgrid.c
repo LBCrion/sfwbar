@@ -235,6 +235,7 @@ void flow_grid_update ( GtkWidget *self )
     flow_grid_attach(self,iter->data);
   }
   flow_grid_pad(self);
+  widget_set_css(self,NULL);
 }
 
 gpointer flow_grid_find_child ( GtkWidget *self, gpointer parent )
