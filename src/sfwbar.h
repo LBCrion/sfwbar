@@ -47,7 +47,7 @@ typedef struct scan_var {
   guint type;
   guchar status;
   ScanFile *file;
-} scan_var_t;
+} ScanVar;
 
 typedef struct user_action {
   guchar cond;

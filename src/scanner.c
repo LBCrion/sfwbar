@@ -64,7 +64,7 @@ ScanFile *scanner_file_new ( gint source, gchar *fname,
   return file;
 }
 
-void scanner_var_free ( scan_var_t *var )
+void scanner_var_free ( ScanVar *var )
 {
   g_free(var->json);
   if(var->regex)
@@ -76,7 +76,7 @@ void scanner_var_free ( scan_var_t *var )
 void scanner_var_attach ( gchar *name, ScanFile *file, gchar *pattern,
     guint type, gint flag )
 {
-  scan_var_t *var = g_malloc0(sizeof(scan_var_t));
+  ScanVar *var = g_malloc0(sizeof(ScanVar));
 
   var->file = file;
   var->type = type;
@@ -105,7 +105,7 @@ void scanner_var_attach ( gchar *name, ScanFile *file, gchar *pattern,
   g_hash_table_insert(scan_list,name,var);
 }
 
-void scanner_expire_var ( void *key, scan_var_t *var, void *data )
+void scanner_expire_var ( void *key, ScanVar *var, void *data )
 {
   if( var->file->source != SO_CLIENT )
     var->status=0;
@@ -118,7 +118,7 @@ void scanner_expire ( void )
     g_hash_table_foreach(scan_list,(GHFunc)scanner_expire_var,NULL);
 }
 
-void scanner_update_var ( scan_var_t *var, gchar *value)
+void scanner_update_var ( ScanVar *var, gchar *value)
 {
   if(!value)
     return;
@@ -157,10 +157,10 @@ void scanner_update_json ( struct json_object *obj, ScanFile *file )
 
   for(node=file->vars;node!=NULL;node=g_list_next(node))
   {
-    ptr = jpath_parse(((scan_var_t *)node->data)->json,obj);
+    ptr = jpath_parse(((ScanVar *)node->data)->json,obj);
     for(i=0;i<json_object_array_length(ptr);i++)
     {
-      scanner_update_var(((scan_var_t *)node->data),
+      scanner_update_var(((ScanVar *)node->data),
         g_strdup(json_object_get_string(json_object_array_get_idx(ptr,i))));
     }
     json_object_put(ptr);
@@ -170,7 +170,7 @@ void scanner_update_json ( struct json_object *obj, ScanFile *file )
 /* update variables in a specific file (or pipe) */
 int scanner_update_file ( GIOChannel *in, ScanFile *file )
 {
-  scan_var_t *var;
+  ScanVar *var;
   GList *node;
   GMatchInfo *match;
   struct json_tokener *json = NULL;
@@ -214,7 +214,7 @@ int scanner_update_file ( GIOChannel *in, ScanFile *file )
   }
 
   for(node=file->vars;node!=NULL;node=g_list_next(node))
-    ((scan_var_t *)node->data)->status=1;
+    ((ScanVar *)node->data)->status=1;
 
   return 0;
 }
@@ -226,11 +226,11 @@ int scanner_reset_vars ( GList *var_list )
   gint64 tv = g_get_monotonic_time();
   for(node=var_list;node!=NULL;node=g_list_next(node))
     {
-    ((scan_var_t *)node->data)->pval = ((scan_var_t *)node->data)->val;
-    ((scan_var_t *)node->data)->count = 0;
-    ((scan_var_t *)node->data)->val = 0;
-    ((scan_var_t *)node->data)->time=tv-((scan_var_t *)node->data)->ptime;
-    ((scan_var_t *)node->data)->ptime=tv;
+    ((ScanVar *)node->data)->pval = ((ScanVar *)node->data)->val;
+    ((ScanVar *)node->data)->count = 0;
+    ((ScanVar *)node->data)->val = 0;
+    ((ScanVar *)node->data)->time=tv-((ScanVar *)node->data)->ptime;
+    ((ScanVar *)node->data)->ptime=tv;
     }
   return 0;
 }
@@ -341,7 +341,7 @@ char *scanner_parse_identifier ( gchar *id, gchar **fname )
 /* get string value of a variable by name */
 char *scanner_get_string ( gchar *name, gboolean update )
 {
-  scan_var_t *scan;
+  ScanVar *scan;
   gchar *fname,*id,*res=NULL;
 
   id = scanner_parse_identifier(name,&fname);
@@ -362,7 +362,7 @@ char *scanner_get_string ( gchar *name, gboolean update )
 /* get numeric value of a variable by name */
 double scanner_get_numeric ( gchar *name, gboolean update )
 {
-  scan_var_t *scan;
+  ScanVar *scan;
   double retval=0;
   gchar *fname,*id;
 
