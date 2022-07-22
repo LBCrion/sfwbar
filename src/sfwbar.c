@@ -8,6 +8,7 @@
 #include "sfwbar.h"
 #include "tray.h"
 #include "taskbar.h"
+#include "switcher.h"
 #include "config.h"
 
 gchar *confname;

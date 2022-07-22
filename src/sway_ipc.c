@@ -11,6 +11,7 @@
 #include <sys/un.h>
 #include "sfwbar.h"
 #include "pager.h"
+#include "switcher.h"
 
 static gchar *bar_id;
 static gint main_ipc;
