@@ -5,10 +5,10 @@
 
 #include <gtk/gtk.h>
 #include <glib-unix.h>
-#include <gtk-layer-shell.h>
 #include "sfwbar.h"
 #include "tray.h"
 #include "taskbar.h"
+#include "config.h"
 
 gchar *confname;
 gchar *sockname;

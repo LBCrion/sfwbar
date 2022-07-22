@@ -1,3 +1,9 @@
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
+
+GtkWidget *config_parse ( gchar *, gboolean );
+void config_pipe_read ( gchar *command );
+void config_string ( gchar *string );
 
 enum {
   G_TOKEN_SCANNER = G_TOKEN_LAST + 50,
@@ -92,3 +98,5 @@ enum {
   G_TOKEN_JSON = G_TOKEN_LAST + 201,
   G_TOKEN_GRAB = G_TOKEN_LAST + 202
 };
+
+#endif

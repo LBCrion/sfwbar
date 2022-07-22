@@ -148,10 +148,6 @@ void wayland_output_new ( GdkMonitor *gmon );
 void wayland_output_destroy ( GdkMonitor *gmon );
 void foreign_toplevel_activate ( gpointer tl );
 
-GtkWidget *config_parse ( gchar *, gboolean );
-void config_pipe_read ( gchar *command );
-void config_string ( gchar *string );
-
 char *expr_parse ( gchar *expr_str, guint * );
 struct json_object *jpath_parse ( gchar *path, struct json_object *obj );
 
