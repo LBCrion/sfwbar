@@ -176,7 +176,7 @@ static void activate (GtkApplication* app, gpointer data )
 
   g_timeout_add (100,(GSourceFunc )shell_timer,NULL);
   g_unix_signal_add(10,(GSourceFunc)switcher_event,NULL);
-  g_unix_signal_add(12,(GSourceFunc)bar_hide_event,NULL);
+  g_unix_signal_add(12,(GSourceFunc)bar_hide_event,"toggle");
 }
 
 int main (int argc, gchar **argv)

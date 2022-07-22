@@ -4,6 +4,7 @@
 #include <gdk/gdkwayland.h>
 #include "xdg-output-unstable-v1.h"
 #include "idle-inhibit-unstable-v1.h"
+#include "wlr-foreign-toplevel-management-unstable-v1.h"
 
 #define WLR_FOREIGN_TOPLEVEL_MANAGEMENT_VERSION 3
 

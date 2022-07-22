@@ -82,31 +82,33 @@ GtkWidget *bar_grid_by_name ( gchar *addr )
   return widget;
 }
 
-gboolean bar_hide_event ( struct json_object *obj )
+gboolean bar_hide_event ( const gchar *mode )
 {
-  const gchar *mode;
   gchar state;
   void *key,*bar;
-  struct json_object *visible;
   static gchar pstate = 's';
   GHashTableIter iter;
 
-  if ( obj )
-  {
-    mode = json_string_by_name(obj,"mode");
-    if(mode)
-      pstate = *mode;
-    state = pstate;
-
-    if(json_object_object_get_ex(obj,"visible_by_modifier",&visible))
-      if(json_object_get_boolean(visible))
-        state = 's';
-  }
-  else
-    if( pstate == 's' )
-      pstate = state = 'h';
-    else
-      pstate = state = 's';
+  state = pstate;
+  if(mode)        // if NULL, return to persistent state
+    switch(*mode)
+    {
+      case 's':   // show
+        pstate = state = 's';
+        break;
+      case 'h':   // hide
+        pstate = state = 'h';
+        break;
+      case 'v':   // visible by modfier
+        state ='s';
+        break;
+      default:    // toggle
+        if( pstate == 's' )
+          pstate = state = 'h';
+        else
+          pstate = state = 's';
+        break;
+    }
 
   g_hash_table_iter_init(&iter,bar_list);
   while(g_hash_table_iter_next(&iter,&key,&bar))

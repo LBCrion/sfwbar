@@ -10,6 +10,7 @@
 #include "sfwbar.h"
 #include "taskbar.h"
 #include "switcher.h"
+#include "wlr-foreign-toplevel-management-unstable-v1.h"
 
 static GList *wt_list;
 static gpointer wt_focus;

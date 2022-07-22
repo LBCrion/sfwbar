@@ -356,7 +356,7 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
     if(etype==0x80000004)
       if ( !bar_id || !g_strcmp0(json_string_by_name(obj,"id"),bar_id) )
       {
-        bar_hide_event(obj);
+        bar_hide_event(json_string_by_name(obj,"mode"));
         switcher_event(obj);
       }
     if(etype==0x00000004) // This is to capture minimized state on sway
@@ -387,7 +387,7 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 
     if(etype==0x80000014)
       if ( !bar_id || !g_strcmp0(json_string_by_name(obj,"id"),bar_id) )
-        bar_hide_event(obj);
+        bar_hide_event(json_bool_by_name(obj,"visible_by_modifier",FALSE)?"visible":NULL);
 
     if(sway_file && etype>=0x80000000 && etype<=0x80000015)
     {

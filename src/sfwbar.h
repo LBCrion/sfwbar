@@ -4,7 +4,6 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <json.h>
-#include "wlr-foreign-toplevel-management-unstable-v1.h"
 
 #define MAX_BUTTON 8
 
@@ -199,7 +198,7 @@ void bar_set_size ( gchar *, gchar * );
 void bar_set_exclusive_zone ( gchar *, gchar * );
 gchar *bar_get_output ( GtkWidget * );
 gint bar_get_toplevel_dir ( GtkWidget * );
-gboolean bar_hide_event ( struct json_object *obj );
+gboolean bar_hide_event ( const gchar *mode );
 void bar_monitor_added_cb ( GdkDisplay *, GdkMonitor * );
 void bar_monitor_removed_cb ( GdkDisplay *, GdkMonitor * );
 void bar_update_monitor ( GtkWindow *win );
