@@ -280,7 +280,7 @@ int scale_image_update ( GtkWidget *self )
   size = MIN(w,h);
 
   if(priv->file)
-    g_debug("image: %s @ %d",priv->file,size);
+    g_debug("image: %s @ %d",priv->ftype==SI_DATA?"svg":priv->file,size);
 
   if(size<1)
     return -1;
@@ -309,10 +309,10 @@ int scale_image_update ( GtkWidget *self )
   else if (priv->ftype == SI_DATA && priv->file)
   {
     loader = gdk_pixbuf_loader_new();
+    gdk_pixbuf_loader_set_size(loader,size,size);
     gdk_pixbuf_loader_write(loader,(guchar *)priv->file,
         strlen(priv->file), NULL);
     gdk_pixbuf_loader_close(loader,NULL);
-    gdk_pixbuf_loader_set_size(loader,size,size);
     buf = gdk_pixbuf_copy(gdk_pixbuf_loader_get_pixbuf(loader));
     g_object_unref(G_OBJECT(loader));
   }
