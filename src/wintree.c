@@ -48,14 +48,12 @@ void wintree_set_focus ( gpointer id )
   window_t *win;
 
   win = wintree_from_id(wt_focus);
-  taskbar_invalidate_all(win);
-  switcher_invalidate(win);
+  wintree_commit(wt_focus);
   wt_focus = id;
   win = wintree_from_id(id);
   if(!win)
     return;
-  taskbar_invalidate_all(win);
-  switcher_invalidate(win);
+  wintree_commit(win);
   wintree_set_active(win->title);
 }
 
@@ -91,6 +89,12 @@ window_t *wintree_from_pid ( gint64 pid )
   return item->data;
 }
 
+void wintree_commit ( window_t *win )
+{
+  taskbar_invalidate_all(win);
+  switcher_invalidate(win);
+}
+
 void wintree_set_title ( gpointer wid, const gchar *title )
 {
   window_t *win;
@@ -105,8 +109,7 @@ void wintree_set_title ( gpointer wid, const gchar *title )
   g_free(win->title);
   win->title = g_strdup(title);
   wintree_set_active(win->title);
-  taskbar_invalidate_all(win);
-  switcher_invalidate(win);
+  wintree_commit(win);
 }
 
 void wintree_set_app_id ( gpointer wid, const gchar *app_id)
@@ -123,8 +126,7 @@ void wintree_set_app_id ( gpointer wid, const gchar *app_id)
   win->appid = g_strdup(app_id);
   if(!win->title)
     win->title = g_strdup(app_id);
-  taskbar_invalidate_all(win);
-  switcher_invalidate(win);
+  wintree_commit(win);
 }
 
 void wintree_window_append ( window_t *win )
@@ -145,8 +147,7 @@ void wintree_window_append ( window_t *win )
     switcher_window_init(win);
   if(g_list_find(wt_list,win)==NULL)
     wt_list = g_list_append (wt_list,win);
-  taskbar_invalidate_all(win);
-  switcher_invalidate(win);
+  wintree_commit(win);
 }
 
 void wintree_window_delete ( gpointer id )

@@ -10,9 +10,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include "sfwbar.h"
-#include "taskbar.h"
 #include "pager.h"
-#include "pageritem.h"
 
 static gchar *bar_id;
 static gint main_ipc;
@@ -147,8 +145,7 @@ void sway_minimized_set ( struct json_object *obj, const gchar *parent,
   {
     g_free(win->output);
     win->output = g_strdup(monitor);
-    taskbar_invalidate_all(win);
-    switcher_invalidate(win);
+    wintree_commit(win);
   }
 }
 

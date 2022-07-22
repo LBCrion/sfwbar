@@ -124,6 +124,7 @@ window_t *wintree_from_id ( gpointer id );
 window_t *wintree_from_pid ( gint64 pid );
 void wintree_window_append ( window_t *win );
 void wintree_window_delete ( gpointer id );
+void wintree_commit ( window_t *win );
 void wintree_set_focus ( gpointer id );
 void wintree_set_active ( gchar *title );
 void wintree_set_title ( gpointer wid, const gchar *title );
