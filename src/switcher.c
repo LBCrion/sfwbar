@@ -86,42 +86,19 @@ void switcher_populate ( void )
     switcher_window_init(iter->data);
 }
 
-gboolean switcher_event ( struct json_object *obj )
+gboolean switcher_event ( gpointer data )
 {
-  const gchar *state,*id;
   GList *item;
-  gboolean event = FALSE;
 
-  if(!switcher)
-    return TRUE;
-
-  if(obj)
-  {
-    state = json_string_by_name(obj,"hidden_state");
-    if(state && *state!='h')
-    {
-      event=TRUE;
-      id = json_string_by_name(obj,"id");
-      if(id)
-        sway_ipc_command("bar %s hidden_state hide",id);
-    }
-  }
-  else
-    event = TRUE;
-
-  if(event)
-  {
-    counter = interval;
-    focus = NULL;
-    for (item = wintree_get_list(); item; item = g_list_next(item) )
-      if ( wintree_is_focused(((window_t *)item->data)->uid) )
-        focus = g_list_next(item);
-    if(focus==NULL)
-      focus=wintree_get_list();
-    if(focus!=NULL)
-      wintree_set_focus(((window_t *)focus->data)->uid);
-//    switcher_invalidate();
-  }
+  counter = interval;
+  focus = NULL;
+  for (item = wintree_get_list(); item; item = g_list_next(item) )
+    if ( wintree_is_focused(((window_t *)item->data)->uid) )
+      focus = g_list_next(item);
+  if(focus==NULL)
+    focus=wintree_get_list();
+  if(focus!=NULL)
+    wintree_set_focus(((window_t *)focus->data)->uid);
 
   return TRUE;
 }

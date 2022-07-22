@@ -102,7 +102,7 @@ gboolean bar_hide_event ( const gchar *mode )
       case 'v':   // visible by modfier
         state ='s';
         break;
-      default:    // toggle
+      case 't':    // toggle
         if( pstate == 's' )
           pstate = state = 'h';
         else
