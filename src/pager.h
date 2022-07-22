@@ -2,6 +2,7 @@
 #define __PAGER_H__
 
 #include "basewidget.h"
+#include "flowgrid.h"
 #include "pageritem.h"
 
 #define PAGER_TYPE            (pager_get_type())

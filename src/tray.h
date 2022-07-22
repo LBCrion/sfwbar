@@ -2,6 +2,7 @@
 #define __TRAY_H__
 
 #include "basewidget.h"
+#include "flowgrid.h"
 
 #define TRAY_TYPE            (tray_get_type())
 #define TRAY(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), TRAY_TYPE, Tray))

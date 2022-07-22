@@ -4,6 +4,7 @@
  */
 
 #include "sfwbar.h"
+#include "flowgrid.h"
 #include "taskbaritem.h"
 #include "taskbar.h"
 

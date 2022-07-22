@@ -2,6 +2,7 @@
 #define __SWITCHER_H__
 
 #include "basewidget.h"
+#include "flowgrid.h"
 
 #define SWITCHER_TYPE            (switcher_get_type())
 #define SWITCHER(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), SWITCHER_TYPE, Switcher))

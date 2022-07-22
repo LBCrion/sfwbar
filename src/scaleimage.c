@@ -4,6 +4,7 @@
  */
 
 #include "sfwbar.h"
+#include "scaleimage.h"
 #include <gtk/gtk.h>
 #include <gio/gdesktopappinfo.h>
 

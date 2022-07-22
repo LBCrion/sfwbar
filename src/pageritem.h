@@ -2,6 +2,7 @@
 #define __PAGERITEM_H__
 
 #include "sfwbar.h" 
+#include "flowitem.h"
 
 #define PAGER_ITEM_TYPE            (pager_item_get_type())
 #define PAGER_ITEM(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), PAGER_ITEM_TYPE, PagerItem))

@@ -4,6 +4,7 @@
  */
 
 #include "sfwbar.h"
+#include "basewidget.h"
 #include "config.h"
 #include <gtk/gtk.h>
 

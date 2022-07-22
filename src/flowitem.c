@@ -4,6 +4,7 @@
  */
 
 #include "sfwbar.h"
+#include "flowitem.h"
 
 G_DEFINE_TYPE_WITH_CODE(FlowItem, flow_item, GTK_TYPE_EVENT_BOX,
     G_ADD_PRIVATE(FlowItem));

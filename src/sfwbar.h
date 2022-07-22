@@ -1,4 +1,4 @@
-#if !defined(__SFWBAR_H__)
+#ifndef __SFWBAR_H__
 #define __SFWBAR_H__
 
 #include <glib.h>
@@ -254,10 +254,5 @@ enum {
   SNI_PROP_ISMENU = 14,
   SNI_PROP_MENU = 15
 };
-
-#include "scaleimage.h"
-#include "chart.h"
-#include "flowgrid.h"
-#include "flowitem.h"
 
 #endif

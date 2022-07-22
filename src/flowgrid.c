@@ -4,6 +4,8 @@
  */
 
 #include "sfwbar.h"
+#include "flowgrid.h"
+#include "basewidget.h"
 
 G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, GTK_TYPE_GRID, G_ADD_PRIVATE (FlowGrid));
 

@@ -7,6 +7,7 @@
 #include <gio/gio.h>
 #include <gio/gunixsocketaddress.h>
 #include "sfwbar.h"
+#include "basewidget.h"
 
 gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 {

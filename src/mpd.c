@@ -7,6 +7,7 @@
 #include <gio/gio.h>
 #include <gio/gunixsocketaddress.h>
 #include "sfwbar.h"
+#include "basewidget.h"
 
 static GSocketConnection *mpd_ipc_sock;
 static GSocketConnection *mpd_cmd_sock;
