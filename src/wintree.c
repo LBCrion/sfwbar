@@ -48,8 +48,7 @@ void wintree_set_focus ( gpointer id )
 {
   window_t *win;
 
-  win = wintree_from_id(wt_focus);
-  wintree_commit(wt_focus);
+  wintree_commit(wintree_from_id(wt_focus));
   wt_focus = id;
   win = wintree_from_id(id);
   if(!win)
