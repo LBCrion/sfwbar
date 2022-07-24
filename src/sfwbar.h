@@ -139,6 +139,8 @@ gchar *wintree_get_active ( void );
 gboolean wintree_is_focused ( gpointer id );
 GList *wintree_get_list ( void );
 gint wintree_compare ( window_t *a, window_t *b);
+void wintree_appid_map_add ( gchar *pattern, gchar *appid );
+gchar *wintree_appid_map_lookup ( gchar *title );
 
 void wayland_init ( void );
 void wayland_set_idle_inhibitor ( GtkWidget *widget, gboolean inhibit );

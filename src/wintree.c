@@ -13,8 +13,14 @@
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
 static GList *wt_list;
+static GList *appid_map;
 static gpointer wt_focus;
 static gchar *wt_active;
+
+struct appid_mapper{
+  GRegex *regex;
+  gchar *app_id;
+};
 
 void wintree_set_active ( gchar *title )
 {
@@ -246,4 +252,28 @@ void wintree_close ( gpointer id )
     sway_ipc_command("[con_id=%ld] kill",GPOINTER_TO_INT(id));
   else
     zwlr_foreign_toplevel_handle_v1_close(id);
+}
+
+void wintree_appid_map_add ( gchar *pattern, gchar *appid )
+{
+  struct appid_mapper *map;
+
+  map = g_malloc0(sizeof(struct appid_mapper));
+  map->regex = g_regex_new(pattern,0,0,NULL);
+  map->app_id = g_strdup(appid);
+  appid_map = g_list_prepend(appid_map,map);
+}
+
+gchar *wintree_appid_map_lookup ( gchar *title )
+{
+  GList *iter;
+  struct appid_mapper *map;
+
+  for(iter=appid_map;iter;iter=g_list_next(iter))
+  {
+    map = iter->data;
+    if(g_regex_match (map->regex, title, 0, NULL))
+      return map->app_id;
+  }
+  return NULL;
 }

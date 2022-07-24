@@ -1187,6 +1187,21 @@ void config_define ( GScanner *scanner )
   g_hash_table_insert(defines,ident,value);
 }
 
+void config_mappid_map ( GScanner *scanner )
+{
+  gchar *pattern, *appid;
+  config_parse_sequence(scanner,
+      SEQ_REQ,G_TOKEN_STRING,NULL,&pattern,"missing pattern in MapAppId",
+      SEQ_REQ,',',NULL,NULL,"missing comma after pattern in MapAppId",
+      SEQ_REQ,G_TOKEN_STRING,NULL,&appid,"missing app_id in MapAppId",
+      SEQ_OPT,';',NULL,NULL,NULL,
+      SEQ_END);
+  if(!scanner->max_parse_errors)
+    wintree_appid_map_add(pattern,appid);
+  g_free(pattern);
+  g_free(appid);
+}
+
 void config_trigger_action ( GScanner *scanner )
 {
   gchar *trigger;
@@ -1249,6 +1264,9 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
       case G_TOKEN_TRIGGERACTION:
         config_trigger_action(scanner);
         break;
+      case G_TOKEN_MAPAPPID:
+        config_mappid_map(scanner);
+        break;
       case G_TOKEN_FUNCTION:
         config_function(scanner);
         break;
@@ -1292,6 +1310,8 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   g_scanner_scope_add_symbol(scanner,0, "Define", (gpointer)G_TOKEN_DEFINE );
   g_scanner_scope_add_symbol(scanner,0, "TriggerAction",
       (gpointer)G_TOKEN_TRIGGERACTION );
+  g_scanner_scope_add_symbol(scanner,0, "MapAppId",
+      (gpointer)G_TOKEN_MAPAPPID );
   g_scanner_scope_add_symbol(scanner,0, "End", (gpointer)G_TOKEN_END );
   g_scanner_scope_add_symbol(scanner,0, "File", (gpointer)G_TOKEN_FILE );
   g_scanner_scope_add_symbol(scanner,0, "Exec", (gpointer)G_TOKEN_EXEC );
