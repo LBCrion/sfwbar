@@ -46,7 +46,7 @@ static void toplevel_handle_done(void *data, wlr_fth *tl)
     return;
 
   if(!win->appid && win->title)
-    win->appid = g_strdup(wintree_appid_map_lookup(win->title));
+    wintree_set_app_id(tl,wintree_appid_map_lookup(win->title));
 }
 
 static void toplevel_handle_state(void *data, wlr_fth *tl,

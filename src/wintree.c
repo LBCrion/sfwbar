@@ -257,7 +257,12 @@ void wintree_close ( gpointer id )
 void wintree_appid_map_add ( gchar *pattern, gchar *appid )
 {
   struct appid_mapper *map;
+  GList *iter;
 
+  for(iter=appid_map;iter;iter=g_list_next(iter))
+    if(!g_strcmp0(pattern,
+          g_regex_get_pattern(((struct appid_mapper *)iter->data)->regex)))
+      return;
   map = g_malloc0(sizeof(struct appid_mapper));
   map->regex = g_regex_new(pattern,0,0,NULL);
   map->app_id = g_strdup(appid);
@@ -267,13 +272,10 @@ void wintree_appid_map_add ( gchar *pattern, gchar *appid )
 gchar *wintree_appid_map_lookup ( gchar *title )
 {
   GList *iter;
-  struct appid_mapper *map;
 
   for(iter=appid_map;iter;iter=g_list_next(iter))
-  {
-    map = iter->data;
-    if(g_regex_match (map->regex, title, 0, NULL))
-      return map->app_id;
-  }
+    if(g_regex_match (((struct appid_mapper *)iter->data)->regex,
+          title, 0, NULL))
+      return ((struct appid_mapper *)iter->data)->app_id;
   return NULL;
 }
