@@ -28,7 +28,7 @@ static gboolean taskbar_item_click_cb ( GtkWidget *widget, GdkEventButton *ev,
   if(!action)
     return FALSE;
 
-  action_exec(widget, action,(GdkEvent *)ev,
+  action_exec(gtk_bin_get_child(GTK_BIN(widget)), action,(GdkEvent *)ev,
       wintree_from_id(priv->win->uid),NULL);
   return TRUE;
 }
@@ -81,7 +81,7 @@ static void taskbar_item_button_cb( GtkWidget *widget, gpointer self )
   action = base_widget_get_action(priv->taskbar,1);
 
   if(action)
-    action_exec(widget,action,NULL,priv->win,NULL);
+    action_exec(gtk_bin_get_child(GTK_BIN(widget)),action,NULL,priv->win,NULL);
   else
   {
     if ( wintree_is_focused(priv->win->uid) )
