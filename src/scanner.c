@@ -260,11 +260,9 @@ int scanner_update_file_glob ( ScanFile *file )
   GIOChannel *chan;
   gboolean reset=FALSE;
 
-  if(file==NULL)
+  if(!file)
     return -1;
-  if(file->source == SO_CLIENT)
-    return -1;
-  if(file->fname==NULL)
+  if(file->source == SO_CLIENT || !file->fname)
     return -1;
   if((file->flags & VF_NOGLOB)||(file->source != SO_FILE))
   {
@@ -286,7 +284,7 @@ int scanner_update_file_glob ( ScanFile *file )
         in = popen(gbuf.gl_pathv[i],"r");
       else
         in = fopen(gbuf.gl_pathv[i],"rt");
-      if(in !=NULL )
+      if(in )
       {
         if(!reset)
         {
@@ -303,7 +301,7 @@ int scanner_update_file_glob ( ScanFile *file )
         else
         {
           fclose(in);
-          if(stat(gbuf.gl_pathv[i],&stattr)==0)
+          if(!stat(gbuf.gl_pathv[i],&stattr))
             file->mtime=stattr.st_mtime;
         }
       }
