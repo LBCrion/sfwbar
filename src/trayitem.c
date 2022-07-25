@@ -7,6 +7,7 @@
 #include "sfwbar.h"
 #include "trayitem.h"
 #include "flowgrid.h"
+#include "scaleimage.h"
 
 G_DEFINE_TYPE_WITH_CODE (TrayItem, tray_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (TrayItem));
 

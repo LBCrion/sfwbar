@@ -6,6 +6,7 @@
 #include "sfwbar.h"
 #include "switcheritem.h"
 #include "flowgrid.h"
+#include "scaleimage.h"
 
 G_DEFINE_TYPE_WITH_CODE (SwitcherItem, switcher_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (SwitcherItem));
 

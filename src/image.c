@@ -6,6 +6,7 @@
 #include "sfwbar.h"
 #include "basewidget.h"
 #include "image.h"
+#include "scaleimage.h"
 
 G_DEFINE_TYPE_WITH_CODE (Image, image, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Image));
 

@@ -7,6 +7,7 @@
 #include "flowgrid.h"
 #include "taskbaritem.h"
 #include "taskbar.h"
+#include "scaleimage.h"
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarItem, taskbar_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (TaskbarItem));
 
@@ -123,7 +124,7 @@ static void taskbar_item_update ( GtkWidget *self )
 
   if(priv->icon)
   {
-    if(priv->win_appid)
+    if(priv->win->appid)
       appid = priv->win->appid;
     else
       appid = wintree_appid_map_lookup(priv->win->title);

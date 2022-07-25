@@ -131,11 +131,6 @@ struct rect parse_rect ( struct json_object *obj );
 guint str_nhash ( gchar *str );
 gboolean str_nequal ( gchar *str1, gchar *str2 );
 
-void scale_image_set_image ( GtkWidget *widget, gchar *image, gchar *extra );
-GtkWidget *scale_image_new();
-int scale_image_update ( GtkWidget *widget );
-void scale_image_set_pixbuf ( GtkWidget *widget, GdkPixbuf * );
-
 enum {
   WS_FOCUSED =    1<<0,
   WS_MINIMIZED =  1<<1,

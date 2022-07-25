@@ -10,6 +10,7 @@
 #include "sfwbar.h"
 #include "trayitem.h"
 #include "tray.h"
+#include "scaleimage.h"
 
 struct sni_prop_wrapper {
   guint prop;
