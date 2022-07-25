@@ -4,6 +4,7 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <json.h>
+#include "scanner.h"
 
 typedef struct wt_window {
   GtkWidget *switcher;
@@ -19,32 +20,6 @@ typedef struct wt_window {
 struct rect {
   guint x,y,w,h;
 };
-
-typedef struct scan_file {
-  gchar *fname;
-  gchar *trigger;
-  gint flags;
-  guchar source;
-  time_t mtime;
-  GList *vars;
-  GSocketConnection *scon;
-  GIOChannel *out;
-} ScanFile;
-
-typedef struct scan_var {
-  GRegex *regex;
-  gchar *json;
-  gchar *str;
-  double val;
-  double pval;
-  gint64 time;
-  gint64 ptime;
-  gint count;
-  gint multi;
-  guint type;
-  guchar status;
-  ScanFile *file;
-} ScanVar;
 
 typedef struct user_action {
   guchar cond;
@@ -128,17 +103,6 @@ gboolean menu_action_cb ( GtkWidget *widget, action_t *action );
 
 void widget_set_css ( GtkWidget *, gpointer );
 void widget_parse_css ( GtkWidget *widget, gchar *css );
-
-void scanner_expire ( void );
-int scanner_reset_vars ( GList * );
-void scanner_update_json ( struct json_object *, ScanFile * );
-int scanner_update_file ( GIOChannel *, ScanFile * );
-int scanner_glob_file ( ScanFile * );
-char *scanner_get_string ( gchar *, gboolean );
-double scanner_get_numeric ( gchar *, gboolean );
-void scanner_var_attach ( gchar *, ScanFile *, gchar *, guint, gint );
-ScanFile *scanner_file_get ( gchar *trigger );
-ScanFile *scanner_file_new ( gint , gchar *, gchar *, gint );
 
 GtkWindow *bar_new ( gchar * );
 void bar_set_monitor ( gchar *, gchar * );
