@@ -17,20 +17,17 @@ static struct wl_seat *seat;
 
 static void toplevel_handle_app_id(void *data, wlr_fth *tl, const gchar *app_id)
 {
-  if(!sway_ipc_active())
-    wintree_set_app_id(tl,app_id);
+  wintree_set_app_id(tl,app_id);
 }
 
 static void toplevel_handle_title(void *data, wlr_fth *tl, const gchar *title)
 {
-  if(!sway_ipc_active())
-    wintree_set_title(tl,title);
+  wintree_set_title(tl,title);
 }
 
 static void toplevel_handle_closed(void *data, wlr_fth *tl)
 {
-  if(!sway_ipc_active())
-    wintree_window_delete(tl);
+  wintree_window_delete(tl);
   zwlr_foreign_toplevel_handle_v1_destroy(tl);
 }
 
@@ -43,9 +40,6 @@ static void toplevel_handle_state(void *data, wlr_fth *tl,
 {
   uint32_t *entry;
   window_t *win;
-
-  if(sway_ipc_active())
-    return;
 
   win = wintree_from_id(tl);
   if(!win)
@@ -94,9 +88,6 @@ static void toplevel_manager_handle_toplevel(void *data,
 {
   window_t *win;
 
-  if(sway_ipc_active())
-    return;
-
   win = wintree_window_init();
   win->uid = tl;
   wintree_window_append(win);
@@ -106,9 +97,6 @@ static void toplevel_manager_handle_toplevel(void *data,
 
 void foreign_toplevel_activate ( gpointer tl )
 {
-  if(sway_ipc_active())
-    return;
-
   zwlr_foreign_toplevel_handle_v1_unset_minimized(tl);
   zwlr_foreign_toplevel_handle_v1_activate(tl,seat);
 }
