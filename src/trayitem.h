@@ -3,6 +3,7 @@
 
 #include "sfwbar.h" 
 #include "flowitem.h"
+#include "sni.h"
 
 #define TRAY_ITEM_TYPE            (tray_item_get_type())
 #define TRAY_ITEM(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), TRAY_ITEM_TYPE, TrayItem))

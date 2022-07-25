@@ -124,24 +124,6 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
     g_variant_get(inner,"b",&(wrap->sni->menu));
 
   g_variant_unref(inner);
-
-  if(wrap->sni->string[SNI_PROP_STATUS])
-    switch(wrap->sni->string[SNI_PROP_STATUS][0])
-    {
-      case 'A':
-        gtk_widget_set_name(wrap->sni->image,"tray_active");
-        sni_item_set_icon(wrap->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
-        break;
-      case 'N':
-        gtk_widget_set_name(wrap->sni->image,"tray_attention");
-        sni_item_set_icon(wrap->sni,SNI_PROP_ATTN,SNI_PROP_ATTNPIX);
-        break;
-      case 'P':
-        gtk_widget_set_name(wrap->sni->image,"tray_passive");
-        sni_item_set_icon(wrap->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
-        break;
-    }
-
   tray_invalidate_all(wrap->sni);
   g_free(wrap);
 }
@@ -236,7 +218,7 @@ void sni_item_free ( SniItem *sni )
   for(i=0;i<3;i++)
     if(sni->pixbuf[i]!=NULL)
       g_object_unref(sni->pixbuf[i]);
-  for(i=0;i<MAX_STRING;i++)
+  for(i=0;i<SNI_MAX_STRING;i++)
     g_free(sni->string[i]);
 
   g_free(sni->menu_path);

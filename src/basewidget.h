@@ -7,6 +7,8 @@
 G_DECLARE_DERIVABLE_TYPE (BaseWidget, base_widget, BASE, WIDGET, GtkEventBox);
 #define IS_BASE_WIDGET BASE_IS_WIDGET
 
+#define WIDGET_MAX_BUTTON 8
+
 typedef struct _BaseWidgetClass BaseWidgetClass;
 
 struct _BaseWidgetClass
@@ -28,7 +30,7 @@ struct _BaseWidgetPrivate
   gchar *evalue;
   gchar *tooltip;
   gulong tooltip_h;
-  action_t *actions[MAX_BUTTON];
+  action_t *actions[WIDGET_MAX_BUTTON];
   gulong button_h;
   gulong click_h;
   gulong scroll_h;

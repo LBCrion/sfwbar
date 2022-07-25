@@ -148,4 +148,3 @@ void switcher_invalidate ( window_t *win )
   if(grid)
     switcher_item_invalidate(flow_grid_find_child(grid,win));
 }
-

@@ -32,7 +32,7 @@ static void base_widget_destroy ( GtkWidget *self )
   g_free(priv->estyle);
   g_free(priv->tooltip);
   g_free(priv->trigger);
-  for(i=0;i<MAX_BUTTON;i++)
+  for(i=0;i<WIDGET_MAX_BUTTON;i++)
     action_free(priv->actions[i],NULL);
 
   GTK_WIDGET_CLASS(base_widget_parent_class)->destroy(self);
@@ -446,7 +446,7 @@ action_t *base_widget_get_action ( GtkWidget *self, gint n )
   g_return_val_if_fail(IS_BASE_WIDGET(self),NULL);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  if(n<0 || n>=MAX_BUTTON)
+  if(n<0 || n>=WIDGET_MAX_BUTTON)
     return NULL;
 
   return priv->actions[n];
@@ -459,7 +459,7 @@ void base_widget_set_action ( GtkWidget *self, gint n, action_t *action )
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  if(n<0 || n>=MAX_BUTTON)
+  if(n<0 || n>=WIDGET_MAX_BUTTON)
     return;
 
   action_free(priv->actions[n],NULL);

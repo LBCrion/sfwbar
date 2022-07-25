@@ -4,10 +4,8 @@
  */
 
 #include <gtk/gtk.h>
-#include <glib-unix.h>
 #include <gtk-layer-shell.h>
 #include "sfwbar.h"
-#include "config.h"
 #include "grid.h"
 
 static GHashTable *bar_list;

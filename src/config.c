@@ -707,7 +707,7 @@ void config_widget_action ( GScanner *scanner, GtkWidget *widget )
   if(scanner->max_parse_errors)
     return;
 
-  if( button<0 || button >=MAX_BUTTON )
+  if( button<0 || button >=WIDGET_MAX_BUTTON )
     return g_scanner_error(scanner,"invalid action index %d",button);
 
   base_widget_set_action(widget,button,config_action(scanner));
