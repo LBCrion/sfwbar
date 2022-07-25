@@ -110,6 +110,7 @@ static window_t *taskbar_item_get_window ( GtkWidget *self )
 static void taskbar_item_update ( GtkWidget *self )
 {
   TaskbarItemPrivate *priv;
+  gchar *appid;
 
   g_return_if_fail(IS_TASKBAR_ITEM(self));
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
@@ -121,7 +122,13 @@ static void taskbar_item_update ( GtkWidget *self )
       gtk_label_set_text(GTK_LABEL(priv->label), priv->win->title);
 
   if(priv->icon)
-    scale_image_set_image(priv->icon,priv->win->appid,NULL);
+  {
+    if(priv->win_appid)
+      appid = priv->win->appid;
+    else
+      appid = wintree_appid_map_lookup(priv->win->title);
+    scale_image_set_image(priv->icon,appid,NULL);
+  }
 
   if ( wintree_is_focused(taskbar_item_get_window(self)->uid) )
     gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "taskbar_active");
