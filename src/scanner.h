@@ -1,6 +1,17 @@
 #ifndef __SCANNER_H__
 #define __SCANNER_H__
 
+enum {
+  SO_FILE = 0,
+  SO_EXEC = 1,
+  SO_CLIENT = 2
+};
+
+enum {
+  VF_CHTIME = 1,
+  VF_NOGLOB = 2
+};
+
 typedef struct scan_file {
   gchar *fname;
   gchar *trigger;

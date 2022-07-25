@@ -140,15 +140,4 @@ enum {
   WS_USERSTATE =  1<<5
 };
 
-enum {
-  SO_FILE = 0,
-  SO_EXEC = 1,
-  SO_CLIENT = 2
-};
-
-enum {
-  VF_CHTIME = 1,
-  VF_NOGLOB = 2
-};
-
 #endif
