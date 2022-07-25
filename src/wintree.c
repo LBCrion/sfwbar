@@ -191,7 +191,7 @@ void wintree_focus ( gpointer id )
 
   if(sway_ipc_active())
     sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
-  else
+  else if(foreign_toplevel_is_active())
   {
     zwlr_foreign_toplevel_handle_v1_unset_minimized(id);
     foreign_toplevel_activate(id);
@@ -205,7 +205,7 @@ void wintree_minimize ( gpointer id )
 
   if(sway_ipc_active())
     sway_ipc_command("[con_id=%ld] move window to scratchpad",GPOINTER_TO_INT(id));
-  else
+  else if(foreign_toplevel_is_active())
     zwlr_foreign_toplevel_handle_v1_set_minimized(id);
   wintree_set_focus(NULL);
 }
@@ -217,7 +217,7 @@ void wintree_unminimize ( gpointer id )
 
   if(sway_ipc_active())
     sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
-  else
+  else if(foreign_toplevel_is_active())
     zwlr_foreign_toplevel_handle_v1_unset_minimized(id);
 }
 
@@ -228,7 +228,7 @@ void wintree_maximize ( gpointer id )
 
   if(sway_ipc_active())
     sway_ipc_command("[con_id=%ld] fullscreen enable",GPOINTER_TO_INT(id));
-  else
+  else if(foreign_toplevel_is_active())
     zwlr_foreign_toplevel_handle_v1_set_maximized(id);
 }
 
@@ -239,7 +239,7 @@ void wintree_unmaximize ( gpointer id )
 
   if(sway_ipc_active())
     sway_ipc_command("[con_id=%ld] fullscreen disable",GPOINTER_TO_INT(id));
-  else
+  else if(foreign_toplevel_is_active())
     zwlr_foreign_toplevel_handle_v1_unset_maximized(id);
 }
 
@@ -250,7 +250,7 @@ void wintree_close ( gpointer id )
 
   if(sway_ipc_active())
     sway_ipc_command("[con_id=%ld] kill",GPOINTER_TO_INT(id));
-  else
+  else if(foreign_toplevel_is_active())
     zwlr_foreign_toplevel_handle_v1_close(id);
 }
 

@@ -15,6 +15,11 @@ static struct zxdg_output_manager_v1 *xdg_output_manager;
 static struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
 static struct wl_seat *seat;
 
+gboolean foreign_toplevel_is_active ( void )
+{
+  return (toplevel_manager!=NULL);
+}
+
 static void toplevel_handle_app_id(void *data, wlr_fth *tl, const gchar *app_id)
 {
   wintree_set_app_id(tl,app_id);
@@ -238,9 +243,6 @@ void wayland_init ( void )
   registry = wl_display_get_registry(wdisp);
   wl_registry_add_listener(registry, &registry_listener, NULL);
   wl_display_roundtrip(wdisp);
-
-  if (toplevel_manager == NULL && !sway_ipc_active())
-    g_error("wlr-foreign-toplevel not available\n");
 
   wl_display_roundtrip(wdisp);
   wl_display_roundtrip(wdisp);

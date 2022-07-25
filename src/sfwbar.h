@@ -85,6 +85,7 @@ void wayland_reset_inhibitors ( GtkWidget *w, gpointer data );
 void wayland_output_new ( GdkMonitor *gmon );
 void wayland_output_destroy ( GdkMonitor *gmon );
 void foreign_toplevel_activate ( gpointer tl );
+gboolean foreign_toplevel_is_active ( void );
 
 char *expr_parse ( gchar *expr_str, guint * );
 struct json_object *jpath_parse ( gchar *path, struct json_object *obj );
