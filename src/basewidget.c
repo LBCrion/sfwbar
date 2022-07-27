@@ -5,6 +5,7 @@
 
 #include "sfwbar.h"
 #include "basewidget.h"
+#include "action.h"
 
 G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX, G_ADD_PRIVATE (BaseWidget));
 

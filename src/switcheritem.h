@@ -32,7 +32,6 @@ struct _SwitcherItemPrivate
   GtkWidget *grid;
   GtkWidget *switcher;
   window_t *win;
-  action_t **actions;
   gboolean invalid;
 };
 

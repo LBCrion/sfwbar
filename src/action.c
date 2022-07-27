@@ -6,7 +6,8 @@
 #include "sfwbar.h"
 #include "basewidget.h"
 #include "config.h"
-#include <gtk/gtk.h>
+#include "action.h"
+#include "menu.h"
 
 static GHashTable *functions;
 static GHashTable *trigger_actions;

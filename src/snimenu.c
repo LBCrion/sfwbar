@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include "sfwbar.h"
 #include "sni.h"
+#include "menu.h"
 
 struct sni_menu_wrapper {
   GdkEvent *event;

@@ -2,6 +2,7 @@
 #define __BASE_WIDGET_H__
 
 #include "sfwbar.h" 
+#include "action.h"
 
 #define BASE_WIDGET_TYPE            (base_widget_get_type())
 G_DECLARE_DERIVABLE_TYPE (BaseWidget, base_widget, BASE, WIDGET, GtkEventBox);

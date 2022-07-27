@@ -4,7 +4,7 @@
  */
 
 #include "sfwbar.h"
-#include <gtk/gtk.h>
+#include "menu.h"
 
 static GHashTable *menus;
 

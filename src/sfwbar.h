@@ -21,22 +21,6 @@ struct rect {
   guint x,y,w,h;
 };
 
-typedef struct user_action {
-  guchar cond;
-  guchar ncond;
-  guint type;
-  gchar *command;
-  gchar *addr;
-} action_t;
-
-void action_exec ( GtkWidget *, action_t *, GdkEvent *, window_t *, guint16 *);
-void action_free ( action_t *, GObject *);
-void action_function_add ( gchar *, GList *);
-void action_function_exec ( gchar *, GtkWidget *, GdkEvent *, window_t *,
-    guint16 *);
-void action_trigger_add ( action_t *action, gchar *trigger );
-action_t *action_trigger_lookup ( gchar *trigger );
-
 void client_exec ( ScanFile *file );
 void client_socket ( ScanFile *file );
 
@@ -95,12 +79,6 @@ void pager_set_preview ( gboolean pv );
 void pager_set_numeric ( gboolean pn );
 void pager_add_pin ( GtkWidget *pager, gchar *pin );
 void pager_event ( struct json_object *obj );
-
-GtkWidget *menu_from_name ( gchar *name );
-void menu_add ( gchar *name, GtkWidget *menu );
-void menu_remove ( gchar *name );
-void menu_popup ( GtkWidget *, GtkWidget *, GdkEvent *, gpointer, guint16 * );
-gboolean menu_action_cb ( GtkWidget *widget, action_t *action );
 
 void widget_set_css ( GtkWidget *, gpointer );
 void widget_parse_css ( GtkWidget *widget, gchar *css );

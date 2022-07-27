@@ -15,6 +15,8 @@
 #include "pager.h"
 #include "tray.h"
 #include "switcher.h"
+#include "action.h"
+#include "menu.h"
 #include <fcntl.h>
 #include <sys/stat.h>
 
