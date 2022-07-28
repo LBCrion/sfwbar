@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include "sfwbar.h"
+#include "bar.h"
 #include "pager.h"
 #include "switcher.h"
 

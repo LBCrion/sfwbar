@@ -4,6 +4,7 @@
  */
 
 #include "sfwbar.h"
+#include "bar.h"
 #include "trayitem.h"
 #include "flowgrid.h"
 #include "scaleimage.h"

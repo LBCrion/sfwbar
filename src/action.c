@@ -5,6 +5,7 @@
 
 #include "sfwbar.h"
 #include "wayland.h"
+#include "bar.h"
 #include "basewidget.h"
 #include "config.h"
 #include "action.h"

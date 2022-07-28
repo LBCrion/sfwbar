@@ -6,6 +6,7 @@
 #include <gtk/gtk.h>
 #include <gtk-layer-shell.h>
 #include "sfwbar.h"
+#include "bar.h"
 #include "wayland.h"
 #include "grid.h"
 

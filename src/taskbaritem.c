@@ -9,6 +9,7 @@
 #include "taskbar.h"
 #include "scaleimage.h"
 #include "action.h"
+#include "bar.h"
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarItem, taskbar_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (TaskbarItem));
 

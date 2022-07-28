@@ -5,6 +5,7 @@
 
 #include "sfwbar.h"
 #include "config.h"
+#include "bar.h"
 #include "button.h"
 #include "scale.h"
 #include "image.h"

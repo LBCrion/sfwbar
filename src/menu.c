@@ -5,6 +5,7 @@
 
 #include "sfwbar.h"
 #include "menu.h"
+#include "bar.h"
 
 static GHashTable *menus;
 

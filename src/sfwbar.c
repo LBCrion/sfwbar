@@ -7,6 +7,7 @@
 #include <glib-unix.h>
 #include "sfwbar.h"
 #include "wayland.h"
+#include "bar.h"
 #include "tray.h"
 #include "taskbar.h"
 #include "pager.h"
