@@ -18,6 +18,8 @@ gchar *confname;
 gchar *sockname;
 static gchar *cssname;
 static gchar *monitor;
+static gchar *dfilter;
+static GRegex *rfilter;
 static gboolean debug = FALSE;
 
 static GOptionEntry entries[] = {
@@ -25,6 +27,7 @@ static GOptionEntry entries[] = {
   {"css",'c',0,G_OPTION_ARG_FILENAME,&cssname,"Specify css file"},
   {"socket",'s',0,G_OPTION_ARG_FILENAME,&sockname,"Specify sway socket file"},
   {"debug",'d',0,G_OPTION_ARG_NONE,&debug,"Display debug info"},
+  {"debug-filter",'g',0,G_OPTION_ARG_STRING,&dfilter,"Filter debug output for a pattern"},
   {"monitor",'m',0,G_OPTION_ARG_STRING,&monitor,
     "Monitor to display the panel on (use \"-m list\" to list monitors`"},
   {NULL}};
@@ -64,6 +67,10 @@ void log_print ( const gchar *log_domain, GLogLevelFlags log_level,
   GDateTime *now;
   if(!debug && (log_level==G_LOG_LEVEL_DEBUG || log_level==G_LOG_LEVEL_INFO) )
     return;
+
+  if(rfilter)
+    if(!g_regex_match(rfilter,message,0,NULL))
+      return;
 
   now = g_date_time_new_now_local();
 
@@ -191,6 +198,9 @@ int main (int argc, gchar **argv)
   g_log_set_handler(NULL,G_LOG_LEVEL_MASK,log_print,NULL);
 
   parse_command_line(argc,argv);
+
+  if(dfilter)
+    rfilter = g_regex_new(dfilter,0,0,NULL);
 
   app = gtk_application_new ("org.gtk.sfwbar", G_APPLICATION_NON_UNIQUE);
   g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);
