@@ -6,6 +6,7 @@
 #include <gtk/gtk.h>
 #include <glib-unix.h>
 #include "sfwbar.h"
+#include "wayland.h"
 #include "tray.h"
 #include "taskbar.h"
 #include "switcher.h"

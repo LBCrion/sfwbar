@@ -6,6 +6,7 @@
 #include <gtk/gtk.h>
 #include <gtk-layer-shell.h>
 #include "sfwbar.h"
+#include "wayland.h"
 #include "grid.h"
 
 static GHashTable *bar_list;
@@ -236,8 +237,8 @@ void bar_monitor_added_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 {
   GHashTableIter iter;
   void *key, *bar;
-  wayland_output_new(gmon);
 
+  xdg_output_new(gmon);
   g_hash_table_iter_init(&iter,bar_list);
   while(g_hash_table_iter_next(&iter,&key,&bar))
     bar_update_monitor(bar);
@@ -247,8 +248,8 @@ void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 {
   GHashTableIter iter;
   void *key, *bar;
-  wayland_output_destroy(gmon);
 
+  xdg_output_destroy(gmon);
   g_hash_table_iter_init(&iter,bar_list);
   while(g_hash_table_iter_next(&iter,&key,&bar))
     bar_update_monitor(bar);
