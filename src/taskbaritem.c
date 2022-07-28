@@ -126,7 +126,7 @@ static void taskbar_item_update ( GtkWidget *self )
 
   if(priv->icon)
   {
-    if(priv->win->appid)
+    if(priv->win->appid && *(priv->win->appid))
       appid = priv->win->appid;
     else
       appid = wintree_appid_map_lookup(priv->win->title);
