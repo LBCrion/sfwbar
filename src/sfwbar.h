@@ -66,12 +66,6 @@ gchar *wintree_appid_map_lookup ( gchar *title );
 char *expr_parse ( gchar *expr_str, guint * );
 struct json_object *jpath_parse ( gchar *path, struct json_object *obj );
 
-void pager_populate ( void );
-void pager_set_preview ( gboolean pv );
-void pager_set_numeric ( gboolean pn );
-void pager_add_pin ( GtkWidget *pager, gchar *pin );
-void pager_event ( struct json_object *obj );
-
 void widget_set_css ( GtkWidget *, gpointer );
 void widget_parse_css ( GtkWidget *widget, gchar *css );
 

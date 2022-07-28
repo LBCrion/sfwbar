@@ -9,6 +9,7 @@
 #include "wayland.h"
 #include "tray.h"
 #include "taskbar.h"
+#include "pager.h"
 #include "switcher.h"
 #include "config.h"
 

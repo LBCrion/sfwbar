@@ -147,11 +147,11 @@ void bar_set_layer ( gchar *layer_str, gchar *addr )
 
   if(!g_ascii_strcasecmp(layer_str,"background"))
     layer = GTK_LAYER_SHELL_LAYER_BACKGROUND;
-  if(!g_ascii_strcasecmp(layer_str,"bottom"))
+  else if(!g_ascii_strcasecmp(layer_str,"bottom"))
     layer = GTK_LAYER_SHELL_LAYER_BOTTOM;
-  if(!g_ascii_strcasecmp(layer_str,"top"))
+  else if(!g_ascii_strcasecmp(layer_str,"top"))
     layer = GTK_LAYER_SHELL_LAYER_TOP;
-  if(!g_ascii_strcasecmp(layer_str,"overlay"))
+  else if(!g_ascii_strcasecmp(layer_str,"overlay"))
     layer = GTK_LAYER_SHELL_LAYER_OVERLAY;
 
   gtk_layer_set_layer(GTK_WINDOW(bar),layer);

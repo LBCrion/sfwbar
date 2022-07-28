@@ -40,5 +40,7 @@ void pager_workspace_set_focus ( gpointer id );
 gboolean pager_workspace_is_focused ( workspace_t *ws );
 void pager_update ( void );
 void pager_invalidate_all ( workspace_t *ws );
+void pager_populate ( void );
+void pager_add_pin ( GtkWidget *pager, gchar *pin );
 
 #endif
