@@ -1050,6 +1050,7 @@ GtkWidget *config_menu_item ( GScanner *scanner )
   if(!action)
   {
     g_scanner_error(scanner, "menu item: invalid action");
+    g_free(label);
     return NULL;
   }
 
