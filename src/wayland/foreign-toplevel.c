@@ -40,6 +40,12 @@ static void toplevel_handle_closed(void *data, wlr_fth *tl)
 
 static void toplevel_handle_done(void *data, wlr_fth *tl)
 {
+  window_t *win;
+
+  win = wintree_from_id(tl);
+  if(win)
+    g_debug("app_id: '%s', title '%s'",
+        win->appid?win->appid:"(null)",win->title?win->title:"(null)");
 }
 
 static void toplevel_handle_state(void *data, wlr_fth *tl,
