@@ -8,6 +8,6 @@ GtkWidget *menu_from_name ( gchar *name );
 void menu_add ( gchar *name, GtkWidget *menu );
 void menu_remove ( gchar *name );
 void menu_popup ( GtkWidget *, GtkWidget *, GdkEvent *, gpointer, guint16 * );
-gboolean menu_action_cb ( GtkWidget *widget, action_t *action );
+GtkWidget *menu_item_new ( gchar *label, action_t *action );
 
 #endif

@@ -1063,11 +1063,8 @@ GtkWidget *config_menu_item ( GScanner *scanner )
 
   config_optional_semicolon(scanner);
 
-  item = gtk_menu_item_new_with_label(label);
+  item = menu_item_new(label,action);
   g_free(label);
-  g_signal_connect(G_OBJECT(item),"activate",
-      G_CALLBACK(menu_action_cb),action);
-  g_object_weak_ref(G_OBJECT(item),(GWeakNotify)action_free,action);
   return item;
 }
 

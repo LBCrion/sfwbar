@@ -99,3 +99,15 @@ gboolean menu_action_cb ( GtkWidget *w ,action_t *action )
   action_exec(widget,action,NULL,wintree_from_id(wid),&state);
   return TRUE;
 }
+
+GtkWidget *menu_item_new ( gchar *label, action_t *action )
+{
+  GtkWidget *item;
+
+  item = gtk_menu_item_new_with_label(label);
+  g_signal_connect(G_OBJECT(item),"activate",
+      G_CALLBACK(menu_action_cb),action);
+  g_object_weak_ref(G_OBJECT(item),(GWeakNotify)action_free,action);
+
+  return item;
+}
