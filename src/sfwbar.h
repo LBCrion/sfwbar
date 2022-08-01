@@ -36,13 +36,4 @@ struct rect parse_rect ( struct json_object *obj );
 guint str_nhash ( gchar *str );
 gboolean str_nequal ( gchar *str1, gchar *str2 );
 
-enum {
-  WS_FOCUSED =    1<<0,
-  WS_MINIMIZED =  1<<1,
-  WS_MAXIMIZED =  1<<2,
-  WS_FULLSCREEN = 1<<3,
-  WS_INHIBIT =    1<<4,
-  WS_USERSTATE =  1<<5
-};
-
 #endif

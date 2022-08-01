@@ -36,4 +36,13 @@ gint wintree_compare ( window_t *a, window_t *b);
 void wintree_appid_map_add ( gchar *pattern, gchar *appid );
 gchar *wintree_appid_map_lookup ( gchar *title );
 
+enum {
+  WS_FOCUSED =    1<<0,
+  WS_MINIMIZED =  1<<1,
+  WS_MAXIMIZED =  1<<2,
+  WS_FULLSCREEN = 1<<3,
+  WS_INHIBIT =    1<<4,
+  WS_USERSTATE =  1<<5
+};
+
 #endif
