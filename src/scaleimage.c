@@ -215,6 +215,9 @@ void scale_image_set_image ( GtkWidget *self, gchar *image, gchar *extra )
   g_return_if_fail(IS_SCALE_IMAGE(self));
   priv = scale_image_get_instance_private( SCALE_IMAGE(self));
 
+  if(!image)
+    return;
+
   if( !g_strcmp0(priv->file,image) && !g_strcmp0(priv->extra,extra) )
     return;
   g_free(priv->file);
