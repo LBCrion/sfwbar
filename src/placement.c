@@ -159,10 +159,11 @@ struct json_object *placement_find_wid ( struct json_object *obj, gint64 wid )
   if(json_object_object_get_ex(obj,"nodes",&arr))
     if(json_object_is_type(arr, json_type_array))
       for(i=0;i<json_object_array_length(arr);i++)
-        if(ret==NULL)
       {
-          item = json_object_array_get_idx(arr,i);
-          ret = placement_find_wid(item,wid);
+        item = json_object_array_get_idx(arr,i);
+        ret = placement_find_wid(item,wid);
+        if(ret)
+          break;
       }
   return ret;
 }
@@ -178,9 +179,8 @@ void place_window ( gint64 wid, gint64 pid )
   if(!placer)
     return;
 
-  if(check_pid)
-    if(wintree_from_pid(pid)!=NULL)
-      return;
+  if(check_pid && wintree_from_pid(pid))
+    return;
 
   if(!sway_ipc_active())
     return;
@@ -197,15 +197,10 @@ void place_window ( gint64 wid, gint64 pid )
   if(obj)
   {
     node = placement_find_wid ( obj, wid );
-    if(node!=NULL)
-    {
-      if(placement_location(node,wid,&r)!=-1)
-      {
-        sway_ipc_command("[con_id=%ld] move absolute position %d %d",
-            wid,r.x,r.y);
-      }
-      json_object_put(obj);
-    }
+    if(node && placement_location(node,wid,&r)!=-1)
+      sway_ipc_command("[con_id=%ld] move absolute position %d %d",
+          wid,r.x,r.y);
+    json_object_put(obj);
   }
   g_free(response);
 }

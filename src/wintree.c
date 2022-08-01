@@ -3,7 +3,6 @@
  * Copyright 2020-2022 sfwbar maintainers
  */
 
-
 #include <glib.h>
 #include <unistd.h>
 #include <gtk/gtk.h>
