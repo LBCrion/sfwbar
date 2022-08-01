@@ -267,6 +267,12 @@ void wintree_appid_map_add ( gchar *pattern, gchar *appid )
       return;
   map = g_malloc0(sizeof(struct appid_mapper));
   map->regex = g_regex_new(pattern,0,0,NULL);
+  if(!map->regex)
+  {
+    g_message("MapAppId: invalid paatern '%s'",pattern);
+    g_free(map);
+    return;
+  }
   map->app_id = g_strdup(appid);
   appid_map = g_list_prepend(appid_map,map);
 }
