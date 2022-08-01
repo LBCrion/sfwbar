@@ -11,6 +11,7 @@
 #include "taskbar.h"
 #include "switcher.h"
 #include "wayland.h"
+#include "sway_ipc.h"
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
 static GList *wt_list;

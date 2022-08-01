@@ -7,6 +7,7 @@
 #include "sfwbar.h"
 #include "pager.h"
 #include "pageritem.h"
+#include "sway_ipc.h"
 
 G_DEFINE_TYPE_WITH_CODE (Pager, pager, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Pager));
 

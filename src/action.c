@@ -10,6 +10,7 @@
 #include "config.h"
 #include "action.h"
 #include "menu.h"
+#include "sway_ipc.h"
 
 static GHashTable *functions;
 static GHashTable *trigger_actions;

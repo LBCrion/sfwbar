@@ -6,6 +6,7 @@
 #include "sfwbar.h"
 #include "pager.h"
 #include "pageritem.h"
+#include "sway_ipc.h"
 
 G_DEFINE_TYPE_WITH_CODE (PagerItem, pager_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (PagerItem));
 

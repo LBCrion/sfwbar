@@ -3,8 +3,9 @@
  * Copyright 2022 sfwbar maintainers
  */
 
-#include "../sfwbar.h"
 #include <gdk/gdkwayland.h>
+#include "../sfwbar.h"
+#include "../sway_ipc.h"
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
 typedef struct zwlr_foreign_toplevel_handle_v1 wlr_fth;

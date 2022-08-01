@@ -13,6 +13,7 @@
 #include "pager.h"
 #include "switcher.h"
 #include "config.h"
+#include "sway_ipc.h"
 
 gchar *confname;
 gchar *sockname;

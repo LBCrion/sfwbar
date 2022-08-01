@@ -3,6 +3,8 @@
  * Copyright 2020-2022 sfwbar maintainers
  */
 
+#include <fcntl.h>
+#include <sys/stat.h>
 #include "sfwbar.h"
 #include "config.h"
 #include "bar.h"
@@ -18,8 +20,7 @@
 #include "switcher.h"
 #include "action.h"
 #include "menu.h"
-#include <fcntl.h>
-#include <sys/stat.h>
+#include "sway_ipc.h"
 
 typedef gboolean (*parse_func) ( GScanner *, void * );
 void config_widget ( GScanner *scanner, GtkWidget *widget );
