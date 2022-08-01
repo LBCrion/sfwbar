@@ -666,6 +666,22 @@ keyword. I.e. ::
   ...
   value = Str(MyExpr,2)
 
+Miscellnaeous
+=============
+
+If the icon is missing for a specific program in the taskbar or switcher, it
+is likely due to an missing icon or application not setting app_id correctly.
+You can check app_id's of running programs by running sfwbar -d -g app_id.
+if app_id is present, you need to add an icon with the appropriate name to 
+you icon theme. If it's blnak, you can try mapping it from the program's title
+(please note that title may change during runtime, so matching it can be
+tricky). TO map app_id from programs title, you a toplevel keyword:
+
+MapAppId app_id, pattern
+
+where app_id is the desired app_id and pattern is a regular expression to
+match the title against.
+
 CSS Style
 =========
 SFWBar uses gtk+ widgets and can accept all css properties supported by 
