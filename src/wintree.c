@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <gtk/gtk.h>
 #include "sfwbar.h"
+#include "wintree.h"
 #include "taskbar.h"
 #include "switcher.h"
 #include "wayland.h"

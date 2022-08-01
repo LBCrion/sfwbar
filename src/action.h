@@ -1,6 +1,8 @@
 #ifndef __ACTION_H__
 #define __ACTION_H__
 
+#include "wintree.h"
+
 typedef struct user_action {
   guchar cond;
   guchar ncond;

@@ -7,6 +7,7 @@
 #include "flowgrid.h"
 #include "taskbaritem.h"
 #include "taskbar.h"
+#include "wintree.h"
 
 G_DEFINE_TYPE_WITH_CODE (Taskbar, taskbar, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Taskbar));
 

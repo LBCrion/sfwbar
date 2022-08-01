@@ -9,6 +9,7 @@
 #include <sys/statvfs.h>
 #include <glib.h>
 #include "sfwbar.h"
+#include "wintree.h"
 
 enum {
   G_TOKEN_TIME    = G_TOKEN_LAST + 1,

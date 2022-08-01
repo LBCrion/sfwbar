@@ -9,6 +9,7 @@
 #include "sfwbar.h"
 #include "switcheritem.h"
 #include "switcher.h"
+#include "wintree.h"
 
 G_DEFINE_TYPE_WITH_CODE (Switcher, switcher, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Switcher));
 

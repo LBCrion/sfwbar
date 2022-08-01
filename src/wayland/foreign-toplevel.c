@@ -6,6 +6,7 @@
 #include <gdk/gdkwayland.h>
 #include "../sfwbar.h"
 #include "../sway_ipc.h"
+#include "../wintree.h"
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
 typedef struct zwlr_foreign_toplevel_handle_v1 wlr_fth;

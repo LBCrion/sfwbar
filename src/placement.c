@@ -8,6 +8,7 @@
 #include <json.h>
 #include "sfwbar.h"
 #include "sway_ipc.h"
+#include "wintree.h"
 
 static gint x_step, y_step, x_origin, y_origin;
 static gboolean check_pid;

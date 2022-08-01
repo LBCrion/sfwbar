@@ -3,6 +3,7 @@
 
 #include "sfwbar.h" 
 #include "flowitem.h"
+#include "wintree.h"
 
 #define SWITCHER_ITEM_TYPE            (switcher_item_get_type())
 #define SWITCHER_ITEM(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), SWITCHER_ITEM_TYPE, SwitcherItem))

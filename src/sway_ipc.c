@@ -13,6 +13,7 @@
 #include "bar.h"
 #include "pager.h"
 #include "switcher.h"
+#include "wintree.h"
 
 static gchar *bar_id;
 static gint main_ipc;
