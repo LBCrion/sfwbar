@@ -85,7 +85,6 @@ void log_print ( const gchar *log_domain, GLogLevelFlags log_level,
   g_date_time_unref(now);
 }
 
-
 gboolean shell_timer ( gpointer data )
 {
   taskbar_update_all();
