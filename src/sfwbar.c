@@ -66,6 +66,7 @@ void log_print ( const gchar *log_domain, GLogLevelFlags log_level,
     const gchar *message, gpointer data )
 {
   GDateTime *now;
+
   if(!debug && (log_level==G_LOG_LEVEL_DEBUG || log_level==G_LOG_LEVEL_INFO) )
     return;
 
@@ -82,6 +83,26 @@ void log_print ( const gchar *log_domain, GLogLevelFlags log_level,
       message);
 
   g_date_time_unref(now);
+}
+
+void css_file_load ( gchar *name )
+{
+  GtkCssProvider *css;
+  gchar *fname;
+
+  if(!name)
+    return;
+
+  fname = get_xdg_config_file(name,NULL);
+  if(!fname)
+    return;
+
+  css = gtk_css_provider_new();
+  gtk_css_provider_load_from_path(css,fname,NULL);
+  gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
+    GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
+  g_object_unref(css);
+  g_free(fname);
 }
 
 void css_init ( void )
@@ -125,14 +146,7 @@ void css_init ( void )
     GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
   g_object_unref(css);
 
-  if(cssname!=NULL)
-  {
-    css = gtk_css_provider_new();
-    gtk_css_provider_load_from_path(css,cssname,NULL);
-    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
-      GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
-    g_object_unref(css);
-  }
+  css_file_load(cssname);
 }
 
 gboolean shell_timer ( gpointer data )

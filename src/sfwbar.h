@@ -10,6 +10,8 @@ struct rect {
   guint x,y,w,h;
 };
 
+void css_file_load ( gchar * );
+
 void client_exec ( ScanFile *file );
 void client_socket ( ScanFile *file );
 

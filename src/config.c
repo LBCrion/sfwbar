@@ -1493,13 +1493,14 @@ void config_pipe_read ( gchar *command )
 
 GtkWidget *config_parse ( gchar *file, gboolean toplevel )
 {
-  gchar *fname;
+  gchar *fname, *dir, *base ,*cssfile, *csspath, *tmp;
   gchar *conf=NULL;
   gsize size;
   GtkWidget *w=NULL;
 
   fname = get_xdg_config_file(file,NULL);
   g_debug("include: %s -> %s",file,fname);
+
   if(fname)
     if(!g_file_get_contents(fname,&conf,&size,NULL))
       conf=NULL;
@@ -1510,9 +1511,26 @@ GtkWidget *config_parse ( gchar *file, gboolean toplevel )
     exit(1);
   }
 
-  w = config_parse_data (fname, conf,toplevel);
+  w = config_parse_data (fname, conf, toplevel);
 
   g_free(conf);
+
+  dir = g_path_get_dirname(fname);
+  base = g_path_get_basename(fname);
+  
+  tmp = strrchr(base,'.');
+  if(tmp)
+    *tmp = '\0';
+  cssfile = g_strconcat(base,".css",NULL);
+  csspath = g_build_filename(dir,cssfile,NULL);
+
+  css_file_load (csspath);
+
+  g_free(csspath);
+  g_free(cssfile);
+  g_free(base);
+  g_free(dir);
   g_free(fname);
+
   return w;
 }
