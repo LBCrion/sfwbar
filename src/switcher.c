@@ -134,7 +134,7 @@ void switcher_update ( void )
   {
     flow_grid_update(grid);
     gtk_widget_show_all(switcher);
-    widget_set_css(switcher,NULL);
+    css_widget_cascade(switcher,NULL);
   }
   else
   {

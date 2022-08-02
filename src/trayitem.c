@@ -44,7 +44,7 @@ void tray_item_update ( GtkWidget *self )
     }
   }
 
-  widget_set_css(self,NULL);
+  css_widget_cascade(self,NULL);
   priv->invalid = FALSE;
 }
 

@@ -194,7 +194,7 @@ gboolean base_widget_style ( GtkWidget *self )
     child = BASE_WIDGET_GET_CLASS(self)->get_child(self);
     priv = base_widget_get_instance_private(BASE_WIDGET(self));
     gtk_widget_set_name(child,priv->estyle);
-    widget_set_css(child,NULL);
+    css_widget_cascade(child,NULL);
   }
   return FALSE;
 }
@@ -484,48 +484,6 @@ void base_widget_set_action ( GtkWidget *self, gint n, action_t *action )
       priv->actions[1])
     priv->button_h = g_signal_connect(G_OBJECT(base_widget_get_child(self)),
         "clicked",G_CALLBACK(base_widget_button_cb),self);
-}
-
-void base_widget_parse_css ( GtkWidget *widget, gchar *css )
-{
-  GtkStyleContext *cont;
-  GtkCssProvider *provider;
-
-  if(!css)
-    return;
-
-  cont = gtk_widget_get_style_context (widget);
-  provider = gtk_css_provider_new();
-  gtk_css_provider_load_from_data(provider,css,strlen(css),NULL);
-  gtk_style_context_add_provider (cont,
-    GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
-  g_object_unref(provider);
-  g_free(css);
-}
-
-void widget_set_css ( GtkWidget *widget, gpointer data )
-{
-  gboolean state;
-  gdouble xalign;
-
-  gtk_widget_style_get(widget,"visible",&state,NULL);
-  gtk_widget_set_visible(widget,state);
-  if(!GTK_IS_EVENT_BOX(widget))
-  {
-    gtk_widget_style_get(widget,"hexpand",&state,NULL);
-    gtk_widget_set_hexpand(widget,state);
-    gtk_widget_style_get(widget,"vexpand",&state,NULL);
-    gtk_widget_set_vexpand(widget,state);
-  }
-
-  if(GTK_IS_LABEL(widget))
-  {
-    gtk_widget_style_get(widget,"align",&xalign,NULL);
-    gtk_label_set_xalign(GTK_LABEL(widget),xalign);
-  }
-
-  if(GTK_IS_CONTAINER(widget))
-    gtk_container_forall(GTK_CONTAINER(widget),widget_set_css,NULL);
 }
 
 void base_widget_emit_trigger ( gchar *trigger )

@@ -146,7 +146,7 @@ static void taskbar_item_update ( GtkWidget *self )
       !g_object_get_data(G_OBJECT(priv->taskbar),"filter_output") ||
       !g_strcmp0(priv->win->output,
         bar_get_output(base_widget_get_child(priv->taskbar))));
-  widget_set_css(self,NULL);
+  css_widget_cascade(self,NULL);
 
   priv->invalid = FALSE;
 }

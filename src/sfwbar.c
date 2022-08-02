@@ -85,69 +85,6 @@ void log_print ( const gchar *log_domain, GLogLevelFlags log_level,
   g_date_time_unref(now);
 }
 
-void css_file_load ( gchar *name )
-{
-  GtkCssProvider *css;
-  gchar *fname;
-
-  if(!name)
-    return;
-
-  fname = get_xdg_config_file(name,NULL);
-  if(!fname)
-    return;
-
-  css = gtk_css_provider_new();
-  gtk_css_provider_load_from_path(css,fname,NULL);
-  gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
-    GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
-  g_object_unref(css);
-  g_free(fname);
-}
-
-void css_init ( void )
-{
-  gchar *css_str;
-  GtkCssProvider *css;
-  GtkWidgetClass *widget_class = g_type_class_ref(GTK_TYPE_WIDGET);
-
-  gtk_widget_class_install_style_property( widget_class,
-    g_param_spec_double("align","text alignment","text alignment",
-      0.0,1.0,0.5, G_PARAM_READABLE));
-
-  gtk_widget_class_install_style_property( widget_class,
-    g_param_spec_boolean("hexpand","horizonal expansion","horizontal expansion",
-       FALSE, G_PARAM_READABLE));
-  gtk_widget_class_install_style_property( widget_class,
-    g_param_spec_boolean("vexpand","vertical expansion","vertical expansion",
-      FALSE, G_PARAM_READABLE));
-  gtk_widget_class_install_style_property( widget_class,
-    g_param_spec_boolean("visible","show/hide a widget","show/hide a widget",
-      TRUE, G_PARAM_READABLE));
-  gtk_widget_class_install_style_property( widget_class,
-    g_param_spec_int("icon-size","icon size","icon size",
-      0,500,48, G_PARAM_READABLE));
-
-  static GEnumValue dir_types [] = {
-    {GTK_POS_TOP,"top","top"},
-    {GTK_POS_BOTTOM,"bottom","bottom"},
-    {GTK_POS_LEFT,"left","left"},
-    {GTK_POS_RIGHT,"right","right"},
-    {0,NULL,NULL}};
-  gtk_widget_class_install_style_property( widget_class,
-    g_param_spec_enum("direction","direction","direction",
-      g_enum_register_static ("direction",dir_types),
-      GTK_POS_RIGHT, G_PARAM_READABLE));
-
-  css_str = "window { -GtkWidget-direction: bottom; }";
-  css = gtk_css_provider_new();
-  gtk_css_provider_load_from_data(css,css_str,strlen(css_str),NULL);
-  gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
-    GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
-  g_object_unref(css);
-
-  css_file_load(cssname);
-}
 
 gboolean shell_timer ( gpointer data )
 {
@@ -163,7 +100,7 @@ static void activate (GtkApplication* app, gpointer data )
   GdkDisplay *gdisp;
   GList *clist, *iter;
 
-  css_init();
+  css_init(cssname);
   sway_ipc_init();
   wayland_init();
 
@@ -180,7 +117,7 @@ static void activate (GtkApplication* app, gpointer data )
     if(GTK_IS_BOX(gtk_bin_get_child(GTK_BIN(iter->data))))
     {
       gtk_application_add_window(app,GTK_WINDOW(iter->data));
-      widget_set_css(GTK_WIDGET(iter->data),NULL);
+      css_widget_cascade(GTK_WIDGET(iter->data),NULL);
       base_widget_autoexec(iter->data,NULL);
     }
   g_list_free(clist);

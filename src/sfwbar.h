@@ -10,7 +10,10 @@ struct rect {
   guint x,y,w,h;
 };
 
+void css_init ( gchar * );
 void css_file_load ( gchar * );
+void css_widget_apply ( GtkWidget *widget, gchar *css );
+void css_widget_cascade ( GtkWidget *widget, gpointer data );
 
 void client_exec ( ScanFile *file );
 void client_socket ( ScanFile *file );

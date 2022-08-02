@@ -753,7 +753,7 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
             config_get_value(scanner,"style",TRUE,NULL));
         return TRUE;
       case G_TOKEN_CSS:
-        base_widget_parse_css(base_widget_get_child(widget),
+        css_widget_apply(base_widget_get_child(widget),
             config_assign_string(scanner,"css"));
         return TRUE;
       case G_TOKEN_INTERVAL:
@@ -958,7 +958,7 @@ void config_switcher ( GScanner *scanner )
           config_assign_number(scanner, "rows"));
         break;
       case G_TOKEN_CSS:
-        base_widget_parse_css(widget,config_assign_string(scanner,"css"));
+        css_widget_apply(widget,config_assign_string(scanner,"css"));
         break;
       case G_TOKEN_ICONS:
         g_object_set_data(G_OBJECT(widget),"icons",
@@ -1249,7 +1249,7 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
         else
           dest = bar_grid_by_name(NULL);
         config_layout(scanner,dest);
-        widget_set_css(dest,NULL);
+        css_widget_cascade(dest,NULL);
         break;
       case G_TOKEN_PLACER:
         config_placer(scanner);
