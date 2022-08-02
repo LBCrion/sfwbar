@@ -49,8 +49,9 @@ a location and a name of the config file using ``-f`` command line option.
 
 Appearance of the program can be specifie using CSS properties, these
 are sourced either from the css section of the main configuration file or
-from a file sfwbar.css located in the same directory as the config
-file. The name of the css file can be also specified using ``-c`` option.
+from a file with a .css extension with the same base name as the config file
+located in the same directory as the config file. The name of the css file 
+can be also specified using ``-c`` option.
 
 The config file consists of the following top level sections:
 
