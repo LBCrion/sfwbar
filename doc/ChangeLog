@@ -1,3 +1,48 @@
+1.0_beta7
+  - Implement chart widget
+  - Support loading svg images from inline data
+  - Implement centering of widgets in respect to the bar
+  - Support multiple bars, taskbars and pagers
+  - Implement addressable bars / widgets
+  - Allow hiding widgets via css property
+
+1.0_beta6
+  - Improved json path parser
+  - Support for listening to all sway events
+  - Support for show/hide on modifier
+  - Support for continuous listening to output of an executed program or a socket
+  - Support for dynamic recoloring of images
+  - Support for user state of widgets
+  - Support for configuration of layer shell exclusive zone
+  - Fixes for icon matching
+  - Fixes for SNI tray support
+
+1.0_beta4
+  - Implement tooltips
+  - Implement dynamci styling
+  - MPD support
+  - Idle Inhibit protocol support
+  - Taskbar output filter (only show windows from a given output)
+  - SetBarSize action
+  - title_width property to trim long window titles
+  - SetBarID action (listen to events on a specific bar ID)
+  - SetValue / SetStyle actions (control widget visuals via actions)
+
+1.0_beta3
+  - Implement user defined menues, functions and actions
+  - Allow binding actions to multiple mouse events for any widget
+
+1.0_beta2
+  - Implement tray icon menues
+  - Lookup XDG data system directories for resources
+  - Update default configs to be more useful
+
+1.0_beta1
+  - Implement system tray
+  - Move configuration from libucl to custom parser
+  - Move expression parser to custom parser
+  - Move data extraction and expression engine to a separate thread
+
 0.9.10
   - Add support for wayland foreign toplevel protocol (taskbar support for
       wayfire and other compositors supporting this protocol)
