@@ -1,3 +1,6 @@
+1.0_beta8
+  - Update config files
+
 1.0_beta7
   - Implement chart widget
   - Support loading svg images from inline data
