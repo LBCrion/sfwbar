@@ -2,11 +2,12 @@ Scanner {
   MpdClient("") {
     MpdTitle = RegEx("Title: (.*)")
     MpdArtist = RegEx("Artist: (.*)")
+    MpdState = RegEx("state: (.*)")
   }
 }
 
 layout {
-    style = "frame"
+    style = If(MpdState.count=0,"hidden","frame")
     label {
       style = "mpd"
       interval = 100
