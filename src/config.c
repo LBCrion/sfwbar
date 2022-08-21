@@ -813,6 +813,32 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         g_object_set_data(G_OBJECT(widget),"title_width",
             GINT_TO_POINTER(config_assign_number(scanner,"title_width")));
         return TRUE;
+      case G_TOKEN_GROUP:
+        if(g_scanner_peek_next_token(scanner) == '=')
+        {
+          g_object_set_data(G_OBJECT(widget),"group",GINT_TO_POINTER(
+            config_assign_boolean(scanner,FALSE,"group")));
+          return TRUE;
+        }
+        switch((gint)g_scanner_get_next_token(scanner))
+        {
+          case G_TOKEN_COLS:
+            g_object_set_data(G_OBJECT(widget),"g_cols",GINT_TO_POINTER(
+              (gint)config_assign_number(scanner,"group cols")));
+            return TRUE;
+          case G_TOKEN_ROWS:
+            g_object_set_data(G_OBJECT(widget),"g_rows",GINT_TO_POINTER(
+              (gint)config_assign_number(scanner,"group rows")));
+            return TRUE;
+          case G_TOKEN_CSS:
+            g_object_set_data(G_OBJECT(widget),"g_css",
+              config_assign_string(scanner,"group css"));
+            return TRUE;
+          case G_TOKEN_STYLE:
+            g_object_set_data(G_OBJECT(widget),"g_style",
+              config_assign_string(scanner,"group style"));
+            return TRUE;
+        }
     }
 
   if(IS_FLOW_GRID(base_widget_get_child(widget)))
@@ -870,7 +896,7 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *parent )
       widget = config_include( scanner );
       break;
     case G_TOKEN_TASKBAR:
-      widget = taskbar_new();
+      widget = taskbar_new(TRUE);
       break;
     case G_TOKEN_PAGER:
       widget = pager_new();
@@ -1365,6 +1391,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
       (gpointer)G_TOKEN_TITLEWIDTH );
   g_scanner_scope_add_symbol(scanner,0, "Tooltip", (gpointer)G_TOKEN_TOOLTIP );
   g_scanner_scope_add_symbol(scanner,0, "Trigger", (gpointer)G_TOKEN_TRIGGER );
+  g_scanner_scope_add_symbol(scanner,0, "Group", (gpointer)G_TOKEN_GROUP );
   g_scanner_scope_add_symbol(scanner,0, "XStep", (gpointer)G_TOKEN_XSTEP );
   g_scanner_scope_add_symbol(scanner,0, "YStep", (gpointer)G_TOKEN_YSTEP );
   g_scanner_scope_add_symbol(scanner,0, "XOrigin", (gpointer)G_TOKEN_XORIGIN );

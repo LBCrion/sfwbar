@@ -6,6 +6,7 @@
 #include "sfwbar.h"
 #include "flowgrid.h"
 #include "taskbaritem.h"
+#include "taskbargroup.h"
 #include "taskbar.h"
 #include "wintree.h"
 
@@ -32,7 +33,7 @@ static void taskbar_init ( Taskbar *self )
 {
 }
 
-GtkWidget *taskbar_new ( void )
+GtkWidget *taskbar_new ( gboolean list )
 {
   GtkWidget *self;
   TaskbarPrivate *priv;
@@ -42,7 +43,8 @@ GtkWidget *taskbar_new ( void )
 
   priv->taskbar = flow_grid_new(TRUE);
   gtk_container_add(GTK_CONTAINER(self),priv->taskbar);
-  taskbars = g_list_append(taskbars,self);
+  if(list)
+    taskbars = g_list_append(taskbars,self);
 
   flow_grid_invalidate(priv->taskbar);
   return self;
@@ -59,10 +61,21 @@ void taskbar_invalidate_all ( window_t *win )
 void taskbar_init_item ( window_t *win )
 {
   GList *iter;
+  GtkWidget *taskbar;
+  gboolean group;
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
     if(iter->data)
-      taskbar_item_new(win,iter->data);
+    {
+      taskbar = iter->data;
+      group = GPOINTER_TO_INT(
+        g_object_get_data(G_OBJECT(taskbar),"group"));
+      if(group)
+        taskbar = taskbar_group_new(win->appid,taskbar);
+
+      if(!flow_grid_find_child(taskbar,win))
+        taskbar_item_new(win,taskbar);
+    }
 }
 
 void taskbar_populate ( void )
@@ -76,9 +89,47 @@ void taskbar_populate ( void )
     taskbar_init_item (iter->data);
 }
 
+void taskbar_reparent_item ( window_t *win, const gchar *new_appid )
+{
+  GList *iter;
+  GtkWidget *taskbar, *group;
+
+  for(iter=taskbars; iter; iter=g_list_next(iter))
+    if(iter->data)
+    {
+      taskbar = iter->data;
+      if(!GPOINTER_TO_INT(
+            g_object_get_data(G_OBJECT(taskbar),"group")))
+        break;
+      group = taskbar_group_new(win->appid,taskbar);
+      flow_grid_delete_child(group,win);
+      if(!flow_grid_n_children(group))
+        flow_grid_delete_child(taskbar, win->appid);
+      group = taskbar_group_new(new_appid,taskbar);
+      taskbar_item_new(win,group);
+    }
+}
+
 void taskbar_destroy_item ( window_t *win )
 {
-  g_list_foreach(taskbars,(GFunc)flow_grid_delete_child,win);
+  GList *iter;
+  GtkWidget *taskbar, *tgroup;
+  gboolean group;
+
+  for(iter=taskbars; iter; iter=g_list_next(iter))
+    if(iter->data)
+    {
+      taskbar = iter->data;
+      group = GPOINTER_TO_INT(
+        g_object_get_data(G_OBJECT(taskbar),"group"));
+      if(group)
+        tgroup = taskbar_group_new(win->appid,taskbar);
+      else
+        tgroup = taskbar;
+      flow_grid_delete_child(tgroup,win);
+      if(!flow_grid_n_children(tgroup))
+        flow_grid_delete_child(taskbar, win->appid);
+    }
 }
 
 void taskbar_update_all ( void )

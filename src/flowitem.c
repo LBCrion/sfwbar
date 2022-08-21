@@ -9,8 +9,14 @@
 G_DEFINE_TYPE_WITH_CODE(FlowItem, flow_item, GTK_TYPE_EVENT_BOX,
     G_ADD_PRIVATE(FlowItem));
 
+static gint flow_item_comp_parent ( gconstpointer p1, gconstpointer p2 )
+{
+  return p2 - p1;
+}
+
 static void flow_item_class_init ( FlowItemClass *kclass )
 {
+  FLOW_ITEM_CLASS(kclass)->comp_parent = flow_item_comp_parent;
 }
 
 void flow_item_set_active ( GtkWidget *self, gboolean active )

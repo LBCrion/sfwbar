@@ -6,6 +6,7 @@
 #include "sfwbar.h"
 #include "flowgrid.h"
 #include "basewidget.h"
+#include "taskbargroup.h"
 
 G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, GTK_TYPE_GRID, G_ADD_PRIVATE (FlowGrid));
 
@@ -197,14 +198,20 @@ void flow_grid_delete_child ( GtkWidget *self, void *parent )
 {
   FlowGridPrivate *priv;
   GList *iter;
+  GCompareFunc comp_parent;
 
   if(IS_BASE_WIDGET(self))
     self = base_widget_get_child(self);
   g_return_if_fail(IS_FLOW_GRID(self));
 
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
+  if(!priv->children || !priv->children->data ||
+      !FLOW_ITEM_GET_CLASS(priv->children->data)->comp_parent)
+    return;
+  comp_parent = FLOW_ITEM_GET_CLASS(priv->children->data)->comp_parent;
+
   for(iter=priv->children;iter;iter=g_list_next(iter))
-    if(flow_item_get_parent(iter->data)==parent)
+    if(!comp_parent(flow_item_get_parent(iter->data),parent))
     {
       gtk_widget_destroy(iter->data);
       priv->children = g_list_delete_link(priv->children,iter);
@@ -240,10 +247,23 @@ void flow_grid_update ( GtkWidget *self )
   css_widget_cascade(self,NULL);
 }
 
-gpointer flow_grid_find_child ( GtkWidget *self, gpointer parent )
+guint flow_grid_n_children ( GtkWidget *self )
+{
+  FlowGridPrivate *priv;
+
+  if(IS_BASE_WIDGET(self))
+    self = base_widget_get_child(self);
+  g_return_val_if_fail(IS_FLOW_GRID(self),0);
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  return g_list_length(priv->children);
+}
+
+gpointer flow_grid_find_child ( GtkWidget *self, gconstpointer parent )
 {
   FlowGridPrivate *priv;
   GList *iter;
+  GCompareFunc comp_parent;
 
   if(IS_BASE_WIDGET(self))
     self = base_widget_get_child(self);
@@ -251,8 +271,13 @@ gpointer flow_grid_find_child ( GtkWidget *self, gpointer parent )
 
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
+  if(!priv->children || !priv->children->data ||
+      !FLOW_ITEM_GET_CLASS(priv->children->data)->comp_parent)
+    return NULL;
+  comp_parent = FLOW_ITEM_GET_CLASS(priv->children->data)->comp_parent;
+
   for(iter=priv->children;iter;iter=g_list_next(iter))
-    if(flow_item_get_parent(iter->data)==parent)
+    if(!comp_parent(flow_item_get_parent(iter->data),parent))
       return iter->data;
 
   return NULL;

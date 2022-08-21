@@ -130,6 +130,7 @@ void wintree_set_app_id ( gpointer wid, const gchar *app_id)
   win = wintree_from_id(wid);
   if(!win)
     return;
+  taskbar_reparent_item(win,app_id);
   g_free(win->appid);
   win->appid = g_strdup(app_id);
   if(!win->title)

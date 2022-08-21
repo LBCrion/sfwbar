@@ -6,6 +6,7 @@
 #include "sfwbar.h"
 #include "menu.h"
 #include "bar.h"
+#include "taskbargroup.h"
 
 static GHashTable *menus;
 
@@ -41,6 +42,7 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
     gpointer wid, guint16 *state )
 {
   GdkGravity wanchor, manchor;
+  GtkWidget *window;
 
   if(!menu || !widget)
     return;
@@ -49,6 +51,10 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
     g_object_set_data( G_OBJECT(menu), "state", GUINT_TO_POINTER(*state) );
   g_object_set_data( G_OBJECT(menu), "wid", wid );
   g_object_set_data( G_OBJECT(menu), "caller", widget );
+
+  window = gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
+  if(gtk_window_get_window_type(GTK_WINDOW(window)) == GTK_WINDOW_POPUP)
+    taskbar_group_pop_child(window, menu);
 
   switch(bar_get_toplevel_dir(widget))
   {

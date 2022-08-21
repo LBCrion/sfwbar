@@ -31,11 +31,12 @@ struct _TaskbarPrivate
 
 GType taskbar_get_type ( void );
 
-GtkWidget *taskbar_new();
+GtkWidget *taskbar_new( gboolean );
 void taskbar_populate ( void );
 void taskbar_invalidate_all ( window_t *win );
 void taskbar_update_all ( void );
 void taskbar_init_item ( window_t *win );
 void taskbar_destroy_item ( window_t *win );
+void taskbar_reparent_item ( window_t *win, const gchar *new_appid );
 
 #endif
