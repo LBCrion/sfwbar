@@ -23,7 +23,7 @@ static void base_widget_destroy ( GtkWidget *self )
 
   widgets_scan = g_list_remove(widgets_scan,self);
 
-  if(widgets_id)
+  if(widgets_id && priv->id)
     g_hash_table_remove(widgets_id,priv->id);
 
   g_free(priv->id);
