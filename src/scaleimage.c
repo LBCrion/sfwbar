@@ -174,7 +174,7 @@ static void scale_image_check_appinfo ( GtkWidget *self, gchar *icon )
   g_object_unref(G_OBJECT(app));
 }
 
-static void scale_image_check_icon ( GtkWidget *self, gchar *file )
+static void scale_image_check_icon ( GtkWidget *self, const gchar *file )
 {
   gint i,j;
   gchar *temp;
@@ -204,7 +204,8 @@ static void scale_image_check_icon ( GtkWidget *self, gchar *file )
   g_free(temp);
 }
 
-void scale_image_set_image ( GtkWidget *self, gchar *image, gchar *extra )
+void scale_image_set_image ( GtkWidget *self, const gchar *image,
+    gchar *extra )
 {
   static gchar *exts[4] = {"", ".svg", ".png", ".xpm"};
   ScaleImagePrivate *priv;
