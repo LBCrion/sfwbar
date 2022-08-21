@@ -247,6 +247,22 @@ void action_exec ( GtkWidget *widget, action_t *action,
   }
 }
 
+action_t *action_dup ( action_t *src )
+{
+  action_t *dest;
+
+  if(!src)
+    return NULL;
+
+  dest = g_malloc0(sizeof(action_t));
+  dest->cond = src->cond;
+  dest->ncond = src->ncond;
+  dest->type = src->type;
+  dest->command = g_strdup(src->command);
+  dest->addr = g_strdup(src->addr);
+  return dest;
+}
+
 void action_free ( action_t *action, GObject *old )
 {
   if(!action)
