@@ -33,7 +33,7 @@ static void taskbar_init ( Taskbar *self )
 {
 }
 
-GtkWidget *taskbar_new ( gboolean list )
+GtkWidget *taskbar_new ( gboolean toplevel )
 {
   GtkWidget *self;
   TaskbarPrivate *priv;
@@ -43,11 +43,21 @@ GtkWidget *taskbar_new ( gboolean list )
 
   priv->taskbar = flow_grid_new(TRUE);
   gtk_container_add(GTK_CONTAINER(self),priv->taskbar);
-  if(list)
-    taskbars = g_list_append(taskbars,self);
+  priv->toplevel = toplevel;
+  taskbars = g_list_append(taskbars,self);
 
   flow_grid_invalidate(priv->taskbar);
   return self;
+}
+
+gboolean taskbar_is_toplevel ( GtkWidget *self )
+{
+  TaskbarPrivate *priv;
+
+  g_return_val_if_fail(IS_TASKBAR(self),FALSE);
+  priv = taskbar_get_instance_private(TASKBAR(self));
+
+  return priv->toplevel;
 }
 
 void taskbar_invalidate_all ( window_t *win )
@@ -55,7 +65,10 @@ void taskbar_invalidate_all ( window_t *win )
   GList *iter;
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
+  {
     taskbar_item_invalidate(flow_grid_find_child(iter->data,win));
+    taskbar_group_invalidate(flow_grid_find_child(iter->data,win->appid));
+  }
 }
 
 void taskbar_init_item ( window_t *win )
@@ -65,7 +78,7 @@ void taskbar_init_item ( window_t *win )
   gboolean group;
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
-    if(iter->data)
+    if(iter->data && taskbar_is_toplevel(iter->data))
     {
       taskbar = iter->data;
       group = GPOINTER_TO_INT(
@@ -95,7 +108,7 @@ void taskbar_reparent_item ( window_t *win, const gchar *new_appid )
   GtkWidget *taskbar, *group;
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
-    if(iter->data)
+    if(iter->data && taskbar_is_toplevel(iter->data))
     {
       taskbar = iter->data;
       if(!GPOINTER_TO_INT(
@@ -117,7 +130,7 @@ void taskbar_destroy_item ( window_t *win )
   gboolean group;
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
-    if(iter->data)
+    if(iter->data && taskbar_is_toplevel(iter->data))
     {
       taskbar = iter->data;
       group = GPOINTER_TO_INT(

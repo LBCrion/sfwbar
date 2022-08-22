@@ -27,6 +27,7 @@ typedef struct _TaskbarPrivate TaskbarPrivate;
 struct _TaskbarPrivate
 {
   GtkWidget *taskbar;
+  gboolean toplevel;
 };
 
 GType taskbar_get_type ( void );
