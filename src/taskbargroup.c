@@ -102,9 +102,9 @@ static void taskbar_group_update ( GtkWidget *self )
 
   scale_image_set_image(priv->icon,priv->appid,NULL);
 
-//  if ( wintree_is_focused(taskbar_group_get_window(self)->uid) )
-//    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "taskbar_group_active");
-//  else
+  if (flow_grid_find_child(priv->tgroup,wintree_from_id(wintree_get_focus())))
+    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "taskbar_group_active");
+  else
     gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "taskbar_group_normal");
 
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
