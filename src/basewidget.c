@@ -11,6 +11,7 @@ G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX, G_ADD_PRIV
 
 static GHashTable *widgets_id;
 static GList *widgets_scan;
+static GMutex widget_mutex;
 
 static void base_widget_destroy ( GtkWidget *self )
 {
@@ -18,23 +19,27 @@ static void base_widget_destroy ( GtkWidget *self )
   gint i;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
+  g_mutex_lock(&widget_mutex);
   widgets_scan = g_list_remove(widgets_scan,self);
+  g_mutex_unlock(&widget_mutex);
 
   if(widgets_id && priv->id)
     g_hash_table_remove(widgets_id,priv->id);
 
-  g_free(priv->id);
-  g_free(priv->value);
-  g_free(priv->evalue);
-  g_free(priv->style);
-  g_free(priv->estyle);
-  g_free(priv->tooltip);
-  g_free(priv->trigger);
+  g_clear_pointer(&priv->id,g_free);
+  g_clear_pointer(&priv->value,g_free);
+  g_clear_pointer(&priv->evalue,g_free);
+  g_clear_pointer(&priv->style,g_free);
+  g_clear_pointer(&priv->estyle,g_free);
+  g_clear_pointer(&priv->tooltip,g_free);
+  g_clear_pointer(&priv->trigger,g_free);
   for(i=0;i<WIDGET_MAX_BUTTON;i++)
+  {
     action_free(priv->actions[i],NULL);
+    priv->actions[i]=NULL;
+  }
 
   GTK_WIDGET_CLASS(base_widget_parent_class)->destroy(self);
 }
@@ -254,6 +259,7 @@ void base_widget_set_value ( GtkWidget *self, gchar *value )
   if(base_widget_cache(&priv->value,&priv->evalue))
     base_widget_update_value(self);
 
+  g_mutex_lock(&widget_mutex);
   if(priv->value || priv->style)
   {
     if(!g_list_find(widgets_scan,self))
@@ -261,6 +267,7 @@ void base_widget_set_value ( GtkWidget *self, gchar *value )
   }
   else
     widgets_scan = g_list_remove(widgets_scan,self);
+  g_mutex_unlock(&widget_mutex);
 }
 
 void base_widget_set_style ( GtkWidget *self, gchar *style )
@@ -277,6 +284,7 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
   if(base_widget_cache(&priv->style,&priv->estyle))
     base_widget_style(self);
 
+  g_mutex_lock(&widget_mutex);
   if(priv->value || priv->style)
   {
     if(!g_list_find(widgets_scan,self))
@@ -284,6 +292,7 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
   }
   else
     widgets_scan = g_list_remove(widgets_scan,self);
+  g_mutex_unlock(&widget_mutex);
 }
 
 void base_widget_set_trigger ( GtkWidget *self, gchar *trigger )
@@ -496,6 +505,7 @@ void base_widget_emit_trigger ( gchar *trigger )
     return;
 
   scanner_expire();
+  g_mutex_lock(&widget_mutex);
   for(iter=widgets_scan;iter!=NULL;iter=g_list_next(iter))
   {
     priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
@@ -506,6 +516,7 @@ void base_widget_emit_trigger ( gchar *trigger )
     if(base_widget_cache(&priv->style,&priv->estyle))
       base_widget_style(iter->data);
   }
+  g_mutex_unlock(&widget_mutex);
   action = action_trigger_lookup(trigger);
   if(action)
     action_exec(NULL,action,NULL,NULL,NULL);
@@ -523,6 +534,7 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
     timer = G_MAXINT64;
     ctime = g_get_monotonic_time();
 
+    g_mutex_lock(&widget_mutex);
     for(iter=widgets_scan;iter!=NULL;iter=g_list_next(iter))
     {
       priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
@@ -538,6 +550,7 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
       }
       timer = MIN(timer,base_widget_get_next_poll(iter->data));
     }
+    g_mutex_unlock(&widget_mutex);
 
     timer -= g_get_monotonic_time();
     if(timer>0)
