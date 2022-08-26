@@ -99,6 +99,7 @@ static void taskbar_item_button_cb( GtkWidget *widget, gpointer self )
 
 static void taskbar_item_destroy ( GtkWidget *self )
 {
+  GTK_WIDGET_CLASS(taskbar_item_parent_class)->destroy(self);
 }
 
 static window_t *taskbar_item_get_window ( GtkWidget *self )
@@ -186,6 +187,9 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
 
   g_return_val_if_fail(IS_TASKBAR(taskbar),NULL);
 
+  if(flow_grid_find_child(taskbar,win))
+    return NULL;
+
   self = GTK_WIDGET(g_object_new(taskbar_item_get_type(), NULL));
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
 
@@ -239,6 +243,7 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   g_signal_connect(self,"scroll-event",
       G_CALLBACK(taskbar_item_scroll_cb),self);
   taskbar_item_invalidate(self);
+
   return self;
 }
 
