@@ -29,6 +29,7 @@ typedef struct _TaskbarGroupPrivate TaskbarGroupPrivate;
 struct _TaskbarGroupPrivate
 {
   GtkWidget *icon;
+  GtkWidget *label;
   GtkWidget *taskbar;
   GtkWidget *tgroup;
   GtkWidget *popover;

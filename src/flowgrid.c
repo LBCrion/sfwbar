@@ -40,7 +40,6 @@ static void flow_grid_get_preferred_height (GtkWidget *widget, gint *minimal, gi
     *minimal = MIN(*natural,1);
 }
 
-
 static void flow_grid_class_init ( FlowGridClass *kclass )
 {
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(kclass);
