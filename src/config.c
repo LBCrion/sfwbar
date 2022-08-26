@@ -830,6 +830,14 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
             g_object_set_data(G_OBJECT(widget),"g_rows",GINT_TO_POINTER(
               (gint)config_assign_number(scanner,"group rows")));
             return TRUE;
+          case G_TOKEN_ICONS:
+            g_object_set_data(G_OBJECT(widget),"g_icons",
+              GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"group icons")));
+            return TRUE;
+          case G_TOKEN_LABELS:
+            g_object_set_data(G_OBJECT(widget),"g_labels",
+              GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"group labels")));
+            return TRUE;
           case G_TOKEN_CSS:
             g_object_set_data(G_OBJECT(widget),"g_css",
               config_assign_string(scanner,"group css"));
