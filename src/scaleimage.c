@@ -12,67 +12,28 @@ G_DEFINE_TYPE_WITH_CODE (ScaleImage, scale_image, GTK_TYPE_IMAGE, G_ADD_PRIVATE 
 
 int scale_image_update ( GtkWidget *self );
 
-void scale_image_resize ( GtkWidget *self, GdkRectangle *alloc )
+static void scale_image_get_preferred_width ( GtkWidget *self, gint *m,
+    gint *n )
 {
-  gint w,h;
   ScaleImagePrivate *priv;
-  GtkBorder border,padding;
-  GtkStyleContext *style;
-  GtkStateFlags flags;
 
   g_return_if_fail(IS_SCALE_IMAGE(self));
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
-  style = gtk_widget_get_style_context(self);
-  flags = gtk_style_context_get_state(style);
 
-  gtk_style_context_get_border(style, flags, &border );
-  gtk_style_context_get_padding(style, flags, &padding );
-
-  w = alloc->width-border.left-border.right-padding.left-padding.right;
-  h = alloc->height-border.top-border.bottom-padding.top-padding.bottom;
-
-  if((w!=priv->w)||(h!=priv->h))
-  {
-    priv->w = w;
-    priv->h = h;
-    scale_image_update(self);
-  }
-
-  gtk_widget_set_allocation(self,alloc);
-  GTK_WIDGET_CLASS(scale_image_parent_class)->size_allocate(self,alloc);
+  *m = priv->w;
+  *n = priv->w;
 }
 
-static void scale_image_get_preferred_width ( GtkWidget *w, gint *m, gint *n )
+static void scale_image_get_preferred_height ( GtkWidget *self, gint *m,
+    gint *n )
 {
-  GtkBorder border,padding;
-  GtkStyleContext *style = gtk_widget_get_style_context(w);
-  GtkStateFlags flags = gtk_style_context_get_state(style);
-  gboolean expand;
+  ScaleImagePrivate *priv;
 
-  gtk_widget_style_get(w,"hexpand",&expand,NULL);
-  gtk_style_context_get_border(style, flags, &border );
-  gtk_style_context_get_padding(style, flags, &padding );
-  GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_width(w,m,n);
-  if(expand)
-    *n += border.left + border.right + padding.left + padding.right;
-  *m=1;
-}
+  g_return_if_fail(IS_SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
 
-static void scale_image_get_preferred_height ( GtkWidget *w, gint *m, gint *n )
-{
-  GtkBorder border,padding;
-  GtkStyleContext *style = gtk_widget_get_style_context(w);
-  GtkStateFlags flags = gtk_style_context_get_state(style);
-  gboolean expand;
-
-  gtk_widget_style_get(w,"hexpand",&expand,NULL);
-
-  gtk_style_context_get_border(style, flags, &border );
-  gtk_style_context_get_padding(style, flags, &padding );
-  GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_height(w,m,n);
-  if(expand)
-    *n += border.top + border.bottom + padding.top + padding.bottom;
-  *m=1;
+  *m = priv->w;
+  *n = priv->w;
 }
 
 static void scale_image_destroy ( GtkWidget *self )
@@ -88,6 +49,19 @@ static void scale_image_destroy ( GtkWidget *self )
   GTK_WIDGET_CLASS(scale_image_parent_class)->destroy(self);
 }
 
+static void scale_image_get_size ( GtkWidget *self )
+{
+  gint m;
+  ScaleImagePrivate *priv;
+
+  g_return_if_fail(IS_SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
+  
+  gtk_image_clear(GTK_IMAGE(self));
+  GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_width(self,&m,&priv->w);
+  GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_height(self,&m,&priv->h);
+}
+
 static void scale_image_map ( GtkWidget *w )
 {
   scale_image_update(w);
@@ -97,7 +71,6 @@ static void scale_image_map ( GtkWidget *w )
 static void scale_image_class_init ( ScaleImageClass *kclass )
 {
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(kclass);
-  widget_class->size_allocate = scale_image_resize;
   widget_class->destroy = scale_image_destroy;
   widget_class->map = scale_image_map;
   widget_class->get_preferred_width = scale_image_get_preferred_width;
@@ -121,6 +94,7 @@ static void scale_image_init ( ScaleImage *self )
   priv->fname = NULL;
   priv->pixbuf = NULL;
   priv->ftype = SI_NONE;
+  scale_image_get_size(GTK_WIDGET(self));
 }
 
 GtkWidget *scale_image_new()
@@ -280,6 +254,7 @@ int scale_image_update ( GtkWidget *self )
 
   g_return_val_if_fail(IS_SCALE_IMAGE(self),-1);
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
+  scale_image_get_size(self);
   w = priv->w * gtk_widget_get_scale_factor(self);
   h = priv->h * gtk_widget_get_scale_factor(self);
   size = MIN(w,h);
@@ -347,7 +322,7 @@ int scale_image_update ( GtkWidget *self )
     cairo_destroy(cr);
   }
 
-  if(cs != NULL)
+  if(cs)
   {
     gtk_image_set_from_surface(GTK_IMAGE(self), cs);
     cairo_surface_destroy(cs); 
