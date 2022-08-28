@@ -152,7 +152,7 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
 {
   GtkWidget *self;
   TaskbarGroupPrivate *priv;
-  gint dir;
+  gint dir, i;
   gboolean icons, labels;
   gint title_width;
   GtkWidget *box, *button;
@@ -243,7 +243,9 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
         g_object_get_data(G_OBJECT(taskbar),"g_icons")));
   g_object_set_data(G_OBJECT(priv->popover),"refcount",&priv->rc);
 
-  base_widget_set_action(priv->tgroup,3,action_dup(base_widget_get_action(taskbar,3)));
+  for(i=0;i<WIDGET_MAX_BUTTON;i++)
+    base_widget_set_action(priv->tgroup,i,
+        action_dup(base_widget_get_action(taskbar,i)));
 
   g_object_ref(G_OBJECT(self));
   flow_grid_add_child(taskbar,self);
