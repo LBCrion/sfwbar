@@ -31,4 +31,3 @@ jobs:
           sudo apt-get -y install libgtk-3-dev meson libgtk-layer-shell-dev libjson-c-dev
           meson build
           ninja -C build
-          ninja install
