@@ -6,7 +6,7 @@ name: Coverity Scan
 
 on:
   push:
-    branches: [master]
+    branches: [main]
 
 jobs:
   coverity:
