@@ -85,8 +85,6 @@ static void scale_image_get_size ( GtkWidget *self )
   gtk_image_clear(GTK_IMAGE(self));
   GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_width(self,&m,&priv->w);
   GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_height(self,&m,&priv->h);
-  priv->w = priv->w;
-  priv->h = priv->h;
 }
 
 static void scale_image_map ( GtkWidget *w )
