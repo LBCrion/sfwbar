@@ -28,15 +28,18 @@ gboolean file_test_read ( gchar *filename )
  * if file doesn't exist, try system xdg data dirs */
 gchar *get_xdg_config_file ( gchar *fname, gchar *extra )
 {
-  gchar *full;
+  gchar *full, *dir;
   const gchar * const *xdg_data;
   gint i;
+
   if( file_test_read(fname) )
     return g_strdup(fname);
 
   if(confname!=NULL)
   {
-    full = g_build_filename ( g_path_get_dirname(confname), fname, NULL );
+    dir = g_path_get_dirname(confname);
+    full = g_build_filename ( dir, fname, NULL );
+    g_free(dir);
     if( file_test_read(full) )
       return full;
     g_free(full);
