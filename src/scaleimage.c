@@ -8,7 +8,8 @@
 #include <gtk/gtk.h>
 #include <gio/gdesktopappinfo.h>
 
-G_DEFINE_TYPE_WITH_CODE (ScaleImage, scale_image, GTK_TYPE_IMAGE, G_ADD_PRIVATE (ScaleImage));
+G_DEFINE_TYPE_WITH_CODE (ScaleImage, scale_image, GTK_TYPE_IMAGE,
+    G_ADD_PRIVATE (ScaleImage));
 
 int scale_image_update ( GtkWidget *self );
 
@@ -20,8 +21,8 @@ static void scale_image_get_preferred_width ( GtkWidget *self, gint *m,
   g_return_if_fail(IS_SCALE_IMAGE(self));
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
 
-  *m = priv->w;
-  *n = priv->w;
+  *m = priv->raww;
+  *n = priv->raww;
 }
 
 static void scale_image_get_preferred_height ( GtkWidget *self, gint *m,
@@ -32,8 +33,8 @@ static void scale_image_get_preferred_height ( GtkWidget *self, gint *m,
   g_return_if_fail(IS_SCALE_IMAGE(self));
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
 
-  *m = priv->h;
-  *n = priv->h;
+  *m = priv->rawh;
+  *n = priv->rawh;
 }
 
 static void scale_image_destroy ( GtkWidget *self )
@@ -70,14 +71,13 @@ static void scale_image_size_allocate ( GtkWidget *self, GdkRectangle *alloc )
     padding.top - padding.bottom;
 
   scale_image_update(self);
-  gtk_widget_set_allocation(self,alloc);
   GTK_WIDGET_CLASS(scale_image_parent_class)->size_allocate(self,alloc);
 }
 
 static void scale_image_get_size ( GtkWidget *self )
 {
   ScaleImagePrivate *priv;
-  GtkBorder border, padding;
+  GtkBorder border, padding, margin;
   GtkStyleContext *style;
   GtkStateFlags flags;
   gint m;
@@ -87,15 +87,18 @@ static void scale_image_get_size ( GtkWidget *self )
   
   gtk_image_clear(GTK_IMAGE(self));
   GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_width(self,&m,
-      &priv->w);
+      &priv->raww);
   GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_height(self,&m,
-      &priv->h);
+      &priv->rawh);
   style = gtk_widget_get_style_context(self);
   flags = gtk_style_context_get_state(style);
   gtk_style_context_get_border(style,flags,&border);
   gtk_style_context_get_padding(style,flags,&padding);
-  priv->w = priv->w - border.left-border.right-padding.left-padding.right;
-  priv->h = priv->h - border.top-border.bottom-padding.top-padding.bottom;
+  gtk_style_context_get_margin(style,flags,&margin);
+  priv->w = priv->raww - border.left - border.right - padding.left - 
+    padding.right - margin.left - margin.right;
+  priv->h = priv->rawh - border.top - border.bottom - padding.top -
+    padding.bottom - margin.top - margin.bottom;
 }
 
 static void scale_image_map ( GtkWidget *w )
@@ -104,9 +107,17 @@ static void scale_image_map ( GtkWidget *w )
   GTK_WIDGET_CLASS(scale_image_parent_class)->map(w);
 }
 
+static void scale_image_style_updated ( GtkWidget *self )
+{
+  GTK_WIDGET_CLASS(scale_image_parent_class)->style_updated(self);
+  scale_image_get_size(self);
+  scale_image_update(self);
+}
+
 static void scale_image_class_init ( ScaleImageClass *kclass )
 {
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(kclass);
+  widget_class->style_updated = scale_image_style_updated;
   widget_class->size_allocate = scale_image_size_allocate;
   widget_class->destroy = scale_image_destroy;
   widget_class->map = scale_image_map;
@@ -291,7 +302,6 @@ int scale_image_update ( GtkWidget *self )
 
   g_return_val_if_fail(IS_SCALE_IMAGE(self),-1);
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
-  scale_image_get_size(self);
 
   w = priv->w;
   h = priv->h;

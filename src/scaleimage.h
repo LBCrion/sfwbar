@@ -27,6 +27,7 @@ typedef struct _ScaleImagePrivate ScaleImagePrivate;
 struct _ScaleImagePrivate
 {
   gint w,h;
+  gint raww, rawh;
   gint maxw, maxh;
   gint ftype;
   gchar *file;
