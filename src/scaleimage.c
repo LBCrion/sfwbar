@@ -77,14 +77,25 @@ static void scale_image_size_allocate ( GtkWidget *self, GdkRectangle *alloc )
 static void scale_image_get_size ( GtkWidget *self )
 {
   ScaleImagePrivate *priv;
+  GtkBorder border, padding;
+  GtkStyleContext *style;
+  GtkStateFlags flags;
   gint m;
 
   g_return_if_fail(IS_SCALE_IMAGE(self));
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
   
   gtk_image_clear(GTK_IMAGE(self));
-  GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_width(self,&m,&priv->w);
-  GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_height(self,&m,&priv->h);
+  GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_width(self,&m,
+      &priv->w);
+  GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_height(self,&m,
+      &priv->h);
+  style = gtk_widget_get_style_context(self);
+  flags = gtk_style_context_get_state(style);
+  gtk_style_context_get_border(style,flags,&border);
+  gtk_style_context_get_padding(style,flags,&padding);
+  priv->w = priv->w - border.left-border.right-padding.left-padding.right;
+  priv->h = priv->h - border.top-border.bottom-padding.top-padding.bottom;
 }
 
 static void scale_image_map ( GtkWidget *w )
@@ -281,8 +292,15 @@ int scale_image_update ( GtkWidget *self )
   g_return_val_if_fail(IS_SCALE_IMAGE(self),-1);
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
   scale_image_get_size(self);
-  w = MAX(priv->w,priv->maxw) * gtk_widget_get_scale_factor(self);
-  h = MAX(priv->h,priv->maxh) * gtk_widget_get_scale_factor(self);
+
+  w = priv->w;
+  h = priv->h;
+  if(w<=0 || gtk_widget_get_hexpand(self))
+    w = MAX(w,priv->maxw);
+  if(h<=0 || gtk_widget_get_vexpand(self))
+    h = MAX(h,priv->maxh);
+  w *= gtk_widget_get_scale_factor(self);
+  h *= gtk_widget_get_scale_factor(self);
   size = MIN(w,h);
 
   if(priv->file)
