@@ -76,6 +76,10 @@ void client_socket ( ScanFile *file )
   file->scon = scon;
 
   chan = g_io_channel_unix_new(g_socket_get_fd(sock));
+  g_debug("channel(socket) %p, handle %d, readable %d, writable %d",chan,
+        g_socket_get_fd(sock),
+        g_io_channel_get_flags(chan) & G_IO_FLAG_IS_READABLE,
+        g_io_channel_get_flags(chan) & G_IO_FLAG_IS_WRITABLE);
 
   if(chan)
   {
