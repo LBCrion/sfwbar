@@ -266,6 +266,16 @@ cols
   If both rows and cols are specified, rows will be used. If neither is
   specified, the default is rows=1
 
+group [true|false]
+  if set to true, the taskbar items will be grouped by app_id, the main
+  taskbar will contain one item per app_id with an icon and a label set
+  to app_id. On over, it will popup a "group taskbar" containing items
+  for individual windows.
+  You can specify taskbar parameters for the group taskbars using group
+  prefix, i.e. ``group cols = 1``. The properties supported for groups 
+  are cols, rows, style, css, title_width, labels, icons.
+  
+
 ``Pager`` widget may contain the following options
 
 preview [true|false]
