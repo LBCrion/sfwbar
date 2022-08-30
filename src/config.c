@@ -846,6 +846,10 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
             g_object_set_data(G_OBJECT(widget),"g_style",
               config_assign_string(scanner,"group style"));
             return TRUE;
+          case G_TOKEN_TITLEWIDTH:
+            g_object_set_data(G_OBJECT(widget),"g_title_with",GINT_TO_POINTER(
+              (gint)config_assign_number(scanner,"group title_width")));
+            return TRUE;
         }
     }
 

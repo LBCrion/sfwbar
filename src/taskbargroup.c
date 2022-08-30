@@ -241,6 +241,8 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
         g_object_get_data(G_OBJECT(taskbar),"g_labels")));
   g_object_set_data(G_OBJECT(priv->tgroup),"icons",GINT_TO_POINTER(
         g_object_get_data(G_OBJECT(taskbar),"g_icons")));
+  g_object_set_data(G_OBJECT(priv->tgroup),"title_width",GINT_TO_POINTER(
+        g_object_get_data(G_OBJECT(taskbar),"g_title_width")));
   g_object_set_data(G_OBJECT(priv->popover),"refcount",&priv->rc);
 
   for(i=0;i<WIDGET_MAX_BUTTON;i++)
