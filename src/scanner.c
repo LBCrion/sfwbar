@@ -47,7 +47,7 @@ ScanFile *scanner_file_new ( gint source, gchar *fname,
   if(iter)
     file = iter->data;
   else
-    file = g_malloc(sizeof(ScanFile));
+    file = g_malloc0(sizeof(ScanFile));
 
   file->fname = fname;
   file->trigger = trigger;
