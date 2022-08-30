@@ -13,6 +13,11 @@ gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 {
   ScanFile *file = data;
 
+  g_debug("channel(out) %p, readable %d, writable %d, cond %d",file->out,
+      g_io_channel_get_flags(file->out) & G_IO_FLAG_IS_READABLE,
+      g_io_channel_get_flags(file->out) & G_IO_FLAG_IS_WRITABLE,
+      cond);
+  g_debug("channel connection %p",file->scon);
   if(file->scon)
     g_io_channel_write_chars(chan,"\n",1,NULL,NULL);
 
@@ -108,5 +113,13 @@ void client_exec ( ScanFile *file )
     g_io_add_watch(g_io_channel_unix_new(err), G_IO_IN, client_event, file);
     file->out = g_io_channel_unix_new(in);
     g_io_channel_set_flags(file->out,G_IO_FLAG_NONBLOCK,NULL);
+    g_debug("channel(out) %p, handle %d, readable %d, writable %d",file->out,
+        in,
+        g_io_channel_get_flags(file->out) & G_IO_FLAG_IS_READABLE,
+        g_io_channel_get_flags(file->out) & G_IO_FLAG_IS_WRITABLE);
+    g_debug("channel(in) %p, handle %d, readable %d, writable %d",chan,out,
+        g_io_channel_get_flags(chan) & G_IO_FLAG_IS_READABLE,
+        g_io_channel_get_flags(chan) & G_IO_FLAG_IS_WRITABLE);
+    g_debug("channel connection %p",file->scon);
   }
 }
