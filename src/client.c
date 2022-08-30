@@ -16,6 +16,10 @@ gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
   g_debug("channel(out) %p, readable %d, writable %d, cond %d",file->out,
       g_io_channel_get_flags(file->out) & G_IO_FLAG_IS_READABLE,
       g_io_channel_get_flags(file->out) & G_IO_FLAG_IS_WRITABLE,
+      g_io_channel_get_buffer_condition(file->out));
+  g_debug("channel(in) %p, readable %d, writable %d, cond %d",chan,
+      g_io_channel_get_flags(chan) & G_IO_FLAG_IS_READABLE,
+      g_io_channel_get_flags(chan) & G_IO_FLAG_IS_WRITABLE,
       cond);
   g_debug("channel connection %p",file->scon);
   if(file->scon)

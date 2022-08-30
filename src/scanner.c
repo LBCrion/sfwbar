@@ -176,8 +176,10 @@ int scanner_update_file ( GIOChannel *in, ScanFile *file )
   struct json_tokener *json = NULL;
   struct json_object *obj;
   gchar *read_buff;
+  GIOStatus status;
 
-  while(g_io_channel_read_line(in,&read_buff,NULL,NULL,NULL)==G_IO_STATUS_NORMAL)
+  while((status = g_io_channel_read_line(in,&read_buff,NULL,NULL,NULL))
+      ==G_IO_STATUS_NORMAL)
   {
     for(node=file->vars;node!=NULL;node=g_list_next(node))
     {
@@ -216,6 +218,7 @@ int scanner_update_file ( GIOChannel *in, ScanFile *file )
   for(node=file->vars;node!=NULL;node=g_list_next(node))
     ((ScanVar *)node->data)->status=1;
 
+  g_debug("channel status %d",status);
   return 0;
 }
 
