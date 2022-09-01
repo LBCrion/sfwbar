@@ -131,6 +131,7 @@ static gint taskbar_group_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *paren
 
   p1 = taskbar_group_get_instance_private(TASKBAR_GROUP(a));
   p2 = taskbar_group_get_instance_private(TASKBAR_GROUP(b));
+
   return g_strcmp0(p1->appid,p2->appid);
 }
 
@@ -237,12 +238,14 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
   if(g_object_get_data(G_OBJECT(taskbar),"g_rows"))
     flow_grid_set_rows(base_widget_get_child(priv->tgroup),GPOINTER_TO_INT(
         g_object_get_data(G_OBJECT(taskbar),"g_rows")));
-  g_object_set_data(G_OBJECT(priv->tgroup),"labels",GINT_TO_POINTER(
-        g_object_get_data(G_OBJECT(taskbar),"g_labels")));
-  g_object_set_data(G_OBJECT(priv->tgroup),"icons",GINT_TO_POINTER(
-        g_object_get_data(G_OBJECT(taskbar),"g_icons")));
-  g_object_set_data(G_OBJECT(priv->tgroup),"title_width",GINT_TO_POINTER(
-        g_object_get_data(G_OBJECT(taskbar),"g_title_width")));
+  g_object_set_data(G_OBJECT(priv->tgroup),"labels",
+        g_object_get_data(G_OBJECT(taskbar),"g_labels"));
+  g_object_set_data(G_OBJECT(priv->tgroup),"icons",
+        g_object_get_data(G_OBJECT(taskbar),"g_icons"));
+  g_object_set_data(G_OBJECT(priv->tgroup),"title_width",
+        g_object_get_data(G_OBJECT(taskbar),"g_title_width"));
+  g_object_set_data(G_OBJECT(priv->tgroup),"sort",
+        g_object_get_data(G_OBJECT(taskbar),"g_sort"));
   g_object_set_data(G_OBJECT(priv->popover),"refcount",&priv->rc);
 
   for(i=0;i<WIDGET_MAX_BUTTON;i++)

@@ -18,6 +18,7 @@ static GList *wt_list;
 static GList *appid_map;
 static gpointer wt_focus;
 static gchar *wt_active;
+static guint64 seq;
 
 struct appid_mapper{
   GRegex *regex;
@@ -40,6 +41,7 @@ window_t *wintree_window_init ( void )
   window_t *w;
   w = g_malloc0(sizeof(window_t));
   w->pid=-1;
+  w->seq = seq++;
   return w;
 }
 

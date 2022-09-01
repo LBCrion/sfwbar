@@ -11,6 +11,7 @@
 #include "action.h"
 #include "bar.h"
 #include "wintree.h"
+#include "config.h"
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarItem, taskbar_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (TaskbarItem));
 
@@ -161,7 +162,16 @@ static gint taskbar_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent
 
   p1 = taskbar_item_get_instance_private(TASKBAR_ITEM(a));
   p2 = taskbar_item_get_instance_private(TASKBAR_ITEM(b));
-  return wintree_compare(p1->win,p2->win);
+  switch(GPOINTER_TO_INT(g_object_get_data(G_OBJECT(p1->taskbar),"sort")))
+  {
+    case G_TOKEN_APPID:
+      return g_strcmp0(p1->win->appid,p2->win->appid);
+    case G_TOKEN_SEQ:
+      return p1->win->seq - p2->win->seq;
+    case G_TOKEN_TITLE:
+    default:
+      return wintree_compare(p1->win,p2->win);
+  }
 }
 
 static void taskbar_item_class_init ( TaskbarItemClass *kclass )

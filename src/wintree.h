@@ -7,6 +7,7 @@ typedef struct wt_window {
   gchar *appid;
   gchar *output;
   gint64 pid;
+  guint64 seq;
   gpointer uid;
   guint16 state;
   gboolean valid;

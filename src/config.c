@@ -721,6 +721,24 @@ void config_widget_action ( GScanner *scanner, GtkWidget *widget )
   config_optional_semicolon(scanner);
 }
 
+gint config_taskbar_sort ( GScanner *scanner )
+{
+  scanner->max_parse_errors = FALSE;
+  if(!config_expect_token(scanner, '=', "Missing '=' in sort = <type>"))
+    return FALSE;
+  g_scanner_get_next_token(scanner);
+  switch((gint)g_scanner_get_next_token(scanner))
+  {
+    case G_TOKEN_TITLE:
+    case G_TOKEN_APPID:
+    case G_TOKEN_SEQ:
+      return scanner->token;
+    default:
+      g_scanner_error(scanner,"Invalid sort type");
+  }
+  return 0;
+}
+
 GtkWidget *config_include ( GScanner *scanner )
 {
   GtkWidget *widget;
@@ -813,6 +831,10 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         g_object_set_data(G_OBJECT(widget),"title_width",
             GINT_TO_POINTER(config_assign_number(scanner,"title_width")));
         return TRUE;
+      case G_TOKEN_SORT:
+        g_object_set_data(G_OBJECT(widget),"sort",GINT_TO_POINTER(
+              config_taskbar_sort(scanner)));
+        return TRUE;
       case G_TOKEN_GROUP:
         if(g_scanner_peek_next_token(scanner) == '=')
         {
@@ -849,6 +871,10 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
           case G_TOKEN_TITLEWIDTH:
             g_object_set_data(G_OBJECT(widget),"g_title_with",GINT_TO_POINTER(
               (gint)config_assign_number(scanner,"group title_width")));
+            return TRUE;
+          case G_TOKEN_SORT:
+            g_object_set_data(G_OBJECT(widget),"g_sort",GINT_TO_POINTER(
+                  config_taskbar_sort(scanner)));
             return TRUE;
         }
     }
@@ -1410,6 +1436,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   g_scanner_scope_add_symbol(scanner,0, "YOrigin", (gpointer)G_TOKEN_YORIGIN );
   g_scanner_scope_add_symbol(scanner,0, "Children", 
       (gpointer)G_TOKEN_CHILDREN );
+  g_scanner_scope_add_symbol(scanner,0, "Sort", (gpointer)G_TOKEN_SORT );
   g_scanner_scope_add_symbol(scanner,0, "True", (gpointer)G_TOKEN_TRUE );
   g_scanner_scope_add_symbol(scanner,0, "False", (gpointer)G_TOKEN_FALSE );
   g_scanner_scope_add_symbol(scanner,0, "Menu", (gpointer)G_TOKEN_MENU );
@@ -1470,6 +1497,9 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   g_scanner_scope_add_symbol(scanner,0, "RegEx", (gpointer)G_TOKEN_REGEX );
   g_scanner_scope_add_symbol(scanner,0, "Json", (gpointer)G_TOKEN_JSON );
   g_scanner_scope_add_symbol(scanner,0, "Grab", (gpointer)G_TOKEN_GRAB );
+  g_scanner_scope_add_symbol(scanner,0, "Title", (gpointer)G_TOKEN_TITLE );
+  g_scanner_scope_add_symbol(scanner,0, "AppId", (gpointer)G_TOKEN_APPID );
+  g_scanner_scope_add_symbol(scanner,0, "Seq", (gpointer)G_TOKEN_SEQ );
 
   tmp = strstr(data,"\n#CSS");
   if(tmp)
