@@ -5,6 +5,7 @@
 
 #include "sfwbar.h"
 #include "basewidget.h"
+#include "flowgrid.h"
 #include "action.h"
 
 G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX, G_ADD_PRIVATE (BaseWidget));
@@ -475,6 +476,8 @@ void base_widget_set_action ( GtkWidget *self, gint n, action_t *action )
   action_free(priv->actions[n],NULL);
   priv->actions[n] = action;
 
+  if(IS_FLOW_GRID(base_widget_get_child(self)))
+    return;
 
   if(!priv->scroll_h && (priv->actions[4] || priv->actions[5] ||
         priv->actions[6] || priv->actions[7]) )
