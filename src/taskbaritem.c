@@ -167,8 +167,7 @@ static gint taskbar_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent
     case G_TOKEN_APPID:
       return g_strcmp0(p1->win->appid,p2->win->appid);
     case G_TOKEN_SEQ:
-      return p1->win->seq - p2->win->seq;
-    case G_TOKEN_TITLE:
+      return 0;
     default:
       return wintree_compare(p1->win,p2->win);
   }
@@ -178,6 +177,7 @@ static void taskbar_item_class_init ( TaskbarItemClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = taskbar_item_destroy;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_item_update;
+  FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_item_invalidate;
   FLOW_ITEM_CLASS(kclass)->get_parent = (void * (*)(GtkWidget *))taskbar_item_get_window;
   FLOW_ITEM_CLASS(kclass)->compare = taskbar_item_compare;
 }
@@ -223,6 +223,7 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   gtk_widget_style_get(button,"direction",&dir,NULL);
   box = gtk_grid_new();
   gtk_container_add(GTK_CONTAINER(button),box);
+  flow_item_dnd_enable(self,button,taskbar);
 
   if(icons)
   {

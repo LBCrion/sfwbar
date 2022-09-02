@@ -40,11 +40,23 @@ static void flow_grid_get_preferred_height (GtkWidget *widget, gint *minimal, gi
     *minimal = MIN(*natural,1);
 }
 
+static void flow_grid_destroy( GtkWidget *self )
+{
+  FlowGridPrivate *priv;
+
+  g_return_if_fail(IS_FLOW_GRID(self));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  g_clear_pointer(&priv->dnd_target,gtk_target_entry_free);
+  GTK_WIDGET_CLASS(flow_grid_parent_class)->destroy(self);
+}
+
 static void flow_grid_class_init ( FlowGridClass *kclass )
 {
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(kclass);
   widget_class->get_preferred_width = flow_grid_get_preferred_width;
   widget_class->get_preferred_height = flow_grid_get_preferred_height;
+  widget_class->destroy = flow_grid_destroy;
 }
 
 static void flow_grid_init ( FlowGrid *self )
@@ -57,6 +69,8 @@ static void flow_grid_init ( FlowGrid *self )
   priv->rows = 1;
   priv->cols = 0;
   priv->limit = TRUE;
+  priv->dnd_target = gtk_target_entry_new(
+      g_strdup_printf("flow-item-%p",self),0,1);
 
   gtk_grid_set_row_homogeneous(GTK_GRID(self),TRUE);
   gtk_grid_set_column_homogeneous(GTK_GRID(self),TRUE);
@@ -167,6 +181,18 @@ void flow_grid_clean ( GtkWidget *cgrid )
       (GtkCallback)flow_grid_remove_widget,cgrid);
 }
 
+GtkTargetEntry *flow_grid_get_dnd_target ( GtkWidget *self )
+{
+  FlowGridPrivate *priv;
+
+  if(IS_BASE_WIDGET(self))
+    self = base_widget_get_child(self);
+  g_return_val_if_fail(IS_FLOW_GRID(self),NULL);
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  return priv->dnd_target;
+}
+
 void flow_grid_invalidate ( GtkWidget *self )
 {
   FlowGridPrivate *priv;
@@ -189,7 +215,7 @@ void flow_grid_add_child ( GtkWidget *self, GtkWidget *child )
 
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
-  priv->children = g_list_prepend(priv->children,child);
+  priv->children = g_list_append(priv->children,child);
   flow_grid_invalidate(self);
 }
 
@@ -280,4 +306,23 @@ gpointer flow_grid_find_child ( GtkWidget *self, gconstpointer parent )
       return iter->data;
 
   return NULL;
+}
+
+void flow_grid_reorder ( GtkWidget *self, GtkWidget *src, GtkWidget *dest )
+{
+  FlowGridPrivate *priv;
+  GList *dlist;
+
+  if(IS_BASE_WIDGET(self))
+    self = base_widget_get_child(self);
+  g_return_if_fail(IS_FLOW_GRID(self));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  dlist = g_list_find(priv->children,dest);
+  if(!dlist)
+    return;
+
+  priv->children = g_list_remove(priv->children, src );
+  priv->children = g_list_insert_before(priv->children, dlist, src );
+  flow_item_invalidate(dest);
 }
