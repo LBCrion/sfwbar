@@ -261,7 +261,7 @@ title_width
 sort
   set sorting order for taskbar items. Possible values are Title, to sort item
   by title, AppId, to sort by app_id, and Seq to sort items by the order in
-  which windowns were open.
+  which windows were open.
 
 rows
   a number of rows in a taskbar.
