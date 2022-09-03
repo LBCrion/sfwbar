@@ -49,7 +49,6 @@ void flow_grid_invalidate ( GtkWidget *self );
 void flow_grid_delete_child ( GtkWidget *, void *parent );
 guint flow_grid_n_children ( GtkWidget *self );
 gpointer flow_grid_find_child ( GtkWidget *, gconstpointer parent );
-void flow_grid_reorder ( GtkWidget *self, GtkWidget *src, GtkWidget *dest );
-GtkTargetEntry *flow_grid_get_dnd_target ( GtkWidget *self );
+void flow_grid_child_dnd_enable ( GtkWidget *, GtkWidget *, GtkWidget *);
 
 #endif

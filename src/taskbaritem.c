@@ -223,7 +223,7 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   gtk_widget_style_get(button,"direction",&dir,NULL);
   box = gtk_grid_new();
   gtk_container_add(GTK_CONTAINER(button),box);
-  flow_item_dnd_enable(self,button,taskbar);
+  flow_grid_child_dnd_enable(taskbar,self,button);
 
   if(icons)
   {
