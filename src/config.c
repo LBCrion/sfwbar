@@ -721,24 +721,6 @@ void config_widget_action ( GScanner *scanner, GtkWidget *widget )
   config_optional_semicolon(scanner);
 }
 
-gint config_taskbar_sort ( GScanner *scanner )
-{
-  scanner->max_parse_errors = FALSE;
-  if(!config_expect_token(scanner, '=', "Missing '=' in sort = <type>"))
-    return FALSE;
-  g_scanner_get_next_token(scanner);
-  switch((gint)g_scanner_get_next_token(scanner))
-  {
-    case G_TOKEN_TITLE:
-    case G_TOKEN_APPID:
-    case G_TOKEN_SEQ:
-      return scanner->token;
-    default:
-      g_scanner_error(scanner,"Invalid sort type");
-  }
-  return 0;
-}
-
 GtkWidget *config_include ( GScanner *scanner )
 {
   GtkWidget *widget;
@@ -833,7 +815,7 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         return TRUE;
       case G_TOKEN_SORT:
         g_object_set_data(G_OBJECT(widget),"sort",GINT_TO_POINTER(
-              config_taskbar_sort(scanner)));
+              config_assign_boolean(scanner,TRUE,"sort")));
         return TRUE;
       case G_TOKEN_GROUP:
         if(g_scanner_peek_next_token(scanner) == '=')
@@ -874,7 +856,7 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
             return TRUE;
           case G_TOKEN_SORT:
             g_object_set_data(G_OBJECT(widget),"g_sort",GINT_TO_POINTER(
-                  config_taskbar_sort(scanner)));
+              config_assign_boolean(scanner,TRUE,"group sort")));
             return TRUE;
         }
     }
