@@ -102,8 +102,6 @@ void flow_grid_set_cols ( GtkWidget *cgrid, gint cols )
   priv->rows = 0;
   if((priv->rows<1)&&(priv->cols<1))
     priv->rows = 1;
-  if((priv->rows>0)&&(priv->cols>0))
-    priv->cols = -1;
 }
 
 void flow_grid_set_rows ( GtkWidget *cgrid, gint rows )
@@ -120,8 +118,6 @@ void flow_grid_set_rows ( GtkWidget *cgrid, gint rows )
 
   if((priv->rows<1)&&(priv->cols<1))
     priv->rows = 1;
-  if((priv->rows>0)&&(priv->cols>0))
-    priv->cols = -1;
 }
 
 void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w )
