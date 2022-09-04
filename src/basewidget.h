@@ -18,6 +18,7 @@ struct _BaseWidgetClass
 
   void (*update_value)(GtkWidget *self);
   GtkWidget *(*get_child)(GtkWidget *self);
+  gboolean no_value_cache;
 };
 
 typedef struct _BaseWidgetPrivate BaseWidgetPrivate;
