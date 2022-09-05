@@ -16,7 +16,7 @@ DESCRIPTION
 ===========
 **SFWBar** is a taskbar for wayland compositors. Originally written for Sway,
 it should work with any compositor supporting layer-shell protocol. SFWBar
-assists in handling of floating windows on a wayland desktop. It provdes a
+assists in handling of floating windows on a wayland desktop. It provides a
 taskbar, a pager, a task switcher, a system tray, a floating window placement
 engine, a simple widget set for display data extracted from various system
 files.
@@ -47,7 +47,7 @@ program checks users XDG config directory (usually ~/.config/sfwbar/) for this
 file, followed by system xdg data directories. Additionally, user can specify
 a location and a name of the config file using ``-f`` command line option.
 
-Appearance of the program can be specifie using CSS properties, these
+Appearance of the program can be specified using CSS properties, these
 are sourced either from the css section of the main configuration file or
 from a file with a .css extension with the same base name as the config file
 located in the same directory as the config file. The name of the css file 
@@ -58,7 +58,7 @@ The config file consists of the following top level sections:
 Placer
 ------
 Placer section enables intelligent placement of new floating windows. If
-enabled the program will first attemp to place the window in a location, where
+enabled the program will first attempt to place the window in a location, where
 it won't overlap with other windows. If such location doesn't exist, the window
 will be placed in a cascading pattern from top-left to bottom-right. The Placer
 declaration accepts parameters "xstep" and "ystep" that specify the
@@ -204,7 +204,7 @@ value
   ``"Value is:" + $MyString`` or ``2 * MyNumber.val``). See ``expressions``
   section for more detail.
   For ``Label`` widgets value tells text to display.
-  For ``Scale`` widgets it speficies a fraction to display.
+  For ``Scale`` widgets it specifies a fraction to display.
   For ``Chart`` widgets it specifies a fraction of the next datapoint.
   For ``Image`` widgets and buttons it provides an icon or an image file name.
 
@@ -229,14 +229,14 @@ trigger
   (if both are specified, interval is ignored and trigger is used).
 
 css
-  additional css properties for the widget. These propertes will only apply to
+  additional css properties for the widget. These properties will only apply to
   the widget in question.
 
 action
   an action to execute upon a button click. Actions can be attached to any
   widget. Multiple actions can be attached to different mouse buttons using
   ``action[n] = <type> <string>`` syntax. For mouse buttons, n = 1,2,3 for
-  left, midle and right button respectively. For mouse scroll events, use
+  left, middle and right button respectively. For mouse scroll events, use
   n = 4,5,6,7 for up, down, left and right respectively. If no index is
   specified the action is attached to a left mouse button click. Additionally,
   action[0] will be executed on startup. You can use this action to set
@@ -353,7 +353,7 @@ Actions
 -------
 Actions can be attached to click and scroll events for any widget or to items
 within a menu. Actions can be conditional on a state of a window or a widget
-they refer to and some actions may require a prameter. Conditions are specified
+they refer to and some actions may require a parameter. Conditions are specified
 in square brackets prior to the action i.e. ``[Minimized]`` and can be inverted
 using ``!`` or joined using ``|`` i.e. ``[!Minimized | Focused]``. All
 conditions on the list must be satisfied. Supported conditions are: 
@@ -376,7 +376,7 @@ Config <string>
   bar configuration on the fly
 
 Exec <string>
-  execute a shell comand
+  execute a shell command
 
 Function [<addr>,]<string>
   Execute a function. Accepts an optional address, to invoke a function on a
@@ -387,7 +387,7 @@ Menu <string>
 
 MenuClear <string>
   delete a menu with a given name (This is useful if you want to generate
-  menues dynamically via PipeRead and would like to delete a previously
+  menus dynamically via PipeRead and would like to delete a previously
   generated menu)
 
 PipeRead <string>
@@ -544,7 +544,7 @@ SwayClient
         ``window: { sway window change object }``
         SwayClient emits trigger "sway"
 
-The file source also accepts further optional argumens specifying how
+The file source also accepts further optional arguments specifying how
 scanner should handle the source, these can be:
 
 NoGlob    
@@ -573,21 +573,21 @@ Json(Path[,Aggregator])
   i.e. ``.data.node.1.string`` and key checks to filter arrays, i.e.
   ``.data.node.[key="blah"].value``
 
-Optional aggregators specify how multiple occurences of numeric data are treated.
+Optional aggregators specify how multiple occurrences of numeric data are treated.
 The following aggregators are supported:
 
 First
-  Variable should be set to the first occurence of the pattern in the source
+  Variable should be set to the first occurrence of the pattern in the source
 
 Last
-  Variable should be set to the last occurence of the pattern in the source
+  Variable should be set to the last occurrence of the pattern in the source
 
 Sum
-  Variable should be set to the sum of all  occurences of the pattern in the
+  Variable should be set to the sum of all  occurrences of the pattern in the
   source
 
 Product
-  Variable should be set to the product of all  occurences of the pattern in the
+  Variable should be set to the product of all  occurrences of the pattern in the
   source
 
 For string variables, Sum and Product aggregators are treated as Last.
@@ -682,18 +682,18 @@ keyword. I.e. ::
   ...
   value = Str(MyExpr,2)
 
-Miscellnaeous
+Miscellaneous
 =============
 
 If the icon is missing for a specific program in the taskbar or switcher, it
 is likely due to an missing icon or application not setting app_id correctly.
 You can check app_id's of running programs by running sfwbar -d -g app_id.
 if app_id is present, you need to add an icon with the appropriate name to 
-you icon theme. If it's blnak, you can try mapping it from the program's title
-(please note that title may change during runtime, so matching it can be
-tricky). TO map app_id from programs title, you a toplevel keyword:
+your icon theme. If it's blank, you can try mapping it from the program's title
+(please note that the title may change during runtime, so matching it can be
+tricky). Mapping is supported via top-level ``MapAppId`` keyword. I.e. ::
 
-MapAppId app_id, pattern
+  MapAppId app_id, pattern
 
 where app_id is the desired app_id and pattern is a regular expression to
 match the title against.
@@ -754,7 +754,7 @@ taskbar_normal        taskbar button for a window
 taskbar_active        taskbar button for currently focused window
 pager_normal          pager button for a workspace
 pager_visible         pager button for a visible workspace
-pager_focused         pager button for a curently focused workspace
+pager_focused         pager button for a currently focused workspace
 switcher              switcher window and top level grid
 switcher_active       switcher active window representation
 switcher_normal       switcher inactive window representation

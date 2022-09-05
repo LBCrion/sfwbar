@@ -56,7 +56,7 @@ static gboolean chart_draw ( GtkWidget *self, cairo_t *cr )
   offset = n - len  + border.left;
 
   gtk_style_context_get_color (context,flags, &fg);
-  cairo_set_source_rgba(cr,fg.red,fg.blue,fg.green,fg.alpha);
+  cairo_set_source_rgba(cr,fg.red,fg.green,fg.blue,fg.alpha);
   cairo_set_line_width(cr,1);
   cairo_move_to(cr,offset,height - border.bottom - 1);
   for(i=0;i<len;i++)

@@ -76,7 +76,7 @@ void log_print ( const gchar *log_domain, GLogLevelFlags log_level,
 
   now = g_date_time_new_now_local();
 
-  fprintf(stderr,"%02d:%02d:%02.2f %s\n",
+  fprintf(stderr,"%02d:%02d:%05.2f %s\n",
       g_date_time_get_hour(now),
       g_date_time_get_minute(now),
       g_date_time_get_seconds(now),
