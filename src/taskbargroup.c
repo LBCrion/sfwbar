@@ -244,8 +244,8 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
         g_object_get_data(G_OBJECT(taskbar),"g_icons"));
   g_object_set_data(G_OBJECT(priv->tgroup),"title_width",
         g_object_get_data(G_OBJECT(taskbar),"g_title_width"));
-  g_object_set_data(G_OBJECT(priv->tgroup),"sort",
-        g_object_get_data(G_OBJECT(taskbar),"g_sort"));
+  flow_grid_set_sort(priv->tgroup,g_object_get_data(G_OBJECT(taskbar),
+        "g_sort"));
   g_object_set_data(G_OBJECT(priv->popover),"refcount",&priv->rc);
 
   for(i=0;i<WIDGET_MAX_BUTTON;i++)

@@ -162,10 +162,7 @@ static gint taskbar_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent
 
   p1 = taskbar_item_get_instance_private(TASKBAR_ITEM(a));
   p2 = taskbar_item_get_instance_private(TASKBAR_ITEM(b));
-  if(g_object_get_data(G_OBJECT(p1->taskbar),"sort"))
-    return wintree_compare(p1->win,p2->win);
-  else
-    return 0;
+  return wintree_compare(p1->win,p2->win);
 }
 
 static void taskbar_item_class_init ( TaskbarItemClass *kclass )

@@ -813,10 +813,6 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         g_object_set_data(G_OBJECT(widget),"title_width",
             GINT_TO_POINTER(config_assign_number(scanner,"title_width")));
         return TRUE;
-      case G_TOKEN_SORT:
-        g_object_set_data(G_OBJECT(widget),"sort",GINT_TO_POINTER(
-              config_assign_boolean(scanner,TRUE,"sort")));
-        return TRUE;
       case G_TOKEN_GROUP:
         if(g_scanner_peek_next_token(scanner) == '=')
         {
@@ -879,6 +875,10 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
       case G_TOKEN_LABELS:
         g_object_set_data(G_OBJECT(widget),"labels",
           GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"labels")));
+        return TRUE;
+      case G_TOKEN_SORT:
+        flow_grid_set_sort(base_widget_get_child(widget),
+              config_assign_boolean(scanner,TRUE,"sort"));
         return TRUE;
     }
 
