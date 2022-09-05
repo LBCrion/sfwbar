@@ -59,7 +59,9 @@ void css_init ( gchar *cssname )
       g_enum_register_static ("direction",dir_types),
       GTK_POS_RIGHT, G_PARAM_READABLE));
 
-  css_str = "window { -GtkWidget-direction: bottom; }";
+  css_str =
+    "window { -GtkWidget-direction: bottom; } " \
+    ".hidden { -GtkWidget-visible: false; }";
   css = gtk_css_provider_new();
   gtk_css_provider_load_from_data(css,css_str,strlen(css_str),NULL);
   gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),

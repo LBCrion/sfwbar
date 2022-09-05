@@ -42,6 +42,17 @@ void tray_item_update ( GtkWidget *self )
       gtk_widget_set_name(priv->icon,"tray_passive");
       sni_item_set_icon(priv->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
     }
+    if(priv->sni->string[SNI_PROP_LABEL]!=NULL
+      && priv->sni->string[SNI_PROP_LABEL][0] != '\0')
+    {
+      gtk_label_set_markup(GTK_LABEL(priv->label),
+        priv->sni->string[SNI_PROP_LABEL]);
+      css_remove_class(priv->label, "hidden");
+    }
+    else
+    {
+      css_add_class(priv->label, "hidden");
+    }
   }
 
   css_widget_cascade(self,NULL);
@@ -202,13 +213,16 @@ void tray_item_invalidate ( GtkWidget *self )
 GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
 {
   GtkWidget *self;
+  GtkWidget *grid;
   TrayItemPrivate *priv;
 
   g_return_val_if_fail(sni,NULL);
   self = GTK_WIDGET(g_object_new(tray_item_get_type(), NULL));
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
 
+  grid = gtk_grid_new();
   priv->icon = scale_image_new();
+  priv->label = gtk_label_new("");
   priv->sni = sni;
   priv->sni->image = priv->icon;
   priv->tray = tray;
@@ -217,7 +231,9 @@ GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
   flow_grid_add_child(tray,self);
   flow_grid_child_dnd_enable(tray,self,self);
 
-  gtk_container_add(GTK_CONTAINER(self),priv->icon);
+  gtk_container_add(GTK_CONTAINER(grid),priv->icon);
+  gtk_container_add(GTK_CONTAINER(grid),priv->label);
+  gtk_container_add(GTK_CONTAINER(self),grid);
   gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
   g_signal_connect(G_OBJECT(self),"button-release-event",
       G_CALLBACK(tray_item_click_cb),priv->sni);
