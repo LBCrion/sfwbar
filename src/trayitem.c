@@ -55,7 +55,6 @@ SniItem *tray_item_get_sni ( GtkWidget *self )
   g_return_val_if_fail(IS_TRAY_ITEM(self),NULL);
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
 
-
   return priv->sni;
 }
 
@@ -94,15 +93,42 @@ gboolean tray_item_scroll_cb ( GtkWidget *self, GdkEventScroll *event, SniItem *
   return TRUE;
 }
 
+gboolean tray_item_press_cb (GtkWidget *self, GdkEventButton *event, SniItem *sni )
+{
+  TrayItemPrivate *priv;
+
+  g_return_val_if_fail(IS_TRAY_ITEM(self),FALSE);
+  priv = tray_item_get_instance_private(TRAY_ITEM(self));
+
+  if(priv->last_press)
+    gdk_event_free((GdkEvent *)priv->last_press);
+  priv->last_press = (GdkEventButton *)gdk_event_copy((GdkEvent *)event);
+  return FALSE;
+}
+
 gboolean tray_item_click_cb (GtkWidget *self, GdkEventButton *event, SniItem *sni )
 {
+  TrayItemPrivate *priv;
   gchar *method=NULL;
   GtkAllocation alloc,walloc;
   GdkRectangle geo;
   gint32 x,y;
 
-  if(event->type != GDK_BUTTON_PRESS)
+  if(event->type != GDK_BUTTON_RELEASE)
     return FALSE;
+
+  g_return_val_if_fail(IS_TRAY_ITEM(self),FALSE);
+  priv = tray_item_get_instance_private(TRAY_ITEM(self));
+
+  if(!priv->last_press)
+    return FALSE;
+  if(priv->last_press->type != GDK_BUTTON_PRESS)
+    return FALSE;
+  if(priv->last_press->button  != event->button)
+    return FALSE;
+
+  gdk_event_free((GdkEvent *)priv->last_press);
+  priv->last_press = NULL;
 
   g_debug("sni %s: button: %d",sni->dest,event->button);
   if(event->button == 1)
@@ -189,11 +215,14 @@ GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
 
   g_object_ref(self);
   flow_grid_add_child(tray,self);
+  flow_grid_child_dnd_enable(tray,self,self);
 
   gtk_container_add(GTK_CONTAINER(self),priv->icon);
   gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
-  g_signal_connect(G_OBJECT(self),"button-press-event",
+  g_signal_connect(G_OBJECT(self),"button-release-event",
       G_CALLBACK(tray_item_click_cb),priv->sni);
+  g_signal_connect(G_OBJECT(self),"button-press-event",
+      G_CALLBACK(tray_item_press_cb),priv->sni);
   g_signal_connect(G_OBJECT(self),"scroll-event",
       G_CALLBACK(tray_item_scroll_cb),priv->sni);
   return self;
