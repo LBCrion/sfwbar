@@ -30,6 +30,7 @@ struct _FlowGridPrivate
   gint cols,rows,i;
   gboolean limit;
   gboolean invalid;
+  gboolean sort;
   GList *children;
   gint (*comp)( GtkWidget *, GtkWidget *, GtkWidget * );
   GtkTargetEntry *dnd_target;
@@ -50,5 +51,6 @@ void flow_grid_delete_child ( GtkWidget *, void *parent );
 guint flow_grid_n_children ( GtkWidget *self );
 gpointer flow_grid_find_child ( GtkWidget *, gconstpointer parent );
 void flow_grid_child_dnd_enable ( GtkWidget *, GtkWidget *, GtkWidget *);
+void flow_grid_set_sort ( GtkWidget *cgrid, gboolean sort );
 
 #endif

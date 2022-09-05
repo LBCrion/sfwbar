@@ -122,6 +122,17 @@ void flow_grid_set_rows ( GtkWidget *cgrid, gint rows )
     priv->rows = 1;
 }
 
+void flow_grid_set_sort ( GtkWidget *cgrid, gboolean sort )
+{
+  FlowGridPrivate *priv;
+
+  g_return_if_fail(cgrid != NULL);
+  g_return_if_fail(IS_FLOW_GRID(cgrid));
+  priv = flow_grid_get_instance_private(FLOW_GRID(cgrid));
+
+  priv->sort = sort;
+}
+
 void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w )
 {
   FlowGridPrivate *priv;
@@ -247,8 +258,9 @@ void flow_grid_update ( GtkWidget *self )
   priv->invalid = FALSE;
 
   flow_grid_clean(self);
-  priv->children = g_list_sort_with_data(priv->children,
-      (GCompareDataFunc)flow_item_compare,self);
+  if(priv->sort)
+    priv->children = g_list_sort_with_data(priv->children,
+        (GCompareDataFunc)flow_item_compare,self);
   for(iter=priv->children;iter;iter=g_list_next(iter))
   {
     flow_item_update(iter->data);
