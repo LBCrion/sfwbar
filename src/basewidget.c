@@ -257,7 +257,8 @@ void base_widget_set_value ( GtkWidget *self, gchar *value )
   g_free(priv->value);
   priv->value = value;
 
-  if(base_widget_cache(&priv->value,&priv->evalue) || BASE_WIDGET_GET_CLASS(self)->no_value_cache)
+  if(base_widget_cache(&priv->value,&priv->evalue) ||
+      BASE_WIDGET_GET_CLASS(self)->no_value_cache)
     base_widget_update_value(self);
 
   g_mutex_lock(&widget_mutex);
@@ -514,7 +515,8 @@ void base_widget_emit_trigger ( gchar *trigger )
     priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
     if(!priv->trigger || g_ascii_strcasecmp(trigger,priv->trigger))
       continue;
-    if(base_widget_cache(&priv->value,&priv->evalue) || BASE_WIDGET_GET_CLASS(iter->data)->no_value_cache)
+    if(base_widget_cache(&priv->value,&priv->evalue) ||
+        BASE_WIDGET_GET_CLASS(iter->data)->no_value_cache)
       base_widget_update_value(iter->data);
     if(base_widget_cache(&priv->style,&priv->estyle))
       base_widget_style(iter->data);
@@ -543,7 +545,8 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
       priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
       if(base_widget_get_next_poll(iter->data)<=ctime)
       {
-        if(base_widget_cache(&priv->value,&priv->evalue) || BASE_WIDGET_GET_CLASS(iter->data)->no_value_cache)
+        if(base_widget_cache(&priv->value,&priv->evalue) ||
+            BASE_WIDGET_GET_CLASS(iter->data)->no_value_cache)
           g_main_context_invoke(gmc,(GSourceFunc)base_widget_update_value,
               iter->data);
         if(base_widget_cache(&priv->style,&priv->estyle))
