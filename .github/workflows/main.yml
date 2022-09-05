@@ -29,5 +29,5 @@ jobs:
       - name: Run a multi-line script
         run: |
           sudo apt-get -y install libgtk-3-dev meson libgtk-layer-shell-dev libjson-c-dev
-          meson build
+          meson build --werror
           ninja -C build
