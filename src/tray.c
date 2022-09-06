@@ -39,6 +39,7 @@ GtkWidget *tray_new ( void )
   priv = tray_get_instance_private(TRAY(self));
 
   priv->tray = flow_grid_new(TRUE);
+  gtk_grid_set_column_homogeneous(GTK_GRID(priv->tray),FALSE);
   gtk_container_add(GTK_CONTAINER(self),priv->tray);
 
   if(!trays)
