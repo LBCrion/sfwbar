@@ -99,7 +99,7 @@ gboolean tray_item_scroll_cb ( GtkWidget *self, GdkEventScroll *event, SniItem *
     dir = "horizontal";
 
   g_dbus_connection_call(sni_get_connection(), sni->dest, sni->path,
-    sni->host->item_iface, "Scroll", g_variant_new("(si)", dir, delta),
+    sni->host->item_iface, "Scroll", g_variant_new("(is)", delta, dir),
     NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
   return TRUE;
 }
