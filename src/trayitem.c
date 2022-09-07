@@ -42,17 +42,15 @@ void tray_item_update ( GtkWidget *self )
       gtk_widget_set_name(priv->icon,"tray_passive");
       sni_item_set_icon(priv->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
     }
-    if(priv->sni->string[SNI_PROP_LABEL]!=NULL
-      && priv->sni->string[SNI_PROP_LABEL][0] != '\0')
+    if(priv->sni->string[SNI_PROP_LABEL]
+      && *(priv->sni->string[SNI_PROP_LABEL][0]) )
     {
       gtk_label_set_markup(GTK_LABEL(priv->label),
         priv->sni->string[SNI_PROP_LABEL]);
       css_remove_class(priv->label, "hidden");
     }
     else
-    {
       css_add_class(priv->label, "hidden");
-    }
   }
 
   css_widget_cascade(self,NULL);
