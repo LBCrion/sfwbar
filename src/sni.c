@@ -65,7 +65,7 @@ static void sni_watcher_item_lost_cb ( GDBusConnection *con, const gchar *name,
       g_variant_new("(s)",item->uid),NULL);
   g_bus_unwatch_name(item->id);
   item->watcher->items = g_list_delete_link(item->watcher->items,
-      g_list_find(item->watcher->items,item->uid));
+      g_list_find(item->watcher->items,item));
   sni_watcher_item_free(item);
 }
 
