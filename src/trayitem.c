@@ -43,7 +43,7 @@ void tray_item_update ( GtkWidget *self )
       sni_item_set_icon(priv->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
     }
     if(priv->sni->string[SNI_PROP_LABEL]
-      && *(priv->sni->string[SNI_PROP_LABEL][0]) )
+      && *(priv->sni->string[SNI_PROP_LABEL]) )
     {
       gtk_label_set_markup(GTK_LABEL(priv->label),
         priv->sni->string[SNI_PROP_LABEL]);
