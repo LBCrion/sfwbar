@@ -30,6 +30,7 @@ struct _TrayItemPrivate
 {
   SniItem *sni;
   GtkWidget *icon;
+  GtkWidget *label;
   GtkWidget *tray;
   gboolean invalid;
   GdkEventButton *last_press;

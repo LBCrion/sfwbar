@@ -19,8 +19,9 @@ struct sni_prop_wrapper {
 
 static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
   "IconName", "OverlayIconName", "AttentionIconName", "AttentionMovieName",
-  "IconThemePath", "IconPixmap", "OverlayIconPixmap", "AttentionIconPixmap",
-  "ToolTip", "WindowId", "ItemIsMenu", "Menu" };
+  "XAyatanaLabel", "XAyatanaLabelGuide", "IconThemePath", "IconPixmap",
+  "OverlayIconPixmap", "AttentionIconPixmap", "ToolTip", "WindowId",
+  "ItemIsMenu", "Menu", "XAyatanaOrderingIndex" };
 
 GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
 {
@@ -123,6 +124,8 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
     }
   else if(wrap->prop == SNI_PROP_ISMENU)
     g_variant_get(inner,"b",&(wrap->sni->menu));
+  else if(wrap->prop == SNI_PROP_ORDER)
+    g_variant_get(inner,"u",&(wrap->sni->order));
 
   g_variant_unref(inner);
   tray_invalidate_all(wrap->sni);
@@ -174,6 +177,8 @@ void sni_item_signal_cb (GDBusConnection *con, const gchar *sender,
     sni_item_get_prop(con,data,SNI_PROP_ATTN);
     sni_item_get_prop(con,data,SNI_PROP_ATTNPIX);
   }
+  else if(!g_strcmp0(signal,"XAyatanaNewLabel"))
+    sni_item_get_prop(con,data,SNI_PROP_LABEL);
 }
 
 SniItem *sni_item_new (GDBusConnection *con, SniHost *host,
@@ -201,7 +206,7 @@ SniItem *sni_item_new (GDBusConnection *con, SniHost *host,
   sni->signal = g_dbus_connection_signal_subscribe(con,sni->dest,
       sni->host->item_iface,NULL,sni->path,NULL,0,sni_item_signal_cb,sni,NULL);
   tray_item_init_for_all(sni);
-  for(i=0;i<16;i++)
+  for(i=0;i<SNI_MAX_PROP;i++)
     sni_item_get_prop(con,sni,i);
 
   return sni;

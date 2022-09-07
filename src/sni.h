@@ -1,7 +1,8 @@
 #ifndef __SNI_H__
 #define __SNI_H__
 
-#define SNI_MAX_STRING 9
+#define SNI_MAX_STRING 11
+#define SNI_MAX_PROP 19
 
 enum {
   SNI_PROP_CATEGORY = 0,
@@ -12,14 +13,17 @@ enum {
   SNI_PROP_OVLAY = 5,
   SNI_PROP_ATTN = 6,
   SNI_PROP_ATTNMOV = 7,
-  SNI_PROP_THEME = 8,
-  SNI_PROP_ICONPIX = 9,
-  SNI_PROP_OVLAYPIX = 10,
-  SNI_PROP_ATTNPIX = 11,
-  SNI_PROP_WINDOWID = 12,
-  SNI_PROP_TOOLTIP = 13,
-  SNI_PROP_ISMENU = 14,
-  SNI_PROP_MENU = 15
+  SNI_PROP_LABEL = 8,
+  SNI_PROP_LGUIDE = 9,
+  SNI_PROP_THEME = 10,
+  SNI_PROP_ICONPIX = 11,
+  SNI_PROP_OVLAYPIX = 12,
+  SNI_PROP_ATTNPIX = 13,
+  SNI_PROP_WINDOWID = 14,
+  SNI_PROP_TOOLTIP = 15,
+  SNI_PROP_ISMENU = 16,
+  SNI_PROP_MENU = 17,
+  SNI_PROP_ORDER = 18
 };
 
 typedef struct sni_host {
@@ -50,6 +54,7 @@ typedef struct sni_item {
   gboolean dirty;
   gint ref;
   guint signal;
+  guint32 order;
   GCancellable *cancel;
   GtkWidget *image;
   GtkWidget *box;

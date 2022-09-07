@@ -59,7 +59,9 @@ void css_init ( gchar *cssname )
       g_enum_register_static ("direction",dir_types),
       GTK_POS_RIGHT, G_PARAM_READABLE));
 
-  css_str = "window { -GtkWidget-direction: bottom; }";
+  css_str =
+    "window { -GtkWidget-direction: bottom; } " \
+    ".hidden { -GtkWidget-visible: false; }";
   css = gtk_css_provider_new();
   gtk_css_provider_load_from_data(css,css_str,strlen(css_str),NULL);
   gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
@@ -111,3 +113,16 @@ void css_widget_cascade ( GtkWidget *widget, gpointer data )
     gtk_container_forall(GTK_CONTAINER(widget),css_widget_cascade,NULL);
 }
 
+void css_add_class ( GtkWidget *widget, gchar *css_class )
+{
+  GtkStyleContext *context;
+  context = gtk_widget_get_style_context(widget);
+  gtk_style_context_add_class(context,css_class);
+}
+
+void css_remove_class ( GtkWidget *widget, gchar *css_class )
+{
+  GtkStyleContext *context;
+  context = gtk_widget_get_style_context(widget);
+  gtk_style_context_remove_class(context,css_class);
+}

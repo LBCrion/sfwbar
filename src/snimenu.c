@@ -166,6 +166,7 @@ GtkWidget *sni_get_menu_iter ( GVariant *list, struct sni_menu_wrapper *wrap)
   g_variant_iter_init(&iter,list);
 
   menu = gtk_menu_new();
+  gtk_menu_set_reserve_toggle_size(GTK_MENU(menu), FALSE);
   gtk_widget_set_name(menu,"tray");
 
   while( (item = g_variant_iter_next_value(&iter)) )
