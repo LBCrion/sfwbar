@@ -49,7 +49,7 @@ void tray_item_update ( GtkWidget *self )
         priv->sni->string[SNI_PROP_LABEL]);
       if( priv->sni->string[SNI_PROP_LGUIDE] &&
           *(priv->sni->string[SNI_PROP_LGUIDE]) )
-        gtk_label_set_width(GTK_LABEL(priv->label),
+        gtk_label_set_width_chars(GTK_LABEL(priv->label),
           strlen(priv->sni->string[SNI_PROP_LGUIDE]));
       css_remove_class(priv->label, "hidden");
     }
