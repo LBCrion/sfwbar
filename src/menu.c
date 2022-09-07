@@ -108,9 +108,31 @@ gboolean menu_action_cb ( GtkWidget *w ,action_t *action )
 
 GtkWidget *menu_item_new ( gchar *label, action_t *action )
 {
-  GtkWidget *item;
+  GtkWidget *item,*box,*wlabel,*img;
+  gchar *text, *icon;
 
-  item = gtk_menu_item_new_with_label(label);
+  icon = strchr(label,'%');
+  if(icon)
+    text = g_strndup(label,icon-label);
+  else
+    text = g_strdup(label);
+
+  item = gtk_menu_item_new();
+  box = gtk_grid_new();
+  if(icon)
+  {
+    img = gtk_image_new_from_icon_name(icon+1,GTK_ICON_SIZE_MENU);
+    if(img)
+      gtk_grid_attach(GTK_GRID(box),img,1,1,1,1);
+  }
+  if(text)
+  {
+    wlabel = gtk_label_new_with_mnemonic(text);
+    gtk_grid_attach(GTK_GRID(box),wlabel,2,1,1,1);
+    g_free(text);
+  }
+  gtk_container_add(GTK_CONTAINER(item),box);
+
   g_signal_connect(G_OBJECT(item),"activate",
       G_CALLBACK(menu_action_cb),action);
   g_object_weak_ref(G_OBJECT(item),(GWeakNotify)action_free,action);
