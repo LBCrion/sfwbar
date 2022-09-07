@@ -54,6 +54,7 @@ typedef struct sni_item {
   gboolean dirty;
   gint ref;
   guint signal;
+  guint32 order;
   GCancellable *cancel;
   GtkWidget *image;
   GtkWidget *box;
