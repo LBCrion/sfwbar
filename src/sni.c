@@ -171,6 +171,15 @@ static const GDBusInterfaceVTable watcher_vtable =
   NULL
 };
 
+void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,
+    SniWatcher *watcher)
+{
+  if(watcher->regid != 0)
+    g_dbus_connection_unregister_object(con, watcher->regid);
+  watcher->regid = 0;
+  g_list_free_full(watcher->items,(GDestroyNotify)sni_watcher_item_free);
+}
+
 void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
     SniWatcher *watcher)
 {
@@ -183,17 +192,12 @@ void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
       "/StatusNotifierWatcher", watcher->idata->interfaces[0],
       &watcher_vtable, watcher, NULL, NULL);
 
+  g_bus_own_name(G_BUS_TYPE_SESSION,watcher->iface,
+      G_BUS_NAME_OWNER_FLAGS_NONE,NULL,NULL,
+      (GBusNameLostCallback)sni_watcher_unregister_cb,watcher,NULL);
+
   for(iter=watcher->host->items;iter!=NULL;iter=g_list_next(iter))
     sni_watcher_item_add(watcher,((SniItem *)iter->data)->uid);
-}
-
-void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,
-    SniWatcher *watcher)
-{
-  if(watcher->regid != 0)
-    g_dbus_connection_unregister_object(con, watcher->regid);
-  watcher->regid = 0;
-  g_list_free_full(watcher->items,(GDestroyNotify)sni_watcher_item_free);
 }
 
 static void sni_host_item_new ( GDBusConnection *con, SniHost *host,
@@ -309,10 +313,10 @@ static void sni_register ( gchar *name )
   host->watcher = watcher->iface;
   watcher->host = host;
 
-  g_bus_own_name(G_BUS_TYPE_SESSION,watcher->iface,
-      G_BUS_NAME_OWNER_FLAGS_NONE,NULL,
-      (GBusNameAcquiredCallback)sni_watcher_register_cb,
-      (GBusNameLostCallback)sni_watcher_unregister_cb,watcher,NULL);
+  g_bus_watch_name(G_BUS_TYPE_SESSION,watcher->iface,
+      G_BUS_NAME_WATCHER_FLAGS_NONE,NULL,
+      (GBusNameVanishedCallback)sni_watcher_register_cb,
+      watcher,NULL);
 
   g_bus_own_name(G_BUS_TYPE_SESSION,host->iface,
       G_BUS_NAME_OWNER_FLAGS_NONE,NULL,NULL,NULL,NULL,NULL);
