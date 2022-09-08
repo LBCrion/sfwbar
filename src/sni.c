@@ -249,24 +249,6 @@ static void sni_host_list_cb ( GDBusConnection *con, GAsyncResult *res,
   g_variant_unref(result);
 }
 
-static void sni_host_register_cb ( GDBusConnection *con, const gchar *name,
-    const gchar *owner_name, SniHost *host )
-{
-  g_dbus_connection_call(con, host->watcher, "/StatusNotifierWatcher",
-    host->watcher, "RegisterStatusNotifierHost",
-    g_variant_new("(s)", host->iface),
-    G_VARIANT_TYPE ("(a{sv})"),
-    G_DBUS_CALL_FLAGS_NONE,-1,NULL,NULL,host);
-
-  g_dbus_connection_call(con, host->watcher, "/StatusNotifierWatcher",
-    "org.freedesktop.DBus.Properties", "Get",
-    g_variant_new("(ss)", host->watcher,"RegisteredStatusNotifierItems"),
-    NULL,
-    G_DBUS_CALL_FLAGS_NONE,-1,NULL,(GAsyncReadyCallback)sni_host_list_cb,host);
-
-  g_debug("sni host %s: found watcher %s (%s)",host->iface,name,owner_name);
-}
-
 static void sni_host_item_unregistered_cb ( GDBusConnection* con,
     const gchar* sender, const gchar* path, const gchar* interface,
     const gchar* signal, GVariant* parameters, SniHost *host )
@@ -288,14 +270,37 @@ static void sni_host_item_unregistered_cb ( GDBusConnection* con,
   host->items = g_list_delete_link(host->items,item);
 }
 
+static void sni_host_register_cb ( GDBusConnection *con, const gchar *name,
+    const gchar *owner_name, SniWatcher *watcher )
+{
+  SniHost *host = watcher->host;
+  g_dbus_connection_call(con, host->watcher, "/StatusNotifierWatcher",
+    host->watcher, "RegisterStatusNotifierHost",
+    g_variant_new("(s)", host->iface),
+    G_VARIANT_TYPE ("(a{sv})"),
+    G_DBUS_CALL_FLAGS_NONE,-1,NULL,NULL,host);
+
+  g_dbus_connection_call(con, host->watcher, "/StatusNotifierWatcher",
+    "org.freedesktop.DBus.Properties", "Get",
+    g_variant_new("(ss)", host->watcher,"RegisteredStatusNotifierItems"),
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,-1,NULL,(GAsyncReadyCallback)sni_host_list_cb,host);
+  g_dbus_connection_signal_subscribe(con,NULL,watcher->iface,
+      "StatusNotifierItemRegistered","/StatusNotifierWatcher",NULL,
+      G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_registered_cb,host,NULL);
+  g_dbus_connection_signal_subscribe(con,NULL,watcher->iface,
+      "StatusNotifierItemUnregistered","/StatusNotifierWatcher",NULL,
+      G_DBUS_SIGNAL_FLAGS_NONE,
+      (GDBusSignalCallback)sni_host_item_unregistered_cb,host,NULL);
+
+  g_debug("sni host %s: found watcher %s (%s)",host->iface,name,owner_name);
+}
+
 static void sni_register ( gchar *name )
 {
   SniWatcher*watcher;
   SniHost*host;
   gchar *xml;
-  GDBusConnection *con;
-
-  con = sni_get_connection();
 
   watcher = g_malloc0(sizeof(SniWatcher));
   host = g_malloc0(sizeof(SniHost));
@@ -314,22 +319,12 @@ static void sni_register ( gchar *name )
   watcher->host = host;
 
   g_bus_watch_name(G_BUS_TYPE_SESSION,watcher->iface,
-      G_BUS_NAME_WATCHER_FLAGS_NONE,NULL,
+      G_BUS_NAME_WATCHER_FLAGS_NONE,
+      (GBusNameAppearedCallback)sni_host_register_cb,
       (GBusNameVanishedCallback)sni_watcher_register_cb,
       watcher,NULL);
-
   g_bus_own_name(G_BUS_TYPE_SESSION,host->iface,
       G_BUS_NAME_OWNER_FLAGS_NONE,NULL,NULL,NULL,NULL,NULL);
-  g_bus_watch_name(G_BUS_TYPE_SESSION,watcher->iface,
-      G_BUS_NAME_WATCHER_FLAGS_NONE,
-      (GBusNameAppearedCallback)sni_host_register_cb,NULL,host,NULL);
-  g_dbus_connection_signal_subscribe(con,NULL,watcher->iface,
-      "StatusNotifierItemRegistered","/StatusNotifierWatcher",NULL,
-      G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_registered_cb,host,NULL);
-  g_dbus_connection_signal_subscribe(con,NULL,watcher->iface,
-      "StatusNotifierItemUnregistered","/StatusNotifierWatcher",NULL,
-      G_DBUS_SIGNAL_FLAGS_NONE,
-      (GDBusSignalCallback)sni_host_item_unregistered_cb,host,NULL);
 }
 
 void sni_init ( void )
