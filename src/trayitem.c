@@ -106,59 +106,20 @@ gboolean tray_item_scroll_cb ( GtkWidget *self, GdkEventScroll *event, SniItem *
   return TRUE;
 }
 
-gboolean tray_item_press_cb (GtkWidget *self, GdkEventButton *event, SniItem *sni )
+gboolean tray_item_click_cb (GtkWidget *self, GdkEventButton *ev, SniItem *sni )
 {
-  TrayItemPrivate *priv;
-
-  g_return_val_if_fail(IS_TRAY_ITEM(self),FALSE);
-  priv = tray_item_get_instance_private(TRAY_ITEM(self));
-
-  if(priv->last_press)
-    gdk_event_free((GdkEvent *)priv->last_press);
-  priv->last_press = (GdkEventButton *)gdk_event_copy((GdkEvent *)event);
-  return FALSE;
-}
-
-gboolean tray_item_click_cb (GtkWidget *self, GdkEventButton *event, SniItem *sni )
-{
-  TrayItemPrivate *priv;
   gchar *method=NULL;
   GtkAllocation alloc,walloc;
   GdkRectangle geo;
   gint32 x,y;
 
-  if(event->type != GDK_BUTTON_RELEASE)
+  if(ev->type != GDK_BUTTON_PRESS || ev->button < 2 || ev->button > 3)
     return FALSE;
 
-  g_return_val_if_fail(IS_TRAY_ITEM(self),FALSE);
-  priv = tray_item_get_instance_private(TRAY_ITEM(self));
-
-  if(!priv->last_press)
-    return FALSE;
-  if(priv->last_press->type != GDK_BUTTON_PRESS)
-    return FALSE;
-  if(priv->last_press->button  != event->button)
-    return FALSE;
-
-  gdk_event_free((GdkEvent *)priv->last_press);
-  priv->last_press = NULL;
-
-  g_debug("sni %s: button: %d",sni->dest,event->button);
-  if(event->button == 1)
-  {
-    if(sni->menu_path)
-      sni_get_menu(sni,(GdkEvent *)event);
-    else
-    {
-      if(sni->menu)
-        method = "ContextMenu";
-      else
-        method = "Activate";
-    }
-  }
-  if(event->button == 2)
+  g_debug("sni %s: button: %d",sni->dest,ev->button);
+  if(ev->button == 2)
     method = "SecondaryActivate";
-  if(event->button == 3)
+  if(ev->button == 3)
     method = "ContextMenu";
 
   if(!method)
@@ -173,20 +134,20 @@ gboolean tray_item_click_cb (GtkWidget *self, GdkEventButton *event, SniItem *sn
   switch(bar_get_toplevel_dir(self))
   {
     case GTK_POS_RIGHT:
-      x = geo.width - walloc.width + event->x + alloc.x;
-      y = event->y + alloc.y;
+      x = geo.width - walloc.width + ev->x + alloc.x;
+      y = ev->y + alloc.y;
       break;
     case GTK_POS_LEFT:
       x = walloc.width;
-      y = event->y + alloc.y;
+      y = ev->y + alloc.y;
       break;
     case GTK_POS_TOP:
       y = walloc.height;
-      x = event->x + alloc.x;
+      x = ev->x + alloc.x;
       break;
     default:
       y = geo.height - walloc.height;
-      x = event->x + alloc.x;
+      x = ev->x + alloc.x;
   }
 
   // call event at 0,0 to avoid menu popping up under the bar
@@ -196,6 +157,50 @@ gboolean tray_item_click_cb (GtkWidget *self, GdkEventButton *event, SniItem *sn
     NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
   
   return TRUE;
+}
+
+gboolean tray_item_release_cb (GtkWidget *button, GdkEventButton *ev, GtkWidget *self )
+{
+  TrayItemPrivate *priv;
+
+  g_return_val_if_fail(IS_TRAY_ITEM(self),FALSE);
+  priv = tray_item_get_instance_private(TRAY_ITEM(self));
+
+  if(priv->last_event)
+    gdk_event_free(priv->last_event);
+  priv->last_event = gdk_event_copy((GdkEvent *)ev);
+
+  return FALSE;
+}
+static void tray_item_button_cb( GtkWidget *button, GtkWidget *self )
+{
+  TrayItemPrivate *priv;
+  SniItem *sni;
+  gchar *method;
+
+  g_return_if_fail(IS_TRAY_ITEM(self));
+  priv = tray_item_get_instance_private(TRAY_ITEM(self));
+  sni = priv->sni;
+
+  if(sni->menu_path)
+  {
+    sni_get_menu(sni,priv->last_event);
+  }
+  else
+  {
+    if(sni->menu)
+      method = "ContextMenu";
+    else
+      method = "Activate";
+
+    g_debug("sni: calling %s on %s",method,sni->dest);
+    g_dbus_connection_call(sni_get_connection(), sni->dest, sni->path,
+      sni->host->item_iface, method, g_variant_new("(ii)", 0, 0),
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+  }
+  if(priv->last_event)
+    gdk_event_free(priv->last_event);
+  priv->last_event = NULL;
 }
 
 void tray_item_invalidate ( GtkWidget *self )
@@ -215,32 +220,40 @@ void tray_item_invalidate ( GtkWidget *self )
 GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
 {
   GtkWidget *self;
-  GtkWidget *grid;
+  GtkWidget *box, *button;
   TrayItemPrivate *priv;
+  gint dir;
 
   g_return_val_if_fail(sni,NULL);
   self = GTK_WIDGET(g_object_new(tray_item_get_type(), NULL));
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
 
-  grid = gtk_grid_new();
+  button = gtk_button_new();
+  gtk_container_add(GTK_CONTAINER(self),button);
+  gtk_widget_set_name(button, "tray_active");
+  gtk_widget_style_get(button,"direction",&dir,NULL);
+  box = gtk_grid_new();
+  gtk_container_add(GTK_CONTAINER(button),box);
+  flow_grid_child_dnd_enable(tray,self,button);
+
   priv->icon = scale_image_new();
   priv->label = gtk_label_new("");
   priv->sni = sni;
   priv->sni->image = priv->icon;
   priv->tray = tray;
 
+  gtk_grid_attach_next_to(GTK_GRID(box),priv->icon,NULL,dir,1,1);
+  gtk_grid_attach_next_to(GTK_GRID(box),priv->label,priv->icon,dir,1,1);
+
   g_object_ref(self);
   flow_grid_add_child(tray,self);
-  flow_grid_child_dnd_enable(tray,self,self);
 
-  gtk_container_add(GTK_CONTAINER(grid),priv->icon);
-  gtk_container_add(GTK_CONTAINER(grid),priv->label);
-  gtk_container_add(GTK_CONTAINER(self),grid);
-  gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
-  g_signal_connect(G_OBJECT(self),"button-release-event",
-      G_CALLBACK(tray_item_click_cb),priv->sni);
+  g_signal_connect(button,"clicked",G_CALLBACK(tray_item_button_cb),self);
   g_signal_connect(G_OBJECT(self),"button-press-event",
-      G_CALLBACK(tray_item_press_cb),priv->sni);
+      G_CALLBACK(tray_item_click_cb),priv->sni);
+  g_signal_connect(G_OBJECT(button),"button-release-event",
+      G_CALLBACK(tray_item_release_cb),self);
+  gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
   g_signal_connect(G_OBJECT(self),"scroll-event",
       G_CALLBACK(tray_item_scroll_cb),priv->sni);
   return self;

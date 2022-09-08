@@ -33,7 +33,7 @@ struct _TrayItemPrivate
   GtkWidget *label;
   GtkWidget *tray;
   gboolean invalid;
-  GdkEventButton *last_press;
+  GdkEvent *last_event;
 };
 
 GType tray_item_get_type ( void );
