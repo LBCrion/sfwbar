@@ -25,25 +25,24 @@ void tray_item_update ( GtkWidget *self )
   if(!priv->invalid)
     return;
 
-  if(priv->sni->string[SNI_PROP_STATUS]!=NULL)
+  if(priv->sni->string[SNI_PROP_STATUS])
   {
-    if(priv->sni->string[SNI_PROP_STATUS][0]=='A')
+    switch(priv->sni->string[SNI_PROP_STATUS][0])
     {
-      gtk_widget_set_name(priv->icon,"tray_active");
-      sni_item_set_icon(priv->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
+      case 'A':
+        gtk_widget_set_name(priv->button,"tray_active");
+        sni_item_set_icon(priv->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
+        break;
+      case 'N':
+        gtk_widget_set_name(priv->button,"tray_attention");
+        sni_item_set_icon(priv->sni,SNI_PROP_ATTN,SNI_PROP_ATTNPIX);
+        break;
+      case 'P':
+        gtk_widget_set_name(priv->button,"tray_passive");
+        sni_item_set_icon(priv->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
     }
-    if(priv->sni->string[SNI_PROP_STATUS][0]=='N')
-    {
-      gtk_widget_set_name(priv->icon,"tray_attention");
-      sni_item_set_icon(priv->sni,SNI_PROP_ATTN,SNI_PROP_ATTNPIX);
-    }
-    if(priv->sni->string[SNI_PROP_STATUS][0]=='P')
-    {
-      gtk_widget_set_name(priv->icon,"tray_passive");
-      sni_item_set_icon(priv->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
-    }
-    if( priv->sni->string[SNI_PROP_LABEL] &&
-        *(priv->sni->string[SNI_PROP_LABEL]) )
+    if(priv->sni->string[SNI_PROP_LABEL] &&
+        *(priv->sni->string[SNI_PROP_LABEL]))
     {
       gtk_label_set_markup(GTK_LABEL(priv->label),
         priv->sni->string[SNI_PROP_LABEL]);
@@ -220,7 +219,7 @@ void tray_item_invalidate ( GtkWidget *self )
 GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
 {
   GtkWidget *self;
-  GtkWidget *box, *button;
+  GtkWidget *box;
   TrayItemPrivate *priv;
   gint dir;
 
@@ -228,13 +227,13 @@ GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
   self = GTK_WIDGET(g_object_new(tray_item_get_type(), NULL));
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
 
-  button = gtk_button_new();
-  gtk_container_add(GTK_CONTAINER(self),button);
-  gtk_widget_set_name(button, "tray_active");
-  gtk_widget_style_get(button,"direction",&dir,NULL);
+  priv->button = gtk_button_new();
+  gtk_container_add(GTK_CONTAINER(self),priv->button);
+  gtk_widget_set_name(priv->button, "tray_active");
+  gtk_widget_style_get(priv->button,"direction",&dir,NULL);
   box = gtk_grid_new();
-  gtk_container_add(GTK_CONTAINER(button),box);
-  flow_grid_child_dnd_enable(tray,self,button);
+  gtk_container_add(GTK_CONTAINER(priv->button),box);
+  flow_grid_child_dnd_enable(tray,self,priv->button);
 
   priv->icon = scale_image_new();
   priv->label = gtk_label_new("");
@@ -248,10 +247,11 @@ GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
   g_object_ref(self);
   flow_grid_add_child(tray,self);
 
-  g_signal_connect(button,"clicked",G_CALLBACK(tray_item_button_cb),self);
+  g_signal_connect(priv->button,"clicked",
+      G_CALLBACK(tray_item_button_cb),self);
   g_signal_connect(G_OBJECT(self),"button-press-event",
       G_CALLBACK(tray_item_click_cb),priv->sni);
-  g_signal_connect(G_OBJECT(button),"button-release-event",
+  g_signal_connect(G_OBJECT(priv->button),"button-release-event",
       G_CALLBACK(tray_item_release_cb),self);
   gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
   g_signal_connect(G_OBJECT(self),"scroll-event",
