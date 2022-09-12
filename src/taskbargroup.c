@@ -35,6 +35,7 @@ static gboolean taskbar_group_enter_cb ( GtkWidget *s, GdkEventCrossing *event,
 
   flow_grid_update(priv->tgroup);
 
+  gtk_widget_unrealize(priv->popover);
   gtk_widget_realize(priv->popover);
   gparent = gtk_widget_get_window(priv->icon);
   gpopup = gtk_widget_get_window(
