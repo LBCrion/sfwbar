@@ -30,11 +30,13 @@ struct _TaskbarGroupPrivate
 {
   GtkWidget *icon;
   GtkWidget *label;
+  GtkWidget *button;
   GtkWidget *taskbar;
   GtkWidget *tgroup;
   GtkWidget *popover;
   gchar *appid;
   gboolean invalid;
+  gboolean in_widget;
   grefcount rc;
 };
 

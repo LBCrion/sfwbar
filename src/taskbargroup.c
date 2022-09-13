@@ -17,8 +17,8 @@
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarGroup, taskbar_group, FLOW_ITEM_TYPE, G_ADD_PRIVATE (TaskbarGroup));
 
-static gboolean taskbar_group_enter_cb ( GtkWidget *s, GdkEventCrossing *event,
-    gpointer self )
+static gboolean taskbar_group_enter_cb ( GtkWidget *widget,
+    GdkEventCrossing *event, gpointer self )
 {
   TaskbarGroupPrivate *priv;
   GdkRectangle rect;
@@ -30,16 +30,20 @@ static gboolean taskbar_group_enter_cb ( GtkWidget *s, GdkEventCrossing *event,
 
   if(gtk_widget_is_visible(priv->popover))
   {
-    g_ref_count_inc(&priv->rc);
+    if(!priv->in_widget || widget != self)
+      g_ref_count_inc(&priv->rc);
+    if(widget == self)
+      priv->in_widget = TRUE;
     return TRUE;
   }
   g_ref_count_init(&priv->rc);
+  priv->in_widget = TRUE;
 
   flow_grid_update(priv->tgroup);
 
   gtk_widget_unrealize(priv->popover);
   gtk_widget_realize(priv->popover);
-  gparent = gtk_widget_get_window(priv->icon);
+  gparent = gtk_widget_get_window(priv->button);
   gpopup = gtk_widget_get_window(
       gtk_widget_get_ancestor(priv->popover,GTK_TYPE_WINDOW));
   rect.x = 0;
@@ -47,7 +51,7 @@ static gboolean taskbar_group_enter_cb ( GtkWidget *s, GdkEventCrossing *event,
   rect.width = gdk_window_get_width(gparent);
   rect.height = gdk_window_get_height(gparent);
   gdk_window_set_transient_for(gpopup, gparent);
-  menu_popup_get_gravity(priv->icon,&wanchor,&panchor);
+  menu_popup_get_gravity(priv->button,&wanchor,&panchor);
   gdk_window_move_to_rect(gpopup, &rect,wanchor,panchor,0,0,0);
   gtk_widget_show(priv->popover);
 
@@ -66,17 +70,24 @@ static gboolean taskbar_group_timeout_cb ( GtkWidget *popover )
   return FALSE;
 }
 
-static gboolean taskbar_group_leave_cb ( GtkWidget *s, GdkEventCrossing *event,
-    gpointer popover )
+static gboolean taskbar_group_leave_cb ( GtkWidget *widget,
+    GdkEventCrossing *event, gpointer self )
 {
-  g_timeout_add(10,(GSourceFunc)taskbar_group_timeout_cb,popover);
-  return TRUE;
+  TaskbarGroupPrivate *priv;
+
+  g_return_val_if_fail(IS_TASKBAR_GROUP(self),FALSE);
+  priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
+
+  if(widget == self)
+    priv->in_widget = FALSE;
+
+  g_timeout_add(10,(GSourceFunc)taskbar_group_timeout_cb,priv->popover);
+  return FALSE;
 }
 
 static void taskbar_group_destroy ( GtkWidget *self )
 {
   TaskbarGroupPrivate *priv;
-
 
   g_return_if_fail(IS_TASKBAR_GROUP(self));
   priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
@@ -159,7 +170,7 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
   gint dir, i;
   gboolean icons, labels;
   gint title_width;
-  GtkWidget *box, *button;
+  GtkWidget *box;
 
   g_return_val_if_fail(IS_TASKBAR(taskbar),NULL);
 
@@ -188,12 +199,12 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
   priv->tgroup = taskbar_new(FALSE);
   priv->appid = g_strdup(appid);
   g_ref_count_init(&priv->rc);
-  button = gtk_button_new();
-  gtk_container_add(GTK_CONTAINER(self),button);
-  gtk_widget_set_name(button, "taskbar_group_normal");
-  gtk_widget_style_get(button,"direction",&dir,NULL);
+  priv->button = gtk_button_new();
+  gtk_container_add(GTK_CONTAINER(self),priv->button);
+  gtk_widget_set_name(priv->button, "taskbar_group_normal");
+  gtk_widget_style_get(priv->button,"direction",&dir,NULL);
   box = gtk_grid_new();
-  gtk_container_add(GTK_CONTAINER(button),box);
+  gtk_container_add(GTK_CONTAINER(priv->button),box);
 
   if(icons)
   {
@@ -231,9 +242,9 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
   g_signal_connect(priv->popover,"enter-notify-event",
       G_CALLBACK(taskbar_group_enter_cb),self);
   g_signal_connect(self,"leave-notify-event",
-      G_CALLBACK(taskbar_group_leave_cb),priv->popover);
+      G_CALLBACK(taskbar_group_leave_cb),self);
   g_signal_connect(priv->popover,"leave-notify-event",
-      G_CALLBACK(taskbar_group_leave_cb),priv->popover);
+      G_CALLBACK(taskbar_group_leave_cb),self);
 
   if(g_object_get_data(G_OBJECT(taskbar),"g_cols"))
     flow_grid_set_cols(base_widget_get_child(priv->tgroup),GPOINTER_TO_INT(
