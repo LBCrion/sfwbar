@@ -83,7 +83,7 @@ static gint sni_watcher_item_add ( SniWatcher *watcher, gchar *uid )
   item->watcher = watcher;
   item->uid = g_strdup(uid);
 
-  if(strchr(uid,'/')!=NULL)
+  if(strchr(uid,'/'))
     name = g_strndup(uid,strchr(uid,'/')-uid);
   else
     name = g_strdup(uid);
@@ -114,6 +114,7 @@ static void sni_watcher_method(GDBusConnection *con, const gchar *sender,
       name = g_strdup(parameter);
     else
       name = g_strconcat(sender,parameter,NULL);
+
     if(sni_watcher_item_add(watcher,name)!=-1)
       g_dbus_connection_emit_signal(con,NULL,"/StatusNotifierWatcher",
           watcher->iface,"StatusNotifierItemRegistered",
@@ -121,13 +122,12 @@ static void sni_watcher_method(GDBusConnection *con, const gchar *sender,
     g_free(name);
   }
 
-  if(g_strcmp0(method,"RegisterStatusNotifierHost")==0)
+  else if(!g_strcmp0(method,"RegisterStatusNotifierHost"))
   {
     watcher->watcher_registered = TRUE;
     g_debug("sni watcher %s: registered host %s",watcher->iface,parameter);
     g_dbus_connection_emit_signal(con,NULL,"/StatusNotifierWatcher",
-        watcher->iface,"StatusNotifierHostRegistered",
-        g_variant_new("(s)",parameter),NULL);
+        watcher->iface,"StatusNotifierHostRegistered",NULL,NULL);
   }
 }
 
@@ -139,13 +139,13 @@ static GVariant *sni_watcher_get_prop (GDBusConnection *con,
   GVariantBuilder *builder;
   GList *iter;
 
-  if (g_strcmp0 (prop, "IsStatusNotifierHostRegistered") == 0)
-    ret = g_variant_new_boolean(watcher->watcher_registered);
+  if (!g_strcmp0 (prop,"IsStatusNotifierHostRegistered"))
+    ret = g_variant_new_boolean(TRUE);
 
-  if (g_strcmp0 (prop, "ProtocolVersion") == 0)
+  else if(!g_strcmp0 (prop,"ProtocolVersion"))
     ret = g_variant_new_int32(0);
 
-  if (g_strcmp0 (prop, "RegisteredStatusNotifierItems") == 0)
+  else if(!g_strcmp0 (prop,"RegisteredStatusNotifierItems"))
   {
     if(!watcher->items)
       ret = g_variant_new_array(G_VARIANT_TYPE_STRING,NULL,0);
@@ -174,10 +174,11 @@ static const GDBusInterfaceVTable watcher_vtable =
 void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,
     SniWatcher *watcher)
 {
-  if(watcher->regid != 0)
+  if(watcher->regid)
     g_dbus_connection_unregister_object(con, watcher->regid);
   watcher->regid = 0;
   g_list_free_full(watcher->items,(GDestroyNotify)sni_watcher_item_free);
+  g_debug("sni watcher %s unregistered",watcher->iface);
 }
 
 void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
@@ -185,7 +186,7 @@ void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
 {
   GList *iter;
 
-  if(watcher->regid != 0)
+  if(watcher->regid)
     g_dbus_connection_unregister_object(con, watcher->regid);
 
   watcher->regid = g_dbus_connection_register_object (con,
@@ -196,8 +197,10 @@ void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
       G_BUS_NAME_OWNER_FLAGS_NONE,NULL,NULL,
       (GBusNameLostCallback)sni_watcher_unregister_cb,watcher,NULL);
 
-  for(iter=watcher->host->items;iter!=NULL;iter=g_list_next(iter))
+  for(iter=watcher->host->items;iter;iter=g_list_next(iter))
     sni_watcher_item_add(watcher,((SniItem *)iter->data)->uid);
+
+  g_debug("sni watcher %s registered",watcher->iface);
 }
 
 static void sni_host_item_new ( GDBusConnection *con, SniHost *host,
@@ -206,7 +209,7 @@ static void sni_host_item_new ( GDBusConnection *con, SniHost *host,
   SniItem *sni;
   GList *iter;
 
-  for(iter=host->items;iter!=NULL;iter=g_list_next(iter))
+  for(iter=host->items;iter;iter=g_list_next(iter))
     if(!g_strcmp0(((SniItem *)iter->data)->uid,uid))
       return;
 
@@ -259,7 +262,7 @@ static void sni_host_item_unregistered_cb ( GDBusConnection* con,
   g_variant_get (parameters, "(&s)", &parameter);
   g_debug("sni host %s: unregister item %s",host->iface, parameter);
 
-  for(item=host->items;item!=NULL;item=g_list_next(item))
+  for(item=host->items;item;item=g_list_next(item))
     if(!g_strcmp0(((SniItem *)item->data)->uid,parameter))
       break;
   if(!item)
@@ -280,11 +283,6 @@ static void sni_host_register_cb ( GDBusConnection *con, const gchar *name,
     G_VARIANT_TYPE ("(a{sv})"),
     G_DBUS_CALL_FLAGS_NONE,-1,NULL,NULL,host);
 
-  g_dbus_connection_call(con, host->watcher, "/StatusNotifierWatcher",
-    "org.freedesktop.DBus.Properties", "Get",
-    g_variant_new("(ss)", host->watcher,"RegisteredStatusNotifierItems"),
-    NULL,
-    G_DBUS_CALL_FLAGS_NONE,-1,NULL,(GAsyncReadyCallback)sni_host_list_cb,host);
   g_dbus_connection_signal_subscribe(con,NULL,watcher->iface,
       "StatusNotifierItemRegistered","/StatusNotifierWatcher",NULL,
       G_DBUS_SIGNAL_FLAGS_NONE,sni_host_item_registered_cb,host,NULL);
@@ -292,6 +290,10 @@ static void sni_host_register_cb ( GDBusConnection *con, const gchar *name,
       "StatusNotifierItemUnregistered","/StatusNotifierWatcher",NULL,
       G_DBUS_SIGNAL_FLAGS_NONE,
       (GDBusSignalCallback)sni_host_item_unregistered_cb,host,NULL);
+  g_dbus_connection_call(con, host->watcher, "/StatusNotifierWatcher",
+    "org.freedesktop.DBus.Properties", "Get",g_variant_new("(ss)",
+      host->watcher,"RegisteredStatusNotifierItems"), NULL,
+    G_DBUS_CALL_FLAGS_NONE,-1,NULL,(GAsyncReadyCallback)sni_host_list_cb,host);
 
   g_debug("sni host %s: found watcher %s (%s)",host->iface,name,owner_name);
 }
