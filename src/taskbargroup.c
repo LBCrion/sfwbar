@@ -12,6 +12,7 @@
 #include "action.h"
 #include "bar.h"
 #include "wintree.h"
+#include "menu.h"
 #include <gtk-layer-shell.h>
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarGroup, taskbar_group, FLOW_ITEM_TYPE, G_ADD_PRIVATE (TaskbarGroup));
@@ -22,6 +23,7 @@ static gboolean taskbar_group_enter_cb ( GtkWidget *s, GdkEventCrossing *event,
   TaskbarGroupPrivate *priv;
   GdkRectangle rect;
   GdkWindow *gparent, *gpopup;
+  GdkGravity wanchor, panchor;
 
   g_return_val_if_fail(IS_TASKBAR_GROUP(self),FALSE);
   priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
@@ -45,8 +47,8 @@ static gboolean taskbar_group_enter_cb ( GtkWidget *s, GdkEventCrossing *event,
   rect.width = gdk_window_get_width(gparent);
   rect.height = gdk_window_get_height(gparent);
   gdk_window_set_transient_for(gpopup, gparent);
-  gdk_window_move_to_rect(gpopup, &rect,GDK_GRAVITY_NORTH_WEST,
-      GDK_GRAVITY_SOUTH_WEST,0,0,0);
+  menu_popup_get_gravity(priv->icon,&wanchor,&panchor);
+  gdk_window_move_to_rect(gpopup, &rect,wanchor,panchor,0,0,0);
   gtk_widget_show(priv->popover);
 
   return TRUE;
@@ -220,9 +222,9 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
         g_object_get_data(G_OBJECT(taskbar),"g_style")));
   gtk_widget_show(priv->tgroup);
 
-  gtk_widget_add_events(GTK_WIDGET(self),GDK_ENTER_NOTIFY_MASK);
+  gtk_widget_add_events(GTK_WIDGET(self),GDK_ENTER_NOTIFY_MASK |
+      GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
   gtk_widget_add_events(GTK_WIDGET(priv->popover),GDK_ENTER_NOTIFY_MASK);
-  gtk_widget_add_events(GTK_WIDGET(self),GDK_LEAVE_NOTIFY_MASK);
   gtk_widget_add_events(GTK_WIDGET(priv->popover),GDK_LEAVE_NOTIFY_MASK);
   g_signal_connect(self,"enter-notify-event",
       G_CALLBACK(taskbar_group_enter_cb),self);

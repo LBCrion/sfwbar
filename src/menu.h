@@ -9,5 +9,7 @@ void menu_add ( gchar *name, GtkWidget *menu );
 void menu_remove ( gchar *name );
 void menu_popup ( GtkWidget *, GtkWidget *, GdkEvent *, gpointer, guint16 * );
 GtkWidget *menu_item_new ( gchar *label, action_t *action );
+void menu_popup_get_gravity ( GtkWidget *widget, GdkGravity *wanchor,
+    GdkGravity *manchor );
 
 #endif
