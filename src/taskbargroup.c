@@ -17,6 +17,24 @@
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarGroup, taskbar_group, FLOW_ITEM_TYPE, G_ADD_PRIVATE (TaskbarGroup));
 
+static void taskbar_group_add_hold ( GtkWidget *popover, GtkWidget *hold )
+{
+  GList **holds;
+
+  holds = g_object_get_data(G_OBJECT(popover),"holds");
+  if(holds && !g_list_find(*holds,hold))
+    *holds = g_list_prepend(*holds,hold);
+}
+
+static void taskbar_group_remove_hold ( GtkWidget *popover, GtkWidget *hold )
+{
+  GList **holds;
+
+  holds = g_object_get_data(G_OBJECT(popover),"holds");
+  if(holds)
+    *holds = g_list_remove(*holds,hold);
+}
+
 static gboolean taskbar_group_enter_cb ( GtkWidget *widget,
     GdkEventCrossing *event, gpointer self )
 {
@@ -30,14 +48,11 @@ static gboolean taskbar_group_enter_cb ( GtkWidget *widget,
 
   if(gtk_widget_is_visible(priv->popover))
   {
-    if(!priv->in_widget || widget != self)
-      g_ref_count_inc(&priv->rc);
-    if(widget == self)
-      priv->in_widget = TRUE;
+    taskbar_group_add_hold(priv->popover,widget);
     return TRUE;
   }
-  g_ref_count_init(&priv->rc);
-  priv->in_widget = TRUE;
+  g_list_free(priv->holds);
+  taskbar_group_add_hold(priv->popover,widget);
 
   flow_grid_update(priv->tgroup);
 
@@ -60,28 +75,20 @@ static gboolean taskbar_group_enter_cb ( GtkWidget *widget,
 
 static gboolean taskbar_group_timeout_cb ( GtkWidget *popover )
 {
-  grefcount *rc;
-  rc = g_object_get_data(G_OBJECT(popover),"refcount");
+  GList **holds;
 
-  if(!rc || !g_ref_count_dec(rc))
-    return FALSE;
-
-  gtk_widget_hide(popover);
+  holds = g_object_get_data(G_OBJECT(popover),"holds");
+  if(!holds || !*holds)
+    gtk_widget_hide(popover);
   return FALSE;
 }
 
 static gboolean taskbar_group_leave_cb ( GtkWidget *widget,
-    GdkEventCrossing *event, gpointer self )
+    GdkEventCrossing *event, gpointer popover )
 {
-  TaskbarGroupPrivate *priv;
+  taskbar_group_remove_hold(popover,widget);
 
-  g_return_val_if_fail(IS_TASKBAR_GROUP(self),FALSE);
-  priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
-
-  if(widget == self)
-    priv->in_widget = FALSE;
-
-  g_timeout_add(10,(GSourceFunc)taskbar_group_timeout_cb,priv->popover);
+  g_timeout_add(10,(GSourceFunc)taskbar_group_timeout_cb,popover);
   return FALSE;
 }
 
@@ -198,7 +205,6 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
   priv->taskbar = taskbar;
   priv->tgroup = taskbar_new(FALSE);
   priv->appid = g_strdup(appid);
-  g_ref_count_init(&priv->rc);
   priv->button = gtk_button_new();
   gtk_container_add(GTK_CONTAINER(self),priv->button);
   gtk_widget_set_name(priv->button, "taskbar_group_normal");
@@ -242,9 +248,9 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
   g_signal_connect(priv->popover,"enter-notify-event",
       G_CALLBACK(taskbar_group_enter_cb),self);
   g_signal_connect(self,"leave-notify-event",
-      G_CALLBACK(taskbar_group_leave_cb),self);
+      G_CALLBACK(taskbar_group_leave_cb),priv->popover);
   g_signal_connect(priv->popover,"leave-notify-event",
-      G_CALLBACK(taskbar_group_leave_cb),self);
+      G_CALLBACK(taskbar_group_leave_cb),priv->popover);
 
   if(g_object_get_data(G_OBJECT(taskbar),"g_cols"))
     flow_grid_set_cols(base_widget_get_child(priv->tgroup),GPOINTER_TO_INT(
@@ -260,7 +266,7 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
         g_object_get_data(G_OBJECT(taskbar),"g_title_width"));
   flow_grid_set_sort(base_widget_get_child(priv->tgroup),
       GPOINTER_TO_INT(g_object_get_data(G_OBJECT(taskbar),"g_sort")));
-  g_object_set_data(G_OBJECT(priv->popover),"refcount",&priv->rc);
+  g_object_set_data(G_OBJECT(priv->popover),"holds",&priv->holds);
 
   for(i=0;i<WIDGET_MAX_BUTTON;i++)
     base_widget_set_action(priv->tgroup,i,
@@ -289,20 +295,14 @@ void taskbar_group_invalidate ( GtkWidget *self )
 
 gboolean taskbar_group_child_cb ( GtkWidget *child, GtkWidget *popover )
 {
+  taskbar_group_remove_hold(popover,child);
   g_timeout_add(10,(GSourceFunc)taskbar_group_timeout_cb,popover);
-
   return FALSE;
 }
 
 void taskbar_group_pop_child ( GtkWidget *popover, GtkWidget *child )
 {
-  grefcount *rc;
-
-  rc = g_object_get_data(G_OBJECT(popover),"refcount");
-  if(!rc)
-    return;
-
-  g_ref_count_inc(rc);
+  taskbar_group_add_hold(popover,child);
   g_signal_connect(G_OBJECT(child),"unmap",
       G_CALLBACK(taskbar_group_child_cb),popover);
 }

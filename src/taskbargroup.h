@@ -36,8 +36,7 @@ struct _TaskbarGroupPrivate
   GtkWidget *popover;
   gchar *appid;
   gboolean invalid;
-  gboolean in_widget;
-  grefcount rc;
+  GList *holds;
 };
 
 GType taskbar_group_get_type ( void );
