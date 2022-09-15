@@ -93,6 +93,7 @@ gboolean bar_hide_event ( const gchar *mode )
   if(mode)        // if NULL, return to persistent state
     switch(*mode)
     {
+      case 'd':
       case 's':   // show
         pstate = state = 's';
         break;

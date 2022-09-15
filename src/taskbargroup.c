@@ -231,6 +231,7 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
     priv->label = NULL;
 
   priv->popover = gtk_window_new(GTK_WINDOW_POPUP);
+  gtk_widget_set_name(priv->button, "taskbar_group");
   g_object_ref(G_OBJECT(priv->popover));
   gtk_container_add(GTK_CONTAINER(priv->popover),priv->tgroup);
   css_widget_apply(priv->tgroup,g_strdup(
