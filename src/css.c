@@ -58,6 +58,20 @@ void css_init ( gchar *cssname )
     g_param_spec_enum("direction","direction","direction",
       g_enum_register_static ("direction",dir_types),
       GTK_POS_RIGHT, G_PARAM_READABLE));
+  static GEnumValue align_types [] = {
+    {GTK_ALIGN_FILL,"fill","fill"},
+    {GTK_ALIGN_START,"start","start"},
+    {GTK_ALIGN_END,"end","end"},
+    {GTK_ALIGN_CENTER,"center","center"},
+    {GTK_ALIGN_BASELINE,"baseline","baseline"}};
+  gtk_widget_class_install_style_property( widget_class,
+    g_param_spec_enum("halign","horizontal alignment","horizontal alignment",
+      g_enum_register_static ("halign",align_types),
+      GTK_ALIGN_FILL, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property( widget_class,
+    g_param_spec_enum("valign","vertical alignment","vertical alignment",
+      g_enum_register_static ("valign",align_types),
+      GTK_ALIGN_FILL, G_PARAM_READABLE));
 
   css_str =
     "window { -GtkWidget-direction: bottom; } " \
@@ -92,6 +106,7 @@ void css_widget_cascade ( GtkWidget *widget, gpointer data )
 {
   gboolean state;
   gdouble xalign;
+  GtkAlign align;
 
   gtk_widget_style_get(widget,"visible",&state,NULL);
   gtk_widget_set_visible(widget,state);
@@ -101,6 +116,10 @@ void css_widget_cascade ( GtkWidget *widget, gpointer data )
     gtk_widget_set_hexpand(widget,state);
     gtk_widget_style_get(widget,"vexpand",&state,NULL);
     gtk_widget_set_vexpand(widget,state);
+    gtk_widget_style_get(widget,"halign",&align,NULL);
+    gtk_widget_set_halign(widget,align);
+    gtk_widget_style_get(widget,"valign",&align,NULL);
+    gtk_widget_set_valign(widget,align);
   }
 
   if(GTK_IS_LABEL(widget))

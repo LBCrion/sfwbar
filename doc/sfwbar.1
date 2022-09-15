@@ -39,7 +39,7 @@ SFWBar \- Sway Floating Window taskBar
 .sp
 \fBSFWBar\fP is a taskbar for wayland compositors. Originally written for Sway,
 it should work with any compositor supporting layer\-shell protocol. SFWBar
-assists in handling of floating windows on a wayland desktop. It provdes a
+assists in handling of floating windows on a wayland desktop. It provides a
 taskbar, a pager, a task switcher, a system tray, a floating window placement
 engine, a simple widget set for display data extracted from various system
 files.
@@ -70,7 +70,7 @@ program checks users XDG config directory (usually ~/.config/sfwbar/) for this
 file, followed by system xdg data directories. Additionally, user can specify
 a location and a name of the config file using \fB\-f\fP command line option.
 .sp
-Appearance of the program can be specifie using CSS properties, these
+Appearance of the program can be specified using CSS properties, these
 are sourced either from the css section of the main configuration file or
 from a file with a .css extension with the same base name as the config file
 located in the same directory as the config file. The name of the css file
@@ -80,7 +80,7 @@ The config file consists of the following top level sections:
 .SS Placer
 .sp
 Placer section enables intelligent placement of new floating windows. If
-enabled the program will first attemp to place the window in a location, where
+enabled the program will first attempt to place the window in a location, where
 it won\(aqt overlap with other windows. If such location doesn\(aqt exist, the window
 will be placed in a cascading pattern from top\-left to bottom\-right. The Placer
 declaration accepts parameters \(dqxstep\(dq and \(dqystep\(dq that specify the
@@ -269,7 +269,7 @@ an expression specifying the value to display. This can be a static value
 \fB\(dqValue is:\(dq + $MyString\fP or \fB2 * MyNumber.val\fP). See \fBexpressions\fP
 section for more detail.
 For \fBLabel\fP widgets value tells text to display.
-For \fBScale\fP widgets it speficies a fraction to display.
+For \fBScale\fP widgets it specifies a fraction to display.
 For \fBChart\fP widgets it specifies a fraction of the next datapoint.
 For \fBImage\fP widgets and buttons it provides an icon or an image file name.
 .TP
@@ -294,14 +294,14 @@ a widget should not have both an interval and a trigger specified.
 (if both are specified, interval is ignored and trigger is used).
 .TP
 .B css
-additional css properties for the widget. These propertes will only apply to
+additional css properties for the widget. These properties will only apply to
 the widget in question.
 .TP
 .B action
 an action to execute upon a button click. Actions can be attached to any
 widget. Multiple actions can be attached to different mouse buttons using
 \fBaction[n] = <type> <string>\fP syntax. For mouse buttons, n = 1,2,3 for
-left, midle and right button respectively. For mouse scroll events, use
+left, middle and right button respectively. For mouse scroll events, use
 n = 4,5,6,7 for up, down, left and right respectively. If no index is
 specified the action is attached to a left mouse button click. Additionally,
 action[0] will be executed on startup. You can use this action to set
@@ -431,7 +431,7 @@ into it.
 .sp
 Actions can be attached to click and scroll events for any widget or to items
 within a menu. Actions can be conditional on a state of a window or a widget
-they refer to and some actions may require a prameter. Conditions are specified
+they refer to and some actions may require a parameter. Conditions are specified
 in square brackets prior to the action i.e. \fB[Minimized]\fP and can be inverted
 using \fB!\fP or joined using \fB|\fP i.e. \fB[!Minimized | Focused]\fP\&. All
 conditions on the list must be satisfied. Supported conditions are:
@@ -463,7 +463,7 @@ Process a snippet of configuration file. This action permits changing the
 bar configuration on the fly
 .TP
 .B Exec <string>
-execute a shell comand
+execute a shell command
 .TP
 .B Function [<addr>,]<string>
 Execute a function. Accepts an optional address, to invoke a function on a
@@ -474,7 +474,7 @@ open a menu with a given name
 .TP
 .B MenuClear <string>
 delete a menu with a given name (This is useful if you want to generate
-menues dynamically via PipeRead and would like to delete a previously
+menus dynamically via PipeRead and would like to delete a previously
 generated menu)
 .TP
 .B PipeRead <string>
@@ -647,7 +647,7 @@ wrapped into an object with a name of the event i.e.
 SwayClient emits trigger \(dqsway\(dq
 .UNINDENT
 .sp
-The file source also accepts further optional argumens specifying how
+The file source also accepts further optional arguments specifying how
 scanner should handle the source, these can be:
 .INDENT 0.0
 .TP
@@ -680,22 +680,22 @@ i.e. \fB\&.data.node.1.string\fP and key checks to filter arrays, i.e.
 \fB\&.data.node.[key=\(dqblah\(dq].value\fP
 .UNINDENT
 .sp
-Optional aggregators specify how multiple occurences of numeric data are treated.
+Optional aggregators specify how multiple occurrences of numeric data are treated.
 The following aggregators are supported:
 .INDENT 0.0
 .TP
 .B First
-Variable should be set to the first occurence of the pattern in the source
+Variable should be set to the first occurrence of the pattern in the source
 .TP
 .B Last
-Variable should be set to the last occurence of the pattern in the source
+Variable should be set to the last occurrence of the pattern in the source
 .TP
 .B Sum
-Variable should be set to the sum of all  occurences of the pattern in the
+Variable should be set to the sum of all  occurrences of the pattern in the
 source
 .TP
 .B Product
-Variable should be set to the product of all  occurences of the pattern in the
+Variable should be set to the product of all  occurrences of the pattern in the
 source
 .UNINDENT
 .sp
@@ -944,17 +944,25 @@ value = Str(MyExpr,2)
 .fi
 .UNINDENT
 .UNINDENT
-.SH MISCELLNAEOUS
+.SH MISCELLANEOUS
 .sp
 If the icon is missing for a specific program in the taskbar or switcher, it
 is likely due to an missing icon or application not setting app_id correctly.
 You can check app_id\(aqs of running programs by running sfwbar \-d \-g app_id.
 if app_id is present, you need to add an icon with the appropriate name to
-you icon theme. If it\(aqs blnak, you can try mapping it from the program\(aqs title
-(please note that title may change during runtime, so matching it can be
-tricky). TO map app_id from programs title, you a toplevel keyword:
+your icon theme. If it\(aqs blank, you can try mapping it from the program\(aqs title
+(please note that the title may change during runtime, so matching it can be
+tricky). Mapping is supported via top\-level \fBMapAppId\fP keyword. I.e.
+.INDENT 0.0
+.INDENT 3.5
 .sp
+.nf
+.ft C
 MapAppId app_id, pattern
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
 .sp
 where app_id is the desired app_id and pattern is a regular expression to
 match the title against.
@@ -1058,6 +1066,21 @@ as above, for vertical expansion.
 T}
 _
 T{
+\-GtkWidget\-halign
+T}	T{
+Horizontally align widget within any free space allocated
+to it, values supported are: fill, start, end, center and
+baseline. The last vertically aligns widgets to align
+text within.
+T}
+_
+T{
+\-GtkWidget\-valign
+T}	T{
+Vertically align widget.
+T}
+_
+T{
 \-GtkWidget\-visible
 T}	T{
 Control visibility of a widget. If set to false, widget
@@ -1125,7 +1148,7 @@ _
 T{
 pager_focused
 T}	T{
-pager button for a curently focused workspace
+pager button for a currently focused workspace
 T}
 _
 T{

@@ -735,6 +735,11 @@ property              description
 -GtkWidget-hexpand    specify if a widget should expand horizontally to occupy
                       available space. [true|false]
 -GtkWidget-vexpand    as above, for vertical expansion.
+-GtkWidget-halign     Horizontally align widget within any free space allocated
+                      to it, values supported are: fill, start, end, center and
+                      baseline. The last vertically aligns widgets to align
+                      text within.
+-GtkWidget-valign     Vertically align widget.
 -GtkWidget-visible    Control visibility of a widget. If set to false, widget
                       will be hidden.
 -ScaleImage-color     Specify a color to repaint an image with. The image will
