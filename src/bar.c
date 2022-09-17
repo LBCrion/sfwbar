@@ -157,6 +157,11 @@ void bar_set_layer ( gchar *layer_str, gchar *addr )
     layer = GTK_LAYER_SHELL_LAYER_OVERLAY;
 
   gtk_layer_set_layer(GTK_WINDOW(bar),layer);
+  if(gtk_widget_is_visible(bar))
+  {
+    gtk_widget_hide(bar);
+    gtk_widget_show(bar);
+  }
 }
 
 void bar_set_exclusive_zone ( gchar *zone, gchar *addr )
