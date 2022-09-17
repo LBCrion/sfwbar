@@ -89,7 +89,8 @@ static void taskbar_item_button_cb( GtkWidget *widget, gpointer self )
     action_exec(gtk_bin_get_child(GTK_BIN(widget)),action,NULL,priv->win,NULL);
   else
   {
-    if ( wintree_is_focused(priv->win->uid) )
+    if ( wintree_is_focused(priv->win->uid) &&
+        !(priv->win->state & WS_MINIMIZED) )
       wintree_minimize(priv->win->uid);
     else
       wintree_focus(priv->win->uid);
