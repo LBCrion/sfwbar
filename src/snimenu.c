@@ -260,7 +260,6 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
 
   if(menu)
   {
-    css_widget_cascade(menu,NULL);
     g_object_ref_sink(G_OBJECT(menu));
     g_signal_connect(G_OBJECT(menu),"unmap",G_CALLBACK(g_object_unref),NULL);
     menu_popup(wrap->sni->image,menu,wrap->event,NULL,NULL);

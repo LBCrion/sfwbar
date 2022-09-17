@@ -133,7 +133,6 @@ void switcher_update ( void )
   if(counter > 0)
   {
     flow_grid_update(grid);
-    gtk_widget_show_all(switcher);
     css_widget_cascade(switcher,NULL);
   }
   else

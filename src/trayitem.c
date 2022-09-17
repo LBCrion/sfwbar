@@ -56,7 +56,6 @@ void tray_item_update ( GtkWidget *self )
       css_add_class(priv->label, "hidden");
   }
 
-  css_widget_cascade(self,NULL);
   priv->invalid = FALSE;
 }
 

@@ -38,7 +38,6 @@ void pager_item_update ( GtkWidget *self )
       g_list_find_custom(g_object_get_data(G_OBJECT(priv->pager),"pins"),
         priv->ws->name, (GCompareFunc)g_strcmp0)!=NULL);
 
-  css_widget_cascade(self,NULL);
   priv->invalid = FALSE;
 }
 

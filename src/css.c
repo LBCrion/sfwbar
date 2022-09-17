@@ -5,6 +5,8 @@
 
 #include "sfwbar.h"
 
+static void (*css_style_updated_original)(GtkWidget *);
+
 void css_file_load ( gchar *name )
 {
   GtkCssProvider *css;
@@ -23,6 +25,39 @@ void css_file_load ( gchar *name )
     GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
   g_object_unref(css);
   g_free(fname);
+}
+
+static void css_custom_handle ( GtkWidget *widget )
+{
+  gboolean state;
+  gdouble xalign;
+  GtkAlign align;
+
+  gtk_widget_style_get(widget,"visible",&state,NULL);
+  gtk_widget_set_visible(widget,state);
+  if(!GTK_IS_EVENT_BOX(widget))
+  {
+    gtk_widget_style_get(widget,"hexpand",&state,NULL);
+    gtk_widget_set_hexpand(widget,state);
+    gtk_widget_style_get(widget,"vexpand",&state,NULL);
+    gtk_widget_set_vexpand(widget,state);
+    gtk_widget_style_get(widget,"halign",&align,NULL);
+    gtk_widget_set_halign(widget,align);
+    gtk_widget_style_get(widget,"valign",&align,NULL);
+    gtk_widget_set_valign(widget,align);
+  }
+
+  if(GTK_IS_LABEL(widget))
+  {
+    gtk_widget_style_get(widget,"align",&xalign,NULL);
+    gtk_label_set_xalign(GTK_LABEL(widget),xalign);
+  }
+}
+
+static void css_style_updated ( GtkWidget *widget )
+{
+  css_style_updated_original(widget);
+  css_custom_handle(widget);
 }
 
 void css_init ( gchar *cssname )
@@ -73,6 +108,9 @@ void css_init ( gchar *cssname )
       g_enum_register_static ("valign",align_types),
       GTK_ALIGN_FILL, G_PARAM_READABLE));
 
+  css_style_updated_original = widget_class->style_updated;
+  widget_class->style_updated = css_style_updated;
+
   css_str =
     "window { -GtkWidget-direction: bottom; } " \
     ".hidden { -GtkWidget-visible: false; }";
@@ -104,29 +142,7 @@ void css_widget_apply ( GtkWidget *widget, gchar *css )
 
 void css_widget_cascade ( GtkWidget *widget, gpointer data )
 {
-  gboolean state;
-  gdouble xalign;
-  GtkAlign align;
-
-  gtk_widget_style_get(widget,"visible",&state,NULL);
-  gtk_widget_set_visible(widget,state);
-  if(!GTK_IS_EVENT_BOX(widget))
-  {
-    gtk_widget_style_get(widget,"hexpand",&state,NULL);
-    gtk_widget_set_hexpand(widget,state);
-    gtk_widget_style_get(widget,"vexpand",&state,NULL);
-    gtk_widget_set_vexpand(widget,state);
-    gtk_widget_style_get(widget,"halign",&align,NULL);
-    gtk_widget_set_halign(widget,align);
-    gtk_widget_style_get(widget,"valign",&align,NULL);
-    gtk_widget_set_valign(widget,align);
-  }
-
-  if(GTK_IS_LABEL(widget))
-  {
-    gtk_widget_style_get(widget,"align",&xalign,NULL);
-    gtk_label_set_xalign(GTK_LABEL(widget),xalign);
-  }
+  css_custom_handle(widget);
 
   if(GTK_IS_CONTAINER(widget))
     gtk_container_forall(GTK_CONTAINER(widget),css_widget_cascade,NULL);

@@ -138,8 +138,6 @@ static void taskbar_group_update ( GtkWidget *self )
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
 
-  css_widget_cascade(self,NULL);
-
   priv->invalid = FALSE;
 }
 

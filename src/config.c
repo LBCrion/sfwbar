@@ -1295,7 +1295,6 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
         else
           dest = bar_grid_by_name(NULL);
         config_layout(scanner,dest);
-        css_widget_cascade(dest,NULL);
         break;
       case G_TOKEN_PLACER:
         config_placer(scanner);
