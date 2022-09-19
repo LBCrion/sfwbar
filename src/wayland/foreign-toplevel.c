@@ -75,9 +75,19 @@ static void toplevel_handle_state(void *data, wlr_fth *tl,
       win->state |= WS_FULLSCREEN;
       break;
     case ZWLR_FOREIGN_TOPLEVEL_HANDLE_V1_STATE_ACTIVATED:
+      win->state |= WS_FOCUSED;
       wintree_set_focus(win->uid);
       break;
     }
+
+  if(wintree_is_focused(win->uid) && !(win->state & WS_FOCUSED))
+    wintree_set_focus(NULL);
+  g_message("foreign toplevel state for %p: %s%s%s%s", win->uid,
+    win->state & WS_FOCUSED ? "Activated, " : "",
+    win->state & WS_MINIMIZED ? "Minimized, " : "",
+    win->state & WS_MAXIMIZED ? "Maximized, " : "",
+    win->state & WS_FULLSCREEN ? "Fullscreen" : ""
+    );
 }
 
 static void toplevel_handle_parent(void *data, wlr_fth *tl, wlr_fth *pt)
