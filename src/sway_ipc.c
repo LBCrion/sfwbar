@@ -142,7 +142,11 @@ void sway_minimized_set ( struct json_object *obj, const gchar *parent,
   if(!g_strcmp0(parent,"__i3_scratch"))
     win->state |= WS_MINIMIZED;
   else
+  {
     win->state &= ~WS_MINIMIZED;
+    g_free(win->workspace);
+    win->workspace = g_strdup(parent);
+  }
 
   if(g_strcmp0(monitor,win->output) && g_strcmp0(monitor,"__i3"))
   {
@@ -385,7 +389,10 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
         else if(!g_strcmp0(change,"title"))
           wintree_set_title(wid,json_string_by_name(container,"name"));
         else if(!g_strcmp0(change,"focus"))
+        {
           wintree_set_focus(wid);
+          sway_ipc_send(main_ipc,4,"");
+        }
         else if(!g_strcmp0(change,"fullscreen_mode"))
           sway_set_state(container);
         else if(!g_strcmp0(change,"move"))

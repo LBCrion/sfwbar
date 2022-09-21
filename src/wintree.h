@@ -6,6 +6,7 @@ typedef struct wt_window {
   gchar *title;
   gchar *appid;
   gchar *output;
+  gchar *workspace;
   gint64 pid;
   guint64 seq;
   gpointer uid;
@@ -43,7 +44,8 @@ enum {
   WS_MAXIMIZED =  1<<2,
   WS_FULLSCREEN = 1<<3,
   WS_INHIBIT =    1<<4,
-  WS_USERSTATE =  1<<5
+  WS_USERSTATE =  1<<5,
+  WS_CHILDREN =   1<<6
 };
 
 #endif

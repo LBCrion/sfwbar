@@ -191,11 +191,18 @@ GList *wintree_get_list ( void )
 
 void wintree_focus ( gpointer id )
 {
+  window_t *win;
   if(!id)
     return;
 
   if(sway_ipc_active())
+  {
+    win = wintree_from_id(id);
+    if(win && win->workspace)
+      sway_ipc_command("[con_id=%ld] move window to workspace %s",
+          GPOINTER_TO_INT(id),win->workspace);
     sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
+  }
   else if(foreign_toplevel_is_active())
   {
     zwlr_foreign_toplevel_handle_v1_unset_minimized(id);
@@ -217,11 +224,20 @@ void wintree_minimize ( gpointer id )
 
 void wintree_unminimize ( gpointer id )
 {
+  window_t *win;
+
   if(!id)
     return;
 
   if(sway_ipc_active())
-    sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
+  {
+    win = wintree_from_id(id);
+    if(win && win->workspace)
+      sway_ipc_command("[con_id=%ld] move window to workspace %s",
+          GPOINTER_TO_INT(id),win->workspace);
+    else
+      sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
+  }
   else if(foreign_toplevel_is_active())
     zwlr_foreign_toplevel_handle_v1_unset_minimized(id);
 }
