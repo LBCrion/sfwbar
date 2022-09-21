@@ -218,6 +218,8 @@ void bar_update_monitor ( GtkWindow *win )
   }
 
   gtk_widget_hide(GTK_WIDGET(win));
+  if(!match)
+    return;
   gtk_layer_set_monitor(win, match);
   gtk_widget_show(GTK_WIDGET(win));
 }
