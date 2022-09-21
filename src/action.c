@@ -117,10 +117,14 @@ void action_exec ( GtkWidget *widget, action_t *action,
     GdkEvent *event, window_t *win, guint16 *istate )
 {
   guint16 state;
-  gboolean children;
+  GList *children, *iter;
+  action_t *caction;
 
   if(!action)
     return;
+
+  if(IS_TASKBAR_ITEM(widget))
+    win = flow_item_get_parent(widget);
 
   if(action->addr && (
         action->type == G_TOKEN_MENU ||
@@ -137,8 +141,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
   else
     state = action_state_build ( widget, win );
 
-  children = action->cond & WS_CHILDREN;
-  if(children)
+  if(action->cond & WS_CHILDREN)
     state |= WS_CHILDREN;
 
   if(((action->cond & 0x0f) || (action->ncond & 0x0f)) && !win)
@@ -157,25 +160,15 @@ void action_exec ( GtkWidget *widget, action_t *action,
       g_debug("widget action: (%d) on %d",action->type,
           GPOINTER_TO_INT(win->uid));
 
-  if(children)
+  if(action->cond & WS_CHILDREN)
   {
-    GList *iter, *list;
-    window_t *cwin;
-    action_t *caction;
-
     caction = action_dup(action);
     caction->cond &= ~WS_CHILDREN;
     state &= ~WS_CHILDREN;
-    list = gtk_container_get_children(GTK_CONTAINER(base_widget_get_child(widget)));
-    for(iter=list;iter;iter=g_list_next(iter))
-    {
-      if(IS_TASKBAR_ITEM(iter->data))
-        cwin = flow_item_get_parent(iter->data);
-      else
-        cwin = win;
-      action_exec(iter->data,caction,event,cwin,&state);
-    }
-    g_list_free(list);
+    children = gtk_container_get_children(GTK_CONTAINER(base_widget_get_child(widget)));
+    for(iter=children;iter;iter=g_list_next(iter))
+      action_exec(iter->data,caction,event,win,&state);
+    g_list_free(children);
     action_free(caction,NULL);
     return;
   }
