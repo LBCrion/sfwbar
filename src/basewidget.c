@@ -200,6 +200,7 @@ gboolean base_widget_style ( GtkWidget *self )
     child = BASE_WIDGET_GET_CLASS(self)->get_child(self);
     priv = base_widget_get_instance_private(BASE_WIDGET(self));
     gtk_widget_set_name(child,priv->estyle);
+    css_widget_cascade(child,NULL);
   }
   return FALSE;
 }
