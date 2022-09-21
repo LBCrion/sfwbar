@@ -5,9 +5,10 @@
 
 #include "sfwbar.h"
 #include "flowitem.h"
+#include "basewidget.h"
 #include "flowgrid.h"
 
-G_DEFINE_TYPE_WITH_CODE(FlowItem, flow_item, GTK_TYPE_EVENT_BOX,
+G_DEFINE_TYPE_WITH_CODE(FlowItem, flow_item, BASE_WIDGET_TYPE,
     G_ADD_PRIVATE(FlowItem));
 
 static gint flow_item_comp_parent ( gconstpointer p1, gconstpointer p2 )
