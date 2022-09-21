@@ -607,6 +607,9 @@ void config_action_conditions ( GScanner *scanner, guchar *cond,
       case G_TOKEN_USERSTATE:
         *ptr |= WS_USERSTATE;
         break;
+      case G_TOKEN_CHILDREN:
+        *ptr |= WS_CHILDREN;
+        break;
       default:
         g_scanner_error(scanner,"invalid condition in action");
         break;
