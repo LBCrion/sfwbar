@@ -32,6 +32,7 @@ void widget_parse_css ( GtkWidget *widget, gchar *css );
 void mpd_ipc_init ( ScanFile *file );
 void mpd_ipc_command ( gchar *command );
 
+gint socket_connect ( const gchar *sockaddr, gint to );
 void list_remove_link ( GList **list, void *child );
 gchar *get_xdg_config_file ( gchar *fname, gchar *extra );
 const gchar *json_string_by_name ( struct json_object *obj, gchar *name );

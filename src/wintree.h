@@ -14,6 +14,16 @@ typedef struct wt_window {
   gboolean valid;
 } window_t;
 
+struct wintree_api {
+  void (*minimize) ( void *);
+  void (*unminimize) ( void *);
+  void (*maximize) ( void *);
+  void (*unmaximize) ( void *);
+  void (*focus) ( void *);
+  void (*close) ( void *);
+};
+
+void wintree_api_register ( struct wintree_api *new );
 window_t *wintree_window_init ( void );
 window_t *wintree_from_id ( gpointer id );
 window_t *wintree_from_pid ( gint64 pid );

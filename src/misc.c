@@ -6,9 +6,29 @@
 #include <glib.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <json.h>
 
 extern gchar *confname;
+
+gint socket_connect ( const gchar *sockaddr, gint to )
+{
+  gint sock;
+  struct sockaddr_un addr;
+  struct timeval timeout = {.tv_sec = to/1000, .tv_usec = to%1000};
+
+  sock = socket(AF_UNIX,SOCK_STREAM,0);
+  if (sock == -1)
+    return -1;
+  addr.sun_family = AF_UNIX;
+  strncpy(addr.sun_path, sockaddr, sizeof(addr.sun_path) - 1);
+  if(connect(sock,(struct sockaddr *)&addr,sizeof(struct sockaddr_un)) != -1 )
+    if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) != -1)
+      return sock;
+  close(sock);
+  return -1;
+}
 
 void list_remove_link ( GList **list, void *child )
 {

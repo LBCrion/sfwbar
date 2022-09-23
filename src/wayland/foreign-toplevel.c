@@ -140,6 +140,26 @@ static const struct zwlr_foreign_toplevel_manager_v1_listener
   .finished = toplevel_manager_handle_finished,
 };
 
+static void foreign_toplevel_focus ( gpointer id )
+{
+  zwlr_foreign_toplevel_handle_v1_unset_minimized(id);
+  foreign_toplevel_activate(id);
+}
+
+static struct wintree_api ft_wintree_api = {
+  .minimize = (void (*)(void *))
+    zwlr_foreign_toplevel_handle_v1_set_minimized,
+  .unminimize = (void (*)(void *))
+    zwlr_foreign_toplevel_handle_v1_unset_minimized,
+  .maximize = (void (*)(void *))
+    zwlr_foreign_toplevel_handle_v1_set_maximized,
+  .unmaximize = (void (*)(void *))
+    zwlr_foreign_toplevel_handle_v1_unset_maximized,
+  .close = (void (*)(void *))
+    zwlr_foreign_toplevel_handle_v1_close,
+  .focus = foreign_toplevel_focus
+};
+
 void foreign_toplevel_register (struct wl_registry *registry, uint32_t name)
 {
   if(sway_ipc_active())
@@ -150,4 +170,6 @@ void foreign_toplevel_register (struct wl_registry *registry, uint32_t name)
 
   zwlr_foreign_toplevel_manager_v1_add_listener(toplevel_manager,
     &toplevel_manager_impl, NULL);
+
+  wintree_api_register(&ft_wintree_api);
 }

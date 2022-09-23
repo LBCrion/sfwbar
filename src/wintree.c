@@ -3,17 +3,13 @@
  * Copyright 2020-2022 sfwbar maintainers
  */
 
-#include <glib.h>
-#include <unistd.h>
 #include <gtk/gtk.h>
 #include "sfwbar.h"
 #include "wintree.h"
 #include "taskbar.h"
 #include "switcher.h"
-#include "wayland.h"
-#include "sway_ipc.h"
-#include "wlr-foreign-toplevel-management-unstable-v1.h"
 
+static struct wintree_api api;
 static GList *wt_list;
 static GList *appid_map;
 static gpointer wt_focus;
@@ -24,6 +20,19 @@ struct appid_mapper{
   GRegex *regex;
   gchar *app_id;
 };
+
+#define api_call(x) if(api.x) api.x(id);
+void wintree_minimize ( gpointer id ) { api_call(minimize) }
+void wintree_unminimize ( gpointer id ) { api_call(unminimize) }
+void wintree_maximize ( gpointer id ) { api_call(maximize) }
+void wintree_unmaximize ( gpointer id ) { api_call(unmaximize) }
+void wintree_focus ( gpointer id ) { api_call(focus) }
+void wintree_close ( gpointer id ) { api_call(close) }
+
+void wintree_api_register ( struct wintree_api *new )
+{
+  api = *new;
+}
 
 void wintree_set_active ( gchar *title )
 {
@@ -188,92 +197,6 @@ GList *wintree_get_list ( void )
 {
   wt_list = g_list_sort(wt_list, (GCompareFunc)wintree_compare);
   return wt_list;
-}
-
-void wintree_focus ( gpointer id )
-{
-  window_t *win;
-  if(!id)
-    return;
-
-  if(sway_ipc_active())
-  {
-    win = wintree_from_id(id);
-    if(win && win->workspace)
-      sway_ipc_command("[con_id=%ld] move window to workspace %s",
-          GPOINTER_TO_INT(id),win->workspace);
-    sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
-  }
-  else if(foreign_toplevel_is_active())
-  {
-    zwlr_foreign_toplevel_handle_v1_unset_minimized(id);
-    foreign_toplevel_activate(id);
-  }
-}
-
-void wintree_minimize ( gpointer id )
-{
-  if(!id)
-    return;
-
-  if(sway_ipc_active())
-    sway_ipc_command("[con_id=%ld] move window to scratchpad",GPOINTER_TO_INT(id));
-  else if(foreign_toplevel_is_active())
-    zwlr_foreign_toplevel_handle_v1_set_minimized(id);
-  wintree_set_focus(NULL);
-}
-
-void wintree_unminimize ( gpointer id )
-{
-  window_t *win;
-
-  if(!id)
-    return;
-
-  if(sway_ipc_active())
-  {
-    win = wintree_from_id(id);
-    if(win && win->workspace)
-      sway_ipc_command("[con_id=%ld] move window to workspace %s",
-          GPOINTER_TO_INT(id),win->workspace);
-    else
-      sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
-  }
-  else if(foreign_toplevel_is_active())
-    zwlr_foreign_toplevel_handle_v1_unset_minimized(id);
-}
-
-void wintree_maximize ( gpointer id )
-{
-  if(!id)
-    return;
-
-  if(sway_ipc_active())
-    sway_ipc_command("[con_id=%ld] fullscreen enable",GPOINTER_TO_INT(id));
-  else if(foreign_toplevel_is_active())
-    zwlr_foreign_toplevel_handle_v1_set_maximized(id);
-}
-
-void wintree_unmaximize ( gpointer id )
-{
-  if(!id)
-    return;
-
-  if(sway_ipc_active())
-    sway_ipc_command("[con_id=%ld] fullscreen disable",GPOINTER_TO_INT(id));
-  else if(foreign_toplevel_is_active())
-    zwlr_foreign_toplevel_handle_v1_unset_maximized(id);
-}
-
-void wintree_close ( gpointer id )
-{
-  if(!id)
-    return;
-
-  if(sway_ipc_active())
-    sway_ipc_command("[con_id=%ld] kill",GPOINTER_TO_INT(id));
-  else if(foreign_toplevel_is_active())
-    zwlr_foreign_toplevel_handle_v1_close(id);
 }
 
 void wintree_appid_map_add ( gchar *pattern, gchar *appid )

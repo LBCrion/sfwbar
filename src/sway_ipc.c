@@ -76,9 +76,6 @@ gchar *sway_ipc_poll ( gint sock, gint32 *etype )
 int sway_ipc_open (int to)
 {
   const gchar *socket_path;
-  gint sock;
-  struct sockaddr_un addr;
-  struct timeval timeout = {.tv_sec = to/1000, .tv_usec = to%1000};
 
   if(sockname!=NULL)
     socket_path=sockname;
@@ -86,16 +83,7 @@ int sway_ipc_open (int to)
     socket_path = g_getenv("SWAYSOCK");
   if (socket_path == NULL)
     return -1;
-  sock = socket(AF_UNIX,SOCK_STREAM,0);
-  if (sock == -1)
-    return -1;
-  addr.sun_family = AF_UNIX;
-  strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
-  if(connect(sock,(struct sockaddr *)&addr,sizeof(struct sockaddr_un)) != -1 )
-    if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) != -1)
-      return sock;
-  close(sock);
-  return -1;
+  return socket_connect(socket_path, to);
 }
 
 int sway_ipc_send ( gint sock, gint32 type, gchar *command )
@@ -422,6 +410,59 @@ gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
   return TRUE;
 }
 
+static void sway_ipc_minimize ( gpointer id )
+{
+  sway_ipc_command("[con_id=%ld] move window to scratchpad",
+      GPOINTER_TO_INT(id));
+}
+
+static void sway_ipc_unminimize ( gpointer id )
+{
+  window_t *win;
+
+  win = wintree_from_id(id);
+  if(win && win->workspace)
+    sway_ipc_command("[con_id=%ld] move window to workspace %s",
+        GPOINTER_TO_INT(id),win->workspace);
+  else
+    sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
+}
+
+static void sway_ipc_maximize ( gpointer id )
+{
+  sway_ipc_command("[con_id=%ld] fullscreen enable",GPOINTER_TO_INT(id));
+}
+
+static void sway_ipc_unmaximize ( gpointer id )
+{
+  sway_ipc_command("[con_id=%ld] fullscreen disable",GPOINTER_TO_INT(id));
+}
+
+static void sway_ipc_focus ( gpointer id )
+{
+  window_t *win;
+
+  win = wintree_from_id(id);
+  if(win && win->workspace)
+    sway_ipc_command("[con_id=%ld] move window to workspace %s",
+        GPOINTER_TO_INT(id),win->workspace);
+  sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
+}
+
+static void sway_ipc_close ( gpointer id )
+{
+  sway_ipc_command("[con_id=%ld] kill",GPOINTER_TO_INT(id));
+}
+
+static struct wintree_api sway_wintree_api = {
+  .minimize = sway_ipc_minimize,
+  .unminimize = sway_ipc_unminimize,
+  .maximize = sway_ipc_maximize,
+  .unmaximize = sway_ipc_unmaximize,
+  .close = sway_ipc_close,
+  .focus = sway_ipc_focus
+};
+
 void sway_ipc_init ( void )
 {
   struct json_object *obj;
@@ -457,6 +498,8 @@ void sway_ipc_init ( void )
       'bar_state_update','input']");
   GIOChannel *chan = g_io_channel_unix_new(main_ipc);
   g_io_add_watch(chan,G_IO_IN,sway_ipc_event,NULL);
+
+  wintree_api_register(&sway_wintree_api);
 }
 
 void sway_ipc_bar_id ( gchar *id )
