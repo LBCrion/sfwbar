@@ -346,7 +346,7 @@ void base_widget_set_interval ( GtkWidget *self, gint64 interval )
   priv->interval = interval;
 }
 
-void base_widget_set_state ( GtkWidget *self, gboolean state )
+void base_widget_set_state ( GtkWidget *self, guint16 mask, gboolean state )
 {
   BaseWidgetPrivate *priv;
 
@@ -354,7 +354,10 @@ void base_widget_set_state ( GtkWidget *self, gboolean state )
 
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  priv->user_state = state;
+  if(state)
+    priv->user_state |= mask;
+  else
+    priv->user_state &= ~mask;
 }
 
 void base_widget_set_rect ( GtkWidget *self, struct rect rect )
@@ -400,7 +403,7 @@ gchar *base_widget_get_id ( GtkWidget *self )
   return priv->id;
 }
 
-gboolean base_widget_get_state ( GtkWidget *self )
+guint16 base_widget_get_state ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
 

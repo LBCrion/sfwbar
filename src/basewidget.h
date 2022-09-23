@@ -40,7 +40,7 @@ struct _BaseWidgetPrivate
   gchar *trigger;
   gint64 next_poll;
   gint dir;
-  gboolean user_state;
+  guint16 user_state;
   struct rect rect;
 };
 
@@ -52,12 +52,12 @@ void base_widget_set_style ( GtkWidget *self, gchar *style );
 void base_widget_set_trigger ( GtkWidget *self, gchar *trigger );
 void base_widget_set_id ( GtkWidget *self, gchar *id );
 void base_widget_set_interval ( GtkWidget *self, gint64 interval );
-void base_widget_set_state ( GtkWidget *self, gboolean state );
+void base_widget_set_state ( GtkWidget *self, guint16 mask, gboolean state );
 void base_widget_set_action ( GtkWidget *self, gint n, action_t *action );
 gboolean base_widget_update_value ( GtkWidget *self );
 void base_widget_set_rect ( GtkWidget *self, struct rect rect );
 void base_widget_attach ( GtkWidget *, GtkWidget *, GtkWidget *);
-gboolean base_widget_get_state ( GtkWidget *self );
+guint16 base_widget_get_state ( GtkWidget *self );
 gint64 base_widget_get_next_poll ( GtkWidget *self );
 void base_widget_set_next_poll ( GtkWidget *self, gint64 ctime );
 gchar *base_widget_get_id ( GtkWidget *self );

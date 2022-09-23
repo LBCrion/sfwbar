@@ -70,13 +70,31 @@ void action_idle_inhibit ( GtkWidget *widget, gchar *command )
 
 void action_set_user_state ( GtkWidget *widget, gchar *value )
 {
+  gchar *state;
+  guint16 mask;
+
   if(!widget)
     return;
 
-  if(!g_ascii_strcasecmp(value,"on"))
-    base_widget_set_state(widget,TRUE);
+  state = strchr(value,':');
+  if(!state)
+  {
+    state = value;
+    mask = WS_USERSTATE;
+  }
   else
-    base_widget_set_state(widget,FALSE);
+  {
+    state++;
+    if(g_ascii_digit_value(*value)==2)
+      mask = WS_USERSTATE2;
+    else
+      mask = WS_USERSTATE;
+  }
+
+  if(!g_ascii_strcasecmp(state,"on"))
+    base_widget_set_state(widget,mask,TRUE);
+  else
+    base_widget_set_state(widget,mask,FALSE);
 }
 
 guint16 action_state_build ( GtkWidget *widget, window_t *win )
@@ -94,8 +112,8 @@ guint16 action_state_build ( GtkWidget *widget, window_t *win )
     if(g_object_get_data(G_OBJECT(widget),"inhibitor"))
       state |= WS_INHIBIT;
 
-    if(IS_BASE_WIDGET(widget) && base_widget_get_state(widget))
-      state |= WS_USERSTATE;
+    if(IS_BASE_WIDGET(widget))
+      state |= base_widget_get_state(widget);
   }
   return state;
 }
@@ -163,11 +181,11 @@ void action_exec ( GtkWidget *widget, action_t *action,
   if(action->cond & WS_CHILDREN)
   {
     caction = action_dup(action);
-    caction->cond &= ~WS_CHILDREN;
-    state &= ~WS_CHILDREN;
+    caction->cond = 0;
+    caction->ncond = 0;
     children = gtk_container_get_children(GTK_CONTAINER(base_widget_get_child(widget)));
     for(iter=children;iter;iter=g_list_next(iter))
-      action_exec(iter->data,caction,event,win,&state);
+      action_exec(iter->data,caction,event,win,NULL);
     g_list_free(children);
     action_free(caction,NULL);
     return;

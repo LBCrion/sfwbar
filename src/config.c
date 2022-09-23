@@ -607,6 +607,9 @@ void config_action_conditions ( GScanner *scanner, guchar *cond,
       case G_TOKEN_USERSTATE:
         *ptr |= WS_USERSTATE;
         break;
+      case G_TOKEN_USERSTATE2:
+        *ptr |= WS_USERSTATE2;
+        break;
       case G_TOKEN_CHILDREN:
         *ptr |= WS_CHILDREN;
         break;
@@ -650,6 +653,7 @@ action_t *config_action ( GScanner *scanner )
     case G_TOKEN_MPDCMD:
     case G_TOKEN_IDLEINHIBIT:
     case G_TOKEN_USERSTATE:
+    case G_TOKEN_USERSTATE2:
     case G_TOKEN_CONFIG:
     case G_TOKEN_FUNCTION:
     case G_TOKEN_SETBARID:
@@ -1435,6 +1439,8 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   g_scanner_scope_add_symbol(scanner,0, "MpdCmd", (gpointer)G_TOKEN_MPDCMD );
   g_scanner_scope_add_symbol(scanner,0, "UserState",
       (gpointer)G_TOKEN_USERSTATE );
+  g_scanner_scope_add_symbol(scanner,0, "UserState2",
+      (gpointer)G_TOKEN_USERSTATE2 );
   g_scanner_scope_add_symbol(scanner,0, "IdleInhibit",
       (gpointer)G_TOKEN_IDLEINHIBIT );
   g_scanner_scope_add_symbol(scanner,0, "SetValue",

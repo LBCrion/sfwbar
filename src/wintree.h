@@ -45,7 +45,8 @@ enum {
   WS_FULLSCREEN = 1<<3,
   WS_INHIBIT =    1<<4,
   WS_USERSTATE =  1<<5,
-  WS_CHILDREN =   1<<6
+  WS_USERSTATE2 = 1<<6,
+  WS_CHILDREN =   1<<7
 };
 
 #endif
