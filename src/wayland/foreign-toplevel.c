@@ -162,7 +162,7 @@ static struct wintree_api ft_wintree_api = {
 
 void foreign_toplevel_register (struct wl_registry *registry, uint32_t name)
 {
-  if(sway_ipc_active())
+  if(ipc_get())
     return;
 
   toplevel_manager = wl_registry_bind(registry, name,

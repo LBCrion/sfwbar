@@ -22,6 +22,7 @@ static gchar *monitor;
 static gchar *dfilter;
 static GRegex *rfilter;
 static gboolean debug = FALSE;
+static enum ipc_type ipc;
 
 static GOptionEntry entries[] = {
   {"config",'f',0,G_OPTION_ARG_FILENAME,&confname,"Specify config file"},
@@ -60,6 +61,16 @@ void list_monitors ( void )
         gdk_monitor_get_model(gmon));
   }
   exit(0);
+}
+
+void ipc_set ( enum ipc_type new )
+{
+  ipc = new;
+}
+
+enum ipc_type ipc_get ( void )
+{
+  return ipc;
 }
 
 void log_print ( const gchar *log_domain, GLogLevelFlags log_level, 
@@ -101,6 +112,7 @@ static void activate (GtkApplication* app, gpointer data )
 
   css_init(cssname);
   sway_ipc_init();
+  hypr_ipc_init();
   wayland_init();
 
   if( monitor && !g_ascii_strcasecmp(monitor,"list") )

@@ -10,6 +10,15 @@ struct rect {
   guint x,y,w,h;
 };
 
+enum ipc_type {
+  IPC_SWAY    = 1,
+  IPC_HYPR    = 2,
+  IPC_WAYLAND = 3
+};
+
+void hypr_ipc_init ( void );
+enum ipc_type ipc_get ( void );
+void ipc_set ( enum ipc_type new );
 void css_init ( gchar * );
 void css_file_load ( gchar * );
 void css_widget_apply ( GtkWidget *widget, gchar *css );
