@@ -115,7 +115,7 @@ gboolean json_bool_by_name ( struct json_object *obj, gchar *name, gboolean defv
 {
   struct json_object *ptr;
 
-  if(json_object_object_get_ex(obj,name,&ptr))
+  if(json_object_object_get_ex(obj,name,&ptr) && ptr)
     return json_object_get_boolean(ptr);
 
   return defval;
