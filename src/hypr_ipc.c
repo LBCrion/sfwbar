@@ -112,7 +112,8 @@ gboolean hypr_ipc_get_clients ( gpointer *uid )
   gpointer id;
   gint i;
 
-  hypr_ipc_send(ipc_sockaddr,"j/clients",&response);
+  if(!hypr_ipc_send(ipc_sockaddr,"j/clients",&response))
+    return FALSE;
   if(response)
   {
     json = json_tokener_parse(response);
@@ -318,6 +319,11 @@ void hypr_ipc_init ( void )
       g_getenv("HYPRLAND_INSTANCE_SIGNATURE"),".socket.sock",NULL);
   if(hypr_ipc_get_clients(NULL))
     ipc_set(IPC_HYPR);
+  else
+  {
+    g_free(ipc_sockaddr);
+    return;
+  }
   hypr_ipc_track_focus();
 
   sockaddr = g_build_filename("/tmp","hypr",
