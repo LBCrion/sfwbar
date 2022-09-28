@@ -15,19 +15,28 @@ gpointer hypr_ipc_id_from_json ( json_object *json )
   return GINT_TO_POINTER(g_ascii_strtoull(str,NULL,16));
 }
 
-gboolean hypr_ipc_send ( gint sock, gchar *command )
+gboolean hypr_ipc_send ( gchar *addr, gchar *command, gchar **response )
 {
-  if(sock<0 || !command)
-    return FALSE;
-
-  return (write(sock,command,strlen(command))!=-1);
-}
-
-gchar *hypr_ipc_poll ( gint sock )
-{
+  gint sock;
   static gchar buf[1024];
   gchar *result = NULL,*tmp;
   ssize_t rlen,total=0;
+
+  sock = socket_connect(addr,10);
+  if(sock==-1 || !command)
+    return FALSE;
+
+  if(write(sock,command,strlen(command))==-1)
+  {
+    close(sock);
+    return FALSE;
+  }
+
+  if(!response)
+  {
+    close(sock);
+    return TRUE;
+  }
 
   do
   {
@@ -43,27 +52,24 @@ gchar *hypr_ipc_poll ( gint sock )
     total += rlen;
   } while(rlen>0);
 
-  return result;
+  close(sock);
+  *response = result;
+  return TRUE;
 }
 
 void hypr_ipc_command ( gchar *cmd, ... )
 {
   va_list args;
   gchar *buf;
-  gint sock;
   
   if(!cmd)
-    return;
-  sock = socket_connect(ipc_sockaddr,10);
-  if(sock<1)
     return;
 
   va_start(args,cmd);
   buf = g_strdup_vprintf(cmd,args);
-  hypr_ipc_send ( sock, buf);
+  hypr_ipc_send ( ipc_sockaddr, buf, NULL);
   g_free(buf);
   va_end(args);
-  close(sock);
 }
 
 void hypr_ipc_handle_window ( json_object *obj )
@@ -104,13 +110,9 @@ gboolean hypr_ipc_get_clients ( gpointer *uid )
   gchar *response;
   json_object *json, *ptr;
   gpointer id;
-  gint sock,i;
+  gint i;
 
-  sock = socket_connect(ipc_sockaddr,10);
-  if(sock==-1)
-    return FALSE;
-  hypr_ipc_send(sock,"j/clients");
-  response = hypr_ipc_poll(sock);
+  hypr_ipc_send(ipc_sockaddr,"j/clients",&response);
   if(response)
   {
     json = json_tokener_parse(response);
@@ -126,7 +128,6 @@ gboolean hypr_ipc_get_clients ( gpointer *uid )
       json_object_put(json);
     g_free(response);
   }
-  close(sock);
 
   return TRUE;
 }
@@ -182,7 +183,6 @@ void hypr_ipc_minimize ( gpointer id )
 {
   window_t *win;
   gpointer focus;
-  gint sock;
   gchar *response;
   json_object *json, *ptr;
 
@@ -191,15 +191,9 @@ void hypr_ipc_minimize ( gpointer id )
     return;
 
   focus = wintree_get_focus();
-  wintree_set_focus(id);
-  sock = socket_connect(ipc_sockaddr,10);
-  if(sock==-1)
-  {
-    wintree_set_focus(focus);
-    return;
-  }
-  hypr_ipc_send(sock,"j/activewindow");
-  response = hypr_ipc_poll(sock);
+  if(focus!=id)
+    wintree_set_focus(id);
+  hypr_ipc_send(ipc_sockaddr,"j/activewindow",&response);
   if(response)
   {
     json = json_tokener_parse(response);
@@ -211,11 +205,9 @@ void hypr_ipc_minimize ( gpointer id )
       json_object_put(json);
     }
     g_free(response);
+    hypr_ipc_command("dispatch movetoworkspace special");
+    hypr_ipc_command("workspace %ld",GPOINTER_TO_INT(win->workspace));
   }
-  close(sock);
-
-  hypr_ipc_command("dispatch movetoworkspace special");
-  hypr_ipc_command("workspace %ld",GPOINTER_TO_INT(win->workspace));
   if(focus!=id)
     wintree_set_focus(focus);
 }
@@ -261,15 +253,10 @@ static struct wintree_api hypr_wintree_api = {
 
 void hypr_ipc_track_focus ( void )
 {
-  gint sock;
   gchar *response;
   json_object *json;
 
-  sock = socket_connect(ipc_sockaddr,10);
-  if(sock==-1)
-    return;
-  hypr_ipc_send(sock,"j/activewindow");
-  response = hypr_ipc_poll(sock);
+  hypr_ipc_send(ipc_sockaddr,"j/activewindow",&response);
   if(response)
   {
     json = json_tokener_parse(response);
@@ -280,7 +267,6 @@ void hypr_ipc_track_focus ( void )
     }
   }
   g_free(response);
-  close(sock);
 }
 
 void hypr_ipc_set_maximized ( gboolean state )
@@ -323,7 +309,7 @@ gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 void hypr_ipc_init ( void )
 {
   gchar *sockaddr;
-  gint sock2;
+  gint sock;
 
   if(ipc_get())
     return;
@@ -336,9 +322,9 @@ void hypr_ipc_init ( void )
 
   sockaddr = g_build_filename("/tmp","hypr",
       g_getenv("HYPRLAND_INSTANCE_SIGNATURE"),".socket2.sock",NULL);
-  sock2 = socket_connect(sockaddr,10);
-  if(sock2!=-1)
-    g_io_add_watch(g_io_channel_unix_new(sock2),G_IO_IN,hypr_ipc_event,NULL);
+  sock = socket_connect(sockaddr,10);
+  if(sock!=-1)
+    g_io_add_watch(g_io_channel_unix_new(sock),G_IO_IN,hypr_ipc_event,NULL);
   g_free(sockaddr);
   wintree_api_register(&hypr_wintree_api);
 }
