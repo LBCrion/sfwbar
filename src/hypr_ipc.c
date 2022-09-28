@@ -60,7 +60,6 @@ void hypr_ipc_command ( gchar *cmd, ... )
 
   va_start(args,cmd);
   buf = g_strdup_vprintf(cmd,args);
-  g_message("command: '%s'",buf);
   hypr_ipc_send ( sock, buf);
   g_free(buf);
   va_end(args);
@@ -83,7 +82,6 @@ void hypr_ipc_handle_window ( json_object *obj )
   {
     win = wintree_window_init();
     win->uid = id;
-    g_message("id %p",id);
     win->pid = json_int_by_name(obj,"pid",0);
     wintree_window_append(win);
     wintree_set_app_id(id,json_string_by_name(obj,"class"));
@@ -148,8 +146,6 @@ void hypr_ipc_track_minimized ( gchar *event )
     win->state |= WS_MINIMIZED;
   else
     win->state &= ~WS_MINIMIZED;
-
-  g_message("state %p %d '%s'",win->uid,win->state & WS_MINIMIZED,ws);
 }
 
 void hypr_ipc_maximize ( gpointer id )
@@ -239,6 +235,11 @@ void hypr_ipc_unminimize ( gpointer id )
       GPOINTER_TO_INT(win->workspace),GPOINTER_TO_INT(id));
 }
 
+void hypr_ipc_close ( gpointer id )
+{
+  hypr_ipc_command("dispatch closewindow address:0x%lx",GPOINTER_TO_INT(id));
+}
+
 void hypr_ipc_focus ( gpointer id )
 {
   window_t *win;
@@ -254,7 +255,7 @@ static struct wintree_api hypr_wintree_api = {
   .unminimize = hypr_ipc_unminimize,
   .maximize = hypr_ipc_maximize,
   .unmaximize = hypr_ipc_unmaximize,
-  .close = NULL,
+  .close = hypr_ipc_close,
   .focus = hypr_ipc_focus
 };
 
@@ -303,7 +304,6 @@ gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
   g_io_channel_read_line(chan,&event,NULL,NULL,NULL);
   if(!event)
     return TRUE;
-  g_message("event: %s",event);
   if(!strncmp(event,"activewindow>>",14))
     hypr_ipc_track_focus();
   else if(!strncmp(event,"openwindow>>",12))
