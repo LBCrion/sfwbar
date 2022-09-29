@@ -116,6 +116,20 @@ void sway_ipc_command ( gchar *cmd, ... )
   va_end(args);
 }
 
+GdkRectangle sway_ipc_parse_rect ( struct json_object *obj )
+{
+  struct json_object *rect;
+  GdkRectangle ret;
+  json_object_object_get_ex(obj,"rect",&rect);
+
+  ret.x = json_int_by_name(rect,"x",0);
+  ret.y = json_int_by_name(rect,"y",0);
+  ret.width = json_int_by_name(rect,"width",0);
+  ret.height = json_int_by_name(rect,"height",0);
+
+  return ret;
+}
+
 void sway_minimized_set ( struct json_object *obj, const gchar *parent,
     const gchar *monitor )
 {
@@ -454,6 +468,11 @@ static void sway_ipc_close ( gpointer id )
   sway_ipc_command("[con_id=%ld] kill",GPOINTER_TO_INT(id));
 }
 
+static void sway_ipc_set_workspace ( workspace_t *ws )
+{
+  sway_ipc_command("workspace '%s'",ws->name);
+}
+
 static struct wintree_api sway_wintree_api = {
   .minimize = sway_ipc_minimize,
   .unminimize = sway_ipc_unminimize,
@@ -461,6 +480,61 @@ static struct wintree_api sway_wintree_api = {
   .unmaximize = sway_ipc_unmaximize,
   .close = sway_ipc_close,
   .focus = sway_ipc_focus
+};
+
+static guint sway_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,
+    GdkRectangle *space, gint *focus )
+{
+  gint sock;
+  gint32 etype;
+  struct json_object *obj = NULL;
+  struct json_object *iter,*fiter,*arr;
+  gint i,j,n = 0;
+  gchar *response;
+
+  *wins = NULL;
+  sock=sway_ipc_open(3000);
+  if(sock==-1)
+    return 0;
+  sway_ipc_send(sock,1,"");
+  response = sway_ipc_poll(sock,&etype);
+  close(sock);
+  if(!response)
+    return 0;
+
+  *focus = -1;
+  obj = json_tokener_parse(response);
+  if(obj && json_object_is_type(obj,json_type_array))
+    for(i=0;i<json_object_array_length(obj);i++)
+    {
+      iter = json_object_array_get_idx(obj,i);
+      if(!g_strcmp0(ws->name,json_string_by_name(iter,"name")))
+      {
+        *space = sway_ipc_parse_rect(iter);
+        json_object_object_get_ex(iter,"floating_nodes",&arr);
+        if(arr && json_object_is_type(arr,json_type_array))
+        {
+          n = json_object_array_length(arr);
+          *wins = g_malloc0(n * sizeof(GdkRectangle));
+          for(j=0;j<n;j++)
+          {
+            fiter = json_object_array_get_idx(arr,j);
+            (*wins)[j] = sway_ipc_parse_rect(fiter);
+            if(json_bool_by_name(fiter,"focused",FALSE))
+              *focus = j;
+          }
+        }
+      }
+    }
+
+  json_object_put(obj);
+  g_free(response);
+  return n;
+}
+
+static struct pager_api sway_pager_api = {
+  .set_workspace = sway_ipc_set_workspace,
+  .get_geom = sway_ipc_get_geom
 };
 
 void sway_ipc_init ( void )
@@ -500,7 +574,10 @@ void sway_ipc_init ( void )
   GIOChannel *chan = g_io_channel_unix_new(main_ipc);
   g_io_add_watch(chan,G_IO_IN,sway_ipc_event,NULL);
 
+  sway_ipc_pager_populate();
+
   wintree_api_register(&sway_wintree_api);
+  pager_api_register(&sway_pager_api);
 }
 
 void sway_ipc_bar_id ( gchar *id )

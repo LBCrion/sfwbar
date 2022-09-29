@@ -6,7 +6,6 @@
 #include "sfwbar.h"
 #include "pager.h"
 #include "pageritem.h"
-#include "sway_ipc.h"
 
 G_DEFINE_TYPE_WITH_CODE (PagerItem, pager_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (PagerItem));
 
@@ -64,31 +63,17 @@ static void pager_item_init ( PagerItem *self )
 
 static void pager_item_button_cb( GtkWidget *self, gpointer data )
 {
-  gchar *label;
-
-  if(!sway_ipc_active())
-    return;
-
-  label = (gchar *)gtk_button_get_label(GTK_BUTTON(self));
-  if(label==NULL)
-    return;
-  sway_ipc_command("workspace '%s'",label);
+  pager_set_workspace(data);
 }
 
 static gboolean pager_item_draw_preview ( GtkWidget *widget, cairo_t *cr,
-    gchar *desk )
+    workspace_t *ws )
 {
-  guint w,h;
   GtkStyleContext *style;
   GdkRGBA fg;
-  gint sock;
-  gint32 etype;
-  struct json_object *obj = NULL;
-  struct json_object *iter,*fiter,*arr;
-  gint i,j;
-  struct rect wr,cw;
-  gchar *response;
-  const gchar *label;
+  guint w,h,i,n;
+  gint focus;
+  GdkRectangle *wins, spc;
 
   w = gtk_widget_get_allocated_width (widget);
   h = gtk_widget_get_allocated_height (widget);
@@ -96,66 +81,40 @@ static gboolean pager_item_draw_preview ( GtkWidget *widget, cairo_t *cr,
   gtk_style_context_get_color (style,GTK_STATE_FLAG_NORMAL, &fg);
   cairo_set_line_width(cr,1);
 
-  sock=sway_ipc_open(3000);
-  if(sock==-1)
-    return FALSE;
-  
-  sway_ipc_send(sock,1,"");
-  response = sway_ipc_poll(sock,&etype);
-  close(sock);
-  if(response!=NULL)
-    obj = json_tokener_parse(response);
-
-  if( (obj) && json_object_is_type(obj,json_type_array) )
+  n = pager_get_geom(ws,&wins,&spc,&focus);
+  if(!n)
+    return TRUE;
+  for(i=0;i<n;i++)
   {
-    for(i=0;i<json_object_array_length(obj);i++)
-    {
-      iter = json_object_array_get_idx(obj,i);
-      label = json_string_by_name(iter,"name");
-      wr = parse_rect(iter);
-      if(!g_strcmp0(desk,label))
-      {
-        json_object_object_get_ex(iter,"floating_nodes",&arr);
-        if(json_object_is_type(arr,json_type_array))
-          for(j=0;j<json_object_array_length(arr);j++)
-          {
-            fiter = json_object_array_get_idx(arr,j);
-            if(json_bool_by_name(fiter,"focused",FALSE))
-              cairo_set_source_rgba(cr,fg.red,fg.blue,fg.green,1);
-            else
-              cairo_set_source_rgba(cr,fg.red,fg.blue,fg.green,0.5);
-            cw = parse_rect(fiter);
-            cairo_rectangle(cr,
-                (int)(cw.x*w/wr.w),
-                (int)(cw.y*h/wr.h),
-                (int)(cw.w*w/wr.w),
-                (int)(cw.h*h/wr.h));
-            cairo_fill(cr);
-            gtk_render_frame(style,cr,
-                (int)(cw.x*w/wr.w),
-                (int)(cw.y*h/wr.h),
-                (int)(cw.w*w/wr.w),
-                (int)(cw.h*h/wr.h));
-            cairo_stroke(cr);
-          }
-      }
-    }
+    if(i==focus)
+      cairo_set_source_rgba(cr,fg.red,fg.blue,fg.green,1);
+    else
+      cairo_set_source_rgba(cr,fg.red,fg.blue,fg.green,0.5);
+    cairo_rectangle(cr,
+        (int)(wins[i].x*w/spc.width),
+        (int)(wins[i].y*h/spc.height),
+        (int)(wins[i].width*w/spc.width),
+        (int)(wins[i].height*h/spc.height));
+    cairo_fill(cr);
+    gtk_render_frame(style,cr,
+        (int)(wins[i].x*w/spc.width),
+        (int)(wins[i].y*h/spc.height),
+        (int)(wins[i].width*w/spc.width),
+        (int)(wins[i].height*h/spc.height));
+    cairo_stroke(cr);
   }
+  g_free(wins);
 
-  json_object_put(obj);
-  g_free(response);
   return TRUE;
 }
 
 static gboolean pager_item_draw_tooltip ( GtkWidget *widget, gint x, gint y,
-    gboolean kbmode, GtkTooltip *tooltip, gpointer data )
+    gboolean kbmode, GtkTooltip *tooltip, workspace_t *ws )
 {
   GtkWidget *button;
-  gchar *desk;
 
-  desk = (gchar *)gtk_button_get_label(GTK_BUTTON(widget));
   button = gtk_button_new();
-  g_signal_connect(button,"draw",G_CALLBACK(pager_item_draw_preview),desk);
+  g_signal_connect(button,"draw",G_CALLBACK(pager_item_draw_preview),ws);
   gtk_widget_set_name(button, "pager_preview");
   gtk_tooltip_set_custom(tooltip,button);
   return TRUE;
@@ -165,9 +124,6 @@ GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
 {
   GtkWidget *self;
   PagerItemPrivate *priv;
-
-  if(!sway_ipc_active())
-    return NULL;
 
   if(flow_grid_find_child(base_widget_get_child(pager),ws))
     return NULL;
@@ -184,9 +140,9 @@ GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
   priv->button = gtk_button_new_with_label(ws->name);
   gtk_container_add(GTK_CONTAINER(self),priv->button);
   gtk_widget_set_name(priv->button, "pager_normal");
-  g_signal_connect(priv->button,"clicked",G_CALLBACK(pager_item_button_cb),NULL);
+  g_signal_connect(priv->button,"clicked",G_CALLBACK(pager_item_button_cb),ws);
   g_signal_connect(priv->button,"query-tooltip",
-      G_CALLBACK(pager_item_draw_tooltip),NULL);
+      G_CALLBACK(pager_item_draw_tooltip),ws);
   g_object_ref(G_OBJECT(self));
   flow_grid_add_child(pager,self);
   pager_item_invalidate(self);

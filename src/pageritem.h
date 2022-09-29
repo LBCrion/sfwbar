@@ -3,6 +3,7 @@
 
 #include "sfwbar.h" 
 #include "flowitem.h"
+#include "pager.h"
 
 #define PAGER_ITEM_TYPE            (pager_item_get_type())
 #define PAGER_ITEM(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), PAGER_ITEM_TYPE, PagerItem))
@@ -24,14 +25,6 @@ struct _PagerItemClass
 };
 
 typedef struct _PagerItemPrivate PagerItemPrivate;
-
-typedef struct workspace_s {
-  gpointer id;
-  gchar *name;
-  gboolean visible;
-  gboolean focused;
-  GtkWidget *pager;
-} workspace_t;
 
 struct _PagerItemPrivate
 {

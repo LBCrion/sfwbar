@@ -7,14 +7,33 @@
 #include "sfwbar.h"
 #include "pager.h"
 #include "pageritem.h"
-#include "sway_ipc.h"
 
 G_DEFINE_TYPE_WITH_CODE (Pager, pager, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Pager));
 
+static struct pager_api api;
 static GList *pagers;
 static GList *global_pins;
 static workspace_t *focus;
 static GList *workspaces;
+
+void pager_api_register ( struct pager_api *new )
+{
+  api = *new;
+}
+
+void pager_set_workspace ( workspace_t *ws )
+{
+  if(api.set_workspace)
+    api.set_workspace(ws);
+}
+
+guint pager_get_geom ( workspace_t *ws, GdkRectangle **wins, GdkRectangle *spc,
+    gint *focus)
+{
+  if(api.get_geom)
+    return api.get_geom(ws,wins,spc,focus);
+  return 0;
+}
 
 static GtkWidget *pager_get_child ( GtkWidget *self )
 {
@@ -55,7 +74,7 @@ void pager_add_pin ( GtkWidget *pager, gchar *pin )
 {
   GObject *child;
 
-  if(!sway_ipc_active())
+  if(ipc_get()!=IPC_SWAY && ipc_get()!=IPC_HYPR)
     return g_free(pin);
 
   global_pins = g_list_prepend(global_pins,pin);
@@ -148,8 +167,6 @@ void pager_workspace_new ( workspace_t *new )
     ws = item->data;
     g_free(ws->name);
     ws->name = g_strdup(new->name);
-    g_list_foreach(pagers,(GFunc)pager_item_new,ws);
-    pager_invalidate_all(ws);
   }
   else
   {
@@ -161,7 +178,6 @@ void pager_workspace_new ( workspace_t *new )
       ws = g_malloc0(sizeof(workspace_t));
       ws->name = g_strdup(new->name);
       workspaces = g_list_prepend(workspaces,ws);
-      g_list_foreach(pagers,(GFunc)pager_item_new,ws);
     }
     ws->id = new->id;
   }
@@ -179,10 +195,11 @@ void pager_populate ( void )
   GList *item;
   workspace_t *ws;
   
-  if(!sway_ipc_active())
+  if(!pagers)
     return;
 
-  sway_ipc_pager_populate();
+  for(item = workspaces;item;item=g_list_next(item))
+    g_list_foreach(pagers,(GFunc)pager_item_new,item->data);
 
   for(item = global_pins;item;item=g_list_next(item))
     if(!g_list_find_custom(workspaces,item->data,
