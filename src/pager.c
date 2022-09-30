@@ -107,6 +107,36 @@ static gint pager_comp_name ( workspace_t *a, gchar * b)
   return g_strcmp0(a->name,b);
 }
 
+workspace_t *pager_workspace_from_id ( gpointer id )
+{
+  GList *item;
+
+  item = g_list_find_custom(workspaces,id,(GCompareFunc)pager_comp_id);
+  if(item)
+    return item->data;
+  return NULL;
+}
+
+workspace_t *pager_workspace_from_name ( gchar *name )
+{
+  GList *item;
+
+  item = g_list_find_custom(workspaces,name,(GCompareFunc)pager_comp_name);
+  if(item)
+    return item->data;
+  return NULL;
+}
+
+gpointer pager_workspace_id_from_name ( gchar *name )
+{
+  GList *iter;
+
+  for(iter=workspaces;iter;iter=g_list_next(iter))
+    if(!g_strcmp0(name,((workspace_t *)iter->data)->name))
+      return ((workspace_t *)iter->data)->id;
+  return NULL;
+}
+
 gboolean pager_workspace_is_focused ( workspace_t *ws )
 {
   return (ws == focus);
@@ -158,30 +188,25 @@ void pager_workspace_delete ( gpointer id )
 
 void pager_workspace_new ( workspace_t *new )
 {
-  GList *item;
   workspace_t *ws;
 
-  item = g_list_find_custom(workspaces,new->id,(GCompareFunc)pager_comp_id);
-  if(item)
+  ws = pager_workspace_from_id(new->id);
+  if(!ws)
+    ws = pager_workspace_from_name(new->name);
+  if(!ws)
   {
-    ws = item->data;
+    ws = g_malloc0(sizeof(workspace_t));
+    workspaces = g_list_prepend(workspaces,ws);
+  }
+  if(g_strcmp0(ws->name,new->name))
+  {
     g_free(ws->name);
     ws->name = g_strdup(new->name);
   }
-  else
-  {
-    item = g_list_find_custom(workspaces,new->name,(GCompareFunc)pager_comp_name);
-    if(item)
-      ws = item->data;
-    else
-    {
-      ws = g_malloc0(sizeof(workspace_t));
-      ws->name = g_strdup(new->name);
-      workspaces = g_list_prepend(workspaces,ws);
-    }
-    ws->id = new->id;
-  }
+  ws->id = new->id;
   ws->visible = new->visible;
+  g_list_foreach(pagers,(GFunc)pager_item_new,ws);
+
   if(new->focused)
   {
     pager_invalidate_all(focus);

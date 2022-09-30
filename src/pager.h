@@ -46,6 +46,7 @@ struct pager_api {
 };
 
 GtkWidget *pager_new();
+workspace_t *pager_workspace_from_id ( gpointer id );
 void pager_workspace_new ( workspace_t *new );
 void pager_workspace_delete ( gpointer id );
 void pager_workspace_set_focus ( gpointer id );
@@ -54,6 +55,7 @@ void pager_update ( void );
 void pager_invalidate_all ( workspace_t *ws );
 void pager_populate ( void );
 void pager_add_pin ( GtkWidget *pager, gchar *pin );
+gpointer pager_workspace_id_from_name ( gchar *name );
 void pager_api_register ( struct pager_api *new );
 void pager_set_workspace ( workspace_t *ws );
 guint pager_get_geom ( workspace_t *, GdkRectangle **, GdkRectangle *, gint * );
