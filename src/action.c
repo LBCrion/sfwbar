@@ -43,8 +43,6 @@ void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
   if(!name || !functions)
     return;
 
-  g_message("Function: %s",name);
-
   if(win)
   {
     stat_win = g_malloc(sizeof(window_t));
