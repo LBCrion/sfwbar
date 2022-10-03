@@ -43,6 +43,8 @@ void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
   if(!name || !functions)
     return;
 
+  g_message("Function: %s",name);
+
   if(win)
   {
     stat_win = g_malloc(sizeof(window_t));
@@ -152,7 +154,10 @@ void action_exec ( GtkWidget *widget, action_t *action,
         action->type == G_TOKEN_SETTOOLTIP ||
         action->type == G_TOKEN_IDLEINHIBIT ||
         action->type == G_TOKEN_USERSTATE ))
+  {
     widget = base_widget_from_id(action->addr);
+    istate = NULL;
+  }
 
   if(istate)
     state = *istate;
