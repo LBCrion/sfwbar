@@ -10,6 +10,8 @@
 
 G_DEFINE_TYPE_WITH_CODE (Pager, pager, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Pager));
 
+#define PAGER_PIN_ID (GINT_TO_POINTER(-1))
+
 static struct pager_api api;
 static GList *pagers;
 static GList *global_pins;
@@ -77,7 +79,8 @@ void pager_add_pin ( GtkWidget *pager, gchar *pin )
   if(ipc_get()!=IPC_SWAY && ipc_get()!=IPC_HYPR)
     return g_free(pin);
 
-  global_pins = g_list_prepend(global_pins,pin);
+  if(!g_list_find_custom(global_pins,pin,(GCompareFunc)g_strcmp0))
+    global_pins = g_list_prepend(global_pins,pin);
 
   child = G_OBJECT(base_widget_get_child(pager));
   if(!child)
@@ -85,7 +88,7 @@ void pager_add_pin ( GtkWidget *pager, gchar *pin )
 
   if(!g_list_find_custom(g_object_get_data(child,"pins"),pin,
         (GCompareFunc)g_strcmp0))
-    g_object_set_data(child,"pins",g_list_append(
+    g_object_set_data(child,"pins",g_list_prepend(
             g_object_get_data(child,"pins"),pin));
 }
 
@@ -144,15 +147,15 @@ gboolean pager_workspace_is_focused ( workspace_t *ws )
 
 void pager_workspace_set_focus ( gpointer id )
 {
-  GList *item;
+  workspace_t *ws;
 
-  item = g_list_find_custom(workspaces,id,(GCompareFunc)pager_comp_id);
-  if(item)
-  {
-    pager_invalidate_all(focus);
-    focus = item->data;
-    pager_invalidate_all(focus);
-  }
+  ws = pager_workspace_from_id(id);
+  if(!ws || ws==focus)
+    return;
+
+  pager_invalidate_all(focus);
+  focus = ws;
+  pager_invalidate_all(focus);
 }
 
 void pager_workspace_delete ( gpointer id )
@@ -167,52 +170,58 @@ void pager_workspace_delete ( gpointer id )
 
   ws = item->data;
 
-  for(iter=global_pins;iter;iter=g_list_next(iter))
-    if(!g_strcmp0(iter->data,ws->name))
-    {
-      ws->id = GINT_TO_POINTER(-1);
-      ws->visible = FALSE;
-      for(iter=pagers;iter;iter=g_list_next(iter))
-        if(!g_list_find_custom(g_object_get_data(
-                G_OBJECT(base_widget_get_child(iter->data)),"pins"),
-              ws->name,(GCompareFunc)g_strcmp0))
-            flow_grid_delete_child(iter->data,ws);
-      return;
-    }
-
-  g_list_foreach(pagers,(GFunc)flow_grid_delete_child,ws);
-  g_free(ws->name);
-  g_free(ws);
-  workspaces = g_list_delete_link(workspaces,item);
+  if(g_list_find_custom(global_pins,ws->name,(GCompareFunc)g_strcmp0))
+  {
+    ws->id = PAGER_PIN_ID;
+    ws->visible = FALSE;
+    for(iter=pagers;iter;iter=g_list_next(iter))
+      if(!g_list_find_custom(g_object_get_data(
+              G_OBJECT(base_widget_get_child(iter->data)),"pins"),
+            ws->name,(GCompareFunc)g_strcmp0))
+          flow_grid_delete_child(iter->data,ws);
+  }
+  else
+  {
+    g_list_foreach(pagers,(GFunc)flow_grid_delete_child,ws);
+    g_free(ws->name);
+    g_free(ws);
+    workspaces = g_list_delete_link(workspaces,item);
+  }
 }
 
 void pager_workspace_new ( workspace_t *new )
 {
   workspace_t *ws;
+  GList *iter;
 
   ws = pager_workspace_from_id(new->id);
   if(!ws)
-    ws = pager_workspace_from_name(new->name);
+    for(iter=workspaces;iter;iter=g_list_next(iter))
+      if(!g_strcmp0(((workspace_t *)iter->data)->name,new->name) &&
+          ((workspace_t *)iter->data)->id == PAGER_PIN_ID)
+        ws = iter->data;
   if(!ws)
   {
     ws = g_malloc0(sizeof(workspace_t));
     workspaces = g_list_prepend(workspaces,ws);
   }
+
   if(g_strcmp0(ws->name,new->name))
   {
     g_free(ws->name);
     ws->name = g_strdup(new->name);
+    pager_invalidate_all(ws);
   }
-  ws->id = new->id;
-  ws->visible = new->visible;
+  if(ws->id != new->id || ws->visible != new->visible)
+  {
+    ws->id = new->id;
+    ws->visible = new->visible;
+    pager_invalidate_all(ws);
+  }
   g_list_foreach(pagers,(GFunc)pager_item_new,ws);
 
   if(new->focused)
-  {
-    pager_invalidate_all(focus);
-    focus = ws;
-    pager_invalidate_all(focus);
-  }
+    pager_workspace_set_focus(ws->id);
 }
 
 void pager_populate ( void )
@@ -232,7 +241,7 @@ void pager_populate ( void )
 
     {
       ws = g_malloc(sizeof(workspace_t));
-      ws->id = GINT_TO_POINTER(-1);
+      ws->id = PAGER_PIN_ID;
       ws->name = g_strdup(item->data);
       ws->visible = FALSE;
       workspaces = g_list_prepend(workspaces,ws);
