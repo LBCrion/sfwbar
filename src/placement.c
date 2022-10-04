@@ -43,14 +43,14 @@ struct rect parse_rect ( struct json_object *obj )
   return ret;
 }
 
-int placement_location ( struct json_object*obj, gint64 wid, struct rect *r )
+int placement_location ( struct json_object*obj, gint64 wid, GdkRectangle *r )
 {
-  struct rect output, win, *obs;
+  GdkRectangle output, win, *obs;
   struct json_object *ptr,*item,*arr;
   gint c,i,j,nobs,success;
   gint *x, *y;
   gint xoff,yoff;
-  output = parse_rect(obj);
+  output = sway_ipc_parse_rect(obj);
   win = output;
 
   if(!json_object_object_get_ex(obj,"floating_nodes",&arr))
@@ -69,21 +69,21 @@ int placement_location ( struct json_object*obj, gint64 wid, struct rect *r )
     if(json_object_is_type(ptr,json_type_int))
     {
       if(json_object_get_int64(ptr) == wid)
-        win = parse_rect(item);
+        win = sway_ipc_parse_rect(item);
       else
       {
         if(c<nobs)
         {
-          obs[c] = parse_rect(item);
-          x[c] = obs[c].x+obs[c].w;
-          y[c] = obs[c].y+obs[c].h;
+          obs[c] = sway_ipc_parse_rect(item);
+          x[c] = obs[c].x+obs[c].width;
+          y[c] = obs[c].y+obs[c].height;
           c++;
         }
       }
     }
   }
-  xoff = (win.x*2+win.w)/2 - (output.x*2+output.w)/2;
-  yoff = (win.y*2+win.h)/2 - (output.y*2+output.h)/2;
+  xoff = (win.x*2+win.width)/2 - (output.x*2+output.width)/2;
+  yoff = (win.y*2+win.height)/2 - (output.y*2+output.height)/2;
   if((xoff<-1)||(xoff>1)||(yoff<-1)||(yoff>1)||(c!=nobs))
   {
     g_free(obs);
@@ -97,8 +97,8 @@ int placement_location ( struct json_object*obj, gint64 wid, struct rect *r )
   qsort(y,nobs+1,sizeof(int),comp_int);
 
   *r=win;
-  win.x = output.x+x_origin*output.w/100;
-  win.y = output.y+y_origin*output.h/100;
+  win.x = output.x+x_origin*output.width/100;
+  win.y = output.y+y_origin*output.height/100;
   do
   {
     success=1;
@@ -112,20 +112,21 @@ int placement_location ( struct json_object*obj, gint64 wid, struct rect *r )
       *r=win;
       break;
     }
-    win.x += output.w*x_step/100;
-    win.y += output.h*y_step/100;;
-  } while((win.x+win.w)<(output.x+output.w) && (win.y+win.h)<(output.y+output.h));
+    win.x += output.width*x_step/100;
+    win.y += output.height*y_step/100;;
+  } while((win.x+win.width)<(output.x+output.width) &&
+      (win.y+win.height)<(output.y+output.height));
 
   for(j=nobs;j>=0;j--)
     for(i=nobs;i>=0;i--)
     {
       success=1;
       for(c=0;c<nobs;c++)
-        if(!(((x[i]+win.w-1)<obs[c].x)||(x[i]>(obs[c].x+obs[c].w-1))||
-            ((y[j]+win.h-1)<obs[c].y)||(y[j]>(obs[c].y+obs[c].h-1))))
+        if(!(((x[i]+win.width-1)<obs[c].x)||(x[i]>(obs[c].x+obs[c].width-1))||
+            ((y[j]+win.height-1)<obs[c].y)||(y[j]>(obs[c].y+obs[c].height-1))))
           success=0;
-      if((x[i]<output.x)||(x[i]+win.w>output.x+output.w)||
-          (y[j]<output.y)||(y[j]+win.h>output.y+output.h))
+      if((x[i]<output.x)||(x[i]+win.width>output.x+output.width)||
+          (y[j]<output.y)||(y[j]+win.height>output.y+output.height))
         success=0;
       if(success==1)
       {
@@ -172,7 +173,7 @@ void place_window ( gint64 wid, gint64 pid )
 {
   gint sock;
   gint32 etype;
-  struct rect r;
+  GdkRectangle r;
   struct json_object *obj, *node;
   gchar *response;
 

@@ -2,6 +2,7 @@
 #define __SWAY_IPC_H__
 
 void sway_ipc_init ( void );
+GdkRectangle sway_ipc_parse_rect ( struct json_object *obj );
 gboolean sway_ipc_active ( void );
 gchar *sway_ipc_poll ( gint sock, gint32 *etype );
 int sway_ipc_open (int to);
