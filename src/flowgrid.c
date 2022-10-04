@@ -85,6 +85,7 @@ GtkWidget *flow_grid_new( gboolean limit)
 
   w = GTK_WIDGET(g_object_new(flow_grid_get_type(), NULL));
   priv = flow_grid_get_instance_private(FLOW_GRID(w));
+  flow_grid_set_sort(w,TRUE);
 
   priv->limit = limit;
   
