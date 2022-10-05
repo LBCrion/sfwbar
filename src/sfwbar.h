@@ -29,8 +29,10 @@ void css_remove_class ( GtkWidget *widget, gchar *css_class );
 void client_exec ( ScanFile *file );
 void client_socket ( ScanFile *file );
 
-void place_window ( gint64 wid, gint64 pid );
 void placer_config ( gint xs, gint ys, gint xo, gint yo, gboolean pid );
+gboolean placer_check ( gboolean *cpid );
+void placer_calc ( gint nobs, GdkRectangle *obs, GdkRectangle output,
+    GdkRectangle *win );
 
 char *expr_parse ( gchar *expr_str, guint * );
 struct json_object *jpath_parse ( gchar *path, struct json_object *obj );
