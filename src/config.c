@@ -1079,7 +1079,7 @@ void config_placer ( GScanner *scanner )
 
   config_optional_semicolon(scanner);
 
-  placer_config(wp_x,wp_y,wo_x,wo_y,pid);
+  wintree_placer_conf(wp_x,wp_y,wo_x,wo_y,pid);
 }
 
 GtkWidget *config_menu_item ( GScanner *scanner )

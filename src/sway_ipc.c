@@ -223,12 +223,8 @@ static void sway_window_place ( gint64 wid, gint64 pid )
   GdkRectangle output, win, *obs;
   struct json_object *obj,*ptr,*item,*arr;
   gint c,i,nobs;
-  gboolean cpid;
 
-  if(!placer_check(&cpid))
-    return;
-
-  if(cpid && wintree_from_pid(pid))
+  if(!wintree_placer_check(pid))
     return;
 
   json = sway_ipc_request("",4,&etype);
@@ -262,7 +258,7 @@ static void sway_window_place ( gint64 wid, gint64 pid )
   }
   if(c==nobs)
   {
-    placer_calc(nobs,obs,output,&win);
+    wintree_placer_calc(nobs,obs,output,&win);
     sway_ipc_command("[con_id=%ld] move absolute position %d %d",
         wid,win.x,win.y);
   }
