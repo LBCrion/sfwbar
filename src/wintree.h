@@ -21,6 +21,7 @@ struct wintree_api {
   void (*unmaximize) ( void *);
   void (*focus) ( void *);
   void (*close) ( void *);
+  void (*free_workspace) ( void * );
 };
 
 void wintree_api_register ( struct wintree_api *new );

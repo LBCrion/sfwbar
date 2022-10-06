@@ -216,7 +216,7 @@ static struct json_object *placement_find_wid ( struct json_object *obj, gint64 
   return ret;
 }
 
-static void sway_window_place ( gint64 wid, gint64 pid )
+static void sway_ipc_window_place ( gint64 wid, gint64 pid )
 {
   gint32 etype;
   struct json_object *json;
@@ -297,7 +297,7 @@ static void sway_window_new ( struct json_object *container )
   if(json_bool_by_name(container,"focused",FALSE))
     wintree_set_focus(wid);
 
-  sway_window_place(GPOINTER_TO_INT(wid), win->pid );
+  sway_ipc_window_place(GPOINTER_TO_INT(wid), win->pid );
 }
 
 static void sway_traverse_tree ( struct json_object *obj, const gchar *parent,
@@ -556,7 +556,8 @@ static struct wintree_api sway_wintree_api = {
   .maximize = sway_ipc_maximize,
   .unmaximize = sway_ipc_unmaximize,
   .close = sway_ipc_close,
-  .focus = sway_ipc_focus
+  .focus = sway_ipc_focus,
+  .free_workspace = g_free
 };
 
 static guint sway_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,

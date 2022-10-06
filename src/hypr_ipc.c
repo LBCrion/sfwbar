@@ -1,3 +1,8 @@
+/* This entire file is licensed under GNU General Public License v3.0
+ *
+ * Copyright 2022 sfwbar maintainers
+ */
+
 #include "sfwbar.h"
 #include "wintree.h"
 #include "pager.h"
@@ -16,6 +21,21 @@ gpointer hypr_ipc_id_from_json ( json_object *json )
     return NULL;
 
   return hypr_ipc_parse_id(str);
+}
+
+GdkRectangle hypr_ipc_window_geom ( json_object *json )
+{
+  json_object *ptr;
+  GdkRectangle res;
+
+  json_object_object_get_ex(json,"at",&ptr);
+  res.x = json_object_get_int(json_object_array_get_idx(ptr,0));
+  res.y = json_object_get_int(json_object_array_get_idx(ptr,1));
+  json_object_object_get_ex(json,"size",&ptr);
+  res.width = json_object_get_int(json_object_array_get_idx(ptr,0));
+  res.height = json_object_get_int(json_object_array_get_idx(ptr,1));
+
+  return res;
 }
 
 gboolean hypr_ipc_request ( gchar *addr, gchar *command, json_object **json )
@@ -45,7 +65,10 @@ gboolean hypr_ipc_request ( gchar *addr, gchar *command, json_object **json )
     *json = NULL;
     tok = json_tokener_new();
     while( (rlen = recv(sock,buf,1024,0))>0 )
+    {
+//      write(1,buf,rlen);
       *json = json_tokener_parse_ex(tok,buf,rlen);
+    }
     json_tokener_free(tok);
   }
 
@@ -68,25 +91,6 @@ void hypr_ipc_command ( gchar *cmd, ... )
   g_free(buf);
   va_end(args);
 }
-
-/*gpointer hypr_ipc_workspace_id ( gchar *name )
-{
-  json_object *json,*ptr;
-  gint i;
-  gpointer res=GINT_TO_POINTER(-99);
-
-  if(!hypr_ipc_request(ipc_sockaddr,"j/workspaces",&json) || !json)
-    return res;
-  if(json_object_is_type(json, json_type_array))
-    for(i=0;i<json_object_array_length(json);i++)
-    {
-      ptr = json_object_array_get_idx(json,i);
-      if(!g_strcmp0(name,json_string_by_name(ptr,"name")))
-        res = GINT_TO_POINTER(json_int_by_name(ptr,"id",-99));
-    }
-  json_object_put(json);
-  return res;
-}*/
 
 gchar *hypr_ipc_workspace_name ( gpointer id )
 {
@@ -133,7 +137,8 @@ void hypr_ipc_handle_window ( json_object *obj )
   json_object_object_get_ex(obj,"workspace",&ptr);
   if(ptr)
   {
-    if(json_int_by_name(ptr,"id",0)==-99)
+    win->workspace = GINT_TO_POINTER(json_int_by_name(ptr,"id",0));
+    if(win->workspace==GINT_TO_POINTER(-99))
       win->state |= WS_MINIMIZED;
     else
       win->state &= ~WS_MINIMIZED;
@@ -277,25 +282,26 @@ void hypr_ipc_set_workspace ( workspace_t *ws )
   g_free(name);
 }
 
-static guint hypr_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,
-    GdkRectangle *space, gint *focus )
+static GdkRectangle hypr_ipc_get_output_geom ( gpointer wsid )
 {
-  json_object *json,*ptr, *iter;
-  gint i, n=0, scale;
+  json_object *json, *iter;
+  gint i, scale;
   gchar *monitor = NULL;
+  GdkRectangle res;
 
+  res.width = -1;
   if(!hypr_ipc_request(ipc_sockaddr,"j/workspaces",&json) || !json)
-    return 0;
+    return res;
   if( json_object_is_type(json, json_type_array) )
     for(i=0;i<json_object_array_length(json);i++)
     {
       iter = json_object_array_get_idx(json,i);
-      if(json_int_by_name(iter,"id",-1) == GPOINTER_TO_INT(ws->id))
+      if(json_int_by_name(iter,"id",-1) == GPOINTER_TO_INT(wsid))
         monitor = g_strdup(json_string_by_name( iter,"monitor"));
     }
   json_object_put(json);
   if(!monitor)
-    return 0;
+    return res;
   if(hypr_ipc_request(ipc_sockaddr,"j/monitors",&json) && json)
     if( json_object_is_type(json, json_type_array) )
       for(i=0;i<json_object_array_length(json);i++)
@@ -304,12 +310,24 @@ static guint hypr_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,
         if(!g_strcmp0(monitor,json_string_by_name(iter,"name")))
         {
           scale = json_int_by_name(iter,"scale",1);
-          space->width = json_int_by_name(iter,"width",0) / scale;
-          space->height = json_int_by_name(iter,"height",0) / scale;
+          res.width = json_int_by_name(iter,"width",0) / scale;
+          res.height = json_int_by_name(iter,"height",0) / scale;
         }
       }
   json_object_put(json);
   g_free(monitor);
+  return res;
+}
+
+static guint hypr_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,
+    GdkRectangle *space, gint *focus )
+{
+  json_object *json,*ptr, *iter;
+  gint i, n=0;
+
+  *space = hypr_ipc_get_output_geom(ws->id);
+  if(space->width<0)
+    return 0;
   if(!hypr_ipc_request(ipc_sockaddr,"j/clients",&json) || !json)
     return 0;
   if( json_object_is_type(json, json_type_array) )
@@ -321,14 +339,7 @@ static guint hypr_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,
       json_object_object_get_ex(iter,"workspace",&ptr);
       if(GINT_TO_POINTER(json_int_by_name(ptr,"id",-1))==ws->id)
       {
-        json_object_object_get_ex(iter,"at",&ptr);
-        (*wins)[n].x = json_object_get_int(json_object_array_get_idx(ptr,0));
-        (*wins)[n].y = json_object_get_int(json_object_array_get_idx(ptr,1));
-        json_object_object_get_ex(iter,"size",&ptr);
-        (*wins)[n].width =
-          json_object_get_int(json_object_array_get_idx(ptr,0));
-        (*wins)[n].height =
-          json_object_get_int(json_object_array_get_idx(ptr,1));
+        (*wins)[n] = hypr_ipc_window_geom(iter);
         if(hypr_ipc_id_from_json(iter)==wintree_get_focus())
           *focus = n;
         n++;
@@ -337,6 +348,42 @@ static guint hypr_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,
   }
   json_object_put(json);
   return n;
+}
+
+static void hypr_ipc_window_place ( gpointer wid )
+{
+  window_t *win;
+  json_object *json, *iter, *ptr;
+  GdkRectangle space, *obs, window;
+  gint i, nobs=0;
+
+  win = wintree_from_id(wid);
+  if(!win || !wintree_placer_check(win->pid))
+    return;
+  space = hypr_ipc_get_output_geom(win->workspace);
+  space.x=0;
+  space.y=0;
+  if(!hypr_ipc_request(ipc_sockaddr,"j/clients",&json) || !json ||
+      !json_object_is_type(json, json_type_array))
+    return;
+  obs = g_malloc0(sizeof(GdkRectangle)*json_object_array_length(json));
+  for(i=0;i<json_object_array_length(json);i++)
+  {
+    iter = json_object_array_get_idx(json,i);
+    json_object_object_get_ex(iter,"workspace",&ptr);
+    if(ptr && GINT_TO_POINTER(json_int_by_name(ptr,"id",0)) == win->workspace)
+    {
+      if(hypr_ipc_id_from_json(iter) == wid)
+        window = hypr_ipc_window_geom(iter);
+      else
+        obs[nobs++] = hypr_ipc_window_geom(iter);
+    }
+  }
+  json_object_put(json);
+  wintree_placer_calc(nobs,obs,space,&window);
+  hypr_ipc_command("dispatch movewindowpixel exact %d %d,address:0x%lx",
+      window.x,window.y,wid);
+  g_free(obs);
 }
 
 static void hypr_ipc_pager_populate( void )
@@ -433,7 +480,10 @@ gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
     if(!strncmp(event,"activewindow>>",14))
       hypr_ipc_track_focus();
     else if(!strncmp(event,"openwindow>>",12))
+    {
       hypr_ipc_get_clients(hypr_ipc_parse_id(event+12));
+      hypr_ipc_window_place(hypr_ipc_parse_id(event+12));
+    }
     else if(!strncmp(event,"closewindow>>",13))
       wintree_window_delete(hypr_ipc_parse_id(event+13));
     else if(!strncmp(event,"fullscreen>>",12))

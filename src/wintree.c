@@ -28,6 +28,7 @@ void wintree_maximize ( gpointer id ) { api_call(maximize) }
 void wintree_unmaximize ( gpointer id ) { api_call(unmaximize) }
 void wintree_focus ( gpointer id ) { api_call(focus) }
 void wintree_close ( gpointer id ) { api_call(close) }
+void wintree_free_workspace ( gpointer id ) { api_call(free_workspace) }
 
 void wintree_api_register ( struct wintree_api *new )
 {
@@ -188,7 +189,7 @@ void wintree_window_delete ( gpointer id )
   g_free(win->appid);
   g_free(win->title);
   g_free(win->output);
-  g_free(win->workspace);
+  wintree_free_workspace(win->workspace);
   wt_list = g_list_delete_link(wt_list,item);
   g_free(win);
 }
