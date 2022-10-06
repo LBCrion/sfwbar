@@ -308,7 +308,10 @@ static GdkRectangle hypr_ipc_get_output_geom ( gpointer wsid )
   gchar *monitor = NULL;
   GdkRectangle res;
 
+  res.x = -1;
+  res.y = -1;
   res.width = -1;
+  res.height = -1;
   if(!hypr_ipc_request(ipc_sockaddr,"j/workspaces",&json) || !json)
     return res;
   if( json_object_is_type(json, json_type_array) )
