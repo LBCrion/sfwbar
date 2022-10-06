@@ -137,11 +137,13 @@ void hypr_ipc_handle_window ( json_object *obj )
   json_object_object_get_ex(obj,"workspace",&ptr);
   if(ptr)
   {
-    win->workspace = GINT_TO_POINTER(json_int_by_name(ptr,"id",0));
-    if(win->workspace==GINT_TO_POINTER(-99))
+    if(json_int_by_name(ptr,"id",0)==-99)
       win->state |= WS_MINIMIZED;
     else
+    {
       win->state &= ~WS_MINIMIZED;
+      win->workspace = GINT_TO_POINTER(json_int_by_name(ptr,"id",0));
+    }
   }
 }
 
@@ -243,16 +245,33 @@ void hypr_ipc_minimize ( gpointer id )
 void hypr_ipc_unminimize ( gpointer id )
 {
   window_t *win;
+  json_object *json, *iter, *ptr;
+  gint i, workspace=0;
 
   win = wintree_from_id(id);
   if(!win || !(win->state & WS_MINIMIZED))
     return;
 
-  if(!win->workspace)
-    return; // we should set win->workspace to current ws
+  if(win->workspace)
+    workspace = GPOINTER_TO_INT(win->workspace);
+  else
+  {
+    if(!hypr_ipc_request(ipc_sockaddr,"j/monitors",&json) || !json ||
+      !json_object_is_type(json, json_type_array))
+      return;
+    for(i=0;i<json_object_array_length(json);i++)
+    {
+      iter = json_object_array_get_idx(json,i);
+      if(json_bool_by_name(iter,"focused",FALSE))
+      {
+        if(json_object_object_get_ex(iter,"activeWorkspace",&ptr) && ptr)
+          workspace = json_int_by_name(ptr,"id",0);
+      }
+    }
+  }
 
   hypr_ipc_command("dispatch movetoworkspace %ld,address:0x%lx",
-      GPOINTER_TO_INT(win->workspace),GPOINTER_TO_INT(id));
+      workspace,GPOINTER_TO_INT(id));
 }
 
 void hypr_ipc_close ( gpointer id )
@@ -398,13 +417,16 @@ static void hypr_ipc_pager_populate( void )
     for(i=0;i<json_object_array_length(json);i++)
     {
       ptr = json_object_array_get_idx(json,i);
-      ws = g_malloc0(sizeof(workspace_t));
-      ws->id = GINT_TO_POINTER(json_int_by_name(ptr,"id",-1));
-      ws->name = g_strdup(json_string_by_name(ptr,"name"));
-      pager_workspace_new(ws);
-      pager_invalidate_all(ws->id);
-      g_free(ws->name);
-      g_free(ws);
+      if(json_int_by_name(ptr,"id",-1)!=-99)
+      {
+        ws = g_malloc0(sizeof(workspace_t));
+        ws->id = GINT_TO_POINTER(json_int_by_name(ptr,"id",-1));
+        ws->name = g_strdup(json_string_by_name(ptr,"name"));
+        pager_workspace_new(ws);
+        pager_invalidate_all(ws->id);
+        g_free(ws->name);
+        g_free(ws);
+      }
     }
   json_object_put(json);
   if(!hypr_ipc_request(ipc_sockaddr,"j/monitors",&json) || !json)
