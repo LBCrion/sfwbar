@@ -32,23 +32,20 @@ static gpointer hypr_ipc_workspace_id ( json_object *json )
   return NULL;
 }
 
-static GdkRectangle hypr_ipc_window_geom ( json_object *json )
+static gboolean hypr_ipc_window_geom ( json_object *json, GdkRectangle *res )
 {
   json_object *ptr;
-  GdkRectangle res;
 
-  if(json_object_object_get_ex(json,"at",&ptr) && ptr)
-  {
-    res.x = json_object_get_int(json_object_array_get_idx(ptr,0));
-    res.y = json_object_get_int(json_object_array_get_idx(ptr,1));
-  }
-  if(json_object_object_get_ex(json,"size",&ptr) && ptr)
-  {
-    res.width = json_object_get_int(json_object_array_get_idx(ptr,0));
-    res.height = json_object_get_int(json_object_array_get_idx(ptr,1));
-  }
+  if(!json_object_object_get_ex(json,"at",&ptr) || !ptr)
+    return FALSE;
+  res->x = json_object_get_int(json_object_array_get_idx(ptr,0));
+  res->y = json_object_get_int(json_object_array_get_idx(ptr,1));
+  if(!json_object_object_get_ex(json,"size",&ptr) || !ptr)
+    return FALSE;
+  res->width = json_object_get_int(json_object_array_get_idx(ptr,0));
+  res->height = json_object_get_int(json_object_array_get_idx(ptr,1));
 
-  return res;
+  return TRUE;
 }
 
 static gboolean hypr_ipc_request ( gchar *addr, gchar *command, json_object **json )
@@ -247,7 +244,7 @@ static guint hypr_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,
       iter = json_object_array_get_idx(json,i);
       if(hypr_ipc_workspace_id(iter)==ws->id)
       {
-        (*wins)[n] = hypr_ipc_window_geom(iter);
+        hypr_ipc_window_geom(iter,&((*wins)[n]));
         if(hypr_ipc_window_id(iter)==wintree_get_focus())
           *focus = n;
         n++;
@@ -281,9 +278,9 @@ static void hypr_ipc_window_place ( gpointer wid )
     if(hypr_ipc_workspace_id(iter) == win->workspace)
     {
       if(hypr_ipc_window_id(iter) == wid)
-        window = hypr_ipc_window_geom(iter);
+        hypr_ipc_window_geom(iter,&window);
       else
-        obs[nobs++] = hypr_ipc_window_geom(iter);
+        hypr_ipc_window_geom(iter,&(obs[nobs++]));
     }
   }
   json_object_put(json);
@@ -324,14 +321,16 @@ static void hypr_ipc_pager_populate( void )
     {
       iter = json_object_array_get_idx(json,i);
       if(json_object_object_get_ex(iter,"activeWorkspace",&ptr) && ptr)
-        wid = json_int_by_name(ptr,"id",-99);
-      if(wid!=-99)
       {
-        if(json_bool_by_name(iter,"focused",FALSE))
-          pager_workspace_set_focus(GINT_TO_POINTER(wid));
-        ws = pager_workspace_from_id(GINT_TO_POINTER(wid));
-        if(ws)
-          ws->visible = TRUE;
+        wid = json_int_by_name(ptr,"id",-99);
+        if(wid!=-99)
+        {
+          if(json_bool_by_name(iter,"focused",FALSE))
+            pager_workspace_set_focus(GINT_TO_POINTER(wid));
+          ws = pager_workspace_from_id(GINT_TO_POINTER(wid));
+          if(ws)
+            ws->visible = TRUE;
+        }
       }
     }
   json_object_put(json);
