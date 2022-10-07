@@ -1,0 +1,58 @@
+function("ShowDesktopSaveFocus") {
+  [Focused] UserState "2:on"
+  [!Focused] UserState "2:off"
+}
+
+function("ShowdesktopMinimize") {
+  [!Minimized] UserState "on"
+  [Minimized] UserState "off"
+  [!Minimized] Minimize
+}
+
+function("ShowDesktopRestore") {
+  [UserState] UnMinimize
+}
+
+function("ShowDesktopRestoreFocus") {
+  [UserState2] Focus
+}
+
+function("ShowDesktopCheckWindow") {
+  [!Minimized] UserState "target","2:on"
+}
+
+function("ShowDesktopReminimize")
+{
+  [!Minimized] UserState "on"
+  [!Minimized] Minimize
+}
+
+function("ShowDesktopUnminimized") {
+  [UserState2 | Children] Function "ShowDesktopSaveFocus"
+  [UserState2 | Children]  Function "ShowDesktopReminimize"
+  [!UserState2 | Children] Function "ShowDesktopRestore"
+  [!UserState2 | Children] Function "ShowDesktopRestoreFocus"
+  [!UserState2] UserState "off"
+  [UserState2] UserState "on"
+}
+
+function("ShowDesktop") {
+  [!UserState | Children] Function "ShowDesktopSaveFocus"
+  [!UserState | Children] Function "ShowDesktopMinimize"
+  [UserState] UserState "2:off"
+  [UserState| Children ] Function "ShowDesktopCheckWindow"
+  [UserState] Function "target","ShowDesktopUnminimized"
+  [!UserState] UserState "on"
+}
+
+layout {
+  button {
+    value = "user-desktop"
+    style = "showdesktop"
+    tooltip = "Show Desktop"
+    action = Function "target", "ShowDesktop"
+  }
+  taskbar "target" {
+    css = "* { -GtkWidget-visible: false; }"
+  }
+}
