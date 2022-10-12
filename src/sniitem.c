@@ -73,12 +73,12 @@ void sni_item_set_icon ( SniItem *sni, gint icon, gint pix )
     scale_image_set_image(sni->image,NULL,NULL);
     return;
   }
-  if(sni->string[icon]!=NULL)
+  if(sni->string[icon] && *(sni->string[icon]))
   {
     scale_image_set_image(sni->image,sni->string[icon],sni->string[SNI_PROP_THEME]);
     return;
   }
-  if(sni->pixbuf[pix-SNI_PROP_ICONPIX]!=NULL)
+  if(sni->pixbuf[pix-SNI_PROP_ICONPIX])
   {
     scale_image_set_pixbuf(sni->image,sni->pixbuf[pix-SNI_PROP_ICONPIX]);
     return;
