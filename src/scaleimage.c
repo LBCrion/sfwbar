@@ -95,6 +95,10 @@ static void scale_image_get_size ( GtkWidget *self )
   gtk_style_context_get_border(style,flags,&border);
   gtk_style_context_get_padding(style,flags,&padding);
   gtk_style_context_get_margin(style,flags,&margin);
+  priv->raww = MAX(priv->raww,2 + border.left + border.right + padding.left +
+      padding.right + margin.left + margin.right);
+  priv->rawh = MAX(priv->rawh,2 + border.top + border.bottom + padding.top +
+      padding.bottom + margin.top + margin.bottom);
   priv->w = priv->raww - border.left - border.right - padding.left - 
     padding.right - margin.left - margin.right;
   priv->h = priv->rawh - border.top - border.bottom - padding.top -
@@ -305,9 +309,9 @@ int scale_image_update ( GtkWidget *self )
 
   w = priv->w;
   h = priv->h;
-  if(w<=0 || gtk_widget_get_hexpand(self))
+  if(w<=2 || gtk_widget_get_hexpand(self))
     w = MAX(w,priv->maxw);
-  if(h<=0 || gtk_widget_get_vexpand(self))
+  if(h<=2 || gtk_widget_get_vexpand(self))
     h = MAX(h,priv->maxh);
   w *= gtk_widget_get_scale_factor(self);
   h *= gtk_widget_get_scale_factor(self);
