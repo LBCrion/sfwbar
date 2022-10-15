@@ -396,7 +396,7 @@ The example syntax is as following:
 menu (\(dqmenu_name\(dq) {
   item(\(dqitem1\(dq, Exec \(dqcommand\(dq)
   separator
-  submenu(\(dqsub\(dq) {
+  submenu(\(dqsub\(dq,\(dqmysubmenu\(dq) {
     item(\(dqitem2\(dq, SwayCmd \(dqfocus next\(dq)
   }
 }
@@ -423,9 +423,9 @@ See \fBActions\fP section for more details on supported actions.
 a menu separator. This item has no parameters
 .TP
 .B submenu
-attach a submenu. Submenu has a one parameter, a label to display in the
-parent menu. The submenu contains a list of items, which will be placed
-into it.
+attach a submenu. The first parameter parameter is a label to display in the
+parent menu, the second optional parameter is a menu name, if a menu name is
+assigned, further items can be added to a submenu as to any other menu.
 .UNINDENT
 .SS Actions
 .sp

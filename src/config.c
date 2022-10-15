@@ -1123,24 +1123,11 @@ GtkWidget *config_menu_item ( GScanner *scanner )
   return item;
 }
 
-void config_menu ( GScanner *scanner, GtkWidget *parent )
+void config_menu_items ( GScanner *scanner, GtkWidget *menu )
 {
-  gchar *name = NULL;
-  GtkWidget *menu, *item;
-
-  config_parse_sequence(scanner,
-      SEQ_REQ,'(',NULL,NULL,"missing '(' after 'menu'",
-      SEQ_REQ,G_TOKEN_STRING,NULL,&name,"missing menu name",
-      SEQ_REQ,')',NULL,NULL,"missing ')' afer 'menu'",
-      SEQ_REQ,'{',NULL,NULL,"missing '{' afer 'menu'",
-      SEQ_END);
-
-  if(scanner->max_parse_errors)
-    return g_free(name);
-
-  menu = menu_from_name(name);
-  if(!menu || parent)
-    menu = gtk_menu_new();
+  GtkWidget *item, *submenu;
+  gchar *itemname, *subname;
+  gboolean items;
 
   g_scanner_peek_next_token(scanner);
   while(scanner->next_token != G_TOKEN_EOF && scanner->next_token != '}')
@@ -1156,11 +1143,34 @@ void config_menu ( GScanner *scanner, GtkWidget *parent )
         config_optional_semicolon(scanner);
         break;
       case G_TOKEN_SUBMENU:
-        config_menu(scanner,menu);
+        itemname = NULL;
+        subname = NULL;
+        items = FALSE;
+        config_parse_sequence(scanner,
+            SEQ_REQ,'(',NULL,NULL,"missing '(' after 'submenu'",
+            SEQ_REQ,G_TOKEN_STRING,NULL,&itemname,"missing submenu title",
+            SEQ_OPT,',',NULL,NULL,NULL,
+            SEQ_CON,G_TOKEN_STRING,NULL,&subname,"missing submenu name",
+            SEQ_REQ,')',NULL,NULL,"missing ')' afer 'submenu'",
+            SEQ_OPT,'{',NULL,&items,"missing '{' afer 'submenu'",
+            SEQ_END);
+        if(!scanner->max_parse_errors && itemname)
+        {
+          item = menu_item_new(itemname,NULL);
+          if(subname)
+            submenu = menu_new(subname);
+          else
+            submenu = gtk_menu_new();
+          gtk_menu_item_set_submenu(GTK_MENU_ITEM(item),submenu);
+          if(items)
+            config_menu_items(scanner,submenu);
+        }
+        g_free(itemname);
+        g_free(subname);
         break;
       default:
         g_scanner_error(scanner,
-            "Unexpected token in menu. Expecting an item or a separator");
+            "Unexpected token in menu. Expecting a menu item");
         break;
     }
     if(item)
@@ -1169,18 +1179,43 @@ void config_menu ( GScanner *scanner, GtkWidget *parent )
   }
   if(scanner->next_token == '}')
     g_scanner_get_next_token(scanner);
+}
 
-  if(!parent)
-    menu_add(name,menu);
-  else
+void config_menu ( GScanner *scanner )
+{
+  gchar *name = NULL;
+  GtkWidget *menu;
+  gboolean items;
+
+  config_parse_sequence(scanner,
+      SEQ_REQ,'(',NULL,NULL,"missing '(' after 'menu'",
+      SEQ_REQ,G_TOKEN_STRING,NULL,&name,"missing menu name",
+      SEQ_REQ,')',NULL,NULL,"missing ')' afer 'menu'",
+      SEQ_REQ,'{',NULL,&items,"missing '{' afer 'menu'",
+      SEQ_END);
+  if(!scanner->max_parse_errors && name)
   {
-    item = gtk_menu_item_new_with_label(name);
-    g_free(name);
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(item),menu);
-    gtk_container_add(GTK_CONTAINER(parent),item);
+    menu = menu_new(name);
+    if(items)
+      config_menu_items(scanner, menu);
   }
-
+  g_free(name);
   config_optional_semicolon(scanner);
+}
+
+void config_menu_clear ( GScanner *scanner )
+{
+  gchar *name = NULL;
+
+  config_parse_sequence(scanner,
+      SEQ_REQ,'(',NULL,NULL,"missing '(' after 'menu'",
+      SEQ_REQ,G_TOKEN_STRING,NULL,&name,"missing menu name",
+      SEQ_REQ,')',NULL,NULL,"missing ')' afer 'menu'",
+      SEQ_OPT,';',NULL,NULL,NULL,
+      SEQ_END);
+  if(!scanner->max_parse_errors && name)
+    menu_remove(name);
+  g_free(name);
 }
 
 void config_function ( GScanner *scanner )
@@ -1193,7 +1228,7 @@ void config_function ( GScanner *scanner )
       SEQ_REQ,'(',NULL,NULL,"missing '(' after 'function'",
       SEQ_REQ,G_TOKEN_STRING,NULL,&name,"missing function name",
       SEQ_REQ,')',NULL,NULL,"missing ')' afer 'function'",
-      SEQ_REQ,'{',NULL,NULL,"missing '{' afer 'function'",
+      SEQ_OPT,'{',NULL,NULL,"missing '{' afer 'function'",
       SEQ_END);
   if(scanner->max_parse_errors)
     return g_free(name);
@@ -1310,7 +1345,10 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
         config_switcher(scanner);
         break;
       case G_TOKEN_MENU:
-        config_menu(scanner,NULL);
+        config_menu(scanner);
+        break;
+      case G_TOKEN_MENUCLEAR:
+        config_menu_clear(scanner);
         break;
       case G_TOKEN_DEFINE:
         config_define(scanner);

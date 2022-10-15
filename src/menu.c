@@ -7,6 +7,7 @@
 #include "menu.h"
 #include "bar.h"
 #include "taskbargroup.h"
+#include "scaleimage.h"
 
 static GHashTable *menus;
 
@@ -19,23 +20,30 @@ GtkWidget *menu_from_name ( gchar *name )
 
 void menu_remove ( gchar *name )
 {
-  if(name)
-    g_hash_table_remove(menus,name);
+  GtkWidget *menu;
+  if(!menus || !name)
+    return;
+  menu = menu_from_name(name);
+  if(!menu)
+    return;
+  g_hash_table_remove(menus,name);
 }
 
-void menu_add ( gchar *name, GtkWidget *menu )
+GtkWidget *menu_new ( gchar *name )
 {
+  GtkWidget *menu;
+
+  menu = menu_from_name(name);
+  if(menu)
+    return menu;
   if(!menus)
     menus = g_hash_table_new_full((GHashFunc)str_nhash,(GEqualFunc)str_nequal,
         g_free,g_object_unref);
-
-  if(!g_hash_table_lookup_extended(menus, name, NULL, NULL))
-  {
-    g_object_ref_sink(menu);
-    g_hash_table_insert(menus, name, menu);
-  }
-  else
-    g_free(name);
+  menu = gtk_menu_new();
+  gtk_menu_set_reserve_toggle_size(GTK_MENU(menu), FALSE);
+  g_object_ref_sink(G_OBJECT(menu));
+  g_hash_table_insert(menus, g_strdup(name), menu);
+  return menu;
 }
 
 void menu_popup_get_gravity ( GtkWidget *widget, GdkGravity *wanchor,
@@ -124,10 +132,12 @@ GtkWidget *menu_item_new ( gchar *label, action_t *action )
     text = g_strdup(label);
 
   item = gtk_menu_item_new();
+  gtk_widget_set_name(item,"menu_item");
   box = gtk_grid_new();
   if(icon)
   {
-    img = gtk_image_new_from_icon_name(icon+1,GTK_ICON_SIZE_MENU);
+    img = scale_image_new();
+    scale_image_set_image(img,icon+1,NULL);
     if(img)
       gtk_grid_attach(GTK_GRID(box),img,1,1,1,1);
   }
@@ -139,9 +149,12 @@ GtkWidget *menu_item_new ( gchar *label, action_t *action )
   }
   gtk_container_add(GTK_CONTAINER(item),box);
 
-  g_signal_connect(G_OBJECT(item),"activate",
-      G_CALLBACK(menu_action_cb),action);
-  g_object_weak_ref(G_OBJECT(item),(GWeakNotify)action_free,action);
+  if(action)
+  {
+    g_signal_connect(G_OBJECT(item),"activate",
+        G_CALLBACK(menu_action_cb),action);
+    g_object_weak_ref(G_OBJECT(item),(GWeakNotify)action_free,action);
+  }
 
   return item;
 }

@@ -323,7 +323,7 @@ The example syntax is as following: ::
   menu ("menu_name") {
     item("item1", Exec "command")
     separator
-    submenu("sub") {
+    submenu("sub","mysubmenu") {
       item("item2", SwayCmd "focus next")
     }
   }
@@ -345,9 +345,9 @@ separator
   a menu separator. This item has no parameters
 
 submenu
-  attach a submenu. Submenu has a one parameter, a label to display in the
-  parent menu. The submenu contains a list of items, which will be placed
-  into it.
+  attach a submenu. The first parameter parameter is a label to display in the
+  parent menu, the second optional parameter is a menu name, if a menu name is
+  assigned, further items can be added to a submenu as to any other menu.
 
 Actions
 -------
