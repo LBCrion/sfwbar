@@ -258,10 +258,9 @@ filter_output [true|false]
 title_width
   set maximum width of an application title in characters
 
-sort
-  set sorting order for taskbar items. Possible values are Title, to sort item
-  by title, AppId, to sort by app_id, and Seq to sort items by the order in
-  which windows were open.
+sort [true|false]
+  setting of whether taskbar items should be sorted. If the items are not
+  sorted, user can sort them manually via drag-and-drop mechanism.
 
 rows
   a number of rows in a taskbar.
@@ -286,6 +285,10 @@ group [true|false]
 preview [true|false]
   specifies whether workspace previews are displayed on mouse hover over
   pager buttons
+
+sort [true|false]
+  setting of whether pager items should be sorted. If the items are not
+  sorted, user can sort them manually via drag-and-drop mechanism.
 
 numeric [true|false]
   if true, the workspaces will be sorted as numbers, otherwise they will be
@@ -313,6 +316,10 @@ cols
   If both rows and cols are specified, rows will be used. If neither is
   specified, the default is rows=1
 
+sort [true|false]
+  setting of whether tray items should be sorted. If the items are not
+  sorted, user can sort them manually via drag-and-drop mechanism.
+
 Menus
 -----
 
@@ -320,6 +327,7 @@ User defined menus can be attached to any widget (see ``action`` widget
 property). Menus are defined using a Menu section in the config file.
 The example syntax is as following: ::
 
+  menuclear("menu_name")
   menu ("menu_name") {
     item("item1", Exec "command")
     separator
@@ -328,6 +336,7 @@ The example syntax is as following: ::
     }
   }
 
+Command MenuClear deletes any existing items from a menu.
 Each menu has a name used to link the menu to the widget action and a
 list of menu items. If a menu with the same name is defined more than
 once, the items from subsequence declarations will be appended to the

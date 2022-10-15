@@ -325,10 +325,9 @@ output as the taskbar
 .B title_width
 set maximum width of an application title in characters
 .TP
-.B sort
-set sorting order for taskbar items. Possible values are Title, to sort item
-by title, AppId, to sort by app_id, and Seq to sort items by the order in
-which windows were open.
+.B sort [true|false]
+setting of whether taskbar items should be sorted. If the items are not
+sorted, user can sort them manually via drag\-and\-drop mechanism.
 .TP
 .B rows
 a number of rows in a taskbar.
@@ -354,6 +353,10 @@ are cols, rows, style, css, title_width, labels, icons.
 .B preview [true|false]
 specifies whether workspace previews are displayed on mouse hover over
 pager buttons
+.TP
+.B sort [true|false]
+setting of whether pager items should be sorted. If the items are not
+sorted, user can sort them manually via drag\-and\-drop mechanism.
 .TP
 .B numeric [true|false]
 if true, the workspaces will be sorted as numbers, otherwise they will be
@@ -382,6 +385,10 @@ a number of rows in a pager.
 a number of columns in a pager.
 If both rows and cols are specified, rows will be used. If neither is
 specified, the default is rows=1
+.TP
+.B sort [true|false]
+setting of whether tray items should be sorted. If the items are not
+sorted, user can sort them manually via drag\-and\-drop mechanism.
 .UNINDENT
 .SS Menus
 .sp
@@ -393,6 +400,7 @@ The example syntax is as following:
 .sp
 .nf
 .ft C
+menuclear(\(dqmenu_name\(dq)
 menu (\(dqmenu_name\(dq) {
   item(\(dqitem1\(dq, Exec \(dqcommand\(dq)
   separator
@@ -405,6 +413,7 @@ menu (\(dqmenu_name\(dq) {
 .UNINDENT
 .UNINDENT
 .sp
+Command MenuClear deletes any existing items from a menu.
 Each menu has a name used to link the menu to the widget action and a
 list of menu items. If a menu with the same name is defined more than
 once, the items from subsequence declarations will be appended to the
