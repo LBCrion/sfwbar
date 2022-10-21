@@ -76,5 +76,6 @@ layout {
     value = "open-menu-symbolic"
     style = "startmenu"
     action = Function "StartMenu"
+    tooltip = "Application menu"
   }
 }

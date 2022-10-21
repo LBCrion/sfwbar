@@ -33,7 +33,8 @@ define BatIcon = "battery-level-" + BatChargeStr + "0" +
 layout {
   image {
     action[0] = Function "BatteryInitScanner"
-    style = "battery"
+    style = If($BatState="","hidden","battery")
+    tooltip = Str(100*BatLeft/BatTotal,0) + "%"
     value = BatIcon
   }
 }
