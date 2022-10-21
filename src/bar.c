@@ -140,7 +140,7 @@ gint bar_get_toplevel_dir ( GtkWidget *widget )
 
 void bar_set_layer ( gchar *layer_str, gchar *addr )
 {
-  GtkLayerShellLayer layer = GTK_LAYER_SHELL_LAYER_TOP;
+  GtkLayerShellLayer layer;
   GtkWidget *bar;
 
   bar = bar_get_by_name(addr);
@@ -151,10 +151,13 @@ void bar_set_layer ( gchar *layer_str, gchar *addr )
     layer = GTK_LAYER_SHELL_LAYER_BACKGROUND;
   else if(!g_ascii_strcasecmp(layer_str,"bottom"))
     layer = GTK_LAYER_SHELL_LAYER_BOTTOM;
-  else if(!g_ascii_strcasecmp(layer_str,"top"))
-    layer = GTK_LAYER_SHELL_LAYER_TOP;
   else if(!g_ascii_strcasecmp(layer_str,"overlay"))
     layer = GTK_LAYER_SHELL_LAYER_OVERLAY;
+  else
+    layer = GTK_LAYER_SHELL_LAYER_TOP;
+
+  if(layer == gtk_layer_get_layer(GTK_WINDOW(bar)))
+    return;
 
   gtk_layer_set_layer(GTK_WINDOW(bar),layer);
   if(gtk_widget_is_visible(bar))
