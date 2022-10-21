@@ -158,12 +158,14 @@ void scanner_update_json ( struct json_object *obj, ScanFile *file )
   for(node=file->vars;node!=NULL;node=g_list_next(node))
   {
     ptr = jpath_parse(((ScanVar *)node->data)->json,obj);
-    for(i=0;i<json_object_array_length(ptr);i++)
-    {
-      scanner_update_var(((ScanVar *)node->data),
-        g_strdup(json_object_get_string(json_object_array_get_idx(ptr,i))));
-    }
-    json_object_put(ptr);
+    if(ptr && json_object_is_type(ptr, json_type_array))
+      for(i=0;i<json_object_array_length(ptr);i++)
+      {
+        scanner_update_var(((ScanVar *)node->data),
+          g_strdup(json_object_get_string(json_object_array_get_idx(ptr,i))));
+      }
+    if(ptr)
+      json_object_put(ptr);
   }
 }
 

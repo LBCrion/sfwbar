@@ -152,6 +152,8 @@ struct json_object *jpath_parse ( gchar *path, struct json_object *obj )
   struct json_object *cur,*next;
   gint i, sep;
 
+  if(!path || !obj)
+    return NULL;
   scanner = g_scanner_new(NULL);
   scanner->config->scan_octal = 0;
   scanner->config->symbol_2_token = 1;
