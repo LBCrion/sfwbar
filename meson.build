@@ -6,6 +6,13 @@ glsh = dependency('gtk-layer-shell-0')
 wayl = dependency('wayland-client')
 wayp = dependency('wayland-protocols', version: '>=1.17')
 
+conf_data = configuration_data()
+glsh_ver = glsh.version().split('.')
+conf_data.set('glsh_major',glsh_ver[0])
+conf_data.set('glsh_minor',glsh_ver[1])
+conf_data.set('glsh_micro',glsh_ver[2])
+configure_file(input: 'config.h.meson', output: 'config.h', configuration: conf_data )
+
 wayland_scanner = find_program('wayland-scanner')
 wprotodir = wayp.get_pkgconfig_variable('pkgdatadir')
 

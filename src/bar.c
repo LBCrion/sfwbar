@@ -9,6 +9,7 @@
 #include "bar.h"
 #include "wayland.h"
 #include "grid.h"
+#include "config.h"
 
 static GHashTable *bar_list;
 
@@ -156,8 +157,10 @@ void bar_set_layer ( gchar *layer_str, gchar *addr )
   else
     layer = GTK_LAYER_SHELL_LAYER_TOP;
 
+#if GTK_LAYER_VER_MINOR > 5 || GTK_LAYER_VER_MAJOR > 0
   if(layer == gtk_layer_get_layer(GTK_WINDOW(bar)))
     return;
+#endif
 
   gtk_layer_set_layer(GTK_WINDOW(bar),layer);
   if(gtk_widget_is_visible(bar))
