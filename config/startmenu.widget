@@ -1,0 +1,80 @@
+Function("StartMenu") {
+  PipeRead "python << END
+import string, sys, fileinput, getopt, os, glob
+
+def main():
+  catmap = {
+  'Programming': 'Development',
+  'TextEditor': 'Editors',
+  'Game': 'Games',
+  'Graphics': 'Graphics',
+  'Internet': 'Internet',
+  'Settings': 'Utilities',
+  'System': 'Utilities',
+  'Utilities': 'Utilities',
+  'Network': 'Internet',
+  'AudioVideo': 'AudioVideo',
+  'Audio': 'AudioVideo',
+  'Video': 'AudioVideo',
+  'Utility': 'Utilities',
+  'Office': 'Office'}
+
+  cats = list()
+  outp = list()
+  print ('MenuClear(\\'Menugen_Applications\\')')
+  dlist = sorted(glob.glob('/usr/share/applications/*.desktop'))
+  for dfile in dlist:
+    de_name = de_icon = de_exec = de_cat = de_disp = ''
+    fchan = open(dfile)
+    for dline in fchan.readlines():
+      try:
+        (tag, value) = dline.strip().split('=')
+        if tag.strip() == 'Name':
+          de_name = value.strip()
+        if tag.strip() == 'Icon':
+          de_icon = value.strip()
+        if tag.strip() == 'Exec':
+          de_exec = value.strip()
+        if tag.strip() == 'Categories':
+          de_cat = value.strip()
+        if tag.strip() == 'NoDisplay':
+          de_disp = value.strip()
+      except:
+        pass
+    fchan.close()
+    if (de_name != '') and (de_exec != '') and (de_disp.lower() != 'true'):
+      de_cat = map_category ( catmap, de_cat )
+      de_exec = de_exec.split(' ')[0]
+      if not (de_cat in cats):
+        cats.append(de_cat)
+        print ('MenuClear(\\'Menugen_' + de_cat + '\\')')
+        outp.append('Menu(\\'Menugen_Applications\\') { SubMenu(\\'' + de_cat +
+        '%applications-' + de_cat.lower() + '\\',\\'Menugen_' + de_cat + '\\') }')
+      outp.append('Menu(\\'Menugen_' + de_cat + '\\') { Item(\\'' + de_name + '%' +
+      de_icon + '\\',Exec \\'' + de_exec +'\\') }')
+  for token in sorted(outp):
+    print(token)
+
+def map_category ( catmap, catlist ):
+  for cat in catlist.strip().split(';'):
+    try:
+      mycat = catmap[cat]
+    except LookupError:
+      mycat = ''
+    if mycat != '':
+      return mycat
+  return 'Other'
+
+if __name__ == '__main__':
+  main()
+END"
+  Menu "MenuGen_Applications"
+}
+
+layout {
+  button {
+    value = "open-menu-symbolic"
+    style = "startmenu"
+    action = Function "StartMenu"
+  }
+}
