@@ -23,8 +23,8 @@ wayland_protos = [
 wayland_targets=[]
 
 foreach proto : wayland_protos
-  header = proto.split('/').get(-1).replace('.xml','.h')
-  cfile = proto.split('/').get(-1).replace('.xml','.c')
+  header = ''.join(proto.split('/').get(-1).split('.xml'),'.h')
+  cfile = ''.join(proto.split('/').get(-1).split('.xml'),'.c')
   wayland_targets += custom_target(header,output:header,input:proto,
       command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@' ] )
   wayland_targets += custom_target(cfile,output:cfile,input:proto,
