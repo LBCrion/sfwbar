@@ -166,7 +166,7 @@ void bar_set_layer ( gchar *layer_str, gchar *addr )
   if(gtk_widget_is_visible(bar))
   {
     gtk_widget_hide(bar);
-    gtk_widget_show_now(bar);
+    gtk_widget_show(bar);
   }
 }
 
@@ -227,7 +227,7 @@ void bar_update_monitor ( GtkWindow *win )
   if(!match)
     return;
   gtk_layer_set_monitor(win, match);
-  gtk_widget_show_now(GTK_WIDGET(win));
+  gtk_widget_show(GTK_WIDGET(win));
 }
 
 void bar_set_monitor ( gchar *mon_name, gchar *addr )
