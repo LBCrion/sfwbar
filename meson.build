@@ -14,37 +14,22 @@ conf_data.set('glsh_micro',glsh_ver[2])
 configure_file(input: 'config.h.meson', output: 'config.h', configuration: conf_data )
 
 wayland_scanner = find_program('wayland-scanner')
-wprotodir = wayp.get_pkgconfig_variable('pkgdatadir')
+wayland_protodir = wayp.get_pkgconfig_variable('pkgdatadir')
+wayland_protos = [
+  'protocols/wlr-foreign-toplevel-management-unstable-v1.xml',
+  'protocols/xdg-output-unstable-v1.xml',
+  wayland_protodir / 'unstable/idle-inhibit/idle-inhibit-unstable-v1.xml'
+]
+wayland_targets=[]
 
-ftop_c = custom_target('wlr-foreign-toplevel-management-unstable-v1.c',
-    output: 'wlr-foreign-toplevel-management-unstable-v1.c',
-    input: 'protocols/wlr-foreign-toplevel-management-unstable-v1.xml',
-    command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@'] )
-
-ftop_h = custom_target('wlr-foreign-toplevel-management-unstable-v1.h',
-    output: 'wlr-foreign-toplevel-management-unstable-v1.h',
-    input: 'protocols/wlr-foreign-toplevel-management-unstable-v1.xml',
-    command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'] )
-
-xout_c = custom_target('xdg-output-unstable-v1.c',
-    output: 'xdg-output-unstable-v1.c',
-    input: 'protocols/xdg-output-unstable-v1.xml',
-    command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@'] )
-
-xout_h = custom_target('xdg-output-unstable-v1.h',
-    output: 'xdg-output-unstable-v1.h',
-    input: 'protocols/xdg-output-unstable-v1.xml',
-    command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'] )
-
-idle_c = custom_target('idle-inhibit-unstable-v1.c',
-    output: 'idle-inhibit-unstable-v1.c',
-    input: wprotodir / 'unstable/idle-inhibit/idle-inhibit-unstable-v1.xml',
-    command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@'] )
-
-idle_h = custom_target('idle-inhibit-unstable-v1.h',
-    output: 'idle-inhibit-unstable-v1.h',
-    input: wprotodir / 'unstable/idle-inhibit/idle-inhibit-unstable-v1.xml',
-    command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'] )
+foreach proto : wayland_protos
+  header = proto.split('/').get(-1).replace('.xml','.h')
+  cfile = proto.split('/').get(-1).replace('.xml','.c')
+  wayland_targets += custom_target(header,output:header,input:proto,
+      command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@' ] )
+  wayland_targets += custom_target(cfile,output:cfile,input:proto,
+      command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@' ] )
+endforeach
 
 src = ['src/sfwbar.c',
     'src/bar.c',
@@ -88,12 +73,7 @@ src = ['src/sfwbar.c',
     'src/wayland/foreign-toplevel.c',
     'src/wayland/idle-inhibit.c',
     'src/wayland/xdg-output.c',
-    ftop_c,
-    ftop_h,
-    idle_c,
-    idle_h,
-    xout_c,
-    xout_h ]
+    wayland_targets ]
 dep = [gtk3, glib, glsh, wayl, json ]
 
 
