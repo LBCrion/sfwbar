@@ -34,7 +34,10 @@ static void css_custom_handle ( GtkWidget *widget )
   GtkAlign align;
 
   gtk_widget_style_get(widget,"visible",&state,NULL);
-  gtk_widget_set_visible(widget,state);
+  if(state)
+    gtk_widget_show_now(widget);
+  else
+    gtk_widget_hide(widget);
   if(!GTK_IS_EVENT_BOX(widget))
   {
     gtk_widget_style_get(widget,"hexpand",&state,NULL);
