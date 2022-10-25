@@ -2,16 +2,17 @@
 #define __FLOWITEM_H__
 
 #include <gtk/gtk.h>
+#include "basewidget.h"
 
 #define FLOW_ITEM_TYPE            (flow_item_get_type())
 
-G_DECLARE_DERIVABLE_TYPE (FlowItem, flow_item, FLOW, ITEM, GtkEventBox);
+G_DECLARE_DERIVABLE_TYPE (FlowItem, flow_item, FLOW, ITEM, BaseWidget);
 
 typedef struct _FlowItemClass FlowItemClass;
 
 struct _FlowItemClass
 {
-  GtkEventBoxClass parent_class;
+  BaseWidgetClass parent_class;
 
   void (*update) ( GtkWidget *self );
   void (*invalidate) ( GtkWidget *self );

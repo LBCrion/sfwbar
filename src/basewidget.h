@@ -17,6 +17,7 @@ struct _BaseWidgetClass
   GtkEventBoxClass parent_class;
 
   void (*update_value)(GtkWidget *self);
+  void (*old_size_allocate)(GtkWidget *, GtkAllocation * );
   GtkWidget *(*get_child)(GtkWidget *self);
   gboolean no_value_cache;
 };
@@ -37,6 +38,7 @@ struct _BaseWidgetPrivate
   gulong click_h;
   gulong scroll_h;
   gint64 interval;
+  guint maxw, maxh;
   gchar *trigger;
   gint64 next_poll;
   gint dir;
@@ -54,6 +56,8 @@ void base_widget_set_id ( GtkWidget *self, gchar *id );
 void base_widget_set_interval ( GtkWidget *self, gint64 interval );
 void base_widget_set_state ( GtkWidget *self, guint16 mask, gboolean state );
 void base_widget_set_action ( GtkWidget *self, gint n, action_t *action );
+void base_widget_set_max_width ( GtkWidget *self, guint x );
+void base_widget_set_max_height ( GtkWidget *self, guint x );
 gboolean base_widget_update_value ( GtkWidget *self );
 void base_widget_set_rect ( GtkWidget *self, struct rect rect );
 void base_widget_attach ( GtkWidget *, GtkWidget *, GtkWidget *);

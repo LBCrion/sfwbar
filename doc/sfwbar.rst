@@ -741,6 +741,8 @@ property              description
                       position relative to the last placed widget.
                       For a window it's an edge along which the bar is positioned.
                       Possible values [top|bottom|left|right]
+-GtkWidget-max-width  Limit maximum width of a widget (in pixels)
+-GtkWidget-max-height Limit maximum height of a widget (in pixels)
 -GtkWidget-hexpand    specify if a widget should expand horizontally to occupy
                       available space. [true|false]
 -GtkWidget-vexpand    as above, for vertical expansion.

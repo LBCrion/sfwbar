@@ -45,9 +45,25 @@ static void base_widget_destroy ( GtkWidget *self )
   GTK_WIDGET_CLASS(base_widget_parent_class)->destroy(self);
 }
 
+static void base_widget_size_allocate ( GtkWidget *self, GtkAllocation *alloc )
+{
+  BaseWidgetPrivate *priv;
+
+  g_return_if_fail(IS_BASE_WIDGET(self));
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  if(priv->maxw)
+    alloc->width = MIN(priv->maxw,alloc->width);
+  if(priv->maxh)
+    alloc->height = MIN(priv->maxh,alloc->height);
+  BASE_WIDGET_GET_CLASS(self)->old_size_allocate(self,alloc);
+}
+
 static void base_widget_class_init ( BaseWidgetClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = base_widget_destroy;
+  kclass->old_size_allocate = GTK_WIDGET_CLASS(kclass)->size_allocate;
+  GTK_WIDGET_CLASS(kclass)->size_allocate = base_widget_size_allocate;
 }
 
 static void base_widget_init ( BaseWidget *self )
@@ -390,6 +406,26 @@ void base_widget_attach ( GtkWidget *parent, GtkWidget *self,
       gtk_grid_attach(GTK_GRID(parent),self,
           priv->rect.x,priv->rect.y,priv->rect.w,priv->rect.h);
   }
+}
+
+void base_widget_set_max_width ( GtkWidget *self, guint x )
+{
+  BaseWidgetPrivate *priv;
+
+  g_return_if_fail(IS_BASE_WIDGET(self));
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  priv->maxw = x;
+}
+
+void base_widget_set_max_height ( GtkWidget *self, guint x )
+{
+  BaseWidgetPrivate *priv;
+
+  g_return_if_fail(IS_BASE_WIDGET(self));
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  priv->maxh = x;
 }
 
 gchar *base_widget_get_id ( GtkWidget *self )

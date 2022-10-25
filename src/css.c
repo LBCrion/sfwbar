@@ -4,6 +4,7 @@
  */
 
 #include "sfwbar.h"
+#include "basewidget.h"
 
 static void (*css_style_updated_original)(GtkWidget *);
 
@@ -32,6 +33,7 @@ static void css_custom_handle ( GtkWidget *widget )
   gboolean state;
   gdouble xalign;
   GtkAlign align;
+  guint x;
 
   gtk_widget_style_get(widget,"visible",&state,NULL);
   gtk_widget_set_visible(widget,state);
@@ -45,6 +47,15 @@ static void css_custom_handle ( GtkWidget *widget )
     gtk_widget_set_halign(widget,align);
     gtk_widget_style_get(widget,"valign",&align,NULL);
     gtk_widget_set_valign(widget,align);
+  }
+  if(IS_BASE_WIDGET(widget))
+  {
+    gtk_widget_style_get(gtk_bin_get_child(GTK_BIN(widget)),"max-width",&x,
+        NULL);
+    base_widget_set_max_width(widget,x);
+    gtk_widget_style_get(gtk_bin_get_child(GTK_BIN(widget)),"max-height",&x,
+        NULL);
+    base_widget_set_max_height(widget,x);
   }
 
   if(GTK_IS_LABEL(widget))
@@ -82,6 +93,12 @@ void css_init ( gchar *cssname )
   gtk_widget_class_install_style_property( widget_class,
     g_param_spec_int("icon-size","icon size","icon size",
       0,500,48, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property( widget_class,
+    g_param_spec_uint("max-width","maximum width","maximum width",
+      0,G_MAXUINT,0, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property( widget_class,
+    g_param_spec_uint("max-height","maximum height","maximum height",
+      0,G_MAXUINT,0, G_PARAM_READABLE));
 
   static GEnumValue dir_types [] = {
     {GTK_POS_TOP,"top","top"},
