@@ -293,6 +293,7 @@ static void sway_window_new ( struct json_object *container )
   wintree_window_append(win);
   wintree_set_app_id(wid,app_id);
   wintree_set_title(wid,json_string_by_name(container,"name"));
+  wintree_log(wid);
 
   if(json_bool_by_name(container,"focused",FALSE))
     wintree_set_focus(wid);
