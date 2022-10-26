@@ -707,6 +707,30 @@ tricky). Mapping is supported via top-level ``MapAppId`` keyword. I.e. ::
 where app_id is the desired app_id and pattern is a regular expression to
 match the title against.
 
+If you are using an XWayland app, they usually do not have an `app_id` set. If
+an icon is not showing, you can add your icon to the following locations:
+1. `$HOME/.icons`
+2. One of the directories listed in `$XDG_DATA_DIRS/icons`
+3. /usr/share/pixmaps
+
+If an `app_id` is not set, sfwbar will fallback to using the `instance` in the
+`window-properties`, which can be found by using a tool such as `swaymsg` (if on sway)
+which can display a list of running processes by using the command `swaymsg -t get_tree`.
+
+For example, with CLion this will show the following:
+```
+"window_properties": {
+  "class": "jetbrains-clion",
+  "instance": "jetbrains-clion",
+  "title": "sfwbar – trayitem.c",
+  "transient_for": null,
+  "window_type": "normal"
+}
+```
+
+So we can put an icon called jetbrains-clion.svg (or other formats, see the
+[Arch wiki](https://wiki.archlinux.org/title/desktop_entries#Icons)) for information about file formats.
+
 CSS Style
 =========
 SFWBar uses gtk+ widgets and can accept all css properties supported by 
