@@ -233,12 +233,10 @@ void bar_update_monitor ( GtkWindow *win )
     gtk_widget_show(GTK_WIDGET(win));
 }
 
-void bar_set_monitor ( gchar *mon_name, gchar *addr )
+void bar_set_monitor ( gchar *mon_name, GtkWidget *bar )
 {
   gchar *monitor;
-  GtkWidget *bar;
 
-  bar = bar_get_by_name(addr);
   if(!bar || !mon_name)
     return;
   monitor = g_object_get_data(G_OBJECT(bar),"monitor");

@@ -130,11 +130,10 @@ static void activate (GtkApplication* app, gpointer data )
       gtk_application_add_window(app,GTK_WINDOW(iter->data));
       css_widget_cascade(GTK_WIDGET(iter->data),NULL);
       base_widget_autoexec(iter->data,NULL);
+      if(monitor)
+        bar_set_monitor(monitor,GTK_WIDGET(iter->data));
     }
   g_list_free(clist);
-
-  if(monitor)
-    bar_set_monitor(monitor,"sfwbar");
 
   gdisp = gdk_display_get_default();
   g_signal_connect(gdisp, "monitor-added",

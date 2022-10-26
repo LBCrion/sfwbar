@@ -230,7 +230,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
       config_string(action->command);
       break;
     case G_TOKEN_SETMONITOR:
-      bar_set_monitor(action->command,action->addr);
+      bar_set_monitor(action->command,bar_get_by_name(action->addr));
       break;
     case G_TOKEN_SETLAYER:
       bar_set_layer(action->command,action->addr);
