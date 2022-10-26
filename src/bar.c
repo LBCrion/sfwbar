@@ -202,6 +202,7 @@ void bar_update_monitor ( GtkWindow *win )
   GdkMonitor *gmon,*match;
   gint nmon,i;
   gchar *name, *monitor;
+  gboolean visible;
 
   if(!win)
     return;
@@ -223,11 +224,13 @@ void bar_update_monitor ( GtkWindow *win )
     }
   }
 
+  visible = gtk_widget_get_visible(GTK_WIDGET(win));
   gtk_widget_hide(GTK_WIDGET(win));
   if(!match)
     return;
   gtk_layer_set_monitor(win, match);
-  gtk_widget_show(GTK_WIDGET(win));
+  if(visible)
+    gtk_widget_show(GTK_WIDGET(win));
 }
 
 void bar_set_monitor ( gchar *mon_name, gchar *addr )
