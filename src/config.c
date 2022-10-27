@@ -1332,10 +1332,10 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
         if(g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
         {
           g_scanner_get_next_token(scanner);
-          dest = bar_grid_by_name(scanner->value.v_string);
+          dest = bar_grid_from_name(scanner->value.v_string);
         }
         else
-          dest = bar_grid_by_name(NULL);
+          dest = bar_grid_from_name(NULL);
         config_layout(scanner,dest);
         break;
       case G_TOKEN_PLACER:

@@ -13,7 +13,7 @@
 
 static GHashTable *bar_list;
 
-GtkWidget *bar_get_by_name ( gchar *name )
+GtkWindow *bar_from_name ( gchar *name )
 {
   if(!bar_list)
     return NULL;
@@ -21,7 +21,7 @@ GtkWidget *bar_get_by_name ( gchar *name )
   return g_hash_table_lookup(bar_list,name?name:"sfwbar");
 }
 
-GtkWidget *bar_grid_by_name ( gchar *addr )
+GtkWidget *bar_grid_from_name ( gchar *addr )
 {
   GtkWidget *bar, *box;
   GtkWidget *widget = NULL;
@@ -46,7 +46,7 @@ GtkWidget *bar_grid_by_name ( gchar *addr )
     name = g_strdup(addr);
   }
 
-  bar = bar_get_by_name(name);
+  bar = GTK_WIDGET(bar_from_name(name));
   if(!bar)
     bar = GTK_WIDGET(bar_new(name));
   g_free(name);
@@ -139,12 +139,10 @@ gint bar_get_toplevel_dir ( GtkWidget *widget )
   return toplevel_dir;
 }
 
-void bar_set_layer ( gchar *layer_str, gchar *addr )
+void bar_set_layer ( gchar *layer_str, GtkWindow *bar )
 {
   GtkLayerShellLayer layer;
-  GtkWidget *bar;
 
-  bar = bar_get_by_name(addr);
   if(!bar || !layer_str)
     return;
 
@@ -158,31 +156,27 @@ void bar_set_layer ( gchar *layer_str, gchar *addr )
     layer = GTK_LAYER_SHELL_LAYER_TOP;
 
 #if GTK_LAYER_VER_MINOR > 5 || GTK_LAYER_VER_MAJOR > 0
-  if(layer == gtk_layer_get_layer(GTK_WINDOW(bar)))
+  if(layer == gtk_layer_get_layer(bar))
     return;
 #endif
 
-  gtk_layer_set_layer(GTK_WINDOW(bar),layer);
-  if(gtk_widget_is_visible(bar))
+  gtk_layer_set_layer(bar, layer);
+  if(gtk_widget_is_visible(GTK_WIDGET(bar)))
   {
-    gtk_widget_hide(bar);
-    gtk_widget_show(bar);
+    gtk_widget_hide(GTK_WIDGET(bar));
+    gtk_widget_show(GTK_WIDGET(bar));
   }
 }
 
-void bar_set_exclusive_zone ( gchar *zone, gchar *addr )
+void bar_set_exclusive_zone ( gchar *zone, GtkWindow *bar )
 {
-  GtkWidget *bar;
-
-  bar = bar_get_by_name(addr);
   if(!bar || !zone)
     return;
 
   if(!g_ascii_strcasecmp(zone,"auto"))
-    gtk_layer_auto_exclusive_zone_enable (GTK_WINDOW(bar));
+    gtk_layer_auto_exclusive_zone_enable (bar);
   else
-    gtk_layer_set_exclusive_zone (GTK_WINDOW(bar),
-        MAX(-1,g_ascii_strtoll(zone,NULL,10)));
+    gtk_layer_set_exclusive_zone (bar,MAX(-1,g_ascii_strtoll(zone,NULL,10)));
 }
 
 gchar *bar_get_output ( GtkWidget *widget )
@@ -191,7 +185,7 @@ gchar *bar_get_output ( GtkWidget *widget )
   GtkWidget *toplevel;
 
   toplevel = gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
-  win = gtk_widget_get_window(GTK_WIDGET(toplevel));
+  win = gtk_widget_get_window(toplevel);
   return g_object_get_data( G_OBJECT(gdk_display_get_monitor_at_window(
         gdk_window_get_display(win),win)), "xdg_name" );
 }
@@ -233,7 +227,7 @@ void bar_update_monitor ( GtkWindow *win )
     gtk_widget_show(GTK_WIDGET(win));
 }
 
-void bar_set_monitor ( gchar *mon_name, GtkWidget *bar )
+void bar_set_monitor ( gchar *mon_name, GtkWindow *bar )
 {
   gchar *monitor;
 
@@ -245,7 +239,7 @@ void bar_set_monitor ( gchar *mon_name, GtkWidget *bar )
   {
     g_free(monitor);
     g_object_set_data(G_OBJECT(bar),"monitor", g_strdup(mon_name));
-    bar_update_monitor(GTK_WINDOW(bar));
+    bar_update_monitor(bar);
   }
 }
 
@@ -271,16 +265,14 @@ void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
     bar_update_monitor(bar);
 }
 
-void bar_set_size ( gchar *size, gchar *addr )
+void bar_set_size ( gchar *size, GtkWindow *bar )
 {
   gdouble number;
   gchar *end;
   GdkRectangle rect;
   GdkWindow *win;
   gint toplevel_dir;
-  GtkWindow *bar;
 
-  bar = GTK_WINDOW(bar_get_by_name(addr));
   if(!bar || !size)
     return;
   number = g_ascii_strtod(size, &end);
