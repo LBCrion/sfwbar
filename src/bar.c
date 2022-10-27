@@ -118,7 +118,10 @@ gboolean bar_hide_event ( const gchar *mode )
       gtk_widget_hide(GTK_WIDGET(bar));
     else
       if(!gtk_widget_is_visible(GTK_WIDGET(bar)))
+      {
         bar_update_monitor(GTK_WINDOW(bar));
+        gtk_widget_show_now(GTK_WIDGET(bar));
+      }
   return TRUE;
 }
 
