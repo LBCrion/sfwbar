@@ -45,21 +45,33 @@ ScanFile *scanner_file_new ( gint source, gchar *fname,
         break;
 
   if(iter)
+  {
     file = iter->data;
+    g_free(fname);
+  }
   else
+  {
     file = g_malloc0(sizeof(ScanFile));
+    file_list = g_list_append(file_list,file);
+    file->fname = fname;
+  }
 
-  file->fname = fname;
-  file->trigger = trigger;
   file->source = source;
-  file->mtime = 0;
   file->flags = flags;
-  file->vars = NULL;
-  if( !strchr(fname,'*') && !strchr(fname,'?') )
+  if( !strchr(file->fname,'*') && !strchr(file->fname,'?') )
     file->flags |= VF_NOGLOB;
-  file_list = g_list_append(file_list,file);
-  if(file->trigger)
-    scanner_file_attach(trigger,file);
+
+  if(g_strcmp0(file->trigger,trigger))
+  {
+    if(file->trigger)
+      g_hash_table_remove(trigger_list,file->trigger);
+    g_free(file->trigger);
+    file->trigger = trigger;
+    if(file->trigger)
+      scanner_file_attach(file->trigger,file);
+  }
+  else
+    g_free(trigger);
 
   return file;
 }
