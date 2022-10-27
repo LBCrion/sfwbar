@@ -164,7 +164,7 @@ void bar_set_layer ( gchar *layer_str, GtkWindow *bar )
   if(gtk_widget_is_visible(GTK_WIDGET(bar)))
   {
     gtk_widget_hide(GTK_WIDGET(bar));
-    gtk_widget_show(GTK_WIDGET(bar));
+    gtk_widget_show_now(GTK_WIDGET(bar));
   }
 }
 
@@ -224,7 +224,7 @@ void bar_update_monitor ( GtkWindow *win )
     return;
   gtk_layer_set_monitor(win, match);
   if(visible)
-    gtk_widget_show(GTK_WIDGET(win));
+    gtk_widget_show_now(GTK_WIDGET(win));
 }
 
 void bar_set_monitor ( gchar *mon_name, GtkWindow *bar )
