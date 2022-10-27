@@ -275,7 +275,6 @@ void base_widget_set_tooltip ( GtkWidget *self, gchar *tooltip )
   gchar *eval;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   g_free(priv->tooltip);
@@ -314,7 +313,6 @@ void base_widget_set_value ( GtkWidget *self, gchar *value )
   BaseWidgetPrivate *priv;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   g_free(priv->value);
@@ -340,7 +338,6 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
   BaseWidgetPrivate *priv;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   g_free(priv->style);
@@ -365,7 +362,6 @@ void base_widget_set_trigger ( GtkWidget *self, gchar *trigger )
   BaseWidgetPrivate *priv;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   g_free(priv->trigger);
@@ -403,7 +399,6 @@ void base_widget_set_interval ( GtkWidget *self, gint64 interval )
   BaseWidgetPrivate *priv;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   priv->interval = interval;
@@ -414,7 +409,6 @@ void base_widget_set_state ( GtkWidget *self, guint16 mask, gboolean state )
   BaseWidgetPrivate *priv;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(state)
@@ -428,7 +422,6 @@ void base_widget_set_rect ( GtkWidget *self, struct rect rect )
   BaseWidgetPrivate *priv;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   priv->rect = rect;
@@ -441,7 +434,6 @@ void base_widget_attach ( GtkWidget *parent, GtkWidget *self,
   gint dir;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(parent)
@@ -480,7 +472,6 @@ gchar *base_widget_get_id ( GtkWidget *self )
   BaseWidgetPrivate *priv;
 
   g_return_val_if_fail(IS_BASE_WIDGET(self),NULL);
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   return priv->id;
@@ -491,7 +482,6 @@ guint16 base_widget_get_state ( GtkWidget *self )
   BaseWidgetPrivate *priv;
 
   g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   return priv->user_state;
@@ -502,7 +492,6 @@ void base_widget_set_next_poll ( GtkWidget *self, gint64 ctime )
   BaseWidgetPrivate *priv;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(priv->trigger)
@@ -517,7 +506,6 @@ gint64 base_widget_get_next_poll ( GtkWidget *self )
   BaseWidgetPrivate *priv;
 
   g_return_val_if_fail(IS_BASE_WIDGET(self),G_MAXINT64);
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(priv->trigger)
@@ -531,7 +519,6 @@ gchar *base_widget_get_value ( GtkWidget *self )
   BaseWidgetPrivate *priv;
 
   g_return_val_if_fail(IS_BASE_WIDGET(self),NULL);
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   return priv->evalue;
