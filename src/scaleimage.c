@@ -379,6 +379,7 @@ int scale_image_update ( GtkWidget *self )
     cairo_mask_surface(cr,cs,0,0);
     cairo_destroy(cr);
   }
+  gdk_rgba_free(color);
 
   if(cs)
   {
