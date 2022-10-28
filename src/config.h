@@ -2,6 +2,7 @@
 #define __CONFIG_H__
 
 #include <gtk/gtk.h>
+#include "action.h"
 
 enum ConfigSequenceType {
   SEQ_OPT,
@@ -18,7 +19,16 @@ void config_string ( gchar *string );
 gboolean config_expect_token ( GScanner *scan, gint token, gchar *fmt, ...);
 void config_optional_semicolon ( GScanner *scanner );
 void config_parse_sequence ( GScanner *scanner, ... );
+gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr);
+gchar *config_assign_string ( GScanner *scanner, gchar *expr );
+gdouble config_assign_number ( GScanner *scanner, gchar *expr );
+action_t *config_action ( GScanner *scanner );
+gchar *config_get_value ( GScanner *, gchar *, gboolean, gchar **);
 void config_scanner ( GScanner *scanner );
+void config_layout ( GScanner *, GtkWidget **, gboolean );
+void config_switcher ( GScanner *scanner );
+void config_placer ( GScanner *scanner );
+GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel );
 
 enum {
   G_TOKEN_SCANNER = G_TOKEN_LAST + 50,
