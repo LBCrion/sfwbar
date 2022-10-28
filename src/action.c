@@ -73,7 +73,7 @@ void action_set_user_state ( GtkWidget *widget, gchar *value )
   gchar *state;
   guint16 mask;
 
-  if(!widget)
+  if(!widget || !value)
     return;
 
   state = strchr(value,':');
