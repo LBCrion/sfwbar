@@ -242,7 +242,7 @@ static void sway_ipc_window_place ( gint64 wid, gint64 pid )
   output = sway_ipc_parse_rect(obj);
   win = output;
   nobs = json_object_array_length(arr)-1;
-  obs = g_malloc(nobs*sizeof(struct rect));
+  obs = g_malloc(nobs*sizeof(GdkRectangle));
   c=0;
   for(i=0;i<=nobs;i++)
   {
