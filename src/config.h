@@ -1,9 +1,24 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+#include <gtk/gtk.h>
+
+enum ConfigSequenceType {
+  SEQ_OPT,
+  SEQ_CON,
+  SEQ_REQ,
+  SEQ_END
+};
+
+typedef gboolean (*parse_func) ( GScanner *, void * );
+
 GtkWidget *config_parse ( gchar *, gboolean );
 void config_pipe_read ( gchar *command );
 void config_string ( gchar *string );
+gboolean config_expect_token ( GScanner *scan, gint token, gchar *fmt, ...);
+void config_optional_semicolon ( GScanner *scanner );
+void config_parse_sequence ( GScanner *scanner, ... );
+void config_scanner ( GScanner *scanner );
 
 enum {
   G_TOKEN_SCANNER = G_TOKEN_LAST + 50,

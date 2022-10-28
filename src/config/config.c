@@ -5,24 +5,23 @@
 
 #include <fcntl.h>
 #include <sys/stat.h>
-#include "sfwbar.h"
-#include "config.h"
-#include "bar.h"
-#include "button.h"
-#include "scale.h"
-#include "image.h"
-#include "label.h"
-#include "cchart.h"
-#include "grid.h"
-#include "taskbar.h"
-#include "pager.h"
-#include "tray.h"
-#include "switcher.h"
-#include "action.h"
-#include "menu.h"
-#include "sway_ipc.h"
+#include "../sfwbar.h"
+#include "../config.h"
+#include "../bar.h"
+#include "../button.h"
+#include "../scale.h"
+#include "../image.h"
+#include "../label.h"
+#include "../cchart.h"
+#include "../grid.h"
+#include "../taskbar.h"
+#include "../pager.h"
+#include "../tray.h"
+#include "../switcher.h"
+#include "../action.h"
+#include "../menu.h"
+#include "../sway_ipc.h"
 
-typedef gboolean (*parse_func) ( GScanner *, void * );
 void config_widget ( GScanner *scanner, GtkWidget *widget );
 
 static GHashTable *defines;
@@ -61,13 +60,6 @@ void config_optional_semicolon ( GScanner *scanner )
   if(g_scanner_peek_next_token(scanner) == ';')
     g_scanner_get_next_token(scanner);
 }
-
-enum {
-  SEQ_OPT,
-  SEQ_CON,
-  SEQ_REQ,
-  SEQ_END
-};
 
 void config_parse_sequence ( GScanner *scanner, ... )
 {
@@ -135,36 +127,6 @@ void config_parse_sequence ( GScanner *scanner, ... )
   va_end(args);
 }
 
-void config_parse_dict ( GScanner *scanner, ... )
-{
-  va_list args;
-  parse_func func;
-  void *dest;
-  gint match = TRUE;
-  gint type;
-
-  while(match)
-  {
-    g_scanner_peek_next_token(scanner);
-    va_start(args,scanner);
-    type = va_arg(args, gint );
-    match = FALSE;
-    while( type >= 0 )
-    {
-      func = va_arg(args, parse_func);
-      dest = va_arg(args, void *);
-      if(type == scanner->next_token)
-      {
-        g_scanner_get_next_token(scanner);
-        if(func(scanner,dest))
-          match = TRUE;
-      }
-      type = va_arg(args, gint );
-    }
-    va_end(args);
-  }
-}
-
 gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr)
 {
   gboolean result = def;
@@ -183,7 +145,8 @@ gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr)
       result = FALSE;
       break;
     default:
-      g_scanner_error(scanner, "Missing <boolean> in %s = <boolean>", expr);
+      g_scanner_error(scanner, "Missing <boolean> value in %s = <boolean>",
+          expr);
       break;
   }
 
@@ -207,9 +170,7 @@ gchar *config_assign_string ( GScanner *scanner, gchar *expr )
     return NULL;
 
   g_scanner_get_next_token(scanner);
-
   result = g_strdup(scanner->value.v_string);
-
   config_optional_semicolon(scanner);
 
   return result;
@@ -228,198 +189,12 @@ gdouble config_assign_number ( GScanner *scanner, gchar *expr )
   if(!config_expect_token(scanner, G_TOKEN_FLOAT,
         "Missing <number> in %s = <number>",expr))
     return 0;
+
   g_scanner_get_next_token(scanner);
-
   result = scanner->value.v_float;
-
   config_optional_semicolon(scanner);
 
   return result;
-}
-
-gboolean config_var_flag ( GScanner *scanner, gint *flag )
-{
-  if(((gint)g_scanner_peek_next_token(scanner) >= G_TOKEN_SUM) &&
-    ((gint)(scanner->next_token) <= G_TOKEN_FIRST))
-    *flag = g_scanner_get_next_token(scanner);
-  return TRUE;
-}
-
-gboolean config_var_type (GScanner *scanner, gint *type )
-{
-  gint token = g_scanner_get_next_token(scanner);
-  if(token == G_TOKEN_REGEX || token == G_TOKEN_JSON || token == G_TOKEN_GRAB)
-    *type = token;
-  else
-    g_scanner_error(scanner,"invalid parser");
-  return !scanner->max_parse_errors;
-}
-
-void config_var ( GScanner *scanner, ScanFile *file )
-{
-  gchar *vname = NULL, *pattern = NULL;
-  guint type;
-  gint flag = G_TOKEN_LASTW;
-
-  config_parse_sequence(scanner,
-      SEQ_REQ,G_TOKEN_IDENTIFIER,NULL,&vname,NULL,
-      SEQ_REQ,'=',NULL,NULL,"Missing '=' in variable declaration",
-      SEQ_REQ,-2,(parse_func)config_var_type,&type,NULL,
-      SEQ_REQ,'(',NULL,NULL,"Missing '(' after parser",
-      SEQ_END);
-
-  if(scanner->max_parse_errors)
-    return g_free(vname);
-
-  switch(type)
-  {
-    case G_TOKEN_REGEX:
-    case G_TOKEN_JSON:
-      config_parse_sequence(scanner,
-          SEQ_REQ,G_TOKEN_STRING,NULL,&pattern,"Missing pattern in parser",
-          SEQ_OPT,',',NULL,NULL,NULL,
-          SEQ_CON,-2,(parse_func)config_var_flag,&flag,NULL,
-          SEQ_REQ,')',NULL,NULL,"Missing ')' after parser",
-          SEQ_OPT,';',NULL,NULL,NULL,
-          SEQ_END);
-      break;
-    case G_TOKEN_GRAB:
-      config_parse_sequence(scanner,
-          SEQ_OPT,-2,(parse_func)config_var_flag,&flag,NULL,
-          SEQ_REQ,')',NULL,NULL,"Missing ')' after parser",
-          SEQ_OPT,';',NULL,NULL,NULL,
-          SEQ_END);
-      break;
-    default:
-      g_scanner_error(scanner,"invalid parser for variable %s",vname);
-  }
-
-  if(scanner->max_parse_errors)
-  {
-    g_free(vname);
-    g_free(pattern);
-    return;
-  }
-
-  scanner_var_attach(vname,file,pattern,type,flag);
-}
-
-gboolean config_source_flags ( GScanner *scanner, gint *flags )
-{
-  while ( g_scanner_peek_next_token(scanner) == ',' )
-  {
-    g_scanner_get_next_token(scanner);
-    g_scanner_get_next_token(scanner);
-    if((gint)scanner->token == G_TOKEN_NOGLOB)
-      *flags |= VF_NOGLOB;
-    else if((gint)scanner->token == G_TOKEN_CHTIME)
-      *flags |= VF_CHTIME;
-    else
-        g_scanner_error(scanner, "invalid flag in source");
-  }
-  return !scanner->max_parse_errors;
-}
-
-ScanFile *config_source ( GScanner *scanner, gint source )
-{
-  ScanFile *file;
-  gchar *fname = NULL, *trigger = NULL;
-  gint flags = 0;
-
-  switch(source)
-  {
-    case SO_FILE:
-      config_parse_sequence(scanner,
-          SEQ_REQ,'(',NULL,NULL,"Missing '(' after source",
-          SEQ_REQ,G_TOKEN_STRING,NULL,&fname,"Missing file in a source",
-          SEQ_OPT,-2,(parse_func)config_source_flags,&flags,NULL,
-          SEQ_REQ,')',NULL,NULL,"Missing ')' after source",
-          SEQ_REQ,'{',NULL,NULL,"Missing '{' after source",
-          SEQ_END);
-      break;
-    case SO_CLIENT:
-      config_parse_sequence(scanner,
-          SEQ_REQ,'(',NULL,NULL,"Missing '(' after source",
-          SEQ_REQ,G_TOKEN_STRING,NULL,&fname,"Missing file in a source",
-          SEQ_OPT,',',NULL,NULL,NULL,
-          SEQ_CON,G_TOKEN_STRING,NULL,&trigger,NULL,
-          SEQ_REQ,')',NULL,NULL,"Missing ')' after source",
-          SEQ_REQ,'{',NULL,NULL,"Missing '{' after source",
-          SEQ_END);
-      break;
-    default:
-      config_parse_sequence(scanner,
-          SEQ_REQ,'(',NULL,NULL,"Missing '(' after source",
-          SEQ_REQ,G_TOKEN_STRING,NULL,&fname,"Missing file in a source",
-          SEQ_REQ,')',NULL,NULL,"Missing ')' after source",
-          SEQ_REQ,'{',NULL,NULL,"Missing '{' after source",
-          SEQ_END);
-      break;
-  }
-
-  if(scanner->max_parse_errors)
-  {
-    g_free(fname);
-    g_free(trigger);
-    return NULL;
-  }
-
-  file = scanner_file_new ( source, fname, trigger, flags );
-
-  while(g_scanner_peek_next_token(scanner) == G_TOKEN_IDENTIFIER)
-    config_var(scanner, file);
-
-  config_parse_sequence(scanner,
-      SEQ_REQ,'}',NULL,NULL,"Expecting a variable declaration or '}'",
-      SEQ_OPT,';',NULL,NULL,NULL,
-      SEQ_END);
-
-  return file;
-}
-
-void config_scanner ( GScanner *scanner )
-{
-  ScanFile *file;
-  scanner->max_parse_errors = FALSE;
-
-  if(!config_expect_token(scanner, '{', "Missing '{' after 'scanner'"))
-    return;
-  g_scanner_get_next_token(scanner);
-
-  while(((gint)g_scanner_peek_next_token(scanner) != '}' )&&
-      ( (gint)g_scanner_peek_next_token ( scanner ) != G_TOKEN_EOF ))
-  {
-    switch((gint)g_scanner_get_next_token(scanner))
-    {
-      case G_TOKEN_FILE:
-        config_source(scanner,SO_FILE);
-        break;
-      case G_TOKEN_EXEC:
-        config_source(scanner,SO_EXEC);
-        break;
-      case G_TOKEN_MPDCLIENT:
-        file = config_source(scanner,SO_CLIENT);
-        mpd_ipc_init(file);
-        break;
-      case G_TOKEN_SWAYCLIENT:
-        file = config_source(scanner,SO_CLIENT);
-        sway_ipc_client_init(file);
-        break;
-      case G_TOKEN_EXECCLIENT:
-        file = config_source(scanner,SO_CLIENT);
-        client_exec(file);
-        break;
-      case G_TOKEN_SOCKETCLIENT:
-        file = config_source(scanner,SO_CLIENT);
-        client_socket(file);
-        break;
-      default:
-        g_scanner_error(scanner, "Unexpected declaration in scanner");
-        break;
-    }
-  }
-  if((gint)scanner->next_token == '}')
-    g_scanner_get_next_token(scanner);
 }
 
 struct rect config_get_loc ( GScanner *scanner )
@@ -968,18 +743,32 @@ void config_widget ( GScanner *scanner, GtkWidget *widget )
   config_optional_semicolon(scanner);
 }
 
-GtkWidget *config_layout ( GScanner *scanner, GtkWidget *widget )
+void config_layout ( GScanner *scanner, GtkWidget **widget, gboolean toplevel )
 {
+  GtkWidget *layout;
   scanner->max_parse_errors=FALSE;
-  
-  if(!widget)
+ 
+  if(!toplevel)
   {
-    widget = grid_new();
-    gtk_widget_set_name(widget,"layout");
+    if(!*widget)
+    {
+      *widget = grid_new();
+      gtk_widget_set_name(*widget,"layout");
+    }
+    layout = *widget;
+  }
+  else
+  {
+    if(g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
+    {
+      g_scanner_get_next_token(scanner);
+      layout = bar_grid_from_name(scanner->value.v_string);
+    }
+    else
+      layout = bar_grid_from_name(NULL);
   }
 
-  config_widget(scanner,widget);
-  return widget;
+  config_widget(scanner,layout);
 }
 
 void config_switcher ( GScanner *scanner )
@@ -1314,7 +1103,7 @@ void config_trigger_action ( GScanner *scanner )
 
 GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
 {
-  GtkWidget *w=NULL, *dest;
+  GtkWidget *w=NULL;
 
   while(g_scanner_peek_next_token(scanner) != G_TOKEN_EOF)
   {
@@ -1324,19 +1113,7 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
         config_scanner(scanner);
         break;
       case G_TOKEN_LAYOUT:
-        if(!toplevel)
-        {
-          w = config_layout(scanner,w);
-          break;
-        }
-        if(g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
-        {
-          g_scanner_get_next_token(scanner);
-          dest = bar_grid_from_name(scanner->value.v_string);
-        }
-        else
-          dest = bar_grid_from_name(NULL);
-        config_layout(scanner,dest);
+        config_layout(scanner,&w,toplevel);
         break;
       case G_TOKEN_PLACER:
         config_placer(scanner);
