@@ -197,13 +197,13 @@ gdouble config_assign_number ( GScanner *scanner, gchar *expr )
   return result;
 }
 
-struct rect config_get_loc ( GScanner *scanner )
+GdkRectangle config_get_loc ( GScanner *scanner )
 {
-  struct rect rect;
+  GdkRectangle rect;
   rect.x = 0;
   rect.y = 0;
-  rect.w = 1;
-  rect.h = 1;
+  rect.width = 1;
+  rect.height = 1;
 
   config_parse_sequence(scanner,
       SEQ_REQ,'(',NULL,NULL,"missing '(' afer loc",
@@ -211,9 +211,9 @@ struct rect config_get_loc ( GScanner *scanner )
       SEQ_REQ,',',NULL,NULL,"missing comma afer x value in loc",
       SEQ_REQ,G_TOKEN_INT,NULL,&rect.y,"missing y value in loc",
       SEQ_OPT,',',NULL,NULL,NULL,
-      SEQ_CON,G_TOKEN_INT,NULL,&rect.w,"missing w value in loc",
+      SEQ_CON,G_TOKEN_INT,NULL,&rect.width,"missing w value in loc",
       SEQ_OPT,',',NULL,NULL,NULL,
-      SEQ_CON,G_TOKEN_INT,NULL,&rect.h,"missing h value in loc",
+      SEQ_CON,G_TOKEN_INT,NULL,&rect.height,"missing h value in loc",
       SEQ_REQ,')',NULL,NULL,"missing ')' in loc statement",
       SEQ_OPT,';',NULL,NULL,NULL,
       SEQ_END );

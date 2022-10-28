@@ -43,7 +43,7 @@ struct _BaseWidgetPrivate
   gint64 next_poll;
   gint dir;
   guint16 user_state;
-  struct rect rect;
+  GdkRectangle rect;
 };
 
 GType base_widget_get_type ( void );
@@ -59,7 +59,7 @@ void base_widget_set_action ( GtkWidget *self, gint n, action_t *action );
 void base_widget_set_max_width ( GtkWidget *self, guint x );
 void base_widget_set_max_height ( GtkWidget *self, guint x );
 gboolean base_widget_update_value ( GtkWidget *self );
-void base_widget_set_rect ( GtkWidget *self, struct rect rect );
+void base_widget_set_rect ( GtkWidget *self, GdkRectangle rect );
 void base_widget_attach ( GtkWidget *, GtkWidget *, GtkWidget *);
 guint16 base_widget_get_state ( GtkWidget *self );
 gint64 base_widget_get_next_poll ( GtkWidget *self );

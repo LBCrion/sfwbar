@@ -122,8 +122,8 @@ static void base_widget_init ( BaseWidget *self )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
   priv->interval = 1000000;
   priv->dir = GTK_POS_RIGHT;
-  priv->rect.w = 1;
-  priv->rect.h = 1;
+  priv->rect.width = 1;
+  priv->rect.height = 1;
 }
 
 static gboolean base_widget_button_cb ( GtkWidget *button, GtkWidget *self )
@@ -417,7 +417,7 @@ void base_widget_set_state ( GtkWidget *self, guint16 mask, gboolean state )
     priv->user_state &= ~mask;
 }
 
-void base_widget_set_rect ( GtkWidget *self, struct rect rect )
+void base_widget_set_rect ( GtkWidget *self, GdkRectangle rect )
 {
   BaseWidgetPrivate *priv;
 
@@ -443,7 +443,7 @@ void base_widget_attach ( GtkWidget *parent, GtkWidget *self,
       gtk_grid_attach_next_to(GTK_GRID(parent),self,sibling,dir,1,1);
     else
       gtk_grid_attach(GTK_GRID(parent),self,
-          priv->rect.x,priv->rect.y,priv->rect.w,priv->rect.h);
+          priv->rect.x,priv->rect.y,priv->rect.width,priv->rect.height);
   }
 }
 
