@@ -73,7 +73,7 @@ void action_set_user_state ( GtkWidget *widget, gchar *value )
   gchar *state;
   guint16 mask;
 
-  if(!widget)
+  if(!widget || !value)
     return;
 
   state = strchr(value,':');
@@ -230,20 +230,19 @@ void action_exec ( GtkWidget *widget, action_t *action,
       config_string(action->command);
       break;
     case G_TOKEN_SETMONITOR:
-      bar_set_monitor(action->command,bar_get_by_name(action->addr));
+      bar_set_monitor(action->command,bar_from_name(action->addr));
       break;
     case G_TOKEN_SETLAYER:
-      bar_set_layer(action->command,action->addr);
+      bar_set_layer(action->command,bar_from_name(action->addr));
       break;
     case G_TOKEN_SETBARSIZE:
-      bar_set_size(action->command,action->addr);
+      bar_set_size(action->command,bar_from_name(action->addr));
       break;
     case G_TOKEN_SETBARID:
       sway_ipc_bar_id(action->command);
       break;
     case G_TOKEN_SETEXCLUSIVEZONE:
-      if(action->command)
-        bar_set_exclusive_zone(action->command,action->addr);
+      bar_set_exclusive_zone(action->command,bar_from_name(action->addr));
       break;
     case G_TOKEN_SETVALUE:
       if(widget && action->command)

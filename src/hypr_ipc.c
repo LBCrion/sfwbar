@@ -120,7 +120,6 @@ static void hypr_ipc_handle_window ( json_object *obj )
 {
   window_t *win;
   gpointer id;
-  const gchar *title;
 
   id = hypr_ipc_window_id(obj);
   if(!id)
@@ -134,10 +133,11 @@ static void hypr_ipc_handle_window ( json_object *obj )
     win->pid = json_int_by_name(obj,"pid",0);
     wintree_window_append(win);
     wintree_set_app_id(id,json_string_by_name(obj,"class"));
+    wintree_set_title(id,json_string_by_name(obj,"title"));
+    wintree_log(id);
   }
-  title = json_string_by_name(obj,"title");
-  if(g_strcmp0(title,win->title))
-    wintree_set_title(id,title);
+  else
+    wintree_set_title(id,json_string_by_name(obj,"title"));
   if(hypr_ipc_workspace_id(obj)==GINT_TO_POINTER(-99))
     win->state |= WS_MINIMIZED;
   else

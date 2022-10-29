@@ -242,7 +242,7 @@ static void sway_ipc_window_place ( gint64 wid, gint64 pid )
   output = sway_ipc_parse_rect(obj);
   win = output;
   nobs = json_object_array_length(arr)-1;
-  obs = g_malloc(nobs*sizeof(struct rect));
+  obs = g_malloc(nobs*sizeof(GdkRectangle));
   c=0;
   for(i=0;i<=nobs;i++)
   {
@@ -293,6 +293,7 @@ static void sway_window_new ( struct json_object *container )
   wintree_window_append(win);
   wintree_set_app_id(wid,app_id);
   wintree_set_title(wid,json_string_by_name(container,"name"));
+  wintree_log(wid);
 
   if(json_bool_by_name(container,"focused",FALSE))
     wintree_set_focus(wid);

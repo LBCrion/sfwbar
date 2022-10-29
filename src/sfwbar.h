@@ -6,10 +6,6 @@
 #include <json.h>
 #include "scanner.h"
 
-struct rect {
-  guint x,y,w,h;
-};
-
 enum ipc_type {
   IPC_SWAY    = 1,
   IPC_HYPR    = 2,

@@ -1,6 +1,8 @@
 #ifndef __SCANNER_H__
 #define __SCANNER_H__
 
+#include <json.h>
+
 enum {
   SO_FILE = 0,
   SO_EXEC = 1,

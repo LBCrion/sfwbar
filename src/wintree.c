@@ -55,6 +55,16 @@ window_t *wintree_window_init ( void )
   return w;
 }
 
+void wintree_log ( gpointer id )
+{
+  window_t *win;
+
+  win = wintree_from_id(id);
+  if(win)
+    g_debug("app_id: '%s', title '%s'",
+        win->appid?win->appid:"(null)",win->title?win->title:"(null)");
+}
+
 gint wintree_compare ( window_t *a, window_t *b)
 {
   gint s;
@@ -124,6 +134,8 @@ void wintree_set_title ( gpointer wid, const gchar *title )
 
   win = wintree_from_id(wid);
   if(!win)
+    return;
+  if(!g_strcmp0(win->title,title))
     return;
 
   g_free(win->title);
