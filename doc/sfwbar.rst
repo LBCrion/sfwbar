@@ -711,13 +711,26 @@ If you are using an XWayland app, they usually do not have an `app_id` set. If
 an icon is not showing, you can add your icon to the following locations:
 1. `$HOME/.icons`
 2. One of the directories listed in `$XDG_DATA_DIRS/icons`
-3. /usr/share/pixmaps
+3. `/usr/share/pixmaps`
+4. Location of the main config file currently in use
+5. `$XDG_CONFIG_HOME/sfwbar/`
 
-If an `app_id` is not set, sfwbar will fallback to using the `instance` in the
-`window-properties`, which can be found by using a tool such as `swaymsg` (if on sway)
-which can display a list of running processes by using the command `swaymsg -t get_tree`.
+If an `app_id` is not set, and sway is being used, sfwbar will fallback to using
+the `instance` in the `window-properties`.
 
-For example, with CLion this will show the following:
+You can find the `app_id` that is being used with sfwbar by using the `sfwbar -d -g app_id`
+command, which will show a list of running applications if your compositor supports the
+wlr-foreign-toplevel protocol (i.e. labwc, wayfire, sway):
+```
+14:49:25.41 app_id: 'jetbrains-clion', title 'sfwbar – pager.c'
+```
+
+Alternatively your desktop environment might have a command to display a list:
+- Sway: `swaymsg -t get_tree`
+- Hyperland: `hyprctl -j clients`
+
+When using `swaymsg -t get_tree`, with CLion this will show the following:
+
 ```
 "window_properties": {
   "class": "jetbrains-clion",
