@@ -707,6 +707,43 @@ tricky). Mapping is supported via top-level ``MapAppId`` keyword. I.e. ::
 where app_id is the desired app_id and pattern is a regular expression to
 match the title against.
 
+If you are using an XWayland app, they usually do not have an `app_id` set. If
+an icon is not showing, you can add your icon to the following locations:
+1. `$HOME/.icons`
+2. One of the directories listed in `$XDG_DATA_DIRS/icons`
+3. `/usr/share/pixmaps`
+4. Location of the main config file currently in use
+5. `$XDG_CONFIG_HOME/sfwbar/`
+
+If an `app_id` is not set, and sway is being used, sfwbar will fallback to using
+the `instance` in the `window-properties`.
+
+You can find the `app_id` that is being used with sfwbar by using the `sfwbar -d -g app_id`
+command, which will show a list of running applications if your compositor supports the
+wlr-foreign-toplevel protocol (i.e. labwc, wayfire, sway):
+```
+14:49:25.41 app_id: 'jetbrains-clion', title 'sfwbar – pager.c'
+```
+
+Alternatively your desktop environment might have a command to display a list:
+- Sway: `swaymsg -t get_tree`
+- Hyperland: `hyprctl -j clients`
+
+When using `swaymsg -t get_tree`, with CLion this will show the following:
+
+```
+"window_properties": {
+  "class": "jetbrains-clion",
+  "instance": "jetbrains-clion",
+  "title": "sfwbar – trayitem.c",
+  "transient_for": null,
+  "window_type": "normal"
+}
+```
+
+So we can put an icon called jetbrains-clion.svg (or other formats, see the
+[Arch wiki](https://wiki.archlinux.org/title/desktop_entries#Icons)) for information about file formats.
+
 CSS Style
 =========
 SFWBar uses gtk+ widgets and can accept all css properties supported by 
