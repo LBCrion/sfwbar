@@ -22,6 +22,7 @@ void config_parse_sequence ( GScanner *scanner, ... );
 gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr);
 gchar *config_assign_string ( GScanner *scanner, gchar *expr );
 gdouble config_assign_number ( GScanner *scanner, gchar *expr );
+gint config_assign_tokens ( GScanner *scanner, gchar *, gchar *, ... );
 action_t *config_action ( GScanner *scanner );
 gchar *config_get_value ( GScanner *, gchar *, gboolean, gchar **);
 void config_scanner ( GScanner *scanner );
@@ -88,6 +89,7 @@ enum {
   G_TOKEN_YORIGIN = G_TOKEN_LAST + 133,
   G_TOKEN_CHILDREN = G_TOKEN_LAST + 134,
   G_TOKEN_SORT = G_TOKEN_LAST + 135,
+  G_TOKEN_FILTER = G_TOKEN_LAST + 136,
   G_TOKEN_TRUE = G_TOKEN_LAST + 138,
   G_TOKEN_FALSE = G_TOKEN_LAST + 139,
   G_TOKEN_MENU = G_TOKEN_LAST + 140,
@@ -128,7 +130,8 @@ enum {
   G_TOKEN_GRAB = G_TOKEN_LAST + 202,
   G_TOKEN_TITLE = G_TOKEN_LAST + 210,
   G_TOKEN_APPID = G_TOKEN_LAST + 211,
-  G_TOKEN_SEQ = G_TOKEN_LAST + 212
+  G_TOKEN_WORKSPACE = G_TOKEN_LAST + 212,
+  G_TOKEN_OUTPUT = G_TOKEN_LAST + 213
 };
 
 #endif

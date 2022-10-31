@@ -164,3 +164,32 @@ gdouble config_assign_number ( GScanner *scanner, gchar *expr )
   return result;
 }
 
+gint config_assign_tokens ( GScanner *scanner, gchar *name, gchar *type, ... )
+{
+  va_list args;
+  gint token, res = 0;
+
+  scanner->max_parse_errors = FALSE;
+  if(!config_expect_token(scanner, '=', "Missing '=' in %s = %s",name,type))
+    return 0;
+
+  g_scanner_get_next_token(scanner);
+  g_scanner_peek_next_token(scanner);
+
+  va_start(args,type);
+  token = va_arg(args, gint );
+
+  while(token!=0)
+  {
+    if(token == scanner->next_token)
+      res = token;
+    token = va_arg(args, gint );
+  }
+  va_end(args);
+
+  if(!res)
+    g_scanner_error(scanner,"missing %s in %s = %s",name,type,name);
+  config_optional_semicolon(scanner);
+
+  return res;
+}

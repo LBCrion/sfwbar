@@ -161,8 +161,8 @@ static void sway_minimized_set ( struct json_object *obj, const gchar *parent,
   else
   {
     win->state &= ~WS_MINIMIZED;
-    g_free(win->workspace);
-    win->workspace = g_strdup(parent);
+//    g_free(win->workspace);
+    win->workspace = pager_workspace_id_from_name(parent);
   }
 
   if(g_strcmp0(monitor,win->output) && g_strcmp0(monitor,"__i3"))
@@ -383,7 +383,10 @@ static void sway_ipc_pager_event ( struct json_object *obj )
     pager_workspace_new(ws);
 
   if(!g_strcmp0(change,"focus"))
+  {
+    pager_workspace_set_active(ws,json_string_by_name(current,"output"));
     pager_workspace_set_focus(ws->id);
+  }
 
   pager_update();
   g_free(ws->name);
@@ -405,6 +408,9 @@ static void sway_ipc_pager_populate ( void )
   {
     ws = sway_ipc_parse_workspace(json_object_array_get_idx(robj,i));
     pager_workspace_new(ws);
+    if(ws->visible)
+      pager_workspace_set_active(ws,
+          json_string_by_name(json_object_array_get_idx(robj,i),"output"));
     g_free(ws->name);
     g_free(ws);
   }
@@ -515,7 +521,7 @@ static void sway_ipc_unminimize ( gpointer id )
   win = wintree_from_id(id);
   if(win && win->workspace)
     sway_ipc_command("[con_id=%ld] move window to workspace %s",
-        GPOINTER_TO_INT(id),win->workspace);
+        GPOINTER_TO_INT(id),pager_workspace_from_id(win->workspace)->name);
   else
     sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
 }
@@ -537,7 +543,7 @@ static void sway_ipc_focus ( gpointer id )
   win = wintree_from_id(id);
   if(win && win->workspace)
     sway_ipc_command("[con_id=%ld] move window to workspace %s",
-        GPOINTER_TO_INT(id),win->workspace);
+        GPOINTER_TO_INT(id),pager_workspace_from_id(win->workspace)->name);
   sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
 }
 
@@ -618,6 +624,7 @@ void sway_ipc_init ( void )
   sway_ipc_send(sock,0,"bar hidden_state hide");
   obj = sway_ipc_poll(sock,&etype);
   json_object_put(obj);
+  sway_ipc_pager_populate();
   sway_ipc_send(sock,4,"");
   obj = sway_ipc_poll(sock,&etype);
   close(sock);
@@ -636,8 +643,6 @@ void sway_ipc_init ( void )
       'bar_state_update','input']");
   GIOChannel *chan = g_io_channel_unix_new(main_ipc);
   g_io_add_watch(chan,G_IO_IN,sway_ipc_event,NULL);
-
-  sway_ipc_pager_populate();
 
   wintree_api_register(&sway_wintree_api);
   pager_api_register(&sway_pager_api);

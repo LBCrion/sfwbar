@@ -112,6 +112,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   g_scanner_scope_add_symbol(scanner,0, "Children", 
       (gpointer)G_TOKEN_CHILDREN );
   g_scanner_scope_add_symbol(scanner,0, "Sort", (gpointer)G_TOKEN_SORT );
+  g_scanner_scope_add_symbol(scanner,0, "Filter", (gpointer)G_TOKEN_FILTER );
   g_scanner_scope_add_symbol(scanner,0, "True", (gpointer)G_TOKEN_TRUE );
   g_scanner_scope_add_symbol(scanner,0, "False", (gpointer)G_TOKEN_FALSE );
   g_scanner_scope_add_symbol(scanner,0, "Menu", (gpointer)G_TOKEN_MENU );
@@ -176,7 +177,9 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   g_scanner_scope_add_symbol(scanner,0, "Grab", (gpointer)G_TOKEN_GRAB );
   g_scanner_scope_add_symbol(scanner,0, "Title", (gpointer)G_TOKEN_TITLE );
   g_scanner_scope_add_symbol(scanner,0, "AppId", (gpointer)G_TOKEN_APPID );
-  g_scanner_scope_add_symbol(scanner,0, "Seq", (gpointer)G_TOKEN_SEQ );
+  g_scanner_scope_add_symbol(scanner,0, "Workspace",
+      (gpointer)G_TOKEN_WORKSPACE );
+  g_scanner_scope_add_symbol(scanner,0, "Output", (gpointer)G_TOKEN_OUTPUT );
 
   tmp = strstr(data,"\n#CSS");
   if(tmp)

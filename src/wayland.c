@@ -13,9 +13,7 @@ void xdg_output_register (struct wl_registry *registry, uint32_t name);
 static void handle_global(void *data, struct wl_registry *registry,
                 uint32_t name, const gchar *interface, uint32_t version)
 {
-  if (!g_strcmp0(interface,zwlr_foreign_toplevel_manager_v1_interface.name))
-    foreign_toplevel_register(registry,name);
-  else if (!g_strcmp0(interface,zwp_idle_inhibit_manager_v1_interface.name))
+  if (!g_strcmp0(interface,zwp_idle_inhibit_manager_v1_interface.name))
     idle_inhibit_register(registry,name);
   else if (!g_strcmp0(interface,zxdg_output_manager_v1_interface.name))
     xdg_output_register(registry,name);

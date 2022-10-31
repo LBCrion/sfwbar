@@ -60,6 +60,26 @@ gboolean taskbar_is_toplevel ( GtkWidget *self )
   return priv->toplevel;
 }
 
+void taskbar_set_filter ( GtkWidget *self, gint filter )
+{
+  TaskbarPrivate *priv;
+
+  g_return_if_fail(IS_TASKBAR(self));
+  priv = taskbar_get_instance_private(TASKBAR(self));
+
+  priv->filter = filter;
+}
+
+gint taskbar_get_filter ( GtkWidget *self )
+{
+  TaskbarPrivate *priv;
+
+  g_return_val_if_fail(IS_TASKBAR(self),0);
+  priv = taskbar_get_instance_private(TASKBAR(self));
+
+  return priv->filter;
+}
+
 void taskbar_invalidate_all ( window_t *win )
 {
   GList *iter;
@@ -75,6 +95,14 @@ void taskbar_invalidate_all ( window_t *win )
     else if(win->appid)
       taskbar_group_invalidate(flow_grid_find_child(iter->data,win->appid));
   }
+}
+
+void taskbar_invalidate_unconditional ( void )
+{
+  GList *iter;
+
+  for(iter=wintree_get_list();iter;iter=g_list_next(iter))
+    taskbar_invalidate_all(iter->data);
 }
 
 void taskbar_init_item ( window_t *win )

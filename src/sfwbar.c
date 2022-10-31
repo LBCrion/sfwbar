@@ -111,9 +111,10 @@ static void activate (GtkApplication* app, gpointer data )
   GList *clist, *iter;
 
   css_init(cssname);
+  wayland_init();
   sway_ipc_init();
   hypr_ipc_init();
-  wayland_init();
+  wayland_ipc_init();
 
   if( monitor && !g_ascii_strcasecmp(monitor,"list") )
     list_monitors();

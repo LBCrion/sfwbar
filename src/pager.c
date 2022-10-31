@@ -7,6 +7,7 @@
 #include "sfwbar.h"
 #include "pager.h"
 #include "pageritem.h"
+#include "taskbar.h"
 
 G_DEFINE_TYPE_WITH_CODE (Pager, pager, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Pager));
 
@@ -130,7 +131,27 @@ workspace_t *pager_workspace_from_name ( gchar *name )
   return NULL;
 }
 
-gpointer pager_workspace_id_from_name ( gchar *name )
+void pager_workspace_set_active ( workspace_t *ws, const gchar *output )
+{
+  GdkDisplay *gdisp;
+  GdkMonitor *gmon;
+  gchar *name;
+  gint i;
+
+  if(!output || !ws)
+    return;
+
+  gdisp = gdk_display_get_default();
+  for(i=gdk_display_get_n_monitors(gdisp)-1;i>=0;i--)
+  {
+    gmon = gdk_display_get_monitor(gdisp,i);
+    name = g_object_get_data(G_OBJECT(gmon),"xdg_name");
+    if(name && !g_strcmp0(name,output))
+      g_object_set_data(G_OBJECT(gmon),"workspace",ws->id);
+  }
+}
+
+gpointer pager_workspace_id_from_name ( const gchar *name )
 {
   GList *iter;
 
@@ -156,6 +177,7 @@ void pager_workspace_set_focus ( gpointer id )
   pager_invalidate_all(focus);
   focus = ws;
   pager_invalidate_all(focus);
+  taskbar_invalidate_unconditional();
 }
 
 void pager_workspace_delete ( gpointer id )

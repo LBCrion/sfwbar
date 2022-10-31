@@ -118,6 +118,7 @@ static void taskbar_item_update ( GtkWidget *self )
 {
   TaskbarItemPrivate *priv;
   gchar *appid;
+  gpointer wsid;
 
   g_return_if_fail(IS_TASKBAR_ITEM(self));
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
@@ -145,10 +146,16 @@ static void taskbar_item_update ( GtkWidget *self )
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
 
-  flow_item_set_active(self, !priv->win->output ||
-      !g_object_get_data(G_OBJECT(priv->taskbar),"filter_output") ||
-      !g_strcmp0(priv->win->output,
-        bar_get_output(base_widget_get_child(priv->taskbar))));
+  wsid = g_object_get_data(G_OBJECT(gdk_display_get_monitor_at_window(
+      gtk_widget_get_display(gtk_widget_get_toplevel(priv->taskbar)),
+      gtk_widget_get_window(priv->taskbar))),"workspace");
+  flow_item_set_active(self, (!priv->win->output ||
+        taskbar_get_filter(priv->taskbar)!=G_TOKEN_OUTPUT ||
+        !g_strcmp0(priv->win->output,
+        bar_get_output(base_widget_get_child(priv->taskbar)))) &&
+      (!priv->win->workspace ||
+      taskbar_get_filter(priv->taskbar)!=G_TOKEN_WORKSPACE ||
+      priv->win->workspace == wsid ));
 
   priv->invalid = FALSE;
 }

@@ -172,8 +172,12 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
     switch ( (gint)scanner->token )
     {
       case G_TOKEN_PEROUTPUT:
-        g_object_set_data(G_OBJECT(widget),"filter_output",GINT_TO_POINTER(
-              config_assign_boolean(scanner,FALSE,"filter_output")));
+        if(config_assign_boolean(scanner,FALSE,"filter_output"))
+          taskbar_set_filter(widget,G_TOKEN_OUTPUT);
+        return TRUE;
+      case G_TOKEN_FILTER:
+        taskbar_set_filter(widget,config_assign_tokens(scanner,"filter",
+              "output|workspace", G_TOKEN_OUTPUT,G_TOKEN_WORKSPACE,0));
         return TRUE;
       case G_TOKEN_TITLEWIDTH:
         g_object_set_data(G_OBJECT(widget),"title_width",

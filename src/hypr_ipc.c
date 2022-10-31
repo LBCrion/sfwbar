@@ -326,10 +326,16 @@ static void hypr_ipc_pager_populate( void )
         if(wid!=-99)
         {
           if(json_bool_by_name(iter,"focused",FALSE))
+          {
             pager_workspace_set_focus(GINT_TO_POINTER(wid));
+            pager_workspace_set_active(ws,json_string_by_name(iter,"name"));
+          }
           ws = pager_workspace_from_id(GINT_TO_POINTER(wid));
           if(ws)
+          {
             ws->visible = TRUE;
+            pager_workspace_set_active(ws,json_string_by_name(iter,"name"));
+          }
         }
       }
     }
