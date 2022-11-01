@@ -161,7 +161,6 @@ static void sway_minimized_set ( struct json_object *obj, const gchar *parent,
   else
   {
     win->state &= ~WS_MINIMIZED;
-//    g_free(win->workspace);
     win->workspace = pager_workspace_id_from_name(parent);
   }
 
@@ -564,7 +563,6 @@ static struct wintree_api sway_wintree_api = {
   .unmaximize = sway_ipc_unmaximize,
   .close = sway_ipc_close,
   .focus = sway_ipc_focus,
-  .free_workspace = g_free
 };
 
 static guint sway_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,
