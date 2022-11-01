@@ -182,7 +182,8 @@ gint config_assign_tokens ( GScanner *scanner, gchar *name, gchar *type, ... )
   while(token!=0)
   {
     if(token == scanner->next_token)
-      res = token;
+      res = g_scanner_get_next_token(scanner);
+
     token = va_arg(args, gint );
   }
   va_end(args);
