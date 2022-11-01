@@ -89,10 +89,9 @@ void taskbar_invalidate_all ( window_t *win )
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
   {
-    if(!taskbar_is_toplevel(iter->data) || 
-        !g_object_get_data(G_OBJECT(iter->data),"group"))
-      taskbar_item_invalidate(flow_grid_find_child(iter->data,win));
-    else if(win->appid)
+    taskbar_item_invalidate(flow_grid_find_child(iter->data,win));
+    if(taskbar_is_toplevel(iter->data) && win->appid &&
+        g_object_get_data(G_OBJECT(iter->data),"group"))
       taskbar_group_invalidate(flow_grid_find_child(iter->data,win->appid));
   }
 }

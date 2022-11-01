@@ -114,11 +114,38 @@ static window_t *taskbar_item_get_window ( GtkWidget *self )
   return priv->win;
 }
 
+static gboolean taskbar_item_check ( GtkWidget *self )
+{
+  TaskbarItemPrivate *priv;
+  GtkWidget *taskbar;
+  gpointer wsid;
+
+  g_return_val_if_fail(IS_TASKBAR_ITEM(self),FALSE);
+  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
+
+  taskbar = g_object_get_data(G_OBJECT(priv->taskbar),"parent_taskbar");
+  if(!taskbar)
+    taskbar = priv->taskbar;
+
+  switch(taskbar_get_filter(taskbar))
+  {
+    case G_TOKEN_OUTPUT:
+      return (!priv->win->output || !g_strcmp0(priv->win->output,
+          bar_get_output(base_widget_get_child(taskbar))));
+    case G_TOKEN_WORKSPACE:
+      wsid = g_object_get_data(G_OBJECT(gdk_display_get_monitor_at_window(
+              gtk_widget_get_display(gtk_widget_get_toplevel(taskbar)),
+              gtk_widget_get_window(taskbar))),"workspace");
+      return (!priv->win->workspace || priv->win->workspace == wsid );
+  }
+
+  return TRUE;
+}
+
 static void taskbar_item_update ( GtkWidget *self )
 {
   TaskbarItemPrivate *priv;
   gchar *appid;
-  gpointer wsid;
 
   g_return_if_fail(IS_TASKBAR_ITEM(self));
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
@@ -146,16 +173,7 @@ static void taskbar_item_update ( GtkWidget *self )
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
 
-  wsid = g_object_get_data(G_OBJECT(gdk_display_get_monitor_at_window(
-      gtk_widget_get_display(gtk_widget_get_toplevel(priv->taskbar)),
-      gtk_widget_get_window(priv->taskbar))),"workspace");
-  flow_item_set_active(self, (!priv->win->output ||
-        taskbar_get_filter(priv->taskbar)!=G_TOKEN_OUTPUT ||
-        !g_strcmp0(priv->win->output,
-        bar_get_output(base_widget_get_child(priv->taskbar)))) &&
-      (!priv->win->workspace ||
-      taskbar_get_filter(priv->taskbar)!=G_TOKEN_WORKSPACE ||
-      priv->win->workspace == wsid ));
+  flow_item_set_active(self, taskbar_item_check(self));
 
   priv->invalid = FALSE;
 }

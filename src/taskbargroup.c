@@ -117,6 +117,7 @@ gchar *taskbar_group_get_appid ( GtkWidget *self )
 static void taskbar_group_update ( GtkWidget *self )
 {
   TaskbarGroupPrivate *priv;
+  GList *children;
 
   g_return_if_fail(IS_TASKBAR_GROUP(self));
   priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
@@ -137,6 +138,12 @@ static void taskbar_group_update ( GtkWidget *self )
 
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
+
+  flow_grid_update(priv->tgroup);
+  children = gtk_container_get_children(GTK_CONTAINER(
+        gtk_bin_get_child(GTK_BIN(priv->tgroup))));
+  flow_item_set_active(self, g_list_length(children)>0 );
+  g_list_free(children);
 
   priv->invalid = FALSE;
 }
@@ -202,6 +209,7 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
 
   priv->taskbar = taskbar;
   priv->tgroup = taskbar_new(FALSE);
+  g_object_set_data(G_OBJECT(priv->tgroup),"parent_taskbar",taskbar);
   priv->appid = g_strdup(appid);
   priv->button = gtk_button_new();
   gtk_container_add(GTK_CONTAINER(self),priv->button);
