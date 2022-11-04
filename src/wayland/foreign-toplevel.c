@@ -177,8 +177,14 @@ static void handle_global(void *data, struct wl_registry *registry,
     foreign_toplevel_register(registry,name);
 }
 
+static void handle_global_remove(void *data, struct wl_registry *registry,
+                uint32_t name)
+{
+}
+
 static const struct wl_registry_listener registry_listener = {
   .global = handle_global,
+  .global_remove = handle_global_remove
 };
 
 void wayland_ipc_init ( void )
