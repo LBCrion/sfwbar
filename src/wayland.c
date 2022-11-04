@@ -19,8 +19,15 @@ static void handle_global(void *data, struct wl_registry *registry,
     xdg_output_register(registry,name);
 }
 
+
+static void handle_global_remove(void *data, struct wl_registry *registry,
+                uint32_t name)
+{
+}
+
 static const struct wl_registry_listener registry_listener = {
   .global = handle_global,
+  .global_remove = handle_global_remove
 };
 
 void wayland_init ( void )
