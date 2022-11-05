@@ -193,7 +193,7 @@ gchar *bar_get_output ( GtkWidget *widget )
         gdk_window_get_display(win),win)), "xdg_name" );
 }
 
-void bar_update_monitor ( GtkWindow *win )
+gboolean bar_update_monitor ( GtkWindow *win )
 {
   GdkDisplay *gdisp;
   GdkMonitor *gmon,*match;
@@ -202,12 +202,14 @@ void bar_update_monitor ( GtkWindow *win )
   gboolean visible;
 
   if(!win)
-    return;
+    return FALSE;
 
   monitor = g_object_get_data(G_OBJECT(win),"monitor");
 
   gdisp = gdk_display_get_default();
   match = gdk_display_get_primary_monitor(gdisp);
+  if(!match)
+    match = gdk_display_get_monitor(gdisp,0);
 
   if(monitor)
   {
@@ -224,10 +226,11 @@ void bar_update_monitor ( GtkWindow *win )
   visible = gtk_widget_get_visible(GTK_WIDGET(win));
   gtk_widget_hide(GTK_WIDGET(win));
   if(!match)
-    return;
+    return FALSE;
   gtk_layer_set_monitor(win, match);
   if(visible)
     gtk_widget_show_now(GTK_WIDGET(win));
+  return FALSE;
 }
 
 void bar_set_monitor ( gchar *mon_name, GtkWindow *bar )
@@ -254,7 +257,7 @@ void bar_monitor_added_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
   xdg_output_new(gmon);
   g_hash_table_iter_init(&iter,bar_list);
   while(g_hash_table_iter_next(&iter,&key,&bar))
-    bar_update_monitor(bar);
+    g_idle_add((GSourceFunc)bar_update_monitor,bar);
 }
 
 void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
@@ -262,7 +265,6 @@ void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
   GHashTableIter iter;
   void *key, *bar;
 
-  xdg_output_destroy(gmon);
   g_hash_table_iter_init(&iter,bar_list);
   while(g_hash_table_iter_next(&iter,&key,&bar))
     bar_update_monitor(bar);

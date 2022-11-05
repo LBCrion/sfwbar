@@ -16,14 +16,19 @@ static void xdg_output_noop ()
 static void xdg_output_handle_name ( void *monitor,
     struct zxdg_output_v1 *xdg_output, const gchar *name )
 {
-  g_free(g_object_get_data(G_OBJECT(monitor),"xdg_name"));
-  g_object_set_data(G_OBJECT(monitor),"xdg_name",strdup(name));
+  g_object_set_data_full(G_OBJECT(monitor),"xdg_name",strdup(name),g_free);
+}
+
+static void xdg_output_handle_done ( void *monitor,
+    struct zxdg_output_v1 *xdg_output )
+{
+  zxdg_output_v1_destroy(xdg_output);
 }
 
 static const struct zxdg_output_v1_listener xdg_output_listener = {
   .logical_position = xdg_output_noop,
   .logical_size = xdg_output_noop,
-  .done = xdg_output_noop,
+  .done = xdg_output_handle_done,
   .name = xdg_output_handle_name,
   .description = xdg_output_noop,
 };
