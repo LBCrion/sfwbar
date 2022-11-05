@@ -228,14 +228,14 @@ gboolean bar_update_monitor ( GtkWindow *win )
   if(!match)
   {
     if(visible)
-      g_object_set_data(G_OBJECT(bar),"visible",GINT_TO_POINTER(TRUE));
+      g_object_set_data(G_OBJECT(win),"visible",GINT_TO_POINTER(TRUE));
     return FALSE;
   }
   gtk_layer_set_monitor(win, match);
-  if(visible || g_object_get_data(G_OBJECT(bar),"visible"))
+  if(visible || g_object_get_data(G_OBJECT(win),"visible"))
   {
     gtk_widget_show_now(GTK_WIDGET(win));
-    g_object_set_data(G_OBJECT(bar),"visible",GINT_TO_POINTER(FALSE));
+    g_object_set_data(G_OBJECT(win),"visible",GINT_TO_POINTER(FALSE));
   }
   return FALSE;
 }
