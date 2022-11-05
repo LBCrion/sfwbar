@@ -226,10 +226,17 @@ gboolean bar_update_monitor ( GtkWindow *win )
   visible = gtk_widget_get_visible(GTK_WIDGET(win));
   gtk_widget_hide(GTK_WIDGET(win));
   if(!match)
+  {
+    if(visible)
+      g_object_set_data(G_OBJECT(bar),"visible",GINT_TO_POINTER(TRUE));
     return FALSE;
+  }
   gtk_layer_set_monitor(win, match);
-  if(visible)
+  if(visible || g_object_get_data(G_OBJECT(bar),"visible"))
+  {
     gtk_widget_show_now(GTK_WIDGET(win));
+    g_object_set_data(G_OBJECT(bar),"visible",GINT_TO_POINTER(FALSE));
+  }
   return FALSE;
 }
 
