@@ -418,6 +418,9 @@ ClientSend <string>, <string>
 
 SetMonitor [<bar_name>,]<string>
   move bar to a given monitor. Bar_name string specifies a bar to move.
+  monitor name can be prefixed by "jump:", i.e. "jump:eDP-1", if this
+  is set and the specified monitor doesn't exist or gets disconnected, 
+  the bar will jump to another montior (if avilable).
 
 SetLayer [<bar_name>,]<string>
   move bar to a specified layer (supported parameters are "top", "bottom",
@@ -729,17 +732,15 @@ Alternatively your desktop environment might have a command to display a list:
 - Sway: `swaymsg -t get_tree`
 - Hyperland: `hyprctl -j clients`
 
-When using `swaymsg -t get_tree`, with CLion this will show the following:
+When using `swaymsg -t get_tree`, with CLion this will show the following: ::
 
-```
-"window_properties": {
-  "class": "jetbrains-clion",
-  "instance": "jetbrains-clion",
-  "title": "sfwbar – trayitem.c",
-  "transient_for": null,
-  "window_type": "normal"
-}
-```
+  "window_properties": {
+    "class": "jetbrains-clion",
+    "instance": "jetbrains-clion",
+    "title": "sfwbar – trayitem.c",
+    "transient_for": null,
+    "window_type": "normal"
+  }
 
 So we can put an icon called jetbrains-clion.svg (or other formats, see the
 [Arch wiki](https://wiki.archlinux.org/title/desktop_entries#Icons)) for information about file formats.

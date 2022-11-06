@@ -505,6 +505,9 @@ The first parameter is the client id, the second is the string to send.
 .TP
 .B SetMonitor [<bar_name>,]<string>
 move bar to a given monitor. Bar_name string specifies a bar to move.
+monitor name can be prefixed by \(dqjump:\(dq, i.e. \(dqjump:eDP\-1\(dq, if this
+is set and the specified monitor doesn\(aqt exist or gets disconnected,
+the bar will jump to another montior (if avilable).
 .TP
 .B SetLayer [<bar_name>,]<string>
 move bar to a specified layer (supported parameters are \(dqtop\(dq, \(dqbottom\(dq,
@@ -975,6 +978,49 @@ MapAppId app_id, pattern
 .sp
 where app_id is the desired app_id and pattern is a regular expression to
 match the title against.
+.sp
+If you are using an XWayland app, they usually do not have an \fIapp_id\fP set. If
+an icon is not showing, you can add your icon to the following locations:
+1. \fI$HOME/.icons\fP
+2. One of the directories listed in \fI$XDG_DATA_DIRS/icons\fP
+3. \fI/usr/share/pixmaps\fP
+4. Location of the main config file currently in use
+5. \fI$XDG_CONFIG_HOME/sfwbar/\fP
+.sp
+If an \fIapp_id\fP is not set, and sway is being used, sfwbar will fallback to using
+the \fIinstance\fP in the \fIwindow\-properties\fP\&.
+.sp
+You can find the \fIapp_id\fP that is being used with sfwbar by using the \fIsfwbar \-d \-g app_id\fP
+command, which will show a list of running applications if your compositor supports the
+wlr\-foreign\-toplevel protocol (i.e. labwc, wayfire, sway):
+\fB\(ga
+14:49:25.41 app_id: \(aqjetbrains\-clion\(aq, title \(aqsfwbar – pager.c\(aq
+\(ga\fP
+.sp
+Alternatively your desktop environment might have a command to display a list:
+\- Sway: \fIswaymsg \-t get_tree\fP
+\- Hyperland: \fIhyprctl \-j clients\fP
+.sp
+When using \fIswaymsg \-t get_tree\fP, with CLion this will show the following:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+\(dqwindow_properties\(dq: {
+  \(dqclass\(dq: \(dqjetbrains\-clion\(dq,
+  \(dqinstance\(dq: \(dqjetbrains\-clion\(dq,
+  \(dqtitle\(dq: \(dqsfwbar – trayitem.c\(dq,
+  \(dqtransient_for\(dq: null,
+  \(dqwindow_type\(dq: \(dqnormal\(dq
+}
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+So we can put an icon called jetbrains\-clion.svg (or other formats, see the
+[Arch wiki](\fI\%https://wiki.archlinux.org/title/desktop_entries#Icons\fP)) for information about file formats.
 .SH CSS STYLE
 .sp
 SFWBar uses gtk+ widgets and can accept all css properties supported by
