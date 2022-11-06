@@ -208,9 +208,14 @@ gboolean bar_update_monitor ( GtkWindow *win )
   monitor = g_object_get_data(G_OBJECT(win),"monitor");
 
   gdisp = gdk_display_get_default();
-  match = gdk_display_get_primary_monitor(gdisp);
-  if(!match)
-    match = gdk_display_get_monitor(gdisp,0);
+  if(g_object_get_data(G_OBJECT(win),"jump_output"))
+  {
+    match = gdk_display_get_primary_monitor(gdisp);
+    if(!match)
+      match = gdk_display_get_monitor(gdisp,0);
+  }
+  else
+    match = NULL;
 
   if(monitor)
   {
@@ -242,18 +247,26 @@ gboolean bar_update_monitor ( GtkWindow *win )
   return FALSE;
 }
 
-void bar_set_monitor ( gchar *mon_name, GtkWindow *bar )
+void bar_set_monitor ( gchar *monitor, GtkWindow *bar )
 {
-  gchar *monitor;
+  gchar *old_mon,*mon_name;
 
-  if(!bar || !mon_name)
+  if(!bar || !monitor)
     return;
-  monitor = g_object_get_data(G_OBJECT(bar),"monitor");
 
-  if(!monitor || g_ascii_strcasecmp(monitor, mon_name))
+  if(!g_ascii_strncasecmp(monitor,"jump:",5))
   {
-    g_free(monitor);
-    g_object_set_data(G_OBJECT(bar),"monitor", g_strdup(mon_name));
+    g_object_set_data(G_OBJECT(bar),"jump_output",GINT_TO_POINTER(TRUE));
+    mon_name = monitor+5;
+  }
+  else
+    mon_name = monitor;
+
+  old_mon = g_object_get_data(G_OBJECT(bar),"monitor");
+
+  if(!old_mon || g_ascii_strcasecmp(old_mon, mon_name))
+  {
+    g_object_set_data_full(G_OBJECT(bar),"monitor", g_strdup(mon_name),g_free);
     bar_update_monitor(bar);
   }
 }
