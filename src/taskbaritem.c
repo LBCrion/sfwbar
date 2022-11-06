@@ -119,7 +119,6 @@ static gboolean taskbar_item_check ( GtkWidget *self )
 {
   TaskbarItemPrivate *priv;
   GtkWidget *taskbar;
-  gpointer wsid;
 
   g_return_val_if_fail(IS_TASKBAR_ITEM(self),FALSE);
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
@@ -134,10 +133,8 @@ static gboolean taskbar_item_check ( GtkWidget *self )
       return (!priv->win->output || !g_strcmp0(priv->win->output,
           bar_get_output(base_widget_get_child(taskbar))));
     case G_TOKEN_WORKSPACE:
-      wsid = pager_workspace_get_active(gdk_display_get_monitor_at_window(
-            gtk_widget_get_display(gtk_widget_get_toplevel(taskbar)),
-              gtk_widget_get_window(taskbar)));
-      return (!priv->win->workspace || priv->win->workspace == wsid );
+      return (!priv->win->workspace ||
+          priv->win->workspace == pager_workspace_get_active(taskbar) );
   }
 
   return TRUE;
