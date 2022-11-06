@@ -205,9 +205,14 @@ gboolean bar_update_monitor ( GtkWindow *win )
   if(!win)
     return FALSE;
 
-  monitor = g_object_get_data(G_OBJECT(win),"monitor");
-
   gdisp = gdk_display_get_default();
+
+  for(i=0;i<gdk_display_get_n_monitors(gdisp);i++)
+    if(!g_object_get_data(G_OBJECT(gdk_display_get_monitor(gdisp,i)),
+          "xdg_name"))
+      return TRUE;
+
+  monitor = g_object_get_data(G_OBJECT(win),"monitor");
   if(g_object_get_data(G_OBJECT(win),"jump_output"))
   {
     match = gdk_display_get_primary_monitor(gdisp);
