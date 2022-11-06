@@ -10,6 +10,7 @@
 #include "wayland.h"
 #include "grid.h"
 #include "config.h"
+#include "taskbar.h"
 
 static GHashTable *bar_list;
 
@@ -235,6 +236,7 @@ gboolean bar_update_monitor ( GtkWindow *win )
   if(visible || g_object_get_data(G_OBJECT(win),"visible"))
   {
     gtk_widget_show_now(GTK_WIDGET(win));
+    taskbar_invalidate_unconditional();
     g_object_set_data(G_OBJECT(win),"visible",GINT_TO_POINTER(FALSE));
   }
   return FALSE;

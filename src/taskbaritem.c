@@ -9,6 +9,7 @@
 #include "taskbar.h"
 #include "scaleimage.h"
 #include "action.h"
+#include "pager.h"
 #include "bar.h"
 #include "wintree.h"
 #include "config.h"
@@ -133,9 +134,9 @@ static gboolean taskbar_item_check ( GtkWidget *self )
       return (!priv->win->output || !g_strcmp0(priv->win->output,
           bar_get_output(base_widget_get_child(taskbar))));
     case G_TOKEN_WORKSPACE:
-      wsid = g_object_get_data(G_OBJECT(gdk_display_get_monitor_at_window(
-              gtk_widget_get_display(gtk_widget_get_toplevel(taskbar)),
-              gtk_widget_get_window(taskbar))),"workspace");
+      wsid = pager_workspace_get_active(gdk_display_get_monitor_at_window(
+            gtk_widget_get_display(gtk_widget_get_toplevel(taskbar)),
+              gtk_widget_get_window(taskbar)));
       return (!priv->win->workspace || priv->win->workspace == wsid );
   }
 

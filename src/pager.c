@@ -18,6 +18,7 @@ static GList *pagers;
 static GList *global_pins;
 static workspace_t *focus;
 static GList *workspaces;
+static GHashTable *actives;
 
 void pager_api_register ( struct pager_api *new )
 {
@@ -131,6 +132,15 @@ workspace_t *pager_workspace_from_name ( gchar *name )
   return NULL;
 }
 
+gpointer pager_workspace_get_active ( GdkMonitor *mon )
+{
+  if(!actives)
+    return NULL;
+
+  return g_hash_table_lookup(actives,
+      g_object_get_data(G_OBJECT(mon),"xdg_name"));
+}
+
 void pager_workspace_set_active ( workspace_t *ws, const gchar *output )
 {
   GdkDisplay *gdisp;
@@ -141,13 +151,17 @@ void pager_workspace_set_active ( workspace_t *ws, const gchar *output )
   if(!output || !ws)
     return;
 
+  if(!actives)
+    actives = g_hash_table_new_full((GHashFunc)str_nhash,
+        (GEqualFunc)str_nequal,g_free,NULL);
+
   gdisp = gdk_display_get_default();
   for(i=gdk_display_get_n_monitors(gdisp)-1;i>=0;i--)
   {
     gmon = gdk_display_get_monitor(gdisp,i);
     name = g_object_get_data(G_OBJECT(gmon),"xdg_name");
     if(name && !g_strcmp0(name,output))
-      g_object_set_data(G_OBJECT(gmon),"workspace",ws->id);
+      g_hash_table_insert(actives,g_strdup(name),ws->id);
   }
 }
 

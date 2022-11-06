@@ -51,6 +51,7 @@ void pager_workspace_new ( workspace_t *new );
 void pager_workspace_delete ( gpointer id );
 void pager_workspace_set_focus ( gpointer id );
 void pager_workspace_set_active ( workspace_t *ws, const gchar *output );
+gpointer pager_workspace_get_active ( GdkMonitor *mon );
 gboolean pager_workspace_is_focused ( workspace_t *ws );
 void pager_update ( void );
 void pager_invalidate_all ( workspace_t *ws );
