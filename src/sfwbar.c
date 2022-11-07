@@ -134,7 +134,6 @@ static void activate (GtkApplication* app, gpointer data )
       if(monitor)
         bar_set_monitor(monitor,GTK_WINDOW(iter->data));
       bar_save_monitor(iter->data);
-      g_message("mon: %s",g_object_get_data(G_OBJECT(iter->data),"monitor"));
     }
   g_list_free(clist);
 
