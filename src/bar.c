@@ -205,13 +205,10 @@ gboolean bar_update_monitor ( GtkWindow *win )
   if(!win)
     return FALSE;
 
+  if(!xdg_output_check())
+    return TRUE;
+
   gdisp = gdk_display_get_default();
-
-  for(i=0;i<gdk_display_get_n_monitors(gdisp);i++)
-    if(!g_object_get_data(G_OBJECT(gdk_display_get_monitor(gdisp,i)),
-          "xdg_name"))
-      return TRUE;
-
   monitor = g_object_get_data(G_OBJECT(win),"monitor");
   if(g_object_get_data(G_OBJECT(win),"jump_output"))
   {
@@ -250,6 +247,28 @@ gboolean bar_update_monitor ( GtkWindow *win )
     g_object_set_data(G_OBJECT(win),"visible",GINT_TO_POINTER(FALSE));
   }
   return FALSE;
+}
+
+void bar_save_monitor ( GtkWidget *bar )
+{
+  GdkWindow *win;
+  GdkDisplay *disp;
+  GdkMonitor *mon;
+
+  if(g_object_get_data(G_OBJECT(bar),"monitor"))
+    return;
+  win = gtk_widget_get_window(bar);
+  if(!win)
+    return;
+  disp = gdk_window_get_display(win);
+  if(!disp)
+    return;
+  mon = gdk_display_get_monitor_at_window(disp,win);
+  if(!mon)
+    return;
+
+  g_object_set_data(G_OBJECT(bar),"monitor",
+      g_strdup(g_object_get_data(G_OBJECT(mon),"xdg_name")));
 }
 
 void bar_set_monitor ( gchar *monitor, GtkWindow *bar )

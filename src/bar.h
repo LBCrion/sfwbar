@@ -12,6 +12,7 @@ gboolean bar_hide_event ( const gchar *mode );
 void bar_monitor_added_cb ( GdkDisplay *, GdkMonitor * );
 void bar_monitor_removed_cb ( GdkDisplay *, GdkMonitor * );
 gboolean bar_update_monitor ( GtkWindow *win );
+void bar_save_monitor ( GtkWidget *bar );
 GtkWindow *bar_from_name ( gchar *name );
 GtkWidget *bar_grid_from_name ( gchar *addr );
 

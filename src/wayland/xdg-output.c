@@ -68,6 +68,24 @@ void xdg_output_destroy ( GdkMonitor *gmon )
     zxdg_output_v1_destroy(xdg);
 }
 
+gboolean xdg_output_check ( void )
+{
+  GdkMonitor *gdisp;
+  gint i;
+
+  if(!xdg_output_manager)
+    return TRUE;
+
+  gdisp = gdk_display_get_default();
+
+  for(i=0;i<gdk_display_get_n_monitors(gdisp);i++)
+    if(!g_object_get_data(G_OBJECT(gdk_display_get_monitor(gdisp,i)),
+          "xdg_name"))
+      return FALSE;
+
+  return TRUE;
+}
+
 void xdg_output_register (struct wl_registry *registry, uint32_t name)
 {
   GdkDisplay *display;
