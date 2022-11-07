@@ -259,13 +259,13 @@ void bar_set_monitor ( gchar *monitor, GtkWindow *bar )
   if(!bar || !monitor)
     return;
 
-  if(!g_ascii_strncasecmp(monitor,"jump:",5))
+  if(!g_ascii_strncasecmp(monitor,"static:",5))
+    mon_name = monitor+7;
+  else
   {
     g_object_set_data(G_OBJECT(bar),"jump_output",GINT_TO_POINTER(TRUE));
-    mon_name = monitor+5;
-  }
-  else
     mon_name = monitor;
+  }
 
   old_mon = g_object_get_data(G_OBJECT(bar),"monitor");
 

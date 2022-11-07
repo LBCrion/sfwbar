@@ -505,9 +505,10 @@ The first parameter is the client id, the second is the string to send.
 .TP
 .B SetMonitor [<bar_name>,]<string>
 move bar to a given monitor. Bar_name string specifies a bar to move.
-monitor name can be prefixed by \(dqjump:\(dq, i.e. \(dqjump:eDP\-1\(dq, if this
+monitor name can be prefixed by \(dqstatic:\(dq, i.e. \(dqstatic:eDP\-1\(dq, if this
 is set and the specified monitor doesn\(aqt exist or gets disconnected,
-the bar will jump to another montior (if avilable).
+the bar will not jump to another montior, but will be hidden and won\(aqt
+reappear until the monitor is reconnected.
 .TP
 .B SetLayer [<bar_name>,]<string>
 move bar to a specified layer (supported parameters are \(dqtop\(dq, \(dqbottom\(dq,

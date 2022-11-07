@@ -418,9 +418,10 @@ ClientSend <string>, <string>
 
 SetMonitor [<bar_name>,]<string>
   move bar to a given monitor. Bar_name string specifies a bar to move.
-  monitor name can be prefixed by "jump:", i.e. "jump:eDP-1", if this
+  monitor name can be prefixed by "static:", i.e. "static:eDP-1", if this
   is set and the specified monitor doesn't exist or gets disconnected, 
-  the bar will jump to another montior (if avilable).
+  the bar will not jump to another montior, but will be hidden and won't
+  reappear until the monitor is reconnected.
 
 SetLayer [<bar_name>,]<string>
   move bar to a specified layer (supported parameters are "top", "bottom",
