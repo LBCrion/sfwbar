@@ -70,7 +70,7 @@ void xdg_output_destroy ( GdkMonitor *gmon )
 
 gboolean xdg_output_check ( void )
 {
-  GdkMonitor *gdisp;
+  GdkDisplay *gdisp;
   gint i;
 
   if(!xdg_output_manager)
@@ -90,6 +90,7 @@ void xdg_output_register (struct wl_registry *registry, uint32_t name)
 {
   GdkDisplay *display;
   gint i,n;
+
 
   xdg_output_manager = wl_registry_bind(registry, name,
       &zxdg_output_manager_v1_interface, ZXDG_OUTPUT_V1_NAME_SINCE_VERSION);
