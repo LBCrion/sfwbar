@@ -381,7 +381,7 @@ static void sway_ipc_pager_event ( struct json_object *obj )
   else
     pager_workspace_new(ws);
 
-  if(!g_strcmp0(change,"focus") || g_strcmp0(change,"move"))
+  if(!g_strcmp0(change,"focus") || !g_strcmp0(change,"move"))
     pager_workspace_set_active(ws,json_string_by_name(current,"output"));
   if(!g_strcmp0(change,"focus"))
     pager_workspace_set_focus(ws->id);
