@@ -117,7 +117,7 @@ gchar *taskbar_group_get_appid ( GtkWidget *self )
 static void taskbar_group_update ( GtkWidget *self )
 {
   TaskbarGroupPrivate *priv;
-  GList *children;
+  GList *children, *iter;
 
   g_return_if_fail(IS_TASKBAR_GROUP(self));
   priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
@@ -144,6 +144,12 @@ static void taskbar_group_update ( GtkWidget *self )
         gtk_bin_get_child(GTK_BIN(priv->tgroup))));
   flow_item_set_active(self, g_list_length(children)>0 );
   g_list_free(children);
+  for(iter=priv->holds;iter;iter=g_list_next(iter))
+    if(GTK_IS_WINDOW(iter->data))
+      gtk_widget_hide(iter->data);
+  g_list_free(priv->holds);
+  priv->holds = NULL;
+  gtk_widget_hide(priv->popover);
 
   priv->invalid = FALSE;
 }
