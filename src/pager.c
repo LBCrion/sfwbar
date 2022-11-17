@@ -196,7 +196,7 @@ void pager_workspace_set_focus ( gpointer id )
   pager_invalidate_all(focus);
   focus = ws;
   pager_invalidate_all(focus);
-  taskbar_invalidate_unconditional();
+  taskbar_invalidate_conditional();
 }
 
 void pager_workspace_delete ( gpointer id )

@@ -97,7 +97,7 @@ static void taskbar_item_button_cb( GtkWidget *widget, gpointer self )
       wintree_focus(priv->win->uid);
   }
 
-  taskbar_invalidate_all(priv->win);
+  taskbar_invalidate_all(priv->win,FALSE);
 }
 
 static void taskbar_item_destroy ( GtkWidget *self )

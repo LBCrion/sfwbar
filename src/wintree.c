@@ -121,7 +121,7 @@ window_t *wintree_from_pid ( gint64 pid )
 
 void wintree_commit ( window_t *win )
 {
-  taskbar_invalidate_all(win);
+  taskbar_invalidate_all(win,FALSE);
   switcher_invalidate(win);
 }
 

@@ -80,7 +80,7 @@ gint taskbar_get_filter ( GtkWidget *self )
   return priv->filter;
 }
 
-void taskbar_invalidate_all ( window_t *win )
+void taskbar_invalidate_all ( window_t *win, gboolean filter )
 {
   GList *iter;
 
@@ -88,20 +88,21 @@ void taskbar_invalidate_all ( window_t *win )
     return;
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
-  {
-    taskbar_item_invalidate(flow_grid_find_child(iter->data,win));
-    if(taskbar_is_toplevel(iter->data) && win->appid &&
-        g_object_get_data(G_OBJECT(iter->data),"group"))
-      taskbar_group_invalidate(flow_grid_find_child(iter->data,win->appid));
-  }
+    if(!filter || taskbar_get_filter(iter->data))
+    {
+      taskbar_item_invalidate(flow_grid_find_child(iter->data,win));
+      if(taskbar_is_toplevel(iter->data) && win->appid &&
+          g_object_get_data(G_OBJECT(iter->data),"group"))
+        taskbar_group_invalidate(flow_grid_find_child(iter->data,win->appid));
+    }
 }
 
-void taskbar_invalidate_unconditional ( void )
+void taskbar_invalidate_conditional ( void )
 {
   GList *iter;
 
   for(iter=wintree_get_list();iter;iter=g_list_next(iter))
-    taskbar_invalidate_all(iter->data);
+    taskbar_invalidate_all(iter->data,TRUE);
 }
 
 void taskbar_init_item ( window_t *win )
