@@ -174,6 +174,7 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
       case G_TOKEN_PEROUTPUT:
         if(config_assign_boolean(scanner,FALSE,"filter_output"))
           taskbar_set_filter(widget,G_TOKEN_OUTPUT);
+        g_message("'filter_output' is deprecated, please use 'filter = output' instead");
         return TRUE;
       case G_TOKEN_FILTER:
         taskbar_set_filter(widget,config_assign_tokens(scanner,"filter",
