@@ -319,8 +319,13 @@ an indicator whether to display an application title within the taskbar
 an indicator whether to display application icons within the taskbar
 .TP
 .B filter_output [true|false]
+This property is deprecated, please use \fBfilter\fP instead.
 specifies whether taskbar should only list windows present on the same
 output as the taskbar
+.TP
+.B filter [output|workspace]
+Specifies whether taskbar should only list windows present on the same
+output or workspace as the taskbar itself.
 .TP
 .B title_width
 set maximum width of an application title in characters

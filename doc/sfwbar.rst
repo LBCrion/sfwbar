@@ -252,8 +252,13 @@ icons [true|false]
   an indicator whether to display application icons within the taskbar
 
 filter_output [true|false]
+  This property is deprecated, please use ``filter`` instead.
   specifies whether taskbar should only list windows present on the same
   output as the taskbar
+
+filter [output|workspace]
+  Specifies whether taskbar should only list windows present on the same
+  output or workspace as the taskbar itself.
 
 title_width
   set maximum width of an application title in characters
