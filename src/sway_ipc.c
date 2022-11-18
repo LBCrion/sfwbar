@@ -650,5 +650,5 @@ void sway_ipc_bar_id ( gchar *id )
   if(!id)
     return;
   g_free(bar_id);
-  bar_id = strdup(id);
+  bar_id = g_strdup(id);
 }
