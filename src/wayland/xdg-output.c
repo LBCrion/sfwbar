@@ -16,7 +16,7 @@ static void xdg_output_noop ()
 static void xdg_output_handle_name ( void *monitor,
     struct zxdg_output_v1 *xdg_output, const gchar *name )
 {
-  g_object_set_data_full(G_OBJECT(monitor),"xdg_name",strdup(name),g_free);
+  g_object_set_data_full(G_OBJECT(monitor),"xdg_name",g_strdup(name),g_free);
 }
 
 static void xdg_output_handle_done ( void *monitor,

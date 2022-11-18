@@ -158,7 +158,7 @@ gchar *expr_parse_str_mid ( GScanner *scanner )
   parser_expect_symbol(scanner,')',"Mid(String,Number,Number)");
 
   if(str==NULL)
-    return strdup("");
+    return g_strdup("");
   len = strlen(str);
   if(c1<0)	/* negative offsets are relative to the end of the string */
     c1+=len;
@@ -179,7 +179,7 @@ gchar *expr_parse_str_mid ( GScanner *scanner )
     c2^=c1;
   }
 
-  result = strndup( str+c1*sizeof(gchar), (c2-c1+1)*sizeof(gchar));
+  result = g_strndup( str+c1*sizeof(gchar), (c2-c1+1)*sizeof(gchar));
 
   g_free(str);
 
@@ -258,7 +258,7 @@ gchar *expr_parse_extract( GScanner *scanner )
     g_regex_unref (regex);
   }
   if(sres==NULL)
-    sres = strdup("");
+    sres = g_strdup("");
 
   g_free(str);
   g_free(pattern);
@@ -330,7 +330,7 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
   switch((gint)g_scanner_get_next_token(scanner))
   {
     case G_TOKEN_STRING:
-      str = strdup(scanner->value.v_string);
+      str = g_strdup(scanner->value.v_string);
       break;
     case G_TOKEN_STRW:
       parser_expect_symbol(scanner,'(',"Str(Number,Number)");
@@ -376,7 +376,7 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
       g_scanner_warn(scanner,
           "Unexpected token at position %u, expected a string",
           g_scanner_cur_position(scanner));
-      str = strdup("");
+      str = g_strdup("");
   }
   return str;
 }
