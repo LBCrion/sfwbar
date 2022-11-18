@@ -1,7 +1,7 @@
 # Maintainer: Lev Babiev <harley at hosers dot org>
 
 pkgname=sfwbar
-pkgver=0.9.5
+pkgver=1.0_beta8
 pkgrel=1
 
 pkgdesc='Sway Floating Window taskBar'
@@ -9,9 +9,11 @@ arch=('x86_64')
 url='https://github.com/LBCrion/sfwbar'
 license=('GPL3')
 depends=(
+    'wayland'
     'gtk3'
-    'libucl-git'
+    'json-c'
     'gtk-layer-shell'
+    'wayland-protocols'
     )
 makedepends=(
     'meson'
@@ -19,7 +21,7 @@ makedepends=(
 
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
 
-sha256sums=('66c4a824c917759a8f165ebf17b4395b39c39b2e931343d2e072910d13117744')
+sha256sums=('cc3d3b48f804a90df9de29782021f2bac7de30a466a26af6582912ab52e624de')
 
 build() {
     cd "$pkgname-$pkgver"
