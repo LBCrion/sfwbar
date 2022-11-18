@@ -1,3 +1,10 @@
+1.0_beta9
+  - Implement grouped taskbars
+  - Add support for Hyprland IPC
+  - Implement filtering by workspace (on supported IPCs)
+  - Improve support for dynamically generated menus
+  - Implement second user state
+
 1.0_beta8
   - Update config files
 
