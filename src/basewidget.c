@@ -633,7 +633,7 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
 
     timer -= g_get_monotonic_time();
     if(timer>0)
-      usleep(timer);
+      g_usleep(timer);
   }
 }
 
