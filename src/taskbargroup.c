@@ -149,7 +149,10 @@ static void taskbar_group_update ( GtkWidget *self )
     if(GTK_IS_WINDOW(iter->data))
       gtk_widget_hide(iter->data);
     if(GTK_IS_MENU(iter->data))
+    {
       gtk_menu_popdown(iter->data);
+      iter = priv->holds;
+    }
   }
   g_list_free(priv->holds);
   priv->holds = NULL;
