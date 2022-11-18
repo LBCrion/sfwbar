@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <json.h>
+#include <sys/time.h>
 
 extern gchar *confname;
 
