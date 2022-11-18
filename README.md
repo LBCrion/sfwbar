@@ -9,7 +9,7 @@
 
 ### SFWBar
 
-SFWBar (S* Floating Window Bar) is a flexible taskbar application for
+SFWBar (S\* Floating Window Bar) is a flexible taskbar application for
 wayland compositors, designed with a stacking layout in mind. 
 Originally developed for [Sway](https://github.com/swaywm/sway), SFWBar
 will work with any wayland compositor supporting layer shell protocol,
@@ -19,7 +19,7 @@ functionality require sway (or at least i3 IPC support).
 
 # Please note that configuration file format has changed between 0.9 and 1.0 series 
 
-SFWBar is licensed under GNU GPL
+SFWBar is licensed under GNU GPL.
 Weather icons are from yr.no and are licensed under MIT license 
 
 ## SFWBar implements the following features:
@@ -37,6 +37,10 @@ Install dependencies:
 * gtk-layer-shell
 * json-c
 
+Runtime dependencies:
+* python is used by some widgets (i.e. battery and start menu widgets)
+* symbolic icons are used by battery.widget
+
 Compile instructions:
 ```no-highlight
 meson build
@@ -48,13 +52,14 @@ sudo ninja -C build install
 Copy sfwbar.config from /usr/share/sfwbar/ to ~/.config/sfwbar/
 If you prefer to start with something more like tint2 bar, you can
 copy [t2.config](config/t2.config) into ~/.config/sfwbar/sfwbar.config
-instead. Or if want something like waybar, you can copy
-[wbar.config](config/wbar.config)
+instead. If you want something like waybar, you can copy
+[wbar.config](config/wbar.config) and if you prefer something from the
+darker side, [w10.config](config/w10.config) could be for you.
 For more information on the format of configuration file, please see the
 [man page](doc/sfwbar.rst)
 
-you may want to add the following lines to your sway config file to open windows
-as floating by default:
+If you're using sway, you may want to add the following lines to your sway
+config file to open windows as floating by default:
 
 ```no-highlight
 # open new windows as floating by default
