@@ -40,6 +40,9 @@ SFWBar executable can be invoked with the following options:
 -m | --monitor
   Specify a monitor to display the bar on ("-m list" to list available monitors)
 
+-b | --bar_id
+  Specify a sway bar_id on which sfwbar will listen for status changes
+
 CONFIGURATION
 =============
 SFWBar reads configuration from a config file (sfwbar.config by default). The

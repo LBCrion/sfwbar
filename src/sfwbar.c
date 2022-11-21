@@ -19,6 +19,7 @@ gchar *confname;
 gchar *sockname;
 static gchar *cssname;
 static gchar *monitor;
+static gchar *bar_id;
 static gchar *dfilter;
 static GRegex *rfilter;
 static gboolean debug = FALSE;
@@ -32,14 +33,17 @@ static GOptionEntry entries[] = {
   {"debug-filter",'g',0,G_OPTION_ARG_STRING,&dfilter,"Filter debug output for a pattern"},
   {"monitor",'m',0,G_OPTION_ARG_STRING,&monitor,
     "Monitor to display the panel on (use \"-m list\" to list monitors`"},
+  {"bar_id",'b',0,G_OPTION_ARG_STRING,&bar_id,
+    "default sway bar_id to listen on for sway events"},
   {NULL}};
 
 void parse_command_line ( gint argc, gchar **argv)
 {
   GOptionContext *optc;
-  optc = g_option_context_new(" - Sway Floating Window Bar");
+
+  optc = g_option_context_new(" - S* Floating Window Bar");
   g_option_context_add_main_entries(optc,entries,NULL);
-  g_option_context_add_group (optc, gtk_get_option_group (TRUE));
+  g_option_context_add_group(optc, gtk_get_option_group(TRUE));
   g_option_context_parse(optc,&argc,&argv,NULL);
   g_option_context_free(optc);
 }
@@ -119,6 +123,9 @@ static void activate (GtkApplication* app, gpointer data )
   if( monitor && !g_ascii_strcasecmp(monitor,"list") )
     list_monitors();
 
+  if(bar_id && ipc_get() == IPC_SWAY)
+    sway_ipc_bar_id(bar_id);
+
   config_parse(confname?confname:"sfwbar.config",TRUE);
   taskbar_populate();
   pager_populate();
@@ -166,7 +173,7 @@ int main (int argc, gchar **argv)
   if(dfilter)
     rfilter = g_regex_new(dfilter,0,0,NULL);
 
-  app = gtk_application_new ("org.gtk.sfwbar", G_APPLICATION_NON_UNIQUE);
+  app = gtk_application_new ("org.hosers.sfwbar", G_APPLICATION_NON_UNIQUE);
   g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);
   status = g_application_run (G_APPLICATION (app), argc, argv);
   g_object_unref (app);
