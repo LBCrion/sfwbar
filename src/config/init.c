@@ -113,6 +113,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
       (gpointer)G_TOKEN_CHILDREN );
   g_scanner_scope_add_symbol(scanner,0, "Sort", (gpointer)G_TOKEN_SORT );
   g_scanner_scope_add_symbol(scanner,0, "Filter", (gpointer)G_TOKEN_FILTER );
+  g_scanner_scope_add_symbol(scanner,0, "Primary", (gpointer)G_TOKEN_PRIMARY );
   g_scanner_scope_add_symbol(scanner,0, "True", (gpointer)G_TOKEN_TRUE );
   g_scanner_scope_add_symbol(scanner,0, "False", (gpointer)G_TOKEN_FALSE );
   g_scanner_scope_add_symbol(scanner,0, "Menu", (gpointer)G_TOKEN_MENU );

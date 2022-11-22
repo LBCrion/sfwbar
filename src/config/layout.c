@@ -239,6 +239,11 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         flow_grid_set_rows(base_widget_get_child(widget),
           config_assign_number(scanner, "rows"));
         return TRUE;
+      case G_TOKEN_PRIMARY:
+        flow_grid_set_primary(base_widget_get_child(widget),
+            config_assign_tokens(scanner,"primary","rows|cols",
+              G_TOKEN_ROWS,G_TOKEN_COLS,NULL));
+        break;
       case G_TOKEN_ICONS:
         g_object_set_data(G_OBJECT(widget),"icons",
           GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"icons")));

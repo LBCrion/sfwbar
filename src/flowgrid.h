@@ -28,6 +28,7 @@ typedef struct _FlowGridPrivate FlowGridPrivate;
 struct _FlowGridPrivate
 {
   gint cols,rows,i;
+  gint primary_axis,count;
   gboolean limit;
   gboolean invalid;
   gboolean sort;
@@ -42,6 +43,7 @@ GtkWidget *flow_grid_new( gboolean limit);
 void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );
 void flow_grid_set_cols ( GtkWidget *cgrid, gint cols );
 void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w );
+void flow_grid_set_primary ( GtkWidget *self, gint primary );
 void flow_grid_pad ( GtkWidget *cgrid );
 void flow_grid_clean ( GtkWidget *cgrid );
 void flow_grid_add_child ( GtkWidget *self, GtkWidget *child );
