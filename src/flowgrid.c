@@ -145,53 +145,6 @@ void flow_grid_set_sort ( GtkWidget *cgrid, gboolean sort )
   priv->sort = sort;
 }
 
-void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w )
-{
-  FlowGridPrivate *priv;
-  GList *children;
-  gint primary_max;
-
-  g_return_if_fail(cgrid != NULL);
-  g_return_if_fail(IS_FLOW_GRID(cgrid));
-
-  if(!flow_item_get_active(w))
-    return;
-
-  priv = flow_grid_get_instance_private(FLOW_GRID(cgrid));
-
-  children = gtk_container_get_children(GTK_CONTAINER(cgrid));
-  if(!children)
-    priv->i=0;
-
-  g_list_free(children);
-
-  if(priv->rows>0)
-  {
-    if(priv->primary_axis == G_TOKEN_COLS)
-      gtk_grid_attach(GTK_GRID(cgrid),w,
-          (priv->i)/(priv->rows),(priv->i)%(priv->rows),1,1);
-    else
-    {
-      primary_max = priv->count/priv->rows + ((priv->count%priv->rows)?1:0);
-      gtk_grid_attach(GTK_GRID(cgrid),w,(priv->i)%(primary_max),
-          (priv->i)/(primary_max),1,1);
-    }
-  }
-  else
-  {
-    if(priv->primary_axis == G_TOKEN_ROWS)
-      gtk_grid_attach(GTK_GRID(cgrid),w,
-          (priv->i)%(priv->cols),(priv->i)/(priv->cols),1,1);
-    else
-    {
-      primary_max = priv->count/priv->cols + ((priv->count%priv->cols)?1:0);
-      gtk_grid_attach(GTK_GRID(cgrid),w,(priv->i)/(primary_max),
-          (priv->i)%(primary_max),1,1);
-    }
-  }
-  priv->i++;
-}
-
 void flow_grid_pad ( GtkWidget *cgrid )
 {
   FlowGridPrivate *priv;
@@ -278,6 +231,7 @@ void flow_grid_update ( GtkWidget *self )
 {
   FlowGridPrivate *priv;
   GList *iter;
+  gint count, i, cols, rows;
 
   if(IS_BASE_WIDGET(self))
     self = base_widget_get_child(self);
@@ -301,15 +255,42 @@ void flow_grid_update ( GtkWidget *self )
   if(priv->sort)
     priv->children = g_list_sort_with_data(priv->children,
         (GCompareDataFunc)flow_item_compare,self);
-  priv->count = 0;
+  count = 0;
   for(iter=priv->children;iter;iter=g_list_next(iter))
   {
     flow_item_update(iter->data);
     if(flow_item_get_active(iter->data))
-      priv->count++;
+      count++;
   }
+
+  rows = 0;
+  cols = 0;
+  if(priv->rows>0)
+  {
+    if(priv->primary_axis == G_TOKEN_COLS)
+      rows = priv->rows;
+    else
+      cols = (count/priv->rows) + ((count%priv->rows)?1:0);
+  }
+  else
+  {
+    if(priv->primary_axis == G_TOKEN_ROWS)
+      cols = priv->cols;
+    else
+      rows = (count/priv->cols) + ((count%priv->cols)?1:0);
+  }
+
+  i = 0;
   for(iter=priv->children;iter;iter=g_list_next(iter))
-    flow_grid_attach(self,iter->data);
+    if(flow_item_get_active(iter->data))
+    {
+      if(rows>0)
+        gtk_grid_attach(GTK_GRID(self),iter->data,i/rows,i%rows,1,1);
+      else
+        gtk_grid_attach(GTK_GRID(self),iter->data,i%cols,i/cols,1,1);
+      i++;
+    }
+  
   flow_grid_pad(self);
   css_widget_cascade(self,NULL);
 }

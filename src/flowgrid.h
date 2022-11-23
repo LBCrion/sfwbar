@@ -42,7 +42,6 @@ GType flow_grid_get_type ( void );
 GtkWidget *flow_grid_new( gboolean limit);
 void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );
 void flow_grid_set_cols ( GtkWidget *cgrid, gint cols );
-void flow_grid_attach ( GtkWidget *cgrid, GtkWidget *w );
 void flow_grid_set_primary ( GtkWidget *self, gint primary );
 void flow_grid_pad ( GtkWidget *cgrid );
 void flow_grid_clean ( GtkWidget *cgrid );
