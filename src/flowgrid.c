@@ -145,34 +145,9 @@ void flow_grid_set_sort ( GtkWidget *cgrid, gboolean sort )
   priv->sort = sort;
 }
 
-void flow_grid_pad ( GtkWidget *cgrid )
-{
-  FlowGridPrivate *priv;
-
-  g_return_if_fail(cgrid != NULL);
-  g_return_if_fail(IS_FLOW_GRID(cgrid));
-
-  priv = flow_grid_get_instance_private(FLOW_GRID(cgrid));
- 
-  if(priv->rows>0)
-    for(;priv->i<priv->rows;priv->i++)
-      gtk_grid_attach(GTK_GRID(cgrid),gtk_label_new(""),0,priv->i,1,1);
-  else
-    for(;priv->i<priv->cols;priv->i++)
-      gtk_grid_attach(GTK_GRID(cgrid),gtk_label_new(""),priv->i,0,1,1);
-}
-
 void flow_grid_remove_widget ( GtkWidget *widget, GtkWidget *parent )
 {
   gtk_container_remove ( GTK_CONTAINER(parent), widget );
-}
-
-void flow_grid_clean ( GtkWidget *cgrid )
-{
-  g_return_if_fail(IS_FLOW_GRID(cgrid));
-
-  gtk_container_foreach(GTK_CONTAINER(cgrid),
-      (GtkCallback)flow_grid_remove_widget,cgrid);
 }
 
 void flow_grid_invalidate ( GtkWidget *self )
@@ -251,10 +226,13 @@ void flow_grid_update ( GtkWidget *self )
       priv->primary_axis = G_TOKEN_ROWS;
   }
 
-  flow_grid_clean(self);
+  gtk_container_foreach(GTK_CONTAINER(self),
+      (GtkCallback)flow_grid_remove_widget,self);
+
   if(priv->sort)
     priv->children = g_list_sort_with_data(priv->children,
         (GCompareDataFunc)flow_item_compare,self);
+
   count = 0;
   for(iter=priv->children;iter;iter=g_list_next(iter))
   {
@@ -286,12 +264,16 @@ void flow_grid_update ( GtkWidget *self )
     {
       if(rows>0)
         gtk_grid_attach(GTK_GRID(self),iter->data,i/rows,i%rows,1,1);
-      else
+      else if(cols>0)
         gtk_grid_attach(GTK_GRID(self),iter->data,i%cols,i/cols,1,1);
       i++;
     }
-  
-  flow_grid_pad(self);
+  if(rows>0)
+    for(;i<rows;i++)
+      gtk_grid_attach(GTK_GRID(self),gtk_label_new(""),0,i,1,1);
+  else
+    for(;i<cols;i++)
+      gtk_grid_attach(GTK_GRID(self),gtk_label_new(""),i,0,1,1);
   css_widget_cascade(self,NULL);
 }
 
