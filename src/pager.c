@@ -69,7 +69,7 @@ GtkWidget *pager_new ( void )
   priv->pager = flow_grid_new(TRUE);
   gtk_container_add(GTK_CONTAINER(self),priv->pager);
   pagers = g_list_prepend(pagers,self);
-  g_object_set_data(G_OBJECT(self),"sort_numeric",GINT_TO_POINTER(TRUE));
+  g_object_set_data(G_OBJECT(priv->pager),"sort_numeric",GINT_TO_POINTER(TRUE));
 
   return self;
 }

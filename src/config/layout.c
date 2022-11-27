@@ -163,8 +163,9 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
             GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"preview")));
         return TRUE;
       case G_TOKEN_NUMERIC:
-        g_object_set_data(G_OBJECT(widget),"sort_numeric",
-            GINT_TO_POINTER(config_assign_boolean(scanner,TRUE,"numeric")));
+        g_object_set_data(G_OBJECT(base_widget_get_child(widget)),
+            "sort_numeric",GINT_TO_POINTER(
+              config_assign_boolean(scanner,TRUE,"numeric")));
         return TRUE;
     }
 
