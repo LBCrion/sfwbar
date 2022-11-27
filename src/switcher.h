@@ -28,6 +28,7 @@ typedef struct _SwitcherPrivate SwitcherPrivate;
 struct _SwitcherPrivate
 {
   GtkWidget *switcher;
+  gint filter;
 };
 
 GType switcher_get_type ( void );
@@ -39,5 +40,7 @@ void switcher_invalidate ( window_t *win );
 void switcher_update ( void );
 void switcher_window_init ( window_t *win);
 void switcher_populate ( void );
+void switcher_set_filter ( GtkWidget *self, gint filter );
+gint switcher_get_filter ( GtkWidget *self );
 
 #endif

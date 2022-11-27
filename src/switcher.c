@@ -10,6 +10,7 @@
 #include "switcheritem.h"
 #include "switcher.h"
 #include "wintree.h"
+#include "pager.h"
 
 G_DEFINE_TYPE_WITH_CODE (Switcher, switcher, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Switcher));
 
@@ -96,6 +97,8 @@ gboolean switcher_event ( gpointer data )
   for (item = wintree_get_list(); item; item = g_list_next(item) )
     if ( wintree_is_focused(((window_t *)item->data)->uid) )
       focus = g_list_next(item);
+  while( focus && ((window_t *)focus->data)->workspace != pager_get_focused() )
+    focus = g_list_next(focus);
   if(focus==NULL)
     focus=wintree_get_list();
   if(focus!=NULL)
@@ -122,6 +125,7 @@ void switcher_window_init ( window_t *win)
 void switcher_update ( void )
 {
   window_t *win;
+  GList *item;
 
   if(!switcher)
     return;
@@ -132,6 +136,8 @@ void switcher_update ( void )
 
   if(counter > 0)
   {
+    for (item = wintree_get_list(); item; item = g_list_next(item) )
+      switcher_item_invalidate(flow_grid_find_child(grid,item->data));
     flow_grid_update(grid);
     css_widget_cascade(switcher,NULL);
   }
@@ -141,6 +147,26 @@ void switcher_update ( void )
     win = focus->data;
     wintree_focus(win->uid);
   }
+}
+
+void switcher_set_filter ( GtkWidget *self, gint filter )
+{
+  SwitcherPrivate *priv;
+
+  g_return_if_fail(IS_SWITCHER(self));
+  priv = switcher_get_instance_private(SWITCHER(self));
+
+  priv->filter = filter;
+}
+
+gint switcher_get_filter ( GtkWidget *self )
+{
+  SwitcherPrivate *priv;
+
+  g_return_val_if_fail(IS_SWITCHER(self),0);
+  priv = switcher_get_instance_private(SWITCHER(self));
+
+  return priv->filter;
 }
 
 void switcher_invalidate ( window_t *win )

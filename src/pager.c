@@ -185,6 +185,14 @@ gboolean pager_workspace_is_focused ( workspace_t *ws )
   return (ws == focus);
 }
 
+gpointer pager_get_focused ( void )
+{
+  if(!focus)
+    return NULL;
+  else
+    return focus->id;
+}
+
 void pager_workspace_set_focus ( gpointer id )
 {
   workspace_t *ws;

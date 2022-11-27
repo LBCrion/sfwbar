@@ -41,6 +41,10 @@ void config_switcher ( GScanner *scanner )
         g_object_set_data(G_OBJECT(widget),"labels",
           GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"labels")));
         break;
+      case G_TOKEN_FILTER:
+        switcher_set_filter(widget,config_assign_tokens(scanner,"filter",
+              "output|workspace", G_TOKEN_OUTPUT,G_TOKEN_WORKSPACE,0));
+        break;
       case G_TOKEN_TITLEWIDTH:
         g_object_set_data(G_OBJECT(widget),"title_width",
           GINT_TO_POINTER(config_assign_number(scanner,"title_width")));

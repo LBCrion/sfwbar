@@ -7,11 +7,35 @@
 #include "switcheritem.h"
 #include "flowgrid.h"
 #include "scaleimage.h"
+#include "config.h"
+#include "pager.h"
+#include "bar.h"
+#include "switcher.h"
 
 G_DEFINE_TYPE_WITH_CODE (SwitcherItem, switcher_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (SwitcherItem));
 
 static void switcher_item_destroy ( GtkWidget *self )
 {
+}
+
+static gboolean switcher_item_check ( GtkWidget *self )
+{
+  SwitcherItemPrivate *priv;
+
+  g_return_val_if_fail(IS_SWITCHER_ITEM(self),FALSE);
+  priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
+
+  switch(switcher_get_filter(priv->switcher))
+  {
+    case G_TOKEN_OUTPUT:
+      return (!priv->win->output || !g_strcmp0(priv->win->output,
+          bar_get_output(base_widget_get_child(priv->switcher))));
+    case G_TOKEN_WORKSPACE:
+      return (!priv->win->workspace ||
+          priv->win->workspace == pager_get_focused());
+  }
+
+  return TRUE;
 }
 
 void switcher_item_update ( GtkWidget *self )
@@ -38,6 +62,8 @@ void switcher_item_update ( GtkWidget *self )
 
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
+
+  flow_item_set_active(self, switcher_item_check(self));
 
   priv->invalid = FALSE;
 }

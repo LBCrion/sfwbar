@@ -61,5 +61,6 @@ gpointer pager_workspace_id_from_name ( const gchar *name );
 void pager_api_register ( struct pager_api *new );
 void pager_set_workspace ( workspace_t *ws );
 guint pager_get_geom ( workspace_t *, GdkRectangle **, GdkRectangle *, gint * );
+gpointer pager_get_focused ( void );
 
 #endif
