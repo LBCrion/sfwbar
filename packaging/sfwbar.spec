@@ -9,10 +9,10 @@ Source0:        https://github.com/LBCrion/sfwbar/archive/refs/tags/v%{version}.
 BuildRequires:  make
 BuildRequires:  meson
 BuildRequires:  gcc
-BuildRequires:  gtk3-devel 
-BuildRequires:  json-c-devel
+BuildRequires:  (gtk3-devel or lib64gtk+3.0-devel)
+BuildRequires:  (json-c-devel or lib64json-c-devel or libjson-c-devel)
+BuildRequires:  (gtk-layer-shell-devel or lib64gtk-layer-shell-devel)
 BuildRequires:  wayland-protocols-devel
-BuildRequires:  gtk-layer-shell-devel
 
 %global debug_package %{nil}
 
@@ -33,7 +33,7 @@ SFWBar (Sway Floating Window Bar) is a flexible taskbar application for Sway way
 %files
 %{_bindir}/*
 %{_mandir}/man*/*
-%{_datadir}/*
+%{_datadir}/sfwbar
 %license LICENSE
 
 
@@ -53,7 +53,7 @@ SFWBar (Sway Floating Window Bar) is a flexible taskbar application for Sway way
 * Sat Jan 22 2022 Lev Babiev <harley@hosers.org> 1.0_beta3
 - version bump
 
-* Sat Dec 23 2021 Lev Babiev <harley@hosers.org> 1.0_beta2
+* Thu Dec 23 2021 Lev Babiev <harley@hosers.org> 1.0_beta2
 - version bump
 
 * Sat Dec 18 2021 Lev Babiev <harley@hosers.org> 1.0_beta1
