@@ -29,7 +29,7 @@ END"
 define BatChargeStr = Str(10*BatLeft/BatTotal,0)
 define BatIcon = "battery-level-" + BatChargeStr + "0" + 
         If($BatState = "Discharging","",
-          If(BatChargeStr = "100","","-charging")) + "-symbolic"
+          If(BatChargeStr = "10","","-charging")) + "-symbolic"
 layout {
   image {
     action[0] = Function "BatteryInitScanner"
