@@ -53,8 +53,11 @@ gchar *get_xdg_config_file ( gchar *fname, gchar *extra )
   const gchar * const *xdg_data;
   gint i;
 
-  if( file_test_read(fname) )
-    return g_strdup(fname);
+  full = g_build_filename( ".", fname, NULL );
+  if( file_test_read(full) )
+    return full;
+  else
+    g_free(full);
 
   if(confname!=NULL)
   {

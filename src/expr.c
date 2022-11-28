@@ -10,6 +10,7 @@
 #include <glib.h>
 #include "sfwbar.h"
 #include "wintree.h"
+#include "module.h"
 
 enum {
   G_TOKEN_TIME    = G_TOKEN_LAST + 1,
@@ -46,6 +47,13 @@ gboolean parser_expect_symbol ( GScanner *scanner, gint symbol, gchar *expr )
   return TRUE;
 }
 
+gboolean expr_identifier_is_numeric ( gchar *identifier )
+{
+  if(!identifier || *identifier == '$')
+    return FALSE;
+  return module_is_numeric(identifier);
+}
+
 gboolean expr_is_numeric ( GScanner *scanner )
 {
   g_scanner_peek_next_token(scanner);
@@ -55,7 +63,7 @@ gboolean expr_is_numeric ( GScanner *scanner )
       (scanner->next_token == (GTokenType)G_TOKEN_VAL)||
       (scanner->next_token == (GTokenType)G_TOKEN_LEFT_PAREN)||
       ((scanner->next_token == G_TOKEN_IDENTIFIER)&&
-       (*(scanner->next_value.v_identifier)!='$')));
+        expr_identifier_is_numeric(scanner->next_value.v_identifier)));
 }
 
 /* convert a number to a string with specified number of decimals */
@@ -366,6 +374,11 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
     case G_TOKEN_IDENTIFIER:
       if(scanner->max_parse_errors)
         str = g_strdup("");
+      else if(module_is_function(scanner))
+      {
+        str = module_get_string(scanner);
+        *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
+      }
       else
       {
         str = scanner_get_string(scanner->value.v_identifier,TRUE);
@@ -462,6 +475,11 @@ gdouble expr_parse_num_value ( GScanner *scanner )
     case G_TOKEN_IDENTIFIER:
       if(scanner->max_parse_errors)
         val = 0;
+      else if(module_is_function(scanner))
+      {
+        val = module_get_numeric(scanner);
+        *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
+      }
       else
       {
         val = scanner_get_numeric( scanner->value.v_identifier,TRUE );

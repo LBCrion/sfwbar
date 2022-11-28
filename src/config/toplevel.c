@@ -2,6 +2,7 @@
 #include "../config.h"
 #include "../menu.h"
 #include "../sfwbar.h"
+#include "../module.h"
 
 static GHashTable *defines;
 
@@ -471,6 +472,24 @@ void config_trigger_action ( GScanner *scanner )
   config_optional_semicolon(scanner);
 }
 
+void config_module ( GScanner *scanner )
+{
+  gchar *name = NULL;
+
+  config_parse_sequence(scanner,
+      SEQ_REQ,'(',NULL,NULL,"missing '(' after 'module'",
+      SEQ_REQ,G_TOKEN_STRING,NULL,&name,"missing module name",
+      SEQ_REQ,')',NULL,NULL,"missing ')' afer 'module'",
+      SEQ_OPT,';',NULL,NULL,NULL,
+      SEQ_END);
+  if(scanner->max_parse_errors || !name)
+    return;
+
+  module_load ( name );
+  g_free(name);
+
+}
+
 GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
 {
   GtkWidget *w=NULL;
@@ -508,6 +527,9 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
         break;
       case G_TOKEN_FUNCTION:
         config_function(scanner);
+        break;
+      case G_TOKEN_MODULE:
+        config_module(scanner);
         break;
       default:
         g_scanner_error(scanner,"Unexpected toplevel token");

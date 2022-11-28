@@ -1,6 +1,7 @@
 project('sfwbar','c')
 gtk3 = dependency('gtk+-3.0')
 glib = dependency('glib-2.0')
+gmod = dependency('gmodule-2.0')
 json  = dependency('json-c')
 glsh = dependency('gtk-layer-shell-0')
 wayl = dependency('wayland-client')
@@ -58,6 +59,7 @@ src = ['src/sfwbar.c',
     'src/expr.c',
     'src/jpath.c',
     'src/misc.c',
+    'src/module.c',
     'src/mpd.c',
     'src/pager.c',
     'src/pageritem.c',
@@ -81,7 +83,7 @@ src = ['src/sfwbar.c',
     'src/wayland/idle-inhibit.c',
     'src/wayland/xdg-output.c',
     wayland_targets ]
-dep = [gtk3, glib, glsh, wayl, json ]
+dep = [gtk3, glib, gmod, glsh, wayl, json ]
 
 
 executable ('sfwbar', sources: src, c_args: ['-DGLIB_DISABLE_DEPRECATION_WARNINGS','-DGDK_DISABLE_DEPRECATED','-DGTK_DISABLE_DEPRECATED'], dependencies: dep, install: true)

@@ -53,6 +53,8 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
       (gpointer)G_TOKEN_TRIGGERACTION );
   g_scanner_scope_add_symbol(scanner,0, "MapAppId",
       (gpointer)G_TOKEN_MAPAPPID );
+  g_scanner_scope_add_symbol(scanner,0, "Module",
+      (gpointer)G_TOKEN_MODULE );
   g_scanner_scope_add_symbol(scanner,0, "End", (gpointer)G_TOKEN_END );
   g_scanner_scope_add_symbol(scanner,0, "File", (gpointer)G_TOKEN_FILE );
   g_scanner_scope_add_symbol(scanner,0, "Exec", (gpointer)G_TOKEN_EXEC );
@@ -62,7 +64,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
       (gpointer)G_TOKEN_SWAYCLIENT );
   g_scanner_scope_add_symbol(scanner,0, "ExecClient",
       (gpointer)G_TOKEN_EXECCLIENT );
-  g_scanner_scope_add_symbol(scanner,0, "SOcketClient",
+  g_scanner_scope_add_symbol(scanner,0, "SocketClient",
       (gpointer)G_TOKEN_SOCKETCLIENT );
   g_scanner_scope_add_symbol(scanner,0, "Number", (gpointer)G_TOKEN_NUMBERW );
   g_scanner_scope_add_symbol(scanner,0, "String", (gpointer)G_TOKEN_STRINGW );
