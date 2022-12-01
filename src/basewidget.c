@@ -7,6 +7,7 @@
 #include "basewidget.h"
 #include "flowgrid.h"
 #include "action.h"
+#include "module.h"
 
 G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX, G_ADD_PRIVATE (BaseWidget));
 
@@ -572,14 +573,14 @@ void base_widget_set_action ( GtkWidget *self, gint n, action_t *action )
         "clicked",G_CALLBACK(base_widget_button_cb),self);
 }
 
-void base_widget_emit_trigger ( gchar *trigger )
+gboolean base_widget_emit_trigger ( gchar *trigger )
 {
   BaseWidgetPrivate *priv;
   GList *iter;
   action_t *action;
 
   if(!trigger)
-    return;
+    return FALSE;
 
   scanner_expire();
   g_mutex_lock(&widget_mutex);
@@ -598,6 +599,8 @@ void base_widget_emit_trigger ( gchar *trigger )
   action = action_trigger_lookup(trigger);
   if(action)
     action_exec(NULL,action,NULL,NULL,NULL);
+
+  return FALSE;
 }
 
 gpointer base_widget_scanner_thread ( GMainContext *gmc )
@@ -609,6 +612,7 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
   while ( TRUE )
   {
     scanner_expire();
+    module_invalidate_all();
     timer = G_MAXINT64;
     ctime = g_get_monotonic_time();
 
