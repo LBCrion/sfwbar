@@ -613,22 +613,22 @@ void **expr_module_parameters ( GScanner *scanner, gchar *spec, gchar *name )
   else
     params = g_malloc0(strlen(spec)*sizeof(gpointer));
 
-  for(i=0;spec[i];i++)
-  {
-    if(g_scanner_peek_next_token(scanner)==')')
-    {}
-    else if(g_ascii_tolower(spec[i])=='n' && expr_is_numeric(scanner))
-    {
-      params[i] = g_malloc0(sizeof(gdouble));
-      *((gdouble *)params[i]) = expr_parse_num(scanner);
-    }
-    else if(g_ascii_tolower(spec[i])=='s' && !expr_is_numeric(scanner))
-      params[i] = expr_parse_str(scanner);
-    else if(!g_ascii_islower(spec[i]))
-      g_scanner_error(scanner,"invalid type in parameter %d of %s",i,name);
-    if(params[i] && g_scanner_peek_next_token(scanner)==',')
-      g_scanner_get_next_token(scanner);
-  }
+  if(spec)
+    for(i=0;spec[i];i++)
+      if(g_scanner_peek_next_token(scanner)!=')')
+      {
+        if(g_ascii_tolower(spec[i])=='n' && expr_is_numeric(scanner))
+        {
+          params[i] = g_malloc0(sizeof(gdouble));
+          *((gdouble *)params[i]) = expr_parse_num(scanner);
+        }
+        else if(g_ascii_tolower(spec[i])=='s' && !expr_is_numeric(scanner))
+          params[i] = expr_parse_str(scanner);
+        else if(!g_ascii_islower(spec[i]))
+          g_scanner_error(scanner,"invalid type in parameter %d of %s",i,name);
+       if(params[i] && g_scanner_peek_next_token(scanner)==',')
+          g_scanner_get_next_token(scanner);
+      }
 
   if(g_scanner_peek_next_token(scanner)!=')')
     g_scanner_error(scanner,"missing ')' after function call: %s",name);
