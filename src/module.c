@@ -1,3 +1,8 @@
+/* This entire file is licensed under GNU General Public License v3.0
+ *
+ * Copyright 2022 sfwbar maintainers
+ */
+
 #include "sfwbar.h"
 #include <glib.h>
 #include <gmodule.h>
@@ -12,6 +17,7 @@ gboolean module_load ( gchar *name )
   GModule *module;
   ModuleExpressionHandler **handler;
   ModuleInvalidator invalidator;
+  ModuleInitializer initializer;
   ModuleInitTrigger init_trigger;
   gint i;
   gint64 *sig;
@@ -34,6 +40,10 @@ gboolean module_load ( gchar *name )
 
   if(g_module_symbol(module,"sfwbar_module_invalidate",(void **)&invalidator))
     invalidators = g_list_prepend(invalidators,invalidator);
+
+  if(g_module_symbol(module,"sfwbar_module_init",(void **)&initializer))
+    if(initializer)
+      initializer(g_main_context_get_thread_default());
 
   if(g_module_symbol(module,"sfwbar_trigger_init",(void **)&init_trigger))
     init_trigger(g_main_context_get_thread_default(),base_widget_emit_trigger);

@@ -6,6 +6,7 @@
 
 typedef gpointer (*ModuleExpressionFunc)( gpointer *);
 typedef void (*ModuleInvalidator)( void );
+typedef void (*ModuleInitializer)( GMainContext * );
 typedef gboolean (*ModuleEmitTrigger) ( gchar * );
 typedef void (*ModuleInitTrigger) (GMainContext *, ModuleEmitTrigger );
 
@@ -25,7 +26,7 @@ void sfwbar_trigger_init ( GMainContext *context, GSourceFunc emit ) \
   sfwbar_emit_func = emit; \
 } \
 
-#define MODULE_EMIT_TRIGGER(x) \
+#define MODULE_TRIGGER_EMIT(x) \
   g_main_context_invoke(sfwbar_gmc,sfwbar_emit_func,x);
 
 gboolean module_load ( gchar *name );
