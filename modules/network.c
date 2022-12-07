@@ -30,18 +30,19 @@ gint qual, level, noise;
 #include <linux/rtnetlink.h>
 #include <linux/wireless.h>
 
+guint32 nlseq;
+
 void net_update_ifaces ( void )
 {
   struct ifaddrs *addrs, *iter;
 
   getifaddrs(&addrs);
   for(iter=addrs;iter;iter=iter->ifa_next)
-    if(!g_strcmp0(interface,iter->ifa_name))
+    if(!g_strcmp0(interface,iter->ifa_name) && iter->ifa_addr)
       switch(iter->ifa_addr->sa_family)
       {
         case AF_INET:
-          if(iter->ifa_addr)
-            ip = ((struct sockaddr_in *)(iter->ifa_addr))->sin_addr;
+          ip = ((struct sockaddr_in *)(iter->ifa_addr))->sin_addr;
           if(iter->ifa_netmask)
             mask = ((struct sockaddr_in *)(iter->ifa_netmask))->sin_addr;
           if(iter->ifa_broadaddr)
@@ -98,7 +99,6 @@ void net_update_essid ( void )
       g_free(essid);
       essid = g_strdup(lessid);
       g_mutex_unlock(&mutex);
-      return;
     }
     if(sock >= 0)
       close(sock);
@@ -194,9 +194,10 @@ gint nl_request ( gint sock, guint16 type )
   } nlreq;
 
   nlreq.hdr.nlmsg_type = type;
+  nlreq.hdr.nlmsg_pid = getpid();
   nlreq.hdr.nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
   nlreq.hdr.nlmsg_len = sizeof(nlreq);
-  nlreq.hdr.nlmsg_seq = time(NULL);
+  nlreq.hdr.nlmsg_seq = nlseq++;
   nlreq.rtm.rtm_family = AF_INET;
   return send(sock,&nlreq,sizeof(nlreq),0);
 }
@@ -276,7 +277,7 @@ void network_init ( GMainContext *gmc )
     chan = g_io_channel_unix_new(sock);
     g_io_add_watch(chan,G_IO_IN | G_IO_PRI |G_IO_ERR | G_IO_HUP,nl_parse,NULL);
   }
-  else
+  else if(sock >= 0)
     close(sock);
 }
 #else
@@ -314,6 +315,16 @@ void *sfwbar_expr_func ( void **params )
     result = g_strdup(inet_ntop(AF_INET,&gateway,addr,INET_ADDRSTRLEN));
   else if(!g_ascii_strcasecmp(params[0],"signal"))
     result = g_strdup_printf("%lf",net_get_signal());
+  else if(!g_ascii_strcasecmp(params[0],"rxrate"))
+  {
+    net_update_traffic();
+    result = g_strdup_printf("%lf",(gdouble)(rx_bytes - prx_bytes)/time_diff);
+  }
+  else if(!g_ascii_strcasecmp(params[0],"txrate"))
+  {
+    net_update_traffic();
+    result = g_strdup_printf("%lf",(gdouble)(tx_bytes - ptx_bytes)/time_diff);
+  }
   else if(!g_ascii_strcasecmp(params[0],"essid"))
     result = g_strdup(essid);
   else if(!g_ascii_strcasecmp(params[0],"interface"))
