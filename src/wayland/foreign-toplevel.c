@@ -7,6 +7,7 @@
 #include "../sfwbar.h"
 #include "../sway_ipc.h"
 #include "../wintree.h"
+#include "../pager.h"
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
 typedef struct zwlr_foreign_toplevel_handle_v1 wlr_fth;
@@ -94,9 +95,30 @@ static void toplevel_handle_output_leave(void *data, wlr_fth *toplevel,
 {
 }
 
-static void toplevel_handle_output_enter(void *data, wlr_fth *toplevel,
+static void toplevel_handle_output_enter(void *data, wlr_fth *tl,
     struct wl_output *output)
 {
+  char *name;
+  GdkDisplay *disp;
+  GdkMonitor *mon;
+  window_t *win;
+  gint i;
+
+  disp = gdk_display_get_default();
+  mon = NULL;
+  for(i=0;i<gdk_display_get_n_monitors(disp);i++)
+    if(output == gdk_wayland_monitor_get_wl_output(
+          gdk_display_get_monitor(disp,i)))
+      mon = gdk_display_get_monitor(disp,i);
+  if(!mon)
+    return;
+  name = g_object_get_data(G_OBJECT(mon),"xdg_name");
+  if(!name)
+    return;
+  win = wintree_from_id(tl);
+  if(!win)
+    return;
+  win->workspace = pager_workspace_id_from_name(name);
 }
 
 static const struct zwlr_foreign_toplevel_handle_v1_listener toplevel_impl = {
