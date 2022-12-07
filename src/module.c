@@ -8,6 +8,7 @@
 #include <gmodule.h>
 #include "module.h"
 #include "basewidget.h"
+#include "../meson.h"
 
 GHashTable *handlers;
 GList *invalidators;
@@ -24,7 +25,7 @@ gboolean module_load ( gchar *name )
   gchar *fname, *path;
 
   fname = g_strconcat("lib",name,".so",NULL);
-  path = get_xdg_config_file(fname,"/usr/lib/sfwbar");
+  path = get_xdg_config_file(fname,MODULE_DIR);
   g_free(fname);
   module = g_module_open(path, G_MODULE_BIND_LOCAL);
   g_free(path);

@@ -12,7 +12,10 @@ glsh_ver = glsh.version().split('.')
 conf_data.set('glsh_major',glsh_ver[0])
 conf_data.set('glsh_minor',glsh_ver[1])
 conf_data.set('glsh_micro',glsh_ver[2])
-configure_file(input: 'config.h.meson', output: 'config.h', configuration: conf_data )
+conf_data.set('module_dir',
+    get_option('prefix') / get_option('libdir') / 'sfwbar')
+configure_file(input: 'meson.h.meson', output: 'meson.h',
+    configuration: conf_data )
 
 wayland_scanner = find_program('wayland-scanner')
 wayland_protodir = wayp.get_pkgconfig_variable('pkgdatadir')
@@ -85,10 +88,21 @@ src = ['src/sfwbar.c',
     wayland_targets ]
 dep = [gtk3, glib, gmod, glsh, wayl, json ]
 
+library('network', sources: 'modules/network.c', dependencies: glib,
+    install: true, install_dir: get_option('libdir') / 'sfwbar' )
 
-executable ('sfwbar', sources: src, c_args: ['-DGLIB_DISABLE_DEPRECATION_WARNINGS','-DGDK_DISABLE_DEPRECATED','-DGTK_DISABLE_DEPRECATED'], dependencies: dep, install: true)
+executable ('sfwbar', sources: src,
+    c_args: ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
+    '-DGDK_DISABLE_DEPRECATED',
+    '-DGTK_DISABLE_DEPRECATED'],
+    dependencies: dep, install: true)
 
 install_man('doc/sfwbar.1')
-install_subdir('config', install_dir: get_option('datadir') / 'sfwbar', strip_directory : true )
-install_subdir('icons/weather', install_dir: get_option('datadir') / 'sfwbar/icons' )
-install_subdir('icons/misc', install_dir: get_option('datadir') / 'sfwbar/icons' )
+install_subdir('config',
+    install_dir: get_option('datadir') / 'sfwbar', strip_directory : true )
+install_subdir('icons/weather',
+    install_dir: get_option('datadir') / 'sfwbar/icons' )
+install_subdir('icons/misc',
+    install_dir: get_option('datadir') / 'sfwbar/icons' )
+install_data('icons/sfwbar.svg',
+    install_dir: get_option('datadir') / 'icons/hicolor/scalable/apps' )

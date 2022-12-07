@@ -110,7 +110,7 @@ void net_update_essid ( void )
   g_mutex_unlock(&mutex);
 }
 
-gdouble net_get_rssi ( void )
+gdouble net_get_signal ( void )
 {
   struct iw_statistics wstats;
   struct iwreq wreq;
@@ -127,15 +127,13 @@ gdouble net_get_rssi ( void )
   sock = socket(AF_INET, SOCK_DGRAM, 0);
   if(sock >= 0 && ioctl(sock, SIOCGIWSTATS, &wreq) >= 0)
   {
-    g_mutex_lock(&mutex);
     qual = wstats.qual.qual;
     level = wstats.qual.level-(wstats.qual.updated&IW_QUAL_DBM?0x100:0);
     noise = wstats.qual.noise-(wstats.qual.updated&IW_QUAL_DBM?0x100:0);
-    g_mutex_unlock(&mutex);
   }
   if(sock >= 0)
     close(sock);
-  return (80-level);
+  return CLAMP(2*(level+100),0,100);
 }
 
 void net_set_interface ( gint32 iidx, struct in_addr gate )
@@ -251,9 +249,10 @@ gboolean nl_parse ( GIOChannel *chan, GIOCondition cond, gpointer data )
       case RTM_NEWLINK:
         rta = IFLA_RTA(NLMSG_DATA(hdr));
         rtl = IFLA_PAYLOAD(hdr);
-        for(;rtl && RTA_OK(rta,rtl);rta=RTA_NEXT(rta,rtl))
-          if(rta->rta_type==IFLA_WIRELESS)
-            net_update_essid();
+        if(((struct ifinfomsg *)NLMSG_DATA(hdr))->ifi_change!=0)
+          for(;rtl && RTA_OK(rta,rtl);rta=RTA_NEXT(rta,rtl))
+            if(rta->rta_type==IFLA_WIRELESS)
+              net_update_essid();
         break;
       case RTM_DELADDR:
         if(!g_strcmp0(interface,if_indextoname(
@@ -313,8 +312,8 @@ void *sfwbar_expr_func ( void **params )
     result = g_strdup(inet_ntop(AF_INET,&mask,addr,INET_ADDRSTRLEN));
   else if(!g_ascii_strcasecmp(params[0],"gateway"))
     result = g_strdup(inet_ntop(AF_INET,&gateway,addr,INET_ADDRSTRLEN));
-  else if(!g_ascii_strcasecmp(params[0],"rssi"))
-    result = g_strdup_printf("%lf",net_get_rssi());
+  else if(!g_ascii_strcasecmp(params[0],"signal"))
+    result = g_strdup_printf("%lf",net_get_signal());
   else if(!g_ascii_strcasecmp(params[0],"essid"))
     result = g_strdup(essid);
   else if(!g_ascii_strcasecmp(params[0],"interface"))

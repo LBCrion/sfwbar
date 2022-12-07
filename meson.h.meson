@@ -2,3 +2,4 @@
 #define GTK_LAYER_VER_MAJOR @glsh_major@
 #define GTK_LAYER_VER_MINOR @glsh_minor@
 #define GTK_LAYER_VER_MICRO @glsh_micro@
+#define MODULE_DIR "@module_dir@"
