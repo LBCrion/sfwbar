@@ -4,6 +4,10 @@
  */
 
 #include "../src/module.h"
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <sys/ioctl.h>
+#include <arpa/inet.h>
 
 MODULE_TRIGGER_DECL
 gboolean invalid;
@@ -23,10 +27,6 @@ gint qual, level, noise;
 #ifdef __linux__
 
 #include <unistd.h>
-#include <sys/ioctl.h>
-#include <ifaddrs.h>
-#include <arpa/inet.h>
-#include <net/if.h>
 #include <linux/rtnetlink.h>
 #include <linux/wireless.h>
 
@@ -167,6 +167,13 @@ void net_set_interface ( gint32 iidx, struct in_addr gate )
   MODULE_TRIGGER_EMIT("network");
 }
 
+gchar *net_getaddr ( struct in_addr *ina  )
+{
+  gchar addr[INET_ADDRSTRLEN];
+
+  return g_strdup(inet_ntop(AF_INET,ina,addr,INET_ADDRSTRLEN));
+}
+
 gint nl_connect ( void )
 {
   gint sock;
@@ -280,7 +287,21 @@ void network_init ( GMainContext *gmc )
   else if(sock >= 0)
     close(sock);
 }
+
 #else
+
+gchar *net_getaddr ( struct in_addr *ina )
+{
+  return g_strdup("");
+}
+void net_update_traffic ( void )
+{
+}
+
+gdouble net_get_signal ( void )
+{
+  return 0.0;
+}
 
 void network_init ( void * )
 {
@@ -300,7 +321,6 @@ void sfwbar_module_invalidate ( void )
 
 void *sfwbar_expr_func ( void **params )
 {
-  gchar addr[INET_ADDRSTRLEN];
   gchar *result;
 
   if(!params || !params[0])
@@ -308,22 +328,24 @@ void *sfwbar_expr_func ( void **params )
 
   g_mutex_lock(&mutex);
   if(!g_ascii_strcasecmp(params[0],"ip"))
-    result = g_strdup(inet_ntop(AF_INET,&ip,addr,INET_ADDRSTRLEN));
+    result = net_getaddr(&ip);
   else if(!g_ascii_strcasecmp(params[0],"mask"))
-    result = g_strdup(inet_ntop(AF_INET,&mask,addr,INET_ADDRSTRLEN));
+    result = net_getaddr(&mask);
   else if(!g_ascii_strcasecmp(params[0],"gateway"))
-    result = g_strdup(inet_ntop(AF_INET,&gateway,addr,INET_ADDRSTRLEN));
+    result = net_getaddr(&gateway);
   else if(!g_ascii_strcasecmp(params[0],"signal"))
     result = g_strdup_printf("%lf",net_get_signal());
   else if(!g_ascii_strcasecmp(params[0],"rxrate"))
   {
     net_update_traffic();
-    result = g_strdup_printf("%lf",(gdouble)(rx_bytes - prx_bytes)/time_diff);
+    result = g_strdup_printf("%lf",(gdouble)(rx_bytes - prx_bytes)*
+        1000000/time_diff);
   }
   else if(!g_ascii_strcasecmp(params[0],"txrate"))
   {
     net_update_traffic();
-    result = g_strdup_printf("%lf",(gdouble)(tx_bytes - ptx_bytes)/time_diff);
+    result = g_strdup_printf("%lf",(gdouble)(tx_bytes - ptx_bytes)*
+        1000000/time_diff);
   }
   else if(!g_ascii_strcasecmp(params[0],"essid"))
     result = g_strdup(essid);
