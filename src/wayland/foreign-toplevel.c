@@ -7,7 +7,6 @@
 #include "../sfwbar.h"
 #include "../sway_ipc.h"
 #include "../wintree.h"
-#include "../pager.h"
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
 typedef struct zwlr_foreign_toplevel_handle_v1 wlr_fth;
@@ -118,7 +117,8 @@ static void toplevel_handle_output_enter(void *data, wlr_fth *tl,
   win = wintree_from_id(tl);
   if(!win)
     return;
-  win->workspace = pager_workspace_id_from_name(name);
+  g_free(win->output);
+  win->output = g_strdup(name);
 }
 
 static const struct zwlr_foreign_toplevel_handle_v1_listener toplevel_impl = {
