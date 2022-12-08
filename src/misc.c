@@ -53,6 +53,13 @@ gchar *get_xdg_config_file ( gchar *fname, gchar *extra )
   const gchar * const *xdg_data;
   gint i;
 
+  if(fname && *fname == '/')
+  {
+    if(file_test_read(fname))
+      return g_strdup(fname);
+    else
+      return NULL;
+  }
   full = g_build_filename( ".", fname, NULL );
   if( file_test_read(full) )
     return full;
