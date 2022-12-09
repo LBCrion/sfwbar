@@ -162,6 +162,16 @@ void wintree_set_app_id ( gpointer wid, const gchar *app_id)
   wintree_commit(win);
 }
 
+void wintree_set_float ( gpointer wid, gboolean floating )
+{
+  window_t *win;
+  win = wintree_from_id(wid);
+  if(!win)
+    return;
+  win->floating = floating;
+  wintree_commit(win);
+}
+
 void wintree_window_append ( window_t *win )
 {
   if(!win)

@@ -292,6 +292,8 @@ static void sway_window_new ( struct json_object *container )
   wintree_window_append(win);
   wintree_set_app_id(wid,app_id);
   wintree_set_title(wid,json_string_by_name(container,"name"));
+          wintree_set_float(wid,!g_strcmp0(
+                json_string_by_name(container,"type"),"floating_con"));
   wintree_log(wid);
 
   if(json_bool_by_name(container,"focused",FALSE))
@@ -482,6 +484,9 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
           sway_set_state(container);
         else if(!g_strcmp0(change,"move"))
           sway_ipc_send(main_ipc,4,"");
+        else if(!g_strcmp0(change,"floating"))
+          wintree_set_float(wid,!g_strcmp0(
+                json_string_by_name(container,"type"),"floating_con"));
       }
     }
 

@@ -179,7 +179,8 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         return TRUE;
       case G_TOKEN_FILTER:
         taskbar_set_filter(widget,config_assign_tokens(scanner,"filter",
-              "output|workspace", G_TOKEN_OUTPUT,G_TOKEN_WORKSPACE,0));
+              "output|workspace",
+              G_TOKEN_OUTPUT,G_TOKEN_WORKSPACE,G_TOKEN_FLOATING,0));
         return TRUE;
       case G_TOKEN_TITLEWIDTH:
         g_object_set_data(G_OBJECT(widget),"title_width",

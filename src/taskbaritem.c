@@ -135,6 +135,8 @@ static gboolean taskbar_item_check ( GtkWidget *self )
     case G_TOKEN_WORKSPACE:
       return (!priv->win->workspace ||
           priv->win->workspace == pager_workspace_get_active(taskbar) );
+    case G_TOKEN_FLOATING:
+      return priv->win->floating;
   }
 
   return TRUE;

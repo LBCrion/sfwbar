@@ -183,6 +183,8 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   g_scanner_scope_add_symbol(scanner,0, "Workspace",
       (gpointer)G_TOKEN_WORKSPACE );
   g_scanner_scope_add_symbol(scanner,0, "Output", (gpointer)G_TOKEN_OUTPUT );
+  g_scanner_scope_add_symbol(scanner,0, "Floating",
+      (gpointer)G_TOKEN_FLOATING );
 
   tmp = strstr(data,"\n#CSS");
   if(tmp)
