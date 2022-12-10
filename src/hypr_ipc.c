@@ -131,6 +131,7 @@ static void hypr_ipc_handle_window ( json_object *obj )
     win = wintree_window_init();
     win->uid = id;
     win->pid = json_int_by_name(obj,"pid",0);
+    win->floating = json_bool_by_name(obj,"floating",FALSE);
     wintree_window_append(win);
     wintree_set_app_id(id,json_string_by_name(obj,"class"));
     wintree_set_title(id,json_string_by_name(obj,"title"));
@@ -351,6 +352,21 @@ static void hypr_ipc_track_focus ( void )
   json_object_put(json);
 }
 
+static void hypr_ipc_floating_set ( gchar *data )
+{
+  window_t *win;
+  gchar *ptr;
+
+  ptr = strchr(data,',');
+  if(!ptr)
+    return;
+  win = wintree_from_id(hypr_ipc_parse_id(data));
+  if(!win)
+    return;
+  win->floating = *(ptr+1)=='1';
+  wintree_commit(win);
+}
+
 static void hypr_ipc_set_maximized ( gboolean state )
 {
   window_t *win;
@@ -496,13 +512,13 @@ static struct pager_api hypr_pager_api = {
 static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
     gpointer data)
 {
-  gchar *event;
+  gchar *event,*ptr;
 
   g_io_channel_read_line(chan,&event,NULL,NULL,NULL);
   while(event)
   {
-    if(strchr(event,'\n'))
-      *(strchr(event,'\n'))=0;
+    if((ptr=strchr(event,'\n')))
+      *ptr=0;
     g_debug("hypr event: %s",event);
     if(!strncmp(event,"activewindow>>",14))
       hypr_ipc_track_focus();
@@ -523,6 +539,8 @@ static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
       hypr_ipc_pager_populate();
     else if(!strncmp(event,"createworkspace>>",17))
       hypr_ipc_pager_populate();
+    else if(!strncmp(event,"changefloatingmode>>",20))
+      hypr_ipc_floating_set(event+20);
     else if(!strncmp(event,"destroyworkspace>>",18))
       pager_workspace_delete(pager_workspace_id_from_name(event+18));
     g_free(event);
