@@ -134,9 +134,11 @@ static gboolean taskbar_item_check ( GtkWidget *self )
     case G_TOKEN_OUTPUT:
       result = (!priv->win->output || !g_strcmp0(priv->win->output,
           bar_get_output(base_widget_get_child(taskbar))));
+      break;
     case G_TOKEN_WORKSPACE:
       result = (!priv->win->workspace ||
           priv->win->workspace == pager_workspace_get_active(taskbar) );
+      break;
   }
   if(floating)
     result = result & priv->win->floating;
