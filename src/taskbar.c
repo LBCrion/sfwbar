@@ -9,6 +9,7 @@
 #include "taskbargroup.h"
 #include "taskbar.h"
 #include "wintree.h"
+#include "config.h"
 
 G_DEFINE_TYPE_WITH_CODE (Taskbar, taskbar, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Taskbar));
 
@@ -67,28 +68,33 @@ void taskbar_set_filter ( GtkWidget *self, gint filter )
   g_return_if_fail(IS_TASKBAR(self));
   priv = taskbar_get_instance_private(TASKBAR(self));
 
-  priv->filter = filter;
+  if(filter == G_TOKEN_FLOATING)
+    priv->floating_filter = TRUE;
+  else
+    priv->filter = filter;
 }
 
-gint taskbar_get_filter ( GtkWidget *self )
+gint taskbar_get_filter ( GtkWidget *self, gboolean *floating )
 {
   TaskbarPrivate *priv;
 
   g_return_val_if_fail(IS_TASKBAR(self),0);
   priv = taskbar_get_instance_private(TASKBAR(self));
 
+  *floating = priv->floating_filter;
   return priv->filter;
 }
 
 void taskbar_invalidate_all ( window_t *win, gboolean filter )
 {
   GList *iter;
+  gboolean floating;
 
   if(!win)
     return;
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
-    if(!filter || taskbar_get_filter(iter->data))
+    if(!filter || taskbar_get_filter(iter->data,&floating) || floating)
     {
       taskbar_item_invalidate(flow_grid_find_child(iter->data,win));
       if(taskbar_is_toplevel(iter->data) && win->appid &&

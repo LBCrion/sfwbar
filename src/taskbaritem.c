@@ -119,6 +119,7 @@ static gboolean taskbar_item_check ( GtkWidget *self )
 {
   TaskbarItemPrivate *priv;
   GtkWidget *taskbar;
+  gboolean floating, result;
 
   g_return_val_if_fail(IS_TASKBAR_ITEM(self),FALSE);
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
@@ -127,19 +128,20 @@ static gboolean taskbar_item_check ( GtkWidget *self )
   if(!taskbar)
     taskbar = priv->taskbar;
 
-  switch(taskbar_get_filter(taskbar))
+  result = TRUE;
+  switch(taskbar_get_filter(taskbar,&floating))
   {
     case G_TOKEN_OUTPUT:
-      return (!priv->win->output || !g_strcmp0(priv->win->output,
+      result = (!priv->win->output || !g_strcmp0(priv->win->output,
           bar_get_output(base_widget_get_child(taskbar))));
     case G_TOKEN_WORKSPACE:
-      return (!priv->win->workspace ||
+      result = (!priv->win->workspace ||
           priv->win->workspace == pager_workspace_get_active(taskbar) );
-    case G_TOKEN_FLOATING:
-      return priv->win->floating;
   }
+  if(floating)
+    result = result & priv->win->floating;
 
-  return TRUE;
+  return result;
 }
 
 static void taskbar_item_update ( GtkWidget *self )

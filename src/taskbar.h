@@ -28,6 +28,7 @@ struct _TaskbarPrivate
 {
   GtkWidget *taskbar;
   gboolean toplevel;
+  gboolean floating_filter;
   gint filter;
 };
 
@@ -41,7 +42,7 @@ void taskbar_init_item ( window_t *win );
 void taskbar_destroy_item ( window_t *win );
 void taskbar_reparent_item ( window_t *win, const gchar *new_appid );
 void taskbar_set_filter ( GtkWidget *self, gint filter );
-gint taskbar_get_filter ( GtkWidget *self );
+gint taskbar_get_filter ( GtkWidget *self, gboolean * );
 void taskbar_invalidate_conditional ( void );
 
 #endif
