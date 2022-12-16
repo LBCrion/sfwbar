@@ -87,6 +87,7 @@ gchar *expr_dtostr ( double num, gint dec )
 gchar *expr_module_function ( GScanner *scanner )
 {
   gint i;
+  gchar *err;
 
   if(module_is_function(scanner))
   {
@@ -95,6 +96,7 @@ gchar *expr_module_function ( GScanner *scanner )
   }
 
   i=1;
+  err = g_strdup_printf("Unknown Function: %s",scanner->value.v_identifier);
 
   if(g_scanner_peek_next_token(scanner)=='(')
   {
@@ -110,7 +112,7 @@ gchar *expr_module_function ( GScanner *scanner )
           break;
       }
   }
-  return g_strdup_printf("Unknown function");
+  return err;
 }
 
 gchar *expr_parse_cached ( GScanner *scanner )
