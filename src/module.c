@@ -124,13 +124,3 @@ gchar *module_get_string ( GScanner *scanner )
 
   return result;
 }
-
-gdouble module_get_numeric ( GScanner *scanner )
-{
-  gchar *str;
-  gdouble val;
-  str = module_get_string(scanner);
-  val = g_strtod(str,NULL);
-  g_free(str);
-  return val;
-}

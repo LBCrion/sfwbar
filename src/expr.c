@@ -84,6 +84,35 @@ gchar *expr_dtostr ( double num, gint dec )
   return g_strdup(g_ascii_formatd(buf,G_ASCII_DTOSTR_BUF_SIZE,fbuf,num));
 }
 
+gchar *expr_module_function ( GScanner *scanner )
+{
+  gint i;
+
+  if(module_is_function(scanner))
+  {
+    *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
+    return module_get_string(scanner);
+  }
+
+  i=1;
+
+  if(g_scanner_peek_next_token(scanner)=='(')
+  {
+    g_scanner_get_next_token(scanner);
+    while(i && !g_scanner_eof(scanner))
+      switch((gint)g_scanner_get_next_token(scanner))
+      {
+        case '(':
+          i++;
+          break;
+        case ')':
+          i--;
+          break;
+      }
+  }
+  return g_strdup_printf("Unknown function");
+}
+
 gchar *expr_parse_cached ( GScanner *scanner )
 {
   gchar *ret;
@@ -375,11 +404,8 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
     case G_TOKEN_IDENTIFIER:
       if(scanner->max_parse_errors)
         str = g_strdup("");
-      else if(module_is_function(scanner))
-      {
-        str = module_get_string(scanner);
-        *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
-      }
+      else if(g_scanner_peek_next_token(scanner)=='(')
+        str = expr_module_function(scanner);
       else
       {
         str = scanner_get_string(scanner->value.v_identifier,TRUE);
@@ -476,10 +502,11 @@ gdouble expr_parse_num_value ( GScanner *scanner )
     case G_TOKEN_IDENTIFIER:
       if(scanner->max_parse_errors)
         val = 0;
-      else if(module_is_function(scanner))
+      else if(g_scanner_peek_next_token(scanner)=='(')
       {
-        val = module_get_numeric(scanner);
-        *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
+        str = expr_module_function(scanner);
+        val = g_strtod(str,NULL);
+        g_free(str);
       }
       else
       {
