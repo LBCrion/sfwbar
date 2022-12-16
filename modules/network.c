@@ -68,6 +68,8 @@ void net_set_interface ( gint32 iidx, struct in_addr gate,
     gateway = gate;
     gateway6 = gate6;
     g_mutex_unlock(&mutex);
+    net_update_essid();
+    net_update_address();
   }
   else
   {
@@ -83,8 +85,6 @@ void net_set_interface ( gint32 iidx, struct in_addr gate,
     mask.s_addr = 0;
     g_mutex_unlock(&mutex);
   }
-  net_update_essid();
-  net_update_address();
   MODULE_TRIGGER_EMIT("network");
 }
 
@@ -295,7 +295,7 @@ gboolean net_rt_parse ( GIOChannel *chan, GIOCondition cond, gpointer data )
   return TRUE;
 }
 
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__OpenBSD__)
 
 #include <net/if_dl.h>
 #include <net/route.h>
@@ -304,6 +304,9 @@ void net_update_traffic ( void )
 {
   gint64 ctime;
   struct ifaddrs *addrs, *iter;
+
+  if(!invalid)
+    return;
 
   getifaddrs(&addrs);
   for(iter=addrs;iter;iter=iter->ifa_next)
@@ -320,6 +323,7 @@ void net_update_traffic ( void )
   last_time = ctime;
 }
 
+#if defined(__FreeBSD__)
 #include <net80211/ieee80211_ioctl.h>
 
 void net_update_essid ( void )
@@ -330,7 +334,13 @@ void net_update_essid ( void )
   gint rssi = -100;
 
   if(!interface)
+  {
+    g_mutex_lock(&mutex);
+    g_free(essid);
+    essid = NULL;
+    g_mutex_unlock(&mutex);
     return;
+  }
 
   sock = socket(AF_INET, SOCK_DGRAM, 0);
   if(sock<0)
@@ -354,7 +364,7 @@ void net_update_essid ( void )
     g_mutex_lock(&mutex);
     g_free(essid);
     essid = NULL;
-    g_mutex_lock(&mutex);
+    g_mutex_unlock(&mutex);
   }
   close(sock);
 }
@@ -369,6 +379,9 @@ gdouble net_get_signal ( void )
   gchar bssid[IEEE80211_ADDR_LEN];
   gint sock;
   gint rssi;
+
+  if(!interface)
+    return 0.0;
 
   memset(&req,0,sizeof(req));
   req.i_type = IEEE80211_IOC_BSSID;
@@ -393,6 +406,50 @@ gdouble net_get_signal ( void )
   close(sock);
   return CLAMP(2*(rssi+100),0,100);
 }
+#else  /* OpenBSD */
+
+#include <net/if_media.h>
+#include <net80211/ieee80211.h>
+#include <sys/select.h>
+#include <net80211/ieee80211.h>
+#include <stdlib.h>
+#include <sys/types.h>
+
+void net_update_essid ( void )
+{
+  gint sock;
+  struct ieee80211_bssid bssid;
+  struct ieee80211_nodereq req;
+
+  sock = socket(AF_INET,SOCK_DGRAM,0);
+  if(sock <0)
+    return;
+  memset(&bssid,0,sizeof(bssid));
+  g_strlcpy(bssid.i_name,interface,sizeof(bssid.i_name));
+  if(ioctl(sock,SIOCG80211BSSID,&bssd) < 0 || !*bssid.i_bssid ||
+      !memcmp(bssid.i_bssid,bssid.i_bssid+1,IEEE80211_ADDR_LEN-1))
+  {
+    close(sock);
+    return;
+  }
+  memset(&req,0,sizeof(req));
+  g_strlcpy(req.nr_ifname,interface,sizeof(req.nr_ifname));
+  memcpy(&(req.nr_macaddr),bssid.i_bssid,sizeof(req.nr_macaddr));
+  if(ioctl(sock,SIOCG80211NODE,&req) >= 0)
+  {
+    g_mutex_lock(&mutex);
+    g_free(essid);
+    essid = g_strdup(req.nr_nwid);
+    if(req.nr_max_nssi)
+      level = IEEE80211_NODEREQ_RSSI(&req);
+    else
+      level = CLAMP(2*(req.nr_rssi+100),0,100);
+    g_mutex_unlock(&mutex);
+  }
+  close(sock);
+}
+
+#endif
 
 gint net_rt_connect ( void )
 {
@@ -482,7 +539,7 @@ gboolean net_rt_parse ( GIOChannel *chan, GIOCondition cond, gpointer data )
   return TRUE;
 }
 
-#else
+#else /* unknown platform, provide shims */
 
 gchar *net_getaddr ( void *ina, int type )
 {
@@ -501,7 +558,7 @@ void network_init ( void * )
 {
 }
 
-#endif /* __linux__ */
+#endif
 
 void sfwbar_module_init ( GMainContext *gmc )
 {
@@ -577,15 +634,7 @@ ModuleExpressionHandler handler1 = {
   .function = sfwbar_expr_func
 };
 
-ModuleExpressionHandler handler2 = {
-  .numeric = TRUE,
-  .name = "TestNum",
-  .parameters = "Ss",
-  .function = sfwbar_expr_func
-};
-
 ModuleExpressionHandler *sfwbar_expression_handlers[] = {
   &handler1,
-  &handler2,
   NULL
 };
