@@ -142,7 +142,7 @@ void net_update_essid ( void )
     memset(&wreq,0,sizeof(wreq));
     wreq.u.essid.length = IW_ESSID_MAX_SIZE+1;
     wreq.u.essid.pointer = lessid;
-    g_strlcpy(wreq.ifr_name,interface,sizeof(wreq.ifr_name));
+    (void)g_strlcpy(wreq.ifr_name,interface,sizeof(wreq.ifr_name));
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     if(sock >= 0 && ioctl(sock, SIOCGIWESSID, &wreq) >= 0)
     {
@@ -174,7 +174,7 @@ gdouble net_get_signal ( void )
   wreq.u.data.pointer = &wstats;
   wreq.u.data.length = sizeof(wstats);
   wreq.u.data.flags = 1;
-  g_strlcpy(wreq.ifr_name,interface,sizeof(wreq.ifr_name));
+  (void)g_strlcpy(wreq.ifr_name,interface,sizeof(wreq.ifr_name));
   sock = socket(AF_INET, SOCK_DGRAM, 0);
   if(sock >= 0 && ioctl(sock, SIOCGIWSTATS, &wreq) >= 0)
   {
@@ -213,6 +213,7 @@ gint net_rt_request ( gint sock )
     struct rtmsg rtm;
   } nlreq;
 
+  memset(&nlreq,0,sizeof(nlreq));
   nlreq.hdr.nlmsg_type = RTM_GETROUTE;
   nlreq.hdr.nlmsg_pid = getpid();
   nlreq.hdr.nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
@@ -308,6 +309,11 @@ void net_update_traffic ( void )
   if(!invalid)
     return;
 
+  prx_packets = rx_packets;
+  ptx_packets = tx_packets;
+  prx_bytes = rx_bytes;
+  ptx_bytes = tx_bytes;
+
   getifaddrs(&addrs);
   for(iter=addrs;iter;iter=iter->ifa_next)
     if(iter->ifa_addr && iter->ifa_addr->sa_family==AF_LINK)
@@ -350,7 +356,7 @@ void net_update_essid ( void )
   req.i_type = IEEE80211_IOC_SSID;
   req.i_data = lessid;
   req.i_len = sizeof(lessid);
-  g_strlcpy(req.i_name,interface,sizeof(req.i_name));
+  (void)g_strlcpy(req.i_name,interface,sizeof(req.i_name));
   if(ioctl(sock,SIOCG80211,&req) >=0)
   {
     lessid[MIN(req.i_len,IEEE80211_NWID_LEN)]='\0';
@@ -387,25 +393,30 @@ gdouble net_get_signal ( void )
   req.i_type = IEEE80211_IOC_BSSID;
   req.i_data = bssid;
   req.i_len = IEEE80211_ADDR_LEN;
-  g_strlcpy(req.i_name,interface,sizeof(req.i_name));
+  (void)g_strlcpy(req.i_name,interface,sizeof(req.i_name));
   sock = socket(AF_INET, SOCK_DGRAM, 0);
   if(sock<0)
     return 0;
-  if(ioctl(sock,SIOCG80211,&req) >=0)
+  if(ioctl(sock,SIOCG80211,&req) < 0)
   {
-    memset(&nfo,0,sizeof(nfo));
-    memcpy(nfo.sreq.is_u.macaddr,bssid,sizeof(bssid));
-    memset(&req,0,sizeof(req));
-    req.i_type = IEEE80211_IOC_STA_INFO;
-    req.i_data = &nfo;
-    req.i_len = sizeof(nfo);
-    g_strlcpy(req.i_name,interface,sizeof(req.i_name));
-    if(ioctl(sock,SIOCG80211,&req) >=0)
-      rssi = nfo.sreq.info[0].isi_noise+nfo.sreq.info[0].isi_rssi/2;
+    close(sock);
+    return 0;
   }
+  memset(&nfo,0,sizeof(nfo));
+  memcpy(nfo.sreq.is_u.macaddr,bssid,sizeof(bssid));
+  memset(&req,0,sizeof(req));
+  req.i_type = IEEE80211_IOC_STA_INFO;
+  req.i_data = &nfo;
+  req.i_len = sizeof(nfo);
+  (void)g_strlcpy(req.i_name,interface,sizeof(req.i_name));
+  if(ioctl(sock,SIOCG80211,&req) >=0)
+    rssi = nfo.sreq.info[0].isi_noise+nfo.sreq.info[0].isi_rssi/2;
+  else
+    rssi = -100;
   close(sock);
   return CLAMP(2*(rssi+100),0,100);
 }
+
 #else  /* OpenBSD */
 
 #include <net/if_media.h>
@@ -425,7 +436,7 @@ void net_update_essid ( void )
   if(sock <0)
     return;
   memset(&bssid,0,sizeof(bssid));
-  g_strlcpy(bssid.i_name,interface,sizeof(bssid.i_name));
+  (void)g_strlcpy(bssid.i_name,interface,sizeof(bssid.i_name));
   if(ioctl(sock,SIOCG80211BSSID,&bssd) < 0 || !*bssid.i_bssid ||
       !memcmp(bssid.i_bssid,bssid.i_bssid+1,IEEE80211_ADDR_LEN-1))
   {
@@ -433,7 +444,7 @@ void net_update_essid ( void )
     return;
   }
   memset(&req,0,sizeof(req));
-  g_strlcpy(req.nr_ifname,interface,sizeof(req.nr_ifname));
+  (void)g_strlcpy(req.nr_ifname,interface,sizeof(req.nr_ifname));
   memcpy(&(req.nr_macaddr),bssid.i_bssid,sizeof(req.nr_macaddr));
   if(ioctl(sock,SIOCG80211NODE,&req) >= 0)
   {
