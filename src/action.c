@@ -128,7 +128,7 @@ void action_client_send ( action_t *action )
   file = scanner_file_get ( action->addr );
 
   if(file)
-    g_io_channel_write_chars(file->out,action->command,-1,NULL,NULL);
+    (void)g_io_channel_write_chars(file->out,action->command,-1,NULL,NULL);
 }
 
 void action_exec ( GtkWidget *widget, action_t *action,

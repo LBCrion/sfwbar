@@ -92,7 +92,7 @@ static void hypr_ipc_command ( gchar *cmd, ... )
   va_start(args,cmd);
   buf = g_strdup_vprintf(cmd,args);
   g_debug("hypr command: %s",buf);
-  hypr_ipc_request ( ipc_sockaddr, buf, NULL);
+  (void)hypr_ipc_request ( ipc_sockaddr, buf, NULL);
   g_free(buf);
   va_end(args);
 }
@@ -544,7 +544,7 @@ static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
     else if(!strncmp(event,"destroyworkspace>>",18))
       pager_workspace_delete(pager_workspace_id_from_name(event+18));
     g_free(event);
-    g_io_channel_read_line(chan,&event,NULL,NULL,NULL);
+    (void)g_io_channel_read_line(chan,&event,NULL,NULL,NULL);
   }
 
   pager_update();
