@@ -426,7 +426,7 @@ gdouble net_get_signal ( void )
 #include <stdlib.h>
 #include <sys/types.h>
 
-void net_update_essid ( void )
+gdouble net_get_signal ( void )
 {
   gint sock;
   struct ieee80211_bssid bssid;
@@ -448,16 +448,24 @@ void net_update_essid ( void )
   memcpy(&(req.nr_macaddr),bssid.i_bssid,sizeof(req.nr_macaddr));
   if(ioctl(sock,SIOCG80211NODE,&req) >= 0)
   {
-    g_mutex_lock(&mutex);
-    g_free(essid);
-    essid = g_strdup(req.nr_nwid);
+    if(g_mutex_trylock(&mutex))
+    {
+      g_free(essid);
+      essid = g_strdup(req.nr_nwid);
+      g_mutex_unlock(&mutex);
+    }
     if(req.nr_max_nssi)
       level = IEEE80211_NODEREQ_RSSI(&req);
     else
       level = CLAMP(2*(req.nr_rssi+100),0,100);
-    g_mutex_unlock(&mutex);
   }
   close(sock);
+  return level;
+}
+
+void net_update_essit ( void )
+{
+  (void)net_get_signal();
 }
 
 #endif
