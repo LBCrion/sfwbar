@@ -4,9 +4,17 @@
 
 #include <glib.h>
 
-typedef gpointer (*ModuleExpressionFunc)( gpointer *);
+typedef struct {
+  GMainContext *gmc;
+  gboolean (*emit_trigger)(gchar *);
+  void (*config_string)(gchar *);
+} ModuleApi;
+
+typedef gpointer (*ModuleExpressionFunc)(gpointer *);
+typedef void (*ModuleActionFunc)(gchar *, gchar *, void *, void *, void *,
+    void *);
 typedef void (*ModuleInvalidator)( void );
-typedef void (*ModuleInitializer)( GMainContext * );
+typedef void (*ModuleInitializer)( ModuleApi * );
 typedef gboolean (*ModuleEmitTrigger) ( gchar * );
 typedef void (*ModuleInitTrigger) (GMainContext *, ModuleEmitTrigger );
 
@@ -17,22 +25,26 @@ typedef struct {
   gboolean numeric;
 } ModuleExpressionHandler;
 
-#define MODULE_TRIGGER_DECL \
-GMainContext *sfwbar_gmc; \
-GSourceFunc sfwbar_emit_func; \
-void sfwbar_trigger_init ( GMainContext *context, GSourceFunc emit ) \
-{ \
-  sfwbar_gmc = context; \
-  sfwbar_emit_func = emit; \
-} \
+typedef struct {
+  gchar *name;
+  ModuleActionFunc function;
+} ModuleActionHandler;
 
 #define MODULE_TRIGGER_EMIT(x) \
-  g_main_context_invoke(sfwbar_gmc,sfwbar_emit_func,x);
+  if(sfwbar_module_api && sfwbar_module_api->emit_trigger) \
+    g_main_context_invoke(sfwbar_module_api->gmc, \
+        (GSourceFunc)sfwbar_module_api->emit_trigger,x);
+
+#define MODULE_CONFIG_STRING(x) \
+  if(sfwbar_module_api && sfwbar->module_api->config_string) \
+    sfwbar_module_api->config_string(x)
 
 gboolean module_load ( gchar *name );
 void module_invalidate_all ( void );
 gboolean module_is_function ( GScanner *scanner );
 gboolean module_is_numeric ( gchar *identifier );
 gchar *module_get_string ( GScanner *scanner );
+void module_action_exec ( gchar *name, gchar *param, gchar *addr, void *,
+    void *, void *, void * );
 
 #endif

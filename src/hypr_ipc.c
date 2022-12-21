@@ -514,7 +514,7 @@ static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
 {
   gchar *event,*ptr;
 
-  g_io_channel_read_line(chan,&event,NULL,NULL,NULL);
+  (void)g_io_channel_read_line(chan,&event,NULL,NULL,NULL);
   while(event)
   {
     if((ptr=strchr(event,'\n')))

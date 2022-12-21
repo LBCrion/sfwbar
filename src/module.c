@@ -7,19 +7,26 @@
 #include <glib.h>
 #include <gmodule.h>
 #include "module.h"
+#include "config.h"
 #include "basewidget.h"
 #include "../meson.h"
 
-GHashTable *handlers;
+GHashTable *expr_handlers;
+GHashTable *act_handlers;
 GList *invalidators;
+
+static ModuleApi api = {
+  .emit_trigger = base_widget_emit_trigger,
+  .config_string = config_string,
+};
 
 gboolean module_load ( gchar *name )
 {
   GModule *module;
-  ModuleExpressionHandler **handler;
+  ModuleExpressionHandler **ehandler;
+  ModuleActionHandler **ahandler;
   ModuleInvalidator invalidator;
-  ModuleInitializer initializer;
-  ModuleInitTrigger init_trigger;
+  ModuleInitializer init;
   gint i;
   gint64 *sig;
   gchar *fname, *path;
@@ -33,38 +40,48 @@ gboolean module_load ( gchar *name )
   if(!module)
     return FALSE;
 
-  if(!g_module_symbol(module,"sfwbar_module_signature",(void **)&sig))
+  if(!g_module_symbol(module,"sfwbar_module_signature",(void **)&sig) ||
+      !sig || *sig != 0x73f4d956a1 )
     return FALSE;
 
-  if( !sig || *sig != 0x73f4d956a1 )
-    return FALSE;
+  if(g_module_symbol(module,"sfwbar_module_init",(void **)&init) && init)
+  {
+    api.gmc = g_main_context_get_thread_default();
+    init(&api);
+  }
 
   if(g_module_symbol(module,"sfwbar_module_invalidate",(void **)&invalidator))
     invalidators = g_list_prepend(invalidators,invalidator);
 
-  if(g_module_symbol(module,"sfwbar_module_init",(void **)&initializer))
-    if(initializer)
-      initializer(g_main_context_get_thread_default());
+  if(g_module_symbol(module,"sfwbar_expression_handlers",(void **)&ehandler))
+    for(i=0;ehandler[i];i++)
+      if(ehandler[i]->function && ehandler[i]->name)
+      {
+        if(!expr_handlers)
+          expr_handlers = g_hash_table_new((GHashFunc)str_nhash,
+            (GEqualFunc)str_nequal);
+        g_debug("module: register expr function '%s'",ehandler[i]->name);
+        if(g_hash_table_lookup(expr_handlers,ehandler[i]->name))
+          g_message("Duplicate module expr function: %s in module %s",
+              ehandler[i]->name,name);
+        else
+          g_hash_table_insert(expr_handlers,ehandler[i]->name,ehandler[i]);
+      }
 
-  if(g_module_symbol(module,"sfwbar_trigger_init",(void **)&init_trigger))
-    init_trigger(g_main_context_get_thread_default(),base_widget_emit_trigger);
-
-  if(!g_module_symbol(module,"sfwbar_expression_handlers",(void **)&handler))
-    return FALSE;
-
-  for(i=0;handler[i];i++)
-    if(handler[i]->function && handler[i]->name)
-    {
-      if(!handlers)
-        handlers = g_hash_table_new((GHashFunc)str_nhash,
-          (GEqualFunc)str_nequal);
-      g_debug("module: register function '%s'",handler[i]->name);
-      if(g_hash_table_lookup(handlers,handler[i]->name))
-        g_message("Duplicate module function: %s in module %s",
-            handler[i]->name,name);
-      else
-        g_hash_table_insert(handlers,handler[i]->name,handler[i]);
-    }
+  if(g_module_symbol(module,"sfwbar_action_handlers",(void **)&ahandler))
+    for(i=0;ahandler[i];i++)
+      if(ahandler[i]->function && ahandler[i]->name)
+      {
+        if(!act_handlers)
+          act_handlers = g_hash_table_new((GHashFunc)str_nhash,
+            (GEqualFunc)str_nequal);
+        g_debug("module: register action '%s'",ahandler[i]->name);
+        if(g_hash_table_lookup(act_handlers,ahandler[i]->name))
+          g_message("Duplicate module action: %s in module %s",
+              ahandler[i]->name,name);
+        else
+          g_hash_table_insert(act_handlers,ahandler[i]->name,ahandler[i]);
+      }
 
   return TRUE;
 }
@@ -78,9 +95,27 @@ void module_invalidate_all ( void )
       ((ModuleInvalidator)(iter->data))();
 }
 
+void module_action_exec ( gchar *name, gchar *param, gchar *addr, void *widget,
+    void *ev, void *win, void *state)
+{
+  ModuleActionHandler *handler;
+
+  g_debug("module: checking action `%s`",name?name:"(null)");
+  if(!act_handlers || !name)
+    return;
+
+  handler = g_hash_table_lookup(act_handlers, name);
+  if(!handler)
+    return;
+  g_debug("module: calling action `%s`",name);
+
+  handler->function(param, addr, widget,ev,win,state);
+}
+
 gboolean module_is_function ( GScanner *scanner )
 {
-  if(handlers && g_hash_table_lookup(handlers,scanner->value.v_identifier))
+  if(expr_handlers &&
+      g_hash_table_lookup(expr_handlers,scanner->value.v_identifier))
     return TRUE;
   return FALSE;
 }
@@ -89,10 +124,10 @@ gboolean module_is_numeric ( gchar *identifier )
 {
   ModuleExpressionHandler *handler;
 
-  if(!handlers)
+  if(!expr_handlers)
     return TRUE;
 
-  handler = g_hash_table_lookup(handlers,identifier);
+  handler = g_hash_table_lookup(expr_handlers,identifier);
   if(!handler)
     return TRUE;
   return handler->numeric;
@@ -105,10 +140,10 @@ gchar *module_get_string ( GScanner *scanner )
   gchar *result;
   gint i;
 
-  if(!handlers)
+  if(!expr_handlers)
     return NULL;
 
-  handler = g_hash_table_lookup(handlers,scanner->value.v_identifier);
+  handler = g_hash_table_lookup(expr_handlers,scanner->value.v_identifier);
   if(!handler)
     return NULL;
 

@@ -182,6 +182,8 @@ action_t *config_action ( GScanner *scanner )
     case G_TOKEN_UNMINIMIZE:
     case G_TOKEN_UNMAXIMIZE:
       break;
+    case G_TOKEN_IDENTIFIER:
+      action->ident = g_strdup(scanner->value.v_identifier);
     case G_TOKEN_EXEC:
     case G_TOKEN_MENU:
     case G_TOKEN_MENUCLEAR:

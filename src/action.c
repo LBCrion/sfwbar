@@ -12,6 +12,7 @@
 #include "action.h"
 #include "menu.h"
 #include "sway_ipc.h"
+#include "module.h"
 
 static GHashTable *functions;
 static GHashTable *trigger_actions;
@@ -289,6 +290,9 @@ void action_exec ( GtkWidget *widget, action_t *action,
       if(win)
         wintree_unmaximize(win->uid);
       break;
+    case G_TOKEN_IDENTIFIER:
+      module_action_exec(action->ident,action->command, action->addr,widget,
+          event,win,&state);
   }
 }
 
@@ -305,6 +309,7 @@ action_t *action_dup ( action_t *src )
   dest->type = src->type;
   dest->command = g_strdup(src->command);
   dest->addr = g_strdup(src->addr);
+  dest->ident = g_strdup(src->ident);
   return dest;
 }
 
@@ -315,6 +320,8 @@ void action_free ( action_t *action, GObject *old )
 
   g_free(action->command);
   g_free(action->addr);
+  g_free(action->ident);
+
   g_free(action);
 }
 

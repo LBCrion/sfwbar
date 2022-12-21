@@ -9,6 +9,7 @@ typedef struct user_action {
   guint type;
   gchar *command;
   gchar *addr;
+  gchar *ident;
 } action_t;
 
 void action_exec ( GtkWidget *, action_t *, GdkEvent *, window_t *, guint16 *);

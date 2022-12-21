@@ -11,7 +11,7 @@
 #include <net/if.h>
 #include <netinet/in.h>
 
-MODULE_TRIGGER_DECL
+ModuleApi *sfwbar_module_api;
 gboolean invalid;
 
 GMutex mutex;
@@ -20,12 +20,22 @@ struct in6_addr ip6, mask6, bcast6, gateway6;
 guint32 rx_packets, tx_packets, rx_bytes, tx_bytes;
 guint32 prx_packets, ptx_packets, prx_bytes, ptx_bytes;
 gint64 last_time, time_diff;
-gchar *interface;
+gchar *interface, *fixed_interface;
 gchar *essid;
 gint qual, level, noise;
 guint32 seq;
 
 void net_update_essid ( void );
+
+gchar *net_get_cidr ( void )
+{
+  gint i;
+  guint32 m = g_ntohl(mask.s_addr);
+
+  for(i=31;(i>=0)&&(m&0x1<<i);i--);
+
+  return g_strdup_printf("%d",31-i);
+}
 
 void net_update_address ( void )
 {
@@ -59,7 +69,8 @@ void net_set_interface ( gint32 iidx, struct in_addr gate,
 {
   gchar ifname[IF_NAMESIZE];
 
-  if(iidx)
+  if(iidx && (!fixed_interface ||
+        !g_strcmp0(if_indextoname(iidx,ifname),fixed_interface)))
   {
     if_indextoname(iidx,ifname);
     g_mutex_lock(&mutex);
@@ -579,12 +590,13 @@ void network_init ( void * )
 
 #endif
 
-void sfwbar_module_init ( GMainContext *gmc )
+void sfwbar_module_init ( ModuleApi *api )
 {
   int sock;
   GIOChannel *chan;
 
   g_mutex_init(&mutex);
+  sfwbar_module_api = api;
   sock = net_rt_connect();
   if(sock >= 0 && net_rt_request(sock) >= 0)
   {
@@ -613,6 +625,8 @@ void *sfwbar_expr_func ( void **params )
     result = net_getaddr(&ip,AF_INET);
   else if(!g_ascii_strcasecmp(params[0],"mask"))
     result = net_getaddr(&mask,AF_INET);
+  else if(!g_ascii_strcasecmp(params[0],"cidr"))
+    result = net_get_cidr();
   else if(!g_ascii_strcasecmp(params[0],"ip6"))
     result = net_getaddr(&ip6,AF_INET6);
   else if(!g_ascii_strcasecmp(params[0],"mask6"))
@@ -644,6 +658,13 @@ void *sfwbar_expr_func ( void **params )
   return result;
 }
 
+void network_action_interface ( gchar *iface, gchar *dummy, void *d1,
+    void *d2, void *d3, void *d4 )
+{
+  fixed_interface = g_strdup(iface);
+  net_set_interface(if_nametoindex(interface),gateway,gateway6);
+}
+
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 
 ModuleExpressionHandler handler1 = {
@@ -655,5 +676,15 @@ ModuleExpressionHandler handler1 = {
 
 ModuleExpressionHandler *sfwbar_expression_handlers[] = {
   &handler1,
+  NULL
+};
+
+ModuleActionHandler act_handler1 = {
+  .name = "NetSetInterface",
+  .function = network_action_interface
+};
+
+ModuleActionHandler *sfwbar_action_handlers[] = {
+  &act_handler1,
   NULL
 };
