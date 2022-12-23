@@ -6,6 +6,8 @@ json  = dependency('json-c')
 glsh = dependency('gtk-layer-shell-0')
 wayl = dependency('wayland-client')
 wayp = dependency('wayland-protocols', version: '>=1.17')
+puls = dependency('libpulse', required: get_option('pulse'))
+pulg = dependency('libpulse-mainloop-glib', required: get_option('pulse'))
 
 conf_data = configuration_data()
 glsh_ver = glsh.version().split('.')
@@ -88,8 +90,16 @@ src = ['src/sfwbar.c',
     wayland_targets ]
 dep = [gtk3, glib, gmod, glsh, wayl, json ]
 
-library('network', sources: 'modules/network.c', dependencies: glib,
-    install: true, install_dir: get_option('libdir') / 'sfwbar' )
+if get_option('network').enabled()
+  library('network', sources: 'modules/network.c', dependencies: glib,
+      install: true, install_dir: get_option('libdir') / 'sfwbar' )
+endif
+
+if puls.found() and pulg.found()
+  library('pulsectl', sources: 'modules/pulsectl.c',
+      dependencies: [glib, puls, pulg],
+      install: true, install_dir: get_option('libdir') / 'sfwbar' )
+endif
 
 executable ('sfwbar', sources: src,
     c_args: ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',

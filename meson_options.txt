@@ -1,0 +1,2 @@
+option('network',type:'feature',value:'auto',description:'Network module')
+option('pulse',type:'feature',value:'auto',description:'Pulse Audio module')
