@@ -73,26 +73,21 @@ static void pulse_subscribe_cb ( pa_context *ctx,
 {
   if(!(type & PA_SUBSCRIPTION_EVENT_CHANGE))
     return;
-  g_message("change");
 
   switch(type & PA_SUBSCRIPTION_EVENT_FACILITY_MASK)
   {
     case PA_SUBSCRIPTION_EVENT_SERVER:
-      g_message("server");
+      pa_context_get_server_info(ctx,pulse_server_cb,NULL);
       break;
     case PA_SUBSCRIPTION_EVENT_SINK:
       pa_context_get_sink_info_by_index(ctx,idx,pulse_sink_cb,NULL);
-      g_message("sink");
       break;
     case PA_SUBSCRIPTION_EVENT_SINK_INPUT:
-      g_message("sink input");
       break;
     case PA_SUBSCRIPTION_EVENT_SOURCE:
       pa_context_get_source_info_by_index(ctx,idx,pulse_source_cb,NULL);
-      g_message("source");
       break;
     case PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT:
-      g_message("source output");
       break;
   }
 }
@@ -103,13 +98,9 @@ static void pulse_state_cb ( pa_context *ctx, gpointer data )
   state = pa_context_get_state(ctx);
 
   if(state == PA_CONTEXT_FAILED || state == PA_CONTEXT_TERMINATED)
-  {
-    g_message("quit");
     papi->quit(papi,0);
-  }
   else if(state == PA_CONTEXT_READY)
   {
-    g_message("ready");
     pa_context_get_server_info(ctx,pulse_server_cb,NULL);
     pa_context_set_subscribe_callback(ctx,pulse_subscribe_cb,NULL);
     pa_context_subscribe(ctx,PA_SUBSCRIPTION_MASK_SERVER |
