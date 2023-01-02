@@ -87,7 +87,7 @@ void scanner_var_free ( ScanVar *var )
   g_free(var);
 }
 
-void scanner_var_attach ( gchar *name, ScanFile *file, gchar *pattern,
+void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
     guint type, gint flag )
 {
   ScanVar *var = g_malloc0(sizeof(ScanVar));
@@ -140,31 +140,31 @@ void scanner_var_values_update ( ScanVar *var, gchar *value)
   if(!value)
     return;
 
-  if((var->multi!=G_TOKEN_FIRST)||(!var->count))
+  if(var->multi!=G_TOKEN_FIRST || !var->count)
   {
     g_free(var->str);
-    var->str=value;
+    var->str = value;
+    switch(var->multi)
+    {
+      case G_TOKEN_SUM:
+        var->val += g_ascii_strtod(var->str,NULL);
+        break;
+      case G_TOKEN_PRODUCT:
+        var->val *= g_ascii_strtod(var->str,NULL);
+        break;
+      case G_TOKEN_LASTW:
+        var->val = g_ascii_strtod(var->str,NULL);
+        break;
+      case G_TOKEN_FIRST:
+        if(!var->count)
+          var->val = g_ascii_strtod(var->str,NULL);
+        break;
+    }
+    var->count++;
   }
   else
     g_free(value);
 
-  switch(var->multi)
-  {
-    case G_TOKEN_SUM:
-      var->val+=g_ascii_strtod(value,NULL);
-      break;
-    case G_TOKEN_PRODUCT:
-      var->val*=g_ascii_strtod(value,NULL);
-      break;
-    case G_TOKEN_LASTW:
-      var->val=g_ascii_strtod(value,NULL);
-      break;
-    case G_TOKEN_FIRST:
-      if(!var->count)
-        var->val=g_ascii_strtod(value,NULL);
-      break;
-  }
-  var->count++;
   var->invalid = FALSE;
 }
 
@@ -189,7 +189,7 @@ void scanner_update_json ( struct json_object *obj, ScanFile *file )
 }
 
 /* update variables in a specific file (or pipe) */
-int scanner_update_file ( GIOChannel *in, ScanFile *file )
+void scanner_file_update ( GIOChannel *in, ScanFile *file )
 {
   ScanVar *var;
   GList *node;
@@ -240,7 +240,6 @@ int scanner_update_file ( GIOChannel *in, ScanFile *file )
     ((ScanVar *)node->data)->invalid = FALSE;
 
   g_debug("channel status %d",status);
-  return 0;
 }
 
 void scanner_var_reset ( ScanVar *var, gpointer dummy )
@@ -310,7 +309,7 @@ gboolean scanner_file_glob ( ScanFile *file )
         }
 
         chan = g_io_channel_unix_new(fileno(in));
-        scanner_update_file(chan,file);
+        scanner_file_update(chan,file);
         g_io_channel_unref(chan);
 
         if(file->source == SO_EXEC)
@@ -369,7 +368,7 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update )
 
   if(var->type == G_TOKEN_SET)
   {
-    expr_cache((gchar **)&var->definition,&var->str);
+    (void)expr_cache((gchar **)&var->definition,&var->str);
     scanner_var_reset(var,NULL);
     scanner_var_values_update(var,g_strdup(var->str));
     var->invalid = FALSE;
@@ -422,6 +421,8 @@ double scanner_get_numeric ( gchar *name, gboolean update )
       retval = var->time;
     else if(!g_strcmp0(fname,".age"))
       retval = (g_get_monotonic_time() - var->ptime);
+    else
+      retval = 0;
   }
   else
     retval = 0;

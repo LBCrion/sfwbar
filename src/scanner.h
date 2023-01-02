@@ -42,11 +42,11 @@ typedef struct scan_var {
 void scanner_invalidate ( void );
 void scanner_var_reset ( ScanVar *var, gpointer dummy );
 void scanner_update_json ( struct json_object *, ScanFile * );
-int scanner_update_file ( GIOChannel *, ScanFile * );
+void scanner_file_update ( GIOChannel *, ScanFile * );
 int scanner_glob_file ( ScanFile * );
 char *scanner_get_string ( gchar *, gboolean );
 double scanner_get_numeric ( gchar *, gboolean );
-void scanner_var_attach ( gchar *, ScanFile *, gchar *, guint, gint );
+void scanner_var_new ( gchar *, ScanFile *, gchar *, guint, gint );
 ScanFile *scanner_file_get ( gchar *trigger );
 ScanFile *scanner_file_new ( gint , gchar *, gchar *, gint );
 

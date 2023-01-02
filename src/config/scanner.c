@@ -73,7 +73,7 @@ static void config_var ( GScanner *scanner, ScanFile *file )
     return;
   }
 
-  scanner_var_attach(vname,file,pattern,type,flag);
+  scanner_var_new(vname,file,pattern,type,flag);
 }
 
 static gboolean config_source_flags ( GScanner *scanner, gint *flags )
