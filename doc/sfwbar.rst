@@ -696,12 +696,31 @@ The following string operation are supported. For example: ::
 
   $MyString + Str((MyValue - MyValue.pval)/MyValue.time),2)
 
-User defines expressions are supported via top-level ``define``
+User defined expression macros are supported via top-level ``define``
 keyword. I.e. ::
   
   define MyExpr = VarA + VarB * VarC + Val($Complex)
   ...
   value = Str(MyExpr,2)
+
+The above will expand the expression into: ::
+
+  value = Str(VarA + VarB * VarC + Val($Complex),2)
+
+Macro's don't have types, as they perform substitution before the
+expression is evaluated.
+
+Intermediate variables can be declared using a toplevel ``set`` keyword
+I.e. ::
+
+  set MyExpr = VarA + VarB * VarC + Val($Complex
+  ...
+  value = Str(MyExpr,2)
+
+In the above example, value of the MyExpr variable will be calculated and
+the result will be used in computing the value expression. Intermediate
+varibles have type and have all of the fields of a scan variable (i.e. val,
+pval, time etc). They can be used the same way as scan variables.
 
 Miscellaneous
 =============

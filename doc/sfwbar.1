@@ -951,7 +951,7 @@ $MyString + Str((MyValue \- MyValue.pval)/MyValue.time),2)
 .UNINDENT
 .UNINDENT
 .sp
-User defines expressions are supported via top\-level \fBdefine\fP
+User defined expression macros are supported via top\-level \fBdefine\fP
 keyword. I.e.
 .INDENT 0.0
 .INDENT 3.5
@@ -965,6 +965,41 @@ value = Str(MyExpr,2)
 .fi
 .UNINDENT
 .UNINDENT
+.sp
+The above will expand the expression into:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+value = Str(VarA + VarB * VarC + Val($Complex),2)
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Macro\(aqs don\(aqt have types, as they perform substitution before the
+expression is evaluated.
+.sp
+Intermediate variables can be declared using a toplevel \fBset\fP keyword
+I.e.
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+set MyExpr = VarA + VarB * VarC + Val($Complex
+\&...
+value = Str(MyExpr,2)
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+In the above example, value of the MyExpr variable will be calculated and
+the result will be used in computing the value expression. Intermediate
+varibles have type and have all of the fields of a scan variable (i.e. val,
+pval, time etc). They can be used the same way as scan variables.
 .SH MISCELLANEOUS
 .sp
 If the icon is missing for a specific program in the taskbar or switcher, it
