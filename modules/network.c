@@ -662,7 +662,7 @@ void network_action_interface ( gchar *iface, gchar *dummy, void *d1,
     void *d2, void *d3, void *d4 )
 {
   fixed_interface = g_strdup(iface);
-  net_set_interface(if_nametoindex(interface),gateway,gateway6);
+  net_set_interface(if_nametoindex(iface),gateway,gateway6);
 }
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
