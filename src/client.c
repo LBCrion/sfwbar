@@ -37,7 +37,7 @@ gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
     return FALSE;
   }
 
-  scanner_reset_vars(file->vars);
+  g_list_foreach(file->vars,(GFunc)scanner_var_reset,NULL);
   scanner_update_file( chan, file );
   base_widget_emit_trigger(file->trigger);
   return TRUE;

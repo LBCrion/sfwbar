@@ -26,8 +26,7 @@ typedef struct scan_file {
 } ScanFile;
 
 typedef struct scan_var {
-  GRegex *regex;
-  gchar *json;
+  void *definition;
   gchar *str;
   double val;
   double pval;
@@ -36,12 +35,12 @@ typedef struct scan_var {
   gint count;
   gint multi;
   guint type;
-  guchar status;
+  gboolean invalid;
   ScanFile *file;
 } ScanVar;
 
-void scanner_expire ( void );
-int scanner_reset_vars ( GList * );
+void scanner_invalidate ( void );
+void scanner_var_reset ( ScanVar *var, gpointer dummy );
 void scanner_update_json ( struct json_object *, ScanFile * );
 int scanner_update_file ( GIOChannel *, ScanFile * );
 int scanner_glob_file ( ScanFile * );

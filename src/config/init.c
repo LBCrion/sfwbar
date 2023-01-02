@@ -177,6 +177,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   g_scanner_scope_add_symbol(scanner,0, "Focused", (gpointer)G_TOKEN_FOCUSED );
   g_scanner_scope_add_symbol(scanner,0, "RegEx", (gpointer)G_TOKEN_REGEX );
   g_scanner_scope_add_symbol(scanner,0, "Json", (gpointer)G_TOKEN_JSON );
+  g_scanner_scope_add_symbol(scanner,0, "Set", (gpointer)G_TOKEN_SET );
   g_scanner_scope_add_symbol(scanner,0, "Grab", (gpointer)G_TOKEN_GRAB );
   g_scanner_scope_add_symbol(scanner,0, "Title", (gpointer)G_TOKEN_TITLE );
   g_scanner_scope_add_symbol(scanner,0, "AppId", (gpointer)G_TOKEN_APPID );

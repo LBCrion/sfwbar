@@ -78,9 +78,11 @@ ScanFile *scanner_file_new ( gint source, gchar *fname,
 
 void scanner_var_free ( ScanVar *var )
 {
-  g_free(var->json);
-  if(var->regex)
-    g_regex_unref(var->regex);
+  if(var->type != G_TOKEN_REGEX)
+    g_free(var->definition);
+  else
+    if(var->definition)
+      g_regex_unref(var->definition);
   g_free(var->str);
   g_free(var);
 }
@@ -93,14 +95,16 @@ void scanner_var_attach ( gchar *name, ScanFile *file, gchar *pattern,
   var->file = file;
   var->type = type;
   var->multi = flag;
+  var->invalid = TRUE;
 
   switch(var->type)
   {
     case G_TOKEN_JSON:
-      var->json = pattern;
+    case G_TOKEN_SET:
+      var->definition = pattern;
       break;
     case G_TOKEN_REGEX:
-      var->regex = g_regex_new(pattern,0,0,NULL);
+      var->definition = g_regex_new(pattern,0,0,NULL);
       g_free(pattern);
       break;
     default:
@@ -108,7 +112,8 @@ void scanner_var_attach ( gchar *name, ScanFile *file, gchar *pattern,
       break;
   }
 
-  file->vars = g_list_append(file->vars,var);
+  if(file)
+    file->vars = g_list_append(file->vars,var);
 
   if(!scan_list)
     scan_list = g_hash_table_new_full((GHashFunc)str_nhash,
@@ -117,23 +122,24 @@ void scanner_var_attach ( gchar *name, ScanFile *file, gchar *pattern,
   g_hash_table_insert(scan_list,name,var);
 }
 
-void scanner_expire_var ( void *key, ScanVar *var, void *data )
+void scanner_var_invalidate ( void *key, ScanVar *var, void *data )
 {
-  if( var->file->source != SO_CLIENT )
-    var->status=0;
+  if( !var->file || var->file->source != SO_CLIENT )
+    var->invalid = TRUE;
 }
 
 /* expire all variables in the tree */
-void scanner_expire ( void )
+void scanner_invalidate ( void )
 {
   if(scan_list)
-    g_hash_table_foreach(scan_list,(GHFunc)scanner_expire_var,NULL);
+    g_hash_table_foreach(scan_list,(GHFunc)scanner_var_invalidate,NULL);
 }
 
-void scanner_update_var ( ScanVar *var, gchar *value)
+void scanner_var_values_update ( ScanVar *var, gchar *value)
 {
   if(!value)
     return;
+
   if((var->multi!=G_TOKEN_FIRST)||(!var->count))
   {
     g_free(var->str);
@@ -141,6 +147,7 @@ void scanner_update_var ( ScanVar *var, gchar *value)
   }
   else
     g_free(value);
+
   switch(var->multi)
   {
     case G_TOKEN_SUM:
@@ -158,7 +165,7 @@ void scanner_update_var ( ScanVar *var, gchar *value)
       break;
   }
   var->count++;
-  var->status=1;
+  var->invalid = FALSE;
 }
 
 void scanner_update_json ( struct json_object *obj, ScanFile *file )
@@ -169,11 +176,11 @@ void scanner_update_json ( struct json_object *obj, ScanFile *file )
 
   for(node=file->vars;node!=NULL;node=g_list_next(node))
   {
-    ptr = jpath_parse(((ScanVar *)node->data)->json,obj);
+    ptr = jpath_parse(((ScanVar *)node->data)->definition,obj);
     if(ptr && json_object_is_type(ptr, json_type_array))
       for(i=0;i<json_object_array_length(ptr);i++)
       {
-        scanner_update_var(((ScanVar *)node->data),
+        scanner_var_values_update(((ScanVar *)node->data),
           g_strdup(json_object_get_string(json_object_array_get_idx(ptr,i))));
       }
     if(ptr)
@@ -201,13 +208,13 @@ int scanner_update_file ( GIOChannel *in, ScanFile *file )
       switch(var->type)
       {
         case G_TOKEN_REGEX:
-          g_regex_match (var->regex, read_buff, 0, &match);
+          g_regex_match (var->definition, read_buff, 0, &match);
           if(g_match_info_matches (match))
-            scanner_update_var(var,g_match_info_fetch (match, 1));
+            scanner_var_values_update(var,g_match_info_fetch (match, 1));
           g_match_info_free (match);
           break;
         case G_TOKEN_GRAB:
-          scanner_update_var(var,g_strdup(read_buff));
+          scanner_var_values_update(var,g_strdup(read_buff));
           break;
         case G_TOKEN_JSON:
           if(!json)
@@ -230,26 +237,21 @@ int scanner_update_file ( GIOChannel *in, ScanFile *file )
   }
 
   for(node=file->vars;node!=NULL;node=g_list_next(node))
-    ((ScanVar *)node->data)->status=1;
+    ((ScanVar *)node->data)->invalid = FALSE;
 
   g_debug("channel status %d",status);
   return 0;
 }
 
-/* reset variables in a list */
-int scanner_reset_vars ( GList *var_list )
+void scanner_var_reset ( ScanVar *var, gpointer dummy )
 {
-  GList *node;
   gint64 tv = g_get_monotonic_time();
-  for(node=var_list;node!=NULL;node=g_list_next(node))
-    {
-    ((ScanVar *)node->data)->pval = ((ScanVar *)node->data)->val;
-    ((ScanVar *)node->data)->count = 0;
-    ((ScanVar *)node->data)->val = 0;
-    ((ScanVar *)node->data)->time=tv-((ScanVar *)node->data)->ptime;
-    ((ScanVar *)node->data)->ptime=tv;
-    }
-  return 0;
+
+  var->pval = var->val;
+  var->count = 0;
+  var->val = 0;
+  var->time = tv-var->ptime;
+  var->ptime = tv;
 }
 
 time_t scanner_file_mtime ( glob_t *gbuf )
@@ -259,15 +261,14 @@ time_t scanner_file_mtime ( glob_t *gbuf )
   time_t res = 0;
 
   for(i=0;gbuf->gl_pathv[i]!=NULL;i++)
-    if(stat(gbuf->gl_pathv[i],&stattr)==0)
-      if(stattr.st_mtime>res)
-        res = stattr.st_mtime;
+    if(!stat(gbuf->gl_pathv[i],&stattr))
+      res = MAX(stattr.st_mtime, res);
 
   return res;
 }
 
 /* update all variables in a file (by glob) */
-int scanner_update_file_glob ( ScanFile *file )
+gboolean scanner_file_glob ( ScanFile *file )
 {
   glob_t gbuf;
   gchar *dnames[2];
@@ -278,35 +279,34 @@ int scanner_update_file_glob ( ScanFile *file )
   gboolean reset=FALSE;
 
   if(!file)
-    return -1;
+    return FALSE;
   if(file->source == SO_CLIENT || !file->fname)
-    return -1;
+    return FALSE;
   if((file->flags & VF_NOGLOB)||(file->source != SO_FILE))
   {
     dnames[0] = file->fname;
     dnames[1] = NULL;
     gbuf.gl_pathv = dnames;
   }
-  else
-    if(glob(file->fname,GLOB_NOSORT,NULL,&gbuf))
-    {
-      globfree(&gbuf);
-      return -1;
-    }
+  else if(glob(file->fname,GLOB_NOSORT,NULL,&gbuf))
+  {
+    globfree(&gbuf);
+    return FALSE;
+  }
 
   if( !(file->flags & VF_CHTIME) || (file->mtime < scanner_file_mtime(&gbuf)) )
-    for(i=0;gbuf.gl_pathv[i]!=NULL;i++)
+    for(i=0;gbuf.gl_pathv[i];i++)
     {
       if(file->source == SO_EXEC)
         in = popen(gbuf.gl_pathv[i],"r");
       else
         in = fopen(gbuf.gl_pathv[i],"rt");
-      if(in )
+      if(in)
       {
         if(!reset)
         {
           reset=TRUE;
-          scanner_reset_vars(file->vars);
+          g_list_foreach(file->vars,(GFunc)scanner_var_reset,NULL);
         }
 
         chan = g_io_channel_unix_new(fileno(in));
@@ -319,7 +319,7 @@ int scanner_update_file_glob ( ScanFile *file )
         {
           fclose(in);
           if(!stat(gbuf.gl_pathv[i],&stattr))
-            file->mtime=stattr.st_mtime;
+            file->mtime = stattr.st_mtime;
         }
       }
     }
@@ -327,49 +327,74 @@ int scanner_update_file_glob ( ScanFile *file )
   if(!(file->flags & VF_NOGLOB)&&(file->source == SO_FILE))
     globfree(&gbuf);
 
-  return 0;
+  return TRUE;
 }
 
-char *scanner_parse_identifier ( gchar *id, gchar **fname )
+gchar *scanner_parse_identifier ( gchar *id, gchar **fname )
 {
-  gchar *temp;
   gchar *ptr;
-  if(id==NULL)
-    {
-    *fname=NULL;
+
+  if(!id)
+  {
+    if(fname)
+      *fname = NULL;
     return NULL;
-    }
+  }
+
   if(*id=='$')
-    temp=g_strdup(id+sizeof(gchar));
+    id = id + sizeof(gchar);
+
+  ptr=strchr(id,'.');
+  if(fname)
+    *fname = g_strdup(ptr?ptr:".val");
+  if(ptr)
+    return g_strndup(id,ptr-id);
   else
-    temp=g_strdup(id);
-  if((ptr=strchr(temp,'.'))==NULL)
-    {
-    *fname=g_strdup(".val");
-    return temp;
-    }
-  *fname=g_strdup(ptr);
-  *ptr='\0';
-  return temp;
+    return g_strdup(id);
+}
+
+ScanVar *scanner_var_update ( gchar *name, gboolean update )
+{
+  ScanVar *var;
+
+  if(!scan_list)
+    return NULL;
+
+  var = g_hash_table_lookup(scan_list, name);
+  if(!var)
+    return NULL;
+
+  if(!update || !var->invalid)
+    return var;
+
+  if(var->type == G_TOKEN_SET)
+  {
+    expr_cache((gchar **)&var->definition,&var->str);
+    scanner_var_reset(var,NULL);
+    scanner_var_values_update(var,g_strdup(var->str));
+    var->invalid = FALSE;
+  }
+  else
+    scanner_file_glob(var->file);
+
+  return var;
 }
 
 /* get string value of a variable by name */
-char *scanner_get_string ( gchar *name, gboolean update )
+gchar *scanner_get_string ( gchar *name, gboolean update )
 {
-  ScanVar *scan;
-  gchar *fname,*id,*res=NULL;
+  ScanVar *var;
+  gchar *id,*res;
 
-  id = scanner_parse_identifier(name,&fname);
-  g_free(fname);
-  if(scan_list && (scan=g_hash_table_lookup(scan_list,id))!=NULL)
-    {
-    if(!scan->status && update)
-      scanner_update_file_glob(scan->file);
-    res = g_strdup(scan->str);
-    }
-  if(res==NULL)
-    res = g_strdup("");
+  id = scanner_parse_identifier(name,NULL);
+  var = scanner_var_update(id, update);
   g_free(id);
+
+  if(var)
+    res = g_strdup(var->str);
+  else
+    res = g_strdup("");
+
   g_debug("scanner: %s = \"%s\"",name,res);
   return res;
 }
@@ -377,28 +402,29 @@ char *scanner_get_string ( gchar *name, gboolean update )
 /* get numeric value of a variable by name */
 double scanner_get_numeric ( gchar *name, gboolean update )
 {
-  ScanVar *scan;
-  double retval=0;
+  ScanVar *var;
+  double retval;
   gchar *fname,*id;
 
   id = scanner_parse_identifier(name,&fname);
-
-  if(scan_list && (scan=g_hash_table_lookup(scan_list,id))!=NULL)
-    {
-    if(!scan->status && update)
-      scanner_update_file_glob(scan->file);
-    if(!g_strcmp0(fname,".val"))
-      retval=scan->val;
-    else if(!g_strcmp0(fname,".pval"))
-      retval=scan->pval;
-    else if(!g_strcmp0(fname,".count"))
-      retval=scan->count;
-    else if(!g_strcmp0(fname,".time"))
-      retval=scan->time;
-    else if(!g_strcmp0(fname,".age"))
-      retval=(g_get_monotonic_time() - scan->ptime);
-    }
+  var = scanner_var_update(id, update);
   g_free(id);
+
+  if(var)
+  {
+    if(!g_strcmp0(fname,".val"))
+      retval = var->val;
+    else if(!g_strcmp0(fname,".pval"))
+      retval = var->pval;
+    else if(!g_strcmp0(fname,".count"))
+      retval = var->count;
+    else if(!g_strcmp0(fname,".time"))
+      retval = var->time;
+    else if(!g_strcmp0(fname,".age"))
+      retval = (g_get_monotonic_time() - var->ptime);
+  }
+  else
+    retval = 0;
   g_free(fname);
   g_debug("scanner: %s = %f",name,retval);
   return retval;

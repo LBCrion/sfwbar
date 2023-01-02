@@ -18,7 +18,7 @@ gboolean mpd_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer file )
   GIOStatus s;
 
   if(file)
-    scanner_reset_vars(((ScanFile *)file)->vars);
+    g_list_foreach(((ScanFile *)file)->vars,(GFunc)scanner_var_reset,NULL);
 
   if ( cond & G_IO_ERR || cond & G_IO_HUP )
   {

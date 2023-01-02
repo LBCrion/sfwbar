@@ -729,3 +729,28 @@ gchar *expr_parse( gchar *expr, guint *vcount )
 
   return result;
 }
+
+gboolean expr_cache ( gchar **expr, gchar **cache )
+{
+  gchar *eval;
+  guint vcount;
+
+  if(!expr || !*expr)
+    return FALSE;
+
+  eval = expr_parse(*expr, &vcount);
+  if(!vcount)
+  {
+    g_free(*expr);
+    *expr = NULL;
+  }
+  if(g_strcmp0(eval,*cache))
+  {
+    g_free(*cache);
+    *cache = eval;
+    return TRUE;
+  }
+  g_free(eval);
+
+  return FALSE;
+}

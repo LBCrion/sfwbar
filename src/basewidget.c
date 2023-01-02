@@ -208,31 +208,6 @@ static gboolean base_widget_tooltip_update ( GtkWidget *self,
   return TRUE;
 }
 
-static gboolean base_widget_cache ( gchar **expr, gchar **cache )
-{
-  gchar *eval;
-  guint vcount;
-
-  if(!expr || !*expr)
-    return FALSE;
-
-  eval = expr_parse(*expr, &vcount);
-  if(!vcount)
-  {
-    g_free(*expr);
-    *expr = NULL;
-  }
-  if(g_strcmp0(eval,*cache))
-  {
-    g_free(*cache);
-    *cache = eval;
-    return TRUE;
-  }
-  g_free(eval);
-
-  return FALSE;
-}
-
 GtkWidget *base_widget_get_child ( GtkWidget *self )
 {
   g_return_val_if_fail(IS_BASE_WIDGET(self),NULL);
@@ -319,7 +294,7 @@ void base_widget_set_value ( GtkWidget *self, gchar *value )
   g_free(priv->value);
   priv->value = value;
 
-  if(base_widget_cache(&priv->value,&priv->evalue) ||
+  if(expr_cache(&priv->value,&priv->evalue) ||
       BASE_WIDGET_GET_CLASS(self)->no_value_cache)
     base_widget_update_value(self);
 
@@ -344,7 +319,7 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
   g_free(priv->style);
   priv->style = style;
 
-  if(base_widget_cache(&priv->style,&priv->estyle))
+  if(expr_cache(&priv->style,&priv->estyle))
     base_widget_style(self);
 
   g_mutex_lock(&widget_mutex);
@@ -582,17 +557,17 @@ gboolean base_widget_emit_trigger ( gchar *trigger )
   if(!trigger)
     return FALSE;
 
-  scanner_expire();
+  scanner_invalidate();
   g_mutex_lock(&widget_mutex);
   for(iter=widgets_scan;iter!=NULL;iter=g_list_next(iter))
   {
     priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
     if(!priv->trigger || g_ascii_strcasecmp(trigger,priv->trigger))
       continue;
-    if(base_widget_cache(&priv->value,&priv->evalue) ||
+    if(expr_cache(&priv->value,&priv->evalue) ||
         BASE_WIDGET_GET_CLASS(iter->data)->no_value_cache)
       base_widget_update_value(iter->data);
-    if(base_widget_cache(&priv->style,&priv->estyle))
+    if(expr_cache(&priv->style,&priv->estyle))
       base_widget_style(iter->data);
   }
   g_mutex_unlock(&widget_mutex);
@@ -611,7 +586,7 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
 
   while ( TRUE )
   {
-    scanner_expire();
+    scanner_invalidate();
     module_invalidate_all();
     timer = G_MAXINT64;
     ctime = g_get_monotonic_time();
@@ -622,11 +597,11 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
       priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
       if(base_widget_get_next_poll(iter->data)<=ctime)
       {
-        if(base_widget_cache(&priv->value,&priv->evalue) ||
+        if(expr_cache(&priv->value,&priv->evalue) ||
             BASE_WIDGET_GET_CLASS(iter->data)->no_value_cache)
           g_main_context_invoke(gmc,(GSourceFunc)base_widget_update_value,
               iter->data);
-        if(base_widget_cache(&priv->style,&priv->estyle))
+        if(expr_cache(&priv->style,&priv->estyle))
           g_main_context_invoke(gmc,(GSourceFunc)base_widget_style,
               iter->data);
         base_widget_set_next_poll(iter->data,ctime);

@@ -26,6 +26,7 @@ void client_exec ( ScanFile *file );
 void client_socket ( ScanFile *file );
 
 char *expr_parse ( gchar *expr_str, guint * );
+gboolean expr_cache ( gchar **expr, gchar **cache );
 void **expr_module_parameters ( GScanner *scanner, gchar *spec, gchar *name );
 struct json_object *jpath_parse ( gchar *path, struct json_object *obj );
 

@@ -423,7 +423,7 @@ void config_define ( GScanner *scanner )
         "Missing identifier after 'define'"))
     return;
   g_scanner_get_next_token(scanner);
-  ident = g_strdup(scanner->value.v_identifier);  
+  ident = g_strdup(scanner->value.v_identifier);
 
   value = config_get_value(scanner,"define",TRUE,NULL);
   if(!value)
@@ -437,6 +437,26 @@ void config_define ( GScanner *scanner )
         (GEqualFunc)str_nequal,g_free,g_free);
 
   g_hash_table_insert(defines,ident,value);
+}
+
+void config_set ( GScanner *scanner )
+{
+  gchar *ident;
+  gchar *value;
+
+  if(!config_expect_token(scanner, G_TOKEN_IDENTIFIER,
+        "Missing identifier after 'set'"))
+    return;
+  g_scanner_get_next_token(scanner);
+  ident = g_strdup(scanner->value.v_identifier);
+
+  value = config_get_value(scanner,"set",TRUE,NULL);
+  if(!value)
+  {
+    g_free(ident);
+    return;
+  }
+  scanner_var_attach(ident,NULL,value,G_TOKEN_SET,G_TOKEN_FIRST);
 }
 
 void config_mappid_map ( GScanner *scanner )
@@ -520,6 +540,9 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
         break;
       case G_TOKEN_DEFINE:
         config_define(scanner);
+        break;
+      case G_TOKEN_SET:
+        config_set(scanner);
         break;
       case G_TOKEN_TRIGGERACTION:
         config_trigger_action(scanner);
