@@ -89,7 +89,7 @@ gchar *expr_module_function ( GScanner *scanner )
   gint i;
   gchar *err;
 
-  if(module_is_function(scanner))
+  if(module_is_function(scanner) && !scanner->max_parse_errors)
   {
     *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
     return module_get_string(scanner);
@@ -404,10 +404,10 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
       str = expr_parse_if ( scanner );
       break;
     case G_TOKEN_IDENTIFIER:
-      if(scanner->max_parse_errors)
-        str = g_strdup("");
-      else if(g_scanner_peek_next_token(scanner)=='(')
+      if(g_scanner_peek_next_token(scanner)=='(')
         str = expr_module_function(scanner);
+      else if(scanner->max_parse_errors)
+        str = g_strdup("");
       else
       {
         str = scanner_get_string(scanner->value.v_identifier,TRUE);
@@ -502,14 +502,14 @@ gdouble expr_parse_num_value ( GScanner *scanner )
       g_free(str);
       break;
     case G_TOKEN_IDENTIFIER:
-      if(scanner->max_parse_errors)
-        val = 0;
-      else if(g_scanner_peek_next_token(scanner)=='(')
+      if(g_scanner_peek_next_token(scanner)=='(')
       {
         str = expr_module_function(scanner);
         val = g_strtod(str,NULL);
         g_free(str);
       }
+      else if(scanner->max_parse_errors)
+        val = 0;
       else
       {
         val = scanner_get_numeric( scanner->value.v_identifier,TRUE );
@@ -640,9 +640,8 @@ void **expr_module_parameters ( GScanner *scanner, gchar *spec, gchar *name )
   if(!spec)
     params = NULL;
   else
+  {
     params = g_malloc0(strlen(spec)*sizeof(gpointer));
-
-  if(spec)
     for(i=0;spec[i];i++)
       if(g_scanner_peek_next_token(scanner)!=')')
       {
@@ -655,9 +654,10 @@ void **expr_module_parameters ( GScanner *scanner, gchar *spec, gchar *name )
           params[i] = expr_parse_str(scanner);
         else if(!g_ascii_islower(spec[i]))
           g_scanner_error(scanner,"invalid type in parameter %d of %s",i,name);
-       if(params[i] && g_scanner_peek_next_token(scanner)==',')
+        if(params[i] && g_scanner_peek_next_token(scanner)==',')
           g_scanner_get_next_token(scanner);
       }
+  }
 
   if(g_scanner_peek_next_token(scanner)!=')')
     g_scanner_error(scanner,"missing ')' after function call: %s",name);
