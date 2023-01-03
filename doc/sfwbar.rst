@@ -657,6 +657,12 @@ Operation   Description
             if the number is negative, the string is padded at the end, if
             positive, the string is padded at the front.
 ``If``      conditional: If(condition,expr1,expr2)
+``Lookup``  lookup a numeric value within a list of tuplets, the function call
+            is ``Lookup(Value, Threshold1, String1, ..., DefaultString)``. The
+            function checks value against a thresholds and returns a String
+            associated with the highest threshold matched by the Value. If the
+            Value is lower than all thresholds, DefaultString is returned. 
+            Thresholds in the function call must be in decreasing order.
 ``Cached``  get last value from a variable without updating it:
             Cached(identifier)
 =========== ==================================================================

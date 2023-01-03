@@ -22,12 +22,33 @@ enum {
   G_TOKEN_ACTIVE  = G_TOKEN_LAST + 7,
   G_TOKEN_PAD     = G_TOKEN_LAST + 8,
   G_TOKEN_IF      = G_TOKEN_LAST + 9,
-  G_TOKEN_CACHED  = G_TOKEN_LAST + 10
+  G_TOKEN_CACHED  = G_TOKEN_LAST + 10,
+  G_TOKEN_LOOKUP  = G_TOKEN_LAST + 11
 };
 
 
 gdouble expr_parse_num ( GScanner *scanner );
 gchar *expr_parse_str ( GScanner *scanner );
+gdouble expr_parse_num( GScanner *scanner );
+
+gboolean expr_identifier_is_numeric ( gchar *identifier )
+{
+  if(!identifier || *identifier == '$')
+    return FALSE;
+  return module_is_numeric(identifier);
+}
+
+gboolean expr_is_numeric ( GScanner *scanner )
+{
+  g_scanner_peek_next_token(scanner);
+  return ((scanner->next_token == G_TOKEN_FLOAT)||
+      (scanner->next_token == '!')||
+      (scanner->next_token == (GTokenType)G_TOKEN_DISK)||
+      (scanner->next_token == (GTokenType)G_TOKEN_VAL)||
+      (scanner->next_token == (GTokenType)G_TOKEN_LEFT_PAREN)||
+      ((scanner->next_token == G_TOKEN_IDENTIFIER)&&
+        expr_identifier_is_numeric(scanner->next_value.v_identifier)));
+}
 
 gboolean parser_expect_symbol ( GScanner *scanner, gint symbol, gchar *expr )
 {
@@ -48,23 +69,20 @@ gboolean parser_expect_symbol ( GScanner *scanner, gint symbol, gchar *expr )
   return TRUE;
 }
 
-gboolean expr_identifier_is_numeric ( gchar *identifier )
+gdouble expr_force_numeric ( GScanner *scanner )
 {
-  if(!identifier || *identifier == '$')
-    return FALSE;
-  return module_is_numeric(identifier);
-}
+  gchar *str;
+  gdouble value;
 
-gboolean expr_is_numeric ( GScanner *scanner )
-{
-  g_scanner_peek_next_token(scanner);
-  return ((scanner->next_token == G_TOKEN_FLOAT)||
-      (scanner->next_token == '!')||
-      (scanner->next_token == (GTokenType)G_TOKEN_DISK)||
-      (scanner->next_token == (GTokenType)G_TOKEN_VAL)||
-      (scanner->next_token == (GTokenType)G_TOKEN_LEFT_PAREN)||
-      ((scanner->next_token == G_TOKEN_IDENTIFIER)&&
-        expr_identifier_is_numeric(scanner->next_value.v_identifier)));
+  if(expr_is_numeric(scanner))
+    value = expr_parse_num ( scanner );
+  else
+  {
+    str = expr_parse_str(scanner);
+    value = strtod(str,NULL);
+    g_free(str);
+  }
+  return value;
 }
 
 /* convert a number to a string with specified number of decimals */
@@ -115,6 +133,49 @@ gchar *expr_module_function ( GScanner *scanner )
   return err;
 }
 
+gchar *expr_parse_lookup ( GScanner *scanner )
+{
+  gchar *str;
+  gdouble value, comp;
+  guint vstate = scanner->max_parse_errors;
+
+  parser_expect_symbol(scanner,'(',"Lookup(...)");
+  value = expr_force_numeric ( scanner );
+  parser_expect_symbol(scanner,',',"Lookup(value,...)");
+  str = NULL;
+
+  while (scanner->token==',' && expr_is_numeric(scanner))
+  {
+    comp = expr_parse_num(scanner);
+    parser_expect_symbol(scanner,',',"Lookup(... threshold, value ...)");
+    if(comp<value && !str)
+      str = expr_parse_str(scanner);
+    else
+    {
+      scanner->max_parse_errors = 1;
+      g_free(expr_parse_str(scanner));
+      scanner->max_parse_errors = vstate;
+    }
+    if(g_scanner_peek_next_token(scanner)==',')
+      g_scanner_get_next_token(scanner);
+  }
+  if(scanner->token==',')
+  {
+    if(!str)
+      str = expr_parse_str(scanner);
+    else
+    {
+      scanner->max_parse_errors = 1;
+      g_free(expr_parse_str(scanner));
+      scanner->max_parse_errors = vstate;
+    }
+  }
+
+  parser_expect_symbol(scanner,')',"Lookup(...)");
+
+  return str?str:g_strdup("");
+}
+
 gchar *expr_parse_cached ( GScanner *scanner )
 {
   gchar *ret;
@@ -141,14 +202,7 @@ gchar *expr_parse_if ( GScanner *scanner )
   guint vstate = scanner->max_parse_errors;
 
   parser_expect_symbol(scanner,'(',"If(Condition,Expression,Expression)");
-  if(expr_is_numeric(scanner))
-    condition = (gboolean)expr_parse_num ( scanner );
-  else
-  {
-    str = expr_parse_str(scanner);
-    condition = (gboolean)strtod(str,NULL);
-    g_free(str);
-  }
+  condition = (gboolean)expr_force_numeric(scanner);
 
   if(!condition)
     scanner->max_parse_errors = 1;
@@ -402,6 +456,9 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
       break;
     case G_TOKEN_IF:
       str = expr_parse_if ( scanner );
+      break;
+    case G_TOKEN_LOOKUP:
+      str = expr_parse_lookup ( scanner );
       break;
     case G_TOKEN_IDENTIFIER:
       if(g_scanner_peek_next_token(scanner)=='(')
@@ -693,6 +750,7 @@ static GScanner *expr_scanner_new ( void )
   g_scanner_scope_add_symbol(scanner,0, "Pad", (gpointer)G_TOKEN_PAD );
   g_scanner_scope_add_symbol(scanner,0, "If", (gpointer)G_TOKEN_IF );
   g_scanner_scope_add_symbol(scanner,0, "Cached", (gpointer)G_TOKEN_CACHED );
+  g_scanner_scope_add_symbol(scanner,0, "Lookup", (gpointer)G_TOKEN_LOOKUP );
   g_scanner_set_scope(scanner,0);
 
   return scanner;
