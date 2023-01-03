@@ -31,21 +31,33 @@ gboolean module_load ( gchar *name )
   gint64 *sig;
   gchar *fname, *path;
 
+  if(!name)
+    return FALSE;
+  g_debug("module: %s", name);
+
   fname = g_strconcat("lib",name,".so",NULL);
   path = get_xdg_config_file(fname,MODULE_DIR);
   g_free(fname);
+  g_debug("module: %s --> %s",name,path);
   module = g_module_open(path, G_MODULE_BIND_LOCAL);
   g_free(path);
 
   if(!module)
+  {
+    g_debug("module: failed to load %s",name);
     return FALSE;
+  }
 
   if(!g_module_symbol(module,"sfwbar_module_signature",(void **)&sig) ||
       !sig || *sig != 0x73f4d956a1 )
+  {
+    g_debug("module: signature check failed for %s",name);
     return FALSE;
+  }
 
   if(g_module_symbol(module,"sfwbar_module_init",(void **)&init) && init)
   {
+    g_debug("module: calling init function for %s",name);
     api.gmc = g_main_context_get_thread_default();
     init(&api);
   }
