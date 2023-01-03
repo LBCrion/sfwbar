@@ -1,3 +1,8 @@
+/* This entire file is licensed under GNU General Public License v3.0
+ *
+ * Copyright 2022 Sfwbar maintainers
+ */
+
 #include <glib.h>
 #include "../src/module.h"
 #include <pulse/pulseaudio.h>
