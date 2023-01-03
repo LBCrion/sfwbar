@@ -90,7 +90,7 @@ src = ['src/sfwbar.c',
     wayland_targets ]
 dep = [gtk3, glib, gmod, glsh, wayl, json ]
 
-if get_option('network').enabled()
+if get_option('network').enabled() or get_option('network').auto()
   library('network', sources: 'modules/network.c', dependencies: glib,
       install: true, install_dir: get_option('libdir') / 'sfwbar' )
 endif
