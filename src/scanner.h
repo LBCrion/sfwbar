@@ -36,6 +36,7 @@ typedef struct scan_var {
   gint multi;
   guint type;
   gboolean invalid;
+  gboolean inuse;
   ScanFile *file;
 } ScanVar;
 

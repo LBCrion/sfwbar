@@ -368,10 +368,15 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update )
 
   if(var->type == G_TOKEN_SET)
   {
-    (void)expr_cache((gchar **)&var->definition,&var->str);
-    scanner_var_reset(var,NULL);
-    scanner_var_values_update(var,g_strdup(var->str));
-    var->invalid = FALSE;
+    if(!var->inuse)
+    {
+      var->inuse = TRUE;
+      (void)expr_cache((gchar **)&var->definition,&var->str);
+      var->inuse = FALSE;
+      scanner_var_reset(var,NULL);
+      scanner_var_values_update(var,g_strdup(var->str));
+      var->invalid = FALSE;
+    }
   }
   else
     scanner_file_glob(var->file);
