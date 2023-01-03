@@ -663,6 +663,11 @@ Operation   Description
             associated with the highest threshold matched by the Value. If the
             Value is lower than all thresholds, DefaultString is returned. 
             Thresholds in the function call must be in decreasing order.
+``Map``     Match a string within a list of tuplets, the usage is:
+            ``Map(Value, Match1,String`,...,DefaultString)``. THe function will
+            match Value against all Match strings and will return a
+            corresponding String, if none of the Match strings match, the
+            function will return DefaultString.
 ``Cached``  get last value from a variable without updating it:
             Cached(identifier)
 =========== ==================================================================

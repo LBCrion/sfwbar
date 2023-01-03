@@ -23,7 +23,8 @@ enum {
   G_TOKEN_PAD     = G_TOKEN_LAST + 8,
   G_TOKEN_IF      = G_TOKEN_LAST + 9,
   G_TOKEN_CACHED  = G_TOKEN_LAST + 10,
-  G_TOKEN_LOOKUP  = G_TOKEN_LAST + 11
+  G_TOKEN_LOOKUP  = G_TOKEN_LAST + 11,
+  G_TOKEN_MAP     = G_TOKEN_LAST + 12
 };
 
 
@@ -131,6 +132,42 @@ gchar *expr_module_function ( GScanner *scanner )
       }
   }
   return err;
+}
+
+gchar *expr_parse_map ( GScanner *scanner )
+{
+  gchar *match, *result, *comp;
+  guint vstate = scanner->max_parse_errors;
+
+  parser_expect_symbol(scanner,'(',"Map(...)");
+  match = expr_parse_str(scanner);
+  parser_expect_symbol(scanner,',',"Map(value,...)");
+  result = NULL;
+
+  while(scanner->token==',' && g_scanner_peek_next_token(scanner)!=')')
+  {
+    comp = expr_parse_str(scanner);
+    if(g_scanner_peek_next_token(scanner)==')')
+    {
+      if(!result)
+        result = comp;
+      break;
+    }
+    parser_expect_symbol(scanner,',',"Map(... match , string ...)");
+    if(!g_strcmp0(comp,match))
+      result = expr_parse_str(scanner);
+    else
+    {
+      scanner->max_parse_errors = 1;
+      g_free(expr_parse_str(scanner));
+      scanner->max_parse_errors = vstate;
+    }
+    g_free(comp);
+    if(g_scanner_peek_next_token(scanner)==',')
+      g_scanner_get_next_token(scanner);
+  }
+  g_free(match);
+  return result;
 }
 
 gchar *expr_parse_lookup ( GScanner *scanner )
@@ -460,6 +497,9 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
     case G_TOKEN_LOOKUP:
       str = expr_parse_lookup ( scanner );
       break;
+    case G_TOKEN_MAP:
+      str = expr_parse_map ( scanner );
+      break;
     case G_TOKEN_IDENTIFIER:
       if(g_scanner_peek_next_token(scanner)=='(')
         str = expr_module_function(scanner);
@@ -751,6 +791,7 @@ static GScanner *expr_scanner_new ( void )
   g_scanner_scope_add_symbol(scanner,0, "If", (gpointer)G_TOKEN_IF );
   g_scanner_scope_add_symbol(scanner,0, "Cached", (gpointer)G_TOKEN_CACHED );
   g_scanner_scope_add_symbol(scanner,0, "Lookup", (gpointer)G_TOKEN_LOOKUP );
+  g_scanner_scope_add_symbol(scanner,0, "Map", (gpointer)G_TOKEN_MAP );
   g_scanner_set_scope(scanner,0);
 
   return scanner;
