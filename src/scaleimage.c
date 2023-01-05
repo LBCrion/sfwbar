@@ -297,7 +297,7 @@ int scale_image_update ( GtkWidget *self )
   GtkIconTheme *theme;
   GdkPixbuf *buf = NULL, *tmp = NULL;
   GdkPixbufLoader *loader = NULL;
-  GdkRGBA *color = NULL;
+  GdkRGBA col, *color = NULL;
   cairo_surface_t *cs;
   cairo_t *cr;
   gchar *fallback;
@@ -371,7 +371,17 @@ int scale_image_update ( GtkWidget *self )
   cs = gdk_cairo_surface_create_from_pixbuf(buf,0,
       gtk_widget_get_window(self));
 
-  gtk_widget_style_get(self,"color",&color,NULL);
+  if(strlen(priv->file)>=9 &&
+        !g_strcmp0(priv->file+strlen(priv->file)-9,"-symbolic"))
+  {
+    gtk_style_context_get_color(gtk_widget_get_style_context(self),
+        GTK_STATE_FLAG_NORMAL,&col);
+    col.alpha = 1.0;
+    color = gdk_rgba_copy(&col);
+  }
+  else
+    gtk_widget_style_get(self,"color",&color,NULL);
+
   if(color)
   {
     cr = cairo_create(cs);
