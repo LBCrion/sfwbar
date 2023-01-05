@@ -70,6 +70,23 @@ gboolean parser_expect_symbol ( GScanner *scanner, gint symbol, gchar *expr )
   return TRUE;
 }
 
+/* convert a number to a string with specified number of decimals */
+gchar *expr_dtostr ( double num, gint dec )
+{
+  static const gchar *format = "%%0.%df";
+  static gchar fbuf[16];
+  static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+
+  if(dec<0)
+    return g_strdup(g_ascii_dtostr(buf,G_ASCII_DTOSTR_BUF_SIZE,num));
+
+  if(dec>99)
+    dec = 99;
+
+  g_snprintf(fbuf,16,format,dec);
+  return g_strdup(g_ascii_formatd(buf,G_ASCII_DTOSTR_BUF_SIZE,fbuf,num));
+}
+
 gdouble expr_force_numeric ( GScanner *scanner )
 {
   gchar *str;
@@ -86,21 +103,12 @@ gdouble expr_force_numeric ( GScanner *scanner )
   return value;
 }
 
-/* convert a number to a string with specified number of decimals */
-gchar *expr_dtostr ( double num, gint dec )
+gchar *expr_force_string ( GScanner *scanner )
 {
-  static const gchar *format = "%%0.%df";
-  static gchar fbuf[16];
-  static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
-
-  if(dec<0)
-    return g_strdup(g_ascii_dtostr(buf,G_ASCII_DTOSTR_BUF_SIZE,num));
-
-  if(dec>99)
-    dec = 99;
-
-  g_snprintf(fbuf,16,format,dec);
-  return g_strdup(g_ascii_formatd(buf,G_ASCII_DTOSTR_BUF_SIZE,fbuf,num));
+  if(expr_is_numeric(scanner))
+    return expr_dtostr(expr_parse_num ( scanner ),-1);
+  else
+    return expr_parse_str(scanner);
 }
 
 gchar *expr_module_function ( GScanner *scanner )
@@ -244,20 +252,14 @@ gchar *expr_parse_if ( GScanner *scanner )
   if(!condition)
     scanner->max_parse_errors = 1;
   parser_expect_symbol(scanner,',',"If(Condition,Expression,Expression)");
-  if(expr_is_numeric(scanner))
-    str = expr_dtostr(expr_parse_num ( scanner ),-1);
-  else
-    str = expr_parse_str(scanner);
+  str = expr_force_string(scanner);
 
   if(condition)
     scanner->max_parse_errors = 1;
   else
     scanner->max_parse_errors = vstate;
   parser_expect_symbol(scanner,',',"If(Condition,Expression,Expression)");
-  if(expr_is_numeric(scanner))
-    str2 = expr_dtostr(expr_parse_num ( scanner ),-1);
-  else
-    str2 = expr_parse_str(scanner);
+  str2 = expr_force_string(scanner);
 
   scanner->max_parse_errors = vstate;
   parser_expect_symbol(scanner,')',"If(Condition,Expression,Expression)");
@@ -815,10 +817,7 @@ gchar *expr_parse( gchar *expr, guint *vcount )
  
   g_scanner_input_text(scanner, expr, strlen(expr));
 
-  if( expr_is_numeric(scanner) )
-    result = expr_dtostr(expr_parse_num(scanner),-1);
-  else
-    result = expr_parse_str(scanner);
+  result = expr_force_string(scanner);
 
   g_free(scanner->config->cset_identifier_nth);
   g_free(scanner->config->cset_identifier_first);
