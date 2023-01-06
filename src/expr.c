@@ -224,17 +224,18 @@ gchar *expr_parse_lookup ( GScanner *scanner )
 gchar *expr_parse_cached ( GScanner *scanner )
 {
   gchar *ret;
+  guint vcount = 0;
   
   parser_expect_symbol(scanner,'(',"Cached(Identifier)");
   if(parser_expect_symbol(scanner,G_TOKEN_IDENTIFIER,"Cached(Identifier)"))
     return g_strdup("");
 
-  *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
   if(*(scanner->value.v_identifier)=='$')
-    ret = scanner_get_string(scanner->value.v_identifier,FALSE);
+    ret = scanner_get_string(scanner->value.v_identifier,FALSE,&vcount);
   else
     ret = expr_dtostr(
-        scanner_get_numeric(scanner->value.v_identifier,FALSE),-1);
+        scanner_get_numeric(scanner->value.v_identifier,FALSE,&vcount),-1);
+  *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + vcount;
 
   parser_expect_symbol(scanner,')',"Cached(Identifier)");
   return ret;
@@ -459,6 +460,7 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
 {
   gchar *str;
   gdouble n1, n2;
+  guint vcount;
 
   switch((gint)g_scanner_get_next_token(scanner))
   {
@@ -509,8 +511,9 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
         str = g_strdup("");
       else
       {
-        str = scanner_get_string(scanner->value.v_identifier,TRUE);
-        *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
+        vcount = 0;
+        str = scanner_get_string(scanner->value.v_identifier,TRUE,&vcount);
+        *((guint *)scanner->user_data) = *((guint *)scanner->user_data)+vcount;
       }
       break;
     default:
@@ -560,6 +563,7 @@ gdouble expr_parse_num_value ( GScanner *scanner )
 {
   gdouble val;
   gchar *str;
+  guint vcount;
 
   switch((gint)g_scanner_get_next_token(scanner) )
   {
@@ -611,8 +615,9 @@ gdouble expr_parse_num_value ( GScanner *scanner )
         val = 0;
       else
       {
-        val = scanner_get_numeric( scanner->value.v_identifier,TRUE );
-        *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
+        vcount = 0;
+        val = scanner_get_numeric( scanner->value.v_identifier,TRUE, &vcount );
+        *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + vcount;
       }
       break;
     default:
@@ -813,7 +818,7 @@ gchar *expr_parse( gchar *expr, guint *vcount )
   if(!vcount)
     vcount = &vholder;
   scanner->user_data = vcount;
-  *vcount=0;
+  *vcount = 0;
  
   g_scanner_input_text(scanner, expr, strlen(expr));
 
@@ -828,7 +833,7 @@ gchar *expr_parse( gchar *expr, guint *vcount )
   return result;
 }
 
-gboolean expr_cache ( gchar **expr, gchar **cache )
+gboolean expr_cache ( gchar **expr, gchar **cache, guint *vc )
 {
   gchar *eval;
   guint vcount;
@@ -842,6 +847,8 @@ gboolean expr_cache ( gchar **expr, gchar **cache )
     g_free(*expr);
     *expr = NULL;
   }
+  if(vc)
+    *vc = vcount;
   if(g_strcmp0(eval,*cache))
   {
     g_free(*cache);

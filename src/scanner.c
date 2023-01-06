@@ -352,7 +352,7 @@ gchar *scanner_parse_identifier ( gchar *id, gchar **fname )
     return g_strdup(id);
 }
 
-ScanVar *scanner_var_update ( gchar *name, gboolean update )
+ScanVar *scanner_var_update ( gchar *name, gboolean update, guint *vcount )
 {
   ScanVar *var;
 
@@ -364,15 +364,21 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update )
     return NULL;
 
   if(!update || !var->invalid)
+  {
+    if(var->type == G_TOKEN_SET)
+      *vcount += var->vcount;
     return var;
+  }
 
   if(var->type == G_TOKEN_SET)
   {
     if(!var->inuse)
     {
+      var->vcount = 0;
       var->inuse = TRUE;
-      (void)expr_cache((gchar **)&var->definition,&var->str);
+      (void)expr_cache((gchar **)&var->definition,&var->str,&var->vcount);
       var->inuse = FALSE;
+      *vcount += var->vcount;
       scanner_var_reset(var,NULL);
       scanner_var_values_update(var,g_strdup(var->str));
       var->invalid = FALSE;
@@ -385,13 +391,13 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update )
 }
 
 /* get string value of a variable by name */
-gchar *scanner_get_string ( gchar *name, gboolean update )
+gchar *scanner_get_string ( gchar *name, gboolean update, guint *vcount )
 {
   ScanVar *var;
   gchar *id,*res;
 
   id = scanner_parse_identifier(name,NULL);
-  var = scanner_var_update(id, update);
+  var = scanner_var_update(id, update,vcount);
   g_free(id);
 
   if(var)
@@ -400,18 +406,19 @@ gchar *scanner_get_string ( gchar *name, gboolean update )
     res = g_strdup("");
 
   g_debug("scanner: %s = \"%s\"",name,res);
+  g_debug("count = %d",*vcount);
   return res;
 }
 
 /* get numeric value of a variable by name */
-double scanner_get_numeric ( gchar *name, gboolean update )
+double scanner_get_numeric ( gchar *name, gboolean update, guint *vcount )
 {
   ScanVar *var;
   double retval;
   gchar *fname,*id;
 
   id = scanner_parse_identifier(name,&fname);
-  var = scanner_var_update(id, update);
+  var = scanner_var_update(id, update, vcount);
   g_free(id);
 
   if(var)
