@@ -129,9 +129,13 @@ static void scale_image_class_init ( ScaleImageClass *kclass )
   widget_class->get_preferred_height = scale_image_get_preferred_height;
 
   gtk_widget_class_install_style_property( widget_class,
-    g_param_spec_boxed("color","image color",
-      "draw image in this color using it's alpha channel as a mask",
-      GDK_TYPE_RGBA,G_PARAM_READABLE));
+      g_param_spec_boxed("color","image color",
+        "draw image in this color using it's alpha channel as a mask",
+        GDK_TYPE_RGBA,G_PARAM_READABLE));
+  gtk_widget_class_install_style_property( widget_class,
+      g_param_spec_boolean("symbolic","symbolic icon",
+        "treat image as a symbolic icon and apply theme specific color",
+        FALSE,G_PARAM_READABLE));
 }
 
 static void scale_image_init ( ScaleImage *self )
@@ -298,6 +302,7 @@ int scale_image_update ( GtkWidget *self )
   GdkPixbuf *buf = NULL, *tmp = NULL;
   GdkPixbufLoader *loader = NULL;
   GdkRGBA col, *color = NULL;
+  gboolean symbolic;
   cairo_surface_t *cs;
   cairo_t *cr;
   gchar *fallback;
@@ -371,16 +376,19 @@ int scale_image_update ( GtkWidget *self )
   cs = gdk_cairo_surface_create_from_pixbuf(buf,0,
       gtk_widget_get_window(self));
 
-  if(strlen(priv->file)>=9 &&
-        !g_strcmp0(priv->file+strlen(priv->file)-9,"-symbolic"))
+  gtk_widget_style_get(self,"color",&color,NULL);
+  if(!color)
   {
-    gtk_style_context_get_color(gtk_widget_get_style_context(self),
-        GTK_STATE_FLAG_NORMAL,&col);
-    col.alpha = 1.0;
-    color = gdk_rgba_copy(&col);
+    gtk_widget_style_get(self,"symbolic",&symbolic,NULL);
+    if(symbolic || (priv->file && strlen(priv->file)>=9 &&
+          !g_strcmp0(priv->file+strlen(priv->file)-9,"-symbolic")))
+    {
+      gtk_style_context_get_color(gtk_widget_get_style_context(self),
+          GTK_STATE_FLAG_NORMAL,&col);
+      col.alpha = 1.0;
+      color = gdk_rgba_copy(&col);
+    }
   }
-  else
-    gtk_widget_style_get(self,"color",&color,NULL);
 
   if(color)
   {

@@ -560,8 +560,8 @@ MpdClient
         MpdClient emits trigger "mpd"
 
 SwayClient
-        Receive updates on Sway state, updates are the json objects sent by sway,
-        wrapped into an object with a name of the event i.e.
+        Receive updates on Sway state, updates are the json objects sent by
+        sway, wrapped into an object with a name of the event i.e.
         ``window: { sway window change object }``
         SwayClient emits trigger "sway"
 
@@ -594,8 +594,8 @@ Json(Path[,Aggregator])
   i.e. ``.data.node.1.string`` and key checks to filter arrays, i.e.
   ``.data.node.[key="blah"].value``
 
-Optional aggregators specify how multiple occurrences of numeric data are treated.
-The following aggregators are supported:
+Optional aggregators specify how multiple occurrences of numeric data are
+treated. The following aggregators are supported:
 
 First
   Variable should be set to the first occurrence of the pattern in the source
@@ -608,8 +608,8 @@ Sum
   source
 
 Product
-  Variable should be set to the product of all  occurrences of the pattern in the
-  source
+  Variable should be set to the product of all  occurrences of the pattern in
+  the source
 
 For string variables, Sum and Product aggregators are treated as Last.
 
@@ -757,11 +757,12 @@ an icon is not showing, you can add your icon to the following locations:
 4. Location of the main config file currently in use
 5. `$XDG_CONFIG_HOME/sfwbar/`
 
-If an `app_id` is not set, and sway is being used, sfwbar will fallback to using
-the `instance` in the `window-properties`.
+If an `app_id` is not set, and sway is being used, sfwbar will fallback to
+using the `instance` in the `window-properties`.
 
-You can find the `app_id` that is being used with sfwbar by using the `sfwbar -d -g app_id`
-command, which will show a list of running applications if your compositor supports the
+You can find the `app_id` that is being used with sfwbar by using the
+`sfwbar -d -g app_id` command, which will show a list of running applications
+if your compositor supports the
 wlr-foreign-toplevel protocol (i.e. labwc, wayfire, sway):
 ```
 14:49:25.41 app_id: 'jetbrains-clion', title 'sfwbar – pager.c'
@@ -782,7 +783,8 @@ When using `swaymsg -t get_tree`, with CLion this will show the following: ::
   }
 
 So we can put an icon called jetbrains-clion.svg (or other formats, see the
-[Arch wiki](https://wiki.archlinux.org/title/desktop_entries#Icons)) for information about file formats.
+[Arch wiki](https://wiki.archlinux.org/title/desktop_entries#Icons)) for
+information about file formats.
 
 CSS Style
 =========
@@ -815,8 +817,8 @@ property              description
 -GtkWidget-direction  specify a direction for a widget.
                       For scale, it's a direction towards which scale grows.
                       For a grid, it's a direction in which a new widget is 
-                      position relative to the last placed widget.
-                      For a window it's an edge along which the bar is positioned.
+                      position relative to the last placed widget. For a
+                      window it's an edge along which the bar is positioned.
                       Possible values [top|bottom|left|right]
 -GtkWidget-max-width  Limit maximum width of a widget (in pixels)
 -GtkWidget-max-height Limit maximum height of a widget (in pixels)
@@ -834,6 +836,10 @@ property              description
                       be painted with this color using image's alpha channel as
                       a mask. The color's own alpha value can be used to tint
                       an image.
+-ScaleImage-symbolic  Treat the image as a symbolic icon. If set to true, the
+                      image will be re-colored to the gtk theme foreground
+                      color, preserving the image alpha channel. This property
+                      is ignored if -ScaleImage-color is specified.
 ===================== =============
 
 Taskbar and pager buttons are assigned the following styles

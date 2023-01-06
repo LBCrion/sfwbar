@@ -662,8 +662,8 @@ responds to an \(aqidle player\(aq event).
 MpdClient emits trigger \(dqmpd\(dq
 .TP
 .B SwayClient
-Receive updates on Sway state, updates are the json objects sent by sway,
-wrapped into an object with a name of the event i.e.
+Receive updates on Sway state, updates are the json objects sent by
+sway, wrapped into an object with a name of the event i.e.
 \fBwindow: { sway window change object }\fP
 SwayClient emits trigger \(dqsway\(dq
 .UNINDENT
@@ -701,8 +701,8 @@ i.e. \fB\&.data.node.1.string\fP and key checks to filter arrays, i.e.
 \fB\&.data.node.[key=\(dqblah\(dq].value\fP
 .UNINDENT
 .sp
-Optional aggregators specify how multiple occurrences of numeric data are treated.
-The following aggregators are supported:
+Optional aggregators specify how multiple occurrences of numeric data are
+treated. The following aggregators are supported:
 .INDENT 0.0
 .TP
 .B First
@@ -716,8 +716,8 @@ Variable should be set to the sum of all  occurrences of the pattern in the
 source
 .TP
 .B Product
-Variable should be set to the product of all  occurrences of the pattern in the
-source
+Variable should be set to the product of all  occurrences of the pattern in
+the source
 .UNINDENT
 .sp
 For string variables, Sum and Product aggregators are treated as Last.
@@ -1052,11 +1052,12 @@ an icon is not showing, you can add your icon to the following locations:
 4. Location of the main config file currently in use
 5. \fI$XDG_CONFIG_HOME/sfwbar/\fP
 .sp
-If an \fIapp_id\fP is not set, and sway is being used, sfwbar will fallback to using
-the \fIinstance\fP in the \fIwindow\-properties\fP\&.
+If an \fIapp_id\fP is not set, and sway is being used, sfwbar will fallback to
+using the \fIinstance\fP in the \fIwindow\-properties\fP\&.
 .sp
-You can find the \fIapp_id\fP that is being used with sfwbar by using the \fIsfwbar \-d \-g app_id\fP
-command, which will show a list of running applications if your compositor supports the
+You can find the \fIapp_id\fP that is being used with sfwbar by using the
+\fIsfwbar \-d \-g app_id\fP command, which will show a list of running applications
+if your compositor supports the
 wlr\-foreign\-toplevel protocol (i.e. labwc, wayfire, sway):
 \fB\(ga
 14:49:25.41 app_id: \(aqjetbrains\-clion\(aq, title \(aqsfwbar – pager.c\(aq
@@ -1085,7 +1086,8 @@ When using \fIswaymsg \-t get_tree\fP, with CLion this will show the following:
 .UNINDENT
 .sp
 So we can put an icon called jetbrains\-clion.svg (or other formats, see the
-[Arch wiki](\fI\%https://wiki.archlinux.org/title/desktop_entries#Icons\fP)) for information about file formats.
+[Arch wiki](\fI\%https://wiki.archlinux.org/title/desktop_entries#Icons\fP)) for
+information about file formats.
 .SH CSS STYLE
 .sp
 SFWBar uses gtk+ widgets and can accept all css properties supported by
@@ -1167,8 +1169,8 @@ T}	T{
 specify a direction for a widget.
 For scale, it\(aqs a direction towards which scale grows.
 For a grid, it\(aqs a direction in which a new widget is
-position relative to the last placed widget.
-For a window it\(aqs an edge along which the bar is positioned.
+position relative to the last placed widget. For a
+window it\(aqs an edge along which the bar is positioned.
 Possible values [top|bottom|left|right]
 T}
 _
@@ -1226,6 +1228,15 @@ Specify a color to repaint an image with. The image will
 be painted with this color using image\(aqs alpha channel as
 a mask. The color\(aqs own alpha value can be used to tint
 an image.
+T}
+_
+T{
+\-ScaleImage\-symbolic
+T}	T{
+Treat the image as a symbolic icon. If set to true, the
+image will be re\-colored to the gtk theme foreground
+color, preserving the image alpha channel. This property
+is ignored if \-ScaleImage\-color is specified.
 T}
 _
 .TE
