@@ -24,7 +24,8 @@ enum {
   G_TOKEN_IF      = G_TOKEN_LAST + 9,
   G_TOKEN_CACHED  = G_TOKEN_LAST + 10,
   G_TOKEN_LOOKUP  = G_TOKEN_LAST + 11,
-  G_TOKEN_MAP     = G_TOKEN_LAST + 12
+  G_TOKEN_MAP     = G_TOKEN_LAST + 12,
+  G_TOKEN_HAVEFUNCTION
 };
 
 
@@ -116,11 +117,13 @@ gchar *expr_module_function ( GScanner *scanner )
   gint i;
   gchar *err;
 
-  if(module_is_function(scanner) && !scanner->max_parse_errors)
+  if(module_is_function(scanner->value.v_identifier) &&
+      !scanner->max_parse_errors)
   {
     *((guint *)scanner->user_data) = *((guint *)scanner->user_data) + 1;
-    return module_get_string(scanner);
+      return module_get_string(scanner);
   }
+  
 
   i=1;
   err = g_strdup_printf("Unknown Function: %s",scanner->value.v_identifier);
@@ -275,6 +278,19 @@ gchar *expr_parse_if ( GScanner *scanner )
     g_free(str);
     return str2;
   }
+}
+
+gchar *expr_have_function ( GScanner *scanner )
+{
+  gchar *tmp, *res;
+
+  parser_expect_symbol(scanner,'(',"HaveModule(String)");
+  tmp = expr_parse_str(scanner);
+  res = expr_dtostr(module_is_function(tmp),0);
+  g_free(tmp);
+  parser_expect_symbol(scanner,')',"HaveModuke(String)");
+
+  return res;
 }
 
 /* extract a substring */
@@ -503,6 +519,9 @@ gchar *expr_parse_str_l1 ( GScanner *scanner )
       break;
     case G_TOKEN_MAP:
       str = expr_parse_map ( scanner );
+      break;
+    case G_TOKEN_HAVEFUNCTION:
+      str = expr_have_function( scanner );
       break;
     case G_TOKEN_IDENTIFIER:
       if(g_scanner_peek_next_token(scanner)=='(')
@@ -799,6 +818,8 @@ static GScanner *expr_scanner_new ( void )
   g_scanner_scope_add_symbol(scanner,0, "Cached", (gpointer)G_TOKEN_CACHED );
   g_scanner_scope_add_symbol(scanner,0, "Lookup", (gpointer)G_TOKEN_LOOKUP );
   g_scanner_scope_add_symbol(scanner,0, "Map", (gpointer)G_TOKEN_MAP );
+  g_scanner_scope_add_symbol(scanner,0, "HaveFunction",
+      (gpointer)G_TOKEN_HAVEFUNCTION );
   g_scanner_set_scope(scanner,0);
 
   return scanner;

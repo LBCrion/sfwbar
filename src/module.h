@@ -41,7 +41,7 @@ typedef struct {
 
 gboolean module_load ( gchar *name );
 void module_invalidate_all ( void );
-gboolean module_is_function ( GScanner *scanner );
+gboolean module_is_function ( gchar *identifier );
 gboolean module_is_numeric ( gchar *identifier );
 gchar *module_get_string ( GScanner *scanner );
 void module_action_exec ( gchar *name, gchar *param, gchar *addr, void *,

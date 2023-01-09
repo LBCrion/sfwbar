@@ -124,10 +124,10 @@ void module_action_exec ( gchar *name, gchar *param, gchar *addr, void *widget,
   handler->function(param, addr, widget,ev,win,state);
 }
 
-gboolean module_is_function ( GScanner *scanner )
+gboolean module_is_function ( gchar *identifier )
 {
   if(expr_handlers &&
-      g_hash_table_lookup(expr_handlers,scanner->value.v_identifier))
+      g_hash_table_lookup(expr_handlers,identifier))
     return TRUE;
   return FALSE;
 }
