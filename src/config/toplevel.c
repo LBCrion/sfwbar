@@ -14,7 +14,7 @@ gchar *config_value_string ( gchar *dest, gchar *string )
   l = strlen(dest);
 
   for(i=0;string[i];i++)
-    if(string[i] == '"')
+    if(string[i] == '"' || string[i] == '\\')
       j++;
   result = g_malloc(l+i+j+3);
   memcpy(result,dest,l);
@@ -22,7 +22,7 @@ gchar *config_value_string ( gchar *dest, gchar *string )
   result[l++]='"';
   for(i=0;string[i];i++)
   {
-    if(string[i] == '"')
+    if(string[i] == '"' || string[i] == '\\')
       result[l++]='\\';
     result[l++] = string[i];
   }
@@ -37,6 +37,7 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign,
     gchar **id )
 {
   gchar *value, *temp;
+  gint pcount = 0;
   static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
 
   scanner->max_parse_errors = FALSE;
@@ -69,6 +70,8 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign,
       (scanner->next_token!='}')&&
       (scanner->next_token!=';')&&
       (scanner->next_token!='[')&&
+      (scanner->next_token!=',' || pcount)&&
+      (scanner->next_token!=')' || pcount)&&
       (scanner->next_token!=G_TOKEN_EOF))
   {
     switch((gint)g_scanner_get_next_token(scanner))
@@ -99,6 +102,10 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign,
         g_free(temp);
         break;
     }
+    if(scanner->token == '(')
+      pcount++;
+    else if(scanner->token == ')')
+      pcount--;
     g_scanner_peek_next_token(scanner);
   }
   config_optional_semicolon(scanner);
@@ -202,14 +209,14 @@ action_t *config_action ( GScanner *scanner )
     case G_TOKEN_SETBARSIZE:
     case G_TOKEN_SETEXCLUSIVEZONE:
       config_parse_sequence(scanner,
-          SEQ_REQ,G_TOKEN_STRING,NULL,&action->addr,"Missing argument in action",
+          SEQ_REQ,G_TOKEN_VALUE,NULL,&action->addrval,"Missing argument in action",
           SEQ_OPT,',',NULL,NULL,NULL,
-          SEQ_CON,G_TOKEN_STRING,NULL,&action->command,"Missing argument after ','",
+          SEQ_CON,G_TOKEN_VALUE,NULL,&action->comval,"Missing argument after ','",
           SEQ_END);
-      if(!action->command)
+      if(!action->comval)
       {
-        action->command = action->addr;
-        action->addr = NULL;
+        action->comval = action->addrval;
+        action->addrval = NULL;
       }
       break;
     case G_TOKEN_CLIENTSEND:

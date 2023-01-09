@@ -145,6 +145,11 @@ void action_exec ( GtkWidget *widget, action_t *action,
   if(IS_TASKBAR_ITEM(widget))
     win = flow_item_get_parent(widget);
 
+  if(action->type != G_TOKEN_SETVALUE && action->type != G_TOKEN_SETSTYLE &&
+      action->type != G_TOKEN_SETTOOLTIP )
+    expr_cache(&action->comval,&action->command,NULL);
+  expr_cache(&action->addrval,&action->addr,NULL);
+
   if(action->addr && (
         action->type == G_TOKEN_MENU ||
         action->type == G_TOKEN_FUNCTION ||
@@ -176,7 +181,8 @@ void action_exec ( GtkWidget *widget, action_t *action,
     return;
 
   if(action->command)
-    g_debug("widget action: (%d) %s",action->type, action->command);
+    g_debug("widget action: (%d) %s (addr %s)",action->type, action->command,
+        action->addr?action->addr:"null");
   else
     if(win)
       g_debug("widget action: (%d) on %d",action->type,
@@ -307,6 +313,8 @@ action_t *action_dup ( action_t *src )
   dest->cond = src->cond;
   dest->ncond = src->ncond;
   dest->type = src->type;
+  dest->comval = g_strdup(src->comval);
+  dest->addrval = g_strdup(src->addrval);
   dest->command = g_strdup(src->command);
   dest->addr = g_strdup(src->addr);
   dest->ident = g_strdup(src->ident);
@@ -318,6 +326,8 @@ void action_free ( action_t *action, GObject *old )
   if(!action)
     return;
 
+  g_free(action->comval);
+  g_free(action->addrval);
   g_free(action->command);
   g_free(action->addr);
   g_free(action->ident);

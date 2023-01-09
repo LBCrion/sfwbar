@@ -8,7 +8,9 @@ typedef struct user_action {
   guchar ncond;
   guint type;
   gchar *command;
+  gchar *comval;
   gchar *addr;
+  gchar *addrval;
   gchar *ident;
 } action_t;
 

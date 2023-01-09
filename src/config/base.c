@@ -47,16 +47,19 @@ void config_parse_sequence ( GScanner *scanner, ... )
     func = va_arg(args, parse_func );
     dest  = va_arg(args, void * );
     err = va_arg(args, char * );
-    if( (type < 0 && (matched || req != SEQ_CON)) || 
-        g_scanner_peek_next_token(scanner) == type || 
-        ( scanner->next_token == G_TOKEN_FLOAT && type == G_TOKEN_INT) )
+    if( (matched || req != SEQ_CON) &&
+        ( type < 0 || type==G_TOKEN_VALUE ||
+          g_scanner_peek_next_token(scanner) == type ||
+          (scanner->next_token == G_TOKEN_FLOAT && type == G_TOKEN_INT) ))
     {
-      if(type != -2)
-        g_scanner_get_next_token(scanner);
-      else
+      if(type == -2)
+      {
         if(func && !func(scanner,dest))
           if(err)
             g_scanner_error(scanner,"%s",err);
+      }
+      else if(type != G_TOKEN_VALUE)
+        g_scanner_get_next_token(scanner);
 
       matched = TRUE;
       if(dest)
@@ -67,6 +70,14 @@ void config_parse_sequence ( GScanner *scanner, ... )
             break;
           case G_TOKEN_IDENTIFIER:
             *((gchar **)dest) = g_strdup(scanner->value.v_identifier);
+            break;
+          case G_TOKEN_VALUE:
+            *((gchar **)dest) = config_get_value(scanner,err,FALSE,NULL);
+            if(!**((gchar **)dest))
+            {
+              g_free(*((gchar **)dest));
+              *((char **)dest)=NULL;
+            }
             break;
           case G_TOKEN_FLOAT:
             *((gdouble *)dest) = scanner->value.v_float;
