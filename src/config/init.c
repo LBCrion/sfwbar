@@ -55,6 +55,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
       (gpointer)G_TOKEN_MAPAPPID );
   g_scanner_scope_add_symbol(scanner,0, "Module",
       (gpointer)G_TOKEN_MODULE );
+  g_scanner_scope_add_symbol(scanner,0, "Theme", (gpointer)G_TOKEN_THEME );
   g_scanner_scope_add_symbol(scanner,0, "End", (gpointer)G_TOKEN_END );
   g_scanner_scope_add_symbol(scanner,0, "File", (gpointer)G_TOKEN_FILE );
   g_scanner_scope_add_symbol(scanner,0, "Exec", (gpointer)G_TOKEN_EXEC );

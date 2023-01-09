@@ -3,6 +3,7 @@
 #include "../menu.h"
 #include "../sfwbar.h"
 #include "../module.h"
+#include "../bar.h"
 
 static GHashTable *defines;
 
@@ -553,6 +554,9 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
         break;
       case G_TOKEN_TRIGGERACTION:
         config_trigger_action(scanner);
+        break;
+      case G_TOKEN_THEME:
+        bar_set_theme(config_assign_string(scanner,"theme"));
         break;
       case G_TOKEN_MAPAPPID:
         config_mappid_map(scanner);

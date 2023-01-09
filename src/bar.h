@@ -15,5 +15,6 @@ gboolean bar_update_monitor ( GtkWindow *win );
 void bar_save_monitor ( GtkWidget *bar );
 GtkWindow *bar_from_name ( gchar *name );
 GtkWidget *bar_grid_from_name ( gchar *addr );
+void bar_set_theme ( gchar *new_theme );
 
 #endif
