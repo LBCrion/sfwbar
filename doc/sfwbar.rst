@@ -836,7 +836,7 @@ property              description
                       be painted with this color using image's alpha channel as
                       a mask. The color's own alpha value can be used to tint
                       an image.
--ScaleImage-symbolic  Treat the image as a symbolic icon. If set to true, the
+-ScaleImage-symbolic  Render an image as a symbolic icon. If set to true, the
                       image will be re-colored to the gtk theme foreground
                       color, preserving the image alpha channel. This property
                       is ignored if -ScaleImage-color is specified.
