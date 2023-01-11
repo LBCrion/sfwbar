@@ -265,9 +265,13 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
   gtk_widget_add_events(GTK_WIDGET(priv->popover),GDK_LEAVE_NOTIFY_MASK);
   g_signal_connect(self,"enter-notify-event",
       G_CALLBACK(taskbar_group_enter_cb),self);
+  g_signal_connect(priv->button,"enter-notify-event",
+      G_CALLBACK(taskbar_group_enter_cb),self);
   g_signal_connect(priv->popover,"enter-notify-event",
       G_CALLBACK(taskbar_group_enter_cb),self);
   g_signal_connect(self,"leave-notify-event",
+      G_CALLBACK(taskbar_group_leave_cb),priv->popover);
+  g_signal_connect(priv->button,"leave-notify-event",
       G_CALLBACK(taskbar_group_leave_cb),priv->popover);
   g_signal_connect(priv->popover,"leave-notify-event",
       G_CALLBACK(taskbar_group_leave_cb),priv->popover);
