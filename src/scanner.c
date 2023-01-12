@@ -365,8 +365,7 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, guint *vcount )
 
   if(!update || !var->invalid)
   {
-    if(var->type == G_TOKEN_SET)
-      *vcount += var->vcount;
+    *vcount += var->vcount;
     return var;
   }
 
@@ -385,7 +384,10 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, guint *vcount )
     }
   }
   else
+  {
     scanner_file_glob(var->file);
+    var->vcount = ++(*vcount);
+  }
 
   return var;
 }
