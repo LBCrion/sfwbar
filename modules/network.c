@@ -11,95 +11,118 @@
 #include <net/if.h>
 #include <netinet/in.h>
 
-ModuleApi *sfwbar_module_api;
-gboolean invalid;
+typedef struct _iface_info {
+  gchar *name;
+  GMutex mutex;
+  gboolean invalid;
+  struct in_addr ip, mask, bcast, gateway;
+  struct in6_addr ip6, mask6, bcast6, gateway6;
+  guint32 rx_packets, tx_packets, rx_bytes, tx_bytes;
+  guint32 prx_packets, ptx_packets, prx_bytes, ptx_bytes;
+  gint64 last_time, time_diff;
+  gchar *essid;
+} iface_info;
 
-GMutex mutex;
-struct in_addr ip, mask, bcast, gateway;
-struct in6_addr ip6, mask6, bcast6, gateway6;
-guint32 rx_packets, tx_packets, rx_bytes, tx_bytes;
-guint32 prx_packets, ptx_packets, prx_bytes, ptx_bytes;
-gint64 last_time, time_diff;
-gchar *interface, *fixed_interface;
-gchar *essid;
+iface_info *route;
+
 gint qual, level, noise;
+ModuleApi *sfwbar_module_api;
 guint32 seq;
+GList *iface_list;
 
-void net_update_essid ( void );
+static void net_update_essid ( gchar * );
 
-gchar *net_get_cidr ( void )
+static iface_info *net_iface_from_name ( gchar *name, gboolean create )
+{
+  GList *iter;
+  iface_info *iface;
+
+  for(iter = iface_list;iter;iter=g_list_next(iter))
+    if(!g_strcmp0(((iface_info *)iter->data)->name,name))
+      return iter->data;
+
+  if(!create)
+    return NULL;
+
+  iface = g_malloc0(sizeof(iface_info));
+  g_mutex_init(&iface->mutex);
+  iface->name = g_strdup(name);
+  iface_list = g_list_prepend(iface_list,iface);
+  return iface;
+}
+
+static gchar *net_get_cidr ( guint32 addr )
 {
   gint i;
-  guint32 m = g_ntohl(mask.s_addr);
+  guint32 m;
 
+  m = g_ntohl(addr);
   for(i=31;(i>=0)&&(m&0x1<<i);i--);
 
   return g_strdup_printf("%d",31-i);
 }
 
-void net_update_address ( void )
+static void net_update_ifaddrs ( void )
 {
   struct ifaddrs *addrs, *iter;
+  iface_info *iface;
 
   getifaddrs(&addrs);
   for(iter=addrs;iter;iter=iter->ifa_next)
-    if(!g_strcmp0(interface,iter->ifa_name) && iter->ifa_addr)
-      switch(iter->ifa_addr->sa_family)
-      {
-        case AF_INET:
-          ip = ((struct sockaddr_in *)(iter->ifa_addr))->sin_addr;
-          if(iter->ifa_netmask)
-            mask = ((struct sockaddr_in *)(iter->ifa_netmask))->sin_addr;
-          if(iter->ifa_broadaddr)
-            bcast = ((struct sockaddr_in *)(iter->ifa_broadaddr))->sin_addr;
-          break;
-        case AF_INET6:
-          ip6 = ((struct sockaddr_in6 *)(iter->ifa_addr))->sin6_addr;
-          if(iter->ifa_netmask)
-            mask6 = ((struct sockaddr_in6 *)(iter->ifa_netmask))->sin6_addr;
-          if(iter->ifa_broadaddr)
-            bcast6 = ((struct sockaddr_in6 *)(iter->ifa_broadaddr))->sin6_addr;
-          break;
-      }
+  {
+    iface = net_iface_from_name(iter->ifa_name,TRUE);
+    switch(iter->ifa_addr->sa_family)
+    {
+      case AF_INET:
+        iface->ip = ((struct sockaddr_in *)(iter->ifa_addr))->sin_addr;
+        if(iter->ifa_netmask)
+          iface->mask = ((struct sockaddr_in *)(iter->ifa_netmask))->sin_addr;
+        if(iter->ifa_broadaddr)
+          iface->bcast = ((struct sockaddr_in *)(iter->ifa_broadaddr))->sin_addr;
+        break;
+      case AF_INET6:
+        iface->ip6 = ((struct sockaddr_in6 *)(iter->ifa_addr))->sin6_addr;
+        if(iter->ifa_netmask)
+          iface->mask6 = ((struct sockaddr_in6 *)(iter->ifa_netmask))->sin6_addr;
+        if(iter->ifa_broadaddr)
+          iface->bcast6 = ((struct sockaddr_in6 *)(iter->ifa_broadaddr))->sin6_addr;
+        break;
+    }
+  }
   freeifaddrs(addrs);
 }
 
-void net_set_interface ( gint32 iidx, struct in_addr gate,
+static void net_set_interface ( gint32 iidx, struct in_addr gate,
     struct in6_addr gate6 )
 {
   gchar ifname[IF_NAMESIZE];
+  iface_info *iface;
 
-  if(iidx && (!fixed_interface ||
-        !g_strcmp0(if_indextoname(iidx,ifname),fixed_interface)))
+  if(!iidx)
   {
-    if_indextoname(iidx,ifname);
-    g_mutex_lock(&mutex);
-    g_free(interface);
-    interface = g_strdup(ifname);
-    gateway = gate;
-    gateway6 = gate6;
-    g_mutex_unlock(&mutex);
-    net_update_essid();
-    net_update_address();
+    if(route)
+    {
+      route->gateway.s_addr = 0;
+      memset(&route->gateway6,0,sizeof(route->gateway6));
+      route = NULL;
+    }
+    return;
   }
-  else
-  {
-    g_mutex_lock(&mutex);
-    g_free(interface);
-    interface = NULL;
-    g_free(essid);
-    essid = NULL;
-    gateway.s_addr = 0;
-    ip.s_addr = 0;
-    gateway.s_addr = 0;
-    memset(&gateway6,0,sizeof(gateway6));
-    mask.s_addr = 0;
-    g_mutex_unlock(&mutex);
-  }
+
+  iface = net_iface_from_name(if_indextoname(iidx,ifname),TRUE);
+  g_mutex_lock(&iface->mutex);
+  g_free(iface->name);
+  iface->name = g_strdup(ifname);
+  iface->gateway = gate;
+  iface->gateway6 = gate6;
+  g_mutex_unlock(&iface->mutex);
+  net_update_essid(ifname);
+  net_update_ifaddrs();
+  route = iface;
   MODULE_TRIGGER_EMIT("network");
 }
 
-gchar *net_getaddr ( void *ina, gint type  )
+static gchar *net_getaddr ( void *ina, gint type  )
 {
   gchar addr[INET6_ADDRSTRLEN];
 
@@ -111,68 +134,75 @@ gchar *net_getaddr ( void *ina, gint type  )
 #include <linux/rtnetlink.h>
 #include <linux/wireless.h>
 
-void net_update_traffic ( void )
+static void net_update_traffic ( gchar *interface )
 {
   gint64 ctime;
   struct ifaddrs *addrs, *iter;
+  struct rtnl_link_stats *stats;
+  iface_info *iface;
 
-  if(!invalid)
+  iface = net_iface_from_name(interface,FALSE);
+  if(!iface || !iface->invalid)
     return;
-
-  prx_packets = rx_packets;
-  ptx_packets = tx_packets;
-  prx_bytes = rx_bytes;
-  ptx_bytes = tx_bytes;
 
   getifaddrs(&addrs);
   for(iter=addrs;iter;iter=iter->ifa_next)
-    if(!g_strcmp0(interface,iter->ifa_name) && iter->ifa_addr &&
+  {
+    if(!g_strcmp0(interface,iter->ifa_name) &&
         iter->ifa_addr->sa_family == AF_PACKET)
     {
-      rx_packets = ((struct rtnl_link_stats *)(iter->ifa_data))->rx_packets;
-      tx_packets = ((struct rtnl_link_stats *)(iter->ifa_data))->tx_packets;
-      rx_bytes = ((struct rtnl_link_stats *)(iter->ifa_data))->rx_bytes;
-      tx_bytes = ((struct rtnl_link_stats *)(iter->ifa_data))->tx_bytes;
-    }
-  freeifaddrs(addrs);
+      iface->prx_packets = iface->rx_packets;
+      iface->ptx_packets = iface->tx_packets;
+      iface->prx_bytes = iface->rx_bytes;
+      iface->ptx_bytes = iface->tx_bytes;
 
-  ctime = g_get_monotonic_time();
-  time_diff = ctime - last_time;
-  last_time = ctime;
+      stats = ((struct rtnl_link_stats *)(iter->ifa_data));
+      iface->rx_packets = stats->rx_packets;
+      iface->tx_packets = stats->tx_packets;
+      iface->rx_bytes = stats->rx_bytes;
+      iface->tx_bytes = stats->tx_bytes;
+
+      ctime = g_get_monotonic_time();
+      iface->time_diff = ctime - iface->last_time;
+      iface->last_time = ctime;
+      iface->invalid = FALSE;
+    }
+  }
+  freeifaddrs(addrs);
 }
 
-void net_update_essid ( void )
+static void net_update_essid ( gchar *interface )
 {
   struct iwreq wreq;
   gint sock;
   gchar lessid[IW_ESSID_MAX_SIZE+1];
+  iface_info *iface;
 
-  if(interface)
-  {
-    *lessid=0;
-    memset(&wreq,0,sizeof(wreq));
-    wreq.u.essid.length = IW_ESSID_MAX_SIZE+1;
-    wreq.u.essid.pointer = lessid;
-    (void)g_strlcpy(wreq.ifr_name,interface,sizeof(wreq.ifr_name));
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if(sock >= 0 && ioctl(sock, SIOCGIWESSID, &wreq) >= 0)
-    {
-      g_mutex_lock(&mutex);
-      g_free(essid);
-      essid = g_strdup(lessid);
-      g_mutex_unlock(&mutex);
-    }
-    if(sock >= 0)
-      close(sock);
+  if(!interface)
     return;
+
+  iface = net_iface_from_name(interface,FALSE);
+  if(!iface)
+    return;
+
+  *lessid=0;
+  memset(&wreq,0,sizeof(wreq));
+  wreq.u.essid.length = IW_ESSID_MAX_SIZE+1;
+  wreq.u.essid.pointer = lessid;
+  (void)g_strlcpy(wreq.ifr_name,interface,sizeof(wreq.ifr_name));
+  sock = socket(AF_INET, SOCK_DGRAM, 0);
+  if(sock >= 0 && ioctl(sock, SIOCGIWESSID, &wreq) >= 0)
+  {
+    g_mutex_lock(&iface->mutex);
+    g_free(iface->essid);
+    iface->essid = g_strdup(lessid);
+    g_mutex_unlock(&iface->mutex);
   }
-  g_mutex_lock(&mutex);
-  g_free(essid);
-  essid = NULL;
-  g_mutex_unlock(&mutex);
+  if(sock >= 0)
+    close(sock);
 }
 
-gdouble net_get_signal ( void )
+static gdouble net_get_signal ( gchar *interface )
 {
   struct iw_statistics wstats;
   struct iwreq wreq;
@@ -198,7 +228,7 @@ gdouble net_get_signal ( void )
   return CLAMP(2*(level+100),0,100);
 }
 
-gint net_rt_connect ( void )
+static gint net_rt_connect ( void )
 {
   gint sock;
   struct sockaddr_nl saddr;
@@ -217,7 +247,7 @@ gint net_rt_connect ( void )
   return -1;
 }
 
-gint net_rt_request ( gint sock )
+static gint net_rt_request ( gint sock )
 {
   struct {
     struct nlmsghdr hdr;
@@ -234,7 +264,7 @@ gint net_rt_request ( gint sock )
   return send(sock,&nlreq,sizeof(nlreq),0);
 }
 
-gboolean net_rt_parse ( GIOChannel *chan, GIOCondition cond, gpointer data )
+static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
 {
   struct nlmsghdr *hdr;
   struct rtattr *rta;
@@ -246,6 +276,7 @@ gboolean net_rt_parse ( GIOChannel *chan, GIOCondition cond, gpointer data )
   gint32 iidx;
   struct in_addr dest, gate;
   struct in6_addr gate6;
+  struct ifinfomsg *ifmsg;
 
   sock = g_io_channel_unix_get_fd(chan);
   len = recv(sock,buf,sizeof(buf),0);
@@ -259,7 +290,8 @@ gboolean net_rt_parse ( GIOChannel *chan, GIOCondition cond, gpointer data )
     gate.s_addr = 0;
     memset(&gate6,0,sizeof(gate6));
     iidx = 0;
-    if(hdr->nlmsg_type == RTM_DELADDR && !g_strcmp0(interface,if_indextoname(
+    if(hdr->nlmsg_type == RTM_DELADDR && route &&
+        !g_strcmp0(route->name,if_indextoname(
             ((struct ifinfomsg *)NLMSG_DATA(hdr))->ifi_index,ifname)))
     {
       net_set_interface(0,gate,gate6);
@@ -269,10 +301,11 @@ gboolean net_rt_parse ( GIOChannel *chan, GIOCondition cond, gpointer data )
     {
       rta = IFLA_RTA(NLMSG_DATA(hdr));
       rtl = IFLA_PAYLOAD(hdr);
-      if(((struct ifinfomsg *)NLMSG_DATA(hdr))->ifi_change!=0)
+      ifmsg = (struct ifinfomsg *)NLMSG_DATA(hdr);
+      if(ifmsg->ifi_change!=0)
         for(;rtl && RTA_OK(rta,rtl);rta=RTA_NEXT(rta,rtl))
           if(rta->rta_type==IFLA_WIRELESS)
-            net_update_essid();
+            net_update_essid(if_indextoname(ifmsg->ifi_index,ifname));
       break;
     }
     else if(hdr->nlmsg_type == RTM_NEWROUTE || hdr->nlmsg_type == RTM_DELROUTE)
@@ -312,52 +345,55 @@ gboolean net_rt_parse ( GIOChannel *chan, GIOCondition cond, gpointer data )
 #include <net/if_dl.h>
 #include <net/route.h>
 
-void net_update_traffic ( void )
+static void net_update_traffic ( gchar *interface )
 {
   gint64 ctime;
   struct ifaddrs *addrs, *iter;
+  iface_info *iface;
 
-  if(!invalid)
+  iface = net_iface_from_name(interface,FALSE);
+  if(!iface || !iface->invalid)
     return;
-
-  prx_packets = rx_packets;
-  ptx_packets = tx_packets;
-  prx_bytes = rx_bytes;
-  ptx_bytes = tx_bytes;
 
   getifaddrs(&addrs);
   for(iter=addrs;iter;iter=iter->ifa_next)
-    if(iter->ifa_addr && iter->ifa_addr->sa_family==AF_LINK)
+  {
+    if(!g_strcmp0(interface,iter->ifa_name) && iter->ifa_addr &&
+        iter->ifa_addr->sa_family==AF_LINK)
     {
-      rx_packets = ((struct if_data *)(iter->ifa_data))->ifi_ipackets;
-      tx_packets = ((struct if_data *)(iter->ifa_data))->ifi_opackets;
-      rx_bytes = ((struct if_data *)(iter->ifa_data))->ifi_ibytes;
-      tx_bytes = ((struct if_data *)(iter->ifa_data))->ifi_obytes;
+      iface->prx_packets = iface->rx_packets;
+      iface->ptx_packets = iface->tx_packets;
+      iface->prx_bytes = iface->rx_bytes;
+      iface->ptx_bytes = iface->tx_bytes;
+
+      iface->rx_packets = ((struct if_data *)(iter->ifa_data))->ifi_ipackets;
+      iface->tx_packets = ((struct if_data *)(iter->ifa_data))->ifi_opackets;
+      iface->rx_bytes = ((struct if_data *)(iter->ifa_data))->ifi_ibytes;
+      iface->tx_bytes = ((struct if_data *)(iter->ifa_data))->ifi_obytes;
+
+      ctime = g_get_monotonic_time();
+      iface->time_diff = ctime - iface->last_time;
+      iface->last_time = ctime;
+      iface->invalid = FALSE;
     }
+  }
   freeifaddrs(addrs);
-  ctime = g_get_monotonic_time();
-  time_diff = ctime - last_time;
-  last_time = ctime;
 }
 
 #if defined(__FreeBSD__)
 #include <net80211/ieee80211_ioctl.h>
 
-void net_update_essid ( void )
+static void net_update_essid ( char *interface )
 {
   struct ieee80211req req;
+  iface_info *iface;
   gchar lessid[IEEE80211_NWID_LEN+1];
   gint sock;
   gint rssi = -100;
 
-  if(!interface)
-  {
-    g_mutex_lock(&mutex);
-    g_free(essid);
-    essid = NULL;
-    g_mutex_unlock(&mutex);
+  iface = net_iface_from_name(interface,FALSE);
+  if(!iface)
     return;
-  }
 
   sock = socket(AF_INET, SOCK_DGRAM, 0);
   if(sock<0)
@@ -371,22 +407,22 @@ void net_update_essid ( void )
   if(ioctl(sock,SIOCG80211,&req) >=0)
   {
     lessid[MIN(req.i_len,IEEE80211_NWID_LEN)]='\0';
-    g_mutex_lock(&mutex);
-    g_free(essid);
-    essid = g_strdup(lessid);
-    g_mutex_unlock(&mutex);
+    g_mutex_lock(&iface->mutex);
+    g_free(iface->essid);
+    iface->essid = g_strdup(lessid);
+    g_mutex_unlock(&iface->mutex);
   }
   else
   {
-    g_mutex_lock(&mutex);
-    g_free(essid);
-    essid = NULL;
-    g_mutex_unlock(&mutex);
+    g_mutex_lock(&iface->mutex);
+    g_free(iface->essid);
+    iface->essid = NULL;
+    g_mutex_unlock(&iface->mutex);
   }
   close(sock);
 }
 
-gdouble net_get_signal ( void )
+static gdouble net_get_signal ( gchar *interface )
 {
   struct ieee80211req req;
   union {
@@ -437,7 +473,7 @@ gdouble net_get_signal ( void )
 #include <stdlib.h>
 #include <sys/types.h>
 
-gdouble net_get_signal ( void )
+static gdouble net_get_signal ( gchar *interface )
 {
   gint sock;
   struct ieee80211_bssid bssid;
@@ -474,19 +510,19 @@ gdouble net_get_signal ( void )
   return level;
 }
 
-void net_update_essit ( void )
+static void net_update_essid ( gchar *interface )
 {
-  (void)net_get_signal();
+  (void)net_get_signal(interface);
 }
 
 #endif
 
-gint net_rt_connect ( void )
+static gint net_rt_connect ( void )
 {
   return socket(AF_ROUTE, SOCK_RAW,0);
 }
 
-gboolean net_rt_request ( gint sock )
+static gboolean net_rt_request ( gint sock )
 {
   struct {
     struct rt_msghdr hdr;
@@ -512,7 +548,7 @@ gboolean net_rt_request ( gint sock )
   return -1;
 }
 
-gboolean net_rt_parse ( GIOChannel *chan, GIOCondition cond, gpointer data )
+static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
 {
   gint len ,i;
   gint sock;
@@ -536,8 +572,8 @@ gboolean net_rt_parse ( GIOChannel *chan, GIOCondition cond, gpointer data )
   dest.s_addr = 1;
   memset(&gate6,0,sizeof(gate6));
 
-  if(hdr->rtm_type == RTM_DELADDR && !g_strcmp0(interface,if_indextoname(
-          ((struct ifa_msghdr *)hdr)->ifam_index,ifname)))
+  if(hdr->rtm_type == RTM_DELADDR && route && !g_strcmp0(route->name,
+        if_indextoname(((struct ifa_msghdr *)hdr)->ifam_index,ifname)))
   {
     net_set_interface(0,gate,gate6);
     return TRUE;
@@ -571,20 +607,21 @@ gboolean net_rt_parse ( GIOChannel *chan, GIOCondition cond, gpointer data )
 
 #else /* unknown platform, provide shims */
 
-gchar *net_getaddr ( void *ina, int type )
+static gchar *net_getaddr ( void *ina, int type )
 {
   return g_strdup("");
 }
-void net_update_traffic ( void )
+
+static void net_update_traffic ( void )
 {
 }
 
-gdouble net_get_signal ( void )
+static gdouble net_get_signal ( gchar *interface )
 {
   return 0.0;
 }
 
-void network_init ( void * )
+static void network_init ( void * )
 {
 }
 
@@ -595,7 +632,6 @@ void sfwbar_module_init ( ModuleApi *api )
   int sock;
   GIOChannel *chan;
 
-  g_mutex_init(&mutex);
   sfwbar_module_api = api;
   sock = net_rt_connect();
   if(sock >= 0 && net_rt_request(sock) >= 0)
@@ -610,59 +646,63 @@ void sfwbar_module_init ( ModuleApi *api )
 
 void sfwbar_module_invalidate ( void )
 {
-  invalid = TRUE;
+  GList *iter;
+
+  for(iter=iface_list;iter;iter=g_list_next(iter))
+    ((iface_info *)iter->data)->invalid = TRUE;
 }
 
 void *sfwbar_expr_func ( void **params )
 {
   gchar *result;
+  iface_info *iface;
 
   if(!params || !params[0])
     return g_strdup("");
 
-  g_mutex_lock(&mutex);
+  if(params[1] && *((gchar *)params[1]))
+    iface = net_iface_from_name(params[1],FALSE);
+  else
+    iface = route;
+  if(!iface)
+    return g_strdup("");
+
+  g_mutex_lock(&iface->mutex);
   if(!g_ascii_strcasecmp(params[0],"ip"))
-    result = net_getaddr(&ip,AF_INET);
+    result = net_getaddr(&iface->ip,AF_INET);
   else if(!g_ascii_strcasecmp(params[0],"mask"))
-    result = net_getaddr(&mask,AF_INET);
+    result = net_getaddr(&iface->mask,AF_INET);
   else if(!g_ascii_strcasecmp(params[0],"cidr"))
-    result = net_get_cidr();
+    result = net_get_cidr(iface->mask.s_addr);
   else if(!g_ascii_strcasecmp(params[0],"ip6"))
-    result = net_getaddr(&ip6,AF_INET6);
+    result = net_getaddr(&iface->ip6,AF_INET6);
   else if(!g_ascii_strcasecmp(params[0],"mask6"))
-    result = net_getaddr(&mask6,AF_INET6);
+    result = net_getaddr(&iface->mask6,AF_INET6);
   else if(!g_ascii_strcasecmp(params[0],"gateway"))
-    result = net_getaddr(&gateway,AF_INET);
+    result = net_getaddr(&iface->gateway,AF_INET);
   else if(!g_ascii_strcasecmp(params[0],"signal"))
-    result = g_strdup_printf("%lf",net_get_signal());
+    result = g_strdup_printf("%lf",net_get_signal(route?route->name:NULL));
   else if(!g_ascii_strcasecmp(params[0],"rxrate"))
   {
-    net_update_traffic();
-    result = g_strdup_printf("%lf",(gdouble)(rx_bytes - prx_bytes)*
-        1000000/time_diff);
+    net_update_traffic(iface->name);
+    result = g_strdup_printf("%lf",(gdouble)(iface->rx_bytes-iface->prx_bytes)*
+        1000000/iface->time_diff);
   }
   else if(!g_ascii_strcasecmp(params[0],"txrate"))
   {
-    net_update_traffic();
-    result = g_strdup_printf("%lf",(gdouble)(tx_bytes - ptx_bytes)*
-        1000000/time_diff);
+    net_update_traffic(iface->name);
+    result = g_strdup_printf("%lf",(gdouble)(iface->tx_bytes-iface->ptx_bytes)*
+        1000000/iface->time_diff);
   }
   else if(!g_ascii_strcasecmp(params[0],"essid"))
-    result = g_strdup(essid);
+    result = g_strdup(iface->essid);
   else if(!g_ascii_strcasecmp(params[0],"interface"))
-    result = g_strdup(interface);
+    result = g_strdup(iface->name);
   else
     result = g_strdup("invalid query");
-  g_mutex_unlock(&mutex);
+  g_mutex_unlock(&iface->mutex);
 
   return result;
-}
-
-void network_action_interface ( gchar *iface, gchar *dummy, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  fixed_interface = g_strdup(iface);
-  net_set_interface(if_nametoindex(iface),gateway,gateway6);
 }
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
@@ -676,15 +716,5 @@ ModuleExpressionHandler handler1 = {
 
 ModuleExpressionHandler *sfwbar_expression_handlers[] = {
   &handler1,
-  NULL
-};
-
-ModuleActionHandler act_handler1 = {
-  .name = "NetSetInterface",
-  .function = network_action_interface
-};
-
-ModuleActionHandler *sfwbar_action_handlers[] = {
-  &act_handler1,
   NULL
 };
