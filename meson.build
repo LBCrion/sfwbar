@@ -1,6 +1,7 @@
 project('sfwbar','c')
 gtk3 = dependency('gtk+-3.0')
 glib = dependency('glib-2.0')
+gio_unix = dependency('gio-unix-2.0')
 gmod = dependency('gmodule-2.0')
 json  = dependency('json-c')
 glsh = dependency('gtk-layer-shell-0')
@@ -88,7 +89,7 @@ src = ['src/sfwbar.c',
     'src/wayland/idle-inhibit.c',
     'src/wayland/xdg-output.c',
     wayland_targets ]
-dep = [gtk3, glib, gmod, glsh, wayl, json ]
+dep = [gtk3, glib, gio_unix, gmod, glsh, wayl, json ]
 
 if get_option('network').enabled() or get_option('network').auto()
   library('network', sources: 'modules/network.c', dependencies: glib,
