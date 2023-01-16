@@ -10,13 +10,43 @@
 
 ModuleApi *sfwbar_module_api;
 gboolean invalid;
+
+typedef struct _pulse_info {
+  guint32 idx;
+  gchar *name;
+  gboolean mute;
+  pa_cvolume cvol;
+  gdouble vol;
+  gchar *icon, *form;
+} pulse_info;
+
+GList *sink_list, *source_list;
+
 pa_mainloop_api *papi;
 pa_context *pctx;
 gchar *sink_name, *source_name;
 gboolean fixed_sink, fixed_source;
-gdouble sink_vol, source_vol;
-pa_cvolume sink_cvol, source_cvol;
-gboolean sink_mute, source_mute;
+
+static pulse_info *pulse_info_from_name ( GList **l, const gchar *name,
+    gboolean new )
+{
+  GList *iter;
+  pulse_info *info;
+
+  if(name)
+    for(iter=*l;iter;iter=g_list_next(iter))
+      if(!g_strcmp0(((pulse_info *)iter->data)->name,name))
+        return iter->data;
+
+  if(new)
+  {
+    info = g_malloc0(sizeof(pulse_info));
+    *l = g_list_prepend(*l,info);
+    return info;
+  }
+  else
+    return NULL;
+}
 
 static void pulse_set_sink ( const gchar *sink, gboolean fixed )
 {
@@ -36,31 +66,51 @@ static void pulse_set_source ( const gchar *source, gboolean fixed )
   source_name = g_strdup(source);
 }
 
-static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *info,
+static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
     gint eol, void * )
 {
-  if(!info)
-    return;
-  if(g_strcmp0(info->name, sink_name))
-    return;
+  pulse_info *info;
 
-  sink_cvol = info->volume;
-  sink_vol = 100.0 * pa_cvolume_avg(&sink_cvol)/PA_VOLUME_NORM;
-  sink_mute = info->mute;
+  if(!pinfo)
+    return;
+  info = pulse_info_from_name(&sink_list,pinfo->name,TRUE);
+
+  g_free(info->name);
+  info->name = g_strdup(pinfo->name);
+  g_free(info->icon);
+  info->icon = g_strdup(pa_proplist_gets(pinfo->proplist,
+        PA_PROP_DEVICE_ICON_NAME));
+  g_free(info->form);
+  info->form = g_strdup(pa_proplist_gets(pinfo->proplist,
+        PA_PROP_DEVICE_FORM_FACTOR));
+  info->idx = pinfo->index;
+  info->cvol = pinfo->volume;
+  info->vol = 100.0 * pa_cvolume_avg(&info->cvol)/PA_VOLUME_NORM;
+  info->mute = pinfo->mute;
   MODULE_TRIGGER_EMIT("pulse");
 }
 
-static void pulse_source_cb ( pa_context *ctx, const pa_source_info *info,
+static void pulse_source_cb ( pa_context *ctx, const pa_source_info *pinfo,
     gint eol, void * )
 {
-  if(!info)
-    return;
-  if(g_strcmp0(info->name, source_name))
-    return;
+  pulse_info *info;
 
-  source_cvol = info->volume;
-  source_vol = 100.0 * pa_cvolume_avg(&source_cvol)/PA_VOLUME_NORM;
-  source_mute = info->mute;
+  if(!pinfo)
+    return;
+  info = pulse_info_from_name(&source_list,pinfo->name,TRUE);
+
+  g_free(info->name);
+  info->name = g_strdup(pinfo->name);
+  g_free(info->icon);
+  info->icon = g_strdup(pa_proplist_gets(pinfo->proplist,
+        PA_PROP_DEVICE_ICON_NAME));
+  g_free(info->form);
+  info->form = g_strdup(pa_proplist_gets(pinfo->proplist,
+        PA_PROP_DEVICE_FORM_FACTOR));
+  info->idx = pinfo->index;
+  info->cvol = pinfo->volume;
+  info->vol = 100.0 * pa_cvolume_avg(&info->cvol)/PA_VOLUME_NORM;
+  info->mute = pinfo->mute;
   MODULE_TRIGGER_EMIT("pulse");
 }
 
@@ -112,7 +162,6 @@ static void pulse_state_cb ( pa_context *ctx, gpointer data )
         PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SINK_INPUT |
         PA_SUBSCRIPTION_MASK_SOURCE | PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT,
         NULL, NULL);
-
   }
 }
 
@@ -135,23 +184,38 @@ void sfwbar_module_invalidate ( void )
 
 void *pulse_expr_func ( void **params )
 {
-  gchar *result;
+  gchar *cmd;
+  pulse_info *info;
 
   if(!params || !params[0])
     return g_strdup("");
 
-  if(!g_ascii_strcasecmp(params[0],"sink-volume"))
-    return g_strdup_printf("%f",sink_vol);
-  else if(!g_ascii_strcasecmp(params[0],"source-volume"))
-    return g_strdup_printf("%f",source_vol);
-  else if(!g_ascii_strcasecmp(params[0],"sink-mute"))
-    return g_strdup_printf("%d",sink_mute);
-  else if(!g_ascii_strcasecmp(params[0],"source-mute"))
-    return g_strdup_printf("%d",source_mute);
+  if(!g_ascii_strncasecmp(params[0],"sink-",5))
+  {
+    info = pulse_info_from_name(&sink_list,params[1]?params[1]:sink_name,
+        FALSE);
+    cmd = params[0]+5;
+  }
+  if(!g_ascii_strncasecmp(params[0],"source-",7))
+  {
+    info = pulse_info_from_name(&source_list,params[1]?params[1]:source_name,
+        FALSE);
+    cmd = params[0]+7;
+  }
 
-  result = g_strdup("invalid query");
+  if(!info || !cmd || !*cmd)
+    return g_strdup("");
 
-  return result;
+  if(!g_ascii_strcasecmp(cmd,"volume"))
+    return g_strdup_printf("%f",info->vol);
+  else if(!g_ascii_strcasecmp(cmd,"mute"))
+    return g_strdup_printf("%d",info->mute);
+  else if(!g_ascii_strcasecmp(cmd,"icon"))
+    return g_strdup(info->icon?info->icon:"");
+  else if(!g_ascii_strcasecmp(cmd,"form"))
+    return g_strdup(info->icon?info->form:"");
+
+  return g_strdup_printf("invalid query: %s",cmd);
 }
 
 static pa_cvolume *pulse_adjust_volume ( pa_cvolume *vol, gint vold )
@@ -179,22 +243,46 @@ static gboolean pulse_mute_parse ( gchar *cmd, gboolean mute )
   return mute;
 }
 
-static void pulse_action ( gchar *cmd, gchar *dummy, void *d1,
+static void pulse_action ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
+  pulse_info *info;
+
+  if(!g_ascii_strncasecmp(cmd,"sink-",5))
+    info = pulse_info_from_name(&sink_list,name?name:sink_name,FALSE);
+  else if(!g_ascii_strncasecmp(cmd,"source-",7))
+    info = pulse_info_from_name(&source_list,name?name:source_name,FALSE);
+  else
+    info = NULL;
+
+  if(!info)
+    return;
+
   if(!g_ascii_strncasecmp(cmd,"sink-volume",11))
-    pa_context_set_sink_volume_by_name(pctx,sink_name,
-        pulse_adjust_volume(&sink_cvol,g_ascii_strtod(cmd+11,NULL)),NULL,NULL);
+    pa_context_set_sink_volume_by_index(pctx,info->idx,
+        pulse_adjust_volume(&info->cvol,g_ascii_strtod(cmd+11,NULL)),NULL,NULL);
   else if(!g_ascii_strncasecmp(cmd,"source-volume",13))
-    pa_context_set_source_volume_by_name(pctx,source_name,
-        pulse_adjust_volume(&source_cvol,g_ascii_strtod(cmd+13,NULL)),
+    pa_context_set_source_volume_by_index(pctx,info->idx,
+        pulse_adjust_volume(&info->cvol,g_ascii_strtod(cmd+13,NULL)),
         NULL,NULL);
   else if(!g_ascii_strncasecmp(cmd,"sink-mute",9))
-    pa_context_set_sink_mute_by_name(pctx,sink_name,
-        pulse_mute_parse(cmd+9,sink_mute),NULL,NULL);
+    pa_context_set_sink_mute_by_index(pctx,info->idx,
+        pulse_mute_parse(cmd+9,info->mute),NULL,NULL);
   else if(!g_ascii_strncasecmp(cmd,"source-mute",11))
-    pa_context_set_sink_mute_by_name(pctx,source_name,
-        pulse_mute_parse(cmd+11,source_mute),NULL,NULL);
+    pa_context_set_sink_mute_by_index(pctx,info->idx,
+        pulse_mute_parse(cmd+11,info->mute),NULL,NULL);
+}
+
+static void pulse_set_sink_action ( gchar *sink, gchar *dummy, void *d1,
+    void *d2, void *d3, void *d4 )
+{
+  pulse_set_sink(sink,TRUE);
+}
+
+static void pulse_set_source_action ( gchar *source, gchar *dummy, void *d1,
+    void *d2, void *d3, void *d4 )
+{
+  pulse_set_source(source,TRUE);
 }
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
@@ -202,7 +290,7 @@ gint64 sfwbar_module_signature = 0x73f4d956a1;
 ModuleExpressionHandler handler1 = {
   .numeric = FALSE,
   .name = "Pulse",
-  .parameters = "S",
+  .parameters = "Ss",
   .function = pulse_expr_func
 };
 
@@ -216,7 +304,19 @@ ModuleActionHandler act_handler1 = {
   .function = pulse_action
 };
 
+ModuleActionHandler act_handler2 = {
+  .name = "PulseSetDefaultSink",
+  .function = pulse_set_sink_action
+};
+
+ModuleActionHandler act_handler3 = {
+  .name = "PulseSetDefaultSource",
+  .function = pulse_set_source_action
+};
+
 ModuleActionHandler *sfwbar_action_handlers[] = {
   &act_handler1,
+  &act_handler2,
+  &act_handler3,
   NULL
 };
