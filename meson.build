@@ -9,6 +9,7 @@ wayl = dependency('wayland-client')
 wayp = dependency('wayland-protocols', version: '>=1.17')
 puls = dependency('libpulse', required: get_option('pulse'))
 pulg = dependency('libpulse-mainloop-glib', required: get_option('pulse'))
+mpdc = dependency('libmpdclient', required: get_option('mpd'))
 
 conf_data = configuration_data()
 glsh_ver = glsh.version().split('.')
@@ -99,6 +100,11 @@ endif
 if puls.found() and pulg.found()
   library('pulsectl', sources: 'modules/pulsectl.c',
       dependencies: [glib, puls, pulg],
+      install: true, install_dir: get_option('libdir') / 'sfwbar' )
+endif
+
+if mpdc.found()
+  library('mpd', sources: 'modules/mpd.c', dependencies: [glib, mpdc],
       install: true, install_dir: get_option('libdir') / 'sfwbar' )
 endif
 
