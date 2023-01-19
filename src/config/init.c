@@ -45,6 +45,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
 
   g_scanner_scope_add_symbol(scanner,0, "Scanner", (gpointer)G_TOKEN_SCANNER );
   g_scanner_scope_add_symbol(scanner,0, "Layout", (gpointer)G_TOKEN_LAYOUT );
+  g_scanner_scope_add_symbol(scanner,0, "PopUp", (gpointer)G_TOKEN_POPUP );
   g_scanner_scope_add_symbol(scanner,0, "Placer", (gpointer)G_TOKEN_PLACER );
   g_scanner_scope_add_symbol(scanner,0, "Switcher",
       (gpointer)G_TOKEN_SWITCHER );

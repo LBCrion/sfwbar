@@ -13,6 +13,7 @@
 #include "bar.h"
 #include "wintree.h"
 #include "menu.h"
+#include "popup.h"
 #include <gtk-layer-shell.h>
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarGroup, taskbar_group, FLOW_ITEM_TYPE, G_ADD_PRIVATE (TaskbarGroup));
@@ -39,9 +40,6 @@ static gboolean taskbar_group_enter_cb ( GtkWidget *widget,
     GdkEventCrossing *event, gpointer self )
 {
   TaskbarGroupPrivate *priv;
-  GdkRectangle rect;
-  GdkWindow *gparent, *gpopup;
-  GdkGravity wanchor, panchor;
 
   g_return_val_if_fail(IS_TASKBAR_GROUP(self),FALSE);
   priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
@@ -56,19 +54,7 @@ static gboolean taskbar_group_enter_cb ( GtkWidget *widget,
 
   flow_grid_update(priv->tgroup);
 
-  gtk_widget_unrealize(priv->popover);
-  gtk_widget_realize(priv->popover);
-  gparent = gtk_widget_get_window(priv->button);
-  gpopup = gtk_widget_get_window(
-      gtk_widget_get_ancestor(priv->popover,GTK_TYPE_WINDOW));
-  rect.x = 0;
-  rect.y = 0;
-  rect.width = gdk_window_get_width(gparent);
-  rect.height = gdk_window_get_height(gparent);
-  gdk_window_set_transient_for(gpopup, gparent);
-  menu_popup_get_gravity(priv->button,&wanchor,&panchor);
-  gdk_window_move_to_rect(gpopup, &rect,wanchor,panchor,0,0,0);
-  gtk_widget_show(priv->popover);
+  popup_show(priv->button,priv->popover);
 
   return TRUE;
 }

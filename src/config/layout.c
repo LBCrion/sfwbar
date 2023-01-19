@@ -13,6 +13,7 @@
 #include "../grid.h"
 #include "../taskbar.h"
 #include "../pager.h"
+#include "../popup.h"
 #include "../tray.h"
 
 void config_widget ( GScanner *scanner, GtkWidget *widget );
@@ -365,4 +366,19 @@ void config_layout ( GScanner *scanner, GtkWidget **widget, gboolean toplevel )
   }
 
   config_widget(scanner,layout);
+}
+
+void config_popup ( GScanner *scanner )
+{
+  GtkWidget *win, *grid;
+  if(g_scanner_peek_next_token(scanner)!=G_TOKEN_STRING)
+  {
+    g_scanner_error(scanner,"missing identifier after 'window'");
+    return;
+  }
+
+  g_scanner_get_next_token(scanner);
+  win = popup_new(scanner->value.v_string);
+  grid = gtk_bin_get_child(GTK_BIN(win));
+  config_widget(scanner,grid);
 }

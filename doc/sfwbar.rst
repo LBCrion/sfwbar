@@ -328,6 +328,28 @@ sort [true|false]
   setting of whether tray items should be sorted. If the items are not
   sorted, user can sort them manually via drag-and-drop mechanism.
 
+PopUp
+-----
+
+Popup windows can be defined the same way as layouts. The only difference is
+that popup's are not part of a bar and will not be displayed by default.
+Instead they are displayed when a PopUp action is invoked on a widget. i.e.: ::
+
+  PopUp "MyPopup" {
+    label { value = "test" }
+  }
+
+  Layout {
+    label {
+      value = "click me"
+      action = PopUp "MyPopup"
+    }
+  }
+
+The PopUp action toggles visibility of the popup window. I.e. the first time
+it's invoked, the window will pop up and on the second invocation it will pop
+down. As a result it should be safe to bind the PopUp to multiple widgets.
+
 Menus
 -----
 

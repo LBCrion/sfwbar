@@ -199,6 +199,7 @@ action_t *config_action ( GScanner *scanner )
     case G_TOKEN_SWAYCMD:
     case G_TOKEN_SWAYWIN:
     case G_TOKEN_MPDCMD:
+    case G_TOKEN_POPUP:
     case G_TOKEN_IDLEINHIBIT:
     case G_TOKEN_USERSTATE:
     case G_TOKEN_USERSTATE2:
@@ -533,6 +534,9 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
         break;
       case G_TOKEN_LAYOUT:
         config_layout(scanner,&w,toplevel);
+        break;
+      case G_TOKEN_POPUP:
+        config_popup(scanner);
         break;
       case G_TOKEN_PLACER:
         config_placer(scanner);

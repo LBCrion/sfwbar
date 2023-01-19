@@ -8,6 +8,8 @@
 #include "bar.h"
 #include "taskbargroup.h"
 #include "scaleimage.h"
+#include "popup.h"
+
 
 static GHashTable *menus;
 
@@ -46,30 +48,6 @@ GtkWidget *menu_new ( gchar *name )
   return menu;
 }
 
-void menu_popup_get_gravity ( GtkWidget *widget, GdkGravity *wanchor,
-    GdkGravity *manchor )
-{
-  switch(bar_get_toplevel_dir(widget))
-  {
-    case GTK_POS_TOP:
-      *wanchor = GDK_GRAVITY_SOUTH_WEST;
-      *manchor = GDK_GRAVITY_NORTH_WEST;
-      break;
-    case GTK_POS_LEFT:
-      *wanchor = GDK_GRAVITY_NORTH_EAST;
-      *manchor = GDK_GRAVITY_NORTH_WEST;
-      break;
-    case GTK_POS_RIGHT:
-      *wanchor = GDK_GRAVITY_NORTH_WEST;
-      *manchor = GDK_GRAVITY_NORTH_EAST;
-      break;
-    default:
-      *wanchor = GDK_GRAVITY_NORTH_WEST;
-      *manchor = GDK_GRAVITY_SOUTH_WEST;
-      break;
-  }
-}
-
 void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
     gpointer wid, guint16 *state )
 {
@@ -88,7 +66,7 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
   if(gtk_window_get_window_type(GTK_WINDOW(window)) == GTK_WINDOW_POPUP)
     taskbar_group_pop_child(window, menu);
 
-  menu_popup_get_gravity(widget,&wanchor,&manchor);
+  popup_get_gravity(widget,&wanchor,&manchor);
   gtk_widget_show_all(menu);
   gtk_menu_popup_at_widget(GTK_MENU(menu),widget,wanchor,manchor,event);
 }

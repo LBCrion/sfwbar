@@ -13,6 +13,7 @@
 #include "menu.h"
 #include "sway_ipc.h"
 #include "module.h"
+#include "popup.h"
 
 static GHashTable *functions;
 static GHashTable *trigger_actions;
@@ -268,6 +269,9 @@ void action_exec ( GtkWidget *widget, action_t *action,
       break;
     case G_TOKEN_USERSTATE:
       action_set_user_state(widget, action->command);
+      break;
+    case G_TOKEN_POPUP:
+      popup_trigger(widget, action->command);
       break;
     case G_TOKEN_CLIENTSEND:
       action_client_send(action);

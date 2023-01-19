@@ -29,11 +29,13 @@ void config_scanner ( GScanner *scanner );
 void config_layout ( GScanner *, GtkWidget **, gboolean );
 void config_switcher ( GScanner *scanner );
 void config_placer ( GScanner *scanner );
+void config_popup ( GScanner *scanner );
 GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel );
 
 enum {
   G_TOKEN_SCANNER = G_TOKEN_LAST + 50,
   G_TOKEN_LAYOUT,
+  G_TOKEN_POPUP,
   G_TOKEN_PLACER,
   G_TOKEN_SWITCHER,
   G_TOKEN_DEFINE,
