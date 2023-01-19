@@ -14,8 +14,27 @@ static struct mpd_status *status;
 static struct mpd_song *song;
 static struct mpd_connection *conn;
 static gchar *password;
+static guint64 last_update;
+static gboolean timer;
 
 static gboolean mpd_connect ( gpointer data );
+
+static gboolean mpd_timer ( gpointer data )
+{
+  static guint64 last, current;
+
+  if( !status || mpd_status_get_state(status)!=MPD_STATE_PLAY )
+  {
+    timer = FALSE;
+    return FALSE;
+  }
+
+  current = g_get_monotonic_time();
+  if((current-last)/mpd_status_get_total_time(status)/10 > 1)
+    MODULE_TRIGGER_EMIT("mpd-progress");
+
+  return TRUE;
+}
 
 static gboolean mpd_update ( void )
 {
@@ -32,6 +51,13 @@ static gboolean mpd_update ( void )
   song = mpd_run_current_song(conn);
   if(!mpd_response_finish(conn))
     return FALSE;
+  last_update = g_get_monotonic_time();
+
+  if(!timer && (!status || mpd_status_get_state(status) == MPD_STATE_PLAY))
+  {
+    g_timeout_add(1000,mpd_timer,NULL);
+    timer = 1;
+  }
 
   MODULE_TRIGGER_EMIT("mpd");
   return TRUE;
@@ -44,6 +70,7 @@ static gboolean mpd_event ( GIOChannel *chan, GIOCondition cond, void *d )
   mpd_response_finish(conn);
   if( !mpd_update() )
   {
+    mpd_connection_free(conn);
     conn = NULL;
     g_timeout_add (1000,(GSourceFunc )mpd_connect,NULL);
     MODULE_TRIGGER_EMIT("mpd");
@@ -84,6 +111,8 @@ void sfwbar_module_init ( ModuleApi *api )
 
 void *mpd_expr_func ( void **params )
 {
+  if(!conn | !status | !song)
+    return g_strdup("disconnected");
   if(!params || !params[0])
     return g_strdup("");
 
@@ -108,11 +137,25 @@ void *mpd_expr_func ( void **params )
   else if(!g_ascii_strcasecmp(params[0],"queue_pos"))
     return g_strdup_printf("%d",status?mpd_status_get_song_pos(status):0);
   else if(!g_ascii_strcasecmp(params[0],"elapsed"))
-    return g_strdup_printf("%u",status?mpd_status_get_elapsed_ms(status):0);
+    return g_strdup_printf("%lu",status?mpd_status_get_elapsed_ms(status) +
+        (mpd_status_get_state(status)==MPD_STATE_PLAY?
+         (g_get_monotonic_time()-last_update)/1000:0):0);
   else if(!g_ascii_strcasecmp(params[0],"length"))
     return g_strdup_printf("%u",status?mpd_status_get_total_time(status):0);
   else if(!g_ascii_strcasecmp(params[0],"rate"))
     return g_strdup_printf("%u",status?mpd_status_get_kbit_rate(status):0);
+  else if(!g_ascii_strcasecmp(params[0],"state"))
+    switch(mpd_status_get_state(status))
+    {
+      case MPD_STATE_PLAY:
+        return g_strdup("play");
+      case MPD_STATE_PAUSE:
+        return g_strdup("pause");
+      case MPD_STATE_STOP:
+        return g_strdup("stop");
+      default:
+        return g_strdup("unknown");
+    }
 
   return g_strdup("Invalid request");
 }
