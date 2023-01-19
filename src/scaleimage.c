@@ -12,29 +12,50 @@ G_DEFINE_TYPE_WITH_CODE (ScaleImage, scale_image, GTK_TYPE_IMAGE,
     G_ADD_PRIVATE (ScaleImage));
 
 int scale_image_update ( GtkWidget *self );
+static void scale_image_get_size (GtkWidget *self );
 
 static void scale_image_get_preferred_width ( GtkWidget *self, gint *m,
     gint *n )
 {
   ScaleImagePrivate *priv;
+  GtkStyleContext *style;
+  GtkStateFlags flags;
+  GtkBorder border, padding, margin;
 
   g_return_if_fail(IS_SCALE_IMAGE(self));
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
 
-  *m = priv->raww;
-  *n = priv->raww;
+  style = gtk_widget_get_style_context(self);
+  flags = gtk_style_context_get_state(style);
+  gtk_style_context_get_border(style,flags,&border);
+  gtk_style_context_get_padding(style,flags,&padding);
+  gtk_style_context_get_margin(style,flags,&margin);
+
+  *m = priv->w + border.left + border.right + padding.left +
+      padding.right + margin.left + margin.right;
+  *n = *m;
 }
 
 static void scale_image_get_preferred_height ( GtkWidget *self, gint *m,
     gint *n )
 {
   ScaleImagePrivate *priv;
+  GtkStyleContext *style;
+  GtkStateFlags flags;
+  GtkBorder border, padding, margin;
 
   g_return_if_fail(IS_SCALE_IMAGE(self));
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
 
-  *m = priv->rawh;
-  *n = priv->rawh;
+  style = gtk_widget_get_style_context(self);
+  flags = gtk_style_context_get_state(style);
+  gtk_style_context_get_border(style,flags,&border);
+  gtk_style_context_get_padding(style,flags,&padding);
+  gtk_style_context_get_margin(style,flags,&margin);
+
+  *m = priv->h + border.top + border.bottom + padding.top +
+      padding.bottom + margin.top + margin.bottom;
+  *n = *m;
 }
 
 static void scale_image_destroy ( GtkWidget *self )
