@@ -101,29 +101,26 @@ static void scale_image_get_size ( GtkWidget *self )
   GtkBorder border, padding, margin;
   GtkStyleContext *style;
   GtkStateFlags flags;
-  gint m;
+  gint m,n;
 
   g_return_if_fail(IS_SCALE_IMAGE(self));
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
   
   gtk_image_clear(GTK_IMAGE(self));
-  GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_width(self,&m,
-      &priv->raww);
-  GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_height(self,&m,
-      &priv->rawh);
   style = gtk_widget_get_style_context(self);
   flags = gtk_style_context_get_state(style);
   gtk_style_context_get_border(style,flags,&border);
   gtk_style_context_get_padding(style,flags,&padding);
   gtk_style_context_get_margin(style,flags,&margin);
-  priv->raww = MAX(priv->raww,2 + border.left + border.right + padding.left +
-      padding.right + margin.left + margin.right);
-  priv->rawh = MAX(priv->rawh,2 + border.top + border.bottom + padding.top +
-      padding.bottom + margin.top + margin.bottom);
-  priv->w = priv->raww - border.left - border.right - padding.left - 
-    padding.right - margin.left - margin.right;
-  priv->h = priv->rawh - border.top - border.bottom - padding.top -
-    padding.bottom - margin.top - margin.bottom;
+
+  GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_width(self,&m,
+      &n);
+  priv->w = MAX(2,n - border.left - border.right - padding.left -
+      padding.right - margin.left - margin.right);
+  GTK_WIDGET_CLASS(scale_image_parent_class)->get_preferred_height(self,&m,
+      &priv->rawh);
+  priv->h = MAX(2,n - border.top - border.bottom - padding.top -
+      padding.bottom - margin.top - margin.bottom);
 }
 
 static void scale_image_map ( GtkWidget *w )
@@ -326,7 +323,7 @@ int scale_image_update ( GtkWidget *self )
   gboolean symbolic;
   cairo_surface_t *cs;
   cairo_t *cr;
-  gchar *fallback;
+  gchar *fallback = NULL;
   gint w,h;
   gint size;
 
@@ -401,7 +398,7 @@ int scale_image_update ( GtkWidget *self )
   if(!color)
   {
     gtk_widget_style_get(self,"symbolic",&symbolic,NULL);
-    if(symbolic || (priv->file && strlen(priv->file)>=9 &&
+    if(symbolic || fallback || (priv->file && strlen(priv->file)>=9 &&
           !g_strcmp0(priv->file+strlen(priv->file)-9,"-symbolic")))
     {
       gtk_style_context_get_color(gtk_widget_get_style_context(self),
