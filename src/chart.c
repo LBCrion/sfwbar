@@ -29,7 +29,7 @@ static gboolean chart_draw ( GtkWidget *self, cairo_t *cr )
 
   GtkStyleContext *context;
   gint width,height;
-  GtkBorder border;
+  GtkBorder border,margin,padding,extents;
   GtkStateFlags flags;
   GdkRGBA fg;
   gint n, i, offset, len, scale;
@@ -40,11 +40,20 @@ static gboolean chart_draw ( GtkWidget *self, cairo_t *cr )
   context = gtk_widget_get_style_context(self);
   flags = gtk_style_context_get_state(context);
   gtk_style_context_get_border(context,flags,&border);
-  gtk_render_background(context,cr,0,0,width,height);
-  gtk_render_frame(context,cr,0,0,width,height);
+  gtk_style_context_get_padding(context,flags,&padding);
+  gtk_style_context_get_margin(context,flags,&margin);
+  extents.left = border.left + margin.left + padding.left;
+  extents.right = border.right + margin.right + padding.right;
+  extents.top = border.top + margin.top + padding.top;
+  extents.bottom = border.bottom + margin.bottom + padding.bottom;
 
-  n = width - border.left - border.right;
-  scale = height - border.top - border.bottom;
+  gtk_render_background(context,cr,extents.left,extents.top, width -
+      extents.left - extents.right, height - extents.top - extents.bottom);
+  gtk_render_frame(context,cr,margin.left, margin.top, width - margin.left -
+      margin.right, height - margin.top - margin.bottom);
+
+  n = width - extents.left - extents.right;
+  scale = height - extents.top - extents.bottom;
   if(n<1)
     return FALSE;
 
@@ -53,17 +62,18 @@ static gboolean chart_draw ( GtkWidget *self, cairo_t *cr )
 
   len = g_queue_get_length(priv->data);
 
-  offset = n - len  + border.left;
+  offset = width - extents.right - len;
 
   gtk_style_context_get_color (context,flags, &fg);
   cairo_set_source_rgba(cr,fg.red,fg.green,fg.blue,fg.alpha);
   cairo_set_line_width(cr,1);
-  cairo_move_to(cr,offset,height - border.bottom - 1);
+  cairo_move_to(cr,offset,height - extents.bottom);
   for(i=0;i<len;i++)
-    cairo_line_to(cr,offset+i,height-border.bottom - 
+    cairo_line_to(cr,offset+i,height-extents.bottom - 
         scale * *(gdouble *)g_queue_peek_nth(priv->data,i));
-  cairo_line_to(cr,offset + len - 1, height - border.bottom - 1);
-  cairo_line_to(cr,offset,height - border.bottom - 1);
+  cairo_line_to(cr,offset + len - 1, height - extents.bottom);
+  cairo_line_to(cr,offset,height - extents.bottom);
+  cairo_stroke_preserve(cr);
   cairo_fill(cr);
 
   return TRUE;
