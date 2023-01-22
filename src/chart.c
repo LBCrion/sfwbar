@@ -32,7 +32,8 @@ static gboolean chart_draw ( GtkWidget *self, cairo_t *cr )
   GtkBorder border,margin,padding,extents;
   GtkStateFlags flags;
   GdkRGBA fg;
-  gint n, i, offset, len, scale;
+  gdouble x_offset, y_offset;
+  gint i, len;
 
   width = gtk_widget_get_allocated_width(self);
   height = gtk_widget_get_allocated_height(self);
@@ -52,27 +53,28 @@ static gboolean chart_draw ( GtkWidget *self, cairo_t *cr )
   gtk_render_frame(context,cr,margin.left, margin.top, width - margin.left -
       margin.right, height - margin.top - margin.bottom);
 
-  n = width - extents.left - extents.right;
-  scale = height - extents.top - extents.bottom;
-  if(n<1)
+  width = width - extents.left - extents.right;
+  height = height - extents.top - extents.bottom - 1;
+  if( width<1 || height<1 )
     return FALSE;
 
-  while(g_queue_get_length(priv->data)>n)
+  while(g_queue_get_length(priv->data)>width)
     g_free(g_queue_pop_head(priv->data));
 
   len = g_queue_get_length(priv->data);
 
-  offset = width - extents.right - len;
+  x_offset = width + extents.left - len + 0.5;
+  y_offset = height + extents.top + 0.5;
 
   gtk_style_context_get_color (context,flags, &fg);
   cairo_set_source_rgba(cr,fg.red,fg.green,fg.blue,fg.alpha);
   cairo_set_line_width(cr,1);
-  cairo_move_to(cr,offset,height - extents.bottom);
+  cairo_move_to(cr,x_offset,y_offset);
   for(i=0;i<len;i++)
-    cairo_line_to(cr,offset+i,height-extents.bottom - 
-        scale * *(gdouble *)g_queue_peek_nth(priv->data,i));
-  cairo_line_to(cr,offset + len - 1, height - extents.bottom);
-  cairo_line_to(cr,offset,height - extents.bottom);
+    cairo_line_to(cr, x_offset + i, y_offset -
+        height * *(gdouble *)g_queue_peek_nth(priv->data,i));
+  cairo_line_to(cr,x_offset + len - 1, y_offset);
+  cairo_close_path(cr);
   cairo_stroke_preserve(cr);
   cairo_fill(cr);
 
