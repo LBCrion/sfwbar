@@ -26,13 +26,14 @@ typedef struct _ScaleImagePrivate ScaleImagePrivate;
 
 struct _ScaleImagePrivate
 {
-  gint w,h;
-  gint maxw, maxh;
   gint ftype;
+  gint width, height;
+  gboolean fallback;
   gchar *file;
   gchar *extra;
   gchar *fname;
   GdkPixbuf *pixbuf;
+  cairo_surface_t *cs;
 };
 
 enum {

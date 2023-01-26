@@ -184,10 +184,9 @@ void action_exec ( GtkWidget *widget, action_t *action,
   if(action->command)
     g_debug("widget action: (%d) %s (addr %s)",action->type, action->command,
         action->addr?action->addr:"null");
-  else
-    if(win)
-      g_debug("widget action: (%d) on %d",action->type,
-          GPOINTER_TO_INT(win->uid));
+  else if(win)
+    g_debug("widget action: (%d) on %d",action->type,
+        GPOINTER_TO_INT(win->uid));
 
   if(action->cond & WS_CHILDREN &&
       GTK_IS_CONTAINER(base_widget_get_child(widget)))
