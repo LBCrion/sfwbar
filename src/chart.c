@@ -23,10 +23,6 @@ static void chart_destroy ( GtkWidget *self )
 static gboolean chart_draw ( GtkWidget *self, cairo_t *cr )
 {
   ChartPrivate *priv;
-
-  g_return_val_if_fail(IS_CHART(self),FALSE);
-  priv = chart_get_instance_private(CHART(self));
-
   GtkStyleContext *context;
   gint width,height;
   GtkBorder border,margin,padding,extents;
@@ -34,6 +30,9 @@ static gboolean chart_draw ( GtkWidget *self, cairo_t *cr )
   GdkRGBA fg;
   gdouble x_offset, y_offset;
   gint i, len;
+
+  g_return_val_if_fail(IS_CHART(self),FALSE);
+  priv = chart_get_instance_private(CHART(self));
 
   width = gtk_widget_get_allocated_width(self);
   height = gtk_widget_get_allocated_height(self);

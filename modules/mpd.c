@@ -106,7 +106,8 @@ void sfwbar_module_init ( ModuleApi *api )
 {
   sfwbar_module_api = api;
 
-  g_timeout_add (1000,(GSourceFunc )mpd_connect,NULL);
+  if(!mpd_connect(NULL))
+    g_timeout_add (1000,(GSourceFunc )mpd_connect,NULL);
 }
 
 void *mpd_expr_func ( void **params )
