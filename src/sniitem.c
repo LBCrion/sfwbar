@@ -26,43 +26,41 @@ static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
 GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
 {
   gint32 x,y;
-  GVariantIter *iter,*rgba;
-  guchar *buff;
   guint32 *ptr;
-  guchar t;
   cairo_surface_t *cs;
   GdkPixbuf *res;
-  gint i=0;
+  gint i;
+  GVariant *img,*child;
+  gsize len;
 
   if(!v)
     return NULL;
-  g_variant_get(v,"a(iiay)",&iter);
-  if(!iter || !g_variant_iter_n_children(iter))
-    return NULL;
-  g_variant_get(g_variant_iter_next_value(iter),"(iiay)",&x,&y,&rgba);
-  g_variant_iter_free(iter);
-  if(!rgba)
-    return NULL;
-  if(x*y != 0 && x*y*4 == g_variant_iter_n_children(rgba))
+
+  child = g_variant_get_child_value(v,0);
+
+  g_variant_get(child,"(ii@ay)",&x,&y,&img);
+  ptr = (guint32 *)g_variant_get_fixed_array(img,&len,sizeof(guchar));
+
+  if(!len || !ptr || len != x*y*4)
   {
-    buff = g_malloc(x*y*4);
-    while(g_variant_iter_loop(rgba,"y",&t))
-      buff[i++]=t;
-
-    ptr=(guint32 *)buff;
-    for(i=0;i<x*y;i++)
-      ptr[i] = g_ntohl(ptr[i]);
-
-    cs = cairo_image_surface_create_for_data(buff,CAIRO_FORMAT_ARGB32,x,y,
-        cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,x));
-    res = gdk_pixbuf_get_from_surface(cs,0,0,x,y);
-
-    cairo_surface_destroy(cs);
-    g_free(buff);
+    g_variant_unref(img);
+    g_variant_unref(child);
+    return NULL;
   }
-  else
-    res = NULL;
-  g_variant_iter_free(rgba);
+
+  ptr = g_memdup2(ptr,len);
+  g_variant_unref(img);
+  g_variant_unref(child);
+  for(i=0;i<x*y;i++)
+    ptr[i] = g_ntohl(ptr[i]);
+
+  cs = cairo_image_surface_create_for_data((guchar *)ptr,CAIRO_FORMAT_ARGB32,x,y,
+      cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,x));
+  res = gdk_pixbuf_get_from_surface(cs,0,0,x,y);
+  cairo_surface_destroy(cs);
+  g_free(ptr);
+  g_object_ref_sink(G_OBJECT(res));
+
   return res;
 }
 

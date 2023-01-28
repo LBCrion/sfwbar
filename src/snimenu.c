@@ -59,39 +59,29 @@ gboolean sni_variant_get_bool ( GVariant *dict, gchar *key, gboolean def )
 
 GtkWidget *sni_variant_get_pixbuf ( GVariant *dict, gchar *key )
 {
-  GVariant *ptr,*item;
-  GVariantIter iter;
+  GVariant *ptr;
   GdkPixbufLoader *loader;
   GdkPixbuf *pixbuf;
   GtkWidget *img = NULL;
   guchar *buff;
-  gint i=0,len;
+  gsize len;
 
   ptr = g_variant_lookup_value(dict,key,G_VARIANT_TYPE_ARRAY);
   if(!ptr)
     return NULL;
 
-  g_variant_iter_init(&iter,ptr);
-  len = g_variant_iter_n_children(&iter);
-  buff = g_malloc(len);
-  while( (item = g_variant_iter_next_value(&iter)) && i<len )
-  {
-    if(g_variant_is_of_type(item,G_VARIANT_TYPE_BYTE))
-      buff[i++]=g_variant_get_byte(item);
-    g_variant_unref(item);
-  }
-
-  if( i == len )
+  buff = (guchar *)g_variant_get_fixed_array(ptr,&len,sizeof(guchar));
+  if(buff && len>0)
   {
     loader = gdk_pixbuf_loader_new();
-    gdk_pixbuf_loader_write(loader, buff, i, NULL);
+    gdk_pixbuf_loader_write(loader, buff, len, NULL);
     gdk_pixbuf_loader_close(loader,NULL);
     pixbuf = gdk_pixbuf_loader_get_pixbuf(loader);
     if(pixbuf)
       img = gtk_image_new_from_pixbuf(pixbuf);
     g_object_unref(G_OBJECT(loader));
   }
-  g_free(buff);
+
   g_variant_unref(ptr);
 
   return img;
