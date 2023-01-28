@@ -196,12 +196,14 @@ void *pulse_expr_func ( void **params )
         FALSE);
     cmd = params[0]+5;
   }
-  if(!g_ascii_strncasecmp(params[0],"source-",7))
+  else if(!g_ascii_strncasecmp(params[0],"source-",7))
   {
     info = pulse_info_from_name(&source_list,params[1]?params[1]:source_name,
         FALSE);
     cmd = params[0]+7;
   }
+  else
+    info = NULL;
 
   if(!info || !cmd || !*cmd)
     return g_strdup("");
