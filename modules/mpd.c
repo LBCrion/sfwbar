@@ -63,7 +63,7 @@ static gboolean mpd_update ( void )
   return TRUE;
 }
 
-static gboolean mpd_event ( GIOChannel *chan, GIOCondition cond, void *d )
+static gboolean mpd_event ( GIOChannel *chan, GIOCondition cond, void *d)
 {
   g_debug("MPD client: processing an event");
   mpd_recv_idle(conn,FALSE);
@@ -86,7 +86,12 @@ static gboolean mpd_connect ( gpointer data )
   GIOChannel *chan;
 
   conn = mpd_connection_new(NULL,0,0);
-  if(!conn || mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS)
+  if(conn && mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS)
+  {
+    mpd_connection_free(conn);
+    conn = NULL;
+  }
+  if(!conn)
     return TRUE;
   if(password)
     mpd_send_password(conn, password);
@@ -96,7 +101,7 @@ static gboolean mpd_connect ( gpointer data )
   mpd_send_idle_mask(conn,MPD_IDLE_PLAYER);
 
   chan = g_io_channel_unix_new(mpd_connection_get_fd(conn));
-  g_io_add_watch(chan,G_IO_IN,(GIOFunc)mpd_event,NULL);
+  g_io_add_watch(chan,G_IO_IN,(GIOFunc)mpd_event,conn);
   g_io_channel_unref(chan);
  
   return FALSE;
@@ -106,7 +111,7 @@ void sfwbar_module_init ( ModuleApi *api )
 {
   sfwbar_module_api = api;
 
-  if(!mpd_connect(NULL))
+  if(mpd_connect(NULL))
     g_timeout_add (1000,(GSourceFunc )mpd_connect,NULL);
 }
 
