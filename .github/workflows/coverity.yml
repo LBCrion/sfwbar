@@ -14,8 +14,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: sudo apt-get update
-    - run: sudo apt-get -y install libgtk-3-dev meson libgtk-layer-shell-dev libjson-c-dev
-    - run: meson setup builddir/
+    - run: sudo apt-get -y install libgtk-3-dev meson libgtk-layer-shell-dev libjson-c-dev libmpdclient-dev libpulse-dev
+    - run: meson setup builddir/ -Dpulse=enabled -Dmpd=enabled -Dnetwork=enabled
       env:
         CC: gcc
     - uses: vapier/coverity-scan-action@v1
