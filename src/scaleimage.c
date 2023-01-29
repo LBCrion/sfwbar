@@ -281,6 +281,7 @@ void scale_image_set_pixbuf ( GtkWidget *self, GdkPixbuf *pb )
   scale_image_clear(self);
   priv->pixbuf = pb;
   priv->ftype = SI_BUFF;
+  gtk_widget_queue_draw(self);
 }
 
 static void scale_image_check_appinfo ( GtkWidget *self, GtkIconTheme *theme,
@@ -376,6 +377,7 @@ void scale_image_set_image ( GtkWidget *self, const gchar *image,
   scale_image_clear(self);
   priv->file = g_strdup(image);
   priv->extra = g_strdup(extra);
+  gtk_widget_queue_draw(self);
 
   if(!g_ascii_strncasecmp(priv->file,"<?xml",5))
   {
