@@ -119,8 +119,10 @@ static void pulse_server_cb ( pa_context *ctx, const pa_server_info *info,
 {
   pulse_set_sink(info->default_sink_name,FALSE);
   pulse_set_source(info->default_source_name,FALSE);
-  pa_context_get_sink_info_list(ctx,pulse_sink_cb,NULL);
-  pa_context_get_source_info_list(ctx,pulse_source_cb,NULL);
+  pa_operation_unref(
+      pa_context_get_sink_info_list(ctx,pulse_sink_cb,NULL));
+  pa_operation_unref(
+      pa_context_get_source_info_list(ctx,pulse_source_cb,NULL));
 }
 
 static void pulse_subscribe_cb ( pa_context *ctx,
@@ -156,7 +158,8 @@ static void pulse_state_cb ( pa_context *ctx, gpointer data )
     papi->quit(papi,0);
   else if(state == PA_CONTEXT_READY)
   {
-    pa_context_get_server_info(ctx,pulse_server_cb,NULL);
+    pa_operation_unref(
+        pa_context_get_server_info(ctx,pulse_server_cb,NULL));
     pa_context_set_subscribe_callback(ctx,pulse_subscribe_cb,NULL);
     pa_context_subscribe(ctx,PA_SUBSCRIPTION_MASK_SERVER |
         PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SINK_INPUT |
@@ -249,6 +252,7 @@ static void pulse_action ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
   pulse_info *info;
+  pa_operation *op;
 
   if(!g_ascii_strncasecmp(cmd,"sink-",5))
     info = pulse_info_from_name(&sink_list,name?name:sink_name,FALSE);
@@ -261,18 +265,23 @@ static void pulse_action ( gchar *cmd, gchar *name, void *d1,
     return;
 
   if(!g_ascii_strncasecmp(cmd,"sink-volume",11))
-    pa_context_set_sink_volume_by_index(pctx,info->idx,
+    op = pa_context_set_sink_volume_by_index(pctx,info->idx,
         pulse_adjust_volume(&info->cvol,g_ascii_strtod(cmd+11,NULL)),NULL,NULL);
   else if(!g_ascii_strncasecmp(cmd,"source-volume",13))
-    pa_context_set_source_volume_by_index(pctx,info->idx,
+    op = pa_context_set_source_volume_by_index(pctx,info->idx,
         pulse_adjust_volume(&info->cvol,g_ascii_strtod(cmd+13,NULL)),
         NULL,NULL);
   else if(!g_ascii_strncasecmp(cmd,"sink-mute",9))
-    pa_context_set_sink_mute_by_index(pctx,info->idx,
+    op = pa_context_set_sink_mute_by_index(pctx,info->idx,
         pulse_mute_parse(cmd+9,info->mute),NULL,NULL);
   else if(!g_ascii_strncasecmp(cmd,"source-mute",11))
-    pa_context_set_sink_mute_by_index(pctx,info->idx,
+    op = pa_context_set_sink_mute_by_index(pctx,info->idx,
         pulse_mute_parse(cmd+11,info->mute),NULL,NULL);
+  else
+    op = NULL;
+
+  if(op)
+    pa_operation_unref(op);
 }
 
 static void pulse_set_sink_action ( gchar *sink, gchar *dummy, void *d1,
