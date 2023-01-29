@@ -410,4 +410,5 @@ void bar_set_theme ( gchar *new_theme )
   setts = gtk_settings_get_default();
   g_object_set(G_OBJECT(setts),"gtk-application-prefer-dark-theme",FALSE,NULL);
   g_object_set(G_OBJECT(setts),"gtk-theme-name",new_theme,NULL);
+  g_free(new_theme);
 }
