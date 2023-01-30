@@ -95,7 +95,7 @@ GtkWidget *popup_new ( gchar *name )
 
 GtkWidget *popup_from_name ( gchar *name )
 {
-  if(!popup_list)
+  if(!popup_list || !name)
     return NULL;
   return g_hash_table_lookup(popup_list,name);
 }
