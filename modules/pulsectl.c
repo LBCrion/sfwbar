@@ -24,7 +24,7 @@ GList *sink_list, *source_list;
 
 pa_mainloop_api *papi;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 afwbar_module_version = 1;
+guint16 sfwbar_module_version = 1;
 pa_context *pctx;
 gchar *sink_name, *source_name;
 gboolean fixed_sink, fixed_source;

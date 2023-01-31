@@ -27,7 +27,7 @@ iface_info *route;
 
 ModuleApiV1 *sfwbar_module_api;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 afwbar_module_version = 1;
+guint16 sfwbar_module_version = 1;
 guint32 seq;
 GList *iface_list;
 gint qual, level, noise;

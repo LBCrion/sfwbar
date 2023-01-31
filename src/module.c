@@ -29,7 +29,7 @@ gboolean module_load ( gchar *name )
   ModuleInitializer init;
   gint i;
   gint64 *sig;
-  guint32 *ver;
+  guint16 *ver;
   gchar *fname, *path;
 
   if(!name)
@@ -144,11 +144,11 @@ gboolean module_is_numeric ( gchar *identifier )
   ModuleExpressionHandlerV1 *handler;
 
   if(!expr_handlers)
-    return TRUE;
+    return FALSE;
 
   handler = g_hash_table_lookup(expr_handlers,identifier);
   if(!handler)
-    return TRUE;
+    return FALSE;
   return handler->numeric;
 }
 
