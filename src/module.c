@@ -15,7 +15,7 @@ GHashTable *expr_handlers;
 GHashTable *act_handlers;
 GList *invalidators;
 
-static ModuleApi api = {
+static ModuleApiV1 api_v1 = {
   .emit_trigger = base_widget_emit_trigger,
   .config_string = config_string,
 };
@@ -23,12 +23,13 @@ static ModuleApi api = {
 gboolean module_load ( gchar *name )
 {
   GModule *module;
-  ModuleExpressionHandler **ehandler;
-  ModuleActionHandler **ahandler;
+  ModuleExpressionHandlerV1 **ehandler;
+  ModuleActionHandlerV1 **ahandler;
   ModuleInvalidator invalidator;
   ModuleInitializer init;
   gint i;
   gint64 *sig;
+  guint32 *ver;
   gchar *fname, *path;
 
   if(!name)
@@ -54,12 +55,18 @@ gboolean module_load ( gchar *name )
     g_debug("module: signature check failed for %s",name);
     return FALSE;
   }
+  if(!g_module_symbol(module,"sfwbar_module_version",(void **)&ver) ||
+      !ver || *ver != 1 )
+  {
+    g_debug("module: invalid version for %s",name);
+    return FALSE;
+  }
 
   if(g_module_symbol(module,"sfwbar_module_init",(void **)&init) && init)
   {
     g_debug("module: calling init function for %s",name);
-    api.gmc = g_main_context_get_thread_default();
-    init(&api);
+    api_v1.gmc = g_main_context_get_thread_default();
+    init(&api_v1);
   }
 
   if(g_module_symbol(module,"sfwbar_module_invalidate",(void **)&invalidator))
@@ -110,7 +117,7 @@ void module_invalidate_all ( void )
 void module_action_exec ( gchar *name, gchar *param, gchar *addr, void *widget,
     void *ev, void *win, void *state)
 {
-  ModuleActionHandler *handler;
+  ModuleActionHandlerV1 *handler;
 
   g_debug("module: checking action `%s`",name?name:"(null)");
   if(!act_handlers || !name)
@@ -134,7 +141,7 @@ gboolean module_is_function ( gchar *identifier )
 
 gboolean module_is_numeric ( gchar *identifier )
 {
-  ModuleExpressionHandler *handler;
+  ModuleExpressionHandlerV1 *handler;
 
   if(!expr_handlers)
     return TRUE;
@@ -147,7 +154,7 @@ gboolean module_is_numeric ( gchar *identifier )
 
 gchar *module_get_string ( GScanner *scanner )
 {
-  ModuleExpressionHandler *handler;
+  ModuleExpressionHandlerV1 *handler;
   void **params;
   gchar *result;
   gint i;

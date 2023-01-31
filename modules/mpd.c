@@ -8,8 +8,9 @@
 #include "../src/module.h"
 #include "stdio.h"
 
+static ModuleApiV1 *sfwbar_module_api;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-static ModuleApi *sfwbar_module_api;
+guint16 afwbar_module_version = 1;
 static struct mpd_status *status;
 static struct mpd_song *song;
 static struct mpd_connection *conn;
@@ -107,7 +108,7 @@ static gboolean mpd_connect ( gpointer data )
   return FALSE;
 }
 
-void sfwbar_module_init ( ModuleApi *api )
+void sfwbar_module_init ( ModuleApiV1 *api )
 {
   sfwbar_module_api = api;
 
@@ -195,29 +196,29 @@ static void mpd_set_passwd ( gchar *pwd, gchar *dummy, void *d1,
     password = NULL;
 }
 
-ModuleExpressionHandler handler1 = {
+ModuleExpressionHandlerV1 handler1 = {
   .numeric = FALSE,
   .name = "Mpd",
   .parameters = "S",
   .function = mpd_expr_func
 };
 
-ModuleExpressionHandler *sfwbar_expression_handlers[] = {
+ModuleExpressionHandlerV1 *sfwbar_expression_handlers[] = {
   &handler1,
   NULL
 };
 
-ModuleActionHandler act_handler1 = {
+ModuleActionHandlerV1 act_handler1 = {
   .name = "MpdSetPassword",
   .function = mpd_set_passwd
 };
 
-ModuleActionHandler act_handler2 = {
+ModuleActionHandlerV1 act_handler2 = {
   .name = "MpdCommand",
   .function = mpd_command
 };
 
-ModuleActionHandler *sfwbar_action_handlers[] = {
+ModuleActionHandlerV1 *sfwbar_action_handlers[] = {
   &act_handler1,
   &act_handler2,
   NULL

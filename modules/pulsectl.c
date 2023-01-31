@@ -8,7 +8,7 @@
 #include <pulse/pulseaudio.h>
 #include <pulse/glib-mainloop.h>
 
-ModuleApi *sfwbar_module_api;
+ModuleApiV1 *sfwbar_module_api;
 gboolean invalid;
 
 typedef struct _pulse_info {
@@ -23,6 +23,8 @@ typedef struct _pulse_info {
 GList *sink_list, *source_list;
 
 pa_mainloop_api *papi;
+gint64 sfwbar_module_signature = 0x73f4d956a1;
+guint16 afwbar_module_version = 1;
 pa_context *pctx;
 gchar *sink_name, *source_name;
 gboolean fixed_sink, fixed_source;
@@ -168,7 +170,7 @@ static void pulse_state_cb ( pa_context *ctx, gpointer data )
   }
 }
 
-void sfwbar_module_init ( ModuleApi *api )
+void sfwbar_module_init ( ModuleApiV1 *api )
 {
   pa_glib_mainloop *ploop;
 
@@ -296,36 +298,34 @@ static void pulse_set_source_action ( gchar *source, gchar *dummy, void *d1,
   pulse_set_source(source,TRUE);
 }
 
-gint64 sfwbar_module_signature = 0x73f4d956a1;
-
-ModuleExpressionHandler handler1 = {
+ModuleExpressionHandlerV1 handler1 = {
   .numeric = FALSE,
   .name = "Pulse",
   .parameters = "Ss",
   .function = pulse_expr_func
 };
 
-ModuleExpressionHandler *sfwbar_expression_handlers[] = {
+ModuleExpressionHandlerV1 *sfwbar_expression_handlers[] = {
   &handler1,
   NULL
 };
 
-ModuleActionHandler act_handler1 = {
+ModuleActionHandlerV1 act_handler1 = {
   .name = "PulseCmd",
   .function = pulse_action
 };
 
-ModuleActionHandler act_handler2 = {
+ModuleActionHandlerV1 act_handler2 = {
   .name = "PulseSetDefaultSink",
   .function = pulse_set_sink_action
 };
 
-ModuleActionHandler act_handler3 = {
+ModuleActionHandlerV1 act_handler3 = {
   .name = "PulseSetDefaultSource",
   .function = pulse_set_source_action
 };
 
-ModuleActionHandler *sfwbar_action_handlers[] = {
+ModuleActionHandlerV1 *sfwbar_action_handlers[] = {
   &act_handler1,
   &act_handler2,
   &act_handler3,

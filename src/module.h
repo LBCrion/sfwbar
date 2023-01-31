@@ -8,13 +8,13 @@ typedef struct {
   GMainContext *gmc;
   gboolean (*emit_trigger)(gchar *);
   void (*config_string)(gchar *);
-} ModuleApi;
+} ModuleApiV1;
 
 typedef gpointer (*ModuleExpressionFunc)(gpointer *);
 typedef void (*ModuleActionFunc)(gchar *, gchar *, void *, void *, void *,
     void *);
 typedef void (*ModuleInvalidator)( void );
-typedef void (*ModuleInitializer)( ModuleApi * );
+typedef void (*ModuleInitializer)( ModuleApiV1 * );
 typedef gboolean (*ModuleEmitTrigger) ( gchar * );
 typedef void (*ModuleInitTrigger) (GMainContext *, ModuleEmitTrigger );
 
@@ -23,12 +23,12 @@ typedef struct {
   ModuleExpressionFunc function;
   gchar *parameters;
   gboolean numeric;
-} ModuleExpressionHandler;
+} ModuleExpressionHandlerV1;
 
 typedef struct {
   gchar *name;
   ModuleActionFunc function;
-} ModuleActionHandler;
+} ModuleActionHandlerV1;
 
 #define MODULE_TRIGGER_EMIT(x) \
   if(sfwbar_module_api && sfwbar_module_api->emit_trigger) \

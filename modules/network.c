@@ -25,10 +25,12 @@ typedef struct _iface_info {
 
 iface_info *route;
 
-gint qual, level, noise;
-ModuleApi *sfwbar_module_api;
+ModuleApiV1 *sfwbar_module_api;
+gint64 sfwbar_module_signature = 0x73f4d956a1;
+guint16 afwbar_module_version = 1;
 guint32 seq;
 GList *iface_list;
+gint qual, level, noise;
 
 static void net_update_essid ( gchar * );
 
@@ -627,7 +629,7 @@ static void network_init ( void * )
 
 #endif
 
-void sfwbar_module_init ( ModuleApi *api )
+void sfwbar_module_init ( ModuleApiV1 *api )
 {
   int sock;
   GIOChannel *chan;
@@ -705,16 +707,14 @@ void *sfwbar_expr_func ( void **params )
   return result;
 }
 
-gint64 sfwbar_module_signature = 0x73f4d956a1;
-
-ModuleExpressionHandler handler1 = {
+ModuleExpressionHandlerV1 handler1 = {
   .numeric = FALSE,
   .name = "NetInfo",
   .parameters = "Ss",
   .function = sfwbar_expr_func
 };
 
-ModuleExpressionHandler *sfwbar_expression_handlers[] = {
+ModuleExpressionHandlerV1 *sfwbar_expression_handlers[] = {
   &handler1,
   NULL
 };

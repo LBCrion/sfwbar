@@ -146,9 +146,11 @@ void action_exec ( GtkWidget *widget, action_t *action,
   if(IS_TASKBAR_ITEM(widget))
     win = flow_item_get_parent(widget);
 
-  if(action->type != G_TOKEN_SETVALUE && action->type != G_TOKEN_SETSTYLE &&
+  if( action->type != G_TOKEN_SETVALUE &&
+      action->type != G_TOKEN_SETSTYLE &&
       action->type != G_TOKEN_SETTOOLTIP )
     expr_cache(&action->comval,&action->command,NULL);
+
   expr_cache(&action->addrval,&action->addr,NULL);
 
   if(action->addr && (
