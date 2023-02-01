@@ -33,7 +33,8 @@ GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
   GVariant *img,*child;
   gsize len;
 
-  if(!v)
+  if(!v || !g_variant_check_format_string(v,"a(iiay)",FALSE) ||
+      g_variant_n_children(v) < 1)
     return NULL;
 
   child = g_variant_get_child_value(v,0);
