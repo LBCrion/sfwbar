@@ -83,7 +83,9 @@ static void scale_image_surface_update ( GtkWidget *self, gint width,
     gdk_pixbuf_loader_write(loader,(guchar *)priv->file,
         strlen(priv->file), NULL);
     gdk_pixbuf_loader_close(loader,NULL);
-    buf = gdk_pixbuf_copy(gdk_pixbuf_loader_get_pixbuf(loader));
+    buf = gdk_pixbuf_loader_get_pixbuf(loader);
+    if(buf)
+      buf = gdk_pixbuf_copy(buf);
     g_object_unref(G_OBJECT(loader));
   }
   else
