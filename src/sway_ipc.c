@@ -164,10 +164,11 @@ static void sway_minimized_set ( struct json_object *obj, const gchar *parent,
     win->workspace = pager_workspace_id_from_name(parent);
   }
 
-  if(g_strcmp0(monitor,win->output) && g_strcmp0(monitor,"__i3"))
+  if(!g_list_find_custom(win->outputs,monitor,(GCompareFunc)g_strcmp0) &&
+      g_strcmp0(monitor,"__i3"))
   {
-    g_free(win->output);
-    win->output = g_strdup(monitor);
+    g_list_free_full(win->outputs,g_free);
+    win->outputs = g_list_prepend(NULL,g_strdup(monitor));
     wintree_commit(win);
   }
 }

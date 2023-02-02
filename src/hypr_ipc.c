@@ -97,7 +97,7 @@ static void hypr_ipc_command ( gchar *cmd, ... )
   va_end(args);
 }
 
-static gchar *hypr_ipc_workspace_name ( gpointer id )
+static gchar *hypr_ipc_workspace_data ( gpointer id, gchar *field )
 {
   json_object *json,*ptr;
   gint i;
@@ -110,7 +110,7 @@ static gchar *hypr_ipc_workspace_name ( gpointer id )
     {
       ptr = json_object_array_get_idx(json,i);
       if(id==GINT_TO_POINTER(json_int_by_name(ptr,"id",0)))
-        res = g_strdup(json_string_by_name(ptr,"name"));
+        res = g_strdup(json_string_by_name(ptr,field));
     }
   json_object_put(json);
   return res;
@@ -120,6 +120,7 @@ static void hypr_ipc_handle_window ( json_object *obj )
 {
   window_t *win;
   gpointer id;
+  gchar *monitor;
 
   id = hypr_ipc_window_id(obj);
   if(!id)
@@ -145,6 +146,11 @@ static void hypr_ipc_handle_window ( json_object *obj )
   {
     win->state &= ~WS_MINIMIZED;
     win->workspace = hypr_ipc_workspace_id(obj);
+    monitor = hypr_ipc_workspace_data(win->workspace,"monitor");
+    if(!g_list_find_custom(win->outputs,monitor,(GCompareFunc)g_strcmp0))
+      win->outputs = g_list_prepend(win->outputs,monitor);
+    else
+      g_free(monitor);
   }
 }
 
@@ -487,7 +493,7 @@ static void hypr_ipc_set_workspace ( workspace_t *ws )
 {
   gchar *name;
 
-  name = hypr_ipc_workspace_name(ws->id);
+  name = hypr_ipc_workspace_data(ws->id,"name");
   if(name)
     hypr_ipc_command("dispatch workspace name:%s",name);
   else

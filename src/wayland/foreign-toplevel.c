@@ -89,9 +89,36 @@ static void toplevel_handle_parent(void *data, wlr_fth *tl, wlr_fth *pt)
 {
 }
 
-static void toplevel_handle_output_leave(void *data, wlr_fth *toplevel,
+static void toplevel_handle_output_leave(void *data, wlr_fth *tl,
     struct wl_output *output)
 {
+  char *name;
+  GdkDisplay *disp;
+  GdkMonitor *mon;
+  window_t *win;
+  gint i;
+  GList *link;
+
+  disp = gdk_display_get_default();
+  mon = NULL;
+  for(i=0;i<gdk_display_get_n_monitors(disp);i++)
+    if(output == gdk_wayland_monitor_get_wl_output(
+          gdk_display_get_monitor(disp,i)))
+      mon = gdk_display_get_monitor(disp,i);
+  if(!mon)
+    return;
+  name = g_object_get_data(G_OBJECT(mon),"xdg_name");
+  if(!name)
+    return;
+  win = wintree_from_id(tl);
+  if(!win)
+    return;
+  link = g_list_find(win->outputs,name);
+  if(!link)
+    return;
+  g_free(link->data);
+  win->outputs = g_list_delete_link(win->outputs,link);
+  wintree_commit(win);
 }
 
 static void toplevel_handle_output_enter(void *data, wlr_fth *tl,
@@ -117,8 +144,8 @@ static void toplevel_handle_output_enter(void *data, wlr_fth *tl,
   win = wintree_from_id(tl);
   if(!win)
     return;
-  g_free(win->output);
-  win->output = g_strdup(name);
+  win->outputs = g_list_prepend(win->outputs,g_strdup(name));
+  wintree_commit(win);
 }
 
 static const struct zwlr_foreign_toplevel_handle_v1_listener toplevel_impl = {

@@ -132,8 +132,9 @@ static gboolean taskbar_item_check ( GtkWidget *self )
   switch(taskbar_get_filter(taskbar,&floating))
   {
     case G_TOKEN_OUTPUT:
-      result = (!priv->win->output || !g_strcmp0(priv->win->output,
-          bar_get_output(base_widget_get_child(taskbar))));
+      result = (!priv->win->outputs || g_list_find_custom(priv->win->outputs,
+          bar_get_output(base_widget_get_child(taskbar)),
+          (GCompareFunc)g_strcmp0));
       break;
     case G_TOKEN_WORKSPACE:
       result = (!priv->win->workspace ||

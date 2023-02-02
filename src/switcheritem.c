@@ -28,8 +28,9 @@ static gboolean switcher_item_check ( GtkWidget *self )
   switch(switcher_get_filter(priv->switcher))
   {
     case G_TOKEN_OUTPUT:
-      return (!priv->win->output || !g_strcmp0(priv->win->output,
-          bar_get_output(base_widget_get_child(priv->switcher))));
+      return (!priv->win->outputs || g_list_find_custom(priv->win->outputs,
+          bar_get_output(base_widget_get_child(priv->switcher)),
+          (GCompareFunc)g_strcmp0));
     case G_TOKEN_WORKSPACE:
       return (!priv->win->workspace ||
           priv->win->workspace == pager_get_focused());

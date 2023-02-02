@@ -5,7 +5,7 @@ typedef struct wt_window {
   GtkWidget *switcher;
   gchar *title;
   gchar *appid;
-  gchar *output;
+  GList *outputs;
   gchar *workspace;
   gint64 pid;
   guint64 seq;

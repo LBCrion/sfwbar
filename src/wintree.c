@@ -210,7 +210,7 @@ void wintree_window_delete ( gpointer id )
   switcher_window_delete(win);
   g_free(win->appid);
   g_free(win->title);
-  g_free(win->output);
+  g_list_free_full(win->outputs,g_free);
   wintree_free_workspace(win->workspace);
   wt_list = g_list_delete_link(wt_list,item);
   g_free(win);
