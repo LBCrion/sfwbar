@@ -148,7 +148,10 @@ static void hypr_ipc_handle_window ( json_object *obj )
     win->workspace = hypr_ipc_workspace_id(obj);
     monitor = hypr_ipc_workspace_data(win->workspace,"monitor");
     if(!g_list_find_custom(win->outputs,monitor,(GCompareFunc)g_strcmp0))
+    {
+      g_list_free_full(win->outputs,g_free);
       win->outputs = g_list_prepend(win->outputs,monitor);
+    }
     else
       g_free(monitor);
   }
