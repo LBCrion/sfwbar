@@ -51,5 +51,6 @@ double scanner_get_numeric ( gchar *, gboolean, guint * );
 void scanner_var_new ( gchar *, ScanFile *, gchar *, guint, gint );
 ScanFile *scanner_file_get ( gchar *trigger );
 ScanFile *scanner_file_new ( gint , gchar *, gchar *, gint );
+gboolean scanner_is_variable ( gchar *identifier );
 
 #endif

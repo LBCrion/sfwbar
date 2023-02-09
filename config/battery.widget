@@ -1,3 +1,8 @@
+define BatChargeStr = Str(10*BatLeft/BatTotal,0)
+define BatIcon = "battery-level-" + BatChargeStr + "0" + 
+        If($BatState = "Discharging","",
+          If(BatChargeStr = "10","","-charging")) + "-symbolic"
+
 Function("BatteryInitScanner"){
   PipeRead "python << END
 import os
@@ -24,14 +29,11 @@ for entry in list:
           '\") { BatState = RegEx(\"^(.*)$\",First) }')
 print('}')
 END"
+  SetValue "battery", BatIcon
 }
 
-define BatChargeStr = Str(10*BatLeft/BatTotal,0)
-define BatIcon = "battery-level-" + BatChargeStr + "0" + 
-        If($BatState = "Discharging","",
-          If(BatChargeStr = "10","","-charging")) + "-symbolic"
 layout {
-  image {
+  image "battery" {
     action[0] = Function "BatteryInitScanner"
     style = If($BatState="","hidden","battery")
     tooltip = Str(100*BatLeft/BatTotal,0) + "%"

@@ -444,3 +444,18 @@ double scanner_get_numeric ( gchar *name, gboolean update, guint *vcount )
   g_debug("scanner: %s = %f",name,retval);
   return retval;
 }
+
+gboolean scanner_is_variable ( gchar *identifier )
+{
+  gchar *name;
+  gboolean result;
+
+  if(!scan_list)
+    return FALSE;
+
+  name = scanner_parse_identifier(identifier,NULL);
+  result = (g_hash_table_lookup(scan_list, name)!=NULL);
+  g_free(name);
+
+  return result;
+}
