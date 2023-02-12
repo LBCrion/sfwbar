@@ -759,8 +759,6 @@ static gdouble expr_parse_num_value ( GScanner *scanner )
           g_scanner_cur_position(scanner));
       return 0;
   }
-  
-  return 0;
 }
 
 static gdouble expr_parse_num_factor ( GScanner *scanner )
