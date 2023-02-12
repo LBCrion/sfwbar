@@ -31,6 +31,27 @@ void menu_remove ( gchar *name )
   g_hash_table_remove(menus,name);
 }
 
+void menu_clamp_size ( GtkMenu *menu )
+{
+  GdkDisplay *display;
+  GdkMonitor *monitor;
+  GdkWindow *gdk_win;
+  GtkWindow *toplevel;
+  GdkRectangle workarea;
+  gint w,h;
+
+  toplevel = GTK_WINDOW(gtk_widget_get_ancestor(GTK_WIDGET(menu),GTK_TYPE_WINDOW));
+  gdk_win = gtk_widget_get_window(GTK_WIDGET(toplevel));
+  w = gdk_window_get_width(gdk_win);
+  h = gdk_window_get_height(gdk_win);
+
+  display = gdk_window_get_display(gdk_win);
+  monitor = gdk_display_get_monitor_at_window(display,gdk_win);
+  gdk_monitor_get_workarea(monitor,&workarea);
+
+  gdk_window_resize(gdk_win,MIN(w,workarea.width),MIN(h,workarea.height));
+}
+
 GtkWidget *menu_new ( gchar *name )
 {
   GtkWidget *menu;
@@ -42,6 +63,7 @@ GtkWidget *menu_new ( gchar *name )
     menus = g_hash_table_new_full((GHashFunc)str_nhash,(GEqualFunc)str_nequal,
         g_free,g_object_unref);
   menu = gtk_menu_new();
+  g_signal_connect(menu,"popped-up",G_CALLBACK(menu_clamp_size),NULL);
   gtk_menu_set_reserve_toggle_size(GTK_MENU(menu), FALSE);
   g_object_ref_sink(G_OBJECT(menu));
   g_hash_table_insert(menus, g_strdup(name), menu);
