@@ -20,6 +20,44 @@ static ModuleApiV1 api_v1 = {
   .config_string = config_string,
 };
 
+void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler,gchar *name )
+{
+  gint i;
+
+  for(i=0;ehandler[i];i++)
+    if(ehandler[i]->function && ehandler[i]->name)
+    {
+      if(!expr_handlers)
+        expr_handlers = g_hash_table_new((GHashFunc)str_nhash,
+          (GEqualFunc)str_nequal);
+      g_debug("module: register expr function '%s'",ehandler[i]->name);
+      if(g_hash_table_lookup(expr_handlers,ehandler[i]->name))
+        g_message("Duplicate module expr function: %s in module %s",
+            ehandler[i]->name,name);
+      else
+        g_hash_table_insert(expr_handlers,ehandler[i]->name,ehandler[i]);
+    }
+}
+
+void module_actions_add ( ModuleActionHandlerV1 **ahandler, gchar *name )
+{
+  gint i;
+
+  for(i=0;ahandler[i];i++)
+    if(ahandler[i]->function && ahandler[i]->name)
+    {
+      if(!act_handlers)
+        act_handlers = g_hash_table_new((GHashFunc)str_nhash,
+          (GEqualFunc)str_nequal);
+      g_debug("module: register action '%s'",ahandler[i]->name);
+      if(g_hash_table_lookup(act_handlers,ahandler[i]->name))
+        g_message("Duplicate module action: %s in module %s",
+            ahandler[i]->name,name);
+      else
+        g_hash_table_insert(act_handlers,ahandler[i]->name,ahandler[i]);
+    }
+}
+
 gboolean module_load ( gchar *name )
 {
   GModule *module;
@@ -27,7 +65,6 @@ gboolean module_load ( gchar *name )
   ModuleActionHandlerV1 **ahandler;
   ModuleInvalidator invalidator;
   ModuleInitializer init;
-  gint i;
   gint64 *sig;
   guint16 *ver;
   gchar *fname, *path;
@@ -73,34 +110,10 @@ gboolean module_load ( gchar *name )
     invalidators = g_list_prepend(invalidators,invalidator);
 
   if(g_module_symbol(module,"sfwbar_expression_handlers",(void **)&ehandler))
-    for(i=0;ehandler[i];i++)
-      if(ehandler[i]->function && ehandler[i]->name)
-      {
-        if(!expr_handlers)
-          expr_handlers = g_hash_table_new((GHashFunc)str_nhash,
-            (GEqualFunc)str_nequal);
-        g_debug("module: register expr function '%s'",ehandler[i]->name);
-        if(g_hash_table_lookup(expr_handlers,ehandler[i]->name))
-          g_message("Duplicate module expr function: %s in module %s",
-              ehandler[i]->name,name);
-        else
-          g_hash_table_insert(expr_handlers,ehandler[i]->name,ehandler[i]);
-      }
+    module_expr_funcs_add(ehandler, name);
 
   if(g_module_symbol(module,"sfwbar_action_handlers",(void **)&ahandler))
-    for(i=0;ahandler[i];i++)
-      if(ahandler[i]->function && ahandler[i]->name)
-      {
-        if(!act_handlers)
-          act_handlers = g_hash_table_new((GHashFunc)str_nhash,
-            (GEqualFunc)str_nequal);
-        g_debug("module: register action '%s'",ahandler[i]->name);
-        if(g_hash_table_lookup(act_handlers,ahandler[i]->name))
-          g_message("Duplicate module action: %s in module %s",
-              ahandler[i]->name,name);
-        else
-          g_hash_table_insert(act_handlers,ahandler[i]->name,ahandler[i]);
-      }
+    module_actions_add(ahandler, name);
 
   return TRUE;
 }

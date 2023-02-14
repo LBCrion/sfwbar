@@ -1,6 +1,8 @@
 #ifndef __WINTREE_H__
 #define __WINTREE_H__
 
+#include <gtk/gtk.h>
+
 typedef struct wt_window {
   GtkWidget *switcher;
   gchar *title;

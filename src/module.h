@@ -46,5 +46,7 @@ gboolean module_is_numeric ( gchar *identifier );
 gchar *module_get_string ( GScanner *scanner );
 void module_action_exec ( gchar *name, gchar *param, gchar *addr, void *,
     void *, void *, void * );
+void module_actions_add ( ModuleActionHandlerV1 **ahandler, gchar *name );
+void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler,gchar *name);
 
 #endif
