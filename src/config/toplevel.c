@@ -172,7 +172,7 @@ action_t *config_action ( GScanner *scanner )
 {
   action_t *action;
 
-  action = g_malloc0(sizeof(action_t));
+  action = action_new();;
   config_action_conditions ( scanner, &action->cond, &action->ncond );
 
   g_scanner_get_next_token(scanner);
@@ -180,7 +180,7 @@ action_t *config_action ( GScanner *scanner )
   switch ((gint)scanner->token)
   {
     case G_TOKEN_STRING:
-      action->command = g_strdup(scanner->value.v_string);
+      action->command->cache = g_strdup(scanner->value.v_string);
       action->type = G_TOKEN_EXEC;
       break;
     case G_TOKEN_FOCUS:
@@ -211,34 +211,41 @@ action_t *config_action ( GScanner *scanner )
     case G_TOKEN_SETBARSIZE:
     case G_TOKEN_SETEXCLUSIVEZONE:
       config_parse_sequence(scanner,
-          SEQ_REQ,G_TOKEN_VALUE,NULL,&action->addrval,"Missing argument in action",
+          SEQ_REQ,G_TOKEN_VALUE,NULL,&action->addr->definition,
+            "Missing argument in action",
           SEQ_OPT,',',NULL,NULL,NULL,
-          SEQ_CON,G_TOKEN_VALUE,NULL,&action->comval,"Missing argument after ','",
+          SEQ_CON,G_TOKEN_VALUE,NULL,&action->command->definition,
+            "Missing argument after ','",
           SEQ_END);
-      if(!action->comval)
+      action->command->eval = TRUE;
+      action->addr->eval = TRUE;
+      if(!action->command->definition)
       {
-        action->comval = action->addrval;
-        action->addrval = NULL;
+        action->command->definition = action->addr->definition;
+        action->addr->definition = NULL;
+        action->addr->eval = FALSE;
       }
       break;
     case G_TOKEN_CLIENTSEND:
       config_parse_sequence(scanner,
-          SEQ_REQ,G_TOKEN_STRING,NULL,&action->addr,"Missing address in action",
+          SEQ_REQ,G_TOKEN_STRING,NULL,&action->addr->cache,
+            "Missing address in action",
           SEQ_OPT,',',NULL,NULL,NULL,
-          SEQ_CON,G_TOKEN_STRING,NULL,&action->command,"Missing command in action",
+          SEQ_CON,G_TOKEN_STRING,NULL,&action->command->cache,
+            "Missing command in action",
           SEQ_END);
       break;
     case G_TOKEN_SETVALUE:
-      action->command = config_get_value(scanner,"action value",FALSE,
-          &action->addr);
+      action->command->cache = config_get_value(scanner,"action value",FALSE,
+          &action->addr->cache);
       break;
     case G_TOKEN_SETSTYLE:
-      action->command = config_get_value(scanner,"action style",FALSE,
-          &action->addr);
+      action->command->cache = config_get_value(scanner,"action style",FALSE,
+          &action->addr->cache);
       break;
     case G_TOKEN_SETTOOLTIP:
-      action->command = config_get_value(scanner,"action tooltip",FALSE,
-          &action->addr);
+      action->command->cache = config_get_value(scanner,"action tooltip",FALSE,
+          &action->addr->cache);
       break;
     default:
       g_scanner_error(scanner,"invalid action");

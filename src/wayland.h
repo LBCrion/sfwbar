@@ -1,6 +1,8 @@
 #ifndef __WAYLAND_H__
 #define __WAYLAND_H__
 
+#include <gtk/gtk.h>
+
 void wayland_init ( void );
 void wayland_ipc_init ( void );
 void wayland_set_idle_inhibitor ( GtkWidget *widget, gboolean inhibit );

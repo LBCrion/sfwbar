@@ -8,6 +8,7 @@
 #include "sfwbar.h"
 #include "module.h"
 #include "wintree.h"
+#include "expr.h"
 
 /* extract a substring */
 static void *expr_lib_mid ( void **params )

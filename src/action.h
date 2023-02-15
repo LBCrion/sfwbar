@@ -2,19 +2,19 @@
 #define __ACTION_H__
 
 #include "wintree.h"
+#include "expr.h"
 
 typedef struct user_action {
   guchar cond;
   guchar ncond;
   guint type;
-  gchar *command;
-  gchar *comval;
-  gchar *addr;
-  gchar *addrval;
+  ExprCache *command;
+  ExprCache *addr;
   gchar *ident;
 } action_t;
 
 void action_exec ( GtkWidget *, action_t *, GdkEvent *, window_t *, guint16 *);
+action_t *action_new ( void );
 void action_free ( action_t *, GObject *);
 action_t *action_dup ( action_t *src );
 void action_function_add ( gchar *, GList *);

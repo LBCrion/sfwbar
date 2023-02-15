@@ -25,12 +25,6 @@ void css_remove_class ( GtkWidget *widget, gchar *css_class );
 void client_exec ( ScanFile *file );
 void client_socket ( ScanFile *file );
 
-char *expr_parse ( gchar *expr_str, guint * );
-gboolean expr_cache ( gchar **expr, gchar **cache, guint *vcount );
-void **expr_module_parameters ( GScanner *scanner, gchar *spec, gchar *name );
-gchar *expr_dtostr ( double num, gint dec );
-void expr_lib_init ( void );
-
 struct json_object *jpath_parse ( gchar *path, struct json_object *obj );
 
 void widget_set_css ( GtkWidget *, gpointer );

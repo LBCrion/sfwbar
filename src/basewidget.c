@@ -3,7 +3,7 @@
  * Copyright 2022 sfwbar maintainers
  */
 
-#include "sfwbar.h"
+#include "expr.h"
 #include "basewidget.h"
 #include "flowgrid.h"
 #include "action.h"
@@ -31,10 +31,10 @@ static void base_widget_destroy ( GtkWidget *self )
     g_hash_table_remove(widgets_id,priv->id);
 
   g_clear_pointer(&priv->id,g_free);
-  g_clear_pointer(&priv->value,g_free);
-  g_clear_pointer(&priv->evalue,g_free);
-  g_clear_pointer(&priv->style,g_free);
-  g_clear_pointer(&priv->estyle,g_free);
+  expr_cache_free(priv->value);
+  priv->value = NULL;
+  expr_cache_free(priv->style);
+  priv->style = NULL;
   g_clear_pointer(&priv->tooltip,g_free);
   g_clear_pointer(&priv->trigger,g_free);
   for(i=0;i<WIDGET_MAX_BUTTON;i++)
@@ -121,6 +121,8 @@ static void base_widget_init ( BaseWidget *self )
   g_return_if_fail(IS_BASE_WIDGET(self));
 
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
+  priv->value = expr_cache_new();
+  priv->style = expr_cache_new();
   priv->interval = 1000000;
   priv->dir = GTK_POS_RIGHT;
   priv->rect.width = 1;
@@ -238,7 +240,7 @@ gboolean base_widget_style ( GtkWidget *self )
   {
     child = BASE_WIDGET_GET_CLASS(self)->get_child(self);
     priv = base_widget_get_instance_private(BASE_WIDGET(self));
-    gtk_widget_set_name(child,priv->estyle);
+    gtk_widget_set_name(child,priv->style->cache);
     css_widget_cascade(child,NULL);
   }
   return FALSE;
@@ -291,15 +293,16 @@ void base_widget_set_value ( GtkWidget *self, gchar *value )
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  g_free(priv->value);
-  priv->value = value;
+  g_free(priv->value->definition);
+  priv->value->definition = value;
+  priv->value->eval = TRUE;
 
-  if(expr_cache(&priv->value,&priv->evalue,NULL) ||
+  if(expr_cache_eval(priv->value) ||
       BASE_WIDGET_GET_CLASS(self)->no_value_cache)
     base_widget_update_value(self);
 
   g_mutex_lock(&widget_mutex);
-  if(priv->value || priv->style)
+  if(priv->value->eval || priv->style->eval)
   {
     if(!g_list_find(widgets_scan,self))
       widgets_scan = g_list_append(widgets_scan,self);
@@ -316,14 +319,15 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  g_free(priv->style);
-  priv->style = style;
+  g_free(priv->style->definition);
+  priv->style->definition = style;
+  priv->style->eval = TRUE;
 
-  if(expr_cache(&priv->style,&priv->estyle,NULL))
+  if(expr_cache_eval(priv->style))
     base_widget_style(self);
 
   g_mutex_lock(&widget_mutex);
-  if(priv->value || priv->style)
+  if(priv->value->eval || priv->style->eval)
   {
     if(!g_list_find(widgets_scan,self))
       widgets_scan = g_list_append(widgets_scan,self);
@@ -497,7 +501,7 @@ gchar *base_widget_get_value ( GtkWidget *self )
   g_return_val_if_fail(IS_BASE_WIDGET(self),NULL);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  return priv->evalue;
+  return priv->value->cache;
 }
 
 action_t *base_widget_get_action ( GtkWidget *self, gint n )
@@ -564,10 +568,10 @@ gboolean base_widget_emit_trigger ( gchar *trigger )
     priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
     if(!priv->trigger || g_ascii_strcasecmp(trigger,priv->trigger))
       continue;
-    if(expr_cache(&priv->value,&priv->evalue,NULL) ||
+    if(expr_cache_eval(priv->value) ||
         BASE_WIDGET_GET_CLASS(iter->data)->no_value_cache)
       base_widget_update_value(iter->data);
-    if(expr_cache(&priv->style,&priv->estyle,NULL))
+    if(expr_cache_eval(priv->style))
       base_widget_style(iter->data);
   }
   g_mutex_unlock(&widget_mutex);
@@ -597,11 +601,11 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
       priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
       if(base_widget_get_next_poll(iter->data)<=ctime)
       {
-        if(expr_cache(&priv->value,&priv->evalue,NULL) ||
+        if(expr_cache_eval(priv->value) ||
             BASE_WIDGET_GET_CLASS(iter->data)->no_value_cache)
           g_main_context_invoke(gmc,(GSourceFunc)base_widget_update_value,
               iter->data);
-        if(expr_cache(&priv->style,&priv->estyle,NULL))
+        if(expr_cache_eval(priv->style))
           g_main_context_invoke(gmc,(GSourceFunc)base_widget_style,
               iter->data);
         base_widget_set_next_poll(iter->data,ctime);

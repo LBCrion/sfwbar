@@ -2,6 +2,7 @@
 #define __SCANNER_H__
 
 #include <json.h>
+#include "expr.h"
 
 enum {
   SO_FILE = 0,
@@ -26,6 +27,7 @@ typedef struct scan_file {
 } ScanFile;
 
 typedef struct scan_var {
+  ExprCache *expr;
   void *definition;
   gchar *str;
   guint vcount;

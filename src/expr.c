@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <sys/statvfs.h>
 #include <glib.h>
+#include "expr.h"
 #include "sfwbar.h"
 #include "wintree.h"
 #include "module.h"
@@ -384,33 +385,29 @@ static gchar *expr_parse_str_l1 ( GScanner *scanner )
   switch((gint)g_scanner_get_next_token(scanner))
   {
     case G_TOKEN_STRING:
-      str = g_strdup(scanner->value.v_string);
-      break;
+      return g_strdup(scanner->value.v_string);
     case G_TOKEN_LOOKUP:
-      str = expr_parse_lookup ( scanner );
-      break;
+      return expr_parse_lookup ( scanner );
     case G_TOKEN_MAP:
-      str = expr_parse_map ( scanner );
-      break;
+      return expr_parse_map ( scanner );
     case G_TOKEN_IDENTIFIER:
       if(g_scanner_peek_next_token(scanner)=='(')
-        str = expr_module_function(scanner);
+        return expr_module_function(scanner);
       else if(E_STATE(scanner)->ignore)
-        str = g_strdup("");
+        return g_strdup("");
       else
       {
         vcount = 0;
         str = scanner_get_string(scanner->value.v_identifier,TRUE,&vcount);
         E_STATE(scanner)->vcount = E_STATE(scanner)->vcount + vcount;
+        return str;
       }
-      break;
     default:
       g_scanner_warn(scanner,
           "Unexpected token %c at position %u, expected a string",scanner->token,
           g_scanner_cur_position(scanner));
-      str = g_strdup("");
+      return g_strdup("");
   }
-  return str;
 }
 
 static gchar *expr_parse_str ( GScanner *scanner, gchar *prev )
@@ -788,29 +785,42 @@ gchar *expr_parse( gchar *expr, guint *vcount )
   return result;
 }
 
-gboolean expr_cache ( gchar **expr, gchar **cache, guint *vc )
+gboolean expr_cache_eval ( ExprCache *expr )
 {
   gchar *eval;
-  guint vcount = 0;
 
-  if(!expr || !*expr)
+  if(!expr || !expr->definition || !expr->eval)
     return FALSE;
 
-  eval = expr_parse(*expr, &vcount);
-  if(!vcount)
+  expr->vcount = 0;
+  eval = expr_parse(expr->definition, &expr->vcount);
+
+  if(!expr->vcount)
+    expr->eval = FALSE;
+
+  if(g_strcmp0(eval,expr->cache))
   {
-    g_free(*expr);
-    *expr = NULL;
-  }
-  if(vc)
-    *vc = vcount;
-  if(g_strcmp0(eval,*cache))
-  {
-    g_free(*cache);
-    *cache = eval;
+    g_free(expr->cache);
+    expr->cache = eval;
     return TRUE;
   }
-  g_free(eval);
+  else
+  {
+    g_free(eval);
+    return FALSE;
+  }
+}
 
-  return FALSE;
+ExprCache *expr_cache_new ( void )
+{
+  return g_malloc0(sizeof(ExprCache));
+}
+
+void expr_cache_free ( ExprCache *expr )
+{
+  if(!expr)
+    return;
+  g_free(expr->definition);
+  g_free(expr->cache);
+  g_free(expr);
 }

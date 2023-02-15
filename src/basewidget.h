@@ -3,6 +3,7 @@
 
 #include "sfwbar.h" 
 #include "action.h"
+#include "expr.h"
 
 #define BASE_WIDGET_TYPE            (base_widget_get_type())
 G_DECLARE_DERIVABLE_TYPE (BaseWidget, base_widget, BASE, WIDGET, GtkEventBox);
@@ -27,10 +28,8 @@ typedef struct _BaseWidgetPrivate BaseWidgetPrivate;
 struct _BaseWidgetPrivate
 {
   gchar *id;
-  gchar *style;
-  gchar *estyle;
-  gchar *value;
-  gchar *evalue;
+  ExprCache *style;
+  ExprCache *value;
   gchar *tooltip;
   gulong tooltip_h;
   action_t *actions[WIDGET_MAX_BUTTON];

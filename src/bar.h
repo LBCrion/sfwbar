@@ -1,6 +1,8 @@
 #ifndef __BAR_H__
 #define __BAR_H__
 
+#include <gtk/gtk.h>
+
 GtkWindow *bar_new ( gchar * );
 void bar_set_monitor ( gchar *, GtkWindow * );
 void bar_set_layer ( gchar *, GtkWindow *);

@@ -14,6 +14,7 @@
 #include "switcher.h"
 #include "config.h"
 #include "sway_ipc.h"
+#include "expr.h"
 
 gchar *confname;
 gchar *sockname;

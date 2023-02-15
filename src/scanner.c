@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <glob.h>
 #include "sfwbar.h"
+#include "expr.h"
 #include "config.h"
 
 static GList *file_list;
@@ -83,6 +84,7 @@ void scanner_var_free ( ScanVar *var )
   else
     if(var->definition)
       g_regex_unref(var->definition);
+  expr_cache_free(var->expr);
   g_free(var->str);
   g_free(var);
 }
@@ -99,8 +101,12 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
 
   switch(var->type)
   {
-    case G_TOKEN_JSON:
     case G_TOKEN_SET:
+      var->expr = expr_cache_new();
+      var->expr->definition = pattern;
+      var->expr->eval = TRUE;
+      break;
+    case G_TOKEN_JSON:
       var->definition = pattern;
       break;
     case G_TOKEN_REGEX:
@@ -373,13 +379,13 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, guint *vcount )
   {
     if(!var->inuse)
     {
-      var->vcount = 0;
       var->inuse = TRUE;
-      (void)expr_cache((gchar **)&var->definition,&var->str,&var->vcount);
+      (void)expr_cache_eval(var->expr);
       var->inuse = FALSE;
-      *vcount += var->vcount;
+      var->vcount = var->expr->vcount;
+      *vcount += var->expr->vcount;
       scanner_var_reset(var,NULL);
-      scanner_var_values_update(var,g_strdup(var->str));
+      scanner_var_values_update(var,g_strdup(var->expr->cache));
       var->invalid = FALSE;
     }
   }
