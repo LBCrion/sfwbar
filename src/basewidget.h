@@ -30,7 +30,7 @@ struct _BaseWidgetPrivate
   gchar *id;
   ExprCache *style;
   ExprCache *value;
-  gchar *tooltip;
+  ExprCache *tooltip;
   gulong tooltip_h;
   action_t *actions[WIDGET_MAX_BUTTON];
   gulong button_h;

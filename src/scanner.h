@@ -30,7 +30,7 @@ typedef struct scan_var {
   ExprCache *expr;
   void *definition;
   gchar *str;
-  guint vcount;
+  guint vstate;
   double val;
   double pval;
   gint64 time;

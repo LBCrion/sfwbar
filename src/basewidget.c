@@ -35,7 +35,8 @@ static void base_widget_destroy ( GtkWidget *self )
   priv->value = NULL;
   expr_cache_free(priv->style);
   priv->style = NULL;
-  g_clear_pointer(&priv->tooltip,g_free);
+  expr_cache_free(priv->tooltip);
+  priv->tooltip = NULL;
   g_clear_pointer(&priv->trigger,g_free);
   for(i=0;i<WIDGET_MAX_BUTTON;i++)
   {
@@ -123,6 +124,7 @@ static void base_widget_init ( BaseWidget *self )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
   priv->value = expr_cache_new();
   priv->style = expr_cache_new();
+  priv->tooltip = expr_cache_new();
   priv->interval = 1000000;
   priv->dir = GTK_POS_RIGHT;
   priv->rect.width = 1;
@@ -195,17 +197,17 @@ static gboolean base_widget_tooltip_update ( GtkWidget *self,
     gint x, gint y, gboolean kbmode, GtkTooltip *tooltip, gpointer data )
 {
   BaseWidgetPrivate *priv; 
-  gchar *eval;
 
   g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
 
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
-  eval = expr_parse(priv->tooltip, NULL);
-  if(eval)
-  {
-    gtk_tooltip_set_markup(tooltip,eval);
-    g_free(eval);
-  }
+  if(!priv->tooltip)
+    return FALSE;
+  expr_cache_eval(priv->tooltip);
+  if(!priv->tooltip->cache)
+    return FALSE;
+
+  gtk_tooltip_set_markup(tooltip, priv->tooltip->cache);
 
   return TRUE;
 }
@@ -249,41 +251,31 @@ gboolean base_widget_style ( GtkWidget *self )
 void base_widget_set_tooltip ( GtkWidget *self, gchar *tooltip )
 {
   BaseWidgetPrivate *priv;
-  guint vcount;
-  gchar *eval;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  g_free(priv->tooltip);
-  priv->tooltip = tooltip;
+  if(!priv->tooltip)
+    return;
 
-  if(priv->tooltip)
+  g_free(priv->tooltip->definition);
+  priv->tooltip->definition = tooltip;
+  priv->tooltip->eval = TRUE;
+
+  if(!tooltip)
   {
-    eval = expr_parse(priv->tooltip, &vcount);
-    if(eval)
-    {
-      gtk_widget_set_has_tooltip(self,TRUE);
-      gtk_widget_set_tooltip_markup(self,eval);
-      g_free(eval);
-    }
-    if(!vcount)
-    {
-      g_free(priv->tooltip);
-      priv->tooltip = NULL;
-    }
-    else
-      priv->tooltip_h = g_signal_connect(self,"query-tooltip",
-          G_CALLBACK(base_widget_tooltip_update),self);
-  }
-  else
     gtk_widget_set_has_tooltip(self,FALSE);
-
-  if(!priv->tooltip && priv->tooltip_h)
-  {
-    g_signal_handler_disconnect(self,priv->tooltip_h);
-    priv->tooltip_h = 0;
+    return;
   }
+
+  if(expr_cache_eval(priv->tooltip))
+  {
+    gtk_widget_set_has_tooltip(self,TRUE);
+    gtk_widget_set_tooltip_markup(self,priv->tooltip->cache);
+  }
+  if(!priv->tooltip_h)
+    priv->tooltip_h = g_signal_connect(self,"query-tooltip",
+        G_CALLBACK(base_widget_tooltip_update),self);
 }
 
 void base_widget_set_value ( GtkWidget *self, gchar *value )

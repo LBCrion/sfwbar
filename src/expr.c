@@ -13,28 +13,7 @@
 #include "wintree.h"
 #include "module.h"
 
-enum {
-  G_TOKEN_TIME    = G_TOKEN_LAST + 1,
-  G_TOKEN_IF,
-  G_TOKEN_CACHED,
-  G_TOKEN_LOOKUP,
-  G_TOKEN_MAP
-};
-
-enum {
-  EXPR_STRING,
-  EXPR_NUMERIC,
-  EXPR_VARIANT
-};
-
-typedef struct expr_state {
-  gint type;
-  gint vcount;
-  gboolean error;
-  gboolean ignore;
-} ExprState;
-
-#define E_STATE(x) ((ExprState *)x->user_data)
+static GHashTable *expr_deps;
 
 static gdouble expr_parse_num ( GScanner *scanner, gdouble * );
 static gchar *expr_parse_str ( GScanner *scanner, gchar * );
@@ -94,18 +73,16 @@ static gboolean expr_is_string ( GScanner *scanner )
 static gboolean expr_is_variant ( GScanner *scanner )
 {
   g_scanner_peek_next_token(scanner);
-  if(scanner->next_token == (GTokenType)G_TOKEN_IF ||
+  if( scanner->next_token == (GTokenType)G_TOKEN_IF ||
       scanner->next_token == (GTokenType)G_TOKEN_CACHED)
     return TRUE;
 
-  if(scanner->next_token != G_TOKEN_IDENTIFIER)
+  if( scanner->next_token != G_TOKEN_IDENTIFIER ||
+      scanner_is_variable(scanner->next_value.v_identifier) ||
+      module_is_function(scanner->next_value.v_identifier) )
     return FALSE;
-  if(scanner_is_variable(scanner->next_value.v_identifier))
-    return FALSE;
-  if(module_is_function(scanner->next_value.v_identifier))
-    return FALSE;
-
-  return TRUE;
+  else
+    return TRUE;
 }
 
 static gboolean parser_expect_symbol ( GScanner *scanner, gint symbol,
@@ -155,8 +132,8 @@ static gchar *expr_module_function ( GScanner *scanner )
   if(module_is_function(scanner->value.v_identifier) &&
       !E_STATE(scanner)->ignore)
   {
-    E_STATE(scanner)->vcount = E_STATE(scanner)->vcount + 1;
-      return module_get_string(scanner);
+    E_STATE(scanner)->vstate = TRUE;
+    return module_get_string(scanner);
   }
 
   i=1;
@@ -182,7 +159,7 @@ static gchar *expr_module_function ( GScanner *scanner )
 static gchar *expr_parse_map ( GScanner *scanner )
 {
   gchar *match, *result, *comp;
-  guint vstate = E_STATE(scanner)->ignore;
+  guint istate = E_STATE(scanner)->ignore;
 
   parser_expect_symbol(scanner,'(',"Map(...)");
   match = expr_parse_str(scanner,NULL);
@@ -205,7 +182,7 @@ static gchar *expr_parse_map ( GScanner *scanner )
     {
       E_STATE(scanner)->ignore = 1;
       g_free(expr_parse_str(scanner,NULL));
-      E_STATE(scanner)->ignore = vstate;
+      E_STATE(scanner)->ignore = istate;
     }
     g_free(comp);
     if(g_scanner_peek_next_token(scanner)==',')
@@ -219,7 +196,7 @@ static gchar *expr_parse_lookup ( GScanner *scanner )
 {
   gchar *str;
   gdouble value, comp;
-  guint vstate = E_STATE(scanner)->ignore;
+  guint istate = E_STATE(scanner)->ignore;
 
   parser_expect_symbol(scanner,'(',"Lookup(...)");
   value = expr_parse_num ( scanner, NULL );
@@ -236,7 +213,7 @@ static gchar *expr_parse_lookup ( GScanner *scanner )
     {
       E_STATE(scanner)->ignore = 1;
       g_free(expr_parse_str(scanner,NULL));
-      E_STATE(scanner)->ignore = vstate;
+      E_STATE(scanner)->ignore = istate;
     }
     if(g_scanner_peek_next_token(scanner)==',')
       g_scanner_get_next_token(scanner);
@@ -249,7 +226,7 @@ static gchar *expr_parse_lookup ( GScanner *scanner )
     {
       E_STATE(scanner)->ignore = 1;
       g_free(expr_parse_str(scanner,NULL));
-      E_STATE(scanner)->ignore = vstate;
+      E_STATE(scanner)->ignore = istate;
     }
   }
 
@@ -261,7 +238,7 @@ static gchar *expr_parse_lookup ( GScanner *scanner )
 static gchar *expr_parse_cached ( GScanner *scanner )
 {
   gchar *ret;
-  guint vcount = 0;
+  guint vstate = FALSE;
   
   parser_expect_symbol(scanner,'(',"Cached(Identifier)");
   if(parser_expect_symbol(scanner,G_TOKEN_IDENTIFIER,"Cached(Identifier)"))
@@ -275,15 +252,15 @@ static gchar *expr_parse_cached ( GScanner *scanner )
   else if(*(scanner->value.v_identifier)=='$')
   {
     E_STATE(scanner)->type = EXPR_STRING;
-    ret = scanner_get_string(scanner->value.v_identifier,FALSE,&vcount);
+    ret = scanner_get_string(scanner->value.v_identifier,FALSE,&vstate);
   }
   else
   {
     E_STATE(scanner)->type = EXPR_NUMERIC;
     ret = expr_dtostr(
-        scanner_get_numeric(scanner->value.v_identifier,FALSE,&vcount),-1);
+        scanner_get_numeric(scanner->value.v_identifier,FALSE,&vstate),-1);
   }
-  E_STATE(scanner)->vcount = E_STATE(scanner)->vcount + vcount;
+  E_STATE(scanner)->vstate = E_STATE(scanner)->vstate || vstate;
 
   parser_expect_symbol(scanner,')',"Cached(Identifier)");
   return ret;
@@ -293,7 +270,7 @@ static gchar *expr_parse_if ( GScanner *scanner )
 {
   gboolean condition;
   gchar *str, *str2;
-  guint vstate = E_STATE(scanner)->ignore;
+  guint istate = E_STATE(scanner)->ignore;
   gint stype = E_STATE(scanner)->type;
 
   parser_expect_symbol(scanner,'(',"If(Condition,Expression,Expression)");
@@ -309,11 +286,11 @@ static gchar *expr_parse_if ( GScanner *scanner )
   if(condition)
     E_STATE(scanner)->ignore = 1;
   else
-    E_STATE(scanner)->ignore = vstate;
+    E_STATE(scanner)->ignore = istate;
   parser_expect_symbol(scanner,',',"If(Condition,Expression,Expression)");
   str2 = expr_parse_root(scanner);
 
-  E_STATE(scanner)->ignore = vstate;
+  E_STATE(scanner)->ignore = istate;
   parser_expect_symbol(scanner,')',"If(Condition,Expression,Expression)");
 
   if(condition)
@@ -359,7 +336,6 @@ static gdouble expr_parse_num_str ( GScanner *scanner, gchar *prev )
 static gchar *expr_parse_str_l1 ( GScanner *scanner )
 {
   gchar *str;
-  guint vcount;
   gint spos;
 
   if(expr_is_variant(scanner))
@@ -396,12 +372,8 @@ static gchar *expr_parse_str_l1 ( GScanner *scanner )
       else if(E_STATE(scanner)->ignore)
         return g_strdup("");
       else
-      {
-        vcount = 0;
-        str = scanner_get_string(scanner->value.v_identifier,TRUE,&vcount);
-        E_STATE(scanner)->vcount = E_STATE(scanner)->vcount + vcount;
-        return str;
-      }
+        return scanner_get_string(scanner->value.v_identifier,TRUE,
+            &(E_STATE(scanner)->vstate));
     default:
       g_scanner_warn(scanner,
           "Unexpected token %c at position %u, expected a string",scanner->token,
@@ -437,7 +409,6 @@ static gdouble expr_parse_num_value ( GScanner *scanner )
 {
   gdouble val;
   gchar *str;
-  guint vcount;
 
   if(expr_is_string(scanner))
     return expr_parse_num_str(scanner,NULL);
@@ -478,12 +449,8 @@ static gdouble expr_parse_num_value ( GScanner *scanner )
       else if(E_STATE(scanner)->ignore)
         return 0;
       else
-      {
-        vcount = 0;
-        val = scanner_get_numeric( scanner->value.v_identifier,TRUE, &vcount );
-        E_STATE(scanner)->vcount = E_STATE(scanner)->vcount + vcount;
-        return val;
-      }
+        return scanner_get_numeric( scanner->value.v_identifier,TRUE,
+            &(E_STATE(scanner)->vstate));
     default:
       g_scanner_warn(scanner,
           "Unexpected token at position %u, expected a number",
@@ -753,7 +720,7 @@ static GScanner *expr_scanner_new ( void )
   return scanner;
 }
 
-gchar *expr_parse( gchar *expr, guint *vcount )
+gchar *expr_parse( gchar *expr, guint *vstate )
 {
   GScanner *scanner;
   gchar *result;
@@ -766,17 +733,17 @@ gchar *expr_parse( gchar *expr, guint *vcount )
   E_STATE(scanner)->type = EXPR_VARIANT;
   E_STATE(scanner)->error = FALSE;
   E_STATE(scanner)->ignore = FALSE;
-  E_STATE(scanner)->vcount = vcount?*vcount:0;
+  E_STATE(scanner)->vstate = vstate?*vstate:0;
 
   g_scanner_input_text(scanner, expr, strlen(expr));
 
   result = expr_parse_root(scanner);
 
-  if(vcount)
-    *vcount = E_STATE(scanner)->vcount;
+  if(vstate)
+    *vstate = E_STATE(scanner)->vstate;
 
-  g_debug("expr: \"%s\" = \"%s\" (vars: %d)",expr,result,
-      E_STATE(scanner)->vcount);
+  g_debug("expr: \"%s\" = \"%s\" (vstate: %d)",expr,result,
+      E_STATE(scanner)->vstate);
 
   g_free(scanner->config->cset_identifier_nth);
   g_free(scanner->config->cset_identifier_first);
@@ -792,10 +759,10 @@ gboolean expr_cache_eval ( ExprCache *expr )
   if(!expr || !expr->definition || !expr->eval)
     return FALSE;
 
-  expr->vcount = 0;
-  eval = expr_parse(expr->definition, &expr->vcount);
+  expr->vstate = FALSE;
+  eval = expr_parse(expr->definition, &expr->vstate);
 
-  if(!expr->vcount)
+  if(!expr->vstate)
     expr->eval = FALSE;
 
   if(g_strcmp0(eval,expr->cache))
@@ -823,4 +790,30 @@ void expr_cache_free ( ExprCache *expr )
   g_free(expr->definition);
   g_free(expr->cache);
   g_free(expr);
+}
+
+void expr_dep_add ( gchar *ident, ExprCache *expr )
+{
+  GList *list;
+
+  if(!expr_deps)
+    expr_deps = g_hash_table_new_full((GHashFunc)str_nhash,
+          (GEqualFunc)str_nequal,g_free,(GDestroyNotify)g_list_free);
+
+  list = g_hash_table_lookup(expr_deps,ident);
+  if(!g_list_find(list,expr))
+    list = g_list_prepend(list,expr);
+  g_hash_table_replace(expr_deps,g_strdup(ident),list);
+}
+
+void expr_dep_trigger ( gchar *ident )
+{
+  GList *iter;
+
+  if(expr_deps)
+    return;
+
+  for(iter=g_hash_table_lookup(expr_deps,ident);iter;iter=g_list_next(iter))
+    ((ExprCache *)(iter->data))->eval = TRUE;
+  g_hash_table_remove(expr_deps,ident);
 }
