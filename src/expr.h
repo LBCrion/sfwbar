@@ -21,18 +21,18 @@ typedef struct expr_cache {
   gchar *cache;
   gboolean eval;
   guint vstate;
+  struct expr_cache *parent;
 } ExprCache;
 
 typedef struct expr_state {
   gint type;
-  guint vstate;
   gboolean error;
   gboolean ignore;
+  ExprCache *expr;
 } ExprState;
 
 #define E_STATE(x) ((ExprState *)x->user_data)
 
-char *expr_parse ( gchar *expr_str, guint * );
 gboolean expr_cache_eval ( ExprCache *expr );
 void **expr_module_parameters ( GScanner *scanner, gchar *spec, gchar *name );
 gchar *expr_dtostr ( double num, gint dec );

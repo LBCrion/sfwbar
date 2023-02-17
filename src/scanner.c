@@ -358,7 +358,7 @@ gchar *scanner_parse_identifier ( gchar *id, gchar **fname )
     return g_strdup(id);
 }
 
-ScanVar *scanner_var_update ( gchar *name, gboolean update, guint *vstate )
+ScanVar *scanner_var_update ( gchar *name, gboolean update, ExprCache *expr )
 {
   ScanVar *var;
 
@@ -371,7 +371,7 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, guint *vstate )
 
   if(!update || !var->invalid)
   {
-    *vstate = *vstate || TRUE;
+    expr->vstate = expr->vstate || var->vstate;
     return var;
   }
 
@@ -380,10 +380,12 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, guint *vstate )
     if(!var->inuse)
     {
       var->inuse = TRUE;
+      var->expr->parent = expr;
       (void)expr_cache_eval(var->expr);
+      var->expr->parent = NULL;
       var->inuse = FALSE;
       var->vstate = var->expr->vstate;
-      *vstate = *vstate || var->expr->vstate;
+      expr->vstate = expr->vstate || var->expr->vstate;
       scanner_var_reset(var,NULL);
       scanner_var_values_update(var,g_strdup(var->expr->cache));
       var->invalid = FALSE;
@@ -392,21 +394,21 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, guint *vstate )
   else
   {
     scanner_file_glob(var->file);
-    *vstate = TRUE;
-    var->vstate = *vstate;
+    expr->vstate = TRUE;
+    var->vstate = TRUE;
   }
 
   return var;
 }
 
 /* get string value of a variable by name */
-gchar *scanner_get_string ( gchar *name, gboolean update, guint *vstate )
+gchar *scanner_get_string ( gchar *name, gboolean update, ExprCache *expr )
 {
   ScanVar *var;
   gchar *id,*res;
 
   id = scanner_parse_identifier(name,NULL);
-  var = scanner_var_update(id, update,vstate);
+  var = scanner_var_update(id, update, expr);
   g_free(id);
 
   if(var)
@@ -414,19 +416,19 @@ gchar *scanner_get_string ( gchar *name, gboolean update, guint *vstate )
   else
     res = g_strdup("");
 
-  g_debug("scanner: %s = \"%s\" (vstate: %d)",name,res,*vstate);
+  g_debug("scanner: %s = \"%s\" (vstate: %d)",name,res,expr->vstate);
   return res;
 }
 
 /* get numeric value of a variable by name */
-double scanner_get_numeric ( gchar *name, gboolean update, guint *vstate )
+double scanner_get_numeric ( gchar *name, gboolean update, ExprCache *expr )
 {
   ScanVar *var;
   double retval;
   gchar *fname,*id;
 
   id = scanner_parse_identifier(name,&fname);
-  var = scanner_var_update(id, update, vstate);
+  var = scanner_var_update(id, update, expr);
   g_free(id);
 
   if(var)
@@ -447,7 +449,7 @@ double scanner_get_numeric ( gchar *name, gboolean update, guint *vstate )
   else
     retval = 0;
   g_free(fname);
-  g_debug("scanner: %s = %f (vstate: %d)",name,retval,*vstate);
+  g_debug("scanner: %s = %f (vstate: %d)",name,retval,expr->vstate);
   return retval;
 }
 

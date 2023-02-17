@@ -132,7 +132,7 @@ static gchar *expr_module_function ( GScanner *scanner )
   if(module_is_function(scanner->value.v_identifier) &&
       !E_STATE(scanner)->ignore)
   {
-    E_STATE(scanner)->vstate = TRUE;
+    E_STATE(scanner)->expr->vstate = TRUE;
     return module_get_string(scanner);
   }
 
@@ -238,7 +238,6 @@ static gchar *expr_parse_lookup ( GScanner *scanner )
 static gchar *expr_parse_cached ( GScanner *scanner )
 {
   gchar *ret;
-  guint vstate = FALSE;
   
   parser_expect_symbol(scanner,'(',"Cached(Identifier)");
   if(parser_expect_symbol(scanner,G_TOKEN_IDENTIFIER,"Cached(Identifier)"))
@@ -252,15 +251,15 @@ static gchar *expr_parse_cached ( GScanner *scanner )
   else if(*(scanner->value.v_identifier)=='$')
   {
     E_STATE(scanner)->type = EXPR_STRING;
-    ret = scanner_get_string(scanner->value.v_identifier,FALSE,&vstate);
+    ret = scanner_get_string(scanner->value.v_identifier,FALSE,
+        E_STATE(scanner)->expr);
   }
   else
   {
     E_STATE(scanner)->type = EXPR_NUMERIC;
-    ret = expr_dtostr(
-        scanner_get_numeric(scanner->value.v_identifier,FALSE,&vstate),-1);
+    ret = expr_dtostr(scanner_get_numeric(scanner->value.v_identifier,
+          FALSE,E_STATE(scanner)->expr),-1);
   }
-  E_STATE(scanner)->vstate = E_STATE(scanner)->vstate || vstate;
 
   parser_expect_symbol(scanner,')',"Cached(Identifier)");
   return ret;
@@ -373,7 +372,7 @@ static gchar *expr_parse_str_l1 ( GScanner *scanner )
         return g_strdup("");
       else
         return scanner_get_string(scanner->value.v_identifier,TRUE,
-            &(E_STATE(scanner)->vstate));
+            E_STATE(scanner)->expr);
     default:
       g_scanner_warn(scanner,
           "Unexpected token %c at position %u, expected a string",scanner->token,
@@ -450,7 +449,7 @@ static gdouble expr_parse_num_value ( GScanner *scanner )
         return 0;
       else
         return scanner_get_numeric( scanner->value.v_identifier,TRUE,
-            &(E_STATE(scanner)->vstate));
+            (E_STATE(scanner)->expr));
     default:
       g_scanner_warn(scanner,
           "Unexpected token at position %u, expected a number",
@@ -720,7 +719,7 @@ static GScanner *expr_scanner_new ( void )
   return scanner;
 }
 
-gchar *expr_parse( gchar *expr, guint *vstate )
+gchar *expr_parse( ExprCache *expr )
 {
   GScanner *scanner;
   gchar *result;
@@ -728,22 +727,19 @@ gchar *expr_parse( gchar *expr, guint *vstate )
 
   scanner = expr_scanner_new();
 
-  scanner->input_name = expr;
+  scanner->input_name = expr->definition;
   scanner->user_data = &state;
+  E_STATE(scanner)->expr = expr;
   E_STATE(scanner)->type = EXPR_VARIANT;
   E_STATE(scanner)->error = FALSE;
   E_STATE(scanner)->ignore = FALSE;
-  E_STATE(scanner)->vstate = vstate?*vstate:0;
 
-  g_scanner_input_text(scanner, expr, strlen(expr));
+  g_scanner_input_text(scanner, expr->definition, strlen(expr->definition));
 
   result = expr_parse_root(scanner);
 
-  if(vstate)
-    *vstate = E_STATE(scanner)->vstate;
-
-  g_debug("expr: \"%s\" = \"%s\" (vstate: %d)",expr,result,
-      E_STATE(scanner)->vstate);
+  g_debug("expr: \"%s\" = \"%s\" (vstate: %d)",expr->definition,result,
+      E_STATE(scanner)->expr->vstate);
 
   g_free(scanner->config->cset_identifier_nth);
   g_free(scanner->config->cset_identifier_first);
@@ -760,7 +756,7 @@ gboolean expr_cache_eval ( ExprCache *expr )
     return FALSE;
 
   expr->vstate = FALSE;
-  eval = expr_parse(expr->definition, &expr->vstate);
+  eval = expr_parse(expr);
 
   if(!expr->vstate)
     expr->eval = FALSE;
