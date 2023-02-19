@@ -36,6 +36,7 @@ static gboolean expr_is_numeric ( GScanner *scanner )
 {
   g_scanner_peek_next_token(scanner);
   if (scanner->next_token == G_TOKEN_FLOAT ||
+      scanner->next_token == (gint)G_TOKEN_HAVEVAR ||
       scanner->next_token == '!' ||
       scanner->next_token == '(' ||
       scanner->next_token == '-' ||
@@ -48,7 +49,8 @@ static gboolean expr_is_numeric ( GScanner *scanner )
   if(scanner_is_variable(scanner->next_value.v_identifier))
     return (*(scanner->next_value.v_identifier) != '$');
   if(module_is_function(scanner->next_value.v_identifier))
-    return module_is_numeric(scanner->next_value.v_identifier);
+    return module_check_flag(scanner->next_value.v_identifier,
+        MODULE_EXPR_NUMERIC);
   return FALSE;
 }
 
@@ -66,7 +68,8 @@ static gboolean expr_is_string ( GScanner *scanner )
   if(scanner_is_variable(scanner->next_value.v_identifier))
     return (*(scanner->next_value.v_identifier) == '$');
   if(module_is_function(scanner->next_value.v_identifier))
-    return !module_is_numeric(scanner->next_value.v_identifier);
+    return !module_check_flag(scanner->next_value.v_identifier,
+        MODULE_EXPR_NUMERIC);
   return FALSE;
 }
 
@@ -101,8 +104,8 @@ static gboolean parser_expect_symbol ( GScanner *scanner, gint symbol,
   else
     g_scanner_error(scanner,
         "%u: Unexpected token '%c'(%d) in expression %s, expected '%c'",
-        scanner->next_token,scanner->next_token,
-        g_scanner_cur_position(scanner), expr, symbol );
+        g_scanner_cur_position(scanner),
+        scanner->next_token,scanner->next_token,expr, symbol );
 
   return TRUE;
 }
@@ -132,10 +135,13 @@ static gchar *expr_module_function ( GScanner *scanner )
   if(module_is_function(scanner->value.v_identifier) &&
       !E_STATE(scanner)->ignore)
   {
-    E_STATE(scanner)->expr->vstate = TRUE;
+    if(!module_check_flag(scanner->value.v_identifier,
+          MODULE_EXPR_DETERMINISTIC))
+      E_STATE(scanner)->expr->vstate = TRUE;
     return module_get_string(scanner);
   }
 
+  expr_dep_add(scanner->value.v_identifier,E_STATE(scanner)->expr);
   i=1;
   err = g_strdup_printf("Unknown Function: %s",scanner->value.v_identifier);
 
@@ -251,13 +257,13 @@ static gchar *expr_parse_cached ( GScanner *scanner )
   else if(*(scanner->value.v_identifier)=='$')
   {
     E_STATE(scanner)->type = EXPR_STRING;
-    ret = scanner_get_string(scanner->value.v_identifier,FALSE,
+    ret = scanner_get_value(scanner->value.v_identifier,FALSE,
         E_STATE(scanner)->expr);
   }
   else
   {
     E_STATE(scanner)->type = EXPR_NUMERIC;
-    ret = expr_dtostr(scanner_get_numeric(scanner->value.v_identifier,
+    ret = expr_dtostr(*(gdouble *)scanner_get_value(scanner->value.v_identifier,
           FALSE,E_STATE(scanner)->expr),-1);
   }
 
@@ -302,6 +308,23 @@ static gchar *expr_parse_if ( GScanner *scanner )
     g_free(str);
     return str2;
   }
+}
+
+gdouble expr_parse_havevar ( GScanner *scanner )
+{
+  gdouble result;
+
+  parser_expect_symbol(scanner,'(',"HaveVar(iIdentifier)");
+  if(parser_expect_symbol(scanner,G_TOKEN_IDENTIFIER,"HaveVar(Identifier)"))
+    return FALSE;
+
+  result = scanner_is_variable(scanner->value.v_identifier);
+  if(!result)
+    expr_dep_add(scanner->value.v_identifier,E_STATE(scanner)->expr);
+
+  parser_expect_symbol(scanner,')',"HaveVar(iIdentifier)");
+
+  return result;
 }
 
 /* a string has been encountered in a numeric sequence
@@ -371,7 +394,7 @@ static gchar *expr_parse_str_l1 ( GScanner *scanner )
       else if(E_STATE(scanner)->ignore)
         return g_strdup("");
       else
-        return scanner_get_string(scanner->value.v_identifier,TRUE,
+        return scanner_get_value(scanner->value.v_identifier,TRUE,
             E_STATE(scanner)->expr);
     default:
       g_scanner_warn(scanner,
@@ -438,6 +461,8 @@ static gdouble expr_parse_num_value ( GScanner *scanner )
       return !expr_parse_num ( scanner, NULL );
     case G_TOKEN_FLOAT: 
       return scanner->value.v_float;
+    case G_TOKEN_HAVEVAR:
+      return expr_parse_havevar(scanner);
     case '(':
       val = expr_parse_num ( scanner, NULL );
       parser_expect_symbol(scanner, ')',"(Number)");
@@ -448,7 +473,7 @@ static gdouble expr_parse_num_value ( GScanner *scanner )
       else if(E_STATE(scanner)->ignore)
         return 0;
       else
-        return scanner_get_numeric( scanner->value.v_identifier,TRUE,
+        return *(gdouble *)scanner_get_value( scanner->value.v_identifier,TRUE,
             (E_STATE(scanner)->expr));
     default:
       g_scanner_warn(scanner,
@@ -581,7 +606,10 @@ static gchar *expr_parse_variant_token ( GScanner *scanner )
       if(g_scanner_peek_next_token(scanner)=='(')
         str = expr_module_function(scanner);
       else
+      {
+        expr_dep_add(scanner->value.v_identifier,E_STATE(scanner)->expr);
         str = g_strdup("");
+      }
       break;
     default:
       str = g_strdup("");
@@ -714,6 +742,7 @@ static GScanner *expr_scanner_new ( void )
   g_scanner_scope_add_symbol(scanner,0, "Cached", (gpointer)G_TOKEN_CACHED );
   g_scanner_scope_add_symbol(scanner,0, "Lookup", (gpointer)G_TOKEN_LOOKUP );
   g_scanner_scope_add_symbol(scanner,0, "Map", (gpointer)G_TOKEN_MAP );
+  g_scanner_scope_add_symbol(scanner,0, "HaveVar", (gpointer)G_TOKEN_HAVEVAR );
   g_scanner_set_scope(scanner,0);
 
   return scanner;
@@ -791,25 +820,45 @@ void expr_cache_free ( ExprCache *expr )
 void expr_dep_add ( gchar *ident, ExprCache *expr )
 {
   GList *list;
+  ExprCache *iter;
+  gchar *vname;
 
   if(!expr_deps)
     expr_deps = g_hash_table_new_full((GHashFunc)str_nhash,
-          (GEqualFunc)str_nequal,g_free,(GDestroyNotify)g_list_free);
+          (GEqualFunc)str_nequal,g_free,NULL);
 
-  list = g_hash_table_lookup(expr_deps,ident);
-  if(!g_list_find(list,expr))
-    list = g_list_prepend(list,expr);
-  g_hash_table_replace(expr_deps,g_strdup(ident),list);
+  vname = scanner_parse_identifier(ident,NULL);
+  list = g_hash_table_lookup(expr_deps,vname);
+  for(iter=expr;iter;iter=iter->parent)
+    if(!g_list_find(list,iter))
+      list = g_list_prepend(list,iter);
+  g_hash_table_replace(expr_deps,vname,list);
 }
 
 void expr_dep_trigger ( gchar *ident )
 {
-  GList *iter;
+  GList *iter,*list;
 
-  if(expr_deps)
+  if(!expr_deps)
     return;
 
-  for(iter=g_hash_table_lookup(expr_deps,ident);iter;iter=g_list_next(iter))
+  list = g_hash_table_lookup(expr_deps,ident);
+
+  for(iter=list;iter;iter=g_list_next(iter))
     ((ExprCache *)(iter->data))->eval = TRUE;
   g_hash_table_remove(expr_deps,ident);
+  g_list_free(list);
+}
+
+void expr_dep_dump_each ( void *key, void *value, void *d )
+{
+  GList *iter;
+
+  for(iter=value;iter;iter=g_list_next(iter))
+    g_message("%s: %s", (gchar *)key, ((ExprCache *)iter->data)->definition);
+}
+
+void expr_dep_dump ( void )
+{
+  g_hash_table_foreach(expr_deps,expr_dep_dump_each,NULL);
 }

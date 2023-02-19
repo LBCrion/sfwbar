@@ -294,13 +294,8 @@ void base_widget_set_value ( GtkWidget *self, gchar *value )
     base_widget_update_value(self);
 
   g_mutex_lock(&widget_mutex);
-  if(priv->value->eval || priv->style->eval)
-  {
-    if(!g_list_find(widgets_scan,self))
-      widgets_scan = g_list_append(widgets_scan,self);
-  }
-  else
-    widgets_scan = g_list_remove(widgets_scan,self);
+  if(!g_list_find(widgets_scan,self))
+    widgets_scan = g_list_append(widgets_scan,self);
   g_mutex_unlock(&widget_mutex);
 }
 
@@ -319,13 +314,8 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
     base_widget_style(self);
 
   g_mutex_lock(&widget_mutex);
-  if(priv->value->eval || priv->style->eval)
-  {
-    if(!g_list_find(widgets_scan,self))
-      widgets_scan = g_list_append(widgets_scan,self);
-  }
-  else
-    widgets_scan = g_list_remove(widgets_scan,self);
+  if(!g_list_find(widgets_scan,self))
+    widgets_scan = g_list_append(widgets_scan,self);
   g_mutex_unlock(&widget_mutex);
 }
 
@@ -481,6 +471,9 @@ gint64 base_widget_get_next_poll ( GtkWidget *self )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(priv->trigger)
+    return G_MAXINT64;
+
+  if(!priv->value->eval && !priv->style->eval)
     return G_MAXINT64;
 
   return priv->next_poll;

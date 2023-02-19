@@ -22,13 +22,18 @@ typedef struct {
   gchar *name;
   ModuleExpressionFunc function;
   gchar *parameters;
-  gboolean numeric;
+  gint flags;
 } ModuleExpressionHandlerV1;
 
 typedef struct {
   gchar *name;
   ModuleActionFunc function;
 } ModuleActionHandlerV1;
+
+enum ModuleFlags {
+  MODULE_EXPR_NUMERIC       = 1,
+  MODULE_EXPR_DETERMINISTIC = 2
+};
 
 #define MODULE_TRIGGER_EMIT(x) \
   if(sfwbar_module_api && sfwbar_module_api->emit_trigger) \
@@ -42,7 +47,7 @@ typedef struct {
 gboolean module_load ( gchar *name );
 void module_invalidate_all ( void );
 gboolean module_is_function ( gchar *identifier );
-gboolean module_is_numeric ( gchar *identifier );
+gboolean module_check_flag ( gchar *identifier, gint flag );
 gchar *module_get_string ( GScanner *scanner );
 void module_action_exec ( gchar *name, gchar *param, gchar *addr, void *,
     void *, void *, void * );

@@ -7,7 +7,8 @@ enum {
   G_TOKEN_IF      = G_TOKEN_LAST + 1,
   G_TOKEN_CACHED,
   G_TOKEN_LOOKUP,
-  G_TOKEN_MAP
+  G_TOKEN_MAP,
+  G_TOKEN_HAVEVAR
 };
 
 enum {
@@ -41,5 +42,6 @@ ExprCache *expr_cache_new ( void );
 void expr_cache_free ( ExprCache *expr );
 void expr_dep_add ( gchar *ident, ExprCache *expr );
 void expr_dep_trigger ( gchar *ident );
+void expr_dep_dump ( void );
 
 #endif

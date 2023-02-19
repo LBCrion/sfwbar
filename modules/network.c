@@ -708,7 +708,7 @@ void *sfwbar_expr_func ( void **params )
 }
 
 ModuleExpressionHandlerV1 handler1 = {
-  .numeric = FALSE,
+  .flags = 0,
   .name = "NetInfo",
   .parameters = "Ss",
   .function = sfwbar_expr_func

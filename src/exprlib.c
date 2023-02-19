@@ -172,70 +172,70 @@ static void *expr_lib_val ( void **params )
   return &result;
 }
 ModuleExpressionHandlerV1 mid_handler = {
-  .numeric = FALSE,
+  .flags = MODULE_EXPR_DETERMINISTIC,
   .name = "mid",
   .parameters = "SNN",
   .function = expr_lib_mid
 };
 
 ModuleExpressionHandlerV1 pad_handler = {
-  .numeric = FALSE,
+  .flags = MODULE_EXPR_DETERMINISTIC,
   .name = "pad",
   .parameters = "SN",
   .function = expr_lib_pad
 };
 
 ModuleExpressionHandlerV1 extract_handler = {
-  .numeric = FALSE,
+  .flags = MODULE_EXPR_DETERMINISTIC,
   .name = "extract",
   .parameters = "SS",
   .function = expr_lib_extract
 };
 
 ModuleExpressionHandlerV1 time_handler = {
-  .numeric = FALSE,
+  .flags = 0,
   .name = "time",
   .parameters = "ss",
   .function = expr_lib_time
 };
 
 ModuleExpressionHandlerV1 disk_handler = {
-  .numeric = TRUE,
+  .flags = MODULE_EXPR_NUMERIC,
   .name = "disk",
   .parameters = "SS",
   .function = expr_lib_disk
 };
 
 ModuleExpressionHandlerV1 havefunc_handler = {
-  .numeric = TRUE,
+  .flags = MODULE_EXPR_NUMERIC,
   .name = "HaveFunction",
   .parameters = "S",
   .function = expr_lib_have_function
 };
 
 ModuleExpressionHandlerV1 havevar_handler = {
-  .numeric = TRUE,
+  .flags = MODULE_EXPR_NUMERIC,
   .name = "HaveVar",
   .parameters = "S",
   .function = expr_lib_have_var
 };
 
 ModuleExpressionHandlerV1 active_handler = {
-  .numeric = FALSE,
+  .flags = 0,
   .name = "ActiveWin",
   .parameters = "",
   .function = expr_lib_active
 };
 
 ModuleExpressionHandlerV1 str_handler = {
-  .numeric = FALSE,
+  .flags = MODULE_EXPR_DETERMINISTIC,
   .name = "str",
   .parameters = "NN",
   .function = expr_lib_str
 };
 
 ModuleExpressionHandlerV1 val_handler = {
-  .numeric = TRUE,
+  .flags = MODULE_EXPR_NUMERIC | MODULE_EXPR_DETERMINISTIC,
   .name = "val",
   .parameters = "S",
   .function = expr_lib_val
@@ -249,7 +249,6 @@ ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &disk_handler,
   &active_handler,
   &havefunc_handler,
-  &havevar_handler,
   &str_handler,
   &val_handler,
   NULL

@@ -299,7 +299,7 @@ static void pulse_set_source_action ( gchar *source, gchar *dummy, void *d1,
 }
 
 ModuleExpressionHandlerV1 handler1 = {
-  .numeric = FALSE,
+  .flags = 0,
   .name = "Pulse",
   .parameters = "Ss",
   .function = pulse_expr_func

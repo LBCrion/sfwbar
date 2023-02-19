@@ -126,6 +126,7 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
         (GEqualFunc)str_nequal,g_free,(GDestroyNotify)scanner_var_free);
 
   g_hash_table_insert(scan_list,name,var);
+  expr_dep_trigger(name);
 }
 
 void scanner_var_invalidate ( void *key, ScanVar *var, void *data )
@@ -401,56 +402,50 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, ExprCache *expr )
   return var;
 }
 
-/* get string value of a variable by name */
-gchar *scanner_get_string ( gchar *name, gboolean update, ExprCache *expr )
+/* get value of a variable by name */
+void *scanner_get_value ( gchar *ident, gboolean update, ExprCache *expr )
 {
   ScanVar *var;
-  gchar *id,*res;
-
-  id = scanner_parse_identifier(name,NULL);
-  var = scanner_var_update(id, update, expr);
-  g_free(id);
-
-  if(var)
-    res = g_strdup(var->str);
-  else
-    res = g_strdup("");
-
-  g_debug("scanner: %s = \"%s\" (vstate: %d)",name,res,expr->vstate);
-  return res;
-}
-
-/* get numeric value of a variable by name */
-double scanner_get_numeric ( gchar *name, gboolean update, ExprCache *expr )
-{
-  ScanVar *var;
-  double retval;
+  static double retval;
   gchar *fname,*id;
 
-  id = scanner_parse_identifier(name,&fname);
+  id = scanner_parse_identifier(ident,&fname);
   var = scanner_var_update(id, update, expr);
   g_free(id);
 
-  if(var)
+  if(!var)
   {
-    if(!g_strcmp0(fname,".val"))
-      retval = var->val;
-    else if(!g_strcmp0(fname,".pval"))
-      retval = var->pval;
-    else if(!g_strcmp0(fname,".count"))
-      retval = var->count;
-    else if(!g_strcmp0(fname,".time"))
-      retval = var->time;
-    else if(!g_strcmp0(fname,".age"))
-      retval = (g_get_monotonic_time() - var->ptime);
-    else
-      retval = 0;
+    g_free(fname);
+    expr_dep_add(ident, expr);
+    if(*ident == '$')
+      return g_strdup("");
+    retval = 0;
+    return &retval;
   }
+
+  if(*ident == '$')
+  {
+    g_debug("scanner: %s = \"%s\" (vstate: %d)",ident,var->str,expr->vstate);
+    g_free(fname);
+    return g_strdup(var->str);
+  }
+
+  if(!g_strcmp0(fname,".val"))
+    retval = var->val;
+  else if(!g_strcmp0(fname,".pval"))
+    retval = var->pval;
+  else if(!g_strcmp0(fname,".count"))
+    retval = var->count;
+  else if(!g_strcmp0(fname,".time"))
+    retval = var->time;
+  else if(!g_strcmp0(fname,".age"))
+    retval = (g_get_monotonic_time() - var->ptime);
   else
     retval = 0;
+
   g_free(fname);
-  g_debug("scanner: %s = %f (vstate: %d)",name,retval,expr->vstate);
-  return retval;
+  g_debug("scanner: %s = %f (vstate: %d)",ident,retval,expr->vstate);
+  return &retval;
 }
 
 gboolean scanner_is_variable ( gchar *identifier )

@@ -197,7 +197,7 @@ static void mpd_set_passwd ( gchar *pwd, gchar *dummy, void *d1,
 }
 
 ModuleExpressionHandlerV1 handler1 = {
-  .numeric = FALSE,
+  .flags = 0,
   .name = "Mpd",
   .parameters = "S",
   .function = mpd_expr_func

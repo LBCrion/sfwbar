@@ -35,7 +35,10 @@ void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler,gchar *name )
         g_message("Duplicate module expr function: %s in module %s",
             ehandler[i]->name,name);
       else
+      {
         g_hash_table_insert(expr_handlers,ehandler[i]->name,ehandler[i]);
+        expr_dep_trigger(ehandler[i]->name);
+      }
     }
 }
 
@@ -152,7 +155,7 @@ gboolean module_is_function ( gchar *identifier )
   return FALSE;
 }
 
-gboolean module_is_numeric ( gchar *identifier )
+gboolean module_check_flag ( gchar *identifier, gint flag )
 {
   ModuleExpressionHandlerV1 *handler;
 
@@ -162,7 +165,7 @@ gboolean module_is_numeric ( gchar *identifier )
   handler = g_hash_table_lookup(expr_handlers,identifier);
   if(!handler)
     return FALSE;
-  return handler->numeric;
+  return !!(handler->flags & flag);
 }
 
 gchar *module_get_string ( GScanner *scanner )
