@@ -127,10 +127,22 @@ gchar *expr_dtostr ( double num, gint dec )
   return g_strdup(g_ascii_formatd(buf,G_ASCII_DTOSTR_BUF_SIZE,fbuf,num));
 }
 
-static gchar *expr_module_function ( GScanner *scanner )
+static void *expr_parse_identifier ( GScanner *scanner )
 {
   gint i;
   gchar *err;
+
+  if(g_scanner_peek_next_token(scanner)!='(')
+  {
+    if(!scanner_is_variable(scanner->value.v_identifier))
+    {
+      expr_dep_add(scanner->value.v_identifier,E_STATE(scanner)->expr);
+      return g_strdup("");
+    }
+    else
+      return scanner_get_value(scanner->value.v_identifier,
+          !E_STATE(scanner)->ignore,E_STATE(scanner)->expr);
+  }
 
   if(module_is_function(scanner->value.v_identifier) &&
       !E_STATE(scanner)->ignore)
@@ -142,8 +154,8 @@ static gchar *expr_module_function ( GScanner *scanner )
   }
 
   expr_dep_add(scanner->value.v_identifier,E_STATE(scanner)->expr);
-  i=1;
   err = g_strdup_printf("Unknown Function: %s",scanner->value.v_identifier);
+  i=1;
 
   if(g_scanner_peek_next_token(scanner)=='(')
   {
@@ -389,13 +401,7 @@ static gchar *expr_parse_str_l1 ( GScanner *scanner )
     case G_TOKEN_MAP:
       return expr_parse_map ( scanner );
     case G_TOKEN_IDENTIFIER:
-      if(g_scanner_peek_next_token(scanner)=='(')
-        return expr_module_function(scanner);
-      else if(E_STATE(scanner)->ignore)
-        return g_strdup("");
-      else
-        return scanner_get_value(scanner->value.v_identifier,TRUE,
-            E_STATE(scanner)->expr);
+      return expr_parse_identifier(scanner);
     default:
       g_scanner_warn(scanner,
           "Unexpected token %c at position %u, expected a string",scanner->token,
@@ -468,13 +474,7 @@ static gdouble expr_parse_num_value ( GScanner *scanner )
       parser_expect_symbol(scanner, ')',"(Number)");
       return val;
     case G_TOKEN_IDENTIFIER:
-      if(g_scanner_peek_next_token(scanner)=='(')
-        return *((gdouble *)expr_module_function(scanner));
-      else if(E_STATE(scanner)->ignore)
-        return 0;
-      else
-        return *(gdouble *)scanner_get_value( scanner->value.v_identifier,TRUE,
-            (E_STATE(scanner)->expr));
+      return *((gdouble *)expr_parse_identifier(scanner));
     default:
       g_scanner_warn(scanner,
           "Unexpected token at position %u, expected a number",
@@ -588,34 +588,21 @@ static gdouble expr_parse_num( GScanner *scanner, gdouble *prev )
 
 static gchar *expr_parse_variant_token ( GScanner *scanner )
 {
-  gchar *str;
-
   E_STATE(scanner)->type = EXPR_VARIANT;
   switch((gint)g_scanner_peek_next_token(scanner))
   {
     case G_TOKEN_IF:
       g_scanner_get_next_token(scanner);
-      str = expr_parse_if(scanner);
-      break;
+      return expr_parse_if(scanner);
     case G_TOKEN_CACHED:
       g_scanner_get_next_token(scanner);
-      str = expr_parse_cached(scanner);
-      break;
+      return expr_parse_cached(scanner);
     case G_TOKEN_IDENTIFIER:
       g_scanner_get_next_token(scanner);
-      if(g_scanner_peek_next_token(scanner)=='(')
-        str = expr_module_function(scanner);
-      else
-      {
-        expr_dep_add(scanner->value.v_identifier,E_STATE(scanner)->expr);
-        str = g_strdup("");
-      }
-      break;
+      return expr_parse_identifier(scanner);
     default:
-      str = g_strdup("");
+      return g_strdup("");
   }
-
-  return str;
 }
 
 static gchar *expr_parse_variant ( GScanner *scanner )
