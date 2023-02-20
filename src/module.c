@@ -192,7 +192,7 @@ gchar *module_get_string ( GScanner *scanner )
       g_free(params[i]);
   g_free(params);
 
-  if(!(handler->flags && MODULE_EXPR_DETERMINISTIC))
+  if(!(handler->flags & MODULE_EXPR_DETERMINISTIC))
     E_STATE(scanner)->expr->vstate = TRUE;
 
   return result;

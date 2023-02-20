@@ -443,7 +443,7 @@ void *scanner_get_value ( gchar *ident, gboolean update, ExprCache *expr )
     *retval = (g_get_monotonic_time() - var->ptime);
 
   g_free(fname);
-  g_debug("scanner: %s = %f (vstate: %d)",ident,retval,expr->vstate);
+  g_debug("scanner: %s = %f (vstate: %d)",ident,*retval,expr->vstate);
   return retval;
 }
 
