@@ -32,6 +32,23 @@ static gdouble expr_str_to_num ( gchar *str )
   return val;
 }
 
+/* convert a number to a string with specified number of decimals */
+gchar *expr_dtostr ( double num, gint dec )
+{
+  static const gchar *format = "%%0.%df";
+  static gchar fbuf[16];
+  static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+
+  if(dec<0)
+    return g_strdup(g_ascii_dtostr(buf,G_ASCII_DTOSTR_BUF_SIZE,num));
+
+  if(dec>99)
+    dec = 99;
+
+  g_snprintf(fbuf,16,format,dec);
+  return g_strdup(g_ascii_formatd(buf,G_ASCII_DTOSTR_BUF_SIZE,fbuf,num));
+}
+
 static gboolean expr_is_numeric ( GScanner *scanner )
 {
   g_scanner_peek_next_token(scanner);
@@ -110,56 +127,32 @@ static gboolean parser_expect_symbol ( GScanner *scanner, gint symbol,
   return TRUE;
 }
 
-/* convert a number to a string with specified number of decimals */
-gchar *expr_dtostr ( double num, gint dec )
-{
-  static const gchar *format = "%%0.%df";
-  static gchar fbuf[16];
-  static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
-
-  if(dec<0)
-    return g_strdup(g_ascii_dtostr(buf,G_ASCII_DTOSTR_BUF_SIZE,num));
-
-  if(dec>99)
-    dec = 99;
-
-  g_snprintf(fbuf,16,format,dec);
-  return g_strdup(g_ascii_formatd(buf,G_ASCII_DTOSTR_BUF_SIZE,fbuf,num));
-}
-
 static void *expr_parse_identifier ( GScanner *scanner )
 {
   gint i;
   gchar *err;
 
-  if(g_scanner_peek_next_token(scanner)!='(')
-  {
-    if(!scanner_is_variable(scanner->value.v_identifier))
-    {
-      expr_dep_add(scanner->value.v_identifier,E_STATE(scanner)->expr);
-      return g_strdup("");
-    }
-    else
-      return scanner_get_value(scanner->value.v_identifier,
-          !E_STATE(scanner)->ignore,E_STATE(scanner)->expr);
-  }
+  if(g_scanner_peek_next_token(scanner)!='(' &&
+      scanner_is_variable(scanner->value.v_identifier))
+    return scanner_get_value(scanner->value.v_identifier,
+        !E_STATE(scanner)->ignore,E_STATE(scanner)->expr);
 
-  if(module_is_function(scanner->value.v_identifier) &&
+  if(g_scanner_peek_next_token(scanner)=='(' &&
+      module_is_function(scanner->value.v_identifier) &&
       !E_STATE(scanner)->ignore)
-  {
-    if(!module_check_flag(scanner->value.v_identifier,
-          MODULE_EXPR_DETERMINISTIC))
       E_STATE(scanner)->expr->vstate = TRUE;
     return module_get_string(scanner);
-  }
 
   expr_dep_add(scanner->value.v_identifier,E_STATE(scanner)->expr);
-  err = g_strdup_printf("Unknown Function: %s",scanner->value.v_identifier);
-  i=1;
 
-  if(g_scanner_peek_next_token(scanner)=='(')
+  if(g_scanner_peek_next_token(scanner)!='(')
+    return g_strdup_printf("Undeclared variable: %s",
+        scanner->value.v_identifier);
+  else
   {
+    err = g_strdup_printf("Unknown Function: %s",scanner->value.v_identifier);
     g_scanner_get_next_token(scanner);
+    i=1;
     while(i && !g_scanner_eof(scanner))
       switch((gint)g_scanner_get_next_token(scanner))
       {
@@ -170,8 +163,8 @@ static void *expr_parse_identifier ( GScanner *scanner )
           i--;
           break;
       }
+    return err;
   }
-  return err;
 }
 
 static gchar *expr_parse_map ( GScanner *scanner )
@@ -184,7 +177,7 @@ static gchar *expr_parse_map ( GScanner *scanner )
   parser_expect_symbol(scanner,',',"Map(value,...)");
   result = NULL;
 
-  while(scanner->token==',' && g_scanner_peek_next_token(scanner)!=')')
+  while(scanner->token==',' && expr_is_string(scanner))
   {
     comp = expr_parse_str(scanner,NULL);
     if(g_scanner_peek_next_token(scanner)==')')
@@ -684,17 +677,16 @@ void **expr_module_parameters ( GScanner *scanner, gchar *spec, gchar *name )
     for(i=0;spec[i];i++)
       if(g_scanner_peek_next_token(scanner)!=')')
       {
-        if(g_ascii_tolower(spec[i])=='n' &&
-            (expr_is_numeric(scanner)||expr_is_variant(scanner)))
+        if(g_ascii_tolower(spec[i])=='n' && !expr_is_string(scanner))
         {
           params[i] = g_malloc0(sizeof(gdouble));
           *((gdouble *)params[i]) = expr_parse_num(scanner,NULL);
         }
-        else if(g_ascii_tolower(spec[i])=='s' &&
-            (expr_is_string(scanner) || expr_is_variant(scanner)))
+        else if(g_ascii_tolower(spec[i])=='s' && !expr_is_numeric(scanner))
           params[i] = expr_parse_str(scanner,NULL);
         else if(!g_ascii_islower(spec[i]))
           g_scanner_error(scanner,"invalid type in parameter %d of %s",i,name);
+
         if(params[i] && g_scanner_peek_next_token(scanner)==',')
           g_scanner_get_next_token(scanner);
       }
