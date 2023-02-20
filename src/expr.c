@@ -249,6 +249,7 @@ static gchar *expr_parse_lookup ( GScanner *scanner )
 static gchar *expr_parse_cached ( GScanner *scanner )
 {
   gchar *ret;
+  gdouble *ptr;
   
   parser_expect_symbol(scanner,'(',"Cached(Identifier)");
   if(parser_expect_symbol(scanner,G_TOKEN_IDENTIFIER,"Cached(Identifier)"))
@@ -268,8 +269,10 @@ static gchar *expr_parse_cached ( GScanner *scanner )
   else
   {
     E_STATE(scanner)->type = EXPR_NUMERIC;
-    ret = expr_dtostr(*(gdouble *)scanner_get_value(scanner->value.v_identifier,
-          FALSE,E_STATE(scanner)->expr),-1);
+    ptr = scanner_get_value(scanner->value.v_identifier,FALSE,
+        E_STATE(scanner)->expr);
+    ret = expr_dtostr(*ptr,-1);
+    g_free(ptr);
   }
 
   parser_expect_symbol(scanner,')',"Cached(Identifier)");
@@ -428,7 +431,7 @@ static gchar *expr_parse_str ( GScanner *scanner, gchar *prev )
 
 static gdouble expr_parse_num_value ( GScanner *scanner )
 {
-  gdouble val;
+  gdouble val, *ptr;
   gchar *str;
 
   if(expr_is_string(scanner))
@@ -467,7 +470,10 @@ static gdouble expr_parse_num_value ( GScanner *scanner )
       parser_expect_symbol(scanner, ')',"(Number)");
       return val;
     case G_TOKEN_IDENTIFIER:
-      return *((gdouble *)expr_parse_identifier(scanner));
+      ptr = expr_parse_identifier(scanner);
+      val = *ptr;
+      g_free(ptr);
+      return val;
     default:
       g_scanner_warn(scanner,
           "Unexpected token at position %u, expected a number",

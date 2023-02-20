@@ -406,7 +406,7 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, ExprCache *expr )
 void *scanner_get_value ( gchar *ident, gboolean update, ExprCache *expr )
 {
   ScanVar *var;
-  static double retval;
+  double *retval;
   gchar *fname,*id;
 
   id = scanner_parse_identifier(ident,&fname);
@@ -419,8 +419,7 @@ void *scanner_get_value ( gchar *ident, gboolean update, ExprCache *expr )
     expr_dep_add(ident, expr);
     if(*ident == '$')
       return g_strdup("");
-    retval = 0;
-    return &retval;
+    return g_malloc0(sizeof(gdouble));
   }
 
   if(*ident == '$')
@@ -430,22 +429,22 @@ void *scanner_get_value ( gchar *ident, gboolean update, ExprCache *expr )
     return g_strdup(var->str);
   }
 
+  retval = g_malloc0(sizeof(gdouble));
+
   if(!g_strcmp0(fname,".val"))
-    retval = var->val;
+    *retval = var->val;
   else if(!g_strcmp0(fname,".pval"))
-    retval = var->pval;
+    *retval = var->pval;
   else if(!g_strcmp0(fname,".count"))
-    retval = var->count;
+    *retval = var->count;
   else if(!g_strcmp0(fname,".time"))
-    retval = var->time;
+    *retval = var->time;
   else if(!g_strcmp0(fname,".age"))
-    retval = (g_get_monotonic_time() - var->ptime);
-  else
-    retval = 0;
+    *retval = (g_get_monotonic_time() - var->ptime);
 
   g_free(fname);
   g_debug("scanner: %s = %f (vstate: %d)",ident,retval,expr->vstate);
-  return &retval;
+  return retval;
 }
 
 gboolean scanner_is_variable ( gchar *identifier )

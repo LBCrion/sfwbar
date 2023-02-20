@@ -101,26 +101,26 @@ static void *expr_lib_time ( void **params )
 static void *expr_lib_disk ( void **params )
 {
   struct statvfs fs;
-  static gdouble result = 0;
+  gdouble *result = g_malloc0(sizeof(gdouble));
 
   if(!params || !params[0] || !params[1])
-    return &result;
+    return result;
 
   if(statvfs(params[0],&fs))
-    return &result;
+    return result;
 
   if(!g_ascii_strcasecmp(params[1],"total"))
-    result = fs.f_blocks * fs.f_frsize;
+    *result = fs.f_blocks * fs.f_frsize;
   if(!g_ascii_strcasecmp(params[1],"avail"))
-    result = fs.f_bavail * fs.f_bsize;
+    *result = fs.f_bavail * fs.f_bsize;
   if(!g_ascii_strcasecmp(params[1],"free"))
-    result = fs.f_bfree * fs.f_bsize;
+    *result = fs.f_bfree * fs.f_bsize;
   if(!g_ascii_strcasecmp(params[1],"%avail"))
-    result = ((gdouble)(fs.f_bfree*fs.f_bsize) / (gdouble)(fs.f_blocks*fs.f_frsize))*100;
+    *result = ((gdouble)(fs.f_bfree*fs.f_bsize) / (gdouble)(fs.f_blocks*fs.f_frsize))*100;
   if(!g_ascii_strcasecmp(params[1],"%used"))
-    result = (1.0 - (gdouble)(fs.f_bfree*fs.f_bsize) / (gdouble)(fs.f_blocks*fs.f_frsize))*100;
+    *result = (1.0 - (gdouble)(fs.f_bfree*fs.f_bsize) / (gdouble)(fs.f_blocks*fs.f_frsize))*100;
 
-  return &result;
+  return result;
 }
 
 static void *expr_lib_active ( void **params )
@@ -130,26 +130,28 @@ static void *expr_lib_active ( void **params )
 
 static void *expr_lib_have_function ( void **params )
 {
-  static gdouble result;
+  gdouble *result;
 
   if(!params || !params[0])
-    result = (gdouble)FALSE;
-  else
-    result = module_is_function(params[0]);
+    return g_malloc0(sizeof(gdouble));
 
-  return &result;
+  result = g_malloc(sizeof(gdouble));
+  *result = module_is_function(params[0]);
+
+  return result;
 }
 
 static void *expr_lib_have_var ( void **params )
 {
-  static gdouble result;
+  gdouble *result;
 
   if(!params || !params[0])
-    result = (gdouble)FALSE;
-  else
-    result = scanner_is_variable(params[0]);
+    return g_malloc0(sizeof(gdouble));
 
-  return &result;
+  result = g_malloc(sizeof(gdouble));
+  *result = scanner_is_variable(params[0]);
+
+  return result;
 }
 
 static void *expr_lib_str ( void **params )
@@ -162,14 +164,15 @@ static void *expr_lib_str ( void **params )
 
 static void *expr_lib_val ( void **params )
 {
-  static gdouble result;
+  gdouble *result;
 
   if(!params || !params[0])
-    result = (gdouble)FALSE;
-  else
-    result = strtod(params[0],NULL);
+    return g_malloc0(sizeof(gdouble));
 
-  return &result;
+  result = g_malloc(sizeof(gdouble));
+  *result = strtod(params[0],NULL);
+
+  return result;
 }
 ModuleExpressionHandlerV1 mid_handler = {
   .flags = MODULE_EXPR_DETERMINISTIC,
