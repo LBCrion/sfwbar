@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020-2022 sfwbar maintainers
+ * Copyright 2020- sfwbar maintainers
  */
 
 #include "sfwbar.h"
@@ -80,13 +80,28 @@ static void scale_image_surface_update ( GtkWidget *self, gint width,
   {
     loader = gdk_pixbuf_loader_new();
     gdk_pixbuf_loader_set_size(loader,width,height);
-    gdk_pixbuf_loader_write(loader,(guchar *)priv->file,
-        strlen(priv->file), NULL);
+    GdkRGBA col;
+    gtk_style_context_get_color(gtk_widget_get_style_context(self),
+        GTK_STATE_FLAG_NORMAL,&col);
+    gchar *svg;
+    gchar *rgba;
+    if(strstr(priv->file,"@theme_fg_color"))
+    {
+      rgba = g_strdup_printf("Rgba(%d,%d,%d,%f)",(gint)(col.red*256),
+          (gint)(col.green*256),(gint)(col.blue*256),col.alpha);
+      svg = str_replace(priv->file,"@theme_fg_color",rgba);
+      g_free(rgba);
+    }
+    else
+      svg = NULL;
+    gdk_pixbuf_loader_write(loader,(guchar *)(svg?svg:priv->file),
+        strlen(svg?svg:priv->file), NULL);
     gdk_pixbuf_loader_close(loader,NULL);
     buf = gdk_pixbuf_loader_get_pixbuf(loader);
     if(buf)
       buf = gdk_pixbuf_copy(buf);
     g_object_unref(G_OBJECT(loader));
+    g_free(svg);
   }
   else
     buf = NULL;

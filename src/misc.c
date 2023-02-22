@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020-2022 sfwbar maintainers
+ * Copyright 2020-sfwbar maintainers
  */
 
 #include <glib.h>
@@ -193,4 +193,46 @@ guint str_nhash ( gchar *str )
 gboolean str_nequal ( gchar *str1, gchar *str2 )
 {
   return (!g_ascii_strcasecmp(str1,str2));
+}
+
+gchar *str_replace ( gchar *str, gchar *old, gchar *new )
+{
+  gssize olen, nlen;
+  gint n;
+  gchar *ptr, *pptr, *dptr, *dest;
+
+  if(!str || !old || !new)
+    return g_strdup(str);
+
+  olen = strlen(old);
+  nlen = strlen(new);
+
+  n=0;
+  ptr = strstr(str,old);
+  while(ptr)
+  {
+    n++;
+    ptr = strstr(ptr+olen,old);
+  }
+
+  if(!n)
+    return g_strdup(str);
+
+  dest = g_malloc(strlen(str)+n*(nlen-olen)+1);
+
+  pptr = str;
+  ptr = strstr(str,old);
+  dptr = dest;
+  while(ptr)
+  {
+    strncpy(dptr,pptr,ptr-pptr);
+    dptr += ptr - pptr;
+    strncpy(dptr,new,nlen);
+    dptr += nlen;
+    pptr = ptr + olen;
+    ptr = strstr(pptr,old);
+  }
+  strcpy(dptr,pptr);
+
+  return dest;
 }
