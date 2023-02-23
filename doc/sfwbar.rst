@@ -635,8 +635,21 @@ Product
 
 For string variables, Sum and Product aggregators are treated as Last.
 
+Global Options
+--------------
+
+Theme <string>
+  Override a Gtk theme to name specified.
+
+DisownMinimized <boolean>
+  Disassociate windows from their workplaces when they are minimized.
+  If this option is set, selecting a minimize window will unminimize
+  it on the active workplace. If set to False (default), the window 
+  will be unminimzied to it's last workplace.
+  This option only applies to Sway and Hyprland comositors
+
 EXPRESSIONS
-===========
+-----------
 Values in widgets can contain basic arithmetic and string manipulation
 expressions. These allow transformation of data obtained by the scanner before
 it is displayed by the widgets.
@@ -674,6 +687,8 @@ Operation   Description
             ``Extract($Var,'FindThis: (GrabThat)')``
 ``Str``     convert a number into a string, the first argument is a number (or
             a numeric expression), the second argument is decimal precision.
+            If precision is omitted, the number is rounded to the nearest 
+            integer.
 ``Pad``     pad a string to be n characters long, the first parameter is a
             string to pad, the second is the desired number of characters,
             if the number is negative, the string is padded at the end, if
@@ -886,4 +901,3 @@ tray_passive          passive tray icon
 ===================== =============
 
 For example you can style top level grid using ``grid#layout { }``.
-

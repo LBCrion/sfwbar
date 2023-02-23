@@ -749,7 +749,20 @@ the source
 .UNINDENT
 .sp
 For string variables, Sum and Product aggregators are treated as Last.
-.SH EXPRESSIONS
+.SS Global Options
+.INDENT 0.0
+.TP
+.B Theme <string>
+Override a Gtk theme to name specified.
+.TP
+.B DisownMinimized <boolean>
+Disassociate windows from their workplaces when they are minimized.
+If this option is set, selecting a minimize window will unminimize
+it on the active workplace. If set to False (default), the window
+will be unminimzied to it\(aqs last workplace.
+This option only applies to Sway and Hyprland comositors
+.UNINDENT
+.SS EXPRESSIONS
 .sp
 Values in widgets can contain basic arithmetic and string manipulation
 expressions. These allow transformation of data obtained by the scanner before
@@ -883,6 +896,8 @@ T{
 T}	T{
 convert a number into a string, the first argument is a number (or
 a numeric expression), the second argument is decimal precision.
+If precision is omitted, the number is rounded to the nearest
+integer.
 T}
 _
 T{
