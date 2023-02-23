@@ -156,10 +156,11 @@ static void *expr_lib_have_var ( void **params )
 
 static void *expr_lib_str ( void **params )
 {
-  if(!params || !params[0] || !params[1])
+  if(!params || !params[0])
     return g_strdup("");
   else
-    return expr_dtostr(*(gdouble *)params[0],(gint)*(gdouble *)params[1]);
+    return expr_dtostr(*(gdouble *)params[0],
+        params[1]?(gint)*(gdouble *)params[1]:0);
 }
 
 static void *expr_lib_val ( void **params )
@@ -233,7 +234,7 @@ ModuleExpressionHandlerV1 active_handler = {
 ModuleExpressionHandlerV1 str_handler = {
   .flags = MODULE_EXPR_DETERMINISTIC,
   .name = "str",
-  .parameters = "NN",
+  .parameters = "Nn",
   .function = expr_lib_str
 };
 
