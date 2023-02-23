@@ -514,6 +514,13 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
 
 static void sway_ipc_minimize ( gpointer id )
 {
+  window_t *win;
+
+  if(wintree_get_disown())
+  {
+    win = wintree_from_id(id);
+    win->workspace = NULL;
+  }
   sway_ipc_command("[con_id=%ld] move window to scratchpad",
       GPOINTER_TO_INT(id));
 }

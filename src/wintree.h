@@ -57,6 +57,8 @@ void wintree_placer_conf( gint xs, gint ys, gint xo, gint yo, gboolean pid );
 gboolean wintree_placer_check ( gint pid );
 void wintree_placer_calc ( gint nobs, GdkRectangle *obs, GdkRectangle output,
     GdkRectangle *win );
+gboolean wintree_get_disown ( void );
+void wintree_set_disown ( gboolean new );
 
 enum {
   WS_FOCUSED =    1<<0,

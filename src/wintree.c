@@ -15,6 +15,7 @@ static GList *appid_map;
 static gpointer wt_focus;
 static gchar *wt_active;
 static guint64 seq;
+static gboolean disown;
 
 struct appid_mapper{
   GRegex *regex;
@@ -33,6 +34,16 @@ void wintree_free_workspace ( gpointer id ) { api_call(free_workspace) }
 void wintree_api_register ( struct wintree_api *new )
 {
   api = *new;
+}
+
+void wintree_set_disown ( gboolean new )
+{
+  disown = new;
+}
+
+gboolean wintree_get_disown ( void )
+{
+  return disown;
 }
 
 void wintree_set_active ( gchar *title )

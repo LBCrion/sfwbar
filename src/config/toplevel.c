@@ -578,6 +578,10 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
       case G_TOKEN_MODULE:
         config_module(scanner);
         break;
+      case G_TOKEN_DISOWNMINIMIZED:
+        wintree_set_disown(config_assign_boolean(scanner,FALSE,
+              "DisownMinimized"));
+        break;
       default:
         g_scanner_error(scanner,"Unexpected toplevel token");
         break;
