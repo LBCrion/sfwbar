@@ -674,6 +674,7 @@ Operation   Description
 ``If``      conditional: If(condition,expr1,expr2)
 ``Cached``  get last value from a variable without updating it:
             Cached(identifier)
+``Ident``   Check if an identifier exists either as a variable or a function
 =========== ==================================================================
 
 The string operations are:
