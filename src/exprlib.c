@@ -128,32 +128,6 @@ static void *expr_lib_active ( void **params )
   return g_strdup(wintree_get_active());
 }
 
-static void *expr_lib_have_function ( void **params )
-{
-  gdouble *result;
-
-  if(!params || !params[0])
-    return g_malloc0(sizeof(gdouble));
-
-  result = g_malloc(sizeof(gdouble));
-  *result = module_is_function(params[0]);
-
-  return result;
-}
-
-static void *expr_lib_have_var ( void **params )
-{
-  gdouble *result;
-
-  if(!params || !params[0])
-    return g_malloc0(sizeof(gdouble));
-
-  result = g_malloc(sizeof(gdouble));
-  *result = scanner_is_variable(params[0]);
-
-  return result;
-}
-
 static void *expr_lib_str ( void **params )
 {
   if(!params || !params[0])
@@ -210,20 +184,6 @@ ModuleExpressionHandlerV1 disk_handler = {
   .function = expr_lib_disk
 };
 
-ModuleExpressionHandlerV1 havefunc_handler = {
-  .flags = MODULE_EXPR_NUMERIC,
-  .name = "HaveFunction",
-  .parameters = "S",
-  .function = expr_lib_have_function
-};
-
-ModuleExpressionHandlerV1 havevar_handler = {
-  .flags = MODULE_EXPR_NUMERIC,
-  .name = "HaveVar",
-  .parameters = "S",
-  .function = expr_lib_have_var
-};
-
 ModuleExpressionHandlerV1 active_handler = {
   .flags = 0,
   .name = "ActiveWin",
@@ -252,7 +212,6 @@ ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &time_handler,
   &disk_handler,
   &active_handler,
-  &havefunc_handler,
   &str_handler,
   &val_handler,
   NULL

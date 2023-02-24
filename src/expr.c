@@ -53,7 +53,7 @@ static gboolean expr_is_numeric ( GScanner *scanner )
 {
   g_scanner_peek_next_token(scanner);
   if (scanner->next_token == G_TOKEN_FLOAT ||
-      scanner->next_token == (gint)G_TOKEN_HAVEVAR ||
+      scanner->next_token == (gint)G_TOKEN_IDENT ||
       scanner->next_token == '!' ||
       scanner->next_token == '(' ||
       scanner->next_token == '-' ||
@@ -325,7 +325,8 @@ gdouble expr_parse_havevar ( GScanner *scanner )
   if(parser_expect_symbol(scanner,G_TOKEN_IDENTIFIER,"HaveVar(Identifier)"))
     return FALSE;
 
-  result = scanner_is_variable(scanner->value.v_identifier);
+  result = scanner_is_variable(scanner->value.v_identifier) ||
+    module_is_function(scanner->value.v_identifier);
   if(!result)
     expr_dep_add(scanner->value.v_identifier,E_STATE(scanner)->expr);
 
@@ -340,6 +341,7 @@ static gdouble expr_parse_num_str ( GScanner *scanner, gchar *prev )
 {
   gchar *str1, *str2;
   gint res, pos;
+  gboolean negate = FALSE;
 
   pos = scanner->position;
 
@@ -349,6 +351,11 @@ static gdouble expr_parse_num_str ( GScanner *scanner, gchar *prev )
   else
     str1 = prev;
 
+  if(g_scanner_peek_next_token(scanner)=='!')
+  {
+    negate = TRUE;
+    g_scanner_get_next_token(scanner);
+  }
   if(g_scanner_peek_next_token(scanner)=='=')
     g_scanner_get_next_token(scanner);
   else
@@ -359,7 +366,10 @@ static gdouble expr_parse_num_str ( GScanner *scanner, gchar *prev )
   g_free(str1);
   g_free(str2);
 
-  return (gdouble)res;
+  if(negate)
+    return (gdouble)!res;
+  else
+    return (gdouble)res;
 }
 
 static gchar *expr_parse_str_l1 ( GScanner *scanner )
@@ -462,7 +472,7 @@ static gdouble expr_parse_num_value ( GScanner *scanner )
       return !expr_parse_num ( scanner, NULL );
     case G_TOKEN_FLOAT: 
       return scanner->value.v_float;
-    case G_TOKEN_HAVEVAR:
+    case G_TOKEN_IDENT:
       return expr_parse_havevar(scanner);
     case '(':
       val = expr_parse_num ( scanner, NULL );
@@ -726,7 +736,7 @@ static GScanner *expr_scanner_new ( void )
   g_scanner_scope_add_symbol(scanner,0, "Cached", (gpointer)G_TOKEN_CACHED );
   g_scanner_scope_add_symbol(scanner,0, "Lookup", (gpointer)G_TOKEN_LOOKUP );
   g_scanner_scope_add_symbol(scanner,0, "Map", (gpointer)G_TOKEN_MAP );
-  g_scanner_scope_add_symbol(scanner,0, "HaveVar", (gpointer)G_TOKEN_HAVEVAR );
+  g_scanner_scope_add_symbol(scanner,0, "Ident", (gpointer)G_TOKEN_IDENT );
   g_scanner_set_scope(scanner,0);
 
   return scanner;

@@ -8,7 +8,7 @@ enum {
   G_TOKEN_CACHED,
   G_TOKEN_LOOKUP,
   G_TOKEN_MAP,
-  G_TOKEN_HAVEVAR
+  G_TOKEN_IDENT
 };
 
 enum {
