@@ -654,7 +654,43 @@ void sfwbar_module_invalidate ( void )
     ((iface_info *)iter->data)->invalid = TRUE;
 }
 
-void *sfwbar_expr_func ( void **params )
+void *network_func_netstat ( void **params )
+{
+  iface_info *iface;
+  gdouble *result;
+
+  result = g_malloc0(sizeof(gdouble));
+  if(!params || !params[0])
+    return result;
+
+  if(params[1] && *((gchar *)params[1]))
+    iface = net_iface_from_name(params[1],FALSE);
+  else
+    iface = route;
+  if(!iface)
+    return result;
+
+  g_mutex_lock(&iface->mutex);
+  if(!g_ascii_strcasecmp(params[0],"signal"))
+    *result = net_get_signal(route?route->name:NULL);
+  else if(!g_ascii_strcasecmp(params[0],"rxrate"))
+  {
+    net_update_traffic(iface->name);
+    *result = (gdouble)(iface->rx_bytes-iface->prx_bytes)*
+        1000000/iface->time_diff;
+  }
+  else if(!g_ascii_strcasecmp(params[0],"txrate"))
+  {
+    net_update_traffic(iface->name);
+    *result = (gdouble)(iface->tx_bytes-iface->ptx_bytes)*
+      1000000/iface->time_diff;
+  }
+  g_mutex_unlock(&iface->mutex);
+
+  return result;
+}
+
+void *network_func_netinfo ( void **params )
 {
   gchar *result;
   iface_info *iface;
@@ -682,20 +718,6 @@ void *sfwbar_expr_func ( void **params )
     result = net_getaddr(&iface->mask6,AF_INET6);
   else if(!g_ascii_strcasecmp(params[0],"gateway"))
     result = net_getaddr(&iface->gateway,AF_INET);
-  else if(!g_ascii_strcasecmp(params[0],"signal"))
-    result = g_strdup_printf("%lf",net_get_signal(route?route->name:NULL));
-  else if(!g_ascii_strcasecmp(params[0],"rxrate"))
-  {
-    net_update_traffic(iface->name);
-    result = g_strdup_printf("%lf",(gdouble)(iface->rx_bytes-iface->prx_bytes)*
-        1000000/iface->time_diff);
-  }
-  else if(!g_ascii_strcasecmp(params[0],"txrate"))
-  {
-    net_update_traffic(iface->name);
-    result = g_strdup_printf("%lf",(gdouble)(iface->tx_bytes-iface->ptx_bytes)*
-        1000000/iface->time_diff);
-  }
   else if(!g_ascii_strcasecmp(params[0],"essid"))
     result = g_strdup(iface->essid);
   else if(!g_ascii_strcasecmp(params[0],"interface"))
@@ -707,14 +729,24 @@ void *sfwbar_expr_func ( void **params )
   return result;
 }
 
+
+
 ModuleExpressionHandlerV1 handler1 = {
   .flags = 0,
   .name = "NetInfo",
   .parameters = "Ss",
-  .function = sfwbar_expr_func
+  .function = network_func_netinfo
+};
+
+ModuleExpressionHandlerV1 handler2 = {
+  .flags = MODULE_EXPR_NUMERIC,
+  .name = "NetStat",
+  .parameters = "Ss",
+  .function = network_func_netstat
 };
 
 ModuleExpressionHandlerV1 *sfwbar_expression_handlers[] = {
   &handler1,
+  &handler2,
   NULL
 };
