@@ -521,7 +521,7 @@ static void sway_ipc_minimize ( gpointer id )
     win = wintree_from_id(id);
     win->workspace = NULL;
   }
-  sway_ipc_command("[con_id=%ld] move window to scratchpad",
+  sway_ipc_command("[con_id=%d] move window to scratchpad",
       GPOINTER_TO_INT(id));
 }
 
@@ -531,20 +531,20 @@ static void sway_ipc_unminimize ( gpointer id )
 
   win = wintree_from_id(id);
   if(win && win->workspace)
-    sway_ipc_command("[con_id=%ld] move window to workspace %s",
+    sway_ipc_command("[con_id=%d] move window to workspace %s",
         GPOINTER_TO_INT(id),pager_workspace_from_id(win->workspace)->name);
   else
-    sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
+    sway_ipc_command("[con_id=%d] focus",GPOINTER_TO_INT(id));
 }
 
 static void sway_ipc_maximize ( gpointer id )
 {
-  sway_ipc_command("[con_id=%ld] fullscreen enable",GPOINTER_TO_INT(id));
+  sway_ipc_command("[con_id=%d] fullscreen enable",GPOINTER_TO_INT(id));
 }
 
 static void sway_ipc_unmaximize ( gpointer id )
 {
-  sway_ipc_command("[con_id=%ld] fullscreen disable",GPOINTER_TO_INT(id));
+  sway_ipc_command("[con_id=%d] fullscreen disable",GPOINTER_TO_INT(id));
 }
 
 static void sway_ipc_focus ( gpointer id )
@@ -553,14 +553,14 @@ static void sway_ipc_focus ( gpointer id )
 
   win = wintree_from_id(id);
   if(win && win->workspace)
-    sway_ipc_command("[con_id=%ld] move window to workspace %s",
+    sway_ipc_command("[con_id=%d] move window to workspace %s",
         GPOINTER_TO_INT(id),pager_workspace_from_id(win->workspace)->name);
-  sway_ipc_command("[con_id=%ld] focus",GPOINTER_TO_INT(id));
+  sway_ipc_command("[con_id=%d] focus",GPOINTER_TO_INT(id));
 }
 
 static void sway_ipc_close ( gpointer id )
 {
-  sway_ipc_command("[con_id=%ld] kill",GPOINTER_TO_INT(id));
+  sway_ipc_command("[con_id=%d] kill",GPOINTER_TO_INT(id));
 }
 
 static void sway_ipc_set_workspace ( workspace_t *ws )
