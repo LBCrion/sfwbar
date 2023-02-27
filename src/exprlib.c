@@ -137,6 +137,30 @@ static void *expr_lib_str ( void **params )
         params[1]?(gint)*(gdouble *)params[1]:0);
 }
 
+static void *expr_lib_max ( void **params )
+{
+  gdouble *result;
+
+  if(!params || !params[0] || !params[1])
+    return g_malloc0(sizeof(gdouble));
+
+  result = g_malloc(sizeof(gdouble));
+  *result = MAX(*(gdouble *)params[0],*(gdouble *)params[1]);
+  return result;
+}
+
+static void *expr_lib_min ( void **params )
+{
+  gdouble *result;
+
+  if(!params || !params[0] || !params[1])
+    return g_malloc0(sizeof(gdouble));
+
+  result = g_malloc(sizeof(gdouble));
+  *result = MIN(*(gdouble *)params[0],*(gdouble *)params[1]);
+  return result;
+}
+
 static void *expr_lib_val ( void **params )
 {
   gdouble *result;
@@ -198,6 +222,20 @@ ModuleExpressionHandlerV1 str_handler = {
   .function = expr_lib_str
 };
 
+ModuleExpressionHandlerV1 max_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC | MODULE_EXPR_NUMERIC,
+  .name = "max",
+  .parameters = "NN",
+  .function = expr_lib_max
+};
+
+ModuleExpressionHandlerV1 min_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC | MODULE_EXPR_NUMERIC,
+  .name = "min",
+  .parameters = "NN",
+  .function = expr_lib_min
+};
+
 ModuleExpressionHandlerV1 val_handler = {
   .flags = MODULE_EXPR_NUMERIC | MODULE_EXPR_DETERMINISTIC,
   .name = "val",
@@ -212,6 +250,8 @@ ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &time_handler,
   &disk_handler,
   &active_handler,
+  &min_handler,
+  &max_handler,
   &str_handler,
   &val_handler,
   NULL
