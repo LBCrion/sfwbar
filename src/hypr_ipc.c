@@ -441,7 +441,7 @@ static void hypr_ipc_minimize ( gpointer id )
     json_object_put(json);
   }
   hypr_ipc_command("dispatch movetoworkspace special");
-  hypr_ipc_command("workspace %ld",GPOINTER_TO_INT(win->workspace));
+  hypr_ipc_command("workspace %d",GPOINTER_TO_INT(win->workspace));
 
   if(focus!=id)
     wintree_set_focus(focus);

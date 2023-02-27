@@ -216,7 +216,7 @@ static struct json_object *placement_find_wid ( struct json_object *obj, gint64 
   return ret;
 }
 
-static void sway_ipc_window_place ( gint64 wid, gint64 pid )
+static void sway_ipc_window_place ( gint wid, gint64 pid )
 {
   gint32 etype;
   struct json_object *json;
@@ -259,7 +259,7 @@ static void sway_ipc_window_place ( gint64 wid, gint64 pid )
   if(c==nobs)
   {
     wintree_placer_calc(nobs,obs,output,&win);
-    sway_ipc_command("[con_id=%ld] move absolute position %d %d",
+    sway_ipc_command("[con_id=%d] move absolute position %d %d",
         wid,win.x,win.y);
   }
   g_free(obs);
