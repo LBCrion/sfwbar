@@ -199,6 +199,7 @@ static gchar *expr_parse_map ( GScanner *scanner )
       g_scanner_get_next_token(scanner);
   }
   g_free(match);
+  parser_expect_symbol(scanner,')',"Map(...)");
   return result;
 }
 
