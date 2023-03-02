@@ -1,3 +1,12 @@
+1.0_beta10
+  - Implement loadable modules
+  - Add support for scriptable popup windows
+  - Implement intermediate variables
+  - Support flipping grid sort order
+  - Improve taskbar filtering
+  - Support symbolic icons
+  - Support launching via swaybar_command
+
 1.0_beta9
   - Implement grouped taskbars
   - Add support for Hyprland IPC
