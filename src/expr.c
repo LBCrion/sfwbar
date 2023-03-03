@@ -625,10 +625,21 @@ static gchar *expr_parse_variant ( GScanner *scanner )
 
   g_scanner_peek_next_token(scanner);
 
-  while(E_STATE(scanner)->type==EXPR_VARIANT && (scanner->next_token=='=' ||
-      (entry_type==EXPR_VARIANT && scanner->next_token == '+')))
+  while(E_STATE(scanner)->type==EXPR_VARIANT &&
+      (scanner->next_token=='=' || scanner->next_token == '!' ||
+       (entry_type==EXPR_VARIANT && scanner->next_token == '+')))
   {
     g_scanner_get_next_token(scanner);
+    if(scanner->token == '!')
+    {
+      if(g_scanner_peek_next_token(scanner)=='=')
+        g_scanner_get_next_token(scanner);
+      else
+      {
+        g_scanner_error(scanner,"Unexpected symbol after '!', expecting '='");
+        break;
+      }
+    }
     if(scanner->token == '=')
     {
       g_free(expr_parse_root(scanner));
