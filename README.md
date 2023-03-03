@@ -18,8 +18,8 @@ supportinig foreign toplevel protocol, but the pager, and window placement
 functionality require sway (or at least i3 IPC support).
 
 # If you're getting expression errors when upgrading from version 1.0_beta9
-# or earlier, please check your data types. The expression parser now applies
-# strict type checks.
+or earlier, please check your data types. The expression parser now applies
+strict type checks.
 
 SFWBar is licensed under GNU GPL.
 Weather icons are from yr.no and are licensed under MIT license 
