@@ -1,0 +1,55 @@
+set XBatteryLevel = XBatteryLeft / XBatteryTotal * 100
+set XBatterySvgPlus = '<path style="fill:#FFF152;stroke:#000" d="m 27 23 25 0 -13 35 11 -4 -25 38 7 -38 -11 6 z"/>'
+set XBatterySvgMinus = '<path style="fill:#BB0000;stroke:none" d="m 19 50 28 0 0 8 -28 0 z"/>'
+set XBatterySvgSign = If( $XBatteryState="Discharging", $XBatterySvgMinus, $XBatterySvgPlus )
+set XBatterySvg = '<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 66 108">
+  <defs>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="' + Str(If((90 - XBatteryLevel) < 0, 0, (90 - XBatteryLevel))) +
+      '%" style="stop-color:rgb(0,0,0);stop-opacity:0" />
+      <stop offset="' + Str(100 - XBatteryLevel) + 
+      '%" style="stop-color:Rgb('+Str(Min(256,512-5.12*XBatteryLevel))+','+Str(Min(256,5.12*XBatteryLevel))+',0);stop-opacity:0.7" />
+    </linearGradient>
+  </defs>
+  <path style="fill:@theme_fg_color" d="m 19 6 a 6 6 0 0 0 6 -6 l 16 0 a 6 6 0 0 0 6 6 z"/>
+  <path style="fill:url(#grad2);stroke:@theme_fg_color;stroke-width:10" d="m 11 12 44 0 a 10 10 0 0 1 10 10 l 0 72 a 10 10 0 0 1 -10 10 l -44 0  a 10 10 0 0 1 -10 -10 l 0 -72  a 10 10 0 0 1 10 -10 z"/>
+  '+$XBatterySvgSign+'
+</svg>'
+
+define XBatteryInit = "python << END
+import os
+sysdir = '/sys/class/power_supply'
+list = os.scandir(sysdir)
+batdir=''
+for entry in list:
+  if(entry.name.startswith('BAT')):
+    batdir = os.path.join(sysdir,entry.name)
+if(batdir==''):
+  exit(1)
+list = os.scandir(batdir)
+print('scanner {')
+for entry in list:
+  if(entry.name.endswith('_full')):
+    print('file(\"' + os.path.join(batdir,entry.name) +
+          '\") { XBatteryTotal = Grab(First) }')
+  if(entry.name.endswith('_now') and
+          ('charge' in entry.name or 'energy' in entry.name)):
+    print('file(\"' + os.path.join(batdir,entry.name) +
+          '\") { XBatteryLeft = Grab(First) }')
+  if(entry.name == 'status'):
+    print('file(\"' + os.path.join(batdir,entry.name) +
+          '\") { XBatteryState = RegEx(\"^(.*)$\",First) }')
+print('}')
+END"
+
+layout {
+  style = "module"
+  button "XBatteryModule" {
+    action[0] = PipeRead XBatteryInit
+    value = $XBatterySvg
+    style = If(!Ident($XBatteryState),"hidden","module")
+    tooltip = Str(100*XBatteryLeft/XBatteryTotal) + "%"
+    interval = 1000
+  }
+}

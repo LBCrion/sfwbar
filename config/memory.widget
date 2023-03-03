@@ -1,0 +1,18 @@
+scanner {
+  file("/proc/meminfo") {
+    MemTotal = RegEx("^MemTotal:[\t ]*([0-9]+)[\t ]")
+    MemFree = RegEx("^MemFree:[\t ]*([0-9]+)[\t ]")
+    MemCache = RegEx( "^Cached:[\t ]*([0-9]+)[\t ]")
+    MemBuff = Regex("^Buffers:[\t ]*([0-9]+)[\t ]")
+  }
+}
+
+layout {
+  scale {
+    interval = 1000
+    style = "memory"
+    value = (MemTotal-MemFree-MemCache-MemBuff)/MemTotal
+    tooltip = "Memory: " + Str((MemTotal-MemFree-MemCache-MemBuff)/
+      MemTotal*100,0) + "%"
+  }
+}

@@ -1,0 +1,34 @@
+module("pulsectl")
+
+set XPulseMutedIcon = If(!Ident($PulseMutedIcon),
+    "audio-volume-muted-symbolic", $PulseMutedIcon)
+set XPulseLowIcon = If(!Ident($PulseLowIcon),
+    "audio-volume-low-symbolic", $PulseLowIcon)
+set XPulseMediumIcon = If(!Ident($PulseMediumIcon),
+    "audio-volume-medium-symbolic", $PulseMediumIcon)
+set XPulseHighIcon = If(!Ident($PulseHighIcon),
+    "audio-volume-high-symbolic", $PulseHighIcon)
+set XPulseAction = If(!Ident($PulseAction),"pavucontrol",$PulseAction)
+
+define XPulseMuted = Val(Pulse("sink-mute"))
+define XPulseVolume = Val(Pulse("sink-volume"))
+set XPulseVolumeIcon = Lookup(XPulseVolume,
+      80, $XPulseHighIcon,
+      50, $XPulseMediumIcon,
+      0, $XPulseLowIcon,
+      $XPulseMutedIcon)
+set XPulseIcon = If(XPulseMuted,$XPulseMutedIcon,$XPulseVolumeIcon)
+
+layout {
+  style = "module"
+  button {
+    value = $XPulseIcon
+    trigger = "pulse"
+    tooltip = "Volume: " + Str(XPulseVolume,0) + "%" + If(XPulseMuted," (muted)","")
+    style = If(Ident(pulse),"module","hidden")
+    action[1] = PulseCmd "sink-mute toggle"
+    action[3] = Exec $XPulseAction
+    action[4] = PulseCmd "sink-volume +1"
+    action[5] = PulseCmd "sink-volume -1"
+  }
+}

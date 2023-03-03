@@ -1,0 +1,20 @@
+# Add up CPU utilization stats across all CPUs
+scanner {
+  file("/proc/stat") {
+    CpuUser = RegEx("^cpu [\t ]*([0-9]+)",Sum)
+    CpuNice = RegEx("^cpu [\t ]*[0-9]+ ([0-9]+)",Sum)
+    CpuSystem = RegEx("^cpu [\t ]*[0-9]+ [0-9]+ ([0-9]+)",Sum)
+    CpuIdle = RegEx("^cpu [\t ]*[0-9]+ [0-9]+ [0-9]+ ([0-9]+)",Sum)
+  }
+}
+
+layout {
+  chart {
+    interval = 1000
+    style = "cpu_chart"
+    value = (CpuUser-CpuUser.pval)/(CpuUser+CpuNice+CpuSystem+CpuIdle-
+      CpuUser.pval-CpuNice.pval-CpuSystem.pval-CpuIdle.pval)
+    tooltip = "CPU: " + Str((CpuUser-CpuUser.pval)/(CpuUser+CpuNice+CpuSystem+
+      CpuIdle-CpuUser.pval-CpuNice.pval-CpuSystem.pval-CpuIdle.pval)*100,0)+'%'
+  }
+}

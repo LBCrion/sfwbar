@@ -1,0 +1,40 @@
+module("network")
+
+Set XNetworkWifiSvg = '<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" id="_x31_0" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 512 512" style="width: 512px; height: 512px; opacity: 1;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:@theme_fg_color;}
+	.st1{fill:@theme_fg_color;opacity:0.33;}
+</style>
+<g>
+	<path class="st'+If(NetStat("signal")<30,"1","0")+'" d="M255.977,376.774c-12.118,0-23.098,4.918-31.043,12.867c-7.95,7.949-12.867,18.926-12.867,31.043
+		c0,12.117,4.918,23.098,12.867,31.042c7.946,7.95,18.926,12.867,31.043,12.867c12.117,0,23.098-4.918,31.042-12.867
+		c7.95-7.945,12.867-18.926,12.867-31.042c0-12.118-4.918-23.094-12.867-31.043C279.074,381.691,268.094,376.774,255.977,376.774z"></path>
+	<path class="st'+If(NetStat("signal")<50,"1","0")+'" d="M155.371,304.555l38.934,39.015c17.562-14.082,39.082-21.73,61.641-21.73c22.648,0,44.179,7.598,61.691,21.582
+		l38.875-38.879c-27.969-24.317-63.282-37.59-100.566-37.59C218.652,266.954,183.34,280.23,155.371,304.555z"></path>
+	<path class="st'+If(NetStat("signal")<70,"1","0")+'" d="M77.645,226.836l38.828,38.902c38.496-34.691,87.61-53.672,139.473-53.672
+		c51.961,0,101.098,18.922,139.531,53.516l38.855-38.856C385.5,181.793,322.578,157.18,255.946,157.18
+		C189.344,157.18,126.453,181.832,77.645,226.836z"></path>
+	<path class="st'+If(NetStat("signal")<90,"1","0")+'" d="M255.946,47.406C160.137,47.406,69.676,83.469,0,149.18l38.785,38.871
+		c59.203-55.387,135.895-85.758,217.161-85.758c81.273,0,157.984,30.317,217.21,85.606L512,149.062
+		C442.484,83.422,351.988,47.406,255.946,47.406z"></path>
+</g></svg>'
+
+Set XNetworkWirelessIcon = If(Ident(NetworkWirelessIcon),$NetworkWirelessIcon,$XNetworkWifiSvg)
+Set XNetworkWiredIcon = If(Ident(NetworkWiredIcon),$NetworkWiredIcon,"network-wired-symbolic")
+Set XNetworkIcon = If(Ident(NetInfo),If(NetInfo("essid")!="",$XNetworkWirelessIcon,$XNetworkWiredIcon),"")
+
+layout {
+  style = "module"
+  button {
+    value = $XNetworkIcon
+    trigger = "network"
+    tooltip = "interface: " + NetInfo("interface") + "\n" +
+              "ip:        " + NetInfo("ip") + "/" + NetInfo("cidr") +"\n" +
+              "netmask:   " + NetInfo("mask") + "\n" +
+              "gateway:   " + NetInfo("gateway") + "\n" +
+              "essid:     " + NetInfo("essid") + "\n" +
+              "signal:    " + Str(NetStat("signal")) + "%"
+    style = If(Ident(NetInfo),"module","hidden")
+  }
+}
