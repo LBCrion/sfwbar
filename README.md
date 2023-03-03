@@ -1,11 +1,11 @@
-![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar-oneline.png)
+![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar-dark.png)
 ![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar.png)
 ![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar-preview.png)
-![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar-switch.png)
+![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar-mpd.png)
 ![](https://github.com/LBCrion/sfwbar/blob/main/.github/sfwbar-tray.png)
 
 ![](https://scan.coverity.com/projects/22494/badge.svg)
-![](https://api.travis-ci.com/LBCrion/sfwbar.svg)
+![](https://github.com/LBCrion/sfwbar/actions/workflows/main.yml/badge.svg)
 
 ### SFWBar
 
@@ -17,7 +17,9 @@ the taskbar and window switcher functionality shall work with any compositor
 supportinig foreign toplevel protocol, but the pager, and window placement
 functionality require sway (or at least i3 IPC support).
 
-# Please note that configuration file format has changed between 0.9 and 1.0 series 
+# If you're getting expression errors when upgrading from version 1.0_beta9
+# or earlier, please check your data types. The expression parser now applies
+# strict type checks.
 
 SFWBar is licensed under GNU GPL.
 Weather icons are from yr.no and are licensed under MIT license 
