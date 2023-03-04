@@ -284,7 +284,7 @@ static gchar *expr_parse_if ( GScanner *scanner )
   gboolean condition;
   gchar *str, *str2;
   guint istate = E_STATE(scanner)->ignore;
-  gint stype = E_STATE(scanner)->type;
+  gint rtype, stype = E_STATE(scanner)->type;
 
   parser_expect_symbol(scanner,'(',"If(Condition,Expression,Expression)");
   condition = expr_parse_num(scanner,NULL);
@@ -297,9 +297,16 @@ static gchar *expr_parse_if ( GScanner *scanner )
   str = expr_parse_root(scanner);
 
   if(condition)
+  {
     E_STATE(scanner)->ignore = 1;
+    rtype = E_STATE(scanner)->type;
+  }
   else
+  {
     E_STATE(scanner)->ignore = istate;
+    E_STATE(scanner)->type = stype;
+  }
+
   parser_expect_symbol(scanner,',',"If(Condition,Expression,Expression)");
   str2 = expr_parse_root(scanner);
 
@@ -308,6 +315,7 @@ static gchar *expr_parse_if ( GScanner *scanner )
 
   if(condition)
   {
+    E_STATE(scanner)->type = rtype;
     g_free(str2);
     return str;
   }
