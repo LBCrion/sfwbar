@@ -17,7 +17,6 @@ static GHashTable *expr_deps;
 
 static gdouble expr_parse_num ( GScanner *scanner, gdouble * );
 static gchar *expr_parse_str ( GScanner *scanner, gchar * );
-static gchar *expr_parse_variant ( GScanner *scanner );
 static gchar *expr_parse_root ( GScanner *scanner );
 
 static gdouble expr_str_to_num ( gchar *str )
@@ -344,6 +343,80 @@ gdouble expr_parse_havevar ( GScanner *scanner )
   return result;
 }
 
+static gchar *expr_parse_variant_token ( GScanner *scanner )
+{
+  E_STATE(scanner)->type = EXPR_VARIANT;
+  switch((gint)g_scanner_peek_next_token(scanner))
+  {
+    case G_TOKEN_IF:
+      g_scanner_get_next_token(scanner);
+      return expr_parse_if(scanner);
+    case G_TOKEN_CACHED:
+      g_scanner_get_next_token(scanner);
+      return expr_parse_cached(scanner);
+    case G_TOKEN_IDENTIFIER:
+      g_scanner_get_next_token(scanner);
+      return expr_parse_identifier(scanner);
+    default:
+      return g_strdup("");
+  }
+}
+
+static gchar *expr_parse_variant ( GScanner *scanner )
+{
+  gchar *str;
+
+  str = expr_parse_variant_token(scanner);
+
+  while(E_STATE(scanner)->type==EXPR_VARIANT &&
+       g_scanner_peek_next_token(scanner) == '+')
+  {
+    g_scanner_get_next_token(scanner);
+    if(scanner->token == '!')
+    {
+      if(g_scanner_peek_next_token(scanner)=='=')
+        g_scanner_get_next_token(scanner);
+      else
+      {
+        g_scanner_error(scanner,"Unexpected symbol after '!', expecting '='");
+        break;
+      }
+    }
+    if(scanner->token == '=')
+    {
+      g_free(expr_parse_root(scanner));
+      /* comparing a variant to anything produces a variant result */
+      E_STATE(scanner)->type = EXPR_VARIANT;
+    }
+    else
+    {
+      g_free(str);
+      str = expr_parse_root(scanner);
+    }
+  }
+
+  if(E_STATE(scanner)->type != EXPR_VARIANT)
+    return str;
+
+  if(scanner->next_token == '!' || scanner->next_token == '=')
+  {
+    g_scanner_get_next_token(scanner);
+    if(scanner->token == '!' && g_scanner_peek_next_token(scanner) == '=')
+      g_scanner_get_next_token(scanner);
+    g_free(expr_parse_root(scanner));
+    E_STATE(scanner)->type = EXPR_NUMERIC;
+    return g_strdup("");
+  }
+
+  if(!strchr("-*/%<>|&",scanner->next_token))
+  {
+    E_STATE(scanner)->type = EXPR_NUMERIC;
+    return str;
+  }
+
+  return str;
+}
+
 /* a string has been encountered in a numeric sequence
  * is this a comparison between strings? */
 static gdouble expr_parse_num_str ( GScanner *scanner, gchar *prev )
@@ -390,19 +463,15 @@ static gchar *expr_parse_str_l1 ( GScanner *scanner )
   {
     spos = scanner->position;
     E_STATE(scanner)->type = EXPR_STRING;
-    str = expr_parse_variant(scanner);
+    str = expr_parse_variant_token(scanner);
     if(E_STATE(scanner)->type == EXPR_STRING)
       return str;
-    else if(E_STATE(scanner)->type == EXPR_VARIANT)
-    {
-      g_free(str);
-      return g_strdup("");
-    }
     else
     {
-      g_scanner_warn(scanner,
-          "Unexpected variant at position %d, expected a string",spos);
-      return g_strdup("");
+      if(E_STATE(scanner)->type == EXPR_NUMERIC)
+        g_scanner_warn(scanner,
+            "Unexpected variant at position %d, expected a string",spos);
+      return str;
     }
   }
 
@@ -458,11 +527,12 @@ static gdouble expr_parse_num_value ( GScanner *scanner )
   if(expr_is_variant(scanner))
   {
     E_STATE(scanner)->type = EXPR_NUMERIC;
-    str = expr_parse_variant(scanner);
+    str = expr_parse_variant_token(scanner);
     if(E_STATE(scanner)->type == EXPR_NUMERIC)
       return expr_str_to_num(str);
     /* if type is string, assume it's there for comparison */
-    else if(E_STATE(scanner)->type == EXPR_STRING) 
+    else if(E_STATE(scanner)->type == EXPR_STRING ||
+        g_scanner_peek_next_token(scanner) == '=')
       return expr_parse_num_str(scanner,str);
     else /* if the type is unresolved, cast to numeric zero */
     {
@@ -601,82 +671,6 @@ static gdouble expr_parse_num( GScanner *scanner, gdouble *prev )
   }
   E_STATE(scanner)->type = EXPR_NUMERIC;
   return val;
-}
-
-static gchar *expr_parse_variant_token ( GScanner *scanner )
-{
-  E_STATE(scanner)->type = EXPR_VARIANT;
-  switch((gint)g_scanner_peek_next_token(scanner))
-  {
-    case G_TOKEN_IF:
-      g_scanner_get_next_token(scanner);
-      return expr_parse_if(scanner);
-    case G_TOKEN_CACHED:
-      g_scanner_get_next_token(scanner);
-      return expr_parse_cached(scanner);
-    case G_TOKEN_IDENTIFIER:
-      g_scanner_get_next_token(scanner);
-      return expr_parse_identifier(scanner);
-    default:
-      return g_strdup("");
-  }
-}
-
-static gchar *expr_parse_variant ( GScanner *scanner )
-{
-  gdouble val;
-  gint entry_type;
-  gchar *str;
-
-  entry_type = E_STATE(scanner)->type;
-  str = expr_parse_variant_token(scanner);
-
-  g_scanner_peek_next_token(scanner);
-
-  while(E_STATE(scanner)->type==EXPR_VARIANT &&
-      (scanner->next_token=='=' || scanner->next_token == '!' ||
-       (entry_type==EXPR_VARIANT && scanner->next_token == '+')))
-  {
-    g_scanner_get_next_token(scanner);
-    if(scanner->token == '!')
-    {
-      if(g_scanner_peek_next_token(scanner)=='=')
-        g_scanner_get_next_token(scanner);
-      else
-      {
-        g_scanner_error(scanner,"Unexpected symbol after '!', expecting '='");
-        break;
-      }
-    }
-    if(scanner->token == '=')
-    {
-      g_free(expr_parse_root(scanner));
-      /* comparing a variant to anything produces a variant result */
-      E_STATE(scanner)->type = EXPR_VARIANT;
-    }
-    else
-    {
-      g_free(str);
-      str = expr_parse_root(scanner);
-    }
-    g_scanner_peek_next_token(scanner);
-  }
-
-  if(!strchr("+-*/%<>|&",scanner->next_token))
-    return str;
-
-  if(entry_type != EXPR_VARIANT)
-    return str;
-  if(E_STATE(scanner)->type == EXPR_STRING && scanner->next_token == '+')
-    return expr_parse_str(scanner, str);
-  if(E_STATE(scanner)->type == EXPR_NUMERIC ||
-      (scanner->next_token && strchr("+-*/%<>|&",scanner->next_token)))
-  {
-    val = expr_str_to_num(str);
-    return expr_dtostr(expr_parse_num(scanner, &val),-1);
-  }
-
-  return str;
 }
 
 static gchar *expr_parse_root ( GScanner *scanner )
