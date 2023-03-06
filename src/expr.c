@@ -372,27 +372,8 @@ static gchar *expr_parse_variant ( GScanner *scanner )
        g_scanner_peek_next_token(scanner) == '+')
   {
     g_scanner_get_next_token(scanner);
-    if(scanner->token == '!')
-    {
-      if(g_scanner_peek_next_token(scanner)=='=')
-        g_scanner_get_next_token(scanner);
-      else
-      {
-        g_scanner_error(scanner,"Unexpected symbol after '!', expecting '='");
-        break;
-      }
-    }
-    if(scanner->token == '=')
-    {
-      g_free(expr_parse_root(scanner));
-      /* comparing a variant to anything produces a variant result */
-      E_STATE(scanner)->type = EXPR_VARIANT;
-    }
-    else
-    {
-      g_free(str);
-      str = expr_parse_root(scanner);
-    }
+    g_free(str);
+    str = expr_parse_root(scanner);
   }
 
   if(E_STATE(scanner)->type != EXPR_VARIANT)
@@ -404,15 +385,13 @@ static gchar *expr_parse_variant ( GScanner *scanner )
     if(scanner->token == '!' && g_scanner_peek_next_token(scanner) == '=')
       g_scanner_get_next_token(scanner);
     g_free(expr_parse_root(scanner));
+    g_free(str);
     E_STATE(scanner)->type = EXPR_NUMERIC;
     return g_strdup("");
   }
 
   if(!strchr("-*/%<>|&",scanner->next_token))
-  {
     E_STATE(scanner)->type = EXPR_NUMERIC;
-    return str;
-  }
 
   return str;
 }
