@@ -343,6 +343,44 @@ gdouble expr_parse_havevar ( GScanner *scanner )
   return result;
 }
 
+/* compare operator for strigs and variants */
+static gdouble expr_parse_compare ( GScanner *scanner, gchar *prev )
+{
+  gchar *str1, *str2;
+  gint res, pos;
+  gboolean negate = FALSE;
+
+  pos = scanner->position;
+
+  if(!prev)
+    str1 = expr_parse_str(scanner,NULL);
+  else
+    str1 = prev;
+
+  if(g_scanner_peek_next_token(scanner)=='!')
+  {
+    negate = TRUE;
+    g_scanner_get_next_token(scanner);
+  }
+  if(g_scanner_peek_next_token(scanner)=='=')
+    g_scanner_get_next_token(scanner);
+  else
+    g_info("expr: %s:%d: Unexpected string where a numer is expected",
+        scanner->input_name,pos);
+  if(E_STATE(scanner)->type == EXPR_STRING)
+    str2 = expr_parse_str(scanner,NULL);
+  else
+    str2 = expr_parse_root(scanner);
+  res = !g_strcmp0(str1,str2);
+  g_free(str1);
+  g_free(str2);
+
+  if(negate)
+    return (gdouble)!res;
+  else
+    return (gdouble)res;
+}
+
 static gchar *expr_parse_variant_token ( GScanner *scanner )
 {
   E_STATE(scanner)->type = EXPR_VARIANT;
@@ -365,6 +403,7 @@ static gchar *expr_parse_variant_token ( GScanner *scanner )
 static gchar *expr_parse_variant ( GScanner *scanner )
 {
   gchar *str;
+  gdouble zero = 0;
 
   str = expr_parse_variant_token(scanner);
 
@@ -376,61 +415,24 @@ static gchar *expr_parse_variant ( GScanner *scanner )
     str = expr_parse_root(scanner);
   }
 
-  if(E_STATE(scanner)->type != EXPR_VARIANT)
-    return str;
+  if(E_STATE(scanner)->type == EXPR_STRING)
+    return expr_parse_str(scanner,str);
+
+  if(strchr("-*/%<>|&",scanner->next_token) ||
+      E_STATE(scanner)->type == EXPR_NUMERIC)
+  {
+    g_free(str);
+    (void)expr_dtostr(expr_parse_num(scanner,&zero),-1);
+    return 0;
+  }
 
   if(scanner->next_token == '!' || scanner->next_token == '=')
   {
-    g_scanner_get_next_token(scanner);
-    if(scanner->token == '!' && g_scanner_peek_next_token(scanner) == '=')
-      g_scanner_get_next_token(scanner);
-    g_free(expr_parse_root(scanner));
-    g_free(str);
-    E_STATE(scanner)->type = EXPR_NUMERIC;
-    return g_strdup("");
+    expr_parse_compare(scanner,str);
+    return 0;
   }
-
-  if(!strchr("-*/%<>|&",scanner->next_token))
-    E_STATE(scanner)->type = EXPR_NUMERIC;
 
   return str;
-}
-
-/* a string has been encountered in a numeric sequence
- * is this a comparison between strings? */
-static gdouble expr_parse_num_str ( GScanner *scanner, gchar *prev )
-{
-  gchar *str1, *str2;
-  gint res, pos;
-  gboolean negate = FALSE;
-
-  pos = scanner->position;
-
-  E_STATE(scanner)->type = EXPR_STRING;
-  if(!prev)
-    str1 = expr_parse_str(scanner,NULL);
-  else
-    str1 = prev;
-
-  if(g_scanner_peek_next_token(scanner)=='!')
-  {
-    negate = TRUE;
-    g_scanner_get_next_token(scanner);
-  }
-  if(g_scanner_peek_next_token(scanner)=='=')
-    g_scanner_get_next_token(scanner);
-  else
-    g_info("expr: %s:%d: Unexpected string where a numer is expected",
-        scanner->input_name,pos);
-  str2 = expr_parse_str(scanner,NULL);
-  res = !g_strcmp0(str1,str2);
-  g_free(str1);
-  g_free(str2);
-
-  if(negate)
-    return (gdouble)!res;
-  else
-    return (gdouble)res;
 }
 
 static gchar *expr_parse_str_l1 ( GScanner *scanner )
@@ -501,7 +503,7 @@ static gdouble expr_parse_num_value ( GScanner *scanner )
   gchar *str;
 
   if(expr_is_string(scanner))
-    return expr_parse_num_str(scanner,NULL);
+    return expr_parse_compare(scanner,NULL);
 
   if(expr_is_variant(scanner))
   {
@@ -512,7 +514,7 @@ static gdouble expr_parse_num_value ( GScanner *scanner )
     /* if type is string, assume it's there for comparison */
     else if(E_STATE(scanner)->type == EXPR_STRING ||
         g_scanner_peek_next_token(scanner) == '=')
-      return expr_parse_num_str(scanner,str);
+      return expr_parse_compare(scanner,str);
     else /* if the type is unresolved, cast to numeric zero */
     {
       E_STATE(scanner)->type = EXPR_NUMERIC;
@@ -543,8 +545,9 @@ static gdouble expr_parse_num_value ( GScanner *scanner )
       return val;
     default:
       g_scanner_warn(scanner,
-          "Unexpected token at position %u, expected a number",
-          g_scanner_cur_position(scanner));
+          "%d: Unexpected token %d (%c), expected a number",
+          g_scanner_cur_position(scanner),
+          scanner->next_token, scanner->next_token);
       return 0;
   }
 }
@@ -629,6 +632,7 @@ static gdouble expr_parse_num( GScanner *scanner, gdouble *prev )
   gdouble val;
 
   E_STATE(scanner)->type = EXPR_NUMERIC;
+
   if(prev)
     val = *prev;
   else
