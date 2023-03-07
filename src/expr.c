@@ -513,7 +513,8 @@ static gdouble expr_parse_num_value ( GScanner *scanner )
       return expr_str_to_num(str);
     /* if type is string, assume it's there for comparison */
     else if(E_STATE(scanner)->type == EXPR_STRING ||
-        g_scanner_peek_next_token(scanner) == '=')
+        g_scanner_peek_next_token(scanner) == '=' ||
+        g_scanner_peek_next_token(scanner) == '!' )
       return expr_parse_compare(scanner,str);
     else /* if the type is unresolved, cast to numeric zero */
     {

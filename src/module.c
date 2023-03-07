@@ -176,11 +176,11 @@ gchar *module_get_string ( GScanner *scanner )
   gint i;
 
   if(!expr_handlers)
-    return NULL;
+    return g_strdup("");
 
   handler = g_hash_table_lookup(expr_handlers,scanner->value.v_identifier);
   if(!handler)
-    return NULL;
+    return g_strdup("");
 
   g_debug("module: calling function `%s`",handler->name);
   params = expr_module_parameters(scanner,handler->parameters,handler->name);

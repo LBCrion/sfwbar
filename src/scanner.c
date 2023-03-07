@@ -419,14 +419,18 @@ void *scanner_get_value ( gchar *ident, gboolean update, ExprCache *expr )
     expr_dep_add(ident, expr);
     if(*ident == '$')
       return g_strdup("");
-    return g_malloc0(sizeof(gdouble));
+    else
+      return g_malloc0(sizeof(gdouble));
   }
 
   if(*ident == '$')
   {
     g_debug("scanner: %s = \"%s\" (vstate: %d)",ident,var->str,expr->vstate);
     g_free(fname);
-    return g_strdup(var->str);
+    if(var->str)
+      return g_strdup(var->str);
+    else
+      return g_strdup("");
   }
 
   retval = g_malloc0(sizeof(gdouble));
