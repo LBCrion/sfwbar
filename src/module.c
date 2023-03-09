@@ -175,6 +175,7 @@ gchar *module_get_string ( GScanner *scanner )
   gchar *result;
   gint i;
 
+  E_STATE(scanner)->type = EXPR_VARIANT;
   if(!expr_handlers)
     return g_strdup("");
 
@@ -192,6 +193,10 @@ gchar *module_get_string ( GScanner *scanner )
       g_free(params[i]);
   g_free(params);
 
+  if(handler->flags & MODULE_EXPR_NUMERIC)
+    E_STATE(scanner)->type = EXPR_NUMERIC;
+  else
+    E_STATE(scanner)->type = EXPR_STRING;
   if(!(handler->flags & MODULE_EXPR_DETERMINISTIC))
     E_STATE(scanner)->expr->vstate = TRUE;
 
