@@ -107,23 +107,15 @@ static gboolean expr_is_variant ( GScanner *scanner )
 static gboolean parser_expect_symbol ( GScanner *scanner, gint symbol,
     gchar *expr )
 {
-  if(g_scanner_peek_next_token(scanner)==symbol)
-  {
-    g_scanner_get_next_token(scanner);
-    return FALSE;
-  }
-  if(!expr)
-    g_scanner_error(scanner,
-        "Unexpected token '%c'(%d) at position %u, expected '%c'",
-        scanner->next_token,scanner->next_token,
-        g_scanner_cur_position(scanner), symbol );
-  else
-    g_scanner_error(scanner,
-        "%u: Unexpected token '%c'(%d) in expression %s, expected '%c'",
-        g_scanner_cur_position(scanner),
-        scanner->next_token,scanner->next_token,expr, symbol );
+  gchar *err;
 
-  return TRUE;
+  if(g_scanner_get_next_token(scanner)==symbol)
+    return TRUE;
+
+  err = g_strdup_printf("%s [%d:%d]",expr,scanner->line,scanner->position);
+  g_scanner_unexp_token(scanner, symbol, NULL, NULL, "", err , TRUE);
+  g_free(err);
+  return FALSE;
 }
 
 static void *expr_parse_identifier ( GScanner *scanner )
@@ -251,7 +243,7 @@ static gchar *expr_parse_cached ( GScanner *scanner )
   gdouble *ptr;
   
   parser_expect_symbol(scanner,'(',"Cached(Identifier)");
-  if(parser_expect_symbol(scanner,G_TOKEN_IDENTIFIER,"Cached(Identifier)"))
+  if(!parser_expect_symbol(scanner,G_TOKEN_IDENTIFIER,"Cached(Identifier)"))
     return g_strdup("");
 
   else if(*(scanner->value.v_identifier)=='$')
@@ -324,8 +316,8 @@ gdouble expr_parse_havevar ( GScanner *scanner )
 {
   gdouble result;
 
-  parser_expect_symbol(scanner,'(',"HaveVar(iIdentifier)");
-  if(parser_expect_symbol(scanner,G_TOKEN_IDENTIFIER,"HaveVar(Identifier)"))
+  parser_expect_symbol(scanner,'(',"Ident(Identifier)");
+  if(!parser_expect_symbol(scanner,G_TOKEN_IDENTIFIER,"Ident(Identifier)"))
     return FALSE;
 
   result = scanner_is_variable(scanner->value.v_identifier) ||
@@ -333,7 +325,7 @@ gdouble expr_parse_havevar ( GScanner *scanner )
   if(!result)
     expr_dep_add(scanner->value.v_identifier,E_STATE(scanner)->expr);
 
-  parser_expect_symbol(scanner,')',"HaveVar(iIdentifier)");
+  parser_expect_symbol(scanner,')',"Ident(iIdentifier)");
 
   return result;
 }
@@ -342,11 +334,12 @@ gdouble expr_parse_havevar ( GScanner *scanner )
 static gdouble expr_parse_compare ( GScanner *scanner, gchar *prev )
 {
   gchar *str1, *str2;
-  gint pos;
+  gint pos, line;
   gboolean negate = FALSE;
   gdouble res;
 
   pos = scanner->position;
+  line = scanner->line;
 
   if(!prev)
     str1 = expr_parse_str(scanner,NULL);
@@ -361,8 +354,8 @@ static gdouble expr_parse_compare ( GScanner *scanner, gchar *prev )
   if(g_scanner_peek_next_token(scanner)=='=')
     g_scanner_get_next_token(scanner);
   else
-    g_message("expr: %s:%d: Unexpected string where a numer is expected",
-        scanner->input_name,pos);
+    g_scanner_error(scanner,"Unexpected string where a numer is expected [%d:%d]",
+        line,pos);
   E_STATE(scanner)->type = EXPR_STRING;
   str2 = expr_parse_root(scanner);
   res = !g_strcmp0(str1,str2);
@@ -668,13 +661,7 @@ void **expr_module_parameters ( GScanner *scanner, gchar *spec, gchar *name )
   void **params;
   gint i;
 
-  if(g_scanner_peek_next_token(scanner)!='(')
-  {
-    g_scanner_error(scanner,"missing '(' after function call: %s",name);
-    return NULL;
-  }
-  else
-    g_scanner_get_next_token(scanner);
+  parser_expect_symbol(scanner,'(',name);
 
   if(!spec)
     params = NULL;
@@ -699,12 +686,7 @@ void **expr_module_parameters ( GScanner *scanner, gchar *spec, gchar *name )
       }
   }
 
-  if(g_scanner_peek_next_token(scanner)!=')')
-    g_scanner_error(scanner,"%d: missing ')' after function call: %s",
-        scanner->position,name);
-  else
-    g_scanner_get_next_token(scanner);
-
+  parser_expect_symbol(scanner,')',name);
   return params;
 }
 
@@ -754,8 +736,9 @@ gchar *expr_parse( ExprCache *expr )
   result = expr_parse_root(scanner);
 
   if(g_scanner_peek_next_token(scanner) != G_TOKEN_EOF)
-    g_message("expr: %s:%d:%d: Unexpected input at the end of expression\n",
-        scanner->input_name,scanner->line,scanner->position);
+    g_scanner_error(scanner,
+        "Unexpected input at the end of expression [%d:%d]",
+        scanner->line,scanner->position);
 
   g_debug("expr: \"%s\" = \"%s\" (vstate: %d)",expr->definition,result,
       E_STATE(scanner)->expr->vstate);
