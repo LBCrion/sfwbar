@@ -301,7 +301,7 @@ static gchar *expr_parse_if ( GScanner *scanner )
   }
 }
 
-gdouble expr_parse_havevar ( GScanner *scanner )
+gdouble expr_parse_ident ( GScanner *scanner )
 {
   gdouble result;
 
@@ -496,7 +496,7 @@ static gdouble expr_parse_num_value ( GScanner *scanner, gdouble *prev )
     case G_TOKEN_FLOAT: 
       return scanner->value.v_float;
     case G_TOKEN_IDENT:
-      return expr_parse_havevar(scanner);
+      return expr_parse_ident(scanner);
     case '(':
       val = expr_parse_num ( scanner, NULL );
       parser_expect_symbol(scanner, ')',"(Number)");
