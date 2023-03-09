@@ -29,12 +29,15 @@ layout {
   button {
     value = $XNetworkIcon
     trigger = "network"
-    tooltip = "interface: " + NetInfo("interface") + "\n" +
-              "ip:        " + NetInfo("ip") + "/" + NetInfo("cidr") +"\n" +
-              "netmask:   " + NetInfo("mask") + "\n" +
-              "gateway:   " + NetInfo("gateway") + "\n" +
-              "essid:     " + NetInfo("essid") + "\n" +
-              "signal:    " + Str(NetStat("signal")) + "%"
+    tooltip = "<span face='Monospace'>" +
+              "interface: " + Pad(NetInfo("interface"),20) + "\n" +
+              "ip:        " + Pad(NetInfo("ip") + "/" + NetInfo("cidr"),20) +
+                "\n" +
+              "netmask:   " + Pad(NetInfo("mask"),20) + "\n" +
+              "gateway:   " + Pad(NetInfo("gateway"),20) + "\n" +
+              "essid:     " + Pad(NetInfo("essid"),20) + "\n" +
+              "signal:    " + Pad(Str(NetStat("signal")) + "%",20) +
+              "</span>"
     style = If(Ident(NetInfo),"module","hidden")
   }
 }
