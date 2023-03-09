@@ -323,12 +323,8 @@ gdouble expr_parse_ident ( GScanner *scanner )
 static gdouble expr_parse_compare ( GScanner *scanner, gchar *prev )
 {
   gchar *str1, *str2;
-  gint pos, line;
   gboolean negate = FALSE;
   gdouble res;
-
-  pos = scanner->position;
-  line = scanner->line;
 
   if(!prev)
     str1 = expr_parse_str(scanner,NULL);
@@ -340,22 +336,18 @@ static gdouble expr_parse_compare ( GScanner *scanner, gchar *prev )
     negate = TRUE;
     g_scanner_get_next_token(scanner);
   }
-  if(g_scanner_peek_next_token(scanner)=='=')
-    g_scanner_get_next_token(scanner);
-  else
-    g_scanner_error(scanner,"Unexpected string where a numer is expected [%d:%d]",
-        line,pos);
-  E_STATE(scanner)->type = EXPR_STRING;
-  str2 = expr_parse_root(scanner);
+  parser_expect_symbol(scanner,'=',"string = string");
+  str2 = expr_parse_str(scanner,NULL);
+
   res = !g_strcmp0(str1,str2);
+  if(negate)
+    res = !res;
+
   g_free(str1);
   g_free(str2);
 
   E_STATE(scanner)->type = EXPR_NUMERIC;
-  if(negate)
-    return !res;
-  else
-    return res;
+  return res;
 }
 
 static gchar *expr_parse_variant_token ( GScanner *scanner )
