@@ -240,28 +240,17 @@ static gchar *expr_parse_lookup ( GScanner *scanner )
 static gchar *expr_parse_cached ( GScanner *scanner )
 {
   gchar *ret;
-  gdouble *ptr;
+  gint istate;
   
   parser_expect_symbol(scanner,'(',"Cached(Identifier)");
-  if(!parser_expect_symbol(scanner,G_TOKEN_IDENTIFIER,"Cached(Identifier)"))
-    return g_strdup("");
+  istate = E_STATE(scanner)->ignore;
+  E_STATE(scanner)->ignore = TRUE;
 
-  else if(*(scanner->value.v_identifier)=='$')
-  {
-    E_STATE(scanner)->type = EXPR_STRING;
-    ret = scanner_get_value(scanner->value.v_identifier,FALSE,
-        E_STATE(scanner)->expr);
-  }
-  else
-  {
-    E_STATE(scanner)->type = EXPR_NUMERIC;
-    ptr = scanner_get_value(scanner->value.v_identifier,FALSE,
-        E_STATE(scanner)->expr);
-    ret = expr_dtostr(*ptr,-1);
-    g_free(ptr);
-  }
+  ret = expr_parse_root(scanner);
 
+  E_STATE(scanner)->ignore = istate;
   parser_expect_symbol(scanner,')',"Cached(Identifier)");
+
   return ret;
 }
   
