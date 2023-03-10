@@ -1,3 +1,8 @@
+/* This entire file is licensed under GNU General Public License v3.0
+ *
+ * Copyright 2022- sfwbar maintainers
+ */
+
 #include "sfwbar.h"
 #include <glib.h>
 #include <gtk/gtk.h>

@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2022 sfwbar maintainers
+ * Copyright 2022- sfwbar maintainers
  */
 
 #include "expr.h"
@@ -46,10 +46,7 @@ void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
     return;
 
   if(win)
-  {
-    stat_win = g_malloc(sizeof(window_t));
-    memcpy(stat_win,win,sizeof(window_t));
-  }
+    stat_win = g_memdup2(win,sizeof(window_t));
   else
     stat_win = NULL;
 

@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2020-2022 sfwbar maintainers
+ * Copyright 2020- sfwbar maintainers
  */
 
 #include <stdio.h>
@@ -42,7 +42,7 @@ static json_object *sway_ipc_poll ( gint sock, gint32 *etype )
   if(pos==sizeof(sway_ipc_header))
   {
     pos=0;
-    memcpy(etype,sway_ipc_header+sizeof(magic)+sizeof(plen),sizeof(plen));
+    memcpy(etype,sway_ipc_header+sizeof(magic)+sizeof(plen),sizeof(etype));
     memcpy(&plen,sway_ipc_header+sizeof(magic),sizeof(plen));
     if(plen>65536)
       response=NULL;

@@ -244,14 +244,14 @@ static gchar *expr_parse_cached ( GScanner *scanner )
   gchar *ret;
   gint istate;
   
-  parser_expect_symbol(scanner,'(',"Cached(Identifier)");
+  parser_expect_symbol(scanner,'(',"Cached(...)");
   istate = E_STATE(scanner)->ignore;
   E_STATE(scanner)->ignore = TRUE;
 
   ret = expr_parse_root(scanner);
 
   E_STATE(scanner)->ignore = istate;
-  parser_expect_symbol(scanner,')',"Cached(Identifier)");
+  parser_expect_symbol(scanner,')',"Cached(...)");
 
   return ret;
 }
@@ -259,32 +259,30 @@ static gchar *expr_parse_cached ( GScanner *scanner )
 static gchar *expr_parse_if ( GScanner *scanner )
 {
   gboolean condition;
-  gchar *str, *str2;
-  guint istate = E_STATE(scanner)->ignore;
-  gint rtype, stype = E_STATE(scanner)->type;
+  gchar *str1, *str2;
+  guint istate;
+  gint rtype, stype;
 
-  parser_expect_symbol(scanner,'(',"If(Condition,Expression,Expression)");
+  stype = E_STATE(scanner)->type;
+  istate = E_STATE(scanner)->ignore;
+
+  parser_expect_symbol(scanner,'(',"If(...");
   condition = expr_parse_num(scanner,NULL);
   E_STATE(scanner)->type = stype;
 
   if(!condition)
-    E_STATE(scanner)->ignore = 1;
-  parser_expect_symbol(scanner,',',"If(Condition,Expression,Expression)");
-  g_scanner_peek_next_token(scanner);
-  str = expr_parse_root(scanner);
+    E_STATE(scanner)->ignore = TRUE;
+  parser_expect_symbol(scanner,',',"If(Condition,...)");
+  str1 = expr_parse_root(scanner);
+  rtype = E_STATE(scanner)->type;
 
   if(condition)
-  {
-    E_STATE(scanner)->ignore = 1;
-    rtype = E_STATE(scanner)->type;
-  }
+    E_STATE(scanner)->ignore = TRUE;
   else
-  {
     E_STATE(scanner)->ignore = istate;
-    E_STATE(scanner)->type = stype;
-  }
 
-  parser_expect_symbol(scanner,',',"If(Condition,Expression,Expression)");
+  E_STATE(scanner)->type = stype;
+  parser_expect_symbol(scanner,',',"If(Condition,Expression,...)");
   str2 = expr_parse_root(scanner);
 
   E_STATE(scanner)->ignore = istate;
@@ -294,11 +292,11 @@ static gchar *expr_parse_if ( GScanner *scanner )
   {
     E_STATE(scanner)->type = rtype;
     g_free(str2);
-    return str;
+    return str1;
   }
   else
   {
-    g_free(str);
+    g_free(str1);
     return str2;
   }
 }

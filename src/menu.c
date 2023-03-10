@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2021-2022 sfwbar maintainers
+ * Copyright 2021- sfwbar maintainers
  */
 
 #include "sfwbar.h"
