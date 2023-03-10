@@ -24,53 +24,36 @@ extern gchar *sockname;
 
 static json_object *sway_ipc_poll ( gint sock, gint32 *etype )
 {
-  gint8 sway_ipc_header[14];
-  gchar *response = NULL;
-  json_object *res;
+  json_object *json;
+  json_tokener *tok;
   guint32 plen;
-  size_t pos=0;
+  size_t pos;
   ssize_t rlen;
+  static gchar buf[1024];
 
-  while(pos<sizeof(sway_ipc_header))
-  {
-    rlen = recv(sock,(gchar *)sway_ipc_header+pos,sizeof(sway_ipc_header)-pos,0);
-    if (rlen<=0)
+  for(pos=0;pos<14;pos+=rlen)
+    if( (rlen = recv(sock,(gchar *)buf+pos,14-pos,0)) <=0 )
       break;
-    pos+=rlen;
-  }
 
-  if(pos==sizeof(sway_ipc_header))
-  {
-    pos=0;
-    memcpy(etype,sway_ipc_header+sizeof(magic)+sizeof(plen),sizeof(etype));
-    memcpy(&plen,sway_ipc_header+sizeof(magic),sizeof(plen));
-    if(plen>65536)
-      response=NULL;
-    else
-      response = g_malloc(plen+1);
-    if ( response != NULL)
-    {
-      while(pos<plen)
-      {
-        rlen = recv(sock,(gchar *)response+pos,plen-pos,0);
-        if (rlen<=0)
-          break;
-        pos+=rlen;
-      }
-      if(pos<plen)
-      {
-        g_free(response);
-        response = NULL;
-      }
-      else
-        response[plen]='\0';
-    }
-  }
-  if(!response)
+  if(pos!=14)
     return NULL;
-  res = json_tokener_parse(response);
-  g_free(response);
-  return res;
+
+  memcpy(etype,buf+sizeof(magic)+sizeof(plen),sizeof(*etype));
+  memcpy(&plen,buf+sizeof(magic),sizeof(plen));
+  tok = json_tokener_new();
+
+  while(plen>0 && (rlen = recv(sock,(gchar *)buf,MIN(plen,1024),0))>0 )
+  {
+    json = json_tokener_parse_ex(tok,buf,rlen);
+    plen-=rlen;
+  }
+  json_tokener_free(tok);
+
+  if(!plen)
+    return json;
+
+  json_object_put(json);
+  return NULL;
 }
 
 static int sway_ipc_open (int to)
