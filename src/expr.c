@@ -117,7 +117,6 @@ static gboolean parser_expect_symbol ( GScanner *scanner, gint symbol,
     return TRUE;
 
   g_scanner_unexp_token(scanner, symbol, NULL, NULL, "", expr, TRUE);
-  g_free(err);
   return FALSE;
 }
 
@@ -482,7 +481,7 @@ static gdouble expr_parse_num_value ( GScanner *scanner, gdouble *prev )
     case '-':
       return -expr_parse_num_value ( scanner, NULL );
     case '!':
-      return !expr_parse_num ( scanner, NULL );
+      return !expr_parse_num_value ( scanner, NULL );
     case G_TOKEN_FLOAT: 
       return scanner->value.v_float;
     case G_TOKEN_IDENT:
@@ -580,6 +579,7 @@ static gdouble expr_parse_num_compare ( GScanner *scanner, gdouble *prev )
 static gdouble expr_parse_num( GScanner *scanner, gdouble *prev )
 {
   gdouble val;
+  gint istate;
 
   E_STATE(scanner)->type = EXPR_NUMERIC;
 
@@ -587,15 +587,21 @@ static gdouble expr_parse_num( GScanner *scanner, gdouble *prev )
 
   while(strchr("&|",g_scanner_peek_next_token ( scanner )))
   {
+    istate = E_STATE(scanner)->ignore;
     switch((gint)g_scanner_get_next_token ( scanner ))
     {
       case '&':
+        if(!val)
+          E_STATE(scanner)->ignore = TRUE;
         val = expr_parse_num_compare ( scanner, NULL ) && val;
         break;
       case '|':
+        if(val)
+          E_STATE(scanner)->ignore = TRUE;
         val = expr_parse_num_compare ( scanner, NULL ) || val;
         break;
     }
+    E_STATE(scanner)->ignore = istate;
     if(g_scanner_eof(scanner))
       break;
   }
