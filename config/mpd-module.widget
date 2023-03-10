@@ -16,8 +16,7 @@ Function("XMpdToggle") {
 }
 
 PopUp "XMpdWindow" {
-  style = If(Ident(mpd),
-      If(mpd("state")="disconnected","hidden","XMpdPopup"),"hidden")
+  style = If(!Ident(mpd) | mpd("state")="disconnected","hidden","XMpdPopup")
   css = "* { -GtkWidget-direction: bottom; }"
   label {
     value = "<b>"+Mpd("title")+"</b>";
@@ -74,8 +73,7 @@ layout {
   button {
     value = "icons/misc/music-player-symbolic"
     action = PopUp "XMpdWindow"
-    style = If(Ident(mpd),
-        If(mpd("state")="disconnected","hidden","module"),"hidden")
+    style = If(!Ident(mpd) | mpd("state")="disconnected","hidden","module")
   }
 }
 
