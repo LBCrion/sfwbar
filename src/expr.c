@@ -31,6 +31,12 @@ static gdouble expr_str_to_num ( gchar *str )
   return val;
 }
 
+void expr_print_msg ( GScanner *scanner, gchar *msg, gboolean error )
+{
+  g_message("%s:%d:%d: %s: %s",scanner->input_name,scanner->line,
+      scanner->position,error?"error":"warning",msg);
+}
+
 /* convert a number to a string with specified number of decimals */
 gchar *expr_dtostr ( double num, gint dec )
 {
@@ -107,13 +113,10 @@ static gboolean expr_is_variant ( GScanner *scanner )
 static gboolean parser_expect_symbol ( GScanner *scanner, gint symbol,
     gchar *expr )
 {
-  gchar *err;
-
   if(g_scanner_get_next_token(scanner)==symbol)
     return TRUE;
 
-  err = g_strdup_printf("%s [%d:%d]",expr,scanner->line,scanner->position);
-  g_scanner_unexp_token(scanner, symbol, NULL, NULL, "", err , TRUE);
+  g_scanner_unexp_token(scanner, symbol, NULL, NULL, "", expr, TRUE);
   g_free(err);
   return FALSE;
 }
@@ -392,16 +395,13 @@ static gchar *expr_parse_variant ( GScanner *scanner )
 static gchar *expr_parse_str_l1 ( GScanner *scanner )
 {
   gchar *str;
-  gint spos;
 
   if(expr_is_variant(scanner))
   {
-    spos = scanner->position;
     E_STATE(scanner)->type = EXPR_STRING;
     str = expr_parse_variant_token(scanner);
     if(E_STATE(scanner)->type == EXPR_NUMERIC)
-      g_scanner_warn(scanner,
-          "Unexpected variant at position %d, expected a string",spos);
+      g_scanner_unexp_token(scanner,G_TOKEN_STRING,NULL,NULL,"","",TRUE);
     return str;
   }
 
@@ -416,9 +416,7 @@ static gchar *expr_parse_str_l1 ( GScanner *scanner )
     case G_TOKEN_IDENTIFIER:
       return expr_parse_identifier(scanner);
     default:
-      g_scanner_warn(scanner,
-          "Unexpected token %c at position %u, expected a string",scanner->token,
-          g_scanner_cur_position(scanner));
+      g_scanner_unexp_token(scanner,G_TOKEN_STRING,NULL,NULL,"","",TRUE);
       return g_strdup("");
   }
 }
@@ -499,10 +497,7 @@ static gdouble expr_parse_num_value ( GScanner *scanner, gdouble *prev )
       g_free(ptr);
       return val;
     default:
-      g_scanner_warn(scanner,
-          "%d: Unexpected token %d (%c), expected a number",
-          g_scanner_cur_position(scanner),
-          scanner->next_token, scanner->next_token);
+      g_scanner_unexp_token(scanner,G_TOKEN_FLOAT,NULL,NULL,"","",TRUE);
       return 0;
   }
 }
@@ -706,6 +701,7 @@ gchar *expr_parse( ExprCache *expr )
   scanner = expr_scanner_new();
 
   scanner->input_name = expr->definition;
+  scanner->msg_handler = expr_print_msg;
   scanner->user_data = &state;
   E_STATE(scanner)->expr = expr;
   E_STATE(scanner)->type = EXPR_VARIANT;
@@ -717,9 +713,7 @@ gchar *expr_parse( ExprCache *expr )
   result = expr_parse_root(scanner);
 
   if(g_scanner_peek_next_token(scanner) != G_TOKEN_EOF)
-    g_scanner_error(scanner,
-        "Unexpected input at the end of expression [%d:%d]",
-        scanner->line,scanner->position);
+    g_scanner_error(scanner, "Unexpected input at the end of expression");
 
   g_debug("expr: \"%s\" = \"%s\" (vstate: %d)",expr->definition,result,
       E_STATE(scanner)->expr->vstate);
