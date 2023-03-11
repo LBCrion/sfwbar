@@ -413,7 +413,7 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
     "binding",
     "shutdown",
     "tick",
-    "","","","","","","","","","","","","",
+    "","","","","","","","","","","","",
     "bar_state_update",
     "input" };
   struct json_object *obj,*container;
