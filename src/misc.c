@@ -44,7 +44,7 @@ json_object *recv_json ( gint sock, gint32 len )
 
   tok = json_tokener_new();
 
-  while(len!=0 && (rlen = recv(sock,buf,MIN(len,bufsize),0))>0 )
+  while(len!=0 && (rlen = recv(sock,buf,len<0?bufsize:MIN(len,bufsize),0))>0 )
   {
     json = json_tokener_parse_ex(tok,buf,rlen);
     if(len>0)
