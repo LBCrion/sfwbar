@@ -34,6 +34,7 @@ void mpd_ipc_init ( ScanFile *file );
 void mpd_ipc_command ( gchar *command );
 
 gint socket_connect ( const gchar *sockaddr, gint to );
+json_object *recv_json ( gint sock, gint32 len );
 void list_remove_link ( GList **list, void *child );
 gchar *get_xdg_config_file ( gchar *fname, gchar *extra );
 const gchar *json_string_by_name ( struct json_object *obj, gchar *name );

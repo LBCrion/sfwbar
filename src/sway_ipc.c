@@ -24,12 +24,10 @@ extern gchar *sockname;
 
 static json_object *sway_ipc_poll ( gint sock, gint32 *etype )
 {
-  json_object *json;
-  json_tokener *tok;
+  static gchar buf[14];
   guint32 plen;
   size_t pos;
   ssize_t rlen;
-  static gchar buf[1024];
 
   for(pos=0;pos<14;pos+=rlen)
     if( (rlen = recv(sock,(gchar *)buf+pos,14-pos,0)) <=0 )
@@ -40,20 +38,7 @@ static json_object *sway_ipc_poll ( gint sock, gint32 *etype )
 
   memcpy(etype,buf+sizeof(magic)+sizeof(plen),sizeof(*etype));
   memcpy(&plen,buf+sizeof(magic),sizeof(plen));
-  tok = json_tokener_new();
-
-  while(plen>0 && (rlen = recv(sock,(gchar *)buf,MIN(plen,1024),0))>0 )
-  {
-    json = json_tokener_parse_ex(tok,buf,rlen);
-    plen-=rlen;
-  }
-  json_tokener_free(tok);
-
-  if(!plen)
-    return json;
-
-  json_object_put(json);
-  return NULL;
+  return recv_json(sock,plen);
 }
 
 static int sway_ipc_open (int to)

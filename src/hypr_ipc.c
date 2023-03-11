@@ -51,11 +51,8 @@ static gboolean hypr_ipc_window_geom ( json_object *json, GdkRectangle *res )
 static gboolean hypr_ipc_request ( gchar *addr, gchar *command, json_object **json )
 {
   gint sock;
-  static gchar buf[1024];
-  ssize_t rlen;
-  json_tokener *tok;
 
-  if(!command)
+  if(!command || !json)
     return FALSE;
 
   sock = socket_connect(addr,1000);
@@ -68,14 +65,7 @@ static gboolean hypr_ipc_request ( gchar *addr, gchar *command, json_object **js
     return FALSE;
   }
 
-  if(json)
-  {
-    *json = NULL;
-    tok = json_tokener_new();
-    while( (rlen = recv(sock,buf,1024,0))>0 )
-      *json = json_tokener_parse_ex(tok,buf,rlen);
-    json_tokener_free(tok);
-  }
+  *json = recv_json(sock,-1);
 
   close(sock);
   return TRUE;

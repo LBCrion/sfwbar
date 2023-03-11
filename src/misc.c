@@ -31,6 +31,30 @@ gint socket_connect ( const gchar *sockaddr, gint to )
   return -1;
 }
 
+json_object *recv_json ( gint sock, gint32 len )
+{
+  static gchar *buf;
+  const gint bufsize = 1024;
+  json_tokener *tok;
+  json_object *json;
+  gint rlen;
+
+  if(!buf)
+    buf = g_malloc(bufsize);
+
+  tok = json_tokener_new();
+
+  while(len!=0 && (rlen = recv(sock,buf,MIN(len,bufsize),0))>0 )
+  {
+    json = json_tokener_parse_ex(tok,buf,rlen);
+    if(len>0)
+      len-=rlen;
+  }
+  json_tokener_free(tok);
+
+  return json;
+}
+
 void list_remove_link ( GList **list, void *child )
 {
   *list = g_list_delete_link(*list,g_list_find(*list,child));
