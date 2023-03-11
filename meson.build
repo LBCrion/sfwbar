@@ -10,6 +10,7 @@ wayp = dependency('wayland-protocols', version: '>=1.17')
 puls = dependency('libpulse', required: get_option('pulse'))
 pulg = dependency('libpulse-mainloop-glib', required: get_option('pulse'))
 mpdc = dependency('libmpdclient', required: get_option('mpd'))
+xkbr = dependency('xkbregistry', required: get_option('xkb'))
 
 conf_data = configuration_data()
 glsh_ver = glsh.version().split('.')
@@ -107,6 +108,11 @@ endif
 
 if mpdc.found()
   library('mpd', sources: 'modules/mpd.c', dependencies: [glib, mpdc],
+      install: true, install_dir: get_option('libdir') / 'sfwbar' )
+endif
+
+if xkbr.found()
+  library('xkbmap', sources: 'modules/xkbmap.c', dependencies: [glib, xkbr],
       install: true, install_dir: get_option('libdir') / 'sfwbar' )
 endif
 

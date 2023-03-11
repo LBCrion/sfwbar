@@ -1,3 +1,4 @@
 option('network',type:'feature',value:'auto',description:'Network module')
 option('pulse',type:'feature',value:'auto',description:'Pulse Audio module')
 option('mpd',type:'feature',value:'auto',description:'Music Player Daemon module')
+option('xkb',type:'feature',value:'auto',description:'xkbcommon layout lookup')
