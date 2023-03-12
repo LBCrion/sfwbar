@@ -173,6 +173,23 @@ static void *expr_lib_val ( void **params )
 
   return result;
 }
+
+static void *expr_lib_upper ( void **params )
+{
+  if(!params || !params[0])
+    return g_strdup("");
+  else
+    return g_ascii_strup(params[0],-1);
+}
+
+static void *expr_lib_lower ( void **params )
+{
+  if(!params || !params[0])
+    return g_strdup("");
+  else
+    return g_ascii_strdown(params[0],-1);
+}
+
 ModuleExpressionHandlerV1 mid_handler = {
   .flags = MODULE_EXPR_DETERMINISTIC,
   .name = "mid",
@@ -243,6 +260,20 @@ ModuleExpressionHandlerV1 val_handler = {
   .function = expr_lib_val
 };
 
+ModuleExpressionHandlerV1 upper_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC,
+  .name = "upper",
+  .parameters = "S",
+  .function = expr_lib_upper
+};
+
+ModuleExpressionHandlerV1 lower_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC,
+  .name = "lower",
+  .parameters = "S",
+  .function = expr_lib_lower
+};
+
 ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &mid_handler,
   &pad_handler,
@@ -254,6 +285,8 @@ ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &max_handler,
   &str_handler,
   &val_handler,
+  &upper_handler,
+  &lower_handler,
   NULL
 };
 

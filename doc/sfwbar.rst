@@ -694,6 +694,8 @@ Operation   Description
             string to pad, the second is the desired number of characters,
             if the number is negative, the string is padded at the end, if
             positive, the string is padded at the front.
+``Upper``   Convert a string to upper case
+``Lower``   Convert a string to lower case
 ``If``      conditional: If(condition,expr1,expr2)
 ``Lookup``  lookup a numeric value within a list of tuplets, the function call
             is ``Lookup(Value, Threshold1, String1, ..., DefaultString)``. The
