@@ -51,7 +51,7 @@ void *xkb_map_expr_func ( void **params )
 }
 
 ModuleExpressionHandlerV1 handler1 = {
-  .flags = 0,
+  .flags = MODULE_EXPR_DETERMINISTIC,
   .name = "XkbMap",
   .parameters = "SSS",
   .function = xkb_map_expr_func
