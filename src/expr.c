@@ -639,6 +639,8 @@ static gchar *expr_parse_root ( GScanner *scanner )
 void **expr_module_parameters ( GScanner *scanner, gchar *spec, gchar *name )
 {
   void **params;
+  gchar *value = NULL;
+  gdouble numeric;
   gint i;
 
   parser_expect_symbol(scanner,'(',name);
@@ -651,13 +653,21 @@ void **expr_module_parameters ( GScanner *scanner, gchar *spec, gchar *name )
     for(i=0;spec[i];i++)
       if(g_scanner_peek_next_token(scanner)!=')')
       {
-        if(g_ascii_tolower(spec[i])=='n' && !expr_is_string(scanner))
+        if(!value)
+        value = expr_parse_root(scanner);
+        if(g_ascii_tolower(spec[i])=='n' &&
+            E_STATE(scanner)->type!=EXPR_STRING)
         {
-          params[i] = g_malloc0(sizeof(gdouble));
-          *((gdouble *)params[i]) = expr_parse_num(scanner,NULL);
+          numeric = expr_str_to_num(value);
+          params[i] = g_memdup2(&numeric ,sizeof(gdouble));
+          value = NULL;
         }
-        else if(g_ascii_tolower(spec[i])=='s' && !expr_is_numeric(scanner))
-          params[i] = expr_parse_str(scanner,NULL);
+        else if(g_ascii_tolower(spec[i])=='s' &&
+            E_STATE(scanner)->type!=EXPR_NUMERIC)
+        {
+          params[i] = value;
+          value = NULL;
+        }
         else if(!g_ascii_islower(spec[i]))
           g_scanner_error(scanner,"invalid type in parameter %d of %s",i,name);
 
