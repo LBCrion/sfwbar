@@ -8,7 +8,7 @@ Sfwbar xkbcommon layout module
 :Copyright: GPLv3+
 :Manual section: 1
 
-Filename: libxkbmap.so
+Filename: xkbmap.so
 
 Requires: libxkbregistry
 

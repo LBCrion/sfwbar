@@ -8,7 +8,7 @@ Sfwbar Network module
 :Copyright: GPLv3+
 :Manual section: 1
 
-Filename: libnetwork.so
+Filename: network.so
 
 Requires: none
 

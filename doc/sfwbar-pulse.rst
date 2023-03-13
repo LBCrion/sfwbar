@@ -8,7 +8,7 @@ Sfwbar PulseAudio module
 :Copyright: GPLv3+
 :Manual section: 1
 
-Filename: libpulsectl.so
+Filename: pulsectl.so
 
 Requires: libpulse
 

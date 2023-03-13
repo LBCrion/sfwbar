@@ -97,23 +97,26 @@ dep = [gtk3, glib, gio_unix, gmod, glsh, wayl, json ]
 
 if get_option('network').enabled() or get_option('network').auto()
   library('network', sources: 'modules/network.c', dependencies: glib,
-      install: true, install_dir: get_option('libdir') / 'sfwbar' )
+      name_prefix: '', install: true,
+      install_dir: get_option('libdir') / 'sfwbar' )
 endif
 
 if puls.found() and pulg.found()
   library('pulsectl', sources: 'modules/pulsectl.c',
-      dependencies: [glib, puls, pulg],
+      dependencies: [glib, puls, pulg],name_prefix: '',
       install: true, install_dir: get_option('libdir') / 'sfwbar' )
 endif
 
 if mpdc.found()
   library('mpd', sources: 'modules/mpd.c', dependencies: [glib, mpdc],
-      install: true, install_dir: get_option('libdir') / 'sfwbar' )
+      name_prefix: '', install: true,
+      install_dir: get_option('libdir') / 'sfwbar' )
 endif
 
 if xkbr.found()
   library('xkbmap', sources: 'modules/xkbmap.c', dependencies: [glib, xkbr],
-      install: true, install_dir: get_option('libdir') / 'sfwbar' )
+      name_prefix: '', install: true,
+      install_dir: get_option('libdir') / 'sfwbar' )
 endif
 
 executable ('sfwbar', sources: src,

@@ -8,7 +8,7 @@ Sfwbar Music Player Daemon module
 :Copyright: GPLv3+
 :Manual section: 1
 
-Filename: libmpd.so
+Filename: mpd.so
 
 Requires: libmpdclient
 

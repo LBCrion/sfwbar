@@ -76,7 +76,7 @@ gboolean module_load ( gchar *name )
     return FALSE;
   g_debug("module: %s", name);
 
-  fname = g_strconcat("lib",name,".so",NULL);
+  fname = g_strconcat(name,".so",NULL);
   path = get_xdg_config_file(fname,MODULE_DIR);
   g_free(fname);
   g_debug("module: %s --> %s",name,path);
