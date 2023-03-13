@@ -627,7 +627,8 @@ static gchar *expr_parse_root ( GScanner *scanner )
     return expr_dtostr(expr_parse_num(scanner,&res),-1);
   }
 
-  if(E_STATE(scanner)->type != EXPR_STRING)
+  if(E_STATE(scanner)->type != EXPR_STRING &&
+      strchr("|&<>=*/%!+-",g_scanner_peek_next_token(scanner)))
   {
     res = expr_str_to_num(str);
     return expr_dtostr(expr_parse_num(scanner,&res),-1);
