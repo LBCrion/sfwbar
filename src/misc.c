@@ -36,7 +36,7 @@ json_object *recv_json ( gint sock, gint32 len )
   static gchar *buf;
   const gint bufsize = 1024;
   json_tokener *tok;
-  json_object *json;
+  json_object *json = NULL;
   gint rlen;
 
   if(!buf)
