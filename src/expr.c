@@ -468,6 +468,7 @@ static gdouble expr_parse_num_value ( GScanner *scanner, gdouble *prev )
     else /* if the variant type is unresolved, cast to numeric zero */
     {
       E_STATE(scanner)->type = EXPR_NUMERIC;
+      g_free(str);
       return 0;
     }
   }
