@@ -125,7 +125,15 @@ executable ('sfwbar', sources: src,
     '-DGTK_DISABLE_DEPRECATED'],
     dependencies: dep, install: true)
 
-install_man('doc/sfwbar.1')
+man_pages = [ 'doc/sfwbar.1',
+  'doc/sfwbar-pulse.1',
+  'doc/sfwbar-mpd.1',
+  'doc/sfwbar-network.1',
+  'doc/sfwbar-xkbmap.1'
+]
+foreach page : man_pages
+  install_man(page)
+endforeach
 install_subdir('config',
     install_dir: get_option('datadir') / 'sfwbar', strip_directory : true )
 install_subdir('icons/weather',
