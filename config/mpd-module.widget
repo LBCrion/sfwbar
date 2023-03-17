@@ -41,6 +41,18 @@ PopUp "XMpdWindow" {
   grid "XMpdPlayer" {
     css = "* { -GtkWidget-direction: right; -GtkWidget-halign: center; }"
     image {
+      value = "media-playlist-repeat-symbolic"
+      action = MpdCommand "repeat toggle"
+      style = If(val(mpd("repeat")),"mpd_icon_red","mpd_icon")
+      trigger = "mpd"
+    }
+    image {
+      value = "media-playlist-shuffle-symbolic"
+      action = MpdCommand "random toggle"
+      style = If(val(mpd("random")),"mpd_icon_red","mpd_icon")
+      trigger = "mpd"
+    }
+    image {
       value = "media-seek-backward-symbolic"
       action = MpdCommand "prev"
       style = "mpd_icon"
@@ -98,6 +110,15 @@ image#mpd_icon {
   min-width: 16px;
   min-height: 16px;
   padding: 4px;
+}
+
+image#mpd_icon_red {
+  -GtkWidget-hexpand: false;
+  -GtkWidget-vexpand: false;
+  min-width: 16px;
+  min-height: 16px;
+  padding: 4px;
+  color: red;
 }
 
 label#mpd_title,
