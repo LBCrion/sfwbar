@@ -251,7 +251,7 @@ gchar *str_replace ( gchar *str, gchar *old, gchar *new )
   {
     strncpy(dptr,pptr,ptr-pptr);
     dptr += ptr - pptr;
-    strncpy(dptr,new,nlen);
+    strcpy(dptr,new);
     dptr += nlen;
     pptr = ptr + olen;
     ptr = strstr(pptr,old);
