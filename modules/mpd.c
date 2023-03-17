@@ -52,6 +52,7 @@ static gboolean mpd_update ( void )
   song = mpd_run_current_song(conn);
   if(!mpd_response_finish(conn))
     return FALSE;
+
   last_update = g_get_monotonic_time();
 
   if(!timer && (!status || mpd_status_get_state(status) == MPD_STATE_PLAY))
@@ -66,6 +67,7 @@ static gboolean mpd_update ( void )
 
 static gboolean mpd_event ( GIOChannel *chan, GIOCondition cond, void *d)
 {
+
   g_debug("MPD client: processing an event");
   mpd_recv_idle(conn,FALSE);
   mpd_response_finish(conn);
@@ -78,7 +80,7 @@ static gboolean mpd_event ( GIOChannel *chan, GIOCondition cond, void *d)
     return FALSE;
   }
 
-  mpd_send_idle_mask(conn,MPD_IDLE_PLAYER);
+  mpd_send_idle_mask(conn,MPD_IDLE_PLAYER | MPD_IDLE_OPTIONS);
   return TRUE;
 }
 
@@ -99,13 +101,36 @@ static gboolean mpd_connect ( gpointer data )
   g_debug("MPD client: connected to server");
 
   mpd_update();
-  mpd_send_idle_mask(conn,MPD_IDLE_PLAYER);
+  mpd_send_idle_mask(conn,MPD_IDLE_PLAYER | MPD_IDLE_OPTIONS);
 
   chan = g_io_channel_unix_new(mpd_connection_get_fd(conn));
   g_io_add_watch(chan,G_IO_IN,(GIOFunc)mpd_event,conn);
   g_io_channel_unref(chan);
  
   return FALSE;
+}
+
+static void mpd_bool_set( bool (*get)(const struct mpd_status *),
+    bool (*set)(struct mpd_connection *, bool), gchar *val )
+{
+  gboolean new;
+
+  if(!conn || !status || !get || !set || !val)
+    return;
+
+  while(*val && g_ascii_isspace(*val))
+    val++;
+
+  if(!g_ascii_strcasecmp(val,"on"))
+    new = TRUE;
+  else if(!g_ascii_strcasecmp(val,"off"))
+    new = FALSE;
+  else if(!g_ascii_strcasecmp(val,"toggle"))
+    new = !get(status);
+  else
+    return;
+
+  set(conn,new);
 }
 
 void sfwbar_module_init ( ModuleApiV1 *api )
@@ -183,9 +208,15 @@ static void mpd_command ( gchar *cmd, gchar *dummy, void *d1,
     mpd_run_toggle_pause(conn);
   else if(!g_ascii_strcasecmp(cmd,"stop"))
     mpd_run_stop(conn);
+  else if(!g_ascii_strncasecmp(cmd,"random",6))
+    mpd_bool_set(mpd_status_get_random, mpd_run_random, cmd+6);
+  else if(!g_ascii_strncasecmp(cmd,"repeat",6))
+    mpd_bool_set(mpd_status_get_repeat, mpd_run_repeat, cmd+6);
+
   mpd_response_finish(conn);
-  mpd_send_idle_mask(conn,MPD_IDLE_PLAYER);
+  mpd_send_idle_mask(conn,MPD_IDLE_PLAYER | MPD_IDLE_OPTIONS);
 }
+
 static void mpd_set_passwd ( gchar *pwd, gchar *dummy, void *d1,
     void *d2, void *d3, void *d4 )
 {
