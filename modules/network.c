@@ -391,7 +391,6 @@ static void net_update_essid ( char *interface )
   iface_info *iface;
   gchar lessid[IEEE80211_NWID_LEN+1];
   gint sock;
-  gint rssi = -100;
 
   iface = net_iface_from_name(interface,FALSE);
   if(!iface)
@@ -556,12 +555,10 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
   gint sock;
   gchar buff[4096];
   struct rt_msghdr *hdr;
-  struct sockaddr_in *sin;
   struct sockaddr *sa;
   struct in_addr gate, dest, mask;
   struct in6_addr gate6;
   gchar ifname[IF_NAMESIZE];
-  gchar addrstr[INET6_ADDRSTRLEN];
 
   sock = g_io_channel_unix_get_fd(chan);
   len = recv(sock,&buff,sizeof(buff),0);

@@ -69,7 +69,7 @@ static void pulse_set_source ( const gchar *source, gboolean fixed )
 }
 
 static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
-    gint eol, void * )
+    gint eol, void *d )
 {
   pulse_info *info;
 
@@ -93,7 +93,7 @@ static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
 }
 
 static void pulse_source_cb ( pa_context *ctx, const pa_source_info *pinfo,
-    gint eol, void * )
+    gint eol, void *d )
 {
   pulse_info *info;
 
