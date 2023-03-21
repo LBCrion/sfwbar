@@ -289,8 +289,7 @@ void base_widget_set_value ( GtkWidget *self, gchar *value )
   priv->value->definition = value;
   priv->value->eval = TRUE;
 
-  if(expr_cache_eval(priv->value) ||
-      BASE_WIDGET_GET_CLASS(self)->no_value_cache)
+  if(expr_cache_eval(priv->value) || priv->always_update)
     base_widget_update_value(self);
 
   g_mutex_lock(&widget_mutex);
@@ -449,6 +448,16 @@ guint16 base_widget_get_state ( GtkWidget *self )
   return priv->user_state;
 }
 
+void base_widget_set_always_update ( GtkWidget *self, gboolean update )
+{
+  BaseWidgetPrivate *priv;
+
+  g_return_if_fail(IS_BASE_WIDGET(self));
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  priv->always_update = update;
+}
+
 void base_widget_set_next_poll ( GtkWidget *self, gint64 ctime )
 {
   BaseWidgetPrivate *priv;
@@ -553,8 +562,7 @@ gboolean base_widget_emit_trigger ( gchar *trigger )
     priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
     if(!priv->trigger || g_ascii_strcasecmp(trigger,priv->trigger))
       continue;
-    if(expr_cache_eval(priv->value) ||
-        BASE_WIDGET_GET_CLASS(iter->data)->no_value_cache)
+    if(expr_cache_eval(priv->value) || priv->always_update)
       base_widget_update_value(iter->data);
     if(expr_cache_eval(priv->style))
       base_widget_style(iter->data);
@@ -586,8 +594,7 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
       priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
       if(base_widget_get_next_poll(iter->data)<=ctime)
       {
-        if(expr_cache_eval(priv->value) ||
-            BASE_WIDGET_GET_CLASS(iter->data)->no_value_cache)
+        if(expr_cache_eval(priv->value) || priv->always_update)
           g_main_context_invoke(gmc,(GSourceFunc)base_widget_update_value,
               iter->data);
         if(expr_cache_eval(priv->style))

@@ -42,11 +42,11 @@ static void cchart_class_init ( CChartClass *kclass )
   GTK_WIDGET_CLASS(kclass)->destroy = cchart_destroy;
   BASE_WIDGET_CLASS(kclass)->update_value = cchart_update_value;
   BASE_WIDGET_CLASS(kclass)->get_child = cchart_get_child;
-  BASE_WIDGET_CLASS(kclass)->no_value_cache = TRUE;
 }
 
 static void cchart_init ( CChart *self )
 {
+  base_widget_set_always_update(GTK_WIDGET(self),TRUE);
 }
 
 GtkWidget *cchart_new ( void )
