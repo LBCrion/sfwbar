@@ -118,8 +118,8 @@ static void scale_image_surface_update ( GtkWidget *self, gint width,
     }
   }
 
-  if(buf && gdk_pixbuf_get_width(buf) < width &&
-      gdk_pixbuf_get_height(buf) < height )
+  if(buf && gdk_pixbuf_get_width(buf) > width &&
+      gdk_pixbuf_get_height(buf) > height )
   {
     tmp = buf;
     buf = gdk_pixbuf_scale_simple(tmp, width, height, GDK_INTERP_BILINEAR);
