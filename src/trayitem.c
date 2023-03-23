@@ -106,7 +106,7 @@ gboolean tray_item_scroll_cb ( GtkWidget *self, GdkEventScroll *event, SniItem *
 
 gboolean tray_item_click_cb (GtkWidget *self, GdkEventButton *ev, SniItem *sni )
 {
-  gchar *method=NULL;
+  gchar *method;
   GtkAllocation alloc,walloc;
   GdkRectangle geo;
   gint32 x,y;
@@ -117,10 +117,16 @@ gboolean tray_item_click_cb (GtkWidget *self, GdkEventButton *ev, SniItem *sni )
   g_debug("sni %s: button: %d",sni->dest,ev->button);
   if(ev->button == 2)
     method = "SecondaryActivate";
-  if(ev->button == 3)
+  else if(ev->button == 3)
+  {
+    if(sni->menu_path)
+    {
+      sni_get_menu(sni,(GdkEvent *)ev);
+      return TRUE;
+    }
     method = "ContextMenu";
-
-  if(!method)
+  }
+  else
     return FALSE;
 
   gdk_monitor_get_geometry(gdk_display_get_monitor_at_window(
@@ -170,32 +176,35 @@ gboolean tray_item_release_cb (GtkWidget *button, GdkEventButton *ev, GtkWidget 
 
   return FALSE;
 }
+
 static void tray_item_button_cb( GtkWidget *button, GtkWidget *self )
 {
   TrayItemPrivate *priv;
   SniItem *sni;
-  gchar *method;
+  gchar *method = NULL;
 
   g_return_if_fail(IS_TRAY_ITEM(self));
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
   sni = priv->sni;
 
-  if(sni->menu_path)
+  if(sni->menu)
   {
-    sni_get_menu(sni,priv->last_event);
+    if(sni->menu_path)
+      sni_get_menu(sni,priv->last_event);
+    else
+      method = "ContextMenu";
   }
   else
-  {
-    if(sni->menu)
-      method = "ContextMenu";
-    else
-      method = "Activate";
+    method = "Activate";
 
+  if(method)
+  {
     g_debug("sni: calling %s on %s",method,sni->dest);
     g_dbus_connection_call(sni_get_connection(), sni->dest, sni->path,
       sni->host->item_iface, method, g_variant_new("(ii)", 0, 0),
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
   }
+
   if(priv->last_event)
     gdk_event_free(priv->last_event);
   priv->last_event = NULL;
