@@ -112,6 +112,8 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
       g_object_unref(wrap->sni->pixbuf[wrap->prop-SNI_PROP_ICONPIX]);
     wrap->sni->pixbuf[wrap->prop-SNI_PROP_ICONPIX] =
       sni_item_get_pixbuf(inner);
+      g_debug("sni %s: property %s received",wrap->sni->dest,
+          sni_properties[wrap->prop]);
   }
   else if(wrap->prop == SNI_PROP_MENU &&
       g_variant_is_of_type(inner,G_VARIANT_TYPE_OBJECT_PATH))
@@ -122,9 +124,17 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
           sni_properties[wrap->prop],wrap->sni->menu_path);
     }
   else if(wrap->prop == SNI_PROP_ISMENU)
+  {
     g_variant_get(inner,"b",&(wrap->sni->menu));
+    g_debug("sni %s: property %s = %d",wrap->sni->dest,
+        sni_properties[wrap->prop],wrap->sni->menu);
+  }
   else if(wrap->prop == SNI_PROP_ORDER)
+  {
     g_variant_get(inner,"u",&(wrap->sni->order));
+    g_debug("sni %s: property %s = %u",wrap->sni->dest,
+        sni_properties[wrap->prop],wrap->sni->order);
+  }
 
   g_variant_unref(inner);
   tray_invalidate_all(wrap->sni);
