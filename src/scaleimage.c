@@ -62,6 +62,7 @@ static void scale_image_surface_update ( GtkWidget *self, gint width,
   GdkPixbuf *buf, *tmp;
   GdkPixbufLoader *loader;
   gchar *fallback;
+  gboolean aspect;
 
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
   priv->fallback = FALSE;
@@ -118,8 +119,19 @@ static void scale_image_surface_update ( GtkWidget *self, gint width,
     }
   }
 
-  if(buf && gdk_pixbuf_get_width(buf) > width &&
-      gdk_pixbuf_get_height(buf) > height )
+  if(buf)
+  {
+    aspect = (gboolean)gdk_pixbuf_get_width(buf) /
+      (gboolean)gdk_pixbuf_get_height(buf);
+
+    if((gboolean)width/(gboolean)height > aspect)
+      width = (gboolean)height * aspect;
+    else if((gboolean)width/(gboolean)height < aspect)
+      height = (gboolean)width / aspect;
+  }
+
+  if(buf && gdk_pixbuf_get_width(buf) != width &&
+      gdk_pixbuf_get_height(buf) != height )
   {
     tmp = buf;
     buf = gdk_pixbuf_scale_simple(tmp, width, height, GDK_INTERP_BILINEAR);
