@@ -73,23 +73,28 @@ static void net_update_ifaddrs ( void )
   for(iter=addrs;iter;iter=iter->ifa_next)
   {
     iface = net_iface_from_name(iter->ifa_name,TRUE);
-    switch(iter->ifa_addr->sa_family)
-    {
-      case AF_INET:
-        iface->ip = ((struct sockaddr_in *)(iter->ifa_addr))->sin_addr;
-        if(iter->ifa_netmask)
-          iface->mask = ((struct sockaddr_in *)(iter->ifa_netmask))->sin_addr;
-        if(iter->ifa_broadaddr)
-          iface->bcast = ((struct sockaddr_in *)(iter->ifa_broadaddr))->sin_addr;
-        break;
-      case AF_INET6:
-        iface->ip6 = ((struct sockaddr_in6 *)(iter->ifa_addr))->sin6_addr;
-        if(iter->ifa_netmask)
-          iface->mask6 = ((struct sockaddr_in6 *)(iter->ifa_netmask))->sin6_addr;
-        if(iter->ifa_broadaddr)
-          iface->bcast6 = ((struct sockaddr_in6 *)(iter->ifa_broadaddr))->sin6_addr;
-        break;
-    }
+    if(iter->ifa_addr)
+      switch(iter->ifa_addr->sa_family)
+      {
+        case AF_INET:
+          iface->ip = ((struct sockaddr_in *)(iter->ifa_addr))->sin_addr;
+          if(iter->ifa_netmask)
+            iface->mask =
+              ((struct sockaddr_in *)(iter->ifa_netmask))->sin_addr;
+          if(iter->ifa_broadaddr)
+            iface->bcast =
+              ((struct sockaddr_in *)(iter->ifa_broadaddr))->sin_addr;
+          break;
+        case AF_INET6:
+          iface->ip6 = ((struct sockaddr_in6 *)(iter->ifa_addr))->sin6_addr;
+          if(iter->ifa_netmask)
+            iface->mask6 =
+              ((struct sockaddr_in6 *)(iter->ifa_netmask))->sin6_addr;
+          if(iter->ifa_broadaddr)
+            iface->bcast6 =
+              ((struct sockaddr_in6 *)(iter->ifa_broadaddr))->sin6_addr;
+          break;
+      }
   }
   freeifaddrs(addrs);
 }
