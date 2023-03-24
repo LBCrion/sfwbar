@@ -3,20 +3,24 @@ Function("StartMenu") {
 import string, sys, fileinput, getopt, os, glob
 
 def main():
+  # Use categories from XDG spec
   catmap = {
-  'Programming': 'Development',
-  'TextEditor': 'Editors',
+  'Development': 'Development',
+  'Education': 'Education',
   'Game': 'Games',
   'Graphics': 'Graphics',
   'Internet': 'Internet',
-  'Settings': 'Utilities',
-  'System': 'Utilities',
-  'Utilities': 'Utilities',
+  'Settings': 'Settings',
+  'Screensaver': 'Settings',
+  'System': 'System',
+  'Emulator': 'System',
   'Network': 'Internet',
-  'AudioVideo': 'AudioVideo',
-  'Audio': 'AudioVideo',
-  'Video': 'AudioVideo',
-  'Utility': 'Utilities',
+  'AudioVideo': 'Multimedia',
+  'Audio': 'Multimedia',
+  'Video': 'Multimedia',
+  'Utility': 'Accessories',
+  'Accessibility': 'Accessories',
+  'Core': 'Accessories',
   'Office': 'Office'}
 
   cats = list()
@@ -29,7 +33,7 @@ def main():
     for dline in fchan.readlines():
       try:
         (tag, value) = dline.strip().split('=')
-        if tag.strip() == 'Name':
+        if tag.strip() == 'Name' and not de_name: # Grab first name
           de_name = value.strip()
         if tag.strip() == 'Icon':
           de_icon = value.strip()
@@ -48,8 +52,11 @@ def main():
       if not (de_cat in cats):
         cats.append(de_cat)
         print ('MenuClear(\\'Menugen_' + de_cat + '\\')')
+        sub_icon = '%applications-' + de_cat.lower()
+        if (de_cat.lower() == 'settings'): # these is no applications-settings icon
+            sub_icon = '%preferences-system'
         outp.append('Menu(\\'Menugen_Applications\\') { SubMenu(\\'' + de_cat +
-        '%applications-' + de_cat.lower() + '\\',\\'Menugen_' + de_cat + '\\') }')
+        sub_icon + '\\',\\'Menugen_' + de_cat + '\\') }')
       outp.append('Menu(\\'Menugen_' + de_cat + '\\') { Item(\\'' + de_name + '%' +
       de_icon + '\\',Exec \\'' + de_exec +'\\') }')
   for token in sorted(outp):
