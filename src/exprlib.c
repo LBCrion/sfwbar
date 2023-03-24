@@ -50,11 +50,13 @@ static void *expr_lib_extract( void **params )
     return g_strdup("");
 
   regex = g_regex_new(params[1],0,0,NULL);
-  g_regex_match (regex, params[0], 0, &match);
-  if(g_match_info_matches (match))
+  if(regex && g_regex_match (regex, params[0], 0, &match))
+  {
     sres = g_match_info_fetch (match, 0);
-  g_match_info_free (match);
-  g_regex_unref (regex);
+    g_match_info_free (match);
+  }
+  if(regex)
+    g_regex_unref (regex);
 
   return sres?sres:g_strdup("");
 }
