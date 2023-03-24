@@ -41,6 +41,11 @@ static void switcher_init ( Switcher *self )
 {
 }
 
+gboolean switcher_state ( void )
+{
+  return switcher != NULL;
+}
+
 GtkWidget *switcher_new ( void )
 {
   GtkWidget *self;

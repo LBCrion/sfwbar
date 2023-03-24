@@ -54,6 +54,7 @@ gint wintree_compare ( window_t *a, window_t *b);
 void wintree_appid_map_add ( gchar *pattern, gchar *appid );
 gchar *wintree_appid_map_lookup ( gchar *title );
 void wintree_placer_conf( gint xs, gint ys, gint xo, gint yo, gboolean pid );
+gboolean wintree_placer_state ( void );
 gboolean wintree_placer_check ( gint pid );
 void wintree_placer_calc ( gint nobs, GdkRectangle *obs, GdkRectangle output,
     GdkRectangle *win );

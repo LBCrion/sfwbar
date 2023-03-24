@@ -134,6 +134,10 @@ static void activate (GtkApplication* app, gpointer data )
   switcher_populate();
 
   clist = gtk_window_list_toplevels();
+
+  if(!clist && !switcher_state() && !wintree_placer_state())
+    g_error("Configuration file doesn't specify any features");
+
   for(iter = clist; iter; iter = g_list_next(iter) )
     if(GTK_IS_BOX(gtk_bin_get_child(GTK_BIN(iter->data))))
     {

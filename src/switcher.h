@@ -35,6 +35,7 @@ GType switcher_get_type ( void );
 void switcher_window_delete ( window_t *win );
 
 GtkWidget *switcher_new();
+gboolean switcher_state ( void );
 gboolean switcher_event ( gpointer );
 void switcher_invalidate ( window_t *win );
 void switcher_update ( void );

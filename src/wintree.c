@@ -279,6 +279,11 @@ void wintree_placer_conf( gint xs, gint ys, gint xo, gint yo, gboolean pid )
   placer = TRUE;
 }
 
+gboolean wintree_placer_state ( void )
+{
+  return placer;
+}
+
 gboolean wintree_placer_check ( gint pid )
 {
   GList *iter;
