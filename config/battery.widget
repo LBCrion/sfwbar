@@ -33,9 +33,10 @@ END"
 }
 
 layout {
-  image "battery" {
+  style = "module"
+  button "battery" {
     action[0] = Function "BatteryInitScanner"
-    style = If($BatState="","hidden","battery")
+    style = If($BatState="","hidden","module")
     tooltip = Str(100*BatLeft/BatTotal,0) + "%"
     value = BatIcon
   }
