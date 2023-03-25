@@ -25,6 +25,7 @@ static gchar *dfilter;
 static GRegex *rfilter;
 static gboolean debug = FALSE;
 static enum ipc_type ipc;
+static gchar **sargv;
 
 static GOptionEntry entries[] = {
   {"config",'f',0,G_OPTION_ARG_FILENAME,&confname,"Specify config file"},
@@ -110,6 +111,17 @@ gboolean shell_timer ( gpointer data )
   return TRUE;
 }
 
+static gboolean sfwbar_restart ( gpointer d )
+{
+  gint i, fdlimit;
+
+  fdlimit = (int)sysconf(_SC_OPEN_MAX);
+  for(i=STDERR_FILENO+1; i<fdlimit; i++)
+    fcntl(i,F_SETFD,FD_CLOEXEC);
+  execv(sargv[0],sargv);
+  return FALSE;
+}
+
 static void activate (GtkApplication* app, gpointer data )
 {
   GdkDisplay *gdisp;
@@ -165,12 +177,17 @@ static void activate (GtkApplication* app, gpointer data )
   g_timeout_add (100,(GSourceFunc )shell_timer,NULL);
   g_unix_signal_add(SIGUSR1,(GSourceFunc)switcher_event,NULL);
   g_unix_signal_add(SIGUSR2,(GSourceFunc)bar_hide_event,"toggle");
+  g_unix_signal_add(SIGHUP,(GSourceFunc)sfwbar_restart,NULL);
 }
 
 int main (int argc, gchar **argv)
 {
   GtkApplication *app;
-  gint status;
+  gint status, i;
+
+  sargv = g_malloc0(sizeof(gchar *)*(argc+1));
+  for(i=0; i<argc; i++)
+    sargv[i] = argv[i];
 
   g_log_set_handler(NULL,G_LOG_LEVEL_MASK,log_print,NULL);
 
