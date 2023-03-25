@@ -200,6 +200,7 @@ SniItem *sni_item_new (GDBusConnection *con, SniHost *host,
   sni = g_malloc0(sizeof(SniItem));
   sni->uid = g_strdup(uid);
   sni->cancel = g_cancellable_new();
+  sni->menu = TRUE;
   path = strchr(uid,'/');
   if(path!=NULL)
   {
