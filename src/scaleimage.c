@@ -28,7 +28,7 @@ static void scale_image_get_preferred_width ( GtkWidget *self, gint *m,
   gtk_style_context_get_margin(style,flags,&margin);
   gtk_style_context_get(style,flags,"min-width",&w,NULL);
 
-  *m = w + border.left + border.right + padding.left +
+  *m = w?w:16 + border.left + border.right + padding.left +
       padding.right + margin.left + margin.right;
   *n = *m;
 }
@@ -50,7 +50,7 @@ static void scale_image_get_preferred_height ( GtkWidget *self, gint *m,
   gtk_style_context_get_margin(style,flags,&margin);
   gtk_style_context_get(style,flags,"min-height",&h,NULL);
 
-  *m = h + border.top + border.bottom + padding.top +
+  *m = h?h:16 + border.top + border.bottom + padding.top +
       padding.bottom + margin.top + margin.bottom;
   *n = *m;
 }
