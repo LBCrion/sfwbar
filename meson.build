@@ -119,7 +119,7 @@ if xkbr.found()
       install_dir: get_option('libdir') / 'sfwbar' )
 endif
 
-if get_option('bsdctl').enabled() or get_option('bsdctl').auto()
+if get_option('bsdctl').enabled()
   library('bsdctl', sources: 'modules/bsdctl.c', dependencies: glib,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
