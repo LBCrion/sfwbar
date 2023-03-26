@@ -17,7 +17,7 @@
 ModuleApiV1 *sfwbar_module_api;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 1;
-typedef gchar *(*SysctlParseFunc)( gchar *, void *, size_t );
+typedef gchar *(*SysctlParseFunc)( void *, size_t );
 
 typedef struct {
   gint *oid;
@@ -26,7 +26,7 @@ typedef struct {
   SysctlParseFunc func;
 } SysctlVar;
 
-static gchar *sysctl_clockinfo ( gchar *old, void *buf, size_t len )
+static gchar *sysctl_clockinfo ( void *buf, size_t len )
 {
   struct clockinfo *ci;
 
@@ -35,11 +35,11 @@ static gchar *sysctl_clockinfo ( gchar *old, void *buf, size_t len )
 
   ci = buf;
 
-  return g_strdup_printf("%s { hz = %d, tick = %d, profhz = %d, stathz = %d }",
-      old, ci->hz, ci->tick, ci->profhz, ci->stathz);
+  return g_strdup_printf("{ hz = %d, tick = %d, profhz = %d, stathz = %d }",
+      ci->hz, ci->tick, ci->profhz, ci->stathz);
 }
 
-static gchar *sysctl_timeval ( gchar *old, void *buf, size_t len )
+static gchar *sysctl_timeval ( void *buf, size_t len )
 {
   struct timeval *tv;
 
@@ -48,11 +48,11 @@ static gchar *sysctl_timeval ( gchar *old, void *buf, size_t len )
 
   tv = buf;
 
-  return g_strdup_printf("%s { sec = %jd, usec = %lu } %s",
-      old, tv->tv_sec, tv->tv_usec, ctime(&(tv->tv_sec)));
+  return g_strdup_printf("{ sec = %jd, usec = %lu } %s",
+      tv->tv_sec, tv->tv_usec, ctime(&(tv->tv_sec)));
 }
 
-static gchar *sysctl_loadavg ( gchar *old, void *buf, size_t len )
+static gchar *sysctl_loadavg ( void *buf, size_t len )
 {
   struct loadavg *la;
 
@@ -61,13 +61,13 @@ static gchar *sysctl_loadavg ( gchar *old, void *buf, size_t len )
 
   la = buf;
 
-  return g_strdup_printf("%s { %.2f %.2f %.2f }",old,
+  return g_strdup_printf("{ %.2f %.2f %.2f }",
       (double)la->ldavg[0]/(double)la->fscale,
       (double)la->ldavg[1]/(double)la->fscale,
       (double)la->ldavg[2]/(double)la->fscale);
 }
 
-static gchar *sysctl_vmtotal ( gchar *old, void *buf, size_t len )
+static gchar *sysctl_vmtotal ( void *buf, size_t len )
 {
   struct vmtotal *vm;
   int kpp;
@@ -78,13 +78,13 @@ static gchar *sysctl_vmtotal ( gchar *old, void *buf, size_t len )
   vm = buf;
   kpp = getpagesize()/1024;
 
-  return g_strdup_printf("%s\nProcesses:\t\t"
+  return g_strdup_printf("Processes:\t\t"
       "(RUNQ: %hd Disk Wait: %hd Page Wait: %hd Sleep: %hd)\n"
       "Virtual Memory:\t\t(Total %ldK Active %ldK)\n"
       "Real Memory:\t\t(Total %ldK Active %ldK)\n"
       "Shared Virtual Memory:\t(Total %ldK Active %ldK)\n"
       "Shared Real Memory:\t(Total %ldK Active %ldK)\n"
-      "Free Memory:\t%ldK\n",old,
+      "Free Memory:\t%ldK\n",
       vm->t_rq,vm->t_dw,vm->t_pw,vm->t_sl,
       vm->t_vm * kpp, vm->t_avm * kpp, vm->t_rm * kpp, vm->t_arm * kpp,
       vm->t_vmshr * kpp, vm->t_avmshr * kpp,
@@ -133,7 +133,7 @@ static SysctlVar *sysctl_var_new ( const gchar *name )
 static gchar *sysctl_query ( SysctlVar *var )
 {
   u_char buf[1024];
-  void *ptr;
+  void *ptr,*vptr;
   size_t ilen, nlen = sizeof(buf);
   gchar *res, *tmp;
 
@@ -148,73 +148,118 @@ static gchar *sysctl_query ( SysctlVar *var )
 
   while((int)nlen>0)
   {
-    tmp = res;
+    vptr = NULL;
     switch(var->type)
     {
+#ifdef CTLTYPE_STRING
       case CTLTYPE_STRING:
-        res = g_strconcat(tmp," ",ptr,NULL);
+        vptr = g_strndup(ptr,nlen);
         ilen = nlen;
         break;
+#endif
+#ifdef CTLTYPE_INT
       case CTLTYPE_INT:
-        res = g_strdup_printf("%s %d",tmp,*(int *)ptr);
+        if(nlen>=sizeof(int))
+          vptr = g_strdup_printf("%d",*(int *)ptr);
         ilen=sizeof(int);
         break;
+#endif
+#ifdef CTLTYPE_UINT
       case CTLTYPE_UINT:
-        res = g_strdup_printf("%s %u",tmp,*(u_int *)ptr);
+        if(nlen>=sizeof(u_int))
+          vptr = g_strdup_printf("%u",*(u_int *)ptr);
         ilen=sizeof(u_int);
         break;
+#endif
+#ifdef CTLTYPE_LONG
       case CTLTYPE_LONG:
-        res = g_strdup_printf("%s %ld",tmp,*(long *)ptr);
+        if(nlen>=sizeof(long))
+          vptr = g_strdup_printf("%ld",*(long *)ptr);
         ilen=sizeof(long);
         break;
+#endif
+#ifdef CTLTYPE_ULONG
       case CTLTYPE_ULONG:
-        res = g_strdup_printf("%s %lu",tmp,*(u_long *)ptr);
+        if(nlen>=sizeof(u_long))
+          vptr = g_strdup_printf("%lu",*(u_long *)ptr);
         ilen=sizeof(u_long);
         break;
+#endif
+#ifdef CTLTYPE_S8
       case CTLTYPE_S8:
-        res = g_strdup_printf("%s %d",tmp,*(int8_t *)ptr);
+        if(nlen>=sizeof(int8_t))
+          vptr = g_strdup_printf("%d",*(int8_t *)ptr);
         ilen=sizeof(int8_t);
         break;
+#endif
+#ifdef CTLTYPE_U8
       case CTLTYPE_U8:
-        res = g_strdup_printf("%s %u",tmp,*(uint8_t *)ptr);
+        if(nlen>=sizeof(uint8_t))
+          vptr = g_strdup_printf("%u",*(uint8_t *)ptr);
         ilen=sizeof(uint8_t);
         break;
+#endif
+#ifdef CTLTYPE_S16
       case CTLTYPE_S16:
-        res = g_strdup_printf("%s %d",tmp,*(int16_t *)ptr);
+        if(nlen>=sizeof(int16_t))
+          vptr = g_strdup_printf("%d",*(int16_t *)ptr);
         ilen=sizeof(int16_t);
         break;
+#endif
+#ifdef CTLTYPE_U16
       case CTLTYPE_U16:
-        res = g_strdup_printf("%s %u",tmp,*(uint16_t *)ptr);
+        if(nlen>=sizeof(uint16_t))
+          vptr = g_strdup_printf("%u",*(uint16_t *)ptr);
         ilen=sizeof(uint16_t);
         break;
+#endif
+#ifdef CTLTYPE_S32
       case CTLTYPE_S32:
-        res = g_strdup_printf("%s %d",tmp,*(int32_t *)ptr);
+        if(nlen>=sizeof(int32_t))
+          vptr = g_strdup_printf("%d",*(int32_t *)ptr);
         ilen=sizeof(int32_t);
         break;
+#endif
+#ifdef CTLTYPE_U32
       case CTLTYPE_U32:
-        res = g_strdup_printf("%s %u",tmp,*(uint32_t *)ptr);
+        if(nlen>=sizeof(uint32_t))
+          vptr = g_strdup_printf("%u",*(uint32_t *)ptr);
         ilen=sizeof(uint32_t);
         break;
+#endif
+#ifdef CTLTYPE_S64
       case CTLTYPE_S64:
-        res = g_strdup_printf("%s %ld",tmp,*(int64_t *)ptr);
+        if(nlen>=sizeof(int64_t))
+          vptr = g_strdup_printf("%ld",*(int64_t *)ptr);
         ilen=sizeof(int64_t);
         break;
+#endif
+#ifdef CTLTYPE_U64
       case CTLTYPE_U64:
-        res = g_strdup_printf("%s %lu",tmp,*(uint64_t *)ptr);
+        if(nlen>=sizeof(uint64_t))
+          vptr = g_strdup_printf("%lu",*(uint64_t *)ptr);
         ilen=sizeof(uint64_t);
         break;
+#endif
+#ifdef CTLTYPE_OPAQUE
       case CTLTYPE_OPAQUE:
         if(var->func)
-          res = g_strconcat(tmp," ",var->func(tmp,buf,nlen),NULL);
+          vptr = var->func(buf,nlen);
         ilen=nlen;
         break;
+#endif
     default:
-        res = g_strconcat(tmp," [unknown]",NULL);
+        vptr = g_strdup("[unknown]");
         ilen=nlen;
         break;
     }
-    if(tmp!=res)
-      g_free(tmp);
+    if(vptr)
+    {
+      tmp = g_strconcat(res,*res?" ":"",vptr,NULL);
+      g_free(vptr);
+      g_free(res);
+      res = tmp;
+    }
     nlen-=ilen;
     ptr+=ilen;
   }
