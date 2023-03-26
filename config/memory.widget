@@ -13,7 +13,7 @@ Set XPageSize = BSDCtl("vm.stats.vm.v_page_size")
 Set XMemTotal = If(!Ident(BSDCtl),MemTotal,Val(BSDCtl("vm.stats.vm.v_page_count"))*XPageSize)
 Set XMemFree = If(!Ident(BSDCtl),MemFree,Val(BSDCtl("vm.stats.vm.v_free_count"))*XPageSize)
 Set XMemCache = If(!Ident(BSDCtl),MemCache,Val(BSDCtl("vm.stats.vm.v_inactive_count"))*XPageSize)
-Set XMemBuff = If(!Ident(BSDCtl),MemBuff,0)
+Set XMemBuff = If(!Ident(BSDCtl),MemBuff,Val(BSDCtl("vm.stats.vm_laundry_count"))*XPageSize)
 
 layout {
   scale {
