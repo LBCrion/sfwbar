@@ -723,7 +723,7 @@ void *network_func_netinfo ( void **params )
   else if(!g_ascii_strcasecmp(params[0],"gateway6"))
     result = net_getaddr(&iface->gateway6,AF_INET6);
   else if(!g_ascii_strcasecmp(params[0],"essid"))
-    result = g_strdup(iface->essid);
+    result = g_strdup(iface->essid?iface->essid:"");
   else if(!g_ascii_strcasecmp(params[0],"interface"))
     result = g_strdup(iface->name);
   else
