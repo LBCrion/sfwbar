@@ -7,12 +7,20 @@ scanner {
   }
 }
 
+module("bsdctl")
+
+Set XPageSize = BSDCtl("vm.stats.vm.v_page_size")
+Set XMemTotal = If(!Ident(BSDCtl),MemTotal,Val(BSDCtl("vm.stats.vm.v_page_count"))*XPageSize)
+Set XMemFree = If(!Ident(BSDCtl),MemFree,Val(BSDCtl("vm.stats.vm.v_free_count"))*XPageSize)
+Set XMemCache = If(!Ident(BSDCtl),MemCache,Val(BSDCtl("vm.stats.vm.v_inactive_count"))*XPageSize)
+Set XMemBuff = If(!Ident(BSDCtl),MemBuff,0)
+
 layout {
   scale {
     interval = 1000
-    style = "memory"
-    value = (MemTotal-MemFree-MemCache-MemBuff)/MemTotal
-    tooltip = "Memory: " + Str((MemTotal-MemFree-MemCache-MemBuff)/
-      MemTotal*100,0) + "%"
+    style = If(Ident(BSDCtl) | MemTotal.count,"memory","hidden")
+    value = (XMemTotal-XMemFree-XMemCache-XMemBuff)/XMemTotal
+    tooltip = "Memory: " + Str((XMemTotal-XMemFree-XMemCache-XMemBuff)/
+      XMemTotal*100,0) + "%"
   }
 }
