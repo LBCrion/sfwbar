@@ -50,9 +50,9 @@ static void *expr_lib_extract( void **params )
     return g_strdup("");
 
   regex = g_regex_new(params[1],0,0,NULL);
-  if(regex && g_regex_match (regex, params[0], 0, &match))
+  if(regex && g_regex_match (regex, params[0], 0, &match) && match)
   {
-    sres = g_match_info_fetch (match, 0);
+    sres = g_match_info_fetch (match, 1);
     g_match_info_free (match);
   }
   if(regex)
