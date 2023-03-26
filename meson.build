@@ -119,6 +119,12 @@ if xkbr.found()
       install_dir: get_option('libdir') / 'sfwbar' )
 endif
 
+if get_option('bsdctl').enabled() or get_option('bsdctl').auto()
+  library('bsdctl', sources: 'modules/bsdctl.c', dependencies: glib,
+      name_prefix: '', install: true,
+      install_dir: get_option('libdir') / 'sfwbar' )
+endif
+
 executable ('sfwbar', sources: src,
     c_args: ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
     '-DGDK_DISABLE_DEPRECATED',
@@ -131,6 +137,7 @@ man_pages = [ 'doc/sfwbar.1',
   'doc/sfwbar-network.1',
   'doc/sfwbar-xkbmap.1'
 ]
+
 foreach page : man_pages
   install_man(page)
 endforeach
