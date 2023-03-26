@@ -11,6 +11,7 @@
 #include "basewidget.h"
 #include "../meson.h"
 
+GList *module_list;
 GHashTable *expr_handlers;
 GHashTable *act_handlers;
 GList *invalidators;
@@ -76,6 +77,9 @@ gboolean module_load ( gchar *name )
     return FALSE;
   g_debug("module: %s", name);
 
+  if(g_list_find_custom(module_list,name,(GCompareFunc)g_strcmp0))
+    return FALSE;
+
   fname = g_strconcat(name,".so",NULL);
   path = get_xdg_config_file(fname,MODULE_DIR);
   g_free(fname);
@@ -101,6 +105,8 @@ gboolean module_load ( gchar *name )
     g_debug("module: invalid version for %s",name);
     return FALSE;
   }
+
+  module_list = g_list_prepend(module_list,g_strdup(name));
 
   if(g_module_symbol(module,"sfwbar_module_init",(void **)&init) && init)
   {
