@@ -112,6 +112,7 @@ static void net_set_interface ( gint32 iidx, struct in_addr gate,
       route->gateway.s_addr = 0;
       memset(&route->gateway6,0,sizeof(route->gateway6));
       route = NULL;
+      MODULE_TRIGGER_EMIT("network");
     }
     return;
   }
