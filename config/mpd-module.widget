@@ -16,7 +16,7 @@ Function("XMpdToggle") {
 }
 
 PopUp "XMpdWindow" {
-  style = If(!Ident(mpd) | mpd("state")="disconnected","hidden","XMpdPopup")
+  style = If(!Ident(mpd),"hidden","XMpdPopup")
   css = "* { -GtkWidget-direction: bottom; }"
   label {
     value = "<b>"+Mpd("title")+"</b>";
@@ -60,17 +60,17 @@ PopUp "XMpdWindow" {
     image {
       value = "media-playback-start-symbolic"
       action = MpdCommand "play"
-      style = "mpd_icon"
+      style = If(mpd("state")="play","mpd_icon_red","mpd_icon")
     }
     image {
       value = "media-playback-pause-symbolic"
       action = MpdCommand "pause"
-      style = "mpd_icon"
+      style = If(mpd("state")="pause","mpd_icon_red","mpd_icon")
     }
     image {
       value = "media-playback-stop-symbolic"
       action = MpdCommand "stop"
-      style = "mpd_icon"
+      style = If(mpd("state")="stop","mpd_icon_red","mpd_icon")
     }
     image {
       value = "media-seek-forward-symbolic"
@@ -85,7 +85,7 @@ layout {
   button {
     value = "icons/misc/music-player-symbolic"
     action = PopUp "XMpdWindow"
-    style = If(!Ident(mpd) | mpd("state")="disconnected","hidden","module")
+    style = If(!Ident(mpd),"hidden","module")
   }
 }
 
@@ -107,16 +107,16 @@ grid#XMpdPopup {
 image#mpd_icon {
   -GtkWidget-hexpand: false;
   -GtkWidget-vexpand: false;
-  min-width: 16px;
-  min-height: 16px;
+  min-width: 24px;
+  min-height: 24px;
   padding: 4px;
 }
 
 image#mpd_icon_red {
   -GtkWidget-hexpand: false;
   -GtkWidget-vexpand: false;
-  min-width: 16px;
-  min-height: 16px;
+  min-width: 24px;
+  min-height: 24px;
   padding: 4px;
   color: red;
 }
