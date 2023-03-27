@@ -1,0 +1,28 @@
+scanner {
+  ExecClient("amixer sevents Master","alsa") {} # declare alsa trigger
+  Exec("amixer sget Master") {
+    AlsaVolume = RegEx(".*[[](.[0-9]+)%")
+    AlsaMuted = RegEx(".*[[].*[[]([A-Za-z].*)[]]")
+  }
+}
+
+set AlsaMutedIcon = "audio-volume-muted-symbolic"
+set AlsaVolumeIcon = Lookup(AlsaVolume,
+  80, "audio-volume-high-symbolic",
+  50, "audio-volume-medium-symbolic",
+  0, "audio-volume-low-symbolic",
+  $AlsaMutedIcon)
+set AlsaIcon = If($AlsaMuted = "off",$AlsaMutedIcon,$AlsaVolumeIcon)
+
+layout {
+  style = "module"
+  button {
+    value = $AlsaIcon
+    tooltip = "Volume: " + Str(AlsaVolume,0) + "%" + If(AlsaMuted," (muted)","")
+    style = If(Ident($AlsaVolume),"module","hidden")
+    action[1] = Exec "amixer sset Master toggle"
+    action[3] = "foot -e alsamixer"
+    action[4] = Exec "amixer sset Master 5%+"
+    action[5] = Exec "amixer sset Master 5%-"
+  }
+}
