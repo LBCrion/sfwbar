@@ -488,14 +488,14 @@ static gdouble net_get_signal ( gchar *interface )
 
   sock = socket(AF_INET,SOCK_DGRAM,0);
   if(sock <0)
-    return;
+    return 0;
   memset(&bssid,0,sizeof(bssid));
   (void)g_strlcpy(bssid.i_name,interface,sizeof(bssid.i_name));
   if(ioctl(sock,SIOCG80211BSSID,&bssd) < 0 || !*bssid.i_bssid ||
       !memcmp(bssid.i_bssid,bssid.i_bssid+1,IEEE80211_ADDR_LEN-1))
   {
     close(sock);
-    return;
+    return 0;
   }
   memset(&req,0,sizeof(req));
   (void)g_strlcpy(req.nr_ifname,interface,sizeof(req.nr_ifname));
