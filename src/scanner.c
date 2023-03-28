@@ -245,7 +245,10 @@ void scanner_file_update ( GIOChannel *in, ScanFile *file )
   }
 
   for(node=file->vars;node!=NULL;node=g_list_next(node))
+  {
     ((ScanVar *)node->data)->invalid = FALSE;
+    ((ScanVar *)node->data)->vstate = TRUE;
+  }
 
   g_debug("channel status %d",status);
 }
