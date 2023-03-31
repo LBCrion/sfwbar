@@ -235,6 +235,7 @@ gboolean bar_update_monitor ( GtkWindow *win )
   }
 
   visible = gtk_widget_get_visible(GTK_WIDGET(win));
+  bar_save_monitor(GTK_WIDGET(win));
   gtk_widget_hide(GTK_WIDGET(win));
   if(!match)
   {
