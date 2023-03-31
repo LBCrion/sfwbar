@@ -120,7 +120,7 @@ static gboolean sfwbar_restart ( gpointer d )
   for(i=STDERR_FILENO+1; i<fdlimit; i++)
     fcntl(i,F_SETFD,FD_CLOEXEC);
   g_debug("reload: exec: %s",sargv[0]);
-  execv(sargv[0],sargv);
+  execvp(sargv[0],sargv);
   exit(1);
   return FALSE;
 }
