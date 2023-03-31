@@ -116,9 +116,12 @@ static gboolean sfwbar_restart ( gpointer d )
   gint i, fdlimit;
 
   fdlimit = (int)sysconf(_SC_OPEN_MAX);
+  g_debug("reload: closing fd's %d to %d",STDERR_FILENO+1,fdlimit);
   for(i=STDERR_FILENO+1; i<fdlimit; i++)
     fcntl(i,F_SETFD,FD_CLOEXEC);
+  g_debug("reload: exec: %s",sargv[0]);
   execv(sargv[0],sargv);
+  exit(1);
   return FALSE;
 }
 
