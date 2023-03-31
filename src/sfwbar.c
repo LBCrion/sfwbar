@@ -158,7 +158,6 @@ static void activate (GtkApplication* app, gpointer data )
       base_widget_autoexec(iter->data,NULL);
       if(monitor)
         bar_set_monitor(monitor,GTK_WINDOW(iter->data));
-      bar_save_monitor(iter->data);
     }
   g_list_free(clist);
 

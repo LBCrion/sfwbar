@@ -116,7 +116,10 @@ gboolean bar_hide_event ( const gchar *mode )
   g_hash_table_iter_init(&iter,bar_list);
   while(g_hash_table_iter_next(&iter,&key,&bar))
     if(state=='h')
+    {
+      bar_save_monitor(GTK_WIDGET(bar));
       gtk_widget_hide(GTK_WIDGET(bar));
+    }
     else
       if(!gtk_widget_is_visible(GTK_WIDGET(bar)))
       {
@@ -278,8 +281,11 @@ void bar_set_monitor ( gchar *monitor, GtkWindow *bar )
   if(!bar || !monitor)
     return;
 
-  if(!g_ascii_strncasecmp(monitor,"static:",5))
+  if(!g_ascii_strncasecmp(monitor,"static:",7))
+  {
+    g_object_set_data(G_OBJECT(bar),"jump_output",GINT_TO_POINTER(FALSE));
     mon_name = monitor+7;
+  }
   else
   {
     g_object_set_data(G_OBJECT(bar),"jump_output",GINT_TO_POINTER(TRUE));
