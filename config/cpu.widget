@@ -21,9 +21,9 @@ layout {
   chart {
     interval = 1000
     style = If(Ident(BSDCtl) | CpuUser.count,"cpu_chart","hidden")
-    value = (XCpuUser-XCpuUser.pval)/(XCpuUser+XCpuNice+XCpuSystem+XCpuIdle-
-      XCpuUser.pval-XCpuNice.pval-XCpuSystem.pval-XCpuIdle.pval)
-    tooltip = "CPU: " + Str((XCpuUser-XCpuUser.pval)/(XCpuUser+XCpuNice+XCpuSystem+
-      XCpuIdle-XCpuUser.pval-XCpuNice.pval-XCpuSystem.pval-XCpuIdle.pval)*100,0)+'%'
+    value = (XCpuUser-XCpuUser.pval)/(XCpuUser+XCpuNice+XCpuSystem+XCpuIntr+XCpuIdle-
+      XCpuUser.pval-XCpuNice.pval-XCpuSystem.pval-XCpuIntr.pval-XCpuIdle.pval)
+    tooltip = "CPU: " + Str((XCpuUser-XCpuUser.pval)/(XCpuUser+XCpuNice+XCpuSystem+XCpuInt+
+      XCpuIdle-XCpuUser.pval-XCpuNice.pval-XCpuSystem.pval-XCpuIntr.pval-XCpuIdle.pval)*100,0)+'%'
   }
 }
