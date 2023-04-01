@@ -12,9 +12,20 @@
 #include "config.h"
 #include "taskbar.h"
 
+G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW,
+    G_ADD_PRIVATE (Bar));
+
 static GHashTable *bar_list;
 
-GtkWindow *bar_from_name ( gchar *name )
+static void bar_init ( Bar *self )
+{
+}
+
+static void bar_class_init ( BarClass *kclass )
+{
+}
+
+GtkWidget *bar_from_name ( gchar *name )
 {
   if(!bar_list)
     return NULL;
@@ -24,7 +35,9 @@ GtkWindow *bar_from_name ( gchar *name )
 
 GtkWidget *bar_grid_from_name ( gchar *addr )
 {
-  GtkWidget *bar, *box;
+  GtkWidget *bar;
+  BarPrivate *priv;
+  GtkWidget *box;
   GtkWidget *widget = NULL;
   gchar *grid, *ptr, *name;
 
@@ -47,17 +60,18 @@ GtkWidget *bar_grid_from_name ( gchar *addr )
     name = g_strdup(addr);
   }
 
-  bar = GTK_WIDGET(bar_from_name(name));
+  bar = bar_from_name(name);
   if(!bar)
-    bar = GTK_WIDGET(bar_new(name));
+    bar = bar_new(name);
   g_free(name);
+  priv = bar_get_instance_private(BAR(bar));
 
   if(grid && !g_ascii_strcasecmp(grid,"center"))
-    widget = g_object_get_data(G_OBJECT(bar),"center");
+    widget = priv->center;
   else if(grid && !g_ascii_strcasecmp(grid,"end"))
-    widget = g_object_get_data(G_OBJECT(bar),"end");
+    widget = priv->end;
   else
-    widget = g_object_get_data(G_OBJECT(bar),"start");
+    widget = priv->start;
 
   if(widget)
     return widget;
@@ -69,19 +83,33 @@ GtkWidget *bar_grid_from_name ( gchar *addr )
   if(grid && !g_ascii_strcasecmp(grid,"center"))
   {
     gtk_box_set_center_widget(GTK_BOX(box),widget);
-    g_object_set_data(G_OBJECT(bar),"center",widget);
+    priv->center = widget;
   }
   else if(grid && !g_ascii_strcasecmp(grid,"end"))
   {
     gtk_box_pack_end(GTK_BOX(box),widget,TRUE,TRUE,0);
-    g_object_set_data(G_OBJECT(bar),"end",widget);
+    priv->end = widget;
   }
   else
   {
     gtk_box_pack_start(GTK_BOX(box),widget,TRUE,TRUE,0);
-    g_object_set_data(G_OBJECT(bar),"start",widget);
+    priv->start = widget;
   }
   return widget;
+}
+
+void bar_set_visibility ( GtkWidget *self, gchar state )
+{
+  if(state=='h')
+  {
+    bar_save_monitor(self);
+    gtk_widget_hide(self);
+  }
+  else if(!gtk_widget_is_visible(self))
+  {
+    bar_update_monitor(self);
+    gtk_widget_show_now(self);
+  }
 }
 
 gboolean bar_hide_event ( const gchar *mode )
@@ -115,17 +143,7 @@ gboolean bar_hide_event ( const gchar *mode )
 
   g_hash_table_iter_init(&iter,bar_list);
   while(g_hash_table_iter_next(&iter,&key,&bar))
-    if(state=='h')
-    {
-      bar_save_monitor(GTK_WIDGET(bar));
-      gtk_widget_hide(GTK_WIDGET(bar));
-    }
-    else
-      if(!gtk_widget_is_visible(GTK_WIDGET(bar)))
-      {
-        bar_update_monitor(GTK_WINDOW(bar));
-        gtk_widget_show_now(GTK_WIDGET(bar));
-      }
+    bar_set_visibility(bar, state);
   return TRUE;
 }
 
@@ -146,12 +164,12 @@ gint bar_get_toplevel_dir ( GtkWidget *widget )
   return toplevel_dir;
 }
 
-void bar_set_layer ( gchar *layer_str, GtkWindow *bar )
+void bar_set_layer ( gchar *layer_str, GtkWidget *self )
 {
   GtkLayerShellLayer layer;
 
-  if(!bar || !layer_str)
-    return;
+  g_return_if_fail(IS_BAR(self));
+  g_return_if_fail(layer_str!=NULL);
 
   if(!g_ascii_strcasecmp(layer_str,"background"))
     layer = GTK_LAYER_SHELL_LAYER_BACKGROUND;
@@ -163,27 +181,28 @@ void bar_set_layer ( gchar *layer_str, GtkWindow *bar )
     layer = GTK_LAYER_SHELL_LAYER_TOP;
 
 #if GTK_LAYER_VER_MINOR > 5 || GTK_LAYER_VER_MAJOR > 0
-  if(layer == gtk_layer_get_layer(bar))
+  if(layer == gtk_layer_get_layer(GTK_WINDOW(self)))
     return;
 #endif
 
-  gtk_layer_set_layer(bar, layer);
-  if(gtk_widget_is_visible(GTK_WIDGET(bar)))
+  gtk_layer_set_layer(GTK_WINDOW(self), layer);
+  if(gtk_widget_is_visible(self))
   {
-    gtk_widget_hide(GTK_WIDGET(bar));
-    gtk_widget_show_now(GTK_WIDGET(bar));
+    gtk_widget_hide(self);
+    gtk_widget_show_now(self);
   }
 }
 
-void bar_set_exclusive_zone ( gchar *zone, GtkWindow *bar )
+void bar_set_exclusive_zone ( gchar *zone, GtkWidget *self )
 {
-  if(!bar || !zone)
-    return;
+  g_return_if_fail(IS_BAR(self));
+  g_return_if_fail(zone!=NULL);
 
   if(!g_ascii_strcasecmp(zone,"auto"))
-    gtk_layer_auto_exclusive_zone_enable (bar);
+    gtk_layer_auto_exclusive_zone_enable(GTK_WINDOW(self));
   else
-    gtk_layer_set_exclusive_zone (bar,MAX(-1,g_ascii_strtoll(zone,NULL,10)));
+    gtk_layer_set_exclusive_zone(GTK_WINDOW(self),
+        MAX(-1,g_ascii_strtoll(zone,NULL,10)));
 }
 
 gchar *bar_get_output ( GtkWidget *widget )
@@ -197,23 +216,23 @@ gchar *bar_get_output ( GtkWidget *widget )
         gdk_window_get_display(win),win)), "xdg_name" );
 }
 
-gboolean bar_update_monitor ( GtkWindow *win )
+gboolean bar_update_monitor ( GtkWidget *self )
 {
+  BarPrivate *priv;
   GdkDisplay *gdisp;
   GdkMonitor *gmon,*match;
   gint nmon,i;
-  gchar *name, *monitor;
+  gchar *name;
   gboolean visible;
 
-  if(!win)
-    return FALSE;
+  g_return_val_if_fail(IS_BAR(self),FALSE);
+  priv = bar_get_instance_private(BAR(self));
 
   if(!xdg_output_check())
     return TRUE;
 
   gdisp = gdk_display_get_default();
-  monitor = g_object_get_data(G_OBJECT(win),"monitor");
-  if(g_object_get_data(G_OBJECT(win),"jump_output"))
+  if(priv->jump)
   {
     match = gdk_display_get_primary_monitor(gdisp);
     if(!match)
@@ -222,46 +241,50 @@ gboolean bar_update_monitor ( GtkWindow *win )
   else
     match = NULL;
 
-  if(monitor)
+  if(priv->output)
   {
     nmon = gdk_display_get_n_monitors(gdisp);
     for(i=0;i<nmon;i++)
     {
       gmon = gdk_display_get_monitor(gdisp,i);
       name = g_object_get_data(G_OBJECT(gmon),"xdg_name");
-      if(name && !g_strcmp0(name,monitor))
+      if(name && !g_strcmp0(name,priv->output))
         match = gmon;
     }
   }
 
-  visible = gtk_widget_get_visible(GTK_WIDGET(win));
-  bar_save_monitor(GTK_WIDGET(win));
-  gtk_widget_hide(GTK_WIDGET(win));
+  visible = gtk_widget_get_visible(self);
+  bar_save_monitor(self);
+  gtk_widget_hide(self);
   if(!match)
   {
     if(visible)
-      g_object_set_data(G_OBJECT(win),"visible",GINT_TO_POINTER(TRUE));
+      priv->visible = TRUE;
     return FALSE;
   }
-  gtk_layer_set_monitor(win, match);
-  if(visible || g_object_get_data(G_OBJECT(win),"visible"))
+  gtk_layer_set_monitor(GTK_WINDOW(self), match);
+  if(visible || priv->visible)
   {
-    gtk_widget_show_now(GTK_WIDGET(win));
+    gtk_widget_show_now(self);
     taskbar_invalidate_conditional();
-    g_object_set_data(G_OBJECT(win),"visible",GINT_TO_POINTER(FALSE));
+    priv->visible = FALSE;
   }
   return FALSE;
 }
 
-void bar_save_monitor ( GtkWidget *bar )
+void bar_save_monitor ( GtkWidget *self )
 {
+  BarPrivate *priv;
   GdkWindow *win;
   GdkDisplay *disp;
   GdkMonitor *mon;
 
-  if(g_object_get_data(G_OBJECT(bar),"monitor"))
+  g_return_if_fail(IS_BAR(self));
+  priv = bar_get_instance_private(BAR(self));
+
+  if(priv->output)
     return;
-  win = gtk_widget_get_window(bar);
+  win = gtk_widget_get_window(self);
   if(!win)
     return;
   disp = gdk_window_get_display(win);
@@ -271,34 +294,36 @@ void bar_save_monitor ( GtkWidget *bar )
   if(!mon)
     return;
 
-  g_object_set_data(G_OBJECT(bar),"monitor",
-      g_strdup(g_object_get_data(G_OBJECT(mon),"xdg_name")));
+  priv->output = g_strdup(g_object_get_data(G_OBJECT(mon),"xdg_name"));
 }
 
-void bar_set_monitor ( gchar *monitor, GtkWindow *bar )
+void bar_set_monitor ( gchar *monitor, GtkWidget *self )
 {
+  BarPrivate *priv;
   gchar *old_mon,*mon_name;
 
-  if(!bar || !monitor)
-    return;
+  g_return_if_fail(IS_BAR(self));
+  g_return_if_fail(monitor!=NULL);
+  priv = bar_get_instance_private(BAR(self));
 
   if(!g_ascii_strncasecmp(monitor,"static:",7))
   {
-    g_object_set_data(G_OBJECT(bar),"jump_output",GINT_TO_POINTER(FALSE));
+    priv->jump = FALSE;
     mon_name = monitor+7;
   }
   else
   {
-    g_object_set_data(G_OBJECT(bar),"jump_output",GINT_TO_POINTER(TRUE));
+    priv->jump = TRUE;
     mon_name = monitor;
   }
 
-  old_mon = g_object_get_data(G_OBJECT(bar),"monitor");
+  old_mon = priv->output;
 
   if(!old_mon || g_ascii_strcasecmp(old_mon, mon_name))
   {
-    g_object_set_data_full(G_OBJECT(bar),"monitor", g_strdup(mon_name),g_free);
-    bar_update_monitor(bar);
+    g_free(priv->output);
+    priv->output =  g_strdup(mon_name);
+    bar_update_monitor(self);
   }
 }
 
@@ -323,7 +348,7 @@ void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
     bar_update_monitor(bar);
 }
 
-void bar_set_size ( gchar *size, GtkWindow *bar )
+void bar_set_size ( gchar *size, GtkWidget *self )
 {
   gdouble number;
   gchar *end;
@@ -331,13 +356,13 @@ void bar_set_size ( gchar *size, GtkWindow *bar )
   GdkWindow *win;
   gint toplevel_dir;
 
-  if(!bar || !size)
-    return;
+  g_return_if_fail(IS_BAR(self));
+  g_return_if_fail(size!=NULL);
   number = g_ascii_strtod(size, &end);
-  win = gtk_widget_get_window(GTK_WIDGET(bar));
+  win = gtk_widget_get_window(self);
   gdk_monitor_get_geometry( gdk_display_get_monitor_at_window(
       gdk_window_get_display(win),win), &rect );
-  toplevel_dir = bar_get_toplevel_dir(GTK_WIDGET(bar));
+  toplevel_dir = bar_get_toplevel_dir(self);
 
   if ( toplevel_dir == GTK_POS_BOTTOM || toplevel_dir == GTK_POS_TOP )
   {
@@ -345,14 +370,18 @@ void bar_set_size ( gchar *size, GtkWindow *bar )
       number = number * rect.width / 100;
     if ( number >= rect.width )
     {
-      gtk_layer_set_anchor (bar,GTK_LAYER_SHELL_EDGE_LEFT, TRUE );
-      gtk_layer_set_anchor (bar,GTK_LAYER_SHELL_EDGE_RIGHT, TRUE );
+      gtk_layer_set_anchor(GTK_WINDOW(self),
+          GTK_LAYER_SHELL_EDGE_LEFT,TRUE);
+      gtk_layer_set_anchor(GTK_WINDOW(self),
+          GTK_LAYER_SHELL_EDGE_RIGHT,TRUE);
     }
     else
     {
-      gtk_layer_set_anchor (bar,GTK_LAYER_SHELL_EDGE_LEFT, FALSE );
-      gtk_layer_set_anchor (bar,GTK_LAYER_SHELL_EDGE_RIGHT, FALSE );
-      gtk_widget_set_size_request(GTK_WIDGET(bar),(gint)number,-1);
+      gtk_layer_set_anchor(GTK_WINDOW(self),
+          GTK_LAYER_SHELL_EDGE_LEFT, FALSE );
+      gtk_layer_set_anchor(GTK_WINDOW(self),
+          GTK_LAYER_SHELL_EDGE_RIGHT, FALSE );
+      gtk_widget_set_size_request(self,(gint)number,-1);
     }
   }
   else
@@ -361,53 +390,60 @@ void bar_set_size ( gchar *size, GtkWindow *bar )
       number = number * rect.height / 100;
     if ( number >= rect.height )
     {
-      gtk_layer_set_anchor (bar,GTK_LAYER_SHELL_EDGE_TOP, TRUE );
-      gtk_layer_set_anchor (bar,GTK_LAYER_SHELL_EDGE_BOTTOM, TRUE );
+      gtk_layer_set_anchor (GTK_WINDOW(self),
+          GTK_LAYER_SHELL_EDGE_TOP, TRUE );
+      gtk_layer_set_anchor (GTK_WINDOW(self),
+          GTK_LAYER_SHELL_EDGE_BOTTOM, TRUE );
     }
     else
     {
-      gtk_layer_set_anchor (bar,GTK_LAYER_SHELL_EDGE_TOP, FALSE );
-      gtk_layer_set_anchor (bar,GTK_LAYER_SHELL_EDGE_BOTTOM, FALSE );
-      gtk_widget_set_size_request(GTK_WIDGET(bar),-1,(gint)number);
+      gtk_layer_set_anchor (GTK_WINDOW(self),
+          GTK_LAYER_SHELL_EDGE_TOP, FALSE );
+      gtk_layer_set_anchor (GTK_WINDOW(self),
+          GTK_LAYER_SHELL_EDGE_BOTTOM, FALSE );
+      gtk_widget_set_size_request(self,-1,(gint)number);
     }
   }
 }
 
-GtkWindow *bar_new ( gchar *name )
+GtkWidget *bar_new ( gchar *name )
 {
-  GtkWindow *win;
+  GtkWidget *self;
+  BarPrivate *priv;
   GtkWidget *box;
   gint toplevel_dir;
 
-  win = (GtkWindow *)gtk_window_new (GTK_WINDOW_TOPLEVEL);
-  gtk_layer_init_for_window (win);
-  gtk_widget_set_name(GTK_WIDGET(win),name);
-  gtk_layer_auto_exclusive_zone_enable ( win );
-  gtk_layer_set_keyboard_interactivity(win,FALSE);
-  gtk_layer_set_layer(win,GTK_LAYER_SHELL_LAYER_TOP);
+  self = GTK_WIDGET(g_object_new(bar_get_type(), NULL));
+  priv = bar_get_instance_private(BAR(self));
+  priv->name = g_strdup(name);
+  gtk_layer_init_for_window (GTK_WINDOW(self));
+  gtk_widget_set_name(self,name);
+  gtk_layer_auto_exclusive_zone_enable (GTK_WINDOW(self));
+  gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self),FALSE);
+  gtk_layer_set_layer(GTK_WINDOW(self),GTK_LAYER_SHELL_LAYER_TOP);
 
-  gtk_widget_style_get(GTK_WIDGET(win),"direction",&toplevel_dir,NULL);
-  gtk_layer_set_anchor (win,GTK_LAYER_SHELL_EDGE_LEFT,
+  gtk_widget_style_get(self,"direction",&toplevel_dir,NULL);
+  gtk_layer_set_anchor(GTK_WINDOW(self),GTK_LAYER_SHELL_EDGE_LEFT,
       !(toplevel_dir==GTK_POS_RIGHT));
-  gtk_layer_set_anchor (win,GTK_LAYER_SHELL_EDGE_RIGHT,
+  gtk_layer_set_anchor(GTK_WINDOW(self),GTK_LAYER_SHELL_EDGE_RIGHT,
       !(toplevel_dir==GTK_POS_LEFT));
-  gtk_layer_set_anchor (win,GTK_LAYER_SHELL_EDGE_BOTTOM,
+  gtk_layer_set_anchor(GTK_WINDOW(self),GTK_LAYER_SHELL_EDGE_BOTTOM,
       !(toplevel_dir==GTK_POS_TOP));
-  gtk_layer_set_anchor (win,GTK_LAYER_SHELL_EDGE_TOP,
+  gtk_layer_set_anchor(GTK_WINDOW(self),GTK_LAYER_SHELL_EDGE_TOP,
       !(toplevel_dir==GTK_POS_BOTTOM));
 
   if(toplevel_dir == GTK_POS_LEFT || toplevel_dir == GTK_POS_RIGHT)
     box = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
   else
     box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
-  gtk_container_add(GTK_CONTAINER(win), box);
+  gtk_container_add(GTK_CONTAINER(self), box);
 
   if(!bar_list)
     bar_list = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
 
-  g_hash_table_insert(bar_list, g_strdup(name), win);
+  g_hash_table_insert(bar_list, priv->name, self);
 
-  return win;
+  return self;
 }
 
 void bar_set_theme ( gchar *new_theme )

@@ -160,7 +160,7 @@ static void activate (GtkApplication* app, gpointer data )
       css_widget_cascade(GTK_WIDGET(iter->data),NULL);
       base_widget_autoexec(iter->data,NULL);
       if(monitor)
-        bar_set_monitor(monitor,GTK_WINDOW(iter->data));
+        bar_set_monitor(monitor,iter->data);
     }
   g_list_free(clist);
 
