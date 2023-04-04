@@ -254,29 +254,8 @@ void bar_set_exclusive_zone ( gchar *zone, GtkWidget *self )
 
 gchar *bar_get_output ( GtkWidget *widget )
 {
-  GdkWindow *win;
-  GtkWidget *toplevel;
-
-  toplevel = gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
-  win = gtk_widget_get_window(toplevel);
-  return g_object_get_data( G_OBJECT(gdk_display_get_monitor_at_window(
-        gdk_window_get_display(win),win)), "xdg_name" );
-}
-
-GdkMonitor *widget_get_monitor ( GtkWidget *self )
-{
-  GdkWindow *win;
-  GdkDisplay *disp;
-
-  g_return_val_if_fail(GTK_IS_WIDGET(self),NULL);
-
-  win = gtk_widget_get_window(self);
-  if(!win)
-    return NULL;
-  disp = gdk_window_get_display(win);
-  if(!disp)
-    return NULL;
-  return gdk_display_get_monitor_at_window(disp,win);
+  return g_object_get_data( G_OBJECT(widget_get_monitor(
+          gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW))),"xdg_name");
 }
 
 gboolean bar_update_monitor ( GtkWidget *self )

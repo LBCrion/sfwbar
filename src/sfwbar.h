@@ -33,6 +33,7 @@ void widget_parse_css ( GtkWidget *widget, gchar *css );
 void mpd_ipc_init ( ScanFile *file );
 void mpd_ipc_command ( gchar *command );
 
+GdkMonitor *widget_get_monitor ( GtkWidget *self );
 gint socket_connect ( const gchar *sockaddr, gint to );
 json_object *recv_json ( gint sock, gint32 len );
 void list_remove_link ( GList **list, void *child );

@@ -50,6 +50,22 @@ void parse_command_line ( gint argc, gchar **argv)
   g_option_context_free(optc);
 }
 
+GdkMonitor *widget_get_monitor ( GtkWidget *self )
+{
+  GdkWindow *win;
+  GdkDisplay *disp;
+
+  g_return_val_if_fail(GTK_IS_WIDGET(self),NULL);
+
+  win = gtk_widget_get_window(self);
+  if(!win)
+    return NULL;
+  disp = gdk_window_get_display(win);
+  if(!disp)
+    return NULL;
+  return gdk_display_get_monitor_at_window(disp,win);
+}
+
 void list_monitors ( void )
 {
   GdkDisplay *gdisp;

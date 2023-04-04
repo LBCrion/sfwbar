@@ -134,16 +134,11 @@ workspace_t *pager_workspace_from_name ( gchar *name )
 
 gpointer pager_workspace_get_active ( GtkWidget *widget )
 {
-  GdkMonitor *mon;
-
   if(!actives)
     return NULL;
 
-  mon = gdk_display_get_monitor_at_window(gtk_widget_get_display(
-        gtk_widget_get_toplevel(widget)),gtk_widget_get_window(widget));
-
   return g_hash_table_lookup(actives,
-      g_object_get_data(G_OBJECT(mon),"xdg_name"));
+      g_object_get_data(G_OBJECT(widget_get_monitor(widget)),"xdg_name"));
 }
 
 void pager_workspace_set_active ( workspace_t *ws, const gchar *output )

@@ -129,9 +129,7 @@ gboolean tray_item_click_cb (GtkWidget *self, GdkEventButton *ev, SniItem *sni )
   else
     return FALSE;
 
-  gdk_monitor_get_geometry(gdk_display_get_monitor_at_window(
-      gtk_widget_get_display(gtk_widget_get_toplevel(self)),
-      gtk_widget_get_window(self)),&geo);
+  gdk_monitor_get_geometry(widget_get_monitor(self),&geo);
   gtk_widget_get_allocation(self,&alloc);
   gtk_widget_get_allocation(gtk_widget_get_toplevel(self),&walloc);
 
