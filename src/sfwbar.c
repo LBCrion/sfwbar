@@ -140,8 +140,8 @@ static void activate (GtkApplication* app, gpointer data )
   if( monitor && !g_ascii_strcasecmp(monitor,"list") )
     list_monitors();
 
-  if(bar_id && ipc_get() == IPC_SWAY)
-    sway_ipc_bar_id(bar_id);
+  if(bar_id)
+    bar_set_id(NULL,bar_id);
 
   config_parse(confname?confname:"sfwbar.config",TRUE);
   taskbar_populate();
@@ -178,7 +178,7 @@ static void activate (GtkApplication* app, gpointer data )
 
   g_timeout_add (100,(GSourceFunc )shell_timer,NULL);
   g_unix_signal_add(SIGUSR1,(GSourceFunc)switcher_event,NULL);
-  g_unix_signal_add(SIGUSR2,(GSourceFunc)bar_hide_event,"toggle");
+  g_unix_signal_add(SIGUSR2,(GSourceFunc)bar_visibility_toggle_all,NULL);
   g_unix_signal_add(SIGHUP,(GSourceFunc)sfwbar_restart,NULL);
 }
 

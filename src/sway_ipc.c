@@ -15,7 +15,6 @@
 #include "switcher.h"
 #include "wintree.h"
 
-static gchar *bar_id;
 static gint main_ipc;
 static const  gint8 magic[6] = {0x69, 0x33, 0x2d, 0x69, 0x70, 0x63};
 static ScanFile *sway_file;
@@ -417,16 +416,16 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
       sway_ipc_pager_event(obj);
 
     if(etype==0x80000004)
-      if ( !bar_id || !g_strcmp0(json_string_by_name(obj,"id"),bar_id) )
+    {
+      bar_set_visibility(NULL,json_string_by_name(obj,"id"),
+          *(json_string_by_name(obj,"mode")));
+      if(g_strcmp0(json_string_by_name(obj,"hidden_state"),"hide"))
       {
-        bar_hide_event(json_string_by_name(obj,"mode"));
-        if(g_strcmp0(json_string_by_name(obj,"hidden_state"),"hide"))
-        {
-          sway_ipc_command("bar %s hidden_state hide",
-              json_string_by_name(obj,"id"));
-          switcher_event(NULL);
-        }
+        sway_ipc_command("bar %s hidden_state hide",
+            json_string_by_name(obj,"id"));
+        switcher_event(NULL);
       }
+    }
     if(etype==0x00000004) // This is to capture minimized state on sway
       sway_traverse_tree(obj,NULL,NULL,FALSE);
 
@@ -460,8 +459,8 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
     }
 
     if(etype==0x80000014)
-      if ( !bar_id || !g_strcmp0(json_string_by_name(obj,"id"),bar_id) )
-        bar_hide_event(json_bool_by_name(obj,"visible_by_modifier",FALSE)?"visible":NULL);
+      bar_set_visibility(NULL,json_string_by_name(obj,"id"),
+          json_bool_by_name(obj,"visible_by_modifier",FALSE)?'v':'x');
 
     if(sway_file && etype>=0x80000000 && etype<=0x80000015)
     {
@@ -624,12 +623,4 @@ void sway_ipc_init ( void )
 
   wintree_api_register(&sway_wintree_api);
   pager_api_register(&sway_pager_api);
-}
-
-void sway_ipc_bar_id ( gchar *id )
-{
-  if(!id)
-    return;
-  g_free(bar_id);
-  bar_id = g_strdup(id);
 }

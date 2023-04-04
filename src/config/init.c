@@ -166,6 +166,8 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
       (gpointer)G_TOKEN_SETEXCLUSIVEZONE );
   g_scanner_scope_add_symbol(scanner,0, "SetBarID",
       (gpointer)G_TOKEN_SETBARID );
+  g_scanner_scope_add_symbol(scanner,0, "SetBarVisibility",
+      (gpointer)G_TOKEN_SETBARVISIBILITY );
   g_scanner_scope_add_symbol(scanner,0, "ClientSend",
       (gpointer)G_TOKEN_CLIENTSEND );
   g_scanner_scope_add_symbol(scanner,0, "Item", (gpointer)G_TOKEN_ITEM );

@@ -12,8 +12,7 @@
 #include "config.h"
 #include "taskbar.h"
 
-G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW,
-    G_ADD_PRIVATE (Bar));
+G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW, G_ADD_PRIVATE (Bar));
 
 static GHashTable *bar_list;
 
@@ -44,6 +43,9 @@ GtkWidget *bar_grid_from_name ( gchar *addr )
   if(!addr)
     addr = "sfwbar";
 
+  if(!g_ascii_strcasecmp(addr,"*"))
+    return NULL;
+
   ptr = strchr(addr,':');
 
   if(ptr)
@@ -58,6 +60,14 @@ GtkWidget *bar_grid_from_name ( gchar *addr )
   {
     grid = NULL;
     name = g_strdup(addr);
+  }
+  if(!g_ascii_strcasecmp(name,"*"))
+  {
+    g_message(
+        "invalid bar name 'all' in grid address %s, defaulting to 'sfwbar'",
+        addr);
+    g_free(name);
+    name = g_strdup("sfwbar");
   }
 
   bar = bar_from_name(name);
@@ -98,9 +108,68 @@ GtkWidget *bar_grid_from_name ( gchar *addr )
   return widget;
 }
 
-void bar_set_visibility ( GtkWidget *self, gchar state )
+void bar_set_id ( GtkWidget *self, gchar *id )
 {
-  if(state=='h')
+  BarPrivate *priv;
+  void *bar,*key;
+  GHashTableIter iter;
+
+  if(!self)
+  {
+    if(bar_list)
+    {
+      g_hash_table_iter_init(&iter,bar_list);
+      while(g_hash_table_iter_next(&iter,&key,&bar))
+        bar_set_id(bar, id);
+    }
+    return;
+  }
+
+  g_return_if_fail(IS_BAR(self));
+  priv = bar_get_instance_private(BAR(self));
+
+  g_free(priv->bar_id);
+  priv->bar_id = g_strdup(id);
+}
+
+void bar_visibility_toggle_all ( gpointer d )
+{
+  bar_set_visibility ( NULL, NULL, 't' );
+}
+
+void bar_set_visibility ( GtkWidget *self, const gchar *id, gchar state )
+{
+  BarPrivate *priv;
+  gboolean visible;
+  void *bar,*key;
+  GHashTableIter iter;
+
+  if(!self)
+  {
+    if(bar_list)
+    {
+      g_hash_table_iter_init(&iter,bar_list);
+      while(g_hash_table_iter_next(&iter,&key,&bar))
+        bar_set_visibility(bar, id, state);
+    }
+    return;
+  }
+
+  g_return_if_fail(IS_BAR(self));
+  priv = bar_get_instance_private(BAR(self));
+
+  if(id && g_strcmp0(priv->bar_id,id))
+    return;
+
+  if(state == 't')
+    priv->visible = !priv->visible;
+  else if(state == 'h')
+    priv->visible = FALSE;
+  else if(state != 'x' && state != 'v')
+    priv->visible = TRUE;
+
+  visible = priv->visible || (state == 'v');
+  if(!visible && gtk_widget_is_visible(self))
   {
     bar_save_monitor(self);
     gtk_widget_hide(self);
@@ -110,41 +179,6 @@ void bar_set_visibility ( GtkWidget *self, gchar state )
     bar_update_monitor(self);
     gtk_widget_show_now(self);
   }
-}
-
-gboolean bar_hide_event ( const gchar *mode )
-{
-  gchar state;
-  void *key,*bar;
-  static gchar pstate = 's';
-  GHashTableIter iter;
-
-  state = pstate;
-  if(mode)        // if NULL, return to persistent state
-    switch(*mode)
-    {
-      case 'd':
-      case 's':   // show
-        pstate = state = 's';
-        break;
-      case 'h':   // hide
-        pstate = state = 'h';
-        break;
-      case 'v':   // visible by modfier
-        state ='s';
-        break;
-      case 't':    // toggle
-        if( pstate == 's' )
-          pstate = state = 'h';
-        else
-          pstate = state = 's';
-        break;
-    }
-
-  g_hash_table_iter_init(&iter,bar_list);
-  while(g_hash_table_iter_next(&iter,&key,&bar))
-    bar_set_visibility(bar, state);
-  return TRUE;
 }
 
 gint bar_get_toplevel_dir ( GtkWidget *widget )
@@ -167,6 +201,19 @@ gint bar_get_toplevel_dir ( GtkWidget *widget )
 void bar_set_layer ( gchar *layer_str, GtkWidget *self )
 {
   GtkLayerShellLayer layer;
+  void *bar,*key;
+  GHashTableIter iter;
+
+  if(!self)
+  {
+    if(bar_list)
+    {
+      g_hash_table_iter_init(&iter,bar_list);
+      while(g_hash_table_iter_next(&iter,&key,&bar))
+        bar_set_layer(layer_str, bar);
+    }
+    return;
+  }
 
   g_return_if_fail(IS_BAR(self));
   g_return_if_fail(layer_str!=NULL);
@@ -216,6 +263,22 @@ gchar *bar_get_output ( GtkWidget *widget )
         gdk_window_get_display(win),win)), "xdg_name" );
 }
 
+GdkMonitor *widget_get_monitor ( GtkWidget *self )
+{
+  GdkWindow *win;
+  GdkDisplay *disp;
+
+  g_return_val_if_fail(GTK_IS_WIDGET(self),NULL);
+
+  win = gtk_widget_get_window(self);
+  if(!win)
+    return NULL;
+  disp = gdk_window_get_display(win);
+  if(!disp)
+    return NULL;
+  return gdk_display_get_monitor_at_window(disp,win);
+}
+
 gboolean bar_update_monitor ( GtkWidget *self )
 {
   BarPrivate *priv;
@@ -223,7 +286,6 @@ gboolean bar_update_monitor ( GtkWidget *self )
   GdkMonitor *gmon,*match;
   gint nmon,i;
   gchar *name;
-  gboolean visible;
 
   g_return_val_if_fail(IS_BAR(self),FALSE);
   priv = bar_get_instance_private(BAR(self));
@@ -253,21 +315,15 @@ gboolean bar_update_monitor ( GtkWidget *self )
     }
   }
 
-  visible = gtk_widget_get_visible(self);
+  if(!match || match == widget_get_monitor(self))
+    return FALSE;
   bar_save_monitor(self);
   gtk_widget_hide(self);
-  if(!match)
-  {
-    if(visible)
-      priv->visible = TRUE;
-    return FALSE;
-  }
   gtk_layer_set_monitor(GTK_WINDOW(self), match);
-  if(visible || priv->visible)
+  if(priv->visible)
   {
     gtk_widget_show_now(self);
     taskbar_invalidate_conditional();
-    priv->visible = FALSE;
   }
   return FALSE;
 }
@@ -275,8 +331,6 @@ gboolean bar_update_monitor ( GtkWidget *self )
 void bar_save_monitor ( GtkWidget *self )
 {
   BarPrivate *priv;
-  GdkWindow *win;
-  GdkDisplay *disp;
   GdkMonitor *mon;
 
   g_return_if_fail(IS_BAR(self));
@@ -284,13 +338,7 @@ void bar_save_monitor ( GtkWidget *self )
 
   if(priv->output)
     return;
-  win = gtk_widget_get_window(self);
-  if(!win)
-    return;
-  disp = gdk_window_get_display(win);
-  if(!disp)
-    return;
-  mon = gdk_display_get_monitor_at_window(disp,win);
+  mon = widget_get_monitor(self);
   if(!mon)
     return;
 
@@ -301,6 +349,19 @@ void bar_set_monitor ( gchar *monitor, GtkWidget *self )
 {
   BarPrivate *priv;
   gchar *old_mon,*mon_name;
+  void *bar,*key;
+  GHashTableIter iter;
+
+  if(!self)
+  {
+    if(bar_list)
+    {
+      g_hash_table_iter_init(&iter,bar_list);
+      while(g_hash_table_iter_next(&iter,&key,&bar))
+        bar_set_monitor(monitor, bar);
+    }
+    return;
+  }
 
   g_return_if_fail(IS_BAR(self));
   g_return_if_fail(monitor!=NULL);
@@ -355,6 +416,19 @@ void bar_set_size ( gchar *size, GtkWidget *self )
   GdkRectangle rect;
   GdkWindow *win;
   gint toplevel_dir;
+  void *bar,*key;
+  GHashTableIter iter;
+
+  if(!self)
+  {
+    if(bar_list)
+    {
+      g_hash_table_iter_init(&iter,bar_list);
+      while(g_hash_table_iter_next(&iter,&key,&bar))
+        bar_set_size(size, bar);
+    }
+    return;
+  }
 
   g_return_if_fail(IS_BAR(self));
   g_return_if_fail(size!=NULL);
@@ -416,6 +490,7 @@ GtkWidget *bar_new ( gchar *name )
   self = GTK_WIDGET(g_object_new(bar_get_type(), NULL));
   priv = bar_get_instance_private(BAR(self));
   priv->name = g_strdup(name);
+  priv->visible = TRUE;
   gtk_layer_init_for_window (GTK_WINDOW(self));
   gtk_widget_set_name(self,name);
   gtk_layer_auto_exclusive_zone_enable (GTK_WINDOW(self));

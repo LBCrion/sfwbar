@@ -248,7 +248,12 @@ void action_exec ( GtkWidget *widget, action_t *action,
           bar_from_name(action->addr->cache));
       break;
     case G_TOKEN_SETBARID:
-      sway_ipc_bar_id(action->command->cache);
+      bar_set_id(NULL,action->command->cache);
+      break;
+    case G_TOKEN_SETBARVISIBILITY:
+      if(action->command->cache)
+        bar_set_visibility(bar_from_name(action->addr->cache),NULL,
+            *(action->command->cache));
       break;
     case G_TOKEN_SETEXCLUSIVEZONE:
       bar_set_exclusive_zone(action->command->cache,

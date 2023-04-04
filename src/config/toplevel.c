@@ -210,6 +210,7 @@ action_t *config_action ( GScanner *scanner )
     case G_TOKEN_CONFIG:
     case G_TOKEN_FUNCTION:
     case G_TOKEN_SETBARID:
+    case G_TOKEN_SETBARVISIBILITY:
     case G_TOKEN_SETMONITOR:
     case G_TOKEN_SETLAYER:
     case G_TOKEN_SETBARSIZE:

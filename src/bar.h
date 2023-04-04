@@ -8,6 +8,7 @@
 #define BAR_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), BAR_TYPE, BarClass))
 #define IS_BAR(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj), BAR_TYPE))
 #define IS_BAR_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), BAR_TYPE))
+#define BAR_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), BAR_TYPE, BarClass))
 
 typedef struct _Bar Bar;
 typedef struct _BarClass BarClass;
@@ -20,6 +21,7 @@ struct _Bar
 struct _BarClass
 {
   GtkWindowClass parent_class;
+  void (*old_hide)( GtkWidget * );
 };
 
 typedef struct _BarPrivate BarPrivate;
@@ -41,7 +43,9 @@ void bar_set_size ( gchar *, GtkWidget * );
 void bar_set_exclusive_zone ( gchar *, GtkWidget * );
 gchar *bar_get_output ( GtkWidget * );
 gint bar_get_toplevel_dir ( GtkWidget * );
-gboolean bar_hide_event ( const gchar *mode );
+void bar_set_id ( GtkWidget *self, gchar *id );
+void bar_set_visibility ( GtkWidget *self, const gchar *id, gchar state );
+void bar_visibility_toggle_all ( gpointer d );
 void bar_monitor_added_cb ( GdkDisplay *, GdkMonitor * );
 void bar_monitor_removed_cb ( GdkDisplay *, GdkMonitor * );
 gboolean bar_update_monitor ( GtkWidget * );
