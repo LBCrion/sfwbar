@@ -639,6 +639,7 @@ void sfwbar_module_init ( ModuleApiV1 *api )
 
   sfwbar_module_api = api;
   sock = net_rt_connect();
+  g_message("network socket: %d",sock);
   if(sock >= 0 && net_rt_request(sock) >= 0)
   {
     chan = g_io_channel_unix_new(sock);

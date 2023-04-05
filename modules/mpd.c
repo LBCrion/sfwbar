@@ -98,7 +98,8 @@ static gboolean mpd_connect ( gpointer data )
     return TRUE;
   if(password)
     mpd_send_password(conn, password);
-  g_debug("MPD client: connected to server");
+  g_debug("MPD client: connected to server (fd = %d)",
+      mpd_connection_get_fd(conn));
 
   mpd_update();
   mpd_send_idle_mask(conn,MPD_IDLE_PLAYER | MPD_IDLE_OPTIONS);
