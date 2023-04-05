@@ -250,7 +250,7 @@ void scanner_file_update ( GIOChannel *in, ScanFile *file )
     ((ScanVar *)node->data)->vstate = TRUE;
   }
 
-  g_debug("channel status %d",status);
+  g_debug("channel status %d (%s)",status,file->fname?file->fname:"(null)");
 }
 
 void scanner_var_reset ( ScanVar *var, gpointer dummy )

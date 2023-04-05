@@ -554,6 +554,7 @@ gboolean base_widget_emit_trigger ( gchar *trigger )
 
   if(!trigger)
     return FALSE;
+  g_debug("trigger: %s",trigger);
 
   scanner_invalidate();
   g_mutex_lock(&widget_mutex);
