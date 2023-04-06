@@ -72,6 +72,7 @@ void client_socket ( ScanFile *file )
 
   g_object_weak_ref(G_OBJECT(scon),(GWeakNotify)g_object_unref,client);
   sock = g_socket_connection_get_socket(scon);
+  g_debug("client: %s connected to %d",file->fname,g_socket_get_fd(sock));
   g_socket_set_keepalive(sock,TRUE);
 
   if(!sock || !g_socket_connection_is_connected(scon))
