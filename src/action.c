@@ -14,6 +14,7 @@
 #include "sway_ipc.h"
 #include "module.h"
 #include "popup.h"
+#include "client.h"
 
 static GHashTable *functions;
 static GHashTable *trigger_actions;
@@ -126,8 +127,9 @@ void action_client_send ( action_t *action )
 
   file = scanner_file_get ( action->addr->cache );
 
-  if(file)
-    (void)g_io_channel_write_chars(file->out,action->command->cache,-1,NULL,NULL);
+  if(file->client && ((Client *)(file->client))->out)
+    (void)g_io_channel_write_chars(((Client *)(file->client))->out,
+        action->command->cache,-1,NULL,NULL);
 }
 
 void action_exec ( GtkWidget *widget, action_t *action,

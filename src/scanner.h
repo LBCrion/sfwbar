@@ -22,8 +22,7 @@ typedef struct scan_file {
   guchar source;
   time_t mtime;
   GList *vars;
-  GSocketConnection *scon;
-  GIOChannel *out;
+  void *client;
 } ScanFile;
 
 typedef struct scan_var {
@@ -46,7 +45,7 @@ typedef struct scan_var {
 void scanner_invalidate ( void );
 void scanner_var_reset ( ScanVar *var, gpointer dummy );
 void scanner_update_json ( struct json_object *, ScanFile * );
-void scanner_file_update ( GIOChannel *, ScanFile * );
+GIOStatus scanner_file_update ( GIOChannel *, ScanFile *, gsize * );
 int scanner_glob_file ( ScanFile * );
 void *scanner_get_value ( gchar *ident, gboolean update, ExprCache *expr );
 void scanner_var_new ( gchar *, ScanFile *, gchar *, guint, gint );

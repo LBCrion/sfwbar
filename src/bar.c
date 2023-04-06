@@ -158,7 +158,7 @@ void bar_set_visibility ( GtkWidget *self, const gchar *id, gchar state )
   g_return_if_fail(IS_BAR(self));
   priv = bar_get_instance_private(BAR(self));
 
-  if(id && g_strcmp0(priv->bar_id,id))
+  if(id && priv->bar_id && g_strcmp0(priv->bar_id,id))
     return;
 
   if(state == 't')
@@ -371,19 +371,29 @@ void bar_monitor_added_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 {
   GHashTableIter iter;
   void *key, *bar;
+  char trigger[256];
 
   xdg_output_new(gmon);
   g_hash_table_iter_init(&iter,bar_list);
   while(g_hash_table_iter_next(&iter,&key,&bar))
     g_idle_add((GSourceFunc)bar_update_monitor,bar);
+
+  g_snprintf(trigger,255,"%s_connected",
+      (gchar *)g_object_get_data(G_OBJECT(gmon),"xdg_name"));
+  g_idle_add((GSourceFunc)base_widget_emit_trigger,trigger);
 }
 
 void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 {
   GHashTableIter iter;
   void *key, *bar;
+  char trigger[256];
 
   g_hash_table_iter_init(&iter,bar_list);
+  g_snprintf(trigger,255,"%s_disconnected",
+      (gchar *)g_object_get_data(G_OBJECT(gmon),"xdg_name"));
+  g_idle_add((GSourceFunc)base_widget_emit_trigger,trigger);
+
   while(g_hash_table_iter_next(&iter,&key,&bar))
     bar_update_monitor(bar);
 }

@@ -16,6 +16,7 @@ gboolean mpd_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer file )
 {
   static gboolean r;
   GIOStatus s;
+  gsize size;
 
   if(file)
     g_list_foreach(((ScanFile *)file)->vars,(GFunc)scanner_var_reset,NULL);
@@ -37,7 +38,7 @@ gboolean mpd_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer file )
   {
     if( file )
     {
-      scanner_file_update( chan, file );
+      scanner_file_update( chan, file, &size );
       base_widget_emit_trigger("mpd");
     }
 

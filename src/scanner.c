@@ -10,6 +10,7 @@
 #include "sfwbar.h"
 #include "expr.h"
 #include "config.h"
+#include "client.h"
 
 static GList *file_list;
 static GHashTable *scan_list;
@@ -196,7 +197,7 @@ void scanner_update_json ( struct json_object *obj, ScanFile *file )
 }
 
 /* update variables in a specific file (or pipe) */
-void scanner_file_update ( GIOChannel *in, ScanFile *file )
+GIOStatus scanner_file_update ( GIOChannel *in, ScanFile *file, gsize *size )
 {
   ScanVar *var;
   GList *node;
@@ -205,10 +206,16 @@ void scanner_file_update ( GIOChannel *in, ScanFile *file )
   struct json_object *obj;
   gchar *read_buff;
   GIOStatus status;
+  gsize lsize;
 
-  while((status = g_io_channel_read_line(in,&read_buff,NULL,NULL,NULL))
+  if(size)
+    *size = 0;
+
+  while((status = g_io_channel_read_line(in,&read_buff,&lsize,NULL,NULL))
       ==G_IO_STATUS_NORMAL)
   {
+    if(size)
+      *size += lsize;
     for(node=file->vars;node!=NULL;node=g_list_next(node))
     {
       var=node->data;
@@ -250,7 +257,9 @@ void scanner_file_update ( GIOChannel *in, ScanFile *file )
     ((ScanVar *)node->data)->vstate = TRUE;
   }
 
-  g_debug("channel status %d (%s)",status,file->fname?file->fname:"(null)");
+  g_debug("channel status %d, (%s)",status,file->fname?file->fname:"(null)");
+
+  return status;
 }
 
 void scanner_var_reset ( ScanVar *var, gpointer dummy )
@@ -320,7 +329,7 @@ gboolean scanner_file_glob ( ScanFile *file )
         }
 
         chan = g_io_channel_unix_new(fileno(in));
-        scanner_file_update(chan,file);
+        scanner_file_update(chan,file,NULL);
         g_io_channel_unref(chan);
 
         if(file->source == SO_EXEC)
