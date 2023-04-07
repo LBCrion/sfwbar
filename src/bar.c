@@ -294,7 +294,7 @@ gboolean bar_update_monitor ( GtkWidget *self )
     }
   }
 
-  if(!match || match == widget_get_monitor(self))
+  if(!match)
     return FALSE;
   bar_save_monitor(self);
   gtk_widget_hide(self);
