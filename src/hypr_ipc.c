@@ -52,20 +52,25 @@ static gboolean hypr_ipc_request ( gchar *addr, gchar *command, json_object **js
 {
   gint sock;
 
-  if(!command || !json)
+  if(!command)
     return FALSE;
 
   sock = socket_connect(addr,1000);
   if(sock==-1)
+  {
+    g_message("hypr: can't open socket");
     return FALSE;
+  }
 
   if(write(sock,command,strlen(command))==-1)
   {
+    g_message("hypr: can't write to socket");
     close(sock);
     return FALSE;
   }
 
-  *json = recv_json(sock,-1);
+  if(json)
+    *json = recv_json(sock,-1);
 
   close(sock);
   return TRUE;
@@ -82,7 +87,8 @@ static void hypr_ipc_command ( gchar *cmd, ... )
   va_start(args,cmd);
   buf = g_strdup_vprintf(cmd,args);
   g_debug("hypr command: %s",buf);
-  (void)hypr_ipc_request ( ipc_sockaddr, buf, NULL);
+  if(!hypr_ipc_request ( ipc_sockaddr, buf, NULL))
+    g_debug("hypr: unable to send command");
   g_free(buf);
   va_end(args);
 }
