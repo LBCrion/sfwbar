@@ -562,6 +562,9 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
       case G_TOKEN_MENUCLEAR:
         config_menu_clear(scanner);
         break;
+      case G_TOKEN_INCLUDE:
+        config_include(scanner,TRUE);
+        break;
       case G_TOKEN_DEFINE:
         config_define(scanner);
         break;

@@ -27,6 +27,7 @@ action_t *config_action ( GScanner *scanner );
 gchar *config_get_value ( GScanner *, gchar *, gboolean, gchar **);
 void config_scanner ( GScanner *scanner );
 void config_layout ( GScanner *, GtkWidget **, gboolean );
+GtkWidget *config_include ( GScanner *scanner, gboolean toplevel );
 void config_switcher ( GScanner *scanner );
 void config_placer ( GScanner *scanner );
 void config_popup ( GScanner *scanner );

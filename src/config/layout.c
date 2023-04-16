@@ -88,7 +88,7 @@ void config_widget_action ( GScanner *scanner, GtkWidget *widget )
   config_optional_semicolon(scanner);
 }
 
-GtkWidget *config_include ( GScanner *scanner )
+GtkWidget *config_include ( GScanner *scanner, gboolean toplevel )
 {
   GtkWidget *widget;
   gchar *fname = NULL;
@@ -101,7 +101,7 @@ GtkWidget *config_include ( GScanner *scanner )
       SEQ_END);
 
   if(!scanner->max_parse_errors) 
-    widget = config_parse(fname, FALSE);
+    widget = config_parse(fname, toplevel);
   else
     widget = NULL;
 
@@ -292,7 +292,7 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *parent )
       widget = cchart_new();
       break;
     case G_TOKEN_INCLUDE:
-      widget = config_include( scanner );
+      widget = config_include( scanner, FALSE );
       break;
     case G_TOKEN_TASKBAR:
       widget = taskbar_new(TRUE);
