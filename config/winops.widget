@@ -1,0 +1,16 @@
+function("ToggleMinimize") {
+  [!Minimized] Minimize
+  [Minimized] UnMinimize
+}
+
+function("ToggleMaximize") {
+  [!Maximized] Maximize
+  [Maximized] UnMaximize
+}
+
+menu("winops") {
+  item("focus", Focus );
+  item("close", Close );
+  item("(un)minimize", Function "ToggleMinimize" );
+  item("(un)maximize", Function "ToggleMaximize" );
+}
