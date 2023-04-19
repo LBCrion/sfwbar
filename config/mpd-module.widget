@@ -18,20 +18,24 @@ Function("XMpdToggle") {
 PopUp "XMpdWindow" {
   style = If(!Ident(mpd),"hidden","XMpdPopup")
   css = "* { -GtkWidget-direction: bottom; }"
+  trigger = "mpd"
   label {
     value = "<b>"+Mpd("title")+"</b>";
     trigger = "mpd"
     style = "mpd_title"
+    trigger = "mpd"
   }
   label {
     value = Mpd("album");
     trigger = "mpd"
     style = "mpd_album"
+    trigger = "mpd"
   }
   label {
     value = Mpd("artist");
     trigger = "mpd"
     style = "mpd_artist"
+    trigger = "mpd"
   }
   scale {
     value = Val(Mpd("elapsed"))/Val(Mpd("length"))/1000;
@@ -61,16 +65,19 @@ PopUp "XMpdWindow" {
       value = "media-playback-start-symbolic"
       action = MpdCommand "play"
       style = If(mpd("state")="play","mpd_icon_red","mpd_icon")
+      trigger = "mpd"
     }
     image {
       value = "media-playback-pause-symbolic"
       action = MpdCommand "pause"
       style = If(mpd("state")="pause","mpd_icon_red","mpd_icon")
+      trigger = "mpd"
     }
     image {
       value = "media-playback-stop-symbolic"
       action = MpdCommand "stop"
       style = If(mpd("state")="stop","mpd_icon_red","mpd_icon")
+      trigger = "mpd"
     }
     image {
       value = "media-seek-forward-symbolic"
