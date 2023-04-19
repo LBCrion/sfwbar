@@ -132,6 +132,21 @@ void action_client_send ( action_t *action )
         action->command->cache,-1,NULL,NULL);
 }
 
+void action_handle_exec ( gchar *command )
+{
+  gint argc;
+  gchar **argv;
+
+  if(!command)
+    return;
+  if(!g_shell_parse_argv(command,&argc,&argv,NULL))
+    return;
+  g_spawn_async(NULL,argv,NULL,G_SPAWN_SEARCH_PATH |
+       G_SPAWN_STDOUT_TO_DEV_NULL |
+       G_SPAWN_STDERR_TO_DEV_NULL,NULL,NULL,NULL,NULL);
+  g_strfreev(argv);
+}
+
 void action_exec ( GtkWidget *widget, action_t *action,
     GdkEvent *event, window_t *win, guint16 *istate )
 {
@@ -207,8 +222,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
   switch(action->type)
   {
     case G_TOKEN_EXEC:
-      if(action->command->cache)
-        g_spawn_command_line_async(action->command->cache,NULL);
+      action_handle_exec(action->command->cache);
       break;
     case G_TOKEN_MENU:
       menu_popup(widget, menu_from_name(action->command->cache), event,
