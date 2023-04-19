@@ -12,6 +12,22 @@
 static GSocketConnection *mpd_ipc_sock;
 static GSocketConnection *mpd_cmd_sock;
 
+gboolean mpd_ipc_connect ( gpointer file );
+
+gboolean mpd_ipc_reconnect ( gboolean *r, GIOChannel *chan, ScanFile *file )
+{
+  g_io_channel_shutdown(chan,FALSE,NULL);
+  g_io_channel_unref(chan);
+  if(mpd_ipc_sock)
+  {
+    g_object_unref(mpd_ipc_sock);
+    mpd_ipc_sock = NULL;
+    *r = 0;
+  }
+  g_timeout_add (1000,(GSourceFunc )mpd_ipc_connect,file);
+  return FALSE;
+}
+
 gboolean mpd_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer file )
 {
   static gboolean r;
@@ -22,30 +38,22 @@ gboolean mpd_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer file )
     g_list_foreach(((ScanFile *)file)->vars,(GFunc)scanner_var_reset,NULL);
 
   if ( cond & G_IO_ERR || cond & G_IO_HUP )
-  {
-    g_io_channel_shutdown(chan,FALSE,NULL);
-    g_io_channel_unref(chan);
-    if(mpd_ipc_sock)
-    {
-      g_object_unref(mpd_ipc_sock);
-      mpd_ipc_sock = NULL;
-      r = 0;
-    }
-    return FALSE;
-  }
+    return mpd_ipc_reconnect(&r, chan, file);
 
   if( cond & G_IO_IN )
   {
     if( file )
     {
-      scanner_file_update( chan, file, &size );
+      s = scanner_file_update( chan, file, &size );
+      if( s == G_IO_STATUS_ERROR || !size )
+        return mpd_ipc_reconnect(&r, chan, file);
       base_widget_emit_trigger("mpd");
     }
 
     if(!r)
       s = g_io_channel_write_chars(chan,"status\ncurrentsong\n",-1,NULL,NULL);
     else
-      s = g_io_channel_write_chars(chan,"idle player\n",-1,NULL,NULL);
+      s = g_io_channel_write_chars(chan,"idle player options\n",-1,NULL,NULL);
     g_io_channel_flush(chan,NULL);
     if(s != G_IO_STATUS_NORMAL)
       g_debug("mpd: failed to write to mpd socket");
@@ -67,7 +75,7 @@ GSocketConnection *mpd_ipc_connect_unix ( GSocketClient *client, gchar *path )
   return scon;
 }
 
-GSocketConnection *mpd_ipc_connect ( GSocketClient *client, gchar *path )
+GSocketConnection *mpd_ipc_connect_path ( GSocketClient *client, gchar *path )
 {
   GSocketConnection *scon = NULL;
   gchar *host, *port, *addr;
@@ -120,7 +128,7 @@ GIOChannel *mpd_ipc_open ( gchar *user, gpointer *addr )
 
   client = g_socket_client_new();
 
-  scon = mpd_ipc_connect ( client, user );
+  scon = mpd_ipc_connect_path ( client, user );
 
   if(!scon)
   {
@@ -141,7 +149,7 @@ GIOChannel *mpd_ipc_open ( gchar *user, gpointer *addr )
   return g_io_channel_unix_new(g_socket_get_fd(sock));
 }
 
-gboolean mpd_ipc_reconnect ( gpointer file )
+gboolean mpd_ipc_connect ( gpointer file )
 {
   if(mpd_ipc_sock)
     return TRUE;
@@ -158,7 +166,7 @@ void mpd_ipc_init ( ScanFile *file )
   if(chan)
     g_io_add_watch(chan,G_IO_IN | G_IO_ERR | G_IO_HUP,mpd_ipc_event,file);
 
-  g_timeout_add (1000,(GSourceFunc )mpd_ipc_reconnect,file);
+  g_timeout_add (1000,(GSourceFunc )mpd_ipc_connect,file);
 }
 
 gboolean mpd_ipc_command_cb ( GIOChannel *chan, GIOCondition cond, gpointer command )
