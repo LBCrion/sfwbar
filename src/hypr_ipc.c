@@ -8,7 +8,7 @@
 #include "pager.h"
 #include <sys/socket.h>
 
-#define hypr_ipc_parse_id(x) GINT_TO_POINTER(g_ascii_strtoull(x,NULL,16))
+#define hypr_ipc_parse_id(x) GSIZE_TO_POINTER(g_ascii_strtoull(x,NULL,16))
 
 static gchar *ipc_sockaddr;
 
@@ -180,7 +180,7 @@ static void hypr_ipc_track_minimized ( gchar *event )
   window_t *win;
   gchar *ws;
 
-  id = GINT_TO_POINTER(g_ascii_strtoull(event,&ws,16));
+  id = GSIZE_TO_POINTER(g_ascii_strtoull(event,&ws,16));
   win = wintree_from_id(id);
   if(!win || !ws || *ws!=',')
     return;
@@ -292,7 +292,7 @@ static void hypr_ipc_window_place ( gpointer wid )
   json_object_put(json);
   wintree_placer_calc(nobs,obs,space,&window);
   hypr_ipc_command("dispatch movewindowpixel exact %d %d,address:0x%lx",
-      window.x,window.y,wid);
+      window.x,window.y,GPOINTER_TO_SIZE(wid));
   g_free(obs);
 }
 
@@ -472,12 +472,12 @@ static void hypr_ipc_unminimize ( gpointer id )
   }
 
   hypr_ipc_command("dispatch movetoworkspace %d,address:0x%lx",
-      workspace,GPOINTER_TO_INT(id));
+      workspace,GPOINTER_TO_SIZE(id));
 }
 
 static void hypr_ipc_close ( gpointer id )
 {
-  hypr_ipc_command("dispatch closewindow address:0x%lx",GPOINTER_TO_INT(id));
+  hypr_ipc_command("dispatch closewindow address:0x%lx",GPOINTER_TO_SIZE(id));
 }
 
 static void hypr_ipc_focus ( gpointer id )
@@ -487,7 +487,7 @@ static void hypr_ipc_focus ( gpointer id )
   win = wintree_from_id(id);
   if(win && win->state & WS_MINIMIZED)
     hypr_ipc_unminimize(id);
-  hypr_ipc_command("dispatch focuswindow address:0x%lx",GPOINTER_TO_INT(id));
+  hypr_ipc_command("dispatch focuswindow address:0x%lx",GPOINTER_TO_SIZE(id));
 }
 
 static void hypr_ipc_set_workspace ( workspace_t *ws )
