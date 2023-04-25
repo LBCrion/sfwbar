@@ -329,7 +329,7 @@ gboolean scanner_file_glob ( ScanFile *file )
         }
 
         chan = g_io_channel_unix_new(fileno(in));
-        scanner_file_update(chan,file,NULL);
+        (void)scanner_file_update(chan,file,NULL);
         g_io_channel_unref(chan);
 
         if(file->source == SO_EXEC)
