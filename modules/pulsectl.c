@@ -136,15 +136,18 @@ static void pulse_subscribe_cb ( pa_context *ctx,
   switch(type & PA_SUBSCRIPTION_EVENT_FACILITY_MASK)
   {
     case PA_SUBSCRIPTION_EVENT_SERVER:
-      pa_context_get_server_info(ctx,pulse_server_cb,NULL);
+      pa_operation_unref(
+          pa_context_get_server_info(ctx,pulse_server_cb,NULL));
       break;
     case PA_SUBSCRIPTION_EVENT_SINK:
-      pa_context_get_sink_info_by_index(ctx,idx,pulse_sink_cb,NULL);
+      pa_operation_unref(
+        pa_context_get_sink_info_by_index(ctx,idx,pulse_sink_cb,NULL));
       break;
     case PA_SUBSCRIPTION_EVENT_SINK_INPUT:
       break;
     case PA_SUBSCRIPTION_EVENT_SOURCE:
-      pa_context_get_source_info_by_index(ctx,idx,pulse_source_cb,NULL);
+      pa_operation_unref(
+        pa_context_get_source_info_by_index(ctx,idx,pulse_source_cb,NULL));
       break;
     case PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT:
       break;
@@ -163,10 +166,11 @@ static void pulse_state_cb ( pa_context *ctx, gpointer data )
     pa_operation_unref(
         pa_context_get_server_info(ctx,pulse_server_cb,NULL));
     pa_context_set_subscribe_callback(ctx,pulse_subscribe_cb,NULL);
-    pa_context_subscribe(ctx,PA_SUBSCRIPTION_MASK_SERVER |
-        PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SINK_INPUT |
-        PA_SUBSCRIPTION_MASK_SOURCE | PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT,
-        NULL, NULL);
+    pa_operation_unref(
+      pa_context_subscribe(ctx,PA_SUBSCRIPTION_MASK_SERVER |
+          PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SINK_INPUT |
+          PA_SUBSCRIPTION_MASK_SOURCE | PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT,
+          NULL, NULL));
   }
 }
 
