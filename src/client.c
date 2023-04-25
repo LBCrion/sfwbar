@@ -149,8 +149,6 @@ gboolean client_socket_connect ( Client *client )
     return TRUE;
 
   sock = g_socket_connection_get_socket(client->scon);
-  g_socket_set_keepalive(sock,TRUE);
-
   if(!sock)
   {
     g_debug("client: %s: socket connection failed",client->file->fname);
@@ -159,6 +157,7 @@ gboolean client_socket_connect ( Client *client )
     return TRUE;
   }
 
+  g_socket_set_keepalive(sock,TRUE);
   client->out = g_io_channel_unix_new(g_socket_get_fd(sock));
   if(!client->out)
   {
@@ -212,8 +211,7 @@ gboolean client_exec_connect ( Client *client )
   client->out = g_io_channel_unix_new(out);
 
   client_subscribe(client);
-
-  return FALSE;
+  return TRUE;
 }
 
 void client_exec ( ScanFile *file )

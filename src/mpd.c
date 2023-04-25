@@ -47,6 +47,9 @@ GIOStatus client_mpd_respond ( Client *client )
   GIOStatus s;
   gchar *str;
 
+  if(!client || !client->out || !client->data)
+    return G_IO_ERROR;
+
   if(!g_queue_is_empty(MPD_STATE(client->data)->commands))
   {
     str = g_queue_pop_head(MPD_STATE(client->data)->commands);
@@ -103,7 +106,7 @@ void client_mpd_command ( action_t *action )
     return;
 
   client = file->client;
-  if(!client || !client->out)
+  if(!client || !client->out || !client->data)
     return;
 
   g_queue_push_tail(MPD_STATE(client->data)->commands,
