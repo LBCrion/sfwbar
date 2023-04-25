@@ -118,20 +118,6 @@ guint16 action_state_build ( GtkWidget *widget, window_t *win )
   return state;
 }
 
-void action_client_send ( action_t *action )
-{
-  ScanFile *file;
-
-  if(!action->addr->cache || !action->command->cache )
-    return;
-
-  file = scanner_file_get ( action->addr->cache );
-
-  if(file->client && ((Client *)(file->client))->out)
-    (void)g_io_channel_write_chars(((Client *)(file->client))->out,
-        action->command->cache,-1,NULL,NULL);
-}
-
 void action_handle_exec ( gchar *command )
 {
   gint argc;
@@ -241,7 +227,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
       sway_ipc_command("%s",action->command->cache);
       break;
     case G_TOKEN_MPDCMD:
-      mpd_ipc_command(action->command->cache);
+      client_mpd_command(action);
       break;
     case G_TOKEN_SWAYWIN:
       if(win)
@@ -297,7 +283,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
       popup_trigger(widget, action->command->cache);
       break;
     case G_TOKEN_CLIENTSEND:
-      action_client_send(action);
+      client_send(action);
       break;
     case G_TOKEN_FOCUS:
       if(win)

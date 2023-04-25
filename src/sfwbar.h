@@ -27,9 +27,6 @@ struct json_object *jpath_parse ( gchar *path, struct json_object *obj );
 void widget_set_css ( GtkWidget *, gpointer );
 void widget_parse_css ( GtkWidget *widget, gchar *css );
 
-void mpd_ipc_init ( ScanFile *file );
-void mpd_ipc_command ( gchar *command );
-
 GdkMonitor *widget_get_monitor ( GtkWidget *self );
 gint socket_connect ( const gchar *sockaddr, gint to );
 json_object *recv_json ( gint sock, gint32 len );

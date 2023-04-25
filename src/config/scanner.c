@@ -172,7 +172,7 @@ void config_scanner ( GScanner *scanner )
         break;
       case G_TOKEN_MPDCLIENT:
         file = config_source(scanner,SO_CLIENT);
-        mpd_ipc_init(file);
+        client_mpd(file);
         break;
       case G_TOKEN_SWAYCLIENT:
         file = config_source(scanner,SO_CLIENT);

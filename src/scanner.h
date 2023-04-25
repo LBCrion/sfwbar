@@ -53,5 +53,6 @@ gchar *scanner_parse_identifier ( gchar *id, gchar **fname );
 ScanFile *scanner_file_get ( gchar *trigger );
 ScanFile *scanner_file_new ( gint , gchar *, gchar *, gint );
 gboolean scanner_is_variable ( gchar *identifier );
+void scanner_file_attach ( gchar *trigger, ScanFile *file );
 
 #endif

@@ -8,202 +8,106 @@
 #include <gio/gunixsocketaddress.h>
 #include "sfwbar.h"
 #include "basewidget.h"
+#include "client.h"
 
-static GSocketConnection *mpd_ipc_sock;
-static GSocketConnection *mpd_cmd_sock;
+typedef struct _MpdState {
+  gchar *path;
+  gboolean idle;
+  GQueue *commands;
+} MpdState;
 
-gboolean mpd_ipc_connect ( gpointer file );
+#define MPD_STATE(x) ((MpdState *)(x))
 
-gboolean mpd_ipc_reconnect ( gboolean *r, GIOChannel *chan, ScanFile *file )
+gboolean client_mpd_connect ( Client *client )
 {
-  g_io_channel_shutdown(chan,FALSE,NULL);
-  g_io_channel_unref(chan);
-  if(mpd_ipc_sock)
-  {
-    g_object_unref(mpd_ipc_sock);
-    mpd_ipc_sock = NULL;
-    *r = 0;
-  }
-  g_timeout_add (1000,(GSourceFunc )mpd_ipc_connect,file);
-  return FALSE;
-}
-
-gboolean mpd_ipc_event ( GIOChannel *chan, GIOCondition cond, gpointer file )
-{
-  static gboolean r;
-  GIOStatus s;
-  gsize size;
-
-  if(file)
-    g_list_foreach(((ScanFile *)file)->vars,(GFunc)scanner_var_reset,NULL);
-
-  if ( cond & G_IO_ERR || cond & G_IO_HUP )
-    return mpd_ipc_reconnect(&r, chan, file);
-
-  if( cond & G_IO_IN )
-  {
-    if( file )
-    {
-      s = scanner_file_update( chan, file, &size );
-      if( s == G_IO_STATUS_ERROR || !size )
-        return mpd_ipc_reconnect(&r, chan, file);
-      base_widget_emit_trigger("mpd");
-    }
-
-    if(!r)
-      s = g_io_channel_write_chars(chan,"status\ncurrentsong\n",-1,NULL,NULL);
-    else
-      s = g_io_channel_write_chars(chan,"idle player options\n",-1,NULL,NULL);
-    g_io_channel_flush(chan,NULL);
-    if(s != G_IO_STATUS_NORMAL)
-      g_debug("mpd: failed to write to mpd socket");
-    r= !r;
-  }
-  return TRUE;
-}
-
-GSocketConnection *mpd_ipc_connect_unix ( GSocketClient *client, gchar *path )
-{
-  GSocketAddress *addr;
-  GSocketConnection *scon;
-
-  addr = g_unix_socket_address_new(path);
-  scon = g_socket_client_connect(client,(GSocketConnectable *)addr,NULL,NULL);
-
-  g_object_unref(addr);
-
-  return scon;
-}
-
-GSocketConnection *mpd_ipc_connect_path ( GSocketClient *client, gchar *path )
-{
-  GSocketConnection *scon = NULL;
-  gchar *host, *port, *addr;
+  gchar *host, *port;
   const gchar *dir;
 
-  if(path)
-    scon = g_socket_client_connect_to_host(client,path,0,NULL,NULL);
-  if( scon )
-    return scon;
-
-  if(path)
-    scon = mpd_ipc_connect_unix(client, path);
-  if( scon )
-    return scon;
-
-  host = g_strdup(g_getenv("MPD_HOST"));
-  if(!host)
-    host = g_strdup("localhost");
-  port = g_strdup(g_getenv("MPD_PORT"));
-  if(!port)
-    port = g_strdup("6600");
-  addr = g_strconcat( host, ":", port, NULL );
-  g_free(host);
-  g_free(port);
-  g_debug("mpd: attempting to connect to: %s",addr);
-  scon = g_socket_client_connect_to_host(client,addr,0,NULL,NULL);
-  g_free(addr);
-  if(scon)
-    return scon;
-
-  dir = g_get_user_runtime_dir();
-  if(!dir)
-    dir = "/run";
-  addr = g_build_filename(dir,"/mpd/socket",NULL);
-  g_debug("mpd: attempting to connect to: %s",addr);
-  scon = mpd_ipc_connect_unix(client, addr);
-  g_free(addr);
-
-  if(!scon)
-    g_debug("mpd: failed to connect to server");
-
-  return scon;
-}
-
-GIOChannel *mpd_ipc_open ( gchar *user, gpointer *addr )
-{
-  GSocketConnection *scon;
-  GSocket *sock;
-  GSocketClient *client;
-
-  client = g_socket_client_new();
-
-  scon = mpd_ipc_connect_path ( client, user );
-
-  if(!scon)
+  g_free(client->file->fname);
+  if(MPD_STATE(client->data)->path && *(MPD_STATE(client->data)->path) )
+    client->file->fname = g_strdup(MPD_STATE(client->data)->path);
+  else
   {
-    g_object_unref(client);
-    return NULL;
+    dir = g_get_user_runtime_dir();
+    client->file->fname = g_build_filename(dir?dir:"/run","/mpd/socket",NULL);
+    if( !g_file_test(client->file->fname, G_FILE_TEST_EXISTS) )
+    {
+      host = g_strdup(g_getenv("MPD_HOST"));
+      port = g_strdup(g_getenv("MPD_PORT"));
+      client->file->fname = g_strconcat(host?host:"localhost",":",
+          port?port:"6600",NULL);
+    }
   }
 
-  g_object_weak_ref(G_OBJECT(scon),(GWeakNotify)g_object_unref,client);
-  sock = g_socket_connection_get_socket(scon);
-
-  if(!sock || !g_socket_connection_is_connected(scon))
-  {
-    g_object_unref(scon);
-    return NULL;
-  }
-
-  *addr = scon;
-  return g_io_channel_unix_new(g_socket_get_fd(sock));
+  return client_socket_connect(client);
 }
 
-gboolean mpd_ipc_connect ( gpointer file )
+GIOStatus client_mpd_respond ( Client *client )
 {
-  if(mpd_ipc_sock)
-    return TRUE;
-
-  mpd_ipc_init(file);
-  return FALSE;
-}
-
-void mpd_ipc_init ( ScanFile *file )
-{
-  static GIOChannel *chan;
-
-  chan = mpd_ipc_open ( file->fname, (gpointer *) &mpd_ipc_sock );
-  if(chan)
-    g_io_add_watch(chan,G_IO_IN | G_IO_ERR | G_IO_HUP,mpd_ipc_event,file);
-
-  g_timeout_add (1000,(GSourceFunc )mpd_ipc_connect,file);
-}
-
-gboolean mpd_ipc_command_cb ( GIOChannel *chan, GIOCondition cond, gpointer command )
-{
+  GIOStatus s;
   gchar *str;
 
-  if(g_io_channel_read_to_end(chan, &str, NULL, NULL) != G_IO_STATUS_NORMAL )
-    g_debug("mpd: Failed to read from socket");
-  g_free(str);
-  str = g_strconcat( command, "\n", NULL );
-  if( g_io_channel_write_chars ( chan, str, -1, NULL, NULL ) != 
-      G_IO_STATUS_NORMAL )
-    g_debug("mpd: Command \"%s\". Failed to write to socket",
-        (gchar *)command);
-  g_io_channel_flush( chan, NULL );
-  g_free(str);
+  if(!g_queue_is_empty(MPD_STATE(client->data)->commands))
+  {
+    str = g_queue_pop_head(MPD_STATE(client->data)->commands);
+    s = g_io_channel_write_chars(client->out,str,-1,NULL,NULL);
+    g_free(str);
+  }
+  else
+  {
+    MPD_STATE(client->data)->idle = !MPD_STATE(client->data)->idle;
+    s = g_io_channel_write_chars(client->out,
+        MPD_STATE(client->data)->idle?
+        "status\ncurrentsong\n":"idle player options\n",
+        -1,NULL,NULL);
+  }
+  g_io_channel_flush(client->out,NULL);
 
-  g_io_channel_shutdown(chan, FALSE, NULL);
-  g_io_channel_unref(chan);
-
-  g_object_unref(mpd_cmd_sock);
-
-  return FALSE;
+  return s;
 }
 
-void mpd_ipc_command ( gchar *command )
+
+void client_mpd ( ScanFile *file )
 {
-  GIOChannel *chan;
+  Client *client;
 
-  if(!command)
+  if( !file || !file->fname )
     return;
 
-  chan = mpd_ipc_open ( NULL, (gpointer *) &mpd_cmd_sock );
+  client = g_malloc0(sizeof(Client));
+  client->file = file;
+  client->data = g_malloc0(sizeof(MpdState));
+  client->connect = client_mpd_connect;
+  client->respond = client_mpd_respond;
+  MPD_STATE(client->data)->commands = g_queue_new();
+  MPD_STATE(client->data)->path = g_strdup(file->fname);
 
-  if(!chan)
+  g_free(file->trigger);
+  file->trigger = g_strdup("mpd");
+  file->source = SO_CLIENT;
+  file->client = client;
+
+  client_attach(client);
+}
+
+void client_mpd_command ( action_t *action )
+{
+  ScanFile *file;
+  Client *client;
+
+  if(!action->command->cache)
     return;
 
-  g_io_add_watch(chan,G_IO_IN | G_IO_ERR | G_IO_HUP,
-      mpd_ipc_command_cb,command);
+  file = scanner_file_get("mpd");
+  client = file->client;
+
+  g_queue_push_tail(MPD_STATE(client->data)->commands,
+      g_strconcat(action->command->cache,"\n",NULL));
+
+  if(client && client->out)
+  {
+    (void)g_io_channel_write_chars(client->out,"noidle\n",-1,NULL,NULL);
+    g_io_channel_flush(client->out,NULL);
+  }
+  MPD_STATE(client->data)->idle = FALSE;
 }
