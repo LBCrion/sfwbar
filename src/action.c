@@ -283,7 +283,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
       popup_trigger(widget, action->command->cache);
       break;
     case G_TOKEN_CLIENTSEND:
-      client_send(action);
+      client_send(action->addr->cache,action->command->cache);
       break;
     case G_TOKEN_FOCUS:
       if(win)

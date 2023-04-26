@@ -9,7 +9,6 @@
 #include "sfwbar.h"
 #include "basewidget.h"
 #include "client.h"
-#include "action.h"
 
 void client_disconnect ( Client *client )
 {
@@ -187,6 +186,7 @@ void client_socket ( ScanFile *file )
   client->file = file;
   client->connect = client_socket_connect;
   client_attach(client);
+  file->client = client;
 }
 
 gboolean client_exec_connect ( Client *client )
@@ -207,8 +207,8 @@ gboolean client_exec_connect ( Client *client )
   }
   g_strfreev(argv);
 
-  client->in = g_io_channel_unix_new(in);
-  client->out = g_io_channel_unix_new(out);
+  client->in = g_io_channel_unix_new(out);
+  client->out = g_io_channel_unix_new(in);
 
   client_subscribe(client);
   return TRUE;
@@ -225,23 +225,24 @@ void client_exec ( ScanFile *file )
   client->file = file;
   client->connect = client_exec_connect;
   client_attach(client);
+  file->client = client;
 }
 
-void client_send ( action_t *action )
+void client_send ( gchar *addr, gchar *command )
 {
   ScanFile *file;
+  Client *client;
 
-  if(!action->addr->cache || !action->command->cache )
+  if(!addr || !command )
     return;
 
-  file = scanner_file_get ( action->addr->cache );
+  file = scanner_file_get ( addr );
   if(!file)
     return;
 
-  if(file->client && ((Client *)(file->client))->out)
-  {
-    (void)g_io_channel_write_chars(((Client *)(file->client))->out,
-        action->command->cache,-1,NULL,NULL);
-    g_io_channel_flush(((Client *)(file->client))->out,NULL);
-  }
+  client = file->client;
+  if(!client || !client->out)
+    return;
+  (void)g_io_channel_write_chars(client->out, command, -1, NULL, NULL);
+  g_io_channel_flush(client->out, NULL);
 }
