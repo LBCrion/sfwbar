@@ -93,12 +93,12 @@ void client_mpd ( ScanFile *file )
   client_attach(client);
 }
 
-void client_mpd_command ( action_t *action )
+void client_mpd_command ( gchar *command )
 {
   ScanFile *file;
   Client *client;
 
-  if(!action->command->cache)
+  if(!command)
     return;
 
   file = scanner_file_get("mpd");
@@ -110,7 +110,7 @@ void client_mpd_command ( action_t *action )
     return;
 
   g_queue_push_tail(MPD_STATE(client->data)->commands,
-      g_strconcat(action->command->cache,"\n",NULL));
+      g_strconcat(command,"\n",NULL));
   (void)g_io_channel_write_chars(client->out,"noidle\n",-1,NULL,NULL);
   g_io_channel_flush(client->out,NULL);
   MPD_STATE(client->data)->idle = FALSE;

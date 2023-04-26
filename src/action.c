@@ -227,7 +227,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
       sway_ipc_command("%s",action->command->cache);
       break;
     case G_TOKEN_MPDCMD:
-      client_mpd_command(action);
+      client_mpd_command(action->command->cache);
       break;
     case G_TOKEN_SWAYWIN:
       if(win)

@@ -20,6 +20,6 @@ void client_mpd ( ScanFile *file );
 void client_attach ( Client *client );
 gboolean client_socket_connect ( Client *client );
 void client_send ( gchar *addr, gchar *command );
-void client_mpd_command ( action_t *action );
+void client_mpd_command ( gchar *command );
 
 #endif
