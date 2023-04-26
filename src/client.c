@@ -94,14 +94,14 @@ void client_attach ( Client *client )
 
 void client_subscribe ( Client *client )
 {
-  if(client->in)
-    g_io_channel_set_flags(client->in,G_IO_FLAG_NONBLOCK,NULL);
   if(client->out)
-  {
     g_io_channel_set_flags(client->out,G_IO_FLAG_NONBLOCK,NULL);
-    g_io_add_watch(client->out, G_IO_IN | G_IO_PRI | G_IO_HUP | G_IO_ERR,
+  if(client->in)
+  {
+    g_io_channel_set_flags(client->in,G_IO_FLAG_NONBLOCK,NULL);
+    g_io_add_watch(client->in, G_IO_IN | G_IO_PRI | G_IO_HUP | G_IO_ERR,
         client_event, client);
-    g_debug("client new: %p, flags: %d, source: %s", client->out,
+    g_debug("client new: %p, flags: %d, source: %s", client->in,
         g_io_channel_get_flags(client->out),client->file->fname);
   }
 }
