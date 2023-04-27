@@ -30,6 +30,12 @@ gboolean client_mpd_connect ( Client *client )
   {
     dir = g_get_user_runtime_dir();
     client->file->fname = g_build_filename(dir?dir:"/run","/mpd/socket",NULL);
+    if( !g_file_test(client->file->fname, G_FILE_TEST_EXISTS) &&
+        g_strcmp0(client->file->fname,"/run/mp/socket") )
+    {
+      g_free(client->file->fname);
+      client->file->fname = g_strdup("/run/mpd/socket");
+    }
     if( !g_file_test(client->file->fname, G_FILE_TEST_EXISTS) )
     {
       host = g_strdup(g_getenv("MPD_HOST"));
