@@ -50,7 +50,7 @@ PopUp "XMpdWindow" {
     style = "mpd_progress"
   }
   grid "XMpdPlayer" {
-    css = "* { -GtkWidget-direction: right; -GtkWidget-halign: center; }"
+    css = "* { -GtkWidget-direction: right; -GtkWidget-halign: center; -GtkWidget-hexpand: true; }"
     image {
       value = "media-playlist-repeat-symbolic"
       action = MpdCmd "repeat " + If(MpdRepeat,"0","1")
@@ -143,11 +143,13 @@ label#mpd_artist {
   padding-right: 4px;
   -GtkWidget-align: 0.5;
   color: @theme_fg_color;
+  -GtkWidget-halign: center;
 }
 
 #mpd_progress {
   margin-top: 3px;
   margin-bottom: 3px;
+  -GtkWidget-halign: center;
 }
 
 #mpd_progress progress {

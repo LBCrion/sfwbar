@@ -43,7 +43,7 @@ PopUp "XMpdWindow" {
     trigger = "mpd-progress"
   }
   grid "XMpdPlayer" {
-    css = "* { -GtkWidget-direction: right; -GtkWidget-halign: center; }"
+    css = "* { -GtkWidget-direction: right; -GtkWidget-halign: center; -GtkWidget-hexpand: true; }"
     image {
       value = "media-playlist-repeat-symbolic"
       action = MpdCommand "repeat toggle"
@@ -134,12 +134,14 @@ label#mpd_artist {
   padding-left: 4px;
   padding-right: 4px;
   -GtkWidget-align: 0.5;
+  -GtkWidget-halign: center;
   color: @theme_fg_color;
 }
 
 #mpd_progress {
   margin-top: 3px;
   margin-bottom: 3px;
+  -GtkWidget-halign: center;
 }
 
 #mpd_progress progress {
