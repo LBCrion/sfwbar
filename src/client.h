@@ -8,6 +8,8 @@ typedef struct _Client Client;
 struct _Client {
   ScanFile *file;
   GSocketConnection *scon;
+  GSocketConnectable *addr;
+  GSocketClient *sclient;
   GIOChannel *in,*out;
   void *data;
   gboolean (*connect) ( Client * );
