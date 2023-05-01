@@ -12,7 +12,7 @@
 
 void client_reconnect ( Client *client )
 {
-  g_message("client %s: disconnecting",client->file->fname);
+  g_debug("client %s: disconnecting",client->file->fname);
   if(client->in == client->out)
     client->out = NULL;
   g_clear_pointer(&client->in,g_io_channel_unref);
