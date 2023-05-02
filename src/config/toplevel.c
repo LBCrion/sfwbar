@@ -71,7 +71,7 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign,
   else
     value = g_strdup("");;
   g_scanner_peek_next_token(scanner);
-  while(((gint)scanner->next_token<=G_TOKEN_SCANNER)&&
+  while(((gint)scanner->next_token<G_TOKEN_SCANNER)&&
       (scanner->next_token!='}')&&
       (scanner->next_token!=';')&&
       (scanner->next_token!='[')&&
