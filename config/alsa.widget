@@ -1,6 +1,5 @@
 scanner {
   ExecClient("stdbuf -oL amixer -s","alsactl") {
-    AlsaTest = Grab()
     AlsaVolume = RegEx(".*[[](.[0-9]+)%")
     AlsaMuted = RegEx(".*[[].*[[]([A-Za-z].*)[]]")
   }
@@ -16,7 +15,6 @@ set AlsaIcon = If($AlsaMuted = "off",$AlsaMutedIcon,$AlsaVolumeIcon)
 
 layout {
   style = "module"
-  label { value = $AlsaMuted }
   button {
     value = $AlsaIcon
     tooltip = "Volume: " + Str(AlsaVolume,0) + "%" + If(AlsaMuted," (muted)","")
