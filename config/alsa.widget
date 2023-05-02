@@ -1,7 +1,6 @@
 scanner {
-  ExecClient("stdbuf -oL amixer sevents Master","alsa") {} # declare alsa trigger
-  ExecClient("amixer -s","alsactl") {} # declare alsa control interface
-  Exec("amixer sget Master") { # poll amixer for volume levels
+  ExecClient("stdbuf -oL amixer -s","alsactl") {
+    AlsaTest = Grab()
     AlsaVolume = RegEx(".*[[](.[0-9]+)%")
     AlsaMuted = RegEx(".*[[].*[[]([A-Za-z].*)[]]")
   }
@@ -17,11 +16,13 @@ set AlsaIcon = If($AlsaMuted = "off",$AlsaMutedIcon,$AlsaVolumeIcon)
 
 layout {
   style = "module"
+  label { value = $AlsaMuted }
   button {
     value = $AlsaIcon
     tooltip = "Volume: " + Str(AlsaVolume,0) + "%" + If(AlsaMuted," (muted)","")
     style = If(Ident($AlsaVolume),"module","hidden")
-    trigger = "alsa"
+    trigger = "alsactl"
+    action[0] = ClientSend "alsactl","sset Master 0%+\n"
     action[1] = ClientSend "alsactl","sset Master toggle\n"
     action[3] = "foot -e alsamixer"
     action[4] = ClientSend "alsactl","sset Master 5%+\n"
