@@ -250,6 +250,8 @@ static void sway_window_new ( struct json_object *container )
     json_object_object_get_ex(container,"window_properties",&ptr);
     if(ptr)
       app_id = json_string_by_name(ptr,"instance");
+    if(!app_id)
+      app_id = "";
   }
   if(!app_id)
     return;
