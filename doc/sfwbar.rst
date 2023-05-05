@@ -854,6 +854,8 @@ property              description
 ===================== =============
 -GtkWidget-align      specify text alignment for a label, defined as a fraction.
                       (0 = left aligned, 1 = right aligned, 0.5 = centered)
+-GtkWidget-ellipsize  specify whether a text in a label should be ellipsized if
+                      it's too long to fit in allocated space
 -GtkWidget-direction  specify a direction for a widget.
                       For scale, it's a direction towards which scale grows.
                       For a grid, it's a direction in which a new widget is 

@@ -65,6 +65,9 @@ static void css_custom_handle ( GtkWidget *widget )
   {
     gtk_widget_style_get(widget,"align",&xalign,NULL);
     gtk_label_set_xalign(GTK_LABEL(widget),xalign);
+    gtk_widget_style_get(widget,"ellipsize",&state,NULL);
+    gtk_label_set_ellipsize(GTK_LABEL(widget),
+        state?PANGO_ELLIPSIZE_END:PANGO_ELLIPSIZE_NONE);
   }
 }
 
@@ -83,6 +86,9 @@ void css_init ( gchar *cssname )
   gtk_widget_class_install_style_property( widget_class,
     g_param_spec_double("align","text alignment","text alignment",
       0.0,1.0,0.5, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property( widget_class,
+    g_param_spec_boolean("ellipsize","ellipsize text","ellipsize text",
+      TRUE, G_PARAM_READABLE));
 
   gtk_widget_class_install_style_property( widget_class,
     g_param_spec_boolean("hexpand","horizonal expansion","horizontal expansion",
