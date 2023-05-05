@@ -25,7 +25,10 @@ layout {
     value = $XPulseIcon
     trigger = "pulse"
     tooltip = "Volume: " + Str(XPulseVolume,0) + "%" +
-      If(XPulseMuted," (muted)","") + "\nForm: " + Pulse("sink-form")
+      If(XPulseMuted," (muted)","") +
+      "\nForm: " + Pulse("sink-form") +
+      "\nPort: " + Pulse("sink-port") +
+      "\nMonitor: " + Pulse("sink-monitor")
     style = If(Ident(pulse),"module","hidden")
     action[1] = PulseCmd "sink-mute toggle"
     action[3] = Exec $XPulseAction
