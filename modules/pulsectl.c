@@ -17,7 +17,7 @@ typedef struct _pulse_info {
   gboolean mute;
   pa_cvolume cvol;
   gdouble vol;
-  gchar *icon, *form;
+  gchar *icon, *form, *port;
 } pulse_info;
 
 GList *sink_list, *source_list;
@@ -85,6 +85,8 @@ static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
   g_free(info->form);
   info->form = g_strdup(pa_proplist_gets(pinfo->proplist,
         PA_PROP_DEVICE_FORM_FACTOR));
+  g_free(info->port);
+  info->port = g_strdup(pinfo->active_port?pinfo->active_port->name:"Unknown");
   info->idx = pinfo->index;
   info->cvol = pinfo->volume;
   info->vol = 100.0 * pa_cvolume_avg(&info->cvol)/PA_VOLUME_NORM;
@@ -109,6 +111,8 @@ static void pulse_source_cb ( pa_context *ctx, const pa_source_info *pinfo,
   g_free(info->form);
   info->form = g_strdup(pa_proplist_gets(pinfo->proplist,
         PA_PROP_DEVICE_FORM_FACTOR));
+  g_free(info->port);
+  info->port = g_strdup(pinfo->active_port?pinfo->active_port->name:"Unknown");
   info->idx = pinfo->index;
   info->cvol = pinfo->volume;
   info->vol = 100.0 * pa_cvolume_avg(&info->cvol)/PA_VOLUME_NORM;
@@ -224,7 +228,9 @@ void *pulse_expr_func ( void **params )
   else if(!g_ascii_strcasecmp(cmd,"icon"))
     return g_strdup(info->icon?info->icon:"");
   else if(!g_ascii_strcasecmp(cmd,"form"))
-    return g_strdup(info->icon?info->form:"");
+    return g_strdup(info->form?info->form:"");
+  else if(!g_ascii_strcasecmp(cmd,"port"))
+    return g_strdup(info->port?info->port:"");
 
   return g_strdup_printf("invalid query: %s",cmd);
 }

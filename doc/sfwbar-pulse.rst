@@ -37,7 +37,9 @@ supported query types are:
 "sink-icon"
   sink icon.
 "sink-form"
-  the form of the sink
+  the form of the sink.
+"sink-port"
+  the port name of the sink.
 "source-volume"
   the volume of a source.
 "source-mute"
@@ -46,6 +48,8 @@ supported query types are:
   source icon.
 "source-form"
   the form of the source.
+"source-port"
+  the port name of the source.
 
 Actions
 =======
