@@ -1,0 +1,25 @@
+scanner {
+# Extract memory usage information
+  file("/proc/meminfo") {
+    MemTotal = RegEx("^MemTotal:[\t ]*([0-9]+)[\t ]")
+    MemFree = RegEx("^MemFree:[\t ]*([0-9]+)[\t ]")
+    MemCache = RegEx( "^Cached:[\t ]*([0-9]+)[\t ]")
+    MemBuff = Regex("^Buffers:[\t ]*([0-9]+)[\t ]")
+  }
+}
+
+module("bsdctl")
+
+Set XPageSize = BSDCtl("vm.stats.vm.v_page_size")
+Set XMemTotal = If(!Ident(BSDCtl),MemTotal,Val(BSDCtl("vm.stats.vm.v_page_count"))*XPageSize)
+Set XMemFree = If(!Ident(BSDCtl),MemFree,Val(BSDCtl("vm.stats.vm.v_free_count"))*XPageSize)
+Set XMemCache = If(!Ident(BSDCtl),MemCache,Val(BSDCtl("vm.stats.vm.v_inactive_count"))*XPageSize)
+Set XMemBuff = If(!Ident(BSDCtl),MemBuff,Val(BSDCtl("vm.stats.vm_laundry_count"))*XPageSize)
+
+layout {
+  label {
+    style = "memory"
+    interval = 30000
+    value = Str((XMemTotal-XMemFree)/XMemTotal*100) + '% '
+  }
+}

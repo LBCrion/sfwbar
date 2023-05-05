@@ -1,0 +1,13 @@
+scanner {
+  file("/sys/class/bluetooth/*/rfkill*/state") {
+    BluetoothState = Grab(Sum)
+  }
+}
+
+layout {
+  label {
+    style = "bluetooth"
+    interval = 500
+    value = If(BluetoothState = 1," ","")
+  }
+}

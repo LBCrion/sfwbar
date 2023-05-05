@@ -1,0 +1,25 @@
+module("xkbmap")
+
+scanner {
+  SwayClient("") {
+    SwayXkbLayout = Json(".input.input.xkb_active_layout_name")
+  }
+}
+
+Set XSwayLangCommand = If(Ident($SwayLangCommand),$SwayLangCommand,
+    "input type:keyboard xkb_switch_layout next")
+
+Function("XSwayLangInit") {
+  SwayCmd "input type:keyboard xkb_switch_layout next"
+  SwayCmd "input type:keyboard xkb_switch_layout prev"
+}
+
+layout {
+  label {
+    action[0] = Function "XSwayLangInit"
+    action[1] = SwayCmd $XSwayLangCommand 
+    style = If(Ident(SwayXkbLayout) & $SwayXkbLayout!="","language","hidden")
+    value = XkbMap($SwayXkbLayout,"description","name")
+    trigger = "sway"
+  }
+}

@@ -1,0 +1,23 @@
+module("pulsectl")
+
+define Volume = Val(Pulse("sink-volume"))
+
+Set PulseIcon = Map(Pulse("sink-form"),
+            "headphone", "",
+            "hands-free", "",
+            "headset", "",
+            "phone", "",
+            "portable", "",
+            "car", "",
+              Lookup(Volume,66,"",33,"",""))
+
+layout {
+  label {
+    style = If(Ident(Pulse),If(Val(Pulse("sink-mute")),"pulseaudio_muted","pulseaudio"),"hidden")
+    trigger = "pulse"
+    value = If(Val(Pulse("sink-mute")),"", Str(Volume) + "% ") +
+    $PulseIcon + " " + Str(Val(Pulse("source-volume"))) + "% "
+    action[4] = PulseCmd "sink-volume +1"
+    action[5] = PulseCmd "sink-volume -1"
+  }
+}

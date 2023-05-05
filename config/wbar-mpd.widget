@@ -1,0 +1,52 @@
+Scanner {
+  MpdClient("") {
+    MpdTitle = RegEx("Title: (.*)")
+    MpdAlbum = RegEx("Album: (.*)")
+    MpdArtist = RegEx("Artist: (.*)")
+    MpdState = RegEx("state: (.*)")
+    MpdRandom = RegEx("random:(.*)")
+    MpdRepeat = RegEx("repeat:(.*)")
+    MpdVolume = RegEx("volume:(.*)")
+    MpdElapsed = RegEx("elapsed:(.*)")
+    MpdDuration = RegEx("duration:(.*)")
+    MpdQPos = RegEx("song: (.*)")
+    MpdQLen = RegEx("playlistlength: (.*)")
+  }
+}
+
+Set XMpdElapsed = MpdElapsed+If($MpdState="play",MpdElapsed.age/1000000,0)
+Set XMpdRandom = If(!MpdRandom,'<span color="#f53c3c">','<span>')
+
+function("SetMpd") {
+  SetValue "Mpd",
+    If($MpdState="disconnected",
+      "Disconnected",
+      Map($MpdState,"pause"," ","play","","") +
+      $XMpdRandom + " "+ '</span>' + If(!MpdRepeat,""," ")+
+      if($MpdState="stop","Stopped",
+        $MpdArtist + " - " +
+        $MpdAlbum + " - " +
+        $MpdTitle + " (" +
+        Str((XMpdElapsed-XMpdElapsed%60)/60) + ":" + Str(XMpdElapsed%60) +
+        "/" +
+        Str((MpdDuration-MpdDuration%60)/60) + ":" + Str(MpdDuration%60) +
+        ") " + " ⸨" + $MpdQPos + "|" + $MpdQLen + "⸩ " + Str(MpdVolume) + "%"
+      )
+    ) + " "
+}
+
+TriggerAction "mpd", Function "SetMpd"
+
+layout {
+  label "Mpd" {
+    interval = 1000
+    style = Map($MpdState,
+              "play", "mpd_play",
+              "pause", "mpd_paused",
+              "stop", "mpd_stopped",
+              "mpd_disconnected"
+            )
+    action[0] = Function "SetMpd"
+    action = MpdCmd "pause"
+  }
+}

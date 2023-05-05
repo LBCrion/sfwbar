@@ -1,0 +1,23 @@
+scanner {
+  file("/sys/class/backlight/*/actual_brightness") {
+    BacklightActual = Grab(Sum)
+  }
+  file("/sys/class/backlight/*/max_brightness") {
+    BacklightMax = Grab(Sum)
+  }
+}
+
+module("bsdctl")
+
+Set XBacklight = If(!Ident(BSDCtl),
+      BacklightActual/BacklightMax*100,
+      Val(BSDCtl("hw.acpi.video.lcd0.brightness"))
+    )
+
+layout {
+  label {
+    style = "backlight"
+    interval = 2000
+    value = $XBacklight + '% '
+  }
+}

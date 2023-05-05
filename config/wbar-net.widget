@@ -1,0 +1,33 @@
+Module("network")
+
+function("ToggleNet") {
+  [UserState] UserState "off"
+  [UserState] SetValue
+    If(NetInfo("ip")="",
+      "Disconnected ⚠",
+      NetInfo("interface") + ": " + NetInfo("ip") + "/" + NetInfo("cidr")
+    )
+  [!UserState] UserState "on"
+  [!UserState] SetValue
+    If(NetInfo("ip")="", "Disconnected ⚠",
+      If(NetInfo("Essid")="",
+        NetInfo("ip") + ": " + NetInfo("cidr") + " ",
+        NetInfo("Essid") + " (" + Str(NetStat("signal")) + "%) "
+      )
+    )
+}
+
+layout {
+  label {
+    style = If(Ident(NetInfo),
+              If(NetInfo("ip")="",
+                "network_disconnected",
+                "network"
+              ),
+              "hidden"
+            )
+    trigger = "network"
+    action = Function "ToggleNet"
+    action[0] = Function "ToggleNet"
+  }
+}
