@@ -22,5 +22,6 @@ layout {
     value = (XMemTotal-XMemFree-XMemCache-XMemBuff)/XMemTotal
     tooltip = "Memory: " + Str((XMemTotal-XMemFree-XMemCache-XMemBuff)/
       XMemTotal*100,0) + "%"
+    action = Exec $Term + " -e top -o %MEM"
   }
 }

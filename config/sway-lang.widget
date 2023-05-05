@@ -19,7 +19,7 @@ layout {
     action[0] = Function "XSwayLangInit"
     action[1] = SwayCmd $XSwayLangCommand 
     style = If(Ident(SwayXkbLayout) & $SwayXkbLayout!="","sway_lang","hidden")
-    value = Upper(XkbMap($SwayXkbLayout,"description","brief"))
+    value = Upper(XkbMap($SwayXkbLayout,"description","name"))
     trigger = "sway"
   }
 }

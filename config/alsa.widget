@@ -22,7 +22,7 @@ layout {
     trigger = "alsactl"
     action[0] = ClientSend "alsactl","sset Master 0%+\n"
     action[1] = ClientSend "alsactl","sset Master toggle\n"
-    action[3] = "foot -e alsamixer"
+    action[3] = Exec $Term + " -e alsamixer"
     action[4] = ClientSend "alsactl","sset Master 5%+\n"
     action[5] = ClientSend "alsactl","sset Master 5%-\n"
   }

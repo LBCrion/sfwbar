@@ -25,5 +25,6 @@ layout {
       XCpuUser.pval-XCpuNice.pval-XCpuSystem.pval-XCpuIntr.pval-XCpuIdle.pval)
     tooltip = "CPU: " + Str((XCpuUser-XCpuUser.pval)/(XCpuUser+XCpuNice+XCpuSystem+XCpuInt+
       XCpuIdle-XCpuUser.pval-XCpuNice.pval-XCpuSystem.pval-XCpuIntr.pval-XCpuIdle.pval)*100,0)+'%'
+    action = Exec $Term + " -e top"
   }
 }

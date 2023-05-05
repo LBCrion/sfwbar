@@ -1,4 +1,4 @@
-# Parse yr.no weather forecast
+# Parse met.no weather forecast
 scanner {
   Exec("wget -O - \"https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=51.8711&lon=0.1587\"") {
     WthrTemp= Json(".properties.timeseries.1.data.instant.details.air_temperature")
