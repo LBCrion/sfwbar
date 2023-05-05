@@ -40,6 +40,8 @@ supported query types are:
   the form of the sink.
 "sink-port"
   the port name of the sink.
+"sink-monitor"
+  name of the source monitor for the sink.
 "source-volume"
   the volume of a source.
 "source-mute"
@@ -50,6 +52,8 @@ supported query types are:
   the form of the source.
 "source-port"
   the port name of the source.
+"source-monitor"
+  name of the sink monitor for the source.
 
 Actions
 =======
