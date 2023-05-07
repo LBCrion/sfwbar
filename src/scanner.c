@@ -80,6 +80,8 @@ ScanFile *scanner_file_new ( gint source, gchar *fname,
 
 void scanner_var_free ( ScanVar *var )
 {
+  if(var->file)
+    var->file->vars = g_list_remove(var->file->vars,var);
   if(var->type != G_TOKEN_REGEX)
     g_free(var->definition);
   else
