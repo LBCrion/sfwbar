@@ -1,30 +1,11 @@
-# Add up CPU utilization stats across all CPUs
-scanner {
-  file("/proc/stat") {
-    CpuUser = RegEx("^cpu [\t ]*([0-9]+)",Sum)
-    CpuNice = RegEx("^cpu [\t ]*[0-9]+ ([0-9]+)",Sum)
-    CpuSystem = RegEx("^cpu [\t ]*[0-9]+ [0-9]+ ([0-9]+)",Sum)
-    CpuIdle = RegEx("^cpu [\t ]*[0-9]+ [0-9]+ [0-9]+ ([0-9]+)",Sum)
-  }
-}
-
-module("bsdctl")
-
-Set XCpuBSD = BSDCtl("kern.cp_time")
-Set XCpuUser = If(!Ident(BSDCtl),CpuUser,Extract($XCpuBSD,"([0-9]+)"))
-Set XCpuSystem = If(!Ident(BSDCtl),CpuSystem,Extract($XCpuBSD,"[0-9]+ ([0-9]+)"))
-Set XCpuNice = If(!Ident(BSDCtl),CpuNice,Extract($XCpuBSD,"[0-9]+ [0-9]+ ([0-9]+)"))
-Set XCpuIntr = If(!Ident(BSDCtl),0,Extract($XCpuBSD,"[0-9]+ [0-9]+ [0-9]+ ([0-9]+)"))
-Set XCpuIdle = If(!Ident(BSDCtl),CpuIdle,Extract($XCpuBSD,"[0-9]+ [0-9]+ [0-9]+ [0-9]+ ([0-9]+)"))
+include("cpu.source")
 
 layout {
   chart {
     interval = 1000
-    style = If(Ident(BSDCtl) | CpuUser.count,"cpu_chart","hidden")
-    value = (XCpuUser-XCpuUser.pval)/(XCpuUser+XCpuNice+XCpuSystem+XCpuIntr+XCpuIdle-
-      XCpuUser.pval-XCpuNice.pval-XCpuSystem.pval-XCpuIntr.pval-XCpuIdle.pval)
-    tooltip = "CPU: " + Str((XCpuUser-XCpuUser.pval)/(XCpuUser+XCpuNice+XCpuSystem+XCpuInt+
-      XCpuIdle-XCpuUser.pval-XCpuNice.pval-XCpuSystem.pval-XCpuIntr.pval-XCpuIdle.pval)*100,0)+'%'
+    style = If(XCpuPresent,"cpu_chart","hidden")
+    value = XCpuUsage
+    tooltip = "CPU: " + Str(XCpuUsage*100) + '%'
     action = Exec $Term + " -e top"
   }
 }

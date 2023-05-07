@@ -1,4 +1,3 @@
-
 function("ToggleInhibitor") {
   [!IdleInhibit] IdleInhibit "on"
   [!IdleInhibit] SetStyle "idle_inhibitor_activated"

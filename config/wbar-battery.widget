@@ -13,6 +13,8 @@ scanner {
   }
 }
 
+module("bsdctl")
+
 set BatteryLeft = If(BatteryChargeNow.count,BatteryChargeNow,BatteryEnergyNow)
 set XBatteryLevel = If(!Ident(BSDCtl),
       BatteryLeft / BatteryTotal * 100,

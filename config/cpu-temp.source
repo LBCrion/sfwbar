@@ -1,0 +1,10 @@
+scanner {
+  file("/sys/class/hwmon/hwmon1/temp1_input") {
+    CPUTemp = Grab()
+  }
+}
+
+module("bsdctl")
+
+Set XCpuTemp = If(!Ident(BSDCtl),CPUTemp,Val(BSDCtl("dev.cpu.0.temperature")))
+Set XCpuTempPresent = Ident(BSDCtl) | CPUTemp.count

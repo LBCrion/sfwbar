@@ -1,9 +1,4 @@
-scanner {
-# Poll CPU temperature
-  file("/sys/class/hwmon/hwmon1/temp1_input") {
-    CPUTemp = Grab()
-  }
-}
+include("cpu-temp.source")
 
 layout {
   css = "* { -GtkWidget-direction: right; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
@@ -14,6 +9,6 @@ layout {
   label {
     style = "value"
     interval = 1000
-    value = Str(CPUTemp/1000,0)+"C"
+    value = Str(XCpuTemp/1000,0)+"C"
   }
 }
