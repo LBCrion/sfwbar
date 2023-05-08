@@ -99,7 +99,7 @@ void client_socket_connect_cb ( GSocketClient *src, GAsyncResult *res,
   GSocket *sock;
 
   client->scon = g_socket_client_connect_finish(src,res,NULL);
-  if(client->scon || g_socket_connection_is_connected(client->scon))
+  if(client->scon && g_socket_connection_is_connected(client->scon))
   {
     sock = g_socket_connection_get_socket(client->scon);
     if(sock)
