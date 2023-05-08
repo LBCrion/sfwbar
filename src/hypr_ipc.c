@@ -58,13 +58,13 @@ static gboolean hypr_ipc_request ( gchar *addr, gchar *command, json_object **js
   sock = socket_connect(addr,1000);
   if(sock==-1)
   {
-    g_message("hypr: can't open socket");
+    g_debug("hypr: can't open socket");
     return FALSE;
   }
 
   if(write(sock,command,strlen(command))==-1)
   {
-    g_message("hypr: can't write to socket");
+    g_debug("hypr: can't write to socket");
     close(sock);
     return FALSE;
   }
