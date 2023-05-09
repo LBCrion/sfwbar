@@ -4,8 +4,8 @@ layout {
   chart {
     interval = 1000
     style = If(XCpuPresent,"cpu_chart","hidden")
-    value = XCpuUsage
-    tooltip = "CPU: " + Str(XCpuUsage*100) + '%'
+    value = XCpuUtilization
+    tooltip = "CPU: " + Str(XCpuUtilization*100) + '%'
     action = Exec $Term + " -e top"
   }
 }

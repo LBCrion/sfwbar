@@ -1,26 +1,7 @@
+include("cpu.source")
+include("memory.source")
+
 scanner {
-# Extract memory usage information
-  file("/proc/meminfo") {
-    MemTotal = RegEx("^MemTotal:[\t ]*([0-9]+)[\t ]")
-    MemFree = RegEx("^MemFree:[\t ]*([0-9]+)[\t ]")
-    MemCache = RegEx( "^Cached:[\t ]*([0-9]+)[\t ]")
-    MemBuff = Regex("^Buffers:[\t ]*([0-9]+)[\t ]")
-  }
-
-# Add up total and used swap capacity across all partitions
-  file("/proc/swaps") {
-    SwapTotal = RegEx("[\t ]([0-9]+)",Sum)
-    SwapUsed = RegEx("[\t ][0-9]+[\t ]([0-9]+)",Sum)
-  }
-
-# Add up CPU utilization stats across all CPUs
-  file("/proc/stat") {
-    CpuUser = RegEx("^cpu [\t ]*([0-9]+)",Sum)
-    CpuNice = RegEx("^cpu [\t ]*[0-9]+ ([0-9]+)",Sum)
-    CpuSystem = RegEx("^cpu [\t ]*[0-9]+ [0-9]+ ([0-9]+)",Sum)
-    CpuIdle = RegEx("^cpu [\t ]*[0-9]+ [0-9]+ [0-9]+ ([0-9]+)",Sum)
-  }
-
 # Get total and remaining battery charge
   file("/sys/class/power_supply/BAT0/charge_full") {
     BatteryTotal = Grab(Sum)
@@ -36,13 +17,15 @@ scanner {
 layout {
   # add a sub-grid to house scales
   style = "scales"
-  scale { 
+  scale {
+    if(XCpuPresent,"","hidden")
     css = "progressbar progress { background-color: #0000ff;}"
-    value = (CpuUser-CpuUser.pval)/(CpuUser+CpuNice+CpuSystem+CpuIdle-CpuUser.pval-CpuNice.pval-CpuSystem.pval-CpuIdle.pval)
+    value = XCpuUtilization
   }
   scale {
+    if(XMemoryPresent,"","hidden")
     css = "progressbar progress { background-color: #00ff00;}"
-    value= (MemTotal-MemFree-MemCache-MemBuff)/MemTotal
+    value= XMemoryUtilization
   }
   scale {
     value = BatteryLeft/BatteryTotal

@@ -4,6 +4,6 @@ layout {
   label {
     style = if(XCpuPresent,"cpu","hidden")
     interval = 10000
-    value = Str(XCpuUsage*100) + '% '
+    value = Str(XCpuUtilization*100) + '% '
   }
 }

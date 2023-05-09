@@ -1,15 +1,4 @@
-Scanner {
-  MpdClient("") {
-    MpdTitle = RegEx("Title: (.*)")
-    MpdAlbum = RegEx("Album: (.*)")
-    MpdArtist = RegEx("Artist: (.*)")
-    MpdState = RegEx("state: (.*)")
-    MpdRandom = RegEx("random:(.*)")
-    MpdRepeat = RegEx("repeat:(.*)")
-    MpdElapsed = RegEx("elapsed:(.*)")
-    MpdDuration = RegEx("duration:(.*)")
-  }
-}
+include("mpd.source")
 
 Function("XMpdToggleControls") {
     [!UserState] SetStyle "visible"

@@ -1,10 +1,4 @@
-Scanner {
-  MpdClient("") {
-    MpdTitle = RegEx("Title: (.*)")
-    MpdArtist = RegEx("Artist: (.*)")
-    MpdState = RegEx("state: (.*)")
-  }
-}
+include("mpd.source")
 
 layout {
     style = If(MpdState.count=0,"hidden","frame")
