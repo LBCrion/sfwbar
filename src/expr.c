@@ -543,7 +543,7 @@ static gdouble expr_parse_num_compare ( GScanner *scanner, gdouble *prev )
   gdouble val;
 
   val = expr_parse_num_sum ( scanner, prev );
-  while(strchr("<>=",g_scanner_peek_next_token ( scanner )))
+  while(strchr("!<>=",g_scanner_peek_next_token ( scanner )))
   {
     switch((gint)g_scanner_get_next_token ( scanner ))
     {
@@ -567,6 +567,15 @@ static gdouble expr_parse_num_compare ( GScanner *scanner, gdouble *prev )
         break;
       case '=':
         val = (gdouble)(val == expr_parse_num_sum ( scanner, NULL ));
+        break;
+      case '!':
+        if( g_scanner_peek_next_token( scanner ) != '=' )
+          g_scanner_unexp_token(scanner,'=',NULL,NULL,"","",TRUE);
+        else
+        {
+          g_scanner_get_next_token(scanner);
+          val = (gdouble)(val != expr_parse_num_sum ( scanner, NULL ));
+        }
         break;
     }
     if(g_scanner_eof(scanner))
