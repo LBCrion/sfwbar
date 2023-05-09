@@ -15,4 +15,4 @@ Set XMemFree = If(!Ident(BSDCtl),MemFree,Val(BSDCtl("vm.stats.vm.v_free_count"))
 Set XMemCache = If(!Ident(BSDCtl),MemCache,Val(BSDCtl("vm.stats.vm.v_inactive_count"))*XPageSize)
 Set XMemBuff = If(!Ident(BSDCtl),MemBuff,Val(BSDCtl("vm.stats.vm_laundry_count"))*XPageSize)
 Set XMemUtilization = (XMemTotal-XMemFree-XMemCache-XMemBuff)/XMemTotal
-Set XMemPresent = Ident(BSDCtl) | MemTotal.count
+Set XMemPresent = If(Ident(BSDCtl),$XPageSize!="",MemTotal.count)

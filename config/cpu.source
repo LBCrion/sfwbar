@@ -19,4 +19,4 @@ Set XCpuIdle = If(!Ident(BSDCtl),CpuIdle,Extract($XCpuBSD,"(?:[0-9]+ ){4}([0-9]+
 Set XCpuUsage =(XCpuUser-XCpuUser.pval)/
   (XCpuUser+XCpuNice+XCpuSystem+XCpuIntr+XCpuIdle-
    XCpuUser.pval-XCpuNice.pval-XCpuSystem.pval-XCpuIntr.pval-XCpuIdle.pval)
-Set XCpuPresent = Ident(BSDCtl) | CpuIdle.count
+Set XCpuPresent = If(Ident(BSDCtl),$XCpuBSD!="",CpuIdle.count)
