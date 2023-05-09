@@ -63,11 +63,26 @@ static void *expr_lib_extract( void **params )
 
 static void *expr_lib_pad ( void **params )
 {
+  gchar *result;
+  gint n, len;
+  gchar padchar;
+
   if(!params || !params[0] || !params[1])
     return g_strdup("");
 
-  return g_strdup_printf("%*s",(gint)*((gdouble *)params[1]),
-      (gchar *)params[0]);
+  if( params[2] && *((gchar *)params[2]) )
+    padchar = *((gchar *)params[2]);
+  else
+    padchar = ' ';
+
+  len = strlen(params[0]);
+  n = MAX((gint)*((gdouble *)params[1]),len);
+
+  result = g_malloc(n+1);
+  memset(result, padchar, n-len);
+  strcpy(result+n-len, params[0]);
+
+  return result;
 }
 
 /* Get current time string */
@@ -202,7 +217,7 @@ ModuleExpressionHandlerV1 mid_handler = {
 ModuleExpressionHandlerV1 pad_handler = {
   .flags = MODULE_EXPR_DETERMINISTIC,
   .name = "pad",
-  .parameters = "SN",
+  .parameters = "SNs",
   .function = expr_lib_pad
 };
 

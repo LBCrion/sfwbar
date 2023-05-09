@@ -693,7 +693,8 @@ Operation   Description
 ``Pad``     pad a string to be n characters long, the first parameter is a
             string to pad, the second is the desired number of characters,
             if the number is negative, the string is padded at the end, if
-            positive, the string is padded at the front.
+            positive, the string is padded at the front. The third optional
+            string parameter specifies the character to pad the string with.
 ``Upper``   Convert a string to upper case
 ``Lower``   Convert a string to lower case
 ``If``      conditional: If(condition,expr1,expr2)
