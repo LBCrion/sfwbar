@@ -1,4 +1,4 @@
-option('bsdctl',type:'feature',value:'auto',description:'BSD sysctl module')
+option('bsdctl',type:'feature',value:'disabled',description:'BSD sysctl module')
 option('network',type:'feature',value:'auto',description:'Network module')
 option('pulse',type:'feature',value:'auto',description:'Pulse Audio module')
 option('mpd',type:'feature',value:'auto',description:'Music Player Daemon module')
