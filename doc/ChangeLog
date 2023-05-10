@@ -1,3 +1,9 @@
+1.0_beta11
+  - Add BSDCtl module to query BSD sysctl information
+  - Stability improvements for client scanner sources
+  - Update internal mpd client to new client source api
+  - Implement bar reload on SIGHUP
+
 1.0_beta10
   - Implement loadable modules
   - Add support for scriptable popup windows
