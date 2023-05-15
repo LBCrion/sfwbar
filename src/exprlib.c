@@ -63,8 +63,8 @@ static void *expr_lib_extract( void **params )
 
 static void *expr_lib_pad ( void **params )
 {
-  gchar *result;
-  gint n, len;
+  gchar *result, *ptr;
+  gint n, len, sign;
   gchar padchar;
 
   if(!params || !params[0] || !params[1])
@@ -76,11 +76,22 @@ static void *expr_lib_pad ( void **params )
     padchar = ' ';
 
   len = strlen(params[0]);
-  n = MAX((gint)*((gdouble *)params[1]),len);
+  n = (gint)*((gdouble *)params[1]);
+  sign = n>=0;
+  n = MAX(n>0?n:-n,len);
 
   result = g_malloc(n+1);
-  memset(result, padchar, n-len);
-  strcpy(result+n-len, params[0]);
+  if(sign)
+  {
+    memset(result, padchar, n-len);
+    strcpy(result+n-len, params[0]);
+  }
+  else
+  {
+    ptr = g_stpcpy(result, params[0]);
+    memset(ptr, padchar, n-len);
+    *(result+n) = '\0';
+  }
 
   return result;
 }
