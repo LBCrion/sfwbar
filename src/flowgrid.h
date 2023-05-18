@@ -51,5 +51,6 @@ guint flow_grid_n_children ( GtkWidget *self );
 gpointer flow_grid_find_child ( GtkWidget *, gconstpointer parent );
 void flow_grid_child_dnd_enable ( GtkWidget *, GtkWidget *, GtkWidget *);
 void flow_grid_set_sort ( GtkWidget *cgrid, gboolean sort );
+void flow_grid_copy_properties ( GtkWidget *dest, GtkWidget *src );
 
 #endif

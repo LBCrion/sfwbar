@@ -33,11 +33,23 @@ static GtkWidget *label_get_child ( GtkWidget *self )
   return priv->label;
 }
 
+static GtkWidget *label_mirror ( GtkWidget *src )
+{
+  GtkWidget *self;
+
+  g_return_val_if_fail(IS_LABEL(src),NULL);
+
+  self = label_new();
+  base_widget_copy_properties(self,src);
+
+  return self;
+}
 static void label_class_init ( LabelClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = label_destroy;
   BASE_WIDGET_CLASS(kclass)->update_value = label_update_value;
   BASE_WIDGET_CLASS(kclass)->get_child = label_get_child;
+  BASE_WIDGET_CLASS(kclass)->mirror = label_mirror;
 }
 
 static void label_init ( Label *self )

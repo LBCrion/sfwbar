@@ -33,6 +33,7 @@ struct _TrayItemPrivate
   GtkWidget *icon;
   GtkWidget *label;
   GtkWidget *tray;
+  gint icon_idx, pix_idx, old_icon, old_pix;
   gboolean invalid;
   GdkEvent *last_event;
 };

@@ -25,9 +25,51 @@ static GtkWidget *taskbar_get_child ( GtkWidget *self )
   return priv->taskbar;
 }
 
+static GtkWidget *taskbar_mirror ( GtkWidget *src )
+{
+  GtkWidget *self;
+  TaskbarPrivate *dpriv, *spriv;
+
+  g_return_val_if_fail(IS_TASKBAR(src),NULL);
+  spriv = taskbar_get_instance_private(TASKBAR(src));
+
+  self = taskbar_new(TRUE);
+  dpriv = taskbar_get_instance_private(TASKBAR(self));
+  dpriv->filter = spriv->filter;
+  dpriv->floating_filter = spriv->floating_filter;
+  g_object_set_data(G_OBJECT(self),"title_width",
+      g_object_get_data(G_OBJECT(src),"title_width"));
+  g_object_set_data(G_OBJECT(self),"group",
+      g_object_get_data(G_OBJECT(src),"group"));
+  g_object_set_data(G_OBJECT(self),"g_cols",
+      g_object_get_data(G_OBJECT(src),"g_cols"));
+  g_object_set_data(G_OBJECT(self),"g_rows",
+      g_object_get_data(G_OBJECT(src),"g_rows"));
+  g_object_set_data(G_OBJECT(self),"g_icons",
+      g_object_get_data(G_OBJECT(src),"g_icons"));
+  g_object_set_data(G_OBJECT(self),"g_labels",
+      g_object_get_data(G_OBJECT(src),"g_labels"));
+  g_object_set_data(G_OBJECT(self),"g_css",
+      g_strdup(g_object_get_data(G_OBJECT(src),"g_css")));
+  g_object_set_data(G_OBJECT(self),"g_style",
+      g_strdup(g_object_get_data(G_OBJECT(src),"g_style")));
+  g_object_set_data(G_OBJECT(self),"g_title_width",
+      g_object_get_data(G_OBJECT(src),"g_title_width"));
+  g_object_set_data(G_OBJECT(self),"g_sort",
+      g_object_get_data(G_OBJECT(src),"g_sort"));
+  g_object_set_data(G_OBJECT(self),"title_width",
+      g_object_get_data(G_OBJECT(src),"title_width"));
+  flow_grid_copy_properties(self, src);
+  base_widget_copy_properties(self,src);
+  taskbar_populate();
+
+  return self;
+}
+
 static void taskbar_class_init ( TaskbarClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->get_child = taskbar_get_child;
+  BASE_WIDGET_CLASS(kclass)->mirror = taskbar_mirror;
 }
 
 static void taskbar_init ( Taskbar *self )

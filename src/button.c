@@ -34,11 +34,24 @@ static GtkWidget *button_get_child ( GtkWidget *self )
   return priv->button;
 }
 
+static GtkWidget *button_mirror ( GtkWidget *src )
+{
+  GtkWidget *self;
+
+  g_return_val_if_fail(IS_BUTTON(src),NULL);
+
+  self = button_new();
+  base_widget_copy_properties(self,src);
+
+  return self;
+}
+
 static void button_class_init ( ButtonClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = button_destroy;
   BASE_WIDGET_CLASS(kclass)->update_value = button_update_value;
   BASE_WIDGET_CLASS(kclass)->get_child = button_get_child;
+  BASE_WIDGET_CLASS(kclass)->mirror = button_mirror;
 }
 
 static void button_init ( Button *self )

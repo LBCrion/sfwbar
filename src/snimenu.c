@@ -9,9 +9,11 @@
 #include "sfwbar.h"
 #include "sni.h"
 #include "menu.h"
+#include "flowitem.h"
 
 struct sni_menu_wrapper {
   GdkEvent *event;
+  GtkWidget *widget;
   SniItem *sni;
 };
 
@@ -252,7 +254,7 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
   {
     g_object_ref_sink(G_OBJECT(menu));
     g_signal_connect(G_OBJECT(menu),"unmap",G_CALLBACK(g_object_unref),NULL);
-    menu_popup(wrap->sni->image,menu,wrap->event,NULL,NULL);
+    menu_popup(wrap->widget,menu,wrap->event,NULL,NULL);
   }
 
   gdk_event_free(wrap->event);
@@ -261,12 +263,15 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
     g_variant_unref(result);
 }
 
-void sni_get_menu ( SniItem *sni, GdkEvent *event )
+void sni_get_menu ( GtkWidget *widget, GdkEvent *event )
 {
+  SniItem *sni;
   struct sni_menu_wrapper *wrap = g_malloc(sizeof(struct sni_menu_wrapper));
 
+  sni = flow_item_get_parent(widget);
   wrap->event = gdk_event_copy(event);
   wrap->sni = sni;
+  wrap->widget = widget;
 
   g_debug("sni %s: requesting menu",wrap->sni->dest);
 

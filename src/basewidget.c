@@ -127,6 +127,8 @@ static void base_widget_init ( BaseWidget *self )
   priv->tooltip = expr_cache_new();
   priv->interval = 1000000;
   priv->dir = GTK_POS_RIGHT;
+  priv->rect.x = -1;
+  priv->rect.y = -1;
   priv->rect.width = 1;
   priv->rect.height = 1;
 }
@@ -224,10 +226,18 @@ GtkWidget *base_widget_get_child ( GtkWidget *self )
 
 gboolean base_widget_update_value ( GtkWidget *self )
 {
+  BaseWidgetPrivate *priv;
+  GList *iter;
+
   g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(BASE_WIDGET_GET_CLASS(self)->update_value)
     BASE_WIDGET_GET_CLASS(self)->update_value(self);
+
+  for(iter=priv->mirror_children;iter;iter=g_list_next(iter))
+    BASE_WIDGET_GET_CLASS(self)->update_value(iter->data);
+
   return FALSE;
 }
 
@@ -235,16 +245,24 @@ gboolean base_widget_style ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
   GtkWidget *child;
+  GList *iter;
 
   g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
 
-  if(BASE_WIDGET_GET_CLASS(self)->get_child)
-  {
-    child = BASE_WIDGET_GET_CLASS(self)->get_child(self);
-    priv = base_widget_get_instance_private(BASE_WIDGET(self));
-    gtk_widget_set_name(child,priv->style->cache);
-    css_widget_cascade(child,NULL);
-  }
+  if(!BASE_WIDGET_GET_CLASS(self)->get_child)
+    return FALSE;
+
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+  child = BASE_WIDGET_GET_CLASS(self)->get_child(self);
+  if(priv->mirror_parent)
+    priv = base_widget_get_instance_private(BASE_WIDGET(priv->mirror_parent));
+  gtk_widget_set_name(child,priv->style->cache);
+  css_widget_cascade(child,NULL);
+
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+  for(iter=priv->mirror_children;iter;iter=g_list_next(iter))
+    base_widget_style(iter->data);
+
   return FALSE;
 }
 
@@ -310,7 +328,9 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
   priv->style->eval = TRUE;
 
   if(expr_cache_eval(priv->style))
+  {
     base_widget_style(self);
+  }
 
   g_mutex_lock(&widget_mutex);
   if(!g_list_find(widgets_scan,self))
@@ -400,7 +420,7 @@ void base_widget_attach ( GtkWidget *parent, GtkWidget *self,
   if(parent)
   {
     gtk_widget_style_get(parent,"direction",&dir,NULL);
-    if( (priv->rect.x < 1) || (priv->rect.y < 1 ) )
+    if( (priv->rect.x < 0) || (priv->rect.y < 0 ) )
       gtk_grid_attach_next_to(GTK_GRID(parent),self,sibling,dir,1,1);
     else
       gtk_grid_attach(GTK_GRID(parent),self,
@@ -495,6 +515,9 @@ gchar *base_widget_get_value ( GtkWidget *self )
   g_return_val_if_fail(IS_BASE_WIDGET(self),NULL);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
+  if(priv->mirror_parent)
+    priv = base_widget_get_instance_private(BASE_WIDGET(priv->mirror_parent));
+
   return priv->value->cache;
 }
 
@@ -544,6 +567,45 @@ void base_widget_set_action ( GtkWidget *self, gint n, action_t *action )
       priv->actions[1])
     priv->button_h = g_signal_connect(G_OBJECT(base_widget_get_child(self)),
         "clicked",G_CALLBACK(base_widget_button_cb),self);
+}
+
+void base_widget_copy_properties ( GtkWidget *dest, GtkWidget *src )
+{
+  BaseWidgetPrivate *spriv, *dpriv;
+  gint i;
+
+  g_return_if_fail(IS_BASE_WIDGET(dest) && IS_BASE_WIDGET(src));
+  spriv = base_widget_get_instance_private(BASE_WIDGET(src));
+  dpriv = base_widget_get_instance_private(BASE_WIDGET(dest));
+
+  for(i=0;i<WIDGET_MAX_BUTTON;i++)
+    base_widget_set_action( dest, i, action_dup(spriv->actions[i]));
+  if(spriv->tooltip)
+    base_widget_set_tooltip( dest, spriv->tooltip->definition );
+  if(spriv->trigger)
+    base_widget_set_trigger( dest, spriv->trigger );
+  else
+    base_widget_set_interval( dest, spriv->interval );
+  base_widget_set_max_width( dest, spriv->maxw );
+  base_widget_set_max_height( dest, spriv->maxh );
+  base_widget_set_state( dest, spriv->user_state, TRUE );
+  base_widget_set_rect( dest, spriv->rect );
+  if(!g_list_find(spriv->mirror_children, dest))
+  {
+    spriv->mirror_children = g_list_prepend(spriv->mirror_children, dest);
+    dpriv->mirror_parent = src;
+    base_widget_style(dest);
+    base_widget_update_value(dest);
+  }
+}
+
+GtkWidget *base_widget_mirror ( GtkWidget *src )
+{
+  g_return_val_if_fail(IS_BASE_WIDGET(src),NULL);
+  if(!BASE_WIDGET_GET_CLASS(src)->mirror)
+    return NULL;
+
+  return BASE_WIDGET_GET_CLASS(src)->mirror(src);
 }
 
 gboolean base_widget_emit_trigger ( gchar *trigger )

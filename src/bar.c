@@ -502,11 +502,53 @@ GtkWidget *bar_new ( gchar *name )
     box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
   gtk_container_add(GTK_CONTAINER(self), box);
 
-  if(!bar_list)
-    bar_list = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
+  if(priv->name)
+  {
+    if(!bar_list)
+      bar_list = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
 
-  g_hash_table_insert(bar_list, priv->name, self);
+    g_hash_table_insert(bar_list, priv->name, self);
+  }
 
+  return self;
+}
+
+GtkWidget *bar_mirror ( GtkWidget *src )
+{
+  GtkWidget *self, *box;
+  BarPrivate *spriv,*dpriv;
+
+  g_return_val_if_fail(IS_BAR(src),NULL);
+  self = bar_new(NULL);
+  spriv = bar_get_instance_private(BAR(src));
+  dpriv = bar_get_instance_private(BAR(src));
+
+  box = gtk_bin_get_child(GTK_BIN(self));
+  if(spriv->start)
+  {
+    dpriv->start = base_widget_mirror(spriv->start);
+    gtk_box_pack_start(GTK_BOX(box),dpriv->start,TRUE,TRUE,0);
+  }
+  if(spriv->center)
+  {
+    dpriv->center = base_widget_mirror(spriv->center);
+    gtk_box_set_center_widget(GTK_BOX(box),dpriv->center);
+  }
+  if(spriv->end)
+  {
+    dpriv->end = base_widget_mirror(spriv->end);
+    gtk_box_pack_end(GTK_BOX(box),dpriv->end,TRUE,TRUE,0);
+  }
+
+  dpriv->visible = spriv->visible;
+  dpriv->hidden = spriv->hidden;
+  dpriv->jump = spriv->jump;
+  dpriv->jump = spriv->jump;
+  dpriv->output = g_strdup(spriv->output);
+  dpriv->bar_id = g_strdup(spriv->bar_id);
+
+//  gtk_application_add_window(app,GTK_WINDOW(self));
+  css_widget_cascade(GTK_WIDGET(self),NULL);
   return self;
 }
 

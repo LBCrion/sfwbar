@@ -67,22 +67,9 @@ GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
 
 void sni_item_set_icon ( SniItem *sni, gint icon, gint pix )
 {
-  if(icon==-1)
-  {
-    scale_image_set_image(sni->image,NULL,NULL);
-    return;
-  }
-  if(sni->string[icon] && *(sni->string[icon]))
-  {
-    scale_image_set_image(sni->image,sni->string[icon],sni->string[SNI_PROP_THEME]);
-    return;
-  }
-  if(sni->pixbuf[pix-SNI_PROP_ICONPIX])
-  {
-    scale_image_set_pixbuf(sni->image,sni->pixbuf[pix-SNI_PROP_ICONPIX]);
-    return;
-  }
-  return;
+  sni->icon = icon;
+  sni->pix = pix;
+  tray_invalidate_all(sni);
 }
 
 void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,

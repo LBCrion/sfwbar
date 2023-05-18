@@ -20,6 +20,7 @@ struct _BaseWidgetClass
   void (*update_value)(GtkWidget *self);
   void (*old_size_allocate)(GtkWidget *, GtkAllocation * );
   GtkWidget *(*get_child)(GtkWidget *self);
+  GtkWidget *(*mirror)(GtkWidget *self);
 };
 
 typedef struct _BaseWidgetPrivate BaseWidgetPrivate;
@@ -43,6 +44,8 @@ struct _BaseWidgetPrivate
   gboolean always_update;
   guint16 user_state;
   GdkRectangle rect;
+  GList *mirror_children;
+  GtkWidget *mirror_parent;
 };
 
 GType base_widget_get_type ( void );
@@ -73,5 +76,7 @@ void base_widget_parse_css ( GtkWidget *widget, gchar *css );
 gboolean base_widget_emit_trigger ( gchar *trigger );
 void base_widget_autoexec ( GtkWidget *self, gpointer data );
 void base_widget_set_always_update ( GtkWidget *self, gboolean update );
+void base_widget_copy_properties ( GtkWidget *dest, GtkWidget *src );
+GtkWidget *base_widget_mirror ( GtkWidget *src );
 
 #endif

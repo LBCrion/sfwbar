@@ -49,9 +49,35 @@ static GtkWidget *pager_get_child ( GtkWidget *self )
   return priv->pager;
 }
 
+static GtkWidget *pager_mirror ( GtkWidget *src )
+{
+  GtkWidget *self;
+  PagerPrivate *spriv, *dpriv;
+
+  g_return_val_if_fail(IS_PAGER(src),NULL);
+  self = pager_new();
+  dpriv = pager_get_instance_private(PAGER(self));
+  spriv = pager_get_instance_private(PAGER(src));
+
+  g_object_set_data(G_OBJECT(dpriv->pager),"preview",
+      g_object_get_data(G_OBJECT(spriv->pager),"preview"));
+  g_object_set_data(G_OBJECT(dpriv->pager),"sort_numeric",
+      g_object_get_data(G_OBJECT(spriv->pager),"sort_numeric"));
+  g_object_set_data(G_OBJECT(dpriv->pager),"pins",g_list_copy_deep(
+      g_object_get_data(G_OBJECT(spriv->pager),"pins"),
+      (GCopyFunc)g_strdup,NULL));
+
+  flow_grid_copy_properties(self,src);
+  base_widget_copy_properties(self,src);
+  pager_populate();
+
+  return self;
+}
+
 static void pager_class_init ( PagerClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->get_child = pager_get_child;
+  BASE_WIDGET_CLASS(kclass)->mirror = pager_mirror;
 }
 
 static void pager_init ( Pager *self )

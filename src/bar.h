@@ -53,5 +53,6 @@ void bar_save_monitor ( GtkWidget * );
 GtkWidget *bar_from_name ( gchar *name );
 GtkWidget *bar_grid_from_name ( gchar *addr );
 void bar_set_theme ( gchar *new_theme );
+GtkWidget *bar_mirror ( GtkWidget *src );
 
 #endif

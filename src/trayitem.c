@@ -25,6 +25,21 @@ void tray_item_update ( GtkWidget *self )
   if(!priv->invalid)
     return;
 
+  if(priv->icon_idx != priv->sni->icon|| priv->pix_idx != priv->sni->pix)
+  {
+    priv->icon_idx = priv->sni->icon;
+    priv->pix_idx = priv->sni->pix;
+    if(priv->icon_idx==-1)
+      scale_image_set_image(priv->icon,NULL,NULL);
+    else if(priv->sni->string[priv->icon_idx] &&
+        *(priv->sni->string[priv->icon_idx]))
+      scale_image_set_image(priv->icon,priv->sni->string[priv->icon_idx],
+          priv->sni->string[SNI_PROP_THEME]);
+    else if(priv->sni->pixbuf[priv->pix_idx-SNI_PROP_ICONPIX])
+      scale_image_set_pixbuf(priv->icon,
+          priv->sni->pixbuf[priv->pix_idx-SNI_PROP_ICONPIX]);
+  }
+
   if(priv->sni->string[SNI_PROP_STATUS])
   {
     switch(priv->sni->string[SNI_PROP_STATUS][0])
@@ -121,7 +136,7 @@ gboolean tray_item_click_cb (GtkWidget *self, GdkEventButton *ev, SniItem *sni )
   {
     if(sni->menu_path)
     {
-      sni_get_menu(sni,(GdkEvent *)ev);
+      sni_get_menu(self,(GdkEvent *)ev);
       return TRUE;
     }
     method = "ContextMenu";
@@ -244,8 +259,9 @@ GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
   priv->icon = scale_image_new();
   priv->label = gtk_label_new("");
   priv->sni = sni;
-  priv->sni->image = priv->icon;
   priv->tray = tray;
+  priv->old_icon = -1;
+  priv->old_pix = -1;
 
   gtk_grid_attach_next_to(GTK_GRID(box),priv->icon,NULL,dir,1,1);
   gtk_grid_attach_next_to(GTK_GRID(box),priv->label,priv->icon,dir,1,1);

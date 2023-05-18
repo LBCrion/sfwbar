@@ -21,9 +21,24 @@ static GtkWidget *tray_get_child ( GtkWidget *self )
   return priv->tray;
 }
 
+static GtkWidget *tray_mirror ( GtkWidget *src )
+{
+  GtkWidget *self;
+
+  g_return_val_if_fail(IS_TRAY(src),NULL);
+
+  self = tray_new();
+  flow_grid_copy_properties(self,src);
+  base_widget_copy_properties(self,src);
+
+  return self;
+}
+
+
 static void tray_class_init ( TrayClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->get_child = tray_get_child;
+  BASE_WIDGET_CLASS(kclass)->mirror = tray_mirror;
 }
 
 static void tray_init ( Tray *self )

@@ -23,6 +23,36 @@ static GtkWidget *grid_get_child ( GtkWidget *self )
   return priv->grid;
 }
 
+static GtkWidget *grid_mirror ( GtkWidget *src )
+{
+  GtkWidget *self, *grid, *item;
+  GdkRectangle rect;
+  GList *children,*iter;
+
+  self = grid_new();
+  base_widget_copy_properties(self,src);
+  grid = base_widget_get_child(src);
+  children = gtk_container_get_children(GTK_CONTAINER(grid));
+  for(iter=children;iter;iter=g_list_next(iter))
+  {
+    item = base_widget_mirror(iter->data);
+    if(item)
+    {
+      gtk_container_child_get(GTK_CONTAINER(grid),iter->data,
+          "left-attach",&rect.x,
+          "top-attach",&rect.y,
+          "width",&rect.width,
+          "height",&rect.height,
+          NULL);
+      base_widget_set_rect(item,rect);
+      grid_attach(self,item);
+    }
+  }
+  g_list_free(children);
+
+  return self;
+}
+
 static void grid_child_park ( GtkWidget *widget, GtkWidget *grid )
 {
   g_object_ref(widget);
@@ -53,6 +83,7 @@ static void grid_class_init ( GridClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = grid_destroy;
   BASE_WIDGET_CLASS(kclass)->get_child = grid_get_child;
+  BASE_WIDGET_CLASS(kclass)->mirror = grid_mirror;
 }
 
 static void grid_init ( Grid *self )

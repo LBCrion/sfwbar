@@ -376,3 +376,23 @@ void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
   g_signal_connect(G_OBJECT(child),"drag-data-received",
       G_CALLBACK(flow_grid_dnd_data_rec_cb),self);
 }
+
+void flow_grid_copy_properties ( GtkWidget *dest, GtkWidget *src )
+{
+  FlowGridPrivate *spriv, *dpriv;
+
+  g_return_if_fail( IS_BASE_WIDGET(src) && IS_BASE_WIDGET(dest) );
+  g_return_if_fail( IS_FLOW_GRID(base_widget_get_child(src)) && IS_FLOW_GRID(base_widget_get_child(dest)) );
+  spriv = flow_grid_get_instance_private(FLOW_GRID(base_widget_get_child(src)));
+  dpriv = flow_grid_get_instance_private(FLOW_GRID(base_widget_get_child(dest)));
+
+  dpriv->rows = spriv->rows;
+  dpriv->cols = spriv->cols;
+  dpriv->sort = spriv->sort;
+  dpriv->primary_axis = spriv->primary_axis;
+
+  g_object_set_data(G_OBJECT(dest),"icons",
+      g_object_get_data(G_OBJECT(src),"icons"));
+  g_object_set_data(G_OBJECT(dest),"labels",
+      g_object_get_data(G_OBJECT(src),"labels"));
+}

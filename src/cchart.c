@@ -37,11 +37,23 @@ static GtkWidget *cchart_get_child ( GtkWidget *self )
   return priv->chart;
 }
 
+static GtkWidget *cchart_mirror ( GtkWidget *src )
+{
+  GtkWidget *self;
+
+  g_return_val_if_fail(IS_CCHART(src),NULL);
+  self = cchart_new();
+  base_widget_copy_properties(self,src);
+
+  return self;
+}
+
 static void cchart_class_init ( CChartClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = cchart_destroy;
   BASE_WIDGET_CLASS(kclass)->update_value = cchart_update_value;
   BASE_WIDGET_CLASS(kclass)->get_child = cchart_get_child;
+  BASE_WIDGET_CLASS(kclass)->mirror = cchart_mirror;
 }
 
 static void cchart_init ( CChart *self )
