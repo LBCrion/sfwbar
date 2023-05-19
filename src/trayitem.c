@@ -18,7 +18,7 @@ static void tray_item_destroy ( GtkWidget *self )
 void tray_item_update ( GtkWidget *self )
 {
   TrayItemPrivate *priv;
-  gint icon, pix;
+  gint icon=-1, pix=-1;
 
   g_return_if_fail(IS_TRAY_ITEM(self));
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
