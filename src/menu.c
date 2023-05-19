@@ -23,11 +23,19 @@ GtkWidget *menu_from_name ( gchar *name )
 void menu_remove ( gchar *name )
 {
   GtkWidget *menu;
+  GList *items, *iter;
+
   if(!menus || !name)
     return;
   menu = menu_from_name(name);
   if(!menu)
     return;
+  items = gtk_container_get_children(GTK_CONTAINER(menu));
+  for(iter=items;iter;iter=g_list_next(iter))
+    if(gtk_menu_item_get_submenu(iter->data))
+      gtk_menu_item_set_submenu(iter->data,NULL);
+  g_list_free(items);
+
   g_hash_table_remove(menus,name);
 }
 
