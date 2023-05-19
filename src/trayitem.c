@@ -18,27 +18,14 @@ static void tray_item_destroy ( GtkWidget *self )
 void tray_item_update ( GtkWidget *self )
 {
   TrayItemPrivate *priv;
+  gint icon, pix;
 
   g_return_if_fail(IS_TRAY_ITEM(self));
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
 
   if(!priv->invalid)
     return;
-
-  if(priv->icon_idx != priv->sni->icon|| priv->pix_idx != priv->sni->pix)
-  {
-    priv->icon_idx = priv->sni->icon;
-    priv->pix_idx = priv->sni->pix;
-    if(priv->icon_idx==-1)
-      scale_image_set_image(priv->icon,NULL,NULL);
-    else if(priv->sni->string[priv->icon_idx] &&
-        *(priv->sni->string[priv->icon_idx]))
-      scale_image_set_image(priv->icon,priv->sni->string[priv->icon_idx],
-          priv->sni->string[SNI_PROP_THEME]);
-    else if(priv->sni->pixbuf[priv->pix_idx-SNI_PROP_ICONPIX])
-      scale_image_set_pixbuf(priv->icon,
-          priv->sni->pixbuf[priv->pix_idx-SNI_PROP_ICONPIX]);
-  }
+  priv->invalid = FALSE;
 
   if(priv->sni->string[SNI_PROP_STATUS])
   {
@@ -46,32 +33,48 @@ void tray_item_update ( GtkWidget *self )
     {
       case 'A':
         gtk_widget_set_name(priv->button,"tray_active");
-        sni_item_set_icon(priv->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
+        icon = SNI_PROP_ICON;
+        pix = SNI_PROP_ICONPIX;
         break;
       case 'N':
         gtk_widget_set_name(priv->button,"tray_attention");
-        sni_item_set_icon(priv->sni,SNI_PROP_ATTN,SNI_PROP_ATTNPIX);
+        icon = SNI_PROP_ATTN;
+        pix = SNI_PROP_ATTNPIX;
         break;
       case 'P':
         gtk_widget_set_name(priv->button,"tray_passive");
-        sni_item_set_icon(priv->sni,SNI_PROP_ICON,SNI_PROP_ICONPIX);
+        icon = SNI_PROP_ICON;
+        pix = SNI_PROP_ICONPIX;
     }
-    if(priv->sni->string[SNI_PROP_LABEL] &&
-        *(priv->sni->string[SNI_PROP_LABEL]))
-    {
-      gtk_label_set_markup(GTK_LABEL(priv->label),
-        priv->sni->string[SNI_PROP_LABEL]);
-      if( priv->sni->string[SNI_PROP_LGUIDE] &&
-          *(priv->sni->string[SNI_PROP_LGUIDE]) )
-        gtk_label_set_width_chars(GTK_LABEL(priv->label),
-          strlen(priv->sni->string[SNI_PROP_LGUIDE]));
-      css_remove_class(priv->label, "hidden");
-    }
-    else
-      css_add_class(priv->label, "hidden");
   }
 
-  priv->invalid = FALSE;
+  if(priv->icon_idx != icon|| priv->pix_idx != pix)
+  {
+    priv->icon_idx = icon;
+    priv->pix_idx = pix;
+    if(icon==-1)
+      scale_image_set_image(priv->icon,NULL,NULL);
+    else if(priv->sni->string[icon] && *(priv->sni->string[icon]))
+      scale_image_set_image(priv->icon,priv->sni->string[icon],
+          priv->sni->string[SNI_PROP_THEME]);
+    else if(priv->sni->pixbuf[pix-SNI_PROP_ICONPIX])
+      scale_image_set_pixbuf(priv->icon,
+          priv->sni->pixbuf[pix-SNI_PROP_ICONPIX]);
+  }
+
+  if(priv->sni->string[SNI_PROP_LABEL] &&
+      *(priv->sni->string[SNI_PROP_LABEL]))
+  {
+    gtk_label_set_markup(GTK_LABEL(priv->label),
+      priv->sni->string[SNI_PROP_LABEL]);
+    if( priv->sni->string[SNI_PROP_LGUIDE] &&
+        *(priv->sni->string[SNI_PROP_LGUIDE]) )
+      gtk_label_set_width_chars(GTK_LABEL(priv->label),
+        strlen(priv->sni->string[SNI_PROP_LGUIDE]));
+    css_remove_class(priv->label, "hidden");
+  }
+  else
+    css_add_class(priv->label, "hidden");
 }
 
 SniItem *tray_item_get_sni ( GtkWidget *self )
@@ -203,7 +206,7 @@ static void tray_item_button_cb( GtkWidget *button, GtkWidget *self )
   if(sni->menu)
   {
     if(sni->menu_path)
-      sni_get_menu(sni,priv->last_event);
+      sni_get_menu(self,priv->last_event);
     else
       method = "ContextMenu";
   }
@@ -262,6 +265,7 @@ GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
   priv->tray = tray;
   priv->old_icon = -1;
   priv->old_pix = -1;
+  priv->invalid = TRUE;
 
   gtk_grid_attach_next_to(GTK_GRID(box),priv->icon,NULL,dir,1,1);
   gtk_grid_attach_next_to(GTK_GRID(box),priv->label,priv->icon,dir,1,1);

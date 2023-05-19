@@ -56,16 +56,12 @@ typedef struct sni_item {
   guint signal;
   guint32 order;
   GCancellable *cancel;
-//  GtkWidget *image;
-//  GtkWidget *box;
   SniHost *host;
-  gint icon, pix;
 } SniItem;
 
 void sni_init ( void );
 void sni_update ( void );
 GDBusConnection *sni_get_connection ( void );
-void sni_item_set_icon ( SniItem *sni, gint icon, gint pix );
 void sni_get_menu ( GtkWidget *widget, GdkEvent *event );
 SniItem *sni_item_new (GDBusConnection *, SniHost *, const gchar *);
 void sni_item_free ( SniItem *sni );

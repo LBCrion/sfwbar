@@ -65,13 +65,6 @@ GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
   return res;
 }
 
-void sni_item_set_icon ( SniItem *sni, gint icon, gint pix )
-{
-  sni->icon = icon;
-  sni->pix = pix;
-  tray_invalidate_all(sni);
-}
-
 void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
     struct sni_prop_wrapper *wrap)
 {
