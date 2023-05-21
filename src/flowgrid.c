@@ -49,6 +49,8 @@ static void flow_grid_destroy( GtkWidget *self )
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   g_clear_pointer(&priv->dnd_target,gtk_target_entry_free);
+  g_list_free_full(g_steal_pointer(&priv->children),
+      (GDestroyNotify)gtk_widget_destroy);
   GTK_WIDGET_CLASS(flow_grid_parent_class)->destroy(self);
 }
 
@@ -173,6 +175,7 @@ void flow_grid_add_child ( GtkWidget *self, GtkWidget *child )
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   priv->children = g_list_append(priv->children,child);
+  flow_item_set_parent(child,self);
   flow_grid_invalidate(self);
 }
 
@@ -358,7 +361,7 @@ void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
 {
   FlowGridPrivate *priv;
 
-  g_return_if_fail(FLOW_IS_ITEM(child));
+  g_return_if_fail(IS_FLOW_ITEM(child));
   if(IS_BASE_WIDGET(self))
     self = base_widget_get_child(self);
   g_return_if_fail(IS_FLOW_GRID(self));

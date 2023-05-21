@@ -49,10 +49,10 @@ static GtkWidget *taskbar_mirror ( GtkWidget *src )
       g_object_get_data(G_OBJECT(src),"g_icons"));
   g_object_set_data(G_OBJECT(self),"g_labels",
       g_object_get_data(G_OBJECT(src),"g_labels"));
-  g_object_set_data(G_OBJECT(self),"g_css",
-      g_strdup(g_object_get_data(G_OBJECT(src),"g_css")));
-  g_object_set_data(G_OBJECT(self),"g_style",
-      g_strdup(g_object_get_data(G_OBJECT(src),"g_style")));
+  g_object_set_data_full(G_OBJECT(self),"g_css",
+      g_strdup(g_object_get_data(G_OBJECT(src),"g_css")),g_free);
+  g_object_set_data_full(G_OBJECT(self),"g_style",
+      g_strdup(g_object_get_data(G_OBJECT(src),"g_style")),g_free);
   g_object_set_data(G_OBJECT(self),"g_title_width",
       g_object_get_data(G_OBJECT(src),"g_title_width"));
   g_object_set_data(G_OBJECT(self),"g_sort",
@@ -66,10 +66,17 @@ static GtkWidget *taskbar_mirror ( GtkWidget *src )
   return self;
 }
 
+static void taskbar_destroy ( GtkWidget *self )
+{
+  taskbars = g_list_remove(taskbars,self);
+  GTK_WIDGET_CLASS(taskbar_parent_class)->destroy(self);
+}
+
 static void taskbar_class_init ( TaskbarClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->get_child = taskbar_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = taskbar_mirror;
+  GTK_WIDGET_CLASS(kclass)->destroy = taskbar_destroy;
 }
 
 static void taskbar_init ( Taskbar *self )

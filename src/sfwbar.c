@@ -196,6 +196,8 @@ static void activate (GtkApplication* app, gpointer data )
   g_unix_signal_add(SIGUSR1,(GSourceFunc)switcher_event,NULL);
   g_unix_signal_add(SIGUSR2,(GSourceFunc)bar_visibility_toggle_all,NULL);
   g_unix_signal_add(SIGHUP,(GSourceFunc)sfwbar_restart,NULL);
+  g_timeout_add (10000, (GSourceFunc)gtk_widget_destroy,
+    bar_mirror(bar_from_name("sfwbar")));
 }
 
 int main (int argc, gchar **argv)

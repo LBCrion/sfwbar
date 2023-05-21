@@ -74,10 +74,22 @@ static GtkWidget *pager_mirror ( GtkWidget *src )
   return self;
 }
 
+static void pager_destroy ( GtkWidget *self )
+{
+  PagerPrivate *priv;
+  priv = pager_get_instance_private(PAGER(self));
+
+  pagers = g_list_remove(pagers,self);
+  g_list_free_full(g_object_get_data(G_OBJECT(priv->pager),"pins"),g_free);
+  g_object_set_data(G_OBJECT(priv->pager),"pins",NULL);
+  GTK_WIDGET_CLASS(pager_parent_class)->destroy(self);
+}
+
 static void pager_class_init ( PagerClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->get_child = pager_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = pager_mirror;
+  GTK_WIDGET_CLASS(kclass)->destroy = pager_destroy;
 }
 
 static void pager_init ( Pager *self )

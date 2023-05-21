@@ -523,6 +523,7 @@ GtkWidget *bar_mirror ( GtkWidget *src )
   spriv = bar_get_instance_private(BAR(src));
   dpriv = bar_get_instance_private(BAR(src));
 
+  gtk_widget_set_name(self,gtk_widget_get_name(src));
   box = gtk_bin_get_child(GTK_BIN(self));
   if(spriv->start)
   {

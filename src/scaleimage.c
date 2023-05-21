@@ -237,19 +237,11 @@ static void scale_image_clear ( GtkWidget *self )
 
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
 
-  g_free(priv->fname);
-  priv->fname = NULL;
-  g_free(priv->file);
-  priv->file = NULL;
-  g_free(priv->extra);
-  priv->extra = NULL;
-  if(priv->pixbuf)
-  {
-    g_object_unref(G_OBJECT(priv->pixbuf));
-    priv->pixbuf = NULL;
-  }
-  cairo_surface_destroy(priv->cs); 
-  priv->cs = NULL;
+  g_clear_pointer(&priv->fname,g_free);
+  g_clear_pointer(&priv->file,g_free);
+  g_clear_pointer(&priv->extra,g_free);
+  g_clear_pointer(&priv->pixbuf,g_object_unref);
+  g_clear_pointer(&priv->cs,cairo_surface_destroy);
   priv->ftype = SI_NONE;
 }
 

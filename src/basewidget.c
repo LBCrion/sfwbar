@@ -17,7 +17,7 @@ static GMutex widget_mutex;
 
 static void base_widget_destroy ( GtkWidget *self )
 {
-  BaseWidgetPrivate *priv;
+  BaseWidgetPrivate *priv,*ppriv;
   gint i;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
@@ -27,16 +27,20 @@ static void base_widget_destroy ( GtkWidget *self )
   widgets_scan = g_list_remove(widgets_scan,self);
   g_mutex_unlock(&widget_mutex);
 
+  if(priv->mirror_parent)
+  {
+    ppriv = base_widget_get_instance_private(BASE_WIDGET(priv->mirror_parent));
+    ppriv->mirror_children = g_list_remove(ppriv->mirror_children,self);
+    priv->mirror_parent = NULL;
+  }
+
   if(widgets_id && priv->id)
     g_hash_table_remove(widgets_id,priv->id);
 
   g_clear_pointer(&priv->id,g_free);
-  expr_cache_free(priv->value);
-  priv->value = NULL;
-  expr_cache_free(priv->style);
-  priv->style = NULL;
-  expr_cache_free(priv->tooltip);
-  priv->tooltip = NULL;
+  g_clear_pointer(&priv->value,expr_cache_free);
+  g_clear_pointer(&priv->style,expr_cache_free);
+  g_clear_pointer(&priv->tooltip,expr_cache_free);
   g_clear_pointer(&priv->trigger,g_free);
   for(i=0;i<WIDGET_MAX_BUTTON;i++)
   {

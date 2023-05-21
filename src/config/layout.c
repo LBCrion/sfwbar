@@ -213,12 +213,12 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
               GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"group labels")));
             return TRUE;
           case G_TOKEN_CSS:
-            g_object_set_data(G_OBJECT(widget),"g_css",
-              config_assign_string(scanner,"group css"));
+            g_object_set_data_full(G_OBJECT(widget),"g_css",
+              config_assign_string(scanner,"group css"),g_free);
             return TRUE;
           case G_TOKEN_STYLE:
-            g_object_set_data(G_OBJECT(widget),"g_style",
-              config_assign_string(scanner,"group style"));
+            g_object_set_data_full(G_OBJECT(widget),"g_style",
+              config_assign_string(scanner,"group style"),g_free);
             return TRUE;
           case G_TOKEN_TITLEWIDTH:
             g_object_set_data(G_OBJECT(widget),"g_title_width",GINT_TO_POINTER(
