@@ -145,7 +145,8 @@ void bar_set_id ( GtkWidget *self, gchar *id )
   g_return_if_fail(IS_BAR(self));
   priv = bar_get_instance_private(BAR(self));
 
-  g_set_str(&priv->bar_id,id);
+  g_free(priv->bar_id);
+  priv->bar_id = g_strdup(id);
   if(priv->mirror_children)
     g_list_foreach(priv->mirror_children,(GFunc)bar_set_id,id);
 }
@@ -243,8 +244,8 @@ void bar_set_layer ( GtkWidget *self, gchar *layer_str )
   g_return_if_fail(layer_str!=NULL);
   priv = bar_get_instance_private(BAR(self));
 
-  g_set_str(&priv->layer,layer_str);
-
+  g_free(priv->layer);
+  priv->layer = g_strdup(layer_str);
 
   if(!g_ascii_strcasecmp(layer_str,"background"))
     layer = GTK_LAYER_SHELL_LAYER_BACKGROUND;
@@ -278,7 +279,8 @@ void bar_set_exclusive_zone ( GtkWidget *self, gchar *zone )
   g_return_if_fail(zone!=NULL);
   priv = bar_get_instance_private(BAR(self));
 
-  g_set_str(&priv->ezone,zone);
+  g_free(priv->ezone);
+  priv->ezone = g_strdup(zone);
 
   if(!g_ascii_strcasecmp(zone,"auto"))
     gtk_layer_auto_exclusive_zone_enable(GTK_WINDOW(self));
@@ -461,7 +463,8 @@ void bar_set_size ( GtkWidget *self, gchar *size )
   g_return_if_fail(IS_BAR(self));
   g_return_if_fail(size!=NULL);
   priv = bar_get_instance_private(BAR(self));
-  g_set_str(&priv->size,size);
+  g_free(priv->size);
+  priv->size = g_strdup(size);
 
   number = g_ascii_strtod(size, &end);
   win = gtk_widget_get_window(self);
