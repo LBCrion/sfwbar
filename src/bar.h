@@ -37,6 +37,8 @@ struct _BarPrivate {
   gboolean jump;
   gboolean visible;
   gchar *output;
+  gchar **mirror_targets;
+  gchar **mirror_blocks;
   GList *mirror_children;
   GtkWidget *mirror_parent;
 };
@@ -49,6 +51,8 @@ void bar_set_exclusive_zone ( GtkWidget *, gchar * );
 gchar *bar_get_output ( GtkWidget * );
 gint bar_get_toplevel_dir ( GtkWidget * );
 void bar_set_id ( GtkWidget *, gchar * );
+void bar_set_mirrors ( GtkWidget *self, gchar *mirror );
+void bar_set_mirror_blocks ( GtkWidget *self, gchar *mirror );
 void bar_set_visibility ( GtkWidget *, const gchar *, gchar );
 void bar_visibility_toggle_all ( gpointer d );
 void bar_monitor_added_cb ( GdkDisplay *, GdkMonitor * );

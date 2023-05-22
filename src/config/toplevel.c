@@ -213,6 +213,8 @@ action_t *config_action ( GScanner *scanner )
     case G_TOKEN_SETBARVISIBILITY:
     case G_TOKEN_SETMONITOR:
     case G_TOKEN_SETLAYER:
+    case G_TOKEN_SETMIRROR:
+    case G_TOKEN_BLOCKMIRROR:
     case G_TOKEN_SETBARSIZE:
     case G_TOKEN_SETEXCLUSIVEZONE:
       config_parse_sequence(scanner,

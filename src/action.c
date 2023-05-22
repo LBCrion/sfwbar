@@ -245,6 +245,14 @@ void action_exec ( GtkWidget *widget, action_t *action,
       bar_set_layer(bar_from_name(action->addr->cache),
           action->command->cache);
       break;
+    case G_TOKEN_SETMIRROR:
+      bar_set_mirrors(bar_from_name(action->addr->cache),
+          action->command->cache);
+      break;
+    case G_TOKEN_BLOCKMIRROR:
+      bar_set_mirror_blocks(bar_from_name(action->addr->cache),
+          action->command->cache);
+      break;
     case G_TOKEN_SETBARSIZE:
       bar_set_size(bar_from_name(action->addr->cache),
           action->command->cache);

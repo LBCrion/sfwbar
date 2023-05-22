@@ -29,6 +29,8 @@ static void bar_destroy ( GtkWidget *self )
   g_clear_pointer(&priv->size,g_free);
   g_clear_pointer(&priv->ezone,g_free);
   g_clear_pointer(&priv->layer,g_free);
+  g_clear_pointer(&priv->mirror_targets,g_strfreev);
+  g_clear_pointer(&priv->mirror_blocks,g_strfreev);
   GTK_WIDGET_CLASS(bar_parent_class)->destroy(self);
 }
 
@@ -123,6 +125,54 @@ GtkWidget *bar_grid_from_name ( gchar *addr )
     priv->start = widget;
   }
   return widget;
+}
+
+void bar_set_mirrors ( GtkWidget *self, gchar *mirror )
+{
+  BarPrivate *priv;
+  void *bar,*key;
+  GHashTableIter iter;
+
+  if(!self)
+  {
+    if(bar_list)
+    {
+      g_hash_table_iter_init(&iter,bar_list);
+      while(g_hash_table_iter_next(&iter,&key,&bar))
+        bar_set_mirrors(bar, mirror);
+    }
+    return;
+  }
+
+  g_return_if_fail(IS_BAR(self));
+  priv = bar_get_instance_private(BAR(self));
+
+  g_strfreev(priv->mirror_targets);
+  priv->mirror_targets = g_strsplit(mirror,";",-1);
+}
+
+void bar_set_mirror_blocks ( GtkWidget *self, gchar *mirror )
+{
+  BarPrivate *priv;
+  void *bar,*key;
+  GHashTableIter iter;
+
+  if(!self)
+  {
+    if(bar_list)
+    {
+      g_hash_table_iter_init(&iter,bar_list);
+      while(g_hash_table_iter_next(&iter,&key,&bar))
+        bar_set_mirror_blocks(bar, mirror);
+    }
+    return;
+  }
+
+  g_return_if_fail(IS_BAR(self));
+  priv = bar_get_instance_private(BAR(self));
+
+  g_strfreev(priv->mirror_blocks);
+  priv->mirror_blocks = g_strsplit(mirror,";",-1);
 }
 
 void bar_set_id ( GtkWidget *self, gchar *id )

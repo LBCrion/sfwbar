@@ -160,6 +160,10 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
       (gpointer)G_TOKEN_SETMONITOR );
   g_scanner_scope_add_symbol(scanner,0, "SetLayer",
       (gpointer)G_TOKEN_SETLAYER );
+  g_scanner_scope_add_symbol(scanner,0, "SetMirror",
+      (gpointer)G_TOKEN_SETMIRROR );
+  g_scanner_scope_add_symbol(scanner,0, "BlockMirror",
+      (gpointer)G_TOKEN_BLOCKMIRROR );
   g_scanner_scope_add_symbol(scanner,0, "SetBarSize", 
       (gpointer)G_TOKEN_SETBARSIZE );
   g_scanner_scope_add_symbol(scanner,0, "SetExclusiveZone", 
