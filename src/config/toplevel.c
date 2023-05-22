@@ -342,10 +342,7 @@ void config_menu_items ( GScanner *scanner, GtkWidget *menu )
         if(!scanner->max_parse_errors && itemname)
         {
           item = menu_item_new(itemname,NULL);
-          if(subname)
-            submenu = menu_new(subname);
-          else
-            submenu = gtk_menu_new();
+          submenu = menu_new(subname);
           gtk_menu_item_set_submenu(GTK_MENU_ITEM(item),submenu);
           if(items)
             config_menu_items(scanner,submenu);

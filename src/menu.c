@@ -64,17 +64,25 @@ GtkWidget *menu_new ( gchar *name )
 {
   GtkWidget *menu;
 
-  menu = menu_from_name(name);
-  if(menu)
-    return menu;
-  if(!menus)
-    menus = g_hash_table_new_full((GHashFunc)str_nhash,(GEqualFunc)str_nequal,
-        g_free,g_object_unref);
+  if(name)
+  {
+    menu = menu_from_name(name);
+    if(menu)
+      return menu;
+  }
+
   menu = gtk_menu_new();
   g_signal_connect(menu,"popped-up",G_CALLBACK(menu_clamp_size),NULL);
   gtk_menu_set_reserve_toggle_size(GTK_MENU(menu), FALSE);
-  g_object_ref_sink(G_OBJECT(menu));
-  g_hash_table_insert(menus, g_strdup(name), menu);
+
+  if(name)
+  {
+    g_object_ref_sink(G_OBJECT(menu));
+    if(!menus)
+      menus = g_hash_table_new_full((GHashFunc)str_nhash,
+          (GEqualFunc)str_nequal, g_free,g_object_unref);
+    g_hash_table_insert(menus, g_strdup(name), menu);
+  }
   return menu;
 }
 
