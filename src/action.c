@@ -238,16 +238,16 @@ void action_exec ( GtkWidget *widget, action_t *action,
       config_string(action->command->cache);
       break;
     case G_TOKEN_SETMONITOR:
-      bar_set_monitor(action->command->cache,
-          bar_from_name(action->addr->cache));
+      bar_set_monitor(bar_from_name(action->addr->cache),
+          action->command->cache);
       break;
     case G_TOKEN_SETLAYER:
-      bar_set_layer(action->command->cache,
-          bar_from_name(action->addr->cache));
+      bar_set_layer(bar_from_name(action->addr->cache),
+          action->command->cache);
       break;
     case G_TOKEN_SETBARSIZE:
-      bar_set_size(action->command->cache,
-          bar_from_name(action->addr->cache));
+      bar_set_size(bar_from_name(action->addr->cache),
+          action->command->cache);
       break;
     case G_TOKEN_SETBARID:
       bar_set_id(NULL,action->command->cache);
@@ -258,8 +258,8 @@ void action_exec ( GtkWidget *widget, action_t *action,
             *(action->command->cache));
       break;
     case G_TOKEN_SETEXCLUSIVEZONE:
-      bar_set_exclusive_zone(action->command->cache,
-          bar_from_name(action->addr->cache));
+      bar_set_exclusive_zone(bar_from_name(action->addr->cache),
+          action->command->cache);
       break;
     case G_TOKEN_SETVALUE:
       if(widget && action->command->cache)

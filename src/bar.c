@@ -15,6 +15,22 @@
 G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW, G_ADD_PRIVATE (Bar));
 
 static GHashTable *bar_list;
+static GList *mirrors;
+
+static void bar_destroy ( GtkWidget *self )
+{
+  BarPrivate *priv;
+
+  priv = bar_get_instance_private(BAR(self));
+  mirrors = g_list_remove(mirrors, self);
+  g_clear_pointer(&priv->name,g_free);
+  g_clear_pointer(&priv->output,g_free);
+  g_clear_pointer(&priv->bar_id,g_free);
+  g_clear_pointer(&priv->size,g_free);
+  g_clear_pointer(&priv->ezone,g_free);
+  g_clear_pointer(&priv->layer,g_free);
+  GTK_WIDGET_CLASS(bar_parent_class)->destroy(self);
+}
 
 static void bar_init ( Bar *self )
 {
@@ -22,6 +38,7 @@ static void bar_init ( Bar *self )
 
 static void bar_class_init ( BarClass *kclass )
 {
+  GTK_WIDGET_CLASS(kclass)->destroy = bar_destroy;
 }
 
 GtkWidget *bar_from_name ( gchar *name )
@@ -128,8 +145,9 @@ void bar_set_id ( GtkWidget *self, gchar *id )
   g_return_if_fail(IS_BAR(self));
   priv = bar_get_instance_private(BAR(self));
 
-  g_free(priv->bar_id);
-  priv->bar_id = g_strdup(id);
+  g_set_str(&priv->bar_id,id);
+  if(priv->mirror_children)
+    g_list_foreach(priv->mirror_children,(GFunc)bar_set_id,id);
 }
 
 void bar_visibility_toggle_all ( gpointer d )
@@ -143,6 +161,7 @@ void bar_set_visibility ( GtkWidget *self, const gchar *id, gchar state )
   gboolean visible;
   void *bar,*key;
   GHashTableIter iter;
+  GList *liter;
 
   if(!self)
   {
@@ -179,6 +198,10 @@ void bar_set_visibility ( GtkWidget *self, const gchar *id, gchar state )
     bar_update_monitor(self);
     gtk_widget_show_now(self);
   }
+
+  if(priv->mirror_children)
+    for(liter=priv->mirror_children;liter;liter=g_list_next(liter))
+      bar_set_visibility(liter->data,id,state);
 }
 
 gint bar_get_toplevel_dir ( GtkWidget *widget )
@@ -198,8 +221,9 @@ gint bar_get_toplevel_dir ( GtkWidget *widget )
   return toplevel_dir;
 }
 
-void bar_set_layer ( gchar *layer_str, GtkWidget *self )
+void bar_set_layer ( GtkWidget *self, gchar *layer_str )
 {
+  BarPrivate *priv;
   GtkLayerShellLayer layer;
   void *bar,*key;
   GHashTableIter iter;
@@ -210,13 +234,17 @@ void bar_set_layer ( gchar *layer_str, GtkWidget *self )
     {
       g_hash_table_iter_init(&iter,bar_list);
       while(g_hash_table_iter_next(&iter,&key,&bar))
-        bar_set_layer(layer_str, bar);
+        bar_set_layer(bar, layer_str);
     }
     return;
   }
 
   g_return_if_fail(IS_BAR(self));
   g_return_if_fail(layer_str!=NULL);
+  priv = bar_get_instance_private(BAR(self));
+
+  g_set_str(&priv->layer,layer_str);
+
 
   if(!g_ascii_strcasecmp(layer_str,"background"))
     layer = GTK_LAYER_SHELL_LAYER_BACKGROUND;
@@ -238,18 +266,28 @@ void bar_set_layer ( gchar *layer_str, GtkWidget *self )
     gtk_widget_hide(self);
     gtk_widget_show_now(self);
   }
+  if(priv->mirror_children)
+    g_list_foreach(priv->mirror_children,(GFunc)bar_set_layer,layer_str);
 }
 
-void bar_set_exclusive_zone ( gchar *zone, GtkWidget *self )
+void bar_set_exclusive_zone ( GtkWidget *self, gchar *zone )
 {
+  BarPrivate *priv;
+
   g_return_if_fail(IS_BAR(self));
   g_return_if_fail(zone!=NULL);
+  priv = bar_get_instance_private(BAR(self));
+
+  g_set_str(&priv->ezone,zone);
 
   if(!g_ascii_strcasecmp(zone,"auto"))
     gtk_layer_auto_exclusive_zone_enable(GTK_WINDOW(self));
   else
     gtk_layer_set_exclusive_zone(GTK_WINDOW(self),
         MAX(-1,g_ascii_strtoll(zone,NULL,10)));
+
+  if(priv->mirror_children)
+    g_list_foreach(priv->mirror_children,(GFunc)bar_set_exclusive_zone,zone);
 }
 
 gchar *bar_get_output ( GtkWidget *widget )
@@ -324,7 +362,7 @@ void bar_save_monitor ( GtkWidget *self )
   priv->output = g_strdup(g_object_get_data(G_OBJECT(mon),"xdg_name"));
 }
 
-void bar_set_monitor ( gchar *monitor, GtkWidget *self )
+void bar_set_monitor ( GtkWidget *self, gchar *monitor )
 {
   BarPrivate *priv;
   gchar *old_mon,*mon_name;
@@ -337,7 +375,7 @@ void bar_set_monitor ( gchar *monitor, GtkWidget *self )
     {
       g_hash_table_iter_init(&iter,bar_list);
       while(g_hash_table_iter_next(&iter,&key,&bar))
-        bar_set_monitor(monitor, bar);
+        bar_set_monitor(bar, monitor);
     }
     return;
   }
@@ -398,8 +436,9 @@ void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
     bar_update_monitor(bar);
 }
 
-void bar_set_size ( gchar *size, GtkWidget *self )
+void bar_set_size ( GtkWidget *self, gchar *size )
 {
+  BarPrivate *priv;
   gdouble number;
   gchar *end;
   GdkRectangle rect;
@@ -414,13 +453,16 @@ void bar_set_size ( gchar *size, GtkWidget *self )
     {
       g_hash_table_iter_init(&iter,bar_list);
       while(g_hash_table_iter_next(&iter,&key,&bar))
-        bar_set_size(size, bar);
+        bar_set_size(bar, size);
     }
     return;
   }
 
   g_return_if_fail(IS_BAR(self));
   g_return_if_fail(size!=NULL);
+  priv = bar_get_instance_private(BAR(self));
+  g_set_str(&priv->size,size);
+
   number = g_ascii_strtod(size, &end);
   win = gtk_widget_get_window(self);
   gdk_monitor_get_geometry( gdk_display_get_monitor_at_window(
@@ -467,6 +509,8 @@ void bar_set_size ( gchar *size, GtkWidget *self )
       gtk_widget_set_size_request(self,-1,(gint)number);
     }
   }
+  if(priv->mirror_children)
+    g_list_foreach(priv->mirror_children,(GFunc)bar_set_size,size);
 }
 
 GtkWidget *bar_new ( gchar *name )
@@ -513,7 +557,7 @@ GtkWidget *bar_new ( gchar *name )
   return self;
 }
 
-GtkWidget *bar_mirror ( GtkWidget *src )
+GtkWidget *bar_mirror ( GtkWidget *src, gchar *output )
 {
   GtkWidget *self, *box;
   BarPrivate *spriv,*dpriv;
@@ -547,9 +591,20 @@ GtkWidget *bar_mirror ( GtkWidget *src )
   dpriv->jump = spriv->jump;
   dpriv->output = g_strdup(spriv->output);
   dpriv->bar_id = g_strdup(spriv->bar_id);
+  spriv->mirror_children = g_list_prepend(spriv->mirror_children, self);
+  dpriv->mirror_parent = src;
+  mirrors = g_list_prepend(mirrors,self);
 
 //  gtk_application_add_window(app,GTK_WINDOW(self));
+  gtk_widget_show(self);
   css_widget_cascade(GTK_WIDGET(self),NULL);
+  bar_set_monitor(self,output);
+  if(spriv->size)
+    bar_set_size(self,spriv->size);
+  if(spriv->layer)
+    bar_set_layer(self,spriv->layer);
+  if(spriv->ezone)
+    bar_set_exclusive_zone(self,spriv->ezone);
   return self;
 }
 
