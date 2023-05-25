@@ -95,6 +95,10 @@ one of the following bindings: ::
 
 (for non-sway compositors, use SIGUSR1 trigger)
 
+NixOS + Hyprland (probably other non-sway compositors) use: ::
+
+  bind = ALT, Tab, exec, killall -SIGUSR1 .sfwbar-wrapped 
+
 Task switcher is configured in the "switcher" section of the configuration file.
 The following parameters are accepted:
 
