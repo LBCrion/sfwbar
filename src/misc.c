@@ -167,6 +167,20 @@ gdouble json_double_by_name ( struct json_object *obj, gchar *name, gdouble defv
   return defval;
 }
 
+gboolean pattern_match ( gchar **dict, gchar *string )
+{
+  gint i;
+
+  if(!dict)
+    return FALSE;
+
+  for(i=0;dict[i];i++)
+    if(g_pattern_match_simple(dict[i],string))
+      return TRUE;
+
+  return FALSE;
+}
+
 /* compute md5 checksum for a file */
 int md5_file( gchar *path, guchar output[16] )
 {

@@ -36,6 +36,7 @@ const gchar *json_string_by_name ( struct json_object *obj, gchar *name );
 gint64 json_int_by_name ( struct json_object *obj, gchar *name, gint64 defval);
 gboolean json_bool_by_name ( struct json_object *obj, gchar *name, gboolean defval);
 gdouble json_double_by_name ( struct json_object *obj, gchar *name, gdouble defval);
+gboolean pattern_match ( gchar **dict, gchar *string );
 int md5_file( gchar *path, guchar output[16] );
 struct rect parse_rect ( struct json_object *obj );
 guint str_nhash ( gchar *str );
