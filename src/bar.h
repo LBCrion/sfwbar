@@ -40,6 +40,7 @@ struct _BarPrivate {
   gchar **mirror_targets;
   gchar **mirror_blocks;
   GList *mirror_children;
+  GdkMonitor *mirror_monitor;
   GtkWidget *mirror_parent;
 };
 
@@ -62,6 +63,6 @@ void bar_save_monitor ( GtkWidget * );
 GtkWidget *bar_from_name ( gchar *name );
 GtkWidget *bar_grid_from_name ( gchar *addr );
 void bar_set_theme ( gchar *new_theme );
-GtkWidget *bar_mirror ( GtkWidget *, gchar * );
+GtkWidget *bar_mirror ( GtkWidget *, GdkMonitor * );
 
 #endif
