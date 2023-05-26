@@ -612,7 +612,7 @@ void base_widget_copy_properties ( GtkWidget *dest, GtkWidget *src )
   base_widget_set_state( dest, spriv->user_state, TRUE );
   base_widget_set_rect( dest, spriv->rect );
   for(iter=spriv->css;iter;iter=g_list_next(iter))
-    css_widget_apply(dest,iter->data);
+    css_widget_apply(base_widget_get_child(dest),iter->data);
   if(!g_list_find(spriv->mirror_children, dest))
   {
     spriv->mirror_children = g_list_prepend(spriv->mirror_children, dest);
