@@ -37,8 +37,9 @@ static void base_widget_destroy ( GtkWidget *self )
   if(widgets_id && priv->id)
     g_hash_table_remove(widgets_id,priv->id);
 
+  g_list_free_full(priv->css,g_free);
+  priv->css = NULL;
   g_clear_pointer(&priv->id,g_free);
-  g_clear_pointer(&priv->css,g_free);
   g_clear_pointer(&priv->value,expr_cache_free);
   g_clear_pointer(&priv->style,expr_cache_free);
   g_clear_pointer(&priv->tooltip,expr_cache_free);
@@ -549,13 +550,7 @@ void base_widget_set_css ( GtkWidget *self, gchar *css )
   if(!css)
     return;
 
-  if(priv->css)
-  {
-    g_message("Re-defintiion of a widget CSS - ignored");
-    return;
-  }
-
-  priv->css = g_strdup(css);
+  priv->css = g_list_append(priv->css,g_strdup(css));
   css_widget_apply(base_widget_get_child(self),css);
 }
 
@@ -597,6 +592,7 @@ void base_widget_set_action ( GtkWidget *self, gint n, action_t *action )
 void base_widget_copy_properties ( GtkWidget *dest, GtkWidget *src )
 {
   BaseWidgetPrivate *spriv, *dpriv;
+  GList *iter;
   gint i;
 
   g_return_if_fail(IS_BASE_WIDGET(dest) && IS_BASE_WIDGET(src));
@@ -615,7 +611,8 @@ void base_widget_copy_properties ( GtkWidget *dest, GtkWidget *src )
   base_widget_set_max_height( dest, spriv->maxh );
   base_widget_set_state( dest, spriv->user_state, TRUE );
   base_widget_set_rect( dest, spriv->rect );
-  base_widget_set_css( dest, spriv->css );
+  for(iter=spriv->css;iter;iter=g_list_next(iter))
+    css_widget_apply(dest,iter->data);
   if(!g_list_find(spriv->mirror_children, dest))
   {
     spriv->mirror_children = g_list_prepend(spriv->mirror_children, dest);

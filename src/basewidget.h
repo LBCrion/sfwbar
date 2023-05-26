@@ -28,7 +28,7 @@ typedef struct _BaseWidgetPrivate BaseWidgetPrivate;
 struct _BaseWidgetPrivate
 {
   gchar *id;
-  gchar *css;
+  GList *css;
   ExprCache *style;
   ExprCache *value;
   ExprCache *tooltip;
