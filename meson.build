@@ -27,6 +27,7 @@ wayland_protodir = wayp.get_pkgconfig_variable('pkgdatadir')
 wayland_protos = [
   'protocols/wlr-foreign-toplevel-management-unstable-v1',
   'protocols/xdg-output-unstable-v1',
+  'protocols/wlr-layer-shell-unstable-v1',
   wayland_protodir / 'unstable/idle-inhibit/idle-inhibit-unstable-v1'
 ]
 wayland_targets=[]
@@ -91,6 +92,7 @@ src = ['src/sfwbar.c',
     'src/config/toplevel.c',
     'src/wayland/foreign-toplevel.c',
     'src/wayland/idle-inhibit.c',
+    'src/wayland/probe.c',
     'src/wayland/xdg-output.c',
     wayland_targets ]
 dep = [gtk3, glib, gio_unix, gmod, glsh, wayl, json ]

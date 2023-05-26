@@ -11,5 +11,6 @@ void xdg_output_destroy ( GdkMonitor *gmon );
 void foreign_toplevel_activate ( gpointer tl );
 gboolean xdg_output_check ( void );
 gboolean foreign_toplevel_is_active ( void );
+GdkMonitor *wayland_monitor_get_default ( void );
 
 #endif
