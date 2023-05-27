@@ -37,10 +37,10 @@ struct _BarPrivate {
   gboolean jump;
   gboolean visible;
   gchar *output;
+  GdkMonitor *current_monitor;
   gchar **mirror_targets;
   gchar **mirror_blocks;
   GList *mirror_children;
-  GdkMonitor *mirror_monitor;
   GtkWidget *mirror_parent;
 };
 

@@ -1,8 +1,13 @@
+/* This entire file is licensed under GNU General Public License v3.0
+ *
+ * Copyright 2023- sfwbar maintainers
+ */
+
+#include <gtk/gtk.h>
+#include <gdk/gdkwayland.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include "wlr-layer-shell-unstable-v1.h"
-#include <gtk/gtk.h>
-#include <gdk/gdkwayland.h>
 
 static GdkMonitor *default_monitor;
 static struct wl_shm *shm;
@@ -66,14 +71,23 @@ struct zwlr_layer_surface_v1_listener layer_surface_listener = {
   .closed = noop
 };
 
-static struct wl_buffer *create_buffer( struct wl_shm *shm )
+void wayland_monitor_probe ( void )
 {
-  struct wl_shm_pool *pool;
+  struct zwlr_layer_surface_v1 *layer_surface;
+  struct wl_compositor *compositor;
+  struct wl_display *display;
+  struct wl_surface *surface;
   struct wl_buffer *buffer;
+  struct wl_shm_pool *pool;
   void *shm_data = NULL;
   gchar *name;
-  gint size = 4, retries = 100;
   gint fd;
+  gint retries = 100, size = 4;
+
+  display = gdk_wayland_display_get_wl_display(gdk_display_get_default());
+  compositor = gdk_wayland_display_get_wl_compositor(gdk_display_get_default());
+  if(!display || !compositor || !shm || !layer_shell)
+    return;
 
   do
   {
@@ -85,54 +99,36 @@ static struct wl_buffer *create_buffer( struct wl_shm *shm )
   } while (--retries > 0 && errno == EEXIST && fd < 0 );
 
   if (fd < 0)
-    return NULL;
+    return;
 
   if (ftruncate(fd, size) < 0)
   {
     close(fd);
-    return NULL;
+    return;
   }
 
   shm_data = mmap(NULL, 4, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   if (shm_data == MAP_FAILED)
   {
     close(fd);
-    return NULL;
+    return;
   }
 
   pool = wl_shm_create_pool(shm, fd, size);
-  buffer = wl_shm_pool_create_buffer(pool, 0, 1, 1,
-		4, WL_SHM_FORMAT_ARGB8888);
+  buffer = wl_shm_pool_create_buffer(pool, 0, 1, 1, 4, WL_SHM_FORMAT_ARGB8888);
   wl_shm_pool_destroy(pool);
 
   memset(shm_data, 0, size);
-  return buffer;
-}
-
-void wayland_monitor_probe ( void )
-{
-  struct zwlr_layer_surface_v1 *layer_surface;
-  struct wl_compositor *compositor;
-  struct wl_display *display;
-  struct wl_surface *surface;
-  struct wl_buffer *buffer;
-
-  display = gdk_wayland_display_get_wl_display(gdk_display_get_default());
-  compositor = gdk_wayland_display_get_wl_compositor(gdk_display_get_default());
-  if(!display || !compositor || !shm || !layer_shell)
-    return;
-
-  buffer = create_buffer(shm);
-  if(!buffer)
-    return;
 
   surface = wl_compositor_create_surface(compositor);
   wl_surface_add_listener(surface,&surface_listener,NULL);
   layer_surface = zwlr_layer_shell_v1_get_layer_surface(layer_shell,
       surface, NULL, ZWLR_LAYER_SHELL_V1_LAYER_TOP, "sfwbar-test");
-  zwlr_layer_surface_v1_set_anchor(layer_surface,ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
+  zwlr_layer_surface_v1_set_anchor(layer_surface,
+      ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
   zwlr_layer_surface_v1_set_size(layer_surface,1,1);
-  zwlr_layer_surface_v1_add_listener(layer_surface,&layer_surface_listener,NULL);
+  zwlr_layer_surface_v1_add_listener(layer_surface,
+      &layer_surface_listener,NULL);
 
   wl_surface_commit(surface);
   wl_display_roundtrip(display);
@@ -144,6 +140,8 @@ void wayland_monitor_probe ( void )
   zwlr_layer_surface_v1_destroy(layer_surface);
   wl_surface_destroy(surface);
   wl_buffer_destroy(buffer);
+  munmap(shm_data,size);
+  close(fd);
   zwlr_layer_shell_v1_destroy(layer_shell);
   wl_shm_destroy(shm);
 }

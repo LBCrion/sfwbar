@@ -242,10 +242,7 @@ void bar_set_visibility ( GtkWidget *self, const gchar *id, gchar state )
 
   visible = priv->visible || (state == 'v');
   if(!visible && gtk_widget_is_visible(self))
-  {
-    bar_save_monitor(self);
     gtk_widget_hide(self);
-  }
   else if(!gtk_widget_is_visible(self))
   {
     bar_update_monitor(self);
@@ -344,21 +341,34 @@ void bar_set_exclusive_zone ( GtkWidget *self, gchar *zone )
     g_list_foreach(priv->mirror_children,(GFunc)bar_set_exclusive_zone,zone);
 }
 
+GdkMonitor *bar_get_monitor ( GtkWidget *self )
+{
+  BarPrivate *priv;
+
+  g_return_val_if_fail(IS_BAR(self),NULL);
+  priv = bar_get_instance_private(BAR(self));
+
+  return priv->current_monitor;
+}
+
 gchar *bar_get_output ( GtkWidget *widget )
 {
-  return g_object_get_data( G_OBJECT(widget_get_monitor(
-          gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW))),"xdg_name");
+  BarPrivate *priv;
+
+  priv = bar_get_instance_private(
+      BAR(gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW)));
+
+  return g_object_get_data( G_OBJECT(priv->current_monitor),"xdg_name");
 }
 
 gboolean bar_update_monitor ( GtkWidget *self )
 {
-  BarPrivate *priv, *cpriv;
+  BarPrivate *priv;
   GdkDisplay *gdisp;
   GdkMonitor *gmon,*match;
-  GtkWidget *mirror;
   GList *iter;
   gint nmon, i;
-  gchar *output, *parent_output;
+  gchar *output;
   gboolean present;
 
   g_return_val_if_fail(IS_BAR(self),FALSE);
@@ -389,8 +399,8 @@ gboolean bar_update_monitor ( GtkWidget *self )
 
   if(match)
   {
-    bar_save_monitor(self);
     gtk_widget_hide(self);
+    priv->current_monitor = match;
     gtk_layer_set_monitor(GTK_WINDOW(self), match);
     if(priv->visible)
     {
@@ -399,15 +409,10 @@ gboolean bar_update_monitor ( GtkWidget *self )
     }
   }
 
-  parent_output =
-    match?g_object_get_data(G_OBJECT(match),"xdg_name"):bar_get_output(self);
   /* remove any mirrors from new primary output */
   for(iter=priv->mirror_children;iter;iter=g_list_next(iter))
-  {
-    cpriv = bar_get_instance_private(BAR(iter->data));
-    if(match && !g_strcmp0(cpriv->output,parent_output))
+    if(bar_get_monitor(iter->data) == priv->current_monitor)
       bar_destroy(iter->data);
-  }
 
   /* add mirrors to any outputs where they are missing */
   for(i=0;i<nmon;i++)
@@ -416,47 +421,22 @@ gboolean bar_update_monitor ( GtkWidget *self )
     output = g_object_get_data(G_OBJECT(gmon),"xdg_name");
     present = FALSE;
     for(iter=priv->mirror_children;iter;iter=g_list_next(iter))
-    {
-      cpriv = bar_get_instance_private(BAR(iter->data));
-      if(!g_strcmp0(cpriv->output,output))
+      if(bar_get_monitor(iter->data) == gmon)
         present = TRUE;
-    }
 
-    if(!present && g_strcmp0(output,parent_output) &&
+    if(!present && gmon != priv->current_monitor &&
         pattern_match(priv->mirror_targets,output) &&
         !pattern_match(priv->mirror_blocks,output) )
-    {
-      mirror = bar_mirror(self, gmon);
-      cpriv = bar_get_instance_private(BAR(mirror));
-      g_free(cpriv->output);
-      cpriv->output = g_strdup(output);
-    }
+      bar_mirror(self, gmon);
   }
 
   return FALSE;
 }
 
-void bar_save_monitor ( GtkWidget *self )
-{
-  BarPrivate *priv;
-  GdkMonitor *mon;
-
-  g_return_if_fail(IS_BAR(self));
-  priv = bar_get_instance_private(BAR(self));
-
-  if(priv->output)
-    return;
-  mon = widget_get_monitor(self);
-  if(!mon)
-    return;
-
-  priv->output = g_strdup(g_object_get_data(G_OBJECT(mon),"xdg_name"));
-}
-
 void bar_set_monitor ( GtkWidget *self, gchar *monitor )
 {
   BarPrivate *priv;
-  gchar *old_mon,*mon_name;
+  gchar *mon_name;
   void *bar,*key;
   GHashTableIter iter;
 
@@ -486,9 +466,7 @@ void bar_set_monitor ( GtkWidget *self, gchar *monitor )
     mon_name = monitor;
   }
 
-  old_mon = priv->output;
-
-  if(!old_mon || g_ascii_strcasecmp(old_mon, mon_name))
+  if(!priv->output || g_ascii_strcasecmp(priv->output, mon_name))
   {
     g_free(priv->output);
     priv->output =  g_strdup(mon_name);
@@ -616,13 +594,15 @@ GtkWidget *bar_new ( gchar *name )
   priv = bar_get_instance_private(BAR(self));
   priv->name = g_strdup(name);
   priv->visible = TRUE;
+  priv->current_monitor = wayland_monitor_get_default();
+  priv->output = g_strdup(
+      g_object_get_data(G_OBJECT(priv->current_monitor),"xdg_name"));
   gtk_layer_init_for_window (GTK_WINDOW(self));
   gtk_widget_set_name(self,name);
   gtk_layer_auto_exclusive_zone_enable (GTK_WINDOW(self));
   gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self),FALSE);
   gtk_layer_set_layer(GTK_WINDOW(self),GTK_LAYER_SHELL_LAYER_TOP);
-  gtk_layer_set_monitor(GTK_WINDOW(self),gdk_display_get_monitor(
-        gdk_display_get_default(),0));
+  gtk_layer_set_monitor(GTK_WINDOW(self),priv->current_monitor);
 
   gtk_widget_style_get(self,"direction",&toplevel_dir,NULL);
   gtk_layer_set_anchor(GTK_WINDOW(self),GTK_LAYER_SHELL_EDGE_LEFT,
@@ -683,11 +663,11 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
   dpriv->hidden = spriv->hidden;
   dpriv->jump = spriv->jump;
   dpriv->jump = spriv->jump;
-  dpriv->output = g_strdup(spriv->output);
   dpriv->bar_id = g_strdup(spriv->bar_id);
   spriv->mirror_children = g_list_prepend(spriv->mirror_children, self);
   dpriv->mirror_parent = src;
-  dpriv->mirror_monitor = monitor;
+  dpriv->current_monitor = monitor;
+  dpriv->output = g_strdup(g_object_get_data(G_OBJECT(monitor),"xdg_name"));
   mirrors = g_list_prepend(mirrors,self);
 
 //  gtk_application_add_window(app,GTK_WINDOW(self));
