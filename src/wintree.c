@@ -12,6 +12,8 @@
 static struct wintree_api api;
 static GList *wt_list;
 static GList *appid_map;
+static GList *appid_filter_list;
+static GList *title_filter_list;
 static gpointer wt_focus;
 static gchar *wt_active;
 static guint64 seq;
@@ -263,6 +265,46 @@ gchar *wintree_appid_map_lookup ( gchar *title )
           title, 0, NULL))
       return ((struct appid_mapper *)iter->data)->app_id;
   return NULL;
+}
+
+void wintree_filter_appid ( gchar *pattern )
+{
+  GList *iter;
+  GRegex *regex;
+
+  for(iter=appid_filter_list;iter;iter=g_list_next(iter))
+    if(!g_strcmp0(pattern,
+          g_regex_get_pattern(((struct appid_mapper *)iter->data)->regex)))
+      return;
+
+  regex = g_regex_new(pattern,0,0,NULL);
+  if(!regex)
+    return;
+
+  appid_filter_list = g_list_prepend(appid_filter_list, regex);
+}
+
+void wintree_filter_title ( gchar *pattern )
+{
+  GList *iter;
+  GRegex *regex;
+
+  for(iter=title_filter_list;iter;iter=g_list_next(iter))
+    if(!g_strcmp0(pattern,
+          g_regex_get_pattern(((struct appid_mapper *)iter->data)->regex)))
+      return;
+
+  regex = g_regex_new(pattern,0,0,NULL);
+  if(!regex)
+    return;
+
+  title_filter_list = g_list_prepend(title_filter_list, regex);
+}
+
+gboolean wintree_is_filtered ( window_t *win )
+{
+  return (regex_match_list(appid_filter_list, win->appid) ||
+    regex_match_list(title_filter_list, win->title));
 }
 
 static gint x_step, y_step, x_origin, y_origin;

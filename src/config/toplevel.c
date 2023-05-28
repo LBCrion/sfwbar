@@ -579,6 +579,20 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
       case G_TOKEN_MAPAPPID:
         config_mappid_map(scanner);
         break;
+      case G_TOKEN_FILTERAPPID:
+        if(!config_expect_token(scanner, G_TOKEN_STRING,
+          "Missing <string> after FilterAppId"))
+          break;
+        g_scanner_get_next_token(scanner);
+        wintree_filter_appid(scanner->value.v_string);
+        break;
+      case G_TOKEN_FILTERTITLE:
+        if(!config_expect_token(scanner, G_TOKEN_STRING,
+          "Missing <string> after FilterTitle"))
+          break;
+        g_scanner_get_next_token(scanner);
+        wintree_filter_title(scanner->value.v_string);
+        break;
       case G_TOKEN_FUNCTION:
         config_function(scanner);
         break;

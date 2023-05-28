@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "SFWBAR" 1 "" "" ""
+.TH "SFWBAR" 1 "" ""
 .SH NAME
 SFWBar \- Sway Floating Window taskBar
 .SH SYNOPSIS
@@ -131,6 +131,18 @@ bindsym Alt\-Tab exec killall \-SIGUSR1 sfwbar
 .UNINDENT
 .sp
 (for non\-sway compositors, use SIGUSR1 trigger)
+.sp
+NixOS + Hyprland (probably other non\-sway compositors) use:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+bind = ALT, Tab, exec, killall \-SIGUSR1 .sfwbar\-wrapped
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
 .sp
 Task switcher is configured in the \(dqswitcher\(dq section of the configuration file.
 The following parameters are accepted:
@@ -761,6 +773,14 @@ If this option is set, selecting a minimize window will unminimize
 it on the active workplace. If set to False (default), the window
 will be unminimzied to it\(aqs last workplace.
 This option only applies to Sway and Hyprland comositors
+.TP
+.B FilterTitle <regex>
+Any windows with titles matching a regular expression <regex> will
+not be shown on the taskbar or switcher.
+.TP
+.B FilterAppId <regex>
+Any windows with appids matching a regular expression <regex> will
+not be shown on the taskbar or switcher.
 .UNINDENT
 .SS EXPRESSIONS
 .sp

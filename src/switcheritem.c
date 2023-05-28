@@ -7,9 +7,7 @@
 #include "switcheritem.h"
 #include "flowgrid.h"
 #include "scaleimage.h"
-#include "config.h"
 #include "pager.h"
-#include "bar.h"
 #include "switcher.h"
 
 G_DEFINE_TYPE_WITH_CODE (SwitcherItem, switcher_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (SwitcherItem));
@@ -25,18 +23,7 @@ static gboolean switcher_item_check ( GtkWidget *self )
   g_return_val_if_fail(IS_SWITCHER_ITEM(self),FALSE);
   priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
 
-  switch(switcher_get_filter(priv->switcher))
-  {
-    case G_TOKEN_OUTPUT:
-      return (!priv->win->outputs || g_list_find_custom(priv->win->outputs,
-          bar_get_output(base_widget_get_child(priv->switcher)),
-          (GCompareFunc)g_strcmp0));
-    case G_TOKEN_WORKSPACE:
-      return (!priv->win->workspace ||
-          priv->win->workspace == pager_get_focused());
-  }
-
-  return TRUE;
+  return switcher_check(priv->switcher,priv->win);
 }
 
 void switcher_item_update ( GtkWidget *self )

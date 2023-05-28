@@ -652,6 +652,14 @@ DisownMinimized <boolean>
   will be unminimzied to it's last workplace.
   This option only applies to Sway and Hyprland comositors
 
+FilterTitle <regex>
+  Any windows with titles matching a regular expression <regex> will
+  not be shown on the taskbar or switcher.
+
+FilterAppId <regex>
+  Any windows with appids matching a regular expression <regex> will
+  not be shown on the taskbar or switcher.
+
 EXPRESSIONS
 -----------
 Values in widgets can contain basic arithmetic and string manipulation

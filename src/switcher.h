@@ -43,5 +43,6 @@ void switcher_window_init ( window_t *win);
 void switcher_populate ( void );
 void switcher_set_filter ( GtkWidget *self, gint filter );
 gint switcher_get_filter ( GtkWidget *self );
+gboolean switcher_check ( GtkWidget *switcher, window_t *win );
 
 #endif

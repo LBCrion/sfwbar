@@ -144,6 +144,9 @@ static gboolean taskbar_item_check ( GtkWidget *self )
   if(floating)
     result = result & priv->win->floating;
 
+  if(result)
+    result = !wintree_is_filtered(priv->win);
+
   return result;
 }
 

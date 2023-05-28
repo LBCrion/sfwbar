@@ -11,6 +11,8 @@
 #include "switcher.h"
 #include "wintree.h"
 #include "pager.h"
+#include "config.h"
+#include "bar.h"
 
 G_DEFINE_TYPE_WITH_CODE (Switcher, switcher, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Switcher));
 
@@ -20,7 +22,7 @@ static gint interval;
 static gchar hstate;
 static gint counter;
 static gint title_width = -1;
-static GList *focus;
+static window_t *focus;
 
 static GtkWidget *switcher_get_child ( GtkWidget *self )
 {
@@ -93,21 +95,42 @@ void switcher_populate ( void )
     switcher_window_init(iter->data);
 }
 
+gboolean switcher_check ( GtkWidget *switcher, window_t *win )
+{
+  switch(switcher_get_filter(switcher))
+  {
+    case G_TOKEN_OUTPUT:
+      return (!win->outputs || g_list_find_custom(win->outputs,
+          bar_get_output(base_widget_get_child(switcher)),
+          (GCompareFunc)g_strcmp0));
+    case G_TOKEN_WORKSPACE:
+      return (!win->workspace ||
+          win->workspace == pager_get_focused());
+  }
+
+  return !wintree_is_filtered(win);
+}
+
 gboolean switcher_event ( gpointer data )
 {
-  GList *item;
+  GList *iter, *list = NULL, *flink = NULL;
 
   counter = interval;
-  focus = NULL;
-  for (item = wintree_get_list(); item; item = g_list_next(item) )
-    if ( wintree_is_focused(((window_t *)item->data)->uid) )
-      focus = g_list_next(item);
-  while( focus && ((window_t *)focus->data)->workspace != pager_get_focused() )
-    focus = g_list_next(focus);
-  if(focus==NULL)
-    focus=wintree_get_list();
-  if(focus!=NULL)
-    wintree_set_focus(((window_t *)focus->data)->uid);
+  for (iter = wintree_get_list(); iter; iter = g_list_next(iter) )
+    if(switcher_check(grid,iter->data))
+      list = g_list_prepend(list, iter->data);
+  list = g_list_reverse(list);
+  for (iter = list; iter; iter = g_list_next(iter) )
+    if ( wintree_is_focused(((window_t *)iter->data)->uid) )
+      flink = g_list_next(iter)?g_list_next(iter):list;
+
+  if(flink)
+  {
+    focus = flink->data;
+    wintree_set_focus(focus->uid);
+  }
+
+  g_list_free(list);
 
   return TRUE;
 }
@@ -129,7 +152,6 @@ void switcher_window_init ( window_t *win)
 
 void switcher_update ( void )
 {
-  window_t *win;
   GList *item;
 
   if(!switcher)
@@ -149,8 +171,7 @@ void switcher_update ( void )
   else
   {
     gtk_widget_hide(switcher);
-    win = focus->data;
-    wintree_focus(win->uid);
+    wintree_focus(focus->uid);
   }
 }
 

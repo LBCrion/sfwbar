@@ -181,6 +181,17 @@ gboolean pattern_match ( gchar **dict, gchar *string )
   return FALSE;
 }
 
+gboolean regex_match_list ( GList *dict, gchar *string )
+{
+  GList *iter;
+
+  for(iter=dict;iter;iter=g_list_next(iter))
+    if(g_regex_match(iter->data, string, 0, NULL))
+      return TRUE;
+
+  return FALSE;
+}
+
 /* compute md5 checksum for a file */
 int md5_file( gchar *path, guchar output[16] )
 {
