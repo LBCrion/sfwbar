@@ -260,6 +260,10 @@ void action_exec ( GtkWidget *widget, action_t *action,
     case G_TOKEN_SETBARID:
       bar_set_id(NULL,action->command->cache);
       break;
+    case G_TOKEN_SETBARSENSOR:
+      bar_set_sensor(bar_from_name(action->addr->cache),
+          action->command->cache);
+      break;
     case G_TOKEN_SETBARVISIBILITY:
       if(action->command->cache)
         bar_set_visibility(bar_from_name(action->addr->cache),NULL,

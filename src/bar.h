@@ -33,6 +33,11 @@ struct _BarPrivate {
   gchar *layer;
   gchar *bar_id;
   GtkWidget *start, *center, *end;
+  GtkWidget *box, *sensor;
+  gint64 sensor_timeout;
+  guint sensor_handle;
+  gulong sensor_henter, sensor_hleave;
+  GList *sensor_refs;
   gboolean hidden;
   gboolean jump;
   gboolean visible;
@@ -52,6 +57,7 @@ void bar_set_exclusive_zone ( GtkWidget *, gchar * );
 gchar *bar_get_output ( GtkWidget * );
 gint bar_get_toplevel_dir ( GtkWidget * );
 void bar_set_id ( GtkWidget *, gchar * );
+void bar_set_sensor ( GtkWidget *self, gchar *timeout );
 void bar_set_mirrors ( GtkWidget *self, gchar *mirror );
 void bar_set_mirror_blocks ( GtkWidget *self, gchar *mirror );
 void bar_set_visibility ( GtkWidget *, const gchar *, gchar );
@@ -64,5 +70,6 @@ GtkWidget *bar_from_name ( gchar *name );
 GtkWidget *bar_grid_from_name ( gchar *addr );
 void bar_set_theme ( gchar *new_theme );
 GtkWidget *bar_mirror ( GtkWidget *, GdkMonitor * );
+void bar_ref ( GtkWidget *self, GtkWidget *child );
 
 #endif

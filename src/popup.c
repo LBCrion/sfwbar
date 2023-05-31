@@ -57,6 +57,7 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup )
   gdk_window_move_to_rect(gpopup, &rect,wanchor,panchor,
       GDK_ANCHOR_FLIP_X | GDK_ANCHOR_FLIP_Y,0,0);
   css_widget_cascade(popup,NULL);
+  bar_ref(gtk_widget_get_ancestor(parent,GTK_TYPE_WINDOW),popup);
 }
 
 void popup_trigger ( GtkWidget *parent, gchar *name )

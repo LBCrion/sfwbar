@@ -139,6 +139,7 @@ void css_init ( gchar *cssname )
 
   css_str =
     "window { -GtkWidget-direction: bottom; } " \
+    "window.sensor, grid.sensor { min-width: 1px; min-height: 1px; background: red; }" \
     ".hidden { -GtkWidget-visible: false; }";
   css = gtk_css_provider_new();
   gtk_css_provider_load_from_data(css,css_str,strlen(css_str),NULL);
