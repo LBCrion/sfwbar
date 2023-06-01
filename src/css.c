@@ -5,6 +5,7 @@
 
 #include "sfwbar.h"
 #include "basewidget.h"
+#include "bar.h"
 
 static void (*css_style_updated_original)(GtkWidget *);
 
@@ -69,6 +70,7 @@ static void css_custom_handle ( GtkWidget *widget )
     gtk_label_set_ellipsize(GTK_LABEL(widget),
         state?PANGO_ELLIPSIZE_END:PANGO_ELLIPSIZE_NONE);
   }
+  bar_handle_direction(widget);
 }
 
 static void css_style_updated ( GtkWidget *widget )
@@ -139,7 +141,7 @@ void css_init ( gchar *cssname )
 
   css_str =
     "window { -GtkWidget-direction: bottom; } " \
-    "window.sensor, grid.sensor { min-width: 1px; min-height: 1px; background: red; }" \
+    ".sensor { min-width: 1px; min-height: 1px; background: none; }" \
     ".hidden { -GtkWidget-visible: false; }";
   css = gtk_css_provider_new();
   gtk_css_provider_load_from_data(css,css_str,strlen(css_str),NULL);

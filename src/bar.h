@@ -32,6 +32,7 @@ struct _BarPrivate {
   gchar *ezone;
   gchar *layer;
   gchar *bar_id;
+  gint dir;
   GtkWidget *start, *center, *end;
   GtkWidget *box, *sensor;
   gint64 sensor_timeout;
@@ -71,5 +72,6 @@ GtkWidget *bar_grid_from_name ( gchar *addr );
 void bar_set_theme ( gchar *new_theme );
 GtkWidget *bar_mirror ( GtkWidget *, GdkMonitor * );
 void bar_ref ( GtkWidget *self, GtkWidget *child );
+void bar_handle_direction ( GtkWidget *self );
 
 #endif
