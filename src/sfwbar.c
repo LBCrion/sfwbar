@@ -141,6 +141,25 @@ static gboolean sfwbar_restart ( gpointer d )
   return FALSE;
 }
 
+static void signal_handler ( gint sig )
+{
+  static gchar trigger[256];
+
+  g_snprintf(trigger,255,"sigrtmin-%d",sig-SIGRTMIN);
+  g_idle_add((GSourceFunc)base_widget_emit_trigger, trigger);
+}
+
+static void signal_triggers_add ( void )
+{
+  struct sigaction act;
+  gint sig;
+
+  act.sa_handler = signal_handler;
+  sigfillset(&act.sa_mask);
+  for(sig=SIGRTMIN; sig<=SIGRTMAX; sig++)
+    sigaction(sig,&act,NULL);
+}
+
 static void activate (GtkApplication* app, gpointer data )
 {
   GdkDisplay *gdisp;
@@ -196,6 +215,7 @@ static void activate (GtkApplication* app, gpointer data )
   g_unix_signal_add(SIGUSR1,(GSourceFunc)switcher_event,NULL);
   g_unix_signal_add(SIGUSR2,(GSourceFunc)bar_visibility_toggle_all,NULL);
   g_unix_signal_add(SIGHUP,(GSourceFunc)sfwbar_restart,NULL);
+  signal_triggers_add();
 }
 
 int main (int argc, gchar **argv)

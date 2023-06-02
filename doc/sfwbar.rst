@@ -392,6 +392,23 @@ submenu
   parent menu, the second optional parameter is a menu name, if a menu name is
   assigned, further items can be added to a submenu as to any other menu.
 
+Triggers
+--------
+Triggers are emitted in response to various events, such as compositor state
+changes, real time signals or notifications from modules. Some triggers can
+be defined as part of the configuration (i.e. SocketClient or ExecClient 
+scanner sources), others are built in, or defined in modules.
+
+Built-in triggers are:
+
+===================== =========================================================
+SIGRTMIN+X            RT signal SIGRTMIN+X has been received (X is a number)
+sway                  Data has been received on SwayClient scanner source
+mpd                   Data has been received on MpdClient scanner source
+<output>-connected    an output has been connected (i.e. eDP-1-connected)
+<output>-disconnected an output has been disconnected
+===================== =========================================================
+
 Actions
 -------
 Actions can be attached to click and scroll events for any widget or to items
@@ -659,6 +676,10 @@ FilterTitle <regex>
 FilterAppId <regex>
   Any windows with appids matching a regular expression <regex> will
   not be shown on the taskbar or switcher.
+
+TriggerAction <trigger>, <action>
+  execute an action when a trigger is emitted. Trigger is a string, an
+  action is any valid action, as described in the Actions section.
 
 EXPRESSIONS
 -----------
