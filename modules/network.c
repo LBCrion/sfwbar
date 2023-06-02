@@ -658,7 +658,7 @@ void sfwbar_module_invalidate ( void )
     ((iface_info *)iter->data)->invalid = TRUE;
 }
 
-void *network_func_netstat ( void **params )
+void *network_func_netstat ( void **params, void *widget )
 {
   iface_info *iface;
   gdouble *result;
@@ -694,7 +694,7 @@ void *network_func_netstat ( void **params )
   return result;
 }
 
-void *network_func_netinfo ( void **params )
+void *network_func_netinfo ( void **params, void *widget )
 {
   gchar *result;
   iface_info *iface;

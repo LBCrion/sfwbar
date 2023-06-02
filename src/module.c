@@ -178,6 +178,8 @@ gchar *module_get_string ( GScanner *scanner )
 {
   ModuleExpressionHandlerV1 *handler;
   void **params;
+  ExprCache *expr;
+  void *widget;
   gchar *result;
   gint i;
 
@@ -191,8 +193,10 @@ gchar *module_get_string ( GScanner *scanner )
 
   g_debug("module: calling function `%s`",handler->name);
   params = expr_module_parameters(scanner,handler->parameters,handler->name);
+  for(expr=E_STATE(scanner)->expr;!expr->widget&&expr->parent;expr=expr->parent);
+  widget = expr->widget;
 
-  result = handler->function(params);
+  result = handler->function(params, widget);
 
   if(params)
     for(i=0;i<strlen(handler->parameters);i++)

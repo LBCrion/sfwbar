@@ -34,7 +34,7 @@ static const gchar *xkb_get_value ( struct rxkb_layout *layout, gchar *type )
   return g_strdup_printf("XkbMap: Invalid type: %s",type);
 }
 
-void *xkb_map_expr_func ( void **params )
+void *xkb_map_expr_func ( void **params, void *widget )
 {
   struct rxkb_layout *layout;
 

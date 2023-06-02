@@ -11,7 +11,7 @@
 #include "expr.h"
 
 /* extract a substring */
-static void *expr_lib_mid ( void **params )
+static void *expr_lib_mid ( void **params, void *widget )
 {
 
   gint len, c1, c2;
@@ -40,7 +40,7 @@ static void *expr_lib_mid ( void **params )
 }
 
 /* Extract substring using regex */
-static void *expr_lib_extract( void **params )
+static void *expr_lib_extract( void **params, void *widget )
 {
   gchar *sres=NULL;
   GRegex *regex;
@@ -61,7 +61,7 @@ static void *expr_lib_extract( void **params )
   return sres?sres:g_strdup("");
 }
 
-static void *expr_lib_pad ( void **params )
+static void *expr_lib_pad ( void **params, void *widget )
 {
   gchar *result, *ptr;
   gint n, len, sign;
@@ -97,7 +97,7 @@ static void *expr_lib_pad ( void **params )
 }
 
 /* Get current time string */
-static void *expr_lib_time ( void **params )
+static void *expr_lib_time ( void **params, void *widget )
 {
   GTimeZone *tz;
   GDateTime *time;
@@ -126,7 +126,7 @@ static void *expr_lib_time ( void **params )
 }
 
 /* generate disk space utilization for a device */
-static void *expr_lib_disk ( void **params )
+static void *expr_lib_disk ( void **params, void *widget )
 {
   struct statvfs fs;
   gdouble *result = g_malloc0(sizeof(gdouble));
@@ -151,12 +151,12 @@ static void *expr_lib_disk ( void **params )
   return result;
 }
 
-static void *expr_lib_active ( void **params )
+static void *expr_lib_active ( void **params, void *widget )
 {
   return g_strdup(wintree_get_active());
 }
 
-static void *expr_lib_str ( void **params )
+static void *expr_lib_str ( void **params, void *widget )
 {
   if(!params || !params[0])
     return g_strdup("");
@@ -165,7 +165,7 @@ static void *expr_lib_str ( void **params )
         params[1]?(gint)*(gdouble *)params[1]:0);
 }
 
-static void *expr_lib_max ( void **params )
+static void *expr_lib_max ( void **params, void *widget )
 {
   gdouble *result;
 
@@ -177,7 +177,7 @@ static void *expr_lib_max ( void **params )
   return result;
 }
 
-static void *expr_lib_min ( void **params )
+static void *expr_lib_min ( void **params, void *widget )
 {
   gdouble *result;
 
@@ -189,7 +189,7 @@ static void *expr_lib_min ( void **params )
   return result;
 }
 
-static void *expr_lib_val ( void **params )
+static void *expr_lib_val ( void **params, void *widget )
 {
   gdouble *result;
 
@@ -202,7 +202,7 @@ static void *expr_lib_val ( void **params )
   return result;
 }
 
-static void *expr_lib_upper ( void **params )
+static void *expr_lib_upper ( void **params, void *widget )
 {
   if(!params || !params[0])
     return g_strdup("");
@@ -210,7 +210,7 @@ static void *expr_lib_upper ( void **params )
     return g_ascii_strup(params[0],-1);
 }
 
-static void *expr_lib_lower ( void **params )
+static void *expr_lib_lower ( void **params, void *widget )
 {
   if(!params || !params[0])
     return g_strdup("");

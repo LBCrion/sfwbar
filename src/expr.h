@@ -1,7 +1,7 @@
 #ifndef __EXPR_H__
 #define __EXPR_H__
 
-#include <glib.h>
+#include <gtk/gtk.h>
 
 enum {
   G_TOKEN_IF      = G_TOKEN_LAST + 1,
@@ -20,6 +20,7 @@ enum {
 typedef struct expr_cache {
   gchar *definition;
   gchar *cache;
+  GtkWidget *widget;
   gboolean eval;
   guint vstate;
   struct expr_cache *parent;

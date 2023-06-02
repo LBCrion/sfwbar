@@ -199,7 +199,7 @@ void sfwbar_module_invalidate ( void )
   invalid = TRUE;
 }
 
-void *pulse_expr_func ( void **params )
+void *pulse_expr_func ( void **params, void *widget )
 {
   gchar *cmd;
   pulse_info *info;

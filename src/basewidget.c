@@ -285,6 +285,7 @@ void base_widget_set_tooltip ( GtkWidget *self, gchar *tooltip )
   g_free(priv->tooltip->definition);
   priv->tooltip->definition = tooltip;
   priv->tooltip->eval = TRUE;
+  priv->value->widget = self;
 
   if(!tooltip)
   {
@@ -312,6 +313,7 @@ void base_widget_set_value ( GtkWidget *self, gchar *value )
   g_free(priv->value->definition);
   priv->value->definition = value;
   priv->value->eval = TRUE;
+  priv->value->widget = self;
 
   if(expr_cache_eval(priv->value) || priv->always_update)
     base_widget_update_value(self);
@@ -332,6 +334,7 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
   g_free(priv->style->definition);
   priv->style->definition = style;
   priv->style->eval = TRUE;
+  priv->value->widget = self;
 
   if(expr_cache_eval(priv->style))
   {

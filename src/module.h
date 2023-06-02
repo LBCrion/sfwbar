@@ -10,7 +10,7 @@ typedef struct {
   void (*config_string)(gchar *);
 } ModuleApiV1;
 
-typedef gpointer (*ModuleExpressionFunc)(gpointer *);
+typedef gpointer (*ModuleExpressionFunc)(gpointer *, gpointer);
 typedef void (*ModuleActionFunc)(gchar *, gchar *, void *, void *, void *,
     void *);
 typedef void (*ModuleInvalidator)( void );
