@@ -11,6 +11,10 @@ G_DEFINE_TYPE_WITH_CODE (Grid, grid, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Grid));
 
 static void grid_destroy ( GtkWidget *self )
 {
+  GridPrivate *priv;
+
+  priv = grid_get_instance_private(GRID(self));
+  g_list_free(g_steal_pointer(&priv->children));
   GTK_WIDGET_CLASS(grid_parent_class)->destroy(self);
 }
 

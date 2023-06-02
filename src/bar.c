@@ -20,9 +20,15 @@ static GList *mirrors;
 
 static void bar_destroy ( GtkWidget *self )
 {
-  BarPrivate *priv;
+  BarPrivate *priv, *ppriv;
 
   priv = bar_get_instance_private(BAR(self));
+  if(priv->mirror_parent)
+  {
+    ppriv = bar_get_instance_private(BAR(priv->mirror_parent));
+    ppriv->mirror_children = g_list_remove(ppriv->mirror_children, self);
+    priv->mirror_parent = NULL;
+  }
   mirrors = g_list_remove(mirrors, self);
   g_clear_pointer(&priv->name,g_free);
   g_clear_pointer(&priv->output,g_free);
@@ -467,15 +473,15 @@ void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 {
   GHashTableIter iter;
   void *key, *bar;
-  char trigger[256];
+  static char trigger[256];
 
   g_hash_table_iter_init(&iter,bar_list);
+  while(g_hash_table_iter_next(&iter,&key,&bar))
+    bar_update_monitor(bar);
+
   g_snprintf(trigger,255,"%s_disconnected",
       (gchar *)g_object_get_data(G_OBJECT(gmon),"xdg_name"));
   g_idle_add((GSourceFunc)base_widget_emit_trigger,trigger);
-
-  while(g_hash_table_iter_next(&iter,&key,&bar))
-    bar_update_monitor(bar);
 }
 
 void bar_set_size ( GtkWidget *self, gchar *size )
@@ -585,8 +591,9 @@ static gboolean bar_sensor_hide_cb ( GtkWidget *self )
   if(priv->sensor_refs)
     return TRUE;
   css_add_class(self,"sensor");
-  gtk_container_remove(GTK_CONTAINER(self),priv->box);
+  gtk_container_remove(GTK_CONTAINER(self),gtk_bin_get_child(GTK_BIN(self)));
   gtk_container_add(GTK_CONTAINER(self),priv->sensor);
+
   if(g_signal_handler_find(self, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA |
         G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL, bar_sensor_leave_cb, self))
     g_signal_handler_block(self,priv->sensor_hleave);
@@ -642,17 +649,16 @@ static void bar_sensor_show_bar ( GtkWidget *self )
     g_source_remove(priv->sensor_handle);
     priv->sensor_handle = 0;
   }
-  if(gtk_bin_get_child(GTK_BIN(self))==priv->box)
+  if(gtk_bin_get_child(GTK_BIN(self))!=priv->sensor)
     return;
   css_remove_class(self,"sensor");
-  gtk_container_remove(GTK_CONTAINER(self),priv->sensor);
+  gtk_container_remove(GTK_CONTAINER(self),gtk_bin_get_child(GTK_BIN(self)));
   gtk_container_add(GTK_CONTAINER(self),priv->box);
 }
 
 static gboolean bar_sensor_enter_cb ( GtkWidget *widget,
     GdkEventCrossing *event, gpointer self )
 {
-
   bar_sensor_show_bar(self);
   g_idle_add((GSourceFunc)bar_sensor_enter_flip_cb, self);
 
