@@ -156,6 +156,7 @@ static void signal_triggers_add ( void )
 
   act.sa_handler = signal_handler;
   sigfillset(&act.sa_mask);
+  act.sa_flags = 0;
   for(sig=SIGRTMIN; sig<=SIGRTMAX; sig++)
     sigaction(sig,&act,NULL);
 }

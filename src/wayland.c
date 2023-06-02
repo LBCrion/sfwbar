@@ -55,7 +55,7 @@ void wayland_init ( void )
   wl_display_roundtrip(wdisp);
   wayland_monitor_probe();
   GdkMonitor *mon = wayland_monitor_get_default();
-  g_message("default output: %s",(gchar *)g_object_get_data(G_OBJECT(mon),"xdg_name"));
+  g_debug("default output: %s",(gchar *)g_object_get_data(G_OBJECT(mon),"xdg_name"));
 
   wl_display_roundtrip(wdisp);
   wl_display_roundtrip(wdisp);
