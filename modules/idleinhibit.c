@@ -63,11 +63,6 @@ static void idle_inhibitor_action ( gchar *act, gchar *dummy, void *widget,
   struct zwp_idle_inhibitor_v1 *inhibitor;
   gboolean inhibit;
 
-  surface = gdk_wayland_window_get_wl_surface(
-      gtk_widget_get_window(widget));
-  if(!surface)
-    return;
-
   inhibitor = g_object_get_data(G_OBJECT(widget),"inhibitor");
 
   if(!g_ascii_strcasecmp(act,"on"))
@@ -76,9 +71,16 @@ static void idle_inhibitor_action ( gchar *act, gchar *dummy, void *widget,
     inhibit = FALSE;
   else if(!g_ascii_strcasecmp(act,"toggle"))
     inhibit = (inhibitor == NULL);
+  else
+    return;
 
   if(inhibit && !inhibitor)
   {
+    surface = gdk_wayland_window_get_wl_surface(
+        gtk_widget_get_window(widget));
+    if(!surface)
+      return;
+
     inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(
         idle_inhibit_manager, surface );
     g_object_set_data(G_OBJECT(widget),"inhibitor",inhibitor);
