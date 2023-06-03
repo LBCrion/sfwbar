@@ -57,17 +57,6 @@ void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
   g_free(stat_win);
 }
 
-void action_idle_inhibit ( GtkWidget *widget, gchar *command )
-{
-  if(!widget)
-    return;
-
-  if(!g_ascii_strcasecmp(command,"on"))
-    wayland_set_idle_inhibitor(widget,TRUE);
-  if(!g_ascii_strcasecmp(command,"off"))
-    wayland_set_idle_inhibitor(widget,FALSE);
-}
-
 void action_set_user_state ( GtkWidget *widget, gchar *value )
 {
   gchar *state;
@@ -107,14 +96,8 @@ guint16 action_state_build ( GtkWidget *widget, window_t *win )
     if(wintree_is_focused(win->uid))
       state |= WS_FOCUSED;
   }
-  if(widget)
-  {
-    if(g_object_get_data(G_OBJECT(widget),"inhibitor"))
-      state |= WS_INHIBIT;
-
-    if(IS_BASE_WIDGET(widget))
+  if(widget && IS_BASE_WIDGET(widget))
       state |= base_widget_get_state(widget);
-  }
   return state;
 }
 
@@ -159,7 +142,6 @@ void action_exec ( GtkWidget *widget, action_t *action,
         action->type == G_TOKEN_SETVALUE ||
         action->type == G_TOKEN_SETSTYLE ||
         action->type == G_TOKEN_SETTOOLTIP ||
-        action->type == G_TOKEN_IDLEINHIBIT ||
         action->type == G_TOKEN_USERSTATE ))
   {
     widget = base_widget_from_id(action->addr->cache);
@@ -284,9 +266,6 @@ void action_exec ( GtkWidget *widget, action_t *action,
     case G_TOKEN_SETTOOLTIP:
       if(widget && action->command->cache)
         base_widget_set_tooltip(widget,g_strdup(action->command->cache));
-      break;
-    case G_TOKEN_IDLEINHIBIT:
-      action_idle_inhibit(widget, action->command->cache);
       break;
     case G_TOKEN_USERSTATE:
       action_set_user_state(widget, action->command->cache);

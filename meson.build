@@ -28,7 +28,7 @@ wayland_protos = [
   'protocols/wlr-foreign-toplevel-management-unstable-v1',
   'protocols/xdg-output-unstable-v1',
   'protocols/wlr-layer-shell-unstable-v1',
-  wayland_protodir / 'unstable/idle-inhibit/idle-inhibit-unstable-v1'
+  wayland_protodir / 'unstable/xdg-shell/xdg-shell-unstable-v5'
 ]
 wayland_targets=[]
 
@@ -91,40 +91,64 @@ src = ['src/sfwbar.c',
     'src/config/switcher.c',
     'src/config/toplevel.c',
     'src/wayland/foreign-toplevel.c',
-    'src/wayland/idle-inhibit.c',
     'src/wayland/probe.c',
     'src/wayland/xdg-output.c',
     wayland_targets ]
 dep = [gtk3, glib, gio_unix, gmod, glsh, wayl, json ]
+man_pages = [ 'doc/sfwbar.1' ]
 
 if get_option('network').enabled() or get_option('network').auto()
   library('network', sources: 'modules/network.c', dependencies: glib,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
+  man_pages += 'doc/sfwbar-network.1'
 endif
 
 if puls.found() and pulg.found()
   library('pulsectl', sources: 'modules/pulsectl.c',
       dependencies: [glib, puls, pulg],name_prefix: '',
       install: true, install_dir: get_option('libdir') / 'sfwbar' )
+  man_pages += 'doc/sfwbar-pulse.1'
 endif
 
 if mpdc.found()
   library('mpd', sources: 'modules/mpd.c', dependencies: [glib, mpdc],
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
+  man_pages += 'doc/sfwbar-mpd.1'
 endif
 
 if xkbr.found()
   library('xkbmap', sources: 'modules/xkbmap.c', dependencies: [glib, xkbr],
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
+  man_pages += 'doc/sfwbar-xkbmap.1'
 endif
 
 if get_option('bsdctl').enabled()
   library('bsdctl', sources: 'modules/bsdctl.c', dependencies: glib,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
+  man_pages += 'doc/sfwbar-bsdctl.1'
+endif
+
+if get_option('idleinhibit').enabled() or get_option('idleinhibit').auto()
+  inhibit_targets = [
+    custom_target('idle-inhibit-unstable-v1.h',
+      output:'idle-inhibit-unstable-v1.h',
+      input: wayland_protodir /
+        'unstable/idle-inhibit/idle-inhibit-unstable-v1.xml',
+      command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@' ] ),
+    custom_target('idle-inhibit-unstable-v1.c',
+      output:'idle-inhibit-unstable-v1.c',
+      input: wayland_protodir /
+        'unstable/idle-inhibit/idle-inhibit-unstable-v1.xml',
+      command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@' ] ) ]
+
+  library('idleinhibit', sources: ['modules/idleinhibit.c',inhibit_targets], dependencies: [glib, gtk3, wayl],
+      name_prefix: '', install: true,
+      install_dir: get_option('libdir') / 'sfwbar' )
+  man_pages += 'doc/sfwbar-idleinhibit.1'
 endif
 
 executable ('sfwbar', sources: src,
@@ -132,13 +156,6 @@ executable ('sfwbar', sources: src,
     '-DGDK_DISABLE_DEPRECATED',
     '-DGTK_DISABLE_DEPRECATED'],
     dependencies: dep, install: true)
-
-man_pages = [ 'doc/sfwbar.1',
-  'doc/sfwbar-pulse.1',
-  'doc/sfwbar-mpd.1',
-  'doc/sfwbar-network.1',
-  'doc/sfwbar-xkbmap.1'
-]
 
 foreach page : man_pages
   install_man(page)

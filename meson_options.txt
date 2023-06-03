@@ -1,4 +1,5 @@
 option('bsdctl',type:'feature',value:'disabled',description:'BSD sysctl module')
+option('idleinhibit',type:'feature',value:'auto',description:'Idle inhibit protocol support')
 option('network',type:'feature',value:'auto',description:'Network module')
 option('pulse',type:'feature',value:'auto',description:'Pulse Audio module')
 option('mpd',type:'feature',value:'auto',description:'Music Player Daemon module')

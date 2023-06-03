@@ -151,9 +151,6 @@ void config_action_conditions ( GScanner *scanner, guchar *cond,
       case G_TOKEN_FULLSCREEN:
         *ptr |= WS_FULLSCREEN;
         break;
-      case G_TOKEN_IDLEINHIBIT:
-        *ptr |= WS_INHIBIT;
-        break;
       case G_TOKEN_USERSTATE:
         *ptr |= WS_USERSTATE;
         break;
@@ -204,7 +201,6 @@ action_t *config_action ( GScanner *scanner )
     case G_TOKEN_SWAYWIN:
     case G_TOKEN_MPDCMD:
     case G_TOKEN_POPUP:
-    case G_TOKEN_IDLEINHIBIT:
     case G_TOKEN_USERSTATE:
     case G_TOKEN_USERSTATE2:
     case G_TOKEN_CONFIG:

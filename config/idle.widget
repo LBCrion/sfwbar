@@ -1,18 +1,13 @@
-function("ToggleInhibitor") {
-  [!IdleInhibit] IdleInhibit "on"
-  [!IdleInhibit] SetValue "icons/misc/lock.svg"
-  [!IdleInhibit] SetTooltip "Idle Inhibit: On"
-  [IdleInhibit] IdleInhibit "off"
-  [IdleInhibit] SetValue "icons/misc/unlock.svg"
-  [IdleInhibit] SetTooltip "Idle Inhibit: Off"
-}
+Module("idleinhibit");
 
 layout {
   button {
-    style = "idle_inhibit"
-    value = "icons/misc/unlock.svg"
-    action[0] = Function "ToggleInhibitor"
-    action[1] = Function "ToggleInhibitor"
+    style = If(Ident(IdleInhibitState),"idle_inhibit","hidden")
+    value = If(IdleInhibitState()="on",
+        "icons/misc/lock.svg",
+        "icons/misc/unlock.svg")
+    trigger = "idleinhibitor"
+    action[1] = SetIdleInhibitor "toggle"
   }
 }
 

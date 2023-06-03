@@ -417,7 +417,7 @@ they refer to and some actions may require a parameter. Conditions are specified
 in square brackets prior to the action i.e. ``[Minimized]`` and can be inverted
 using ``!`` or joined using ``|`` i.e. ``[!Minimized | Focused]``. All
 conditions on the list must be satisfied. Supported conditions are: 
-``Minimized``, ``Maximized``, ``Focused``, ``FullScreen``, ``IdleInhibit`` and
+``Minimized``, ``Maximized``, ``Focused``, ``FullScreen`` and
 ``UserState``
 
 Actions can be activated upon receipt of a trigger from one of the client type
@@ -503,11 +503,6 @@ SetStyle [<widget>,]<string>
 
 SetTooltip [<widget>,]<string>
   set tooltip text for a widget
-
-IdleInhibit <string>
-  set idle inhibitor for a given widget. The string parameters accepted are
-  "or" and "off. You can toggle this action by using IconInhibit condition
-  in your action. I.e. [!IdleInhibit] IdleInhibit "on"
 
 UserState <string>
   Set boolean user state on a widget. Valid values are "On" or "Off".

@@ -1,19 +1,18 @@
-function("ToggleInhibitor") {
-  [!IdleInhibit] IdleInhibit "on"
-  [!IdleInhibit] SetStyle "idle_inhibitor_activated"
-  [!IdleInhibit] SetValue ""
-  [!IdleInhibit] SetTooltip "activated"
-  [IdleInhibit] IdleInhibit "off"
-  [IdleInhibit] SetStyle "idle_inhibitor"
-  [IdleInhibit] SetValue ""
-  [IdleInhibit] SetTooltip "deactivated"
-}
+Module("idleinhibit");
 
 layout {
   label {
-    style = "idle_inhibitor"
-    value = ""
-    tooltip = "deactivated"
-    action[1] = Function "ToggleInhibitor"
+    style = If(!Ident(IdleInhibitState),"hidden",
+        If(IdleInhibitState()="on",
+          "idle_inhibitor_activated",
+          "idle_inhibitor"))
+    value = If(IdleInhibitState()="on",
+        "",
+        "")
+    tooltip = If(IdleInhibitState()="on",
+        "activated",
+        "deactivated")
+    trigger = "idleinhibitor"
+    action[1] = SetIdleInhibitor "toggle"
   }
 }

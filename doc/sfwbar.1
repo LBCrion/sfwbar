@@ -535,7 +535,7 @@ they refer to and some actions may require a parameter. Conditions are specified
 in square brackets prior to the action i.e. \fB[Minimized]\fP and can be inverted
 using \fB!\fP or joined using \fB|\fP i.e. \fB[!Minimized | Focused]\fP\&. All
 conditions on the list must be satisfied. Supported conditions are:
-\fBMinimized\fP, \fBMaximized\fP, \fBFocused\fP, \fBFullScreen\fP, \fBIdleInhibit\fP and
+\fBMinimized\fP, \fBMaximized\fP, \fBFocused\fP, \fBFullScreen\fP and
 \fBUserState\fP
 .sp
 Actions can be activated upon receipt of a trigger from one of the client type
@@ -630,11 +630,6 @@ set style name for a widget
 .TP
 .B SetTooltip [<widget>,]<string>
 set tooltip text for a widget
-.TP
-.B IdleInhibit <string>
-set idle inhibitor for a given widget. The string parameters accepted are
-\(dqor\(dq and \(dqoff. You can toggle this action by using IconInhibit condition
-in your action. I.e. [!IdleInhibit] IdleInhibit \(dqon\(dq
 .TP
 .B UserState <string>
 Set boolean user state on a widget. Valid values are \(dqOn\(dq or \(dqOff\(dq.

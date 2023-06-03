@@ -140,8 +140,6 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
       (gpointer)G_TOKEN_USERSTATE );
   g_scanner_scope_add_symbol(scanner,0, "UserState2",
       (gpointer)G_TOKEN_USERSTATE2 );
-  g_scanner_scope_add_symbol(scanner,0, "IdleInhibit",
-      (gpointer)G_TOKEN_IDLEINHIBIT );
   g_scanner_scope_add_symbol(scanner,0, "SetValue",
       (gpointer)G_TOKEN_SETVALUE );
   g_scanner_scope_add_symbol(scanner,0, "SetStyle",
