@@ -106,9 +106,7 @@ void action_handle_exec ( gchar *command )
   gint argc;
   gchar **argv;
 
-  if(!command)
-    return;
-  if(!g_shell_parse_argv(command,&argc,&argv,NULL))
+  if(!command || !g_shell_parse_argv(command,&argc,&argv,NULL))
     return;
   g_spawn_async(NULL,argv,NULL,G_SPAWN_SEARCH_PATH |
        G_SPAWN_STDOUT_TO_DEV_NULL |

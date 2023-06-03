@@ -34,8 +34,7 @@ static gboolean taskbar_item_click_cb ( GtkWidget *widget, GdkEventButton *ev,
   if(!action)
     return FALSE;
 
-  action_exec(gtk_bin_get_child(GTK_BIN(widget)), action,(GdkEvent *)ev,
-      wintree_from_id(priv->win->uid),NULL);
+  action_exec(widget, action,(GdkEvent *)ev, NULL, NULL);
   return TRUE;
 }
 
@@ -70,9 +69,7 @@ static gboolean taskbar_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
   if(!action)
     return FALSE;
 
-  action_exec(gtk_bin_get_child(GTK_BIN(w)), action, (GdkEvent *)event,
-      wintree_from_id(priv->win->uid),NULL);
-
+  action_exec(w, action, (GdkEvent *)event, NULL, NULL);
   return TRUE;
 }
 
@@ -87,7 +84,7 @@ static void taskbar_item_button_cb( GtkWidget *widget, gpointer self )
   action = base_widget_get_action(priv->taskbar,1);
 
   if(action)
-    action_exec(gtk_bin_get_child(GTK_BIN(widget)),action,NULL,priv->win,NULL);
+    action_exec(widget,action,NULL, NULL, NULL);
   else
   {
     if ( wintree_is_focused(priv->win->uid) &&

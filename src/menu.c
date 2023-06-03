@@ -104,6 +104,7 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
   if(gtk_window_get_window_type(GTK_WINDOW(window)) == GTK_WINDOW_POPUP)
     taskbar_group_pop_child(window, menu);
 
+  widget = GTK_IS_BIN(widget)?gtk_bin_get_child(GTK_BIN(widget)):widget;
   popup_get_gravity(widget,&wanchor,&manchor);
   gtk_widget_show_all(menu);
   gtk_menu_popup_at_widget(GTK_MENU(menu),widget,wanchor,manchor,event);
