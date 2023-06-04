@@ -27,8 +27,7 @@ wayland_protodir = wayp.get_pkgconfig_variable('pkgdatadir')
 wayland_protos = [
   'protocols/wlr-foreign-toplevel-management-unstable-v1',
   'protocols/xdg-output-unstable-v1',
-  'protocols/wlr-layer-shell-unstable-v1',
-  wayland_protodir / 'unstable/xdg-shell/xdg-shell-unstable-v5'
+  'protocols/wlr-layer-shell-unstable-v1'
 ]
 wayland_targets=[]
 
