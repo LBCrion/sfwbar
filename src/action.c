@@ -127,15 +127,13 @@ void action_exec ( GtkWidget *widget, action_t *action,
   if(IS_TASKBAR_ITEM(widget))
     win = flow_item_get_parent(widget);
 
-  if( action->type != G_TOKEN_SETVALUE &&
-      action->type != G_TOKEN_SETSTYLE &&
-      action->type != G_TOKEN_SETTOOLTIP )
-    expr_cache_eval(action->command);
-
+  expr_cache_eval(action->command);
   expr_cache_eval(action->addr);
 
   if(action->addr->cache && (
         action->type == G_TOKEN_MENU ||
+        action->type == G_TOKEN_POPUP ||
+        action->type == G_TOKEN_IDENTIFIER ||
         action->type == G_TOKEN_FUNCTION ||
         action->type == G_TOKEN_SETVALUE ||
         action->type == G_TOKEN_SETSTYLE ||
@@ -254,16 +252,16 @@ void action_exec ( GtkWidget *widget, action_t *action,
           action->command->cache);
       break;
     case G_TOKEN_SETVALUE:
-      if(widget && action->command->cache)
-        base_widget_set_value(widget,g_strdup(action->command->cache));
+      if(widget && action->command->definition)
+        base_widget_set_value(widget,g_strdup(action->command->definition));
       break;
     case G_TOKEN_SETSTYLE:
-      if(widget && action->command->cache)
-        base_widget_set_style(widget,g_strdup(action->command->cache));
+      if(widget && action->command->definition)
+        base_widget_set_style(widget,g_strdup(action->command->definition));
       break;
     case G_TOKEN_SETTOOLTIP:
-      if(widget && action->command->cache)
-        base_widget_set_tooltip(widget,g_strdup(action->command->cache));
+      if(widget && action->command->definition)
+        base_widget_set_tooltip(widget,g_strdup(action->command->definition));
       break;
     case G_TOKEN_USERSTATE:
       action_set_user_state(widget, action->command->cache);

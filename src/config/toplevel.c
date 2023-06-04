@@ -214,6 +214,9 @@ action_t *config_action ( GScanner *scanner )
     case G_TOKEN_BLOCKMIRROR:
     case G_TOKEN_SETBARSIZE:
     case G_TOKEN_SETEXCLUSIVEZONE:
+    case G_TOKEN_SETVALUE:
+    case G_TOKEN_SETSTYLE:
+    case G_TOKEN_SETTOOLTIP:
       config_parse_sequence(scanner,
           SEQ_REQ,G_TOKEN_VALUE,NULL,&action->addr->definition,
             "Missing argument in action",
@@ -221,7 +224,10 @@ action_t *config_action ( GScanner *scanner )
           SEQ_CON,G_TOKEN_VALUE,NULL,&action->command->definition,
             "Missing argument after ','",
           SEQ_END);
-      action->command->eval = TRUE;
+      if( action->type != G_TOKEN_SETVALUE &&
+          action->type != G_TOKEN_SETSTYLE &&
+          action->type != G_TOKEN_SETTOOLTIP )
+        action->command->eval = TRUE;
       action->addr->eval = TRUE;
       if(!action->command->definition)
       {
@@ -238,18 +244,6 @@ action_t *config_action ( GScanner *scanner )
           SEQ_CON,G_TOKEN_STRING,NULL,&action->command->cache,
             "Missing command in action",
           SEQ_END);
-      break;
-    case G_TOKEN_SETVALUE:
-      action->command->cache = config_get_value(scanner,"action value",FALSE,
-          &action->addr->cache);
-      break;
-    case G_TOKEN_SETSTYLE:
-      action->command->cache = config_get_value(scanner,"action style",FALSE,
-          &action->addr->cache);
-      break;
-    case G_TOKEN_SETTOOLTIP:
-      action->command->cache = config_get_value(scanner,"action tooltip",FALSE,
-          &action->addr->cache);
       break;
     default:
       g_scanner_error(scanner,"invalid action");
