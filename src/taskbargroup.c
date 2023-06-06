@@ -100,6 +100,70 @@ gchar *taskbar_group_get_appid ( GtkWidget *self )
   return priv->appid;
 }
 
+static void taskbar_group_set_single ( GtkWidget *self, GtkWidget *child )
+{
+  TaskbarGroupPrivate *priv;
+
+  g_return_if_fail(IS_TASKBAR_GROUP(self));
+  priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
+
+  if(!g_signal_handler_find(self, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA |
+        G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL, taskbar_group_enter_cb, self))
+    return;
+
+  g_signal_handlers_block_matched(self, G_SIGNAL_MATCH_FUNC |
+      G_SIGNAL_MATCH_DATA | G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL,
+      taskbar_group_enter_cb, self);
+  g_signal_handlers_block_matched(self, G_SIGNAL_MATCH_FUNC |
+      G_SIGNAL_MATCH_DATA | G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL,
+      taskbar_group_leave_cb, self);
+  g_signal_handlers_block_matched(priv->button, G_SIGNAL_MATCH_FUNC |
+      G_SIGNAL_MATCH_DATA | G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL,
+      taskbar_group_enter_cb, self);
+  g_signal_handlers_block_matched(priv->button, G_SIGNAL_MATCH_FUNC |
+      G_SIGNAL_MATCH_DATA | G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL,
+      taskbar_group_leave_cb, self);
+
+  g_signal_connect(priv->button,"clicked",G_CALLBACK(taskbar_item_button_cb),
+      child);
+  g_signal_connect(self,"button_press_event",
+      G_CALLBACK(taskbar_item_click_cb),child);
+  g_signal_connect(self,"scroll-event",
+      G_CALLBACK(taskbar_item_scroll_cb),child);
+}
+
+static void taskbar_group_set_multi ( GtkWidget *self )
+{
+  TaskbarGroupPrivate *priv;
+
+  g_return_if_fail(IS_TASKBAR_GROUP(self));
+  priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
+
+  if(g_signal_handler_find(self, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA |
+        G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL, taskbar_group_enter_cb, self))
+    return;
+
+  g_signal_handlers_unblock_matched(self, G_SIGNAL_MATCH_FUNC |
+      G_SIGNAL_MATCH_DATA, 0, 0, NULL,
+      taskbar_group_enter_cb, self);
+  g_signal_handlers_unblock_matched(self, G_SIGNAL_MATCH_FUNC |
+      G_SIGNAL_MATCH_DATA, 0, 0, NULL,
+      taskbar_group_leave_cb, self);
+  g_signal_handlers_unblock_matched(priv->button, G_SIGNAL_MATCH_FUNC |
+      G_SIGNAL_MATCH_DATA, 0, 0, NULL,
+      taskbar_group_enter_cb, self);
+  g_signal_handlers_unblock_matched(priv->button, G_SIGNAL_MATCH_FUNC |
+      G_SIGNAL_MATCH_DATA, 0, 0, NULL,
+      taskbar_group_leave_cb, self);
+
+  g_signal_handlers_disconnect_matched(self, G_SIGNAL_MATCH_FUNC,
+    0, 0, NULL, taskbar_item_click_cb, NULL);
+  g_signal_handlers_disconnect_matched(self, G_SIGNAL_MATCH_FUNC,
+    0, 0, NULL, taskbar_item_scroll_cb, NULL);
+  g_signal_handlers_disconnect_matched(priv->button, G_SIGNAL_MATCH_FUNC,
+    0, 0, NULL, taskbar_item_button_cb, NULL);
+}
+
 static void taskbar_group_update ( GtkWidget *self )
 {
   TaskbarGroupPrivate *priv;
@@ -129,6 +193,10 @@ static void taskbar_group_update ( GtkWidget *self )
   children = gtk_container_get_children(GTK_CONTAINER(
         gtk_bin_get_child(GTK_BIN(priv->tgroup))));
   flow_item_set_active(self, g_list_length(children)>0 );
+  if(g_list_length(children) == 1)
+    taskbar_group_set_single(self,children->data);
+  else
+    taskbar_group_set_multi(self);
   g_list_free(children);
   for(iter=priv->holds;iter;iter=g_list_next(iter))
   {
@@ -246,7 +314,7 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
   gtk_widget_show(priv->tgroup);
 
   gtk_widget_add_events(GTK_WIDGET(self),GDK_ENTER_NOTIFY_MASK |
-      GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
+      GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK | GDK_SCROLL_MASK);
   gtk_widget_add_events(GTK_WIDGET(priv->popover),GDK_ENTER_NOTIFY_MASK);
   gtk_widget_add_events(GTK_WIDGET(priv->popover),GDK_LEAVE_NOTIFY_MASK);
   g_signal_connect(self,"enter-notify-event",

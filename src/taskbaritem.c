@@ -16,7 +16,7 @@
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarItem, taskbar_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (TaskbarItem));
 
-static gboolean taskbar_item_click_cb ( GtkWidget *widget, GdkEventButton *ev,
+gboolean taskbar_item_click_cb ( GtkWidget *widget, GdkEventButton *ev,
     gpointer self )
 {
   TaskbarItemPrivate *priv;
@@ -34,11 +34,11 @@ static gboolean taskbar_item_click_cb ( GtkWidget *widget, GdkEventButton *ev,
   if(!action)
     return FALSE;
 
-  action_exec(widget, action,(GdkEvent *)ev, NULL, NULL);
+  action_exec(widget, action,(GdkEvent *)ev, priv->win, NULL);
   return TRUE;
 }
 
-static gboolean taskbar_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
+gboolean taskbar_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
     gpointer self )
 {
   TaskbarItemPrivate *priv;
@@ -69,11 +69,11 @@ static gboolean taskbar_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
   if(!action)
     return FALSE;
 
-  action_exec(w, action, (GdkEvent *)event, NULL, NULL);
+  action_exec(w, action, (GdkEvent *)event, priv->win, NULL);
   return TRUE;
 }
 
-static void taskbar_item_button_cb( GtkWidget *widget, gpointer self )
+void taskbar_item_button_cb( GtkWidget *widget, gpointer self )
 {
   TaskbarItemPrivate *priv; 
   action_t *action;
@@ -84,7 +84,7 @@ static void taskbar_item_button_cb( GtkWidget *widget, gpointer self )
   action = base_widget_get_action(priv->taskbar,1);
 
   if(action)
-    action_exec(widget,action,NULL, NULL, NULL);
+    action_exec(widget,action,NULL, priv->win, NULL);
   else
   {
     if ( wintree_is_focused(priv->win->uid) &&
