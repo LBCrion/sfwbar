@@ -175,6 +175,8 @@ static gboolean scale_image_draw ( GtkWidget *self, cairo_t *cr )
   width = gtk_widget_get_allocated_width(self);
   height = gtk_widget_get_allocated_height(self);
 
+  gtk_render_background(style,cr,margin.left, margin.top, width - margin.left -
+      margin.right, height - margin.top - margin.bottom);
   gtk_render_frame(style,cr,margin.left, margin.top, width - margin.left -
       margin.right, height - margin.top - margin.bottom);
   scale = gtk_widget_get_scale_factor(self);
