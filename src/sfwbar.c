@@ -167,6 +167,7 @@ static void activate (GtkApplication* app, gpointer data )
   GList *clist, *iter;
 
   expr_lib_init();
+  action_lib_init();
   css_init(cssname);
   wayland_init();
   sway_ipc_init();

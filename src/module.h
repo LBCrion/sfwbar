@@ -27,12 +27,18 @@ typedef struct {
 
 typedef struct {
   gchar *name;
+  gint flags;
   ModuleActionFunc function;
 } ModuleActionHandlerV1;
 
 enum ModuleFlags {
   MODULE_EXPR_NUMERIC       = 1,
   MODULE_EXPR_DETERMINISTIC = 2
+};
+
+enum ModuleActionFlags {
+  MODULE_ACT_WIDGET_ADDRESS = 1,
+  MODULE_ACT_CMD_BY_DEF     = 2
 };
 
 #define MODULE_TRIGGER_EMIT(x) \
@@ -49,7 +55,8 @@ void module_invalidate_all ( void );
 gboolean module_is_function ( gchar *identifier );
 gboolean module_check_flag ( gchar *identifier, gint flag );
 gchar *module_get_string ( GScanner *scanner );
-void module_action_exec ( gchar *name, gchar *param, gchar *addr, void *,
+ModuleActionHandlerV1 *module_action_get ( GQuark quark );
+void module_action_exec ( GQuark quark, gchar *param, gchar *addr, void *,
     void *, void *, void * );
 void module_actions_add ( ModuleActionHandlerV1 **ahandler, gchar *name );
 void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler,gchar *name);

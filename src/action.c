@@ -4,17 +4,10 @@
  */
 
 #include "expr.h"
-#include "wayland.h"
-#include "bar.h"
 #include "basewidget.h"
 #include "taskbaritem.h"
-#include "config.h"
 #include "action.h"
-#include "menu.h"
-#include "sway_ipc.h"
 #include "module.h"
-#include "popup.h"
-#include "client.h"
 
 static GHashTable *functions;
 static GHashTable *trigger_actions;
@@ -40,7 +33,7 @@ void action_function_add ( gchar *name, GList *actions )
 void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
     window_t *win, guint16 *state )
 {
-  GList *l;
+  GList *iter;
   window_t *stat_win;
 
   if(!name || !functions)
@@ -51,39 +44,10 @@ void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
   else
     stat_win = NULL;
 
-  for(l = g_hash_table_lookup(functions, name); l; l = g_list_next(l))
-    action_exec(w,l->data,ev,stat_win,state);
+  for(iter=g_hash_table_lookup(functions, name); iter; iter=g_list_next(iter))
+    action_exec(w,iter->data,ev,stat_win,state);
 
   g_free(stat_win);
-}
-
-void action_set_user_state ( GtkWidget *widget, gchar *value )
-{
-  gchar *state;
-  guint16 mask;
-
-  if(!widget || !value)
-    return;
-
-  state = strchr(value,':');
-  if(!state)
-  {
-    state = value;
-    mask = WS_USERSTATE;
-  }
-  else
-  {
-    state++;
-    if(g_ascii_digit_value(*value)==2)
-      mask = WS_USERSTATE2;
-    else
-      mask = WS_USERSTATE;
-  }
-
-  if(!g_ascii_strcasecmp(state,"on"))
-    base_widget_set_state(widget,mask,TRUE);
-  else
-    base_widget_set_state(widget,mask,FALSE);
 }
 
 guint16 action_state_build ( GtkWidget *widget, window_t *win )
@@ -101,22 +65,10 @@ guint16 action_state_build ( GtkWidget *widget, window_t *win )
   return state;
 }
 
-void action_handle_exec ( gchar *command )
-{
-  gint argc;
-  gchar **argv;
-
-  if(!command || !g_shell_parse_argv(command,&argc,&argv,NULL))
-    return;
-  g_spawn_async(NULL,argv,NULL,G_SPAWN_SEARCH_PATH |
-       G_SPAWN_STDOUT_TO_DEV_NULL |
-       G_SPAWN_STDERR_TO_DEV_NULL,NULL,NULL,NULL,NULL);
-  g_strfreev(argv);
-}
-
 void action_exec ( GtkWidget *widget, action_t *action,
     GdkEvent *event, window_t *win, guint16 *istate )
 {
+  ModuleActionHandlerV1 *ahandler;
   guint16 state;
   GList *children, *iter;
   action_t *caction;
@@ -124,30 +76,21 @@ void action_exec ( GtkWidget *widget, action_t *action,
   if(!action)
     return;
 
-  if(IS_TASKBAR_ITEM(widget))
-    win = flow_item_get_parent(widget);
+  ahandler = module_action_get(action->quark);
+  if(!ahandler)
+    return;
 
-  expr_cache_eval(action->command);
+  if( !(ahandler->flags & MODULE_ACT_CMD_BY_DEF) )
+    expr_cache_eval(action->command);
   expr_cache_eval(action->addr);
 
-  if(action->addr->cache && (
-        action->type == G_TOKEN_MENU ||
-        action->type == G_TOKEN_POPUP ||
-        action->type == G_TOKEN_IDENTIFIER ||
-        action->type == G_TOKEN_FUNCTION ||
-        action->type == G_TOKEN_SETVALUE ||
-        action->type == G_TOKEN_SETSTYLE ||
-        action->type == G_TOKEN_SETTOOLTIP ||
-        action->type == G_TOKEN_USERSTATE ))
+  if(action->addr->cache && ahandler->flags & MODULE_ACT_WIDGET_ADDRESS )
   {
     widget = base_widget_from_id(action->addr->cache);
     istate = NULL;
   }
 
-  if(istate)
-    state = *istate;
-  else
-    state = action_state_build ( widget, win );
+  state = istate? *istate : action_state_build ( widget, win );
 
   if(action->cond & WS_CHILDREN)
     state |= WS_CHILDREN;
@@ -161,12 +104,10 @@ void action_exec ( GtkWidget *widget, action_t *action,
   if((~state & action->ncond) != action->ncond)
     return;
 
-  if(action->command->cache)
-    g_debug("widget action: (%d) %s (addr %s)",action->type, action->command->cache,
-        action->addr->cache?action->addr->cache:"null");
-  else if(win)
-    g_debug("widget action: (%d) on %d",action->type,
-        GPOINTER_TO_INT(win->uid));
+  g_debug("action: %s '%s', '%s', widget=%p, win=%d", ahandler->name,
+      action->addr->cache,action->command->cache,widget,
+      win?GPOINTER_TO_INT(win->uid):0);
+  g_debug("action: '%s','%s'",action->addr->definition,action->command->definition);
 
   if(action->cond & WS_CHILDREN &&
       GTK_IS_CONTAINER(base_widget_get_child(widget)))
@@ -177,129 +118,17 @@ void action_exec ( GtkWidget *widget, action_t *action,
     children = gtk_container_get_children(
         GTK_CONTAINER(base_widget_get_child(widget)));
     for(iter=children;iter;iter=g_list_next(iter))
-      action_exec(iter->data,caction,event,win,NULL);
+      action_exec(iter->data,caction,event,
+          IS_TASKBAR_ITEM(iter->data)?flow_item_get_parent(iter->data):win,
+          NULL);
     g_list_free(children);
     action_free(caction,NULL);
     return;
   }
 
-  switch(action->type)
-  {
-    case G_TOKEN_EXEC:
-      action_handle_exec(action->command->cache);
-      break;
-    case G_TOKEN_MENU:
-      menu_popup(widget, menu_from_name(action->command->cache), event,
-          win?win->uid:NULL, &state);
-      break;
-    case G_TOKEN_MENUCLEAR:
-      menu_remove(action->command->cache);
-      break;
-    case G_TOKEN_PIPEREAD:
-      config_pipe_read(action->command->cache);
-      break;
-    case G_TOKEN_FUNCTION:
-      action_function_exec(action->command->cache,widget,event,win,&state);
-      break;
-    case G_TOKEN_SWAYCMD:
-      sway_ipc_command("%s",action->command->cache);
-      break;
-    case G_TOKEN_MPDCMD:
-      client_mpd_command(action->command->cache);
-      break;
-    case G_TOKEN_SWAYWIN:
-      if(win)
-        sway_ipc_command("[con_id=%ld] %s",GPOINTER_TO_INT(win->uid),
-            action->command->cache);
-      break;
-    case G_TOKEN_CONFIG:
-      config_string(action->command->cache);
-      break;
-    case G_TOKEN_SETMONITOR:
-      bar_set_monitor(bar_from_name(action->addr->cache),
-          action->command->cache);
-      break;
-    case G_TOKEN_SETLAYER:
-      bar_set_layer(bar_from_name(action->addr->cache),
-          action->command->cache);
-      break;
-    case G_TOKEN_SETMIRROR:
-      bar_set_mirrors(bar_from_name(action->addr->cache),
-          action->command->cache);
-      break;
-    case G_TOKEN_BLOCKMIRROR:
-      bar_set_mirror_blocks(bar_from_name(action->addr->cache),
-          action->command->cache);
-      break;
-    case G_TOKEN_SETBARSIZE:
-      bar_set_size(bar_from_name(action->addr->cache),
-          action->command->cache);
-      break;
-    case G_TOKEN_SETBARID:
-      bar_set_id(NULL,action->command->cache);
-      break;
-    case G_TOKEN_SETBARSENSOR:
-      bar_set_sensor(bar_from_name(action->addr->cache),
-          action->command->cache);
-      break;
-    case G_TOKEN_SETBARVISIBILITY:
-      if(action->command->cache)
-        bar_set_visibility(bar_from_name(action->addr->cache),NULL,
-            *(action->command->cache));
-      break;
-    case G_TOKEN_SETEXCLUSIVEZONE:
-      bar_set_exclusive_zone(bar_from_name(action->addr->cache),
-          action->command->cache);
-      break;
-    case G_TOKEN_SETVALUE:
-      if(widget && action->command->definition)
-        base_widget_set_value(widget,g_strdup(action->command->definition));
-      break;
-    case G_TOKEN_SETSTYLE:
-      if(widget && action->command->definition)
-        base_widget_set_style(widget,g_strdup(action->command->definition));
-      break;
-    case G_TOKEN_SETTOOLTIP:
-      if(widget && action->command->definition)
-        base_widget_set_tooltip(widget,g_strdup(action->command->definition));
-      break;
-    case G_TOKEN_USERSTATE:
-      action_set_user_state(widget, action->command->cache);
-      break;
-    case G_TOKEN_POPUP:
-      popup_trigger(widget, action->command->cache);
-      break;
-    case G_TOKEN_CLIENTSEND:
-      client_send(action->addr->cache,action->command->cache);
-      break;
-    case G_TOKEN_FOCUS:
-      if(win)
-        wintree_focus(win->uid);
-      break;
-    case G_TOKEN_CLOSE:
-      if(win)
-        wintree_close(win->uid);
-      break;
-    case G_TOKEN_MINIMIZE:
-      if(win)
-        wintree_minimize(win->uid);
-      break;
-    case G_TOKEN_MAXIMIZE:
-      if(win)
-        wintree_maximize(win->uid);
-      break;
-    case G_TOKEN_UNMINIMIZE:
-      if(win)
-        wintree_unminimize(win->uid);
-      break;
-    case G_TOKEN_UNMAXIMIZE:
-      if(win)
-        wintree_unmaximize(win->uid);
-      break;
-    case G_TOKEN_IDENTIFIER:
-      module_action_exec(action->ident,action->command->cache,
-          action->addr->cache,widget,event,win,&state);
-  }
+  module_action_exec(action->quark,
+      (ahandler->flags & MODULE_ACT_CMD_BY_DEF)?action->command->definition:
+      action->command->cache, action->addr->cache, widget, event, win, &state);
 }
 
 action_t *action_new ( void )
@@ -323,8 +152,7 @@ action_t *action_dup ( action_t *src )
   dest = action_new();
   dest->cond = src->cond;
   dest->ncond = src->ncond;
-  dest->type = src->type;
-  dest->ident = g_strdup(src->ident);
+  dest->quark = src->quark;
 
   dest->command->definition = g_strdup(src->command->definition);
   dest->command->cache = g_strdup(src->command->cache);
@@ -342,7 +170,6 @@ void action_free ( action_t *action, GObject *old )
 
   expr_cache_free(action->command);
   expr_cache_free(action->addr);
-  g_free(action->ident);
 
   g_free(action);
 }

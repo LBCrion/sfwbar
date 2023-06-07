@@ -13,7 +13,7 @@
 
 GList *module_list;
 GHashTable *expr_handlers;
-GHashTable *act_handlers;
+GData *act_handlers;
 GList *invalidators;
 
 static ModuleApiV1 api_v1 = {
@@ -46,19 +46,19 @@ void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler,gchar *name )
 void module_actions_add ( ModuleActionHandlerV1 **ahandler, gchar *name )
 {
   gint i;
+  gchar *lname;
 
   for(i=0;ahandler[i];i++)
     if(ahandler[i]->function && ahandler[i]->name)
     {
-      if(!act_handlers)
-        act_handlers = g_hash_table_new((GHashFunc)str_nhash,
-          (GEqualFunc)str_nequal);
+      lname = g_ascii_strdown(ahandler[i]->name,-1);
       g_debug("module: register action '%s'",ahandler[i]->name);
-      if(g_hash_table_lookup(act_handlers,ahandler[i]->name))
+      if(g_datalist_get_data(&act_handlers,lname))
         g_message("Duplicate module action: %s in module %s",
             ahandler[i]->name,name);
       else
-        g_hash_table_insert(act_handlers,ahandler[i]->name,ahandler[i]);
+        g_datalist_set_data(&act_handlers,lname,ahandler[i]);
+      g_free(lname);
     }
 }
 
@@ -136,19 +136,22 @@ void module_invalidate_all ( void )
       ((ModuleInvalidator)(iter->data))();
 }
 
-void module_action_exec ( gchar *name, gchar *param, gchar *addr, void *widget,
+ModuleActionHandlerV1 *module_action_get ( GQuark quark )
+{
+  return g_datalist_id_get_data(&act_handlers, quark);
+}
+
+void module_action_exec ( GQuark quark, gchar *param, gchar *addr, void *widget,
     void *ev, void *win, void *state)
 {
   ModuleActionHandlerV1 *handler;
 
-  g_debug("module: checking action `%s`",name?name:"(null)");
-  if(!act_handlers || !name)
-    return;
+  g_debug("module: checking action `%s`",g_quark_to_string(quark));
 
-  handler = g_hash_table_lookup(act_handlers, name);
+  handler = module_action_get(quark);
   if(!handler)
     return;
-  g_debug("module: calling action `%s`",name);
+  g_debug("module: calling action `%s`",g_quark_to_string(quark));
 
   handler->function(param, addr, widget,ev,win,state);
 }

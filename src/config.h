@@ -24,6 +24,7 @@ gchar *config_assign_string ( GScanner *scanner, gchar *expr );
 gdouble config_assign_number ( GScanner *scanner, gchar *expr );
 gint config_assign_tokens ( GScanner *scanner, gchar *, gchar *, ... );
 action_t *config_action ( GScanner *scanner );
+void config_action_finish ( GScanner *scanner );
 gchar *config_get_value ( GScanner *, gchar *, gboolean, gchar **);
 void config_scanner ( GScanner *scanner );
 void config_layout ( GScanner *, GtkWidget **, gboolean );
@@ -103,30 +104,7 @@ enum {
   G_TOKEN_FALSE,
   G_TOKEN_MENU,
   G_TOKEN_MENUCLEAR,
-  G_TOKEN_PIPEREAD,
-  G_TOKEN_CONFIG,
-  G_TOKEN_SWAYCMD,
-  G_TOKEN_SWAYWIN,
-  G_TOKEN_MPDCMD,
-  G_TOKEN_SETMONITOR,
-  G_TOKEN_SETLAYER,
-  G_TOKEN_SETMIRROR,
-  G_TOKEN_BLOCKMIRROR,
-  G_TOKEN_SETBARSIZE,
-  G_TOKEN_SETBARID,
-  G_TOKEN_SETBARSENSOR,
-  G_TOKEN_SETBARVISIBILITY,
-  G_TOKEN_SETVALUE,
-  G_TOKEN_SETSTYLE,
-  G_TOKEN_SETTOOLTIP,
   G_TOKEN_FUNCTION,
-  G_TOKEN_MAXIMIZE,
-  G_TOKEN_MINIMIZE,
-  G_TOKEN_UNMAXIMIZE,
-  G_TOKEN_UNMINIMIZE,
-  G_TOKEN_FOCUS,
-  G_TOKEN_CLOSE,
-  G_TOKEN_SETEXCLUSIVEZONE,
   G_TOKEN_USERSTATE,
   G_TOKEN_USERSTATE2,
   G_TOKEN_CLIENTSEND,

@@ -7,10 +7,9 @@
 typedef struct user_action {
   guchar cond;
   guchar ncond;
-  guint type;
   ExprCache *command;
   ExprCache *addr;
-  gchar *ident;
+  GQuark quark;
 } action_t;
 
 void action_exec ( GtkWidget *, action_t *, GdkEvent *, window_t *, guint16 *);
@@ -22,5 +21,6 @@ void action_function_exec ( gchar *, GtkWidget *, GdkEvent *, window_t *,
     guint16 *);
 void action_trigger_add ( action_t *action, gchar *trigger );
 action_t *action_trigger_lookup ( gchar *trigger );
+void action_lib_init ( void );
 
 #endif

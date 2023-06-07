@@ -71,12 +71,15 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign,
   else
     value = g_strdup("");;
   g_scanner_peek_next_token(scanner);
+  scanner->token = '+';
   while(((gint)scanner->next_token<G_TOKEN_SCANNER)&&
       (scanner->next_token!='}')&&
       (scanner->next_token!=';')&&
       (scanner->next_token!='[')&&
       (scanner->next_token!=',' || pcount)&&
       (scanner->next_token!=')' || pcount)&&
+      (scanner->next_token!=G_TOKEN_IDENTIFIER ||
+        strchr(",(+-*/%=<>!|&",scanner->token))&&
       (scanner->next_token!=G_TOKEN_EOF))
   {
     switch((gint)g_scanner_get_next_token(scanner))
@@ -173,81 +176,64 @@ action_t *config_action ( GScanner *scanner )
 {
   action_t *action;
 
-  action = action_new();;
+  action = action_new();
   config_action_conditions ( scanner, &action->cond, &action->ncond );
 
   g_scanner_get_next_token(scanner);
-  action->type = scanner->token;
-  switch ((gint)scanner->token)
+  if(scanner->token == G_TOKEN_STRING)
   {
-    case G_TOKEN_STRING:
-      action->command->cache = g_strdup(scanner->value.v_string);
-      action->type = G_TOKEN_EXEC;
-      break;
-    case G_TOKEN_FOCUS:
-    case G_TOKEN_CLOSE:
-    case G_TOKEN_MINIMIZE:
-    case G_TOKEN_MAXIMIZE:
-    case G_TOKEN_UNMINIMIZE:
-    case G_TOKEN_UNMAXIMIZE:
-      break;
-    case G_TOKEN_IDENTIFIER:
-      action->ident = g_strdup(scanner->value.v_identifier);
-    case G_TOKEN_EXEC:
-    case G_TOKEN_MENU:
-    case G_TOKEN_MENUCLEAR:
-    case G_TOKEN_PIPEREAD:
-    case G_TOKEN_SWAYCMD:
-    case G_TOKEN_SWAYWIN:
-    case G_TOKEN_MPDCMD:
-    case G_TOKEN_POPUP:
-    case G_TOKEN_USERSTATE:
-    case G_TOKEN_USERSTATE2:
-    case G_TOKEN_CONFIG:
-    case G_TOKEN_FUNCTION:
-    case G_TOKEN_SETBARID:
-    case G_TOKEN_SETBARSENSOR:
-    case G_TOKEN_SETBARVISIBILITY:
-    case G_TOKEN_SETMONITOR:
-    case G_TOKEN_SETLAYER:
-    case G_TOKEN_SETMIRROR:
-    case G_TOKEN_BLOCKMIRROR:
-    case G_TOKEN_SETBARSIZE:
-    case G_TOKEN_SETEXCLUSIVEZONE:
-    case G_TOKEN_SETVALUE:
-    case G_TOKEN_SETSTYLE:
-    case G_TOKEN_SETTOOLTIP:
+    action->command->cache = g_strdup(scanner->value.v_string);
+    action->quark = g_quark_from_static_string("exec");
+  }
+  else
+  {
+    switch ((gint)scanner->token)
+    {
+      case G_TOKEN_MENU:
+        action->quark = g_quark_from_static_string("menu");
+        break;
+      case G_TOKEN_EXEC:
+        action->quark = g_quark_from_static_string("exec");
+        break;
+      case G_TOKEN_POPUP:
+        action->quark = g_quark_from_static_string("popup");
+        break;
+      case G_TOKEN_USERSTATE:
+        action->quark = g_quark_from_static_string("userstate");
+        break;
+      case G_TOKEN_FUNCTION:
+        action->quark = g_quark_from_static_string("function");
+        break;
+      case G_TOKEN_MENUCLEAR:
+        action->quark = g_quark_from_static_string("menuclear");
+        break;
+      case G_TOKEN_IDENTIFIER:
+        gchar *lname = g_ascii_strdown(scanner->value.v_identifier,-1);
+        action->quark = g_quark_from_string(lname);
+        g_free(lname);
+        break;
+      default:
+        g_scanner_error(scanner,"invalid action");
+        break;
+    }
+    if(!scanner->max_parse_errors)
+    {
       config_parse_sequence(scanner,
-          SEQ_REQ,G_TOKEN_VALUE,NULL,&action->addr->definition,
+          SEQ_OPT,G_TOKEN_VALUE,NULL,&action->addr->definition,
             "Missing argument in action",
           SEQ_OPT,',',NULL,NULL,NULL,
           SEQ_CON,G_TOKEN_VALUE,NULL,&action->command->definition,
             "Missing argument after ','",
           SEQ_END);
-      if( action->type != G_TOKEN_SETVALUE &&
-          action->type != G_TOKEN_SETSTYLE &&
-          action->type != G_TOKEN_SETTOOLTIP )
-        action->command->eval = TRUE;
       action->addr->eval = TRUE;
-      if(!action->command->definition)
+      action->command->eval = TRUE;
+      if(!action->command->definition && action->addr->definition)
       {
         action->command->definition = action->addr->definition;
         action->addr->definition = NULL;
         action->addr->eval = FALSE;
       }
-      break;
-    case G_TOKEN_CLIENTSEND:
-      config_parse_sequence(scanner,
-          SEQ_REQ,G_TOKEN_STRING,NULL,&action->addr->cache,
-            "Missing address in action",
-          SEQ_OPT,',',NULL,NULL,NULL,
-          SEQ_CON,G_TOKEN_STRING,NULL,&action->command->cache,
-            "Missing command in action",
-          SEQ_END);
-      break;
-    default:
-      g_scanner_error(scanner,"invalid action");
-      break;
+    }
   }
   if(scanner->max_parse_errors)
   {

@@ -34,6 +34,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   scanner->config->case_sensitive = 0;
   scanner->config->numbers_2_int = 1;
   scanner->config->int_2_float = 1;
+  scanner->config->scope_0_fallback = 0;
 
   scanner->config->cset_identifier_nth = g_strconcat(".",
       scanner->config->cset_identifier_nth,NULL);
@@ -129,55 +130,12 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   g_scanner_scope_add_symbol(scanner,0, "Menu", (gpointer)G_TOKEN_MENU );
   g_scanner_scope_add_symbol(scanner,0, "MenuClear", 
       (gpointer)G_TOKEN_MENUCLEAR );
-  g_scanner_scope_add_symbol(scanner,0, "PipeRead",
-      (gpointer)G_TOKEN_PIPEREAD );
-  g_scanner_scope_add_symbol(scanner,0, "Config", (gpointer)G_TOKEN_CONFIG );
-  g_scanner_scope_add_symbol(scanner,0, "SwayCmd", (gpointer)G_TOKEN_SWAYCMD );
-  g_scanner_scope_add_symbol(scanner,0, "SwayWinCmd",
-      (gpointer)G_TOKEN_SWAYWIN );
-  g_scanner_scope_add_symbol(scanner,0, "MpdCmd", (gpointer)G_TOKEN_MPDCMD );
   g_scanner_scope_add_symbol(scanner,0, "UserState",
       (gpointer)G_TOKEN_USERSTATE );
   g_scanner_scope_add_symbol(scanner,0, "UserState2",
       (gpointer)G_TOKEN_USERSTATE2 );
-  g_scanner_scope_add_symbol(scanner,0, "SetValue",
-      (gpointer)G_TOKEN_SETVALUE );
-  g_scanner_scope_add_symbol(scanner,0, "SetStyle",
-      (gpointer)G_TOKEN_SETSTYLE );
-  g_scanner_scope_add_symbol(scanner,0, "SetTooltip",
-      (gpointer)G_TOKEN_SETTOOLTIP );
   g_scanner_scope_add_symbol(scanner,0, "Function",
       (gpointer)G_TOKEN_FUNCTION );
-  g_scanner_scope_add_symbol(scanner,0, "Focus", (gpointer)G_TOKEN_FOCUS );
-  g_scanner_scope_add_symbol(scanner,0, "Close", (gpointer)G_TOKEN_CLOSE );
-  g_scanner_scope_add_symbol(scanner,0, "Minimize",
-      (gpointer)G_TOKEN_MINIMIZE );
-  g_scanner_scope_add_symbol(scanner,0, "Maximize",
-      (gpointer)G_TOKEN_MAXIMIZE );
-  g_scanner_scope_add_symbol(scanner,0, "UnMinimize",
-      (gpointer)G_TOKEN_UNMINIMIZE );
-  g_scanner_scope_add_symbol(scanner,0, "UnMaximize",
-      (gpointer)G_TOKEN_UNMAXIMIZE );
-  g_scanner_scope_add_symbol(scanner,0, "SetMonitor",
-      (gpointer)G_TOKEN_SETMONITOR );
-  g_scanner_scope_add_symbol(scanner,0, "SetLayer",
-      (gpointer)G_TOKEN_SETLAYER );
-  g_scanner_scope_add_symbol(scanner,0, "SetMirror",
-      (gpointer)G_TOKEN_SETMIRROR );
-  g_scanner_scope_add_symbol(scanner,0, "BlockMirror",
-      (gpointer)G_TOKEN_BLOCKMIRROR );
-  g_scanner_scope_add_symbol(scanner,0, "SetBarSize", 
-      (gpointer)G_TOKEN_SETBARSIZE );
-  g_scanner_scope_add_symbol(scanner,0, "SetExclusiveZone", 
-      (gpointer)G_TOKEN_SETEXCLUSIVEZONE );
-  g_scanner_scope_add_symbol(scanner,0, "SetBarID",
-      (gpointer)G_TOKEN_SETBARID );
-  g_scanner_scope_add_symbol(scanner,0, "SetBarSensor",
-      (gpointer)G_TOKEN_SETBARSENSOR );
-  g_scanner_scope_add_symbol(scanner,0, "SetBarVisibility",
-      (gpointer)G_TOKEN_SETBARVISIBILITY );
-  g_scanner_scope_add_symbol(scanner,0, "ClientSend",
-      (gpointer)G_TOKEN_CLIENTSEND );
   g_scanner_scope_add_symbol(scanner,0, "Item", (gpointer)G_TOKEN_ITEM );
   g_scanner_scope_add_symbol(scanner,0, "Separator",
       (gpointer)G_TOKEN_SEPARATOR );
