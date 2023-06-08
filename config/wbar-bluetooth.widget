@@ -1,13 +1,11 @@
-scanner {
-  file("/sys/class/bluetooth/*/rfkill*/state") {
-    BluetoothState = Grab(Sum)
-  }
-}
+include("rfkill.source")
+
+Set RfKillBTVisible = Cached(RfKillBTVisible) | RfKillBluetoothSoft.count
 
 layout {
   label {
-    style = "bluetooth"
-    interval = 500
-    value = If(BluetoothState = 1," ","")
+    style = If(RfKillBTVisible,"bluetooth","hidden")
+    trigger = "rfkill"
+    value = If(RfKillBluetoothSoft = 0," ","")
   }
 }

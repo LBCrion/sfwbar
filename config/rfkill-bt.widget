@@ -1,0 +1,15 @@
+include("rfkill.source")
+
+
+layout {
+  button {
+    style = If(!XRfKillBTPresent, "hidden","module")
+    value = If(XRfKillBTSoft = 1,
+        "bluetooth-disabled-symbolic",
+        "bluetooth-active-symbolic")
+    tooltip = "Bluetooth: Soft" + If(XRfKillBTSoft,"","Un")+"blocked" +
+              ", Hard" + If(XRfKillBTHard,"","Un")+"blocked"
+    trigger = "rfkill"
+    action = Exec "rfkill " + If(XRfKillBTSoft,"un","") + "block bluetooth"
+  }
+}

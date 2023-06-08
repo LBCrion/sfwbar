@@ -1,0 +1,14 @@
+include("rfkill.source")
+
+layout {
+  button {
+    style = If(!XRfKillWifiPresent, "hidden","module")
+    value = If(XRfKillWifiSoft = 1,
+        "network-wireless-hardware-disabled-symbolic",
+        "network-wireless-connected-symbolic")
+    tooltip = "WiFi: Soft" + If(XRfKillWifiSoft,"","Un")+"blocked" +
+              ", Hard" + If(XRfKillWifiHard,"","Un")+"blocked"
+    trigger = "rfkill"
+    action = Exec "rfkill " + If(XRfKillWifiSoft,"un","") + "block wifi"
+  }
+}

@@ -1,0 +1,23 @@
+scanner {
+  ExecClient("stdbuf -oL rfkill event","rfkill") {
+    RfkillWifiSoft = RegEx("type 1 op [0-9]+ soft ([0-9]+)")
+    RfkillWifiHard = RegEx("type 1 op [0-9]+ soft [0-9]+ hard ([0-9]+)")
+    RfkillBluetoothSoft = RegEx("type 2 op [0-9]+ soft ([0-9]+)")
+    RfkillBluetoothHard = RegEx("type 2 op [0-9]+ soft [0-9]+ hard ([0-9]+)")
+  }
+}
+
+Set XRfKillBTPresent = Cached(XRfKillBTPresent) | RfKillBluetoothSoft.count
+Set XRfKillBTSoft = If(RfKillBluetoothSoft.count,
+    RfKillBluetoothSoft,
+    Cached(XRfKillBTSoft))
+Set XRfKillBTHard = If(RfKillBluetoothHard.count,
+    RfKillBluetoothHard,
+    Cached(XRfKillBTHard))
+Set XRfKillWifiPresent = Cached(XRfKillWifiPresent) | RfKillWifiSoft.count
+Set XRfKillWifiSoft = If(RfKillWifiSoft.count,
+    RfKillWifiSoft,
+    Cached(XRfKillWifiSoft))
+Set XRfKillWifiHard = If(RfKillWifiHard.count,
+    RfKillWifiHard,
+    Cached(XRfKillWifiHard))
