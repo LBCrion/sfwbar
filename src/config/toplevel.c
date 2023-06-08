@@ -175,6 +175,7 @@ void config_action_conditions ( GScanner *scanner, guchar *cond,
 action_t *config_action ( GScanner *scanner )
 {
   action_t *action;
+  gchar *lname;
 
   action = action_new();
   config_action_conditions ( scanner, &action->cond, &action->ncond );
@@ -208,7 +209,7 @@ action_t *config_action ( GScanner *scanner )
         action->quark = g_quark_from_static_string("menuclear");
         break;
       case G_TOKEN_IDENTIFIER:
-        gchar *lname = g_ascii_strdown(scanner->value.v_identifier,-1);
+        lname = g_ascii_strdown(scanner->value.v_identifier,-1);
         action->quark = g_quark_from_string(lname);
         g_free(lname);
         break;
