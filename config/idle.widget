@@ -2,7 +2,7 @@ Module("idleinhibit");
 
 layout {
   button {
-    style = If(Ident(IdleInhibitState),"idle_inhibit","hidden")
+    style = If(Ident(IdleInhibitState),"module","hidden")
     value = If(IdleInhibitState()="on",
         "icons/misc/lock.svg",
         "icons/misc/unlock.svg")
