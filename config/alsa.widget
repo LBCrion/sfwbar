@@ -1,5 +1,6 @@
 scanner {
-  ExecClient("stdbuf -oL amixer -s","alsactl") {
+  ExecClient("stdbuf -oL amixer sevents","alsactl") {}
+  Exec("amixer sget Master") {
     AlsaVolume = RegEx(".*[[](.[0-9]+)%")
     AlsaMuted = RegEx(".*[[].*[[]([A-Za-z].*)[]]")
   }
@@ -20,10 +21,9 @@ layout {
     tooltip = "Volume: " + Str(AlsaVolume,0) + "%" + If(AlsaMuted," (muted)","")
     style = If(Ident($AlsaVolume),"module","hidden")
     trigger = "alsactl"
-    action[0] = ClientSend "alsactl","sset Master 0%+\n"
-    action[1] = ClientSend "alsactl","sset Master toggle\n"
+    action[1] = Exec "amixer sset Master toggle\n"
     action[3] = Exec $Term + " -e alsamixer"
-    action[4] = ClientSend "alsactl","sset Master 5%+\n"
-    action[5] = ClientSend "alsactl","sset Master 5%-\n"
+    action[4] = Exec "amixer sset Master 5%+\n"
+    action[5] = Exec "amixer sset Master 5%-\n"
   }
 }
