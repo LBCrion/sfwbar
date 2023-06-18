@@ -4,7 +4,7 @@
  */
 
 #include <glib.h>
-#include <stdio.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <glob.h>
 #include "sfwbar.h"
@@ -288,6 +288,32 @@ time_t scanner_file_mtime ( glob_t *gbuf )
   return res;
 }
 
+gboolean scanner_file_exec ( ScanFile *file )
+{
+  GIOChannel *chan;
+  gint out;
+  gchar **argv;
+
+  if(!g_shell_parse_argv(file->fname, NULL, &argv, NULL))
+    return FALSE;
+
+  if(!g_spawn_async_with_pipes(NULL,argv,NULL,G_SPAWN_SEARCH_PATH,NULL,NULL,
+        NULL, NULL, &out, NULL, NULL))
+    return FALSE;
+
+  chan = g_io_channel_unix_new(out);
+  if(chan)
+  {
+    g_debug("scanner: exec '%s'",file->fname);
+    g_list_foreach(file->vars,(GFunc)scanner_var_reset,NULL);
+    (void)scanner_file_update(chan,file,NULL);
+    g_io_channel_unref(chan);
+  }
+  close(out);
+
+  return TRUE;
+}
+
 /* update all variables in a file (by glob) */
 gboolean scanner_file_glob ( ScanFile *file )
 {
@@ -295,7 +321,7 @@ gboolean scanner_file_glob ( ScanFile *file )
   gchar *dnames[2];
   struct stat stattr;
   gint i;
-  FILE *in;
+  gint in;
   GIOChannel *chan;
   gboolean reset=FALSE;
 
@@ -303,6 +329,8 @@ gboolean scanner_file_glob ( ScanFile *file )
     return FALSE;
   if(file->source == SO_CLIENT || !file->fname)
     return FALSE;
+  if(file->source == SO_EXEC)
+    return scanner_file_exec(file);
   if((file->flags & VF_NOGLOB)||(file->source != SO_FILE))
   {
     dnames[0] = file->fname;
@@ -318,11 +346,8 @@ gboolean scanner_file_glob ( ScanFile *file )
   if( !(file->flags & VF_CHTIME) || (file->mtime < scanner_file_mtime(&gbuf)) )
     for(i=0;gbuf.gl_pathv[i];i++)
     {
-      if(file->source == SO_EXEC)
-        in = popen(gbuf.gl_pathv[i],"r");
-      else
-        in = fopen(gbuf.gl_pathv[i],"rt");
-      if(in)
+      in = open(gbuf.gl_pathv[i],O_RDONLY);
+      if(in > 0)
       {
         if(!reset)
         {
@@ -330,18 +355,13 @@ gboolean scanner_file_glob ( ScanFile *file )
           g_list_foreach(file->vars,(GFunc)scanner_var_reset,NULL);
         }
 
-        chan = g_io_channel_unix_new(fileno(in));
+        chan = g_io_channel_unix_new(in);
         (void)scanner_file_update(chan,file,NULL);
         g_io_channel_unref(chan);
 
-        if(file->source == SO_EXEC)
-          pclose(in);
-        else
-        {
-          fclose(in);
-          if(!stat(gbuf.gl_pathv[i],&stattr))
-            file->mtime = stattr.st_mtime;
-        }
+        close(in);
+        if(!stat(gbuf.gl_pathv[i],&stattr))
+          file->mtime = stattr.st_mtime;
       }
     }
 
