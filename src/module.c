@@ -197,8 +197,7 @@ gchar *module_get_string ( GScanner *scanner )
   params = expr_module_parameters(scanner,handler->parameters,handler->name);
   for(expr=E_STATE(scanner)->expr;!expr->widget&&expr->parent;expr=expr->parent);
 
-  result = handler->function(params, expr?expr->widget:NULL,
-      expr?expr->event:NULL);
+  result = handler->function(params, expr->widget, expr->event);
 
   if(params)
     for(i=0;i<strlen(handler->parameters);i++)
