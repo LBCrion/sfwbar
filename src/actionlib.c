@@ -318,7 +318,7 @@ static void clientsend_action ( gchar *cmd, gchar *name, void *widget,
 }
 
 static ModuleActionHandlerV1 clientsend_handler = {
-  .name = "ClientSent",
+  .name = "ClientSend",
   .function = (ModuleActionFunc)clientsend_action
 };
 

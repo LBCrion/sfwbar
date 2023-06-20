@@ -142,7 +142,7 @@ void sfwbar_module_init ( ModuleApiV1 *api )
     g_timeout_add (1000,(GSourceFunc )mpd_connect,NULL);
 }
 
-void *mpd_expr_func ( void **params, void *widget )
+void *mpd_expr_func ( void **params, void *widget, void *event )
 {
   if(!conn | !status | !song)
     return g_strdup("disconnected");

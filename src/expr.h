@@ -21,6 +21,7 @@ typedef struct expr_cache {
   gchar *definition;
   gchar *cache;
   GtkWidget *widget;
+  GdkEvent *event;
   gboolean eval;
   guint vstate;
   struct expr_cache *parent;

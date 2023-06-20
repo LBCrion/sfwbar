@@ -347,7 +347,7 @@ gboolean scanner_file_glob ( ScanFile *file )
     for(i=0;gbuf.gl_pathv[i];i++)
     {
       in = open(gbuf.gl_pathv[i],O_RDONLY);
-      if(in > 0)
+      if(in != -1)
       {
         if(!reset)
         {

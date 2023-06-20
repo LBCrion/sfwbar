@@ -48,7 +48,7 @@ void sfwbar_module_init ( ModuleApiV1 *api )
   wl_display_roundtrip(wdisp);
 }
 
-void *idle_inhibit_expr_func ( void **params, void *widget )
+void *idle_inhibit_expr_func ( void **params, void *widget, void *event )
 {
   if(widget && g_object_get_data(G_OBJECT(widget),"inhibitor"))
     return g_strdup("on");

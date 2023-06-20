@@ -199,7 +199,7 @@ void sfwbar_module_invalidate ( void )
   invalid = TRUE;
 }
 
-void *pulse_expr_func ( void **params, void *widget )
+void *pulse_expr_func ( void **params, void *widget, void *event )
 {
   gchar *cmd;
   pulse_info *info;
@@ -241,8 +241,9 @@ void *pulse_expr_func ( void **params, void *widget )
   return g_strdup_printf("invalid query: %s",cmd);
 }
 
-static pa_cvolume *pulse_adjust_volume ( pa_cvolume *vol, gint vold )
+static pa_cvolume *pulse_adjust_volume ( pa_cvolume *vol, gchar *vstr )
 {
+  gint vold = g_ascii_strtod(vstr,NULL);
   if(vold>0)
     pa_cvolume_inc_clamp(vol,vold*PA_VOLUME_NORM/100,PA_VOLUME_UI_MAX);
   else
@@ -284,10 +285,10 @@ static void pulse_action ( gchar *cmd, gchar *name, void *d1,
 
   if(!g_ascii_strncasecmp(cmd,"sink-volume",11))
     op = pa_context_set_sink_volume_by_index(pctx,info->idx,
-        pulse_adjust_volume(&info->cvol,g_ascii_strtod(cmd+11,NULL)),NULL,NULL);
+        pulse_adjust_volume(&info->cvol,cmd+11),NULL,NULL);
   else if(!g_ascii_strncasecmp(cmd,"source-volume",13))
     op = pa_context_set_source_volume_by_index(pctx,info->idx,
-        pulse_adjust_volume(&info->cvol,g_ascii_strtod(cmd+13,NULL)),
+        pulse_adjust_volume(&info->cvol,cmd+13),
         NULL,NULL);
   else if(!g_ascii_strncasecmp(cmd,"sink-mute",9))
     op = pa_context_set_sink_mute_by_index(pctx,info->idx,

@@ -283,7 +283,7 @@ static SysctlVar *sysctl_var_get ( gchar *name )
   return var;
 }
 
-void *bsdctl_func ( void **params )
+void *bsdctl_func ( void **params, void *widget, void *event )
 {
   SysctlVar *var;
 

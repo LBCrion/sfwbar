@@ -81,12 +81,19 @@ void action_exec ( GtkWidget *widget, action_t *action,
     return;
 
   if( !(ahandler->flags & MODULE_ACT_CMD_BY_DEF) )
+  {
+    action->command->widget = widget;
+    action->command->event = event;
     expr_cache_eval(action->command);
+    action->command->widget = NULL;
+    action->command->event = NULL;
+  }
   expr_cache_eval(action->addr);
 
   if(action->addr->cache && ahandler->flags & MODULE_ACT_WIDGET_ADDRESS )
   {
     widget = base_widget_from_id(action->addr->cache);
+    event = NULL;
     istate = NULL;
   }
 

@@ -11,7 +11,7 @@
 #include "expr.h"
 
 /* extract a substring */
-static void *expr_lib_mid ( void **params, void *widget )
+static void *expr_lib_mid ( void **params, void *widget, void *event )
 {
 
   gint len, c1, c2;
@@ -40,7 +40,7 @@ static void *expr_lib_mid ( void **params, void *widget )
 }
 
 /* Extract substring using regex */
-static void *expr_lib_extract( void **params, void *widget )
+static void *expr_lib_extract( void **params, void *widget, void *event )
 {
   gchar *sres=NULL;
   GRegex *regex;
@@ -61,7 +61,7 @@ static void *expr_lib_extract( void **params, void *widget )
   return sres?sres:g_strdup("");
 }
 
-static void *expr_lib_pad ( void **params, void *widget )
+static void *expr_lib_pad ( void **params, void *widget, void *event )
 {
   gchar *result, *ptr;
   gint n, len, sign;
@@ -97,7 +97,7 @@ static void *expr_lib_pad ( void **params, void *widget )
 }
 
 /* Get current time string */
-static void *expr_lib_time ( void **params, void *widget )
+static void *expr_lib_time ( void **params, void *widget, void *event )
 {
   GTimeZone *tz;
   GDateTime *time;
@@ -126,7 +126,7 @@ static void *expr_lib_time ( void **params, void *widget )
 }
 
 /* generate disk space utilization for a device */
-static void *expr_lib_disk ( void **params, void *widget )
+static void *expr_lib_disk ( void **params, void *widget, void *event )
 {
   struct statvfs fs;
   gdouble *result = g_malloc0(sizeof(gdouble));
@@ -151,12 +151,12 @@ static void *expr_lib_disk ( void **params, void *widget )
   return result;
 }
 
-static void *expr_lib_active ( void **params, void *widget )
+static void *expr_lib_active ( void **params, void *widget, void *event )
 {
   return g_strdup(wintree_get_active());
 }
 
-static void *expr_lib_str ( void **params, void *widget )
+static void *expr_lib_str ( void **params, void *widget, void *event )
 {
   if(!params || !params[0])
     return g_strdup("");
@@ -165,7 +165,7 @@ static void *expr_lib_str ( void **params, void *widget )
         params[1]?(gint)*(gdouble *)params[1]:0);
 }
 
-static void *expr_lib_max ( void **params, void *widget )
+static void *expr_lib_max ( void **params, void *widget, void *event )
 {
   gdouble *result;
 
@@ -177,7 +177,7 @@ static void *expr_lib_max ( void **params, void *widget )
   return result;
 }
 
-static void *expr_lib_min ( void **params, void *widget )
+static void *expr_lib_min ( void **params, void *widget, void *event )
 {
   gdouble *result;
 
@@ -189,7 +189,7 @@ static void *expr_lib_min ( void **params, void *widget )
   return result;
 }
 
-static void *expr_lib_val ( void **params, void *widget )
+static void *expr_lib_val ( void **params, void *widget, void *event )
 {
   gdouble *result;
 
@@ -202,7 +202,7 @@ static void *expr_lib_val ( void **params, void *widget )
   return result;
 }
 
-static void *expr_lib_upper ( void **params, void *widget )
+static void *expr_lib_upper ( void **params, void *widget, void *event )
 {
   if(!params || !params[0])
     return g_strdup("");
@@ -210,12 +210,49 @@ static void *expr_lib_upper ( void **params, void *widget )
     return g_ascii_strup(params[0],-1);
 }
 
-static void *expr_lib_lower ( void **params, void *widget )
+static void *expr_lib_lower ( void **params, void *widget, void *event )
 {
   if(!params || !params[0])
     return g_strdup("");
   else
     return g_ascii_strdown(params[0],-1);
+}
+
+static void *expr_lib_gtkevent ( void **params, void *widget, void *event )
+{
+  GdkEventButton  *ev = event;
+  GtkAllocation alloc;
+  GtkStyleContext *style;
+  gint x,y,w,h;
+  gdouble *result;
+
+  if(!params || !params[0])
+    return g_malloc0(sizeof(gdouble));
+
+  gtk_widget_get_allocation( gtk_bin_get_child(widget), &alloc );
+  gtk_widget_translate_coordinates(widget,gtk_bin_get_child(widget),ev->x,ev->y,&x,&y);
+
+  style = gtk_widget_get_style_context(gtk_bin_get_child(widget));
+  GtkBorder margin, padding, border;
+  gtk_style_context_get_margin(style,gtk_style_context_get_state(style),&margin);
+  gtk_style_context_get_padding(style,gtk_style_context_get_state(style),&padding);
+  gtk_style_context_get_border(style,gtk_style_context_get_state(style),&border);
+  w = alloc.width - margin.left - margin.right - padding.left -
+    padding.right - border.left - border.right;
+  h = alloc.height - margin.top - margin.bottom - padding.top -
+    padding.bottom - border.top - border.bottom;
+
+  x = x - margin.left - padding.left - border.left;
+  y = y - margin.top - padding.top - border.top;
+
+  result = g_malloc0(sizeof(gdouble));
+
+  if(!g_ascii_strcasecmp(params[0],"x"))
+    *result = CLAMP((gdouble)x / w,0,1);
+  else if(!g_ascii_strcasecmp(params[0],"y"))
+    *result = CLAMP((gdouble)y / h,0,1);
+
+  return result;
 }
 
 ModuleExpressionHandlerV1 mid_handler = {
@@ -302,6 +339,13 @@ ModuleExpressionHandlerV1 lower_handler = {
   .function = expr_lib_lower
 };
 
+ModuleExpressionHandlerV1 gtkevent_handler = {
+  .flags = MODULE_EXPR_NUMERIC,
+  .name = "gtkevent",
+  .parameters = "S",
+  .function = expr_lib_gtkevent
+};
+
 ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &mid_handler,
   &pad_handler,
@@ -315,6 +359,7 @@ ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &val_handler,
   &upper_handler,
   &lower_handler,
+  &gtkevent_handler,
   NULL
 };
 
