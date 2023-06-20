@@ -255,12 +255,10 @@ static pa_cvolume *pulse_adjust_volume ( pa_cvolume *vol, gchar *vstr )
   if(*vstr!='+' && *vstr!='-')
     vdelta -= pa_cvolume_avg(vol);
 
-  g_message("vstr: %s, avg: %d,vdelta: %d",vstr,pa_cvolume_avg(vol),vdelta);
   if(vdelta > 0)
     pa_cvolume_inc_clamp(vol,vdelta, PA_VOLUME_UI_MAX);
   else
     pa_cvolume_dec(vol,-vdelta);
-  g_message("result: %d",pa_cvolume_avg(vol));
 
   return vol;
 }
