@@ -11,6 +11,7 @@ puls = dependency('libpulse', required: get_option('pulse'))
 pulg = dependency('libpulse-mainloop-glib', required: get_option('pulse'))
 mpdc = dependency('libmpdclient', required: get_option('mpd'))
 xkbr = dependency('xkbregistry', required: get_option('xkb'))
+alsa = dependency('alsa', required: get_option('alsa'))
 
 conf_data = configuration_data()
 glsh_ver = glsh.version().split('.')
@@ -116,6 +117,13 @@ if mpdc.found()
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   man_pages += 'doc/sfwbar-mpd.1'
+endif
+
+if alsa.found()
+  library('alsactl', sources: 'modules/alsactl.c', dependencies: [glib, alsa],
+      name_prefix: '', install: true,
+      install_dir: get_option('libdir') / 'sfwbar' )
+#  man_pages += 'doc/sfwbar-alsa.1'
 endif
 
 if xkbr.found()
