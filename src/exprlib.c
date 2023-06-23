@@ -218,22 +218,42 @@ static void *expr_lib_lower ( void **params, void *widget, void *event )
     return g_ascii_strdown(params[0],-1);
 }
 
-static void *expr_lib_gtkevent ( void **params, void *widget, void *event )
+static void *expr_lib_gtkevent ( void **params, void *base, void *event )
 {
+  GtkWidget *widget;
   GdkEventButton  *ev = event;
   GtkAllocation alloc;
   GtkStyleContext *style;
-  gint x,y,w,h;
+  GtkBorder margin, padding, border;
+  gint x,y,w,h,dir;
   gdouble *result;
 
   if(!params || !params[0])
     return g_malloc0(sizeof(gdouble));
 
-  gtk_widget_get_allocation( gtk_bin_get_child(widget), &alloc );
-  gtk_widget_translate_coordinates(widget,gtk_bin_get_child(widget),ev->x,ev->y,&x,&y);
+  if(GTK_IS_BIN(base))
+  {
+    widget = gtk_bin_get_child(base);
+    gtk_widget_translate_coordinates(base,widget,ev->x,ev->y,&x,&y);
+  }
+  else
+  {
+    widget = base;
+    x = ev->x;
+    y = ev->y;
+  }
 
-  style = gtk_widget_get_style_context(gtk_bin_get_child(widget));
-  GtkBorder margin, padding, border;
+  if(!g_ascii_strcasecmp(params[0],"x"))
+    dir = GTK_POS_RIGHT;
+  else if(!g_ascii_strcasecmp(params[0],"y"))
+    dir = GTK_POS_BOTTOM;
+  else if(!g_ascii_strcasecmp(params[0],"dir"))
+    gtk_widget_style_get(widget,"direction",&dir,NULL);
+  else
+    return g_malloc0(sizeof(gdouble));
+
+  gtk_widget_get_allocation( widget, &alloc );
+  style = gtk_widget_get_style_context(widget);
   gtk_style_context_get_margin(style,gtk_style_context_get_state(style),&margin);
   gtk_style_context_get_padding(style,gtk_style_context_get_state(style),&padding);
   gtk_style_context_get_border(style,gtk_style_context_get_state(style),&border);
@@ -246,11 +266,12 @@ static void *expr_lib_gtkevent ( void **params, void *widget, void *event )
   y = y - margin.top - padding.top - border.top;
 
   result = g_malloc0(sizeof(gdouble));
-
-  if(!g_ascii_strcasecmp(params[0],"x"))
+  if(dir==GTK_POS_RIGHT || dir==GTK_POS_LEFT)
     *result = CLAMP((gdouble)x / w,0,1);
-  else if(!g_ascii_strcasecmp(params[0],"y"))
+  else
     *result = CLAMP((gdouble)y / h,0,1);
+  if(dir==GTK_POS_LEFT || dir==GTK_POS_TOP)
+    *result = 1.0 - *result;
 
   return result;
 }
