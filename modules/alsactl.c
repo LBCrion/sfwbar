@@ -11,11 +11,10 @@ typedef struct _alsa_source {
   GSource source;
   snd_mixer_t *mixer;
   snd_mixer_elem_t* element;
+  snd_mixer_selem_id_t *sid;
   struct pollfd *pfds;
   int pfdcount;
 } alsa_source_t;
-
-#define ALSA_SOURCE(x) ((alsa_source_t *)x)
 
 ModuleApiV1 *sfwbar_module_api;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
@@ -25,48 +24,40 @@ alsa_source_t *main_src;
 gdouble volume, cvolume;
 gboolean mute, cmute;
 
-/*void alsa_volume_set (long volume)
-{
-  long min, max;
-
-  snd_mixer_selem_get_playback_volume_range(elem, &min, &max);
-  snd_mixer_selem_set_playback_volume_all(elem, volume / 100 * (max-min) + min);
-}*/
-
-void alsa_volume_get ( snd_mixer_elem_t *element )
+void alsa_volume_get ( alsa_source_t *source )
 {
   long min, max, vol;
   gint pb;
 
-  if(snd_mixer_selem_has_playback_volume(element))
+  if(snd_mixer_selem_has_playback_volume(source->element))
   {
-    snd_mixer_selem_get_playback_volume_range(element, &min, &max);
-    snd_mixer_selem_get_playback_volume(element, 0, &vol);
+    snd_mixer_selem_get_playback_volume_range(source->element, &min, &max);
+    snd_mixer_selem_get_playback_volume(source->element, 0, &vol);
     volume = ((gdouble)vol-min)/(max-min);
   }
   else
     volume = 0.0;
 
-  if(snd_mixer_selem_has_capture_volume(element))
+  if(snd_mixer_selem_has_capture_volume(source->element))
   {
-    snd_mixer_selem_get_capture_volume_range(element, &min, &max);
-    snd_mixer_selem_get_capture_volume(element, 0, &vol);
+    snd_mixer_selem_get_capture_volume_range(source->element, &min, &max);
+    snd_mixer_selem_get_capture_volume(source->element, 0, &vol);
     cvolume = (vol-min)/(max-min);
   }
   else
     cvolume = 0.0;
 
-  if(snd_mixer_selem_has_playback_switch(element))
+  if(snd_mixer_selem_has_playback_switch(source->element))
   {
-    snd_mixer_selem_get_playback_switch(element, 0, &pb);
+    snd_mixer_selem_get_playback_switch(source->element, 0, &pb);
     mute = !pb;
   }
   else
     mute = 0;
 
-  if(snd_mixer_selem_has_capture_switch(element))
+  if(snd_mixer_selem_has_capture_switch(source->element))
   {
-    snd_mixer_selem_get_capture_switch(element, 0, &pb);
+    snd_mixer_selem_get_capture_switch(source->element, 0, &pb);
     cmute = !pb;
   }
   else
@@ -81,40 +72,38 @@ gboolean alsa_source_prepare(GSource *source, gint *timeout)
   return FALSE;
 }
 
-gboolean alsa_source_check( GSource *source )
+gboolean alsa_source_check( alsa_source_t *source )
 {
   gushort revents;
 
-  snd_mixer_poll_descriptors_revents(ALSA_SOURCE(source)->mixer,
-      ALSA_SOURCE(source)->pfds, ALSA_SOURCE(source)->pfdcount, &revents);
+  snd_mixer_poll_descriptors_revents(source->mixer, source->pfds,
+      source->pfdcount, &revents);
   return !!(revents & POLLIN);
 }
 
-gboolean alsa_source_dispatch( GSource *source,GSourceFunc cb, gpointer data)
+gboolean alsa_source_dispatch( alsa_source_t *source,GSourceFunc cb, gpointer data)
 {
-  snd_mixer_handle_events(ALSA_SOURCE(source)->mixer);
-  alsa_volume_get(ALSA_SOURCE(source)->element);
+  snd_mixer_handle_events(source->mixer);
+  alsa_volume_get(source);
 
   return TRUE;
 }
 
-static GSourceFuncs alsa_source_funcs = {
-  alsa_source_prepare,
-  alsa_source_check,
-  alsa_source_dispatch,
-  NULL,
-  NULL,
-  NULL
-};
-
-static void alsa_source_free ( alsa_source_t *source )
+static void alsa_source_finalize ( alsa_source_t *source )
 {
+  g_clear_pointer(&source->sid,snd_mixer_selem_id_free);
   g_clear_pointer((&source->mixer),snd_mixer_close);
   g_clear_pointer((&source->pfds),g_free);
-  g_source_destroy((GSource *)source);
 }
 
-#define alsa_source_bail(x) { alsa_source_free(x); return NULL; }
+static GSourceFuncs alsa_source_funcs = {
+  alsa_source_prepare,
+  (gboolean (*)(GSource *))alsa_source_check,
+  (gboolean (*)(GSource *, GSourceFunc, gpointer))alsa_source_dispatch,
+  (void (*)(GSource *))alsa_source_finalize
+};
+
+#define alsa_source_bail(x) { g_source_destroy((GSource *)x); return NULL; }
 
 static alsa_source_t *alsa_source_subscribe ( gchar *name )
 {
@@ -138,6 +127,8 @@ static alsa_source_t *alsa_source_subscribe ( gchar *name )
   if(snd_mixer_poll_descriptors(source->mixer, source->pfds,
         source->pfdcount) < 0)
     alsa_source_bail(source);
+  if(source->sid)
+    source->element = snd_mixer_find_selem(source->mixer, source->sid);
 
   g_source_attach((GSource *)source,NULL);
   g_source_set_priority((GSource *)source,G_PRIORITY_DEFAULT);
@@ -148,12 +139,11 @@ static alsa_source_t *alsa_source_subscribe ( gchar *name )
 
 static void alsa_set_element ( alsa_source_t *source, gchar *name )
 {
-  snd_mixer_selem_id_t *sid;
-
-  snd_mixer_selem_id_alloca(&sid);
-  snd_mixer_selem_id_set_index(sid, 0);
-  snd_mixer_selem_id_set_name(sid, name);
-  source->element = snd_mixer_find_selem(source->mixer, sid);
+  g_clear_pointer(&source->sid,snd_mixer_selem_id_free);
+  snd_mixer_selem_id_malloc(&source->sid);
+  snd_mixer_selem_id_set_index(source->sid, 0);
+  snd_mixer_selem_id_set_name(source->sid, name);
+  source->element = snd_mixer_find_selem(source->mixer, source->sid);
 }
 
 void sfwbar_module_init ( ModuleApiV1 *api )
@@ -261,7 +251,28 @@ static void alsa_action ( gchar *cmd, gchar *name, void *d1,
   else
     return;
 
-  alsa_volume_get(main_src->element);
+  alsa_volume_get(main_src);
+}
+
+static void alsa_card_action ( gchar *cmd, gchar *name, void *d1,
+    void *d2, void *d3, void *d4 )
+{
+  if(!cmd)
+    return;
+
+  g_clear_pointer((GSource **)&main_src,g_source_destroy);
+  main_src = alsa_source_subscribe(cmd);
+  alsa_volume_get(main_src);
+}
+
+static void alsa_element_action ( gchar *cmd, gchar *name, void *d1,
+    void *d2, void *d3, void *d4 )
+{
+  if(!cmd)
+    return;
+
+  alsa_set_element(main_src, cmd);
+  alsa_volume_get(main_src);
 }
 
 ModuleExpressionHandlerV1 handler1 = {
@@ -281,7 +292,19 @@ ModuleActionHandlerV1 act_handler1 = {
   .function = alsa_action
 };
 
+ModuleActionHandlerV1 act_handler2 = {
+  .name = "AlsaSetCard",
+  .function = alsa_card_action
+};
+
+ModuleActionHandlerV1 act_handler3 = {
+  .name = "AlsaSetElement",
+  .function = alsa_element_action
+};
+
 ModuleActionHandlerV1 *sfwbar_action_handlers[] = {
   &act_handler1,
+  &act_handler2,
+  &act_handler3,
   NULL
 };
