@@ -59,6 +59,12 @@ Command will be applied to the current interface.
 "capture-mute State"
   Change the capture mute state, State can be On, Off or Toggle.
 
+AlsaSetCard Card
+-----------------------------
+
+Select ALSA sound card. This action accepts one paramter with a card name, by
+default the module will use "default" card.
+
 Triggers
 ========
 

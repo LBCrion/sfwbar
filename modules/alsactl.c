@@ -7,14 +7,14 @@
 #include <alsa/asoundlib.h>
 #include "../src/module.h"
 
+ModuleApiV1 *sfwbar_module_api;
+gint64 sfwbar_module_signature = 0x73f4d956a1;
+guint16 sfwbar_module_version = 1;
+
 static GSource *main_src;
 static snd_mixer_t *mixer;
 static  struct pollfd *pfds;
 static  int pfdcount;
-
-ModuleApiV1 *sfwbar_module_api;
-gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 sfwbar_module_version = 1;
 
 typedef struct _mixer_api {
   int (*has_volume)( snd_mixer_elem_t *);
@@ -152,6 +152,7 @@ static gdouble alsa_volume_get ( snd_mixer_elem_t *element, mixer_api_t *api )
 
   if(!api->has_volume(element))
     return 0;
+
   api->get_range(element, &min, &max);
   vol = alsa_volume_avg_get(element, api );
   return ((gdouble)vol-min)/(max-min)*100;
