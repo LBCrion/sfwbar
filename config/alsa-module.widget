@@ -10,7 +10,7 @@ set XAlsaHighIcon = If(!Ident($AlsaHighIcon),
     "audio-volume-high-symbolic", $AlsaHighIcon)
 set XAlsaAction = If(!Ident($AlsaAction),"pavucontrol",$AlsaAction)
 
-define XAlsaMuted = Alsa("playback-muted")
+define XAlsaMuted = Alsa("playback-mute")
 define XAlsaVolume = Alsa("playback-volume")
 set XAlsaVolumeIcon = Lookup(XAlsaVolume,
       80, $XAlsaHighIcon,

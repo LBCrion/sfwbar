@@ -1,6 +1,6 @@
 /* This entire file is licensed under GNU General Public License v3.0
  *
- * Copyright 2022 Sfwbar maintainers
+ * Copyright 2023- Sfwbar maintainers
  */
 
 #include <glib.h>
@@ -15,6 +15,39 @@ static  int pfdcount;
 ModuleApiV1 *sfwbar_module_api;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 1;
+
+typedef struct _mixer_api {
+  int (*has_volume)( snd_mixer_elem_t *);
+  int (*has_channel)( snd_mixer_elem_t *, snd_mixer_selem_channel_id_t );
+  int (*get_range) ( snd_mixer_elem_t *, long *, long *);
+  int (*get_channel)(snd_mixer_elem_t *, snd_mixer_selem_channel_id_t, long *);
+  int (*set_channel)(snd_mixer_elem_t *, snd_mixer_selem_channel_id_t, long );
+  int (*has_switch)( snd_mixer_elem_t *);
+  int (*get_switch)( snd_mixer_elem_t *, snd_mixer_selem_channel_id_t, int *);
+  int (*set_switch) ( snd_mixer_elem_t *, int );
+} mixer_api_t;
+
+static mixer_api_t playback_api = {
+  .has_volume = snd_mixer_selem_has_playback_volume,
+  .has_channel = snd_mixer_selem_has_playback_channel,
+  .get_range = snd_mixer_selem_get_playback_volume_range,
+  .get_channel = snd_mixer_selem_get_playback_volume,
+  .set_channel = snd_mixer_selem_set_playback_volume,
+  .has_switch = snd_mixer_selem_has_playback_switch,
+  .get_switch = snd_mixer_selem_get_playback_switch,
+  .set_switch = snd_mixer_selem_set_playback_switch_all
+};
+
+static mixer_api_t capture_api = {
+  .has_volume = snd_mixer_selem_has_capture_volume,
+  .has_channel = snd_mixer_selem_has_capture_channel,
+  .get_range = snd_mixer_selem_get_capture_volume_range,
+  .get_channel = snd_mixer_selem_get_capture_volume,
+  .set_channel = snd_mixer_selem_set_capture_volume,
+  .has_switch = snd_mixer_selem_has_capture_switch,
+  .get_switch = snd_mixer_selem_get_capture_switch,
+  .set_switch = snd_mixer_selem_set_capture_switch_all
+};
 
 gboolean alsa_source_prepare(GSource *source, gint *timeout)
 {
@@ -97,141 +130,129 @@ static snd_mixer_elem_t *alsa_element_get ( gchar *name )
   return snd_mixer_find_selem(mixer, sid);
 }
 
+static glong alsa_volume_avg_get ( snd_mixer_elem_t *element, mixer_api_t *api )
+{
+  glong vol, tvol = 0;
+  gint i, count = 0;
+
+  for(i=0;i<=SND_MIXER_SCHN_LAST;i++)
+    if(api->has_channel(element, i))
+    {
+      api->get_channel(element, i, &vol);
+      tvol += vol;
+      count++;
+    }
+
+  return tvol/count;
+}
+
+static gdouble alsa_volume_get ( snd_mixer_elem_t *element, mixer_api_t *api )
+{
+  glong min, max, vol;
+
+  if(!api->has_volume(element))
+    return 0;
+  api->get_range(element, &min, &max);
+  vol = alsa_volume_avg_get(element, api );
+  return ((gdouble)vol-min)/(max-min)*100;
+}
+
+static gdouble alsa_mute_get ( snd_mixer_elem_t *element, mixer_api_t *api )
+{
+  gint pb;
+
+  if(!api->has_switch(element))
+    return FALSE;
+
+  api->get_switch(element, 0, &pb);
+  return !pb;
+}
+
 void *alsa_expr_func ( void **params, void *widget, void *event )
 {
-  gdouble *result;
-  gchar *dname;
   snd_mixer_elem_t *element;
-  glong min, max, vol;
-  gint pb;
+  gdouble *result;
 
   result = g_malloc0(sizeof(gdouble));
   if(!params || !params[0])
     return result;
 
-  dname = params[1]?params[1]:params[0];
-  element = alsa_element_get( params[1]?params[0]:NULL);
+  element = alsa_element_get(params[1]);
 
-  if(!g_ascii_strcasecmp(dname,"playback-volume"))
-  {
-    if(snd_mixer_selem_has_playback_volume(element))
-    {
-      snd_mixer_selem_get_playback_volume_range(element, &min, &max);
-      snd_mixer_selem_get_playback_volume(element, 0, &vol);
-      *result = ((gdouble)vol-min)/(max-min)*100;
-    }
-  }
-  if(!g_ascii_strcasecmp(dname,"capture-volume"))
-  {
-    if(snd_mixer_selem_has_capture_volume(element))
-    {
-      snd_mixer_selem_get_capture_volume_range(element, &min, &max);
-      snd_mixer_selem_get_capture_volume(element, 0, &vol);
-      *result = (vol-min)/(max-min)*100;
-    }
-  }
-  if(!g_ascii_strcasecmp(dname,"playback-muted"))
-  {
-    if(snd_mixer_selem_has_playback_switch(element))
-    {
-      snd_mixer_selem_get_playback_switch(element, 0, &pb);
-      *result = !pb;
-    }
-  }
-  if(!g_ascii_strcasecmp(dname,"capture-muted"))
-  {
-    if(snd_mixer_selem_has_capture_switch(element))
-    {
-      snd_mixer_selem_get_capture_switch(element, 0, &pb);
-      *result = !pb;
-    }
-  }
+  if(!g_ascii_strcasecmp(params[0],"playback-volume"))
+    *result = alsa_volume_get(element, &playback_api);
+  else if(!g_ascii_strcasecmp(params[0],"capture-volume"))
+    *result = alsa_volume_get(element, &capture_api);
+  else if(!g_ascii_strcasecmp(params[0],"playback-mute"))
+    *result = alsa_mute_get(element, &playback_api);
+  else if(!g_ascii_strcasecmp(params[0],"capture-mute"))
+    *result = alsa_mute_get(element, &capture_api);
   return result;
 }
 
-static gdouble alsa_volume_calc ( gchar *vstr, gdouble old )
+static void alsa_volume_adjust ( snd_mixer_elem_t *element, gchar *vstr,
+    mixer_api_t *api )
 {
-  gdouble vol;
+  long min, max, vol, vdelta;
+  gint i;
 
-  if(!vstr)
-    return old;
+  if(!api->has_volume(element))
+    return;
+
+  api->get_range(element, &min, &max);
+  vol = alsa_volume_avg_get(element, api);
 
   while(*vstr==' ')
     vstr++;
 
-  vol = g_ascii_strtod(vstr,NULL)/100;
-  if(*vstr=='+' || *vstr=='-')
-    vol += old;
+  vdelta = g_ascii_strtod(vstr,NULL) * (max-min)/100;
+  if(*vstr!='+' && *vstr!='-')
+    vdelta = vdelta - vol;
 
-  return vol;
+  for(i=0;i<=SND_MIXER_SCHN_LAST;i++)
+  {
+    api->get_channel(element, i, &vol);
+    api->set_channel(element, i, CLAMP(vol + vdelta,min,max));
+  }
+}
+
+static void alsa_mute_set ( snd_mixer_elem_t *element, gchar *vstr,
+   mixer_api_t *api )
+{
+  gint pb;
+
+  if(!api->has_switch(element))
+    return;
+
+  while(*vstr==' ')
+    vstr++;
+
+  if(!g_ascii_strcasecmp(vstr,"on"))
+    api->set_switch(element,0);
+  else if(!g_ascii_strcasecmp(vstr,"off"))
+    api->set_switch(element,1);
+  else if(!g_ascii_strcasecmp(vstr,"toggle"))
+  {
+    api->get_switch(element, 0, &pb);
+    api->set_switch(element, !pb);
+  }
 }
 
 static void alsa_action ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
   snd_mixer_elem_t *element;
-  long min, max, vol;
-  gint pb;
 
   element = alsa_element_get ( name );
 
   if(!g_ascii_strncasecmp(cmd,"playback-volume",15))
-  {
-    if(snd_mixer_selem_has_playback_volume(element))
-    {
-      snd_mixer_selem_get_playback_volume_range(element, &min, &max);
-      snd_mixer_selem_get_playback_volume(element, 0, &vol);
-      snd_mixer_selem_set_playback_volume_all(element, 
-         min + alsa_volume_calc(cmd+15, vol) * (max-min));
-    }
-  }
+    alsa_volume_adjust(element, cmd+15, &playback_api);
   else if(!g_ascii_strncasecmp(cmd,"playback-mute",13))
-  {
-    if(snd_mixer_selem_has_playback_switch(element))
-    {
-      cmd+=13;
-      while(*cmd==' ')
-        cmd++;
-      if(!g_ascii_strcasecmp(cmd,"on"))
-        snd_mixer_selem_set_playback_switch_all(element,0);
-      if(!g_ascii_strcasecmp(cmd,"off"))
-        snd_mixer_selem_set_playback_switch_all(element,1);
-      if(!g_ascii_strcasecmp(cmd,"toggle"))
-      {
-        snd_mixer_selem_get_playback_switch(element, 0, &pb);
-        snd_mixer_selem_set_playback_switch_all(element,!pb);
-      }
-    }
-  }
+    alsa_mute_set(element, cmd+13, &playback_api);
   else if(!g_ascii_strncasecmp(cmd,"capture-volume",14))
-  {
-    if(snd_mixer_selem_has_capture_volume(element))
-    {
-      snd_mixer_selem_get_capture_volume_range(element, &min, &max);
-      snd_mixer_selem_get_capture_volume(element, 0, &vol);
-      snd_mixer_selem_set_capture_volume_all(element, 
-         min + alsa_volume_calc(cmd+14, vol) * (max-min));
-    }
-
-  }
+    alsa_volume_adjust(element, cmd+14, &capture_api);
   else if(!g_ascii_strncasecmp(cmd,"capture-mute",12))
-  {
-    if(snd_mixer_selem_has_capture_switch(element))
-    {
-      cmd+=12;
-      while(*cmd==' ')
-        cmd++;
-      if(!g_ascii_strcasecmp(cmd,"on"))
-        snd_mixer_selem_set_capture_switch_all(element,0);
-      if(!g_ascii_strcasecmp(cmd,"off"))
-        snd_mixer_selem_set_capture_switch_all(element,1);
-      if(!g_ascii_strcasecmp(cmd,"toggle"))
-      {
-        snd_mixer_selem_get_capture_switch(element, 0, &pb);
-        snd_mixer_selem_set_capture_switch_all(element,!pb);
-      }
-    }
-  }
+    alsa_mute_set(element, cmd+12, &capture_api);
   else
     return;
 
