@@ -206,15 +206,27 @@ static void alsa_volume_adjust ( snd_mixer_elem_t *element, gchar *vstr,
   while(*vstr==' ')
     vstr++;
 
-  vdelta = g_ascii_strtod(vstr,NULL) * (max-min)/100;
-  if(*vstr!='+' && *vstr!='-')
-    vdelta = vdelta - vol;
+  vdelta = g_ascii_strtod(vstr,NULL);
+  vdelta = (vdelta*(max-min) + ((vdelta<0)?-50:50))/100;
+  switch(*vstr)
+  {
+    case '+':
+      vdelta = MAX(1,vdelta);
+      break;
+    case '-':
+      vdelta = MIN(-1,vdelta);
+      break;
+    default:
+      vdelta = vdelta - vol;
+      break;
+  }
 
   for(i=0;i<=SND_MIXER_SCHN_LAST;i++)
-  {
-    api->get_channel(element, i, &vol);
-    api->set_channel(element, i, CLAMP(vol + vdelta,min,max));
-  }
+    if(api->has_channel(element, i))
+    {
+      api->get_channel(element, i, &vol);
+      api->set_channel(element, i, CLAMP(vol + vdelta,min,max));
+    }
 }
 
 static void alsa_mute_set ( snd_mixer_elem_t *element, gchar *vstr,
