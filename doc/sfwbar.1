@@ -29,7 +29,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 ..
 .TH "SFWBAR" 1 "" ""
 .SH NAME
-SFWBar \- Sway Floating Window taskBar
+SFWBar \- S* Floating Window taskBar
 .SH SYNOPSIS
 .nf
 \fBsfwbar\fP [options]
@@ -925,6 +925,19 @@ T{
 \fBIdent\fP
 T}	T{
 Check if an identifier exists either as a variable or a function
+T}
+_
+T{
+\fBGtkEvent\fP
+T}	T{
+Get the location of an event trigger the action. This function is
+only applicable in action command expressions where an action is
+called as a result of button click. The function returns location
+of the click within the widget. The value is returned as percentage
+of the widget width or height. Acceptable arguments are \(dqX\(dq,\(dqY\(dq and
+\(dqDir\(dq. X and Y select an axis for which to return the event
+location, Dir returns the event location along the widget direction
+property.
 T}
 _
 .TE
