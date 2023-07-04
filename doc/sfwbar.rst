@@ -240,12 +240,17 @@ css
   the widget in question.
 
 action
-  an action to execute upon a button click. Actions can be attached to any
-  widget. Multiple actions can be attached to different mouse buttons using
-  ``action[n] = <type> <string>`` syntax. For mouse buttons, n = 1,2,3 for
-  left, middle and right button respectively. For mouse scroll events, use
-  n = 4,5,6,7 for up, down, left and right respectively. If no index is
-  specified the action is attached to a left mouse button click. Additionally,
+  an action to execute upon interaction with a widget. Actions can be attached
+  to any widget. Multiple actions can be attached to various pointer events.
+  The notation is ``action[<event>] = <action>``.  Event values are 1,2,3 or
+  LeftClick, MiddleClick or RightClick respectively. For mouse scroll events,
+  use values 4,5,6,7 or ScrollUp, ScrollDown, ScrollLeft and ScrollRight
+  respectively. If no index is specified the action is attached to a left mouse
+  button click.
+  Additionallly, modifiers can be specified using the notation of
+  ``[Modifier+]Index``. I.e. ``action[Ctrl+LeftClick]``. The following
+  modifiers supported: Shift, Ctrl, Mod1, Mod2, Mod3, Mod4 and Mod5. Multiple
+  modifiers can be added, i.e. ``action[Ctrl+Shift+ScrollUp]``.
   action[0] will be executed on startup. You can use this action to set
   initial configuration for a widget.  See ``Actions`` section for more
   details on how actions are specified.

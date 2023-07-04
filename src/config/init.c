@@ -158,6 +158,27 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   g_scanner_scope_add_symbol(scanner,0, "Output", (gpointer)G_TOKEN_OUTPUT );
   g_scanner_scope_add_symbol(scanner,0, "Floating",
       (gpointer)G_TOKEN_FLOATING );
+  g_scanner_scope_add_symbol(scanner,0, "Init", (gpointer)G_TOKEN_INIT );
+  g_scanner_scope_add_symbol(scanner,0, "LeftClick", (gpointer)G_TOKEN_LEFT );
+  g_scanner_scope_add_symbol(scanner,0, "MiddleClick",
+      (gpointer)G_TOKEN_MIDDLE );
+  g_scanner_scope_add_symbol(scanner,0, "RightClick",
+      (gpointer)G_TOKEN_RIGHT );
+  g_scanner_scope_add_symbol(scanner,0, "ScrollUp",
+      (gpointer)G_TOKEN_SCROLL_UP );
+  g_scanner_scope_add_symbol(scanner,0, "ScrollLeft",
+      (gpointer)G_TOKEN_SCROLL_LEFT );
+  g_scanner_scope_add_symbol(scanner,0, "ScrollRight",
+      (gpointer)G_TOKEN_SCROLL_RIGHT );
+  g_scanner_scope_add_symbol(scanner,0, "ScrollDown",
+      (gpointer)G_TOKEN_SCROLL_DOWN );
+  g_scanner_scope_add_symbol(scanner,0, "Shift", (gpointer)G_TOKEN_SHIFT );
+  g_scanner_scope_add_symbol(scanner,0, "Ctrl", (gpointer)G_TOKEN_CTRL );
+  g_scanner_scope_add_symbol(scanner,0, "Mod1", (gpointer)G_TOKEN_MOD1 );
+  g_scanner_scope_add_symbol(scanner,0, "Mod2", (gpointer)G_TOKEN_MOD2 );
+  g_scanner_scope_add_symbol(scanner,0, "Mod3", (gpointer)G_TOKEN_MOD3 );
+  g_scanner_scope_add_symbol(scanner,0, "Mod4", (gpointer)G_TOKEN_MOD4 );
+  g_scanner_scope_add_symbol(scanner,0, "Mod5", (gpointer)G_TOKEN_MOD5 );
 
   tmp = strstr(data,"\n#CSS");
   if(tmp)

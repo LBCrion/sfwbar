@@ -64,16 +64,96 @@ void config_get_pins ( GScanner *scanner, GtkWidget *widget )
   config_optional_semicolon(scanner);
 }
 
+void config_widget_action_index ( GScanner *scanner, gint *button, gint *mod )
+{
+  *mod = 0;
+
+  g_scanner_get_next_token(scanner);
+  while(g_scanner_peek_next_token(scanner)=='+')
+  {
+    switch((gint)(scanner->token))
+    {
+      case G_TOKEN_SHIFT:
+        *mod |= GDK_SHIFT_MASK;
+        break;
+      case G_TOKEN_CTRL:
+        *mod |= GDK_CONTROL_MASK;
+        break;
+      case G_TOKEN_MOD1:
+        *mod |= GDK_MOD1_MASK;
+        break;
+      case G_TOKEN_MOD2:
+        *mod |= GDK_MOD2_MASK;
+        break;
+      case G_TOKEN_MOD3:
+        *mod |= GDK_MOD3_MASK;
+        break;
+      case G_TOKEN_MOD4:
+        *mod |= GDK_MOD4_MASK;
+        break;
+      case G_TOKEN_MOD5:
+        *mod |= GDK_MOD5_MASK;
+        break;
+      default:
+        g_scanner_error(scanner, "Invalid action key modifier");
+    }
+    g_scanner_get_next_token(scanner); // get '+'
+    g_scanner_get_next_token(scanner);
+  }
+  switch((gint)(scanner->token))
+  {
+    case G_TOKEN_FLOAT:
+      if(scanner->value.v_float>=0 &&
+          scanner->value.v_float<=WIDGET_MAX_BUTTON)
+        *button = scanner->value.v_float;
+      else
+        g_scanner_error(scanner,"invalid action index %d",
+            (gint)scanner->value.v_float);
+      break;
+    case G_TOKEN_INIT:
+      *button = 0;
+      break;
+    case G_TOKEN_LEFT:
+      *button = 1;
+      break;
+    case G_TOKEN_MIDDLE:
+      *button = 2;
+      break;
+    case G_TOKEN_RIGHT:
+      *button = 3;
+      break;
+    case G_TOKEN_SCROLL_UP:
+      *button = 4;
+      break;
+    case G_TOKEN_SCROLL_DOWN:
+      *button = 5;
+      break;
+    case G_TOKEN_SCROLL_LEFT:
+      *button = 6;
+      break;
+    case G_TOKEN_SCROLL_RIGHT:
+      *button = 7;
+      break;
+    default:
+      g_scanner_error(scanner,"invalid action index");
+      break;
+  }
+}
+
 void config_widget_action ( GScanner *scanner, GtkWidget *widget )
 {
-  gint button = 1;
+  gint button = 1, mod = 0;
 
-  config_parse_sequence(scanner,
-    SEQ_OPT,'[',NULL,NULL,NULL,
-    SEQ_CON,G_TOKEN_INT,NULL,&button,"missing in action[<index>]",
-    SEQ_CON,']',NULL,NULL,"missing closing ']' in action[<index>]",
-    SEQ_REQ,'=',NULL,NULL,"missing '=' after action",
-    SEQ_END);
+  if(g_scanner_peek_next_token(scanner)=='[')
+  {
+    g_scanner_get_next_token(scanner);
+    config_widget_action_index(scanner,&button,&mod);
+    if(config_expect_token(scanner, ']', "missing ']' after action"))
+      g_scanner_get_next_token(scanner);
+  }
+
+  if(config_expect_token(scanner, '=', "missing '=' after action"))
+    g_scanner_get_next_token(scanner);
 
   if(scanner->max_parse_errors)
     return;
@@ -81,7 +161,7 @@ void config_widget_action ( GScanner *scanner, GtkWidget *widget )
   if( button<0 || button >=WIDGET_MAX_BUTTON )
     return g_scanner_error(scanner,"invalid action index %d",button);
 
-  base_widget_set_action(widget,button,config_action(scanner));
+  base_widget_set_action(widget,button,config_action(scanner, mod));
   if(!base_widget_get_action(widget,button))
     return g_scanner_error(scanner,"invalid action");
 

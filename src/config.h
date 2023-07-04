@@ -23,7 +23,7 @@ gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr);
 gchar *config_assign_string ( GScanner *scanner, gchar *expr );
 gdouble config_assign_number ( GScanner *scanner, gchar *expr );
 gint config_assign_tokens ( GScanner *scanner, gchar *, gchar *, ... );
-action_t *config_action ( GScanner *scanner );
+action_t *config_action ( GScanner *scanner, gint mod );
 void config_action_finish ( GScanner *scanner );
 gchar *config_get_value ( GScanner *, gchar *, gboolean, gchar **);
 void config_scanner ( GScanner *scanner );
@@ -123,7 +123,22 @@ enum {
   G_TOKEN_APPID,
   G_TOKEN_WORKSPACE,
   G_TOKEN_OUTPUT,
-  G_TOKEN_FLOATING
+  G_TOKEN_FLOATING,
+  G_TOKEN_INIT,
+  G_TOKEN_LEFT,
+  G_TOKEN_MIDDLE,
+  G_TOKEN_RIGHT,
+  G_TOKEN_SCROLL_UP,
+  G_TOKEN_SCROLL_LEFT,
+  G_TOKEN_SCROLL_RIGHT,
+  G_TOKEN_SCROLL_DOWN,
+  G_TOKEN_SHIFT,
+  G_TOKEN_CTRL,
+  G_TOKEN_MOD1,
+  G_TOKEN_MOD2,
+  G_TOKEN_MOD3,
+  G_TOKEN_MOD4,
+  G_TOKEN_MOD5
 };
 
 #endif
