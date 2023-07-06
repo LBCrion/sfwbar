@@ -144,7 +144,7 @@ static void base_widget_init ( BaseWidget *self )
   priv->rect.height = 1;
 }
 
-static gboolean base_widget_check_mods ( GtkWidget *self, GdkModifierType mods )
+static GdkModifierType base_widget_get_modifiers ( GtkWidget *self )
 {
   GdkModifierType state;
   GtkWindow *win;
@@ -166,13 +166,29 @@ static gboolean base_widget_check_mods ( GtkWidget *self, GdkModifierType mods )
   else
     state = 0;
 
-  return !(state^mods);
+  return state;
+}
+
+static gboolean base_widget_button_cb ( GtkWidget *self, GdkEventButton *ev,
+    gpointer data )
+{
+  BaseWidgetPrivate *priv;
+
+  g_return_val_if_fail(IS_BASE_WIDGET(data),FALSE);
+
+  priv = base_widget_get_instance_private(BASE_WIDGET(data));
+
+  if(ev->button == 1)
+    priv->saved_modifiers = base_widget_get_modifiers(self);
+
+  return FALSE;
 }
 
 static gboolean base_widget_click_cb ( GtkWidget *self, GdkEventButton *ev,
     gpointer data )
 {
   BaseWidgetPrivate *priv;
+  GdkModifierType mods;
 
   g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
 
@@ -182,11 +198,14 @@ static gboolean base_widget_click_cb ( GtkWidget *self, GdkEventButton *ev,
   {
     if(ev->type != GDK_BUTTON_RELEASE)
       return FALSE;
+    mods = priv->saved_modifiers;
   }
   else if (ev->type != GDK_BUTTON_PRESS || ev->button < 1 || ev->button > 3 )
     return FALSE;
+  else
+    mods = base_widget_get_modifiers(self);
 
-  if(base_widget_check_mods(self, priv->actions[ev->button]->mod))
+  if(!(mods^(priv->actions[ev->button]->mod)))
     action_exec(self,priv->actions[ev->button],
         (GdkEvent *)ev, wintree_from_id(wintree_get_focus()),NULL);
 
@@ -220,7 +239,7 @@ static gboolean base_widget_scroll_cb ( GtkWidget *self,
       return FALSE;
   }
 
-  if(base_widget_check_mods(self, priv->actions[button]->mod))
+  if(!(base_widget_get_modifiers(self)^(priv->actions[button]->mod)))
     action_exec(self,priv->actions[button],
         (GdkEvent *)event, wintree_from_id(wintree_get_focus()),NULL);
 
@@ -616,6 +635,10 @@ void base_widget_set_action ( GtkWidget *self, gint n, action_t *action )
       priv->actions[1])
     priv->button_h = g_signal_connect(G_OBJECT(self),"button-release-event",
         G_CALLBACK(base_widget_click_cb),NULL);
+  if(!priv->buttonp_h && GTK_IS_BUTTON(base_widget_get_child(self)) &&
+      priv->actions[1])
+    priv->buttonp_h = g_signal_connect(G_OBJECT(base_widget_get_child(self)),
+        "button-press-event", G_CALLBACK(base_widget_button_cb),self);
 }
 
 void base_widget_copy_properties ( GtkWidget *dest, GtkWidget *src )

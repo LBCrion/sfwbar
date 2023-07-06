@@ -35,6 +35,7 @@ struct _BaseWidgetPrivate
   gulong tooltip_h;
   action_t *actions[WIDGET_MAX_BUTTON];
   gulong button_h;
+  gulong buttonp_h;
   gulong click_h;
   gulong scroll_h;
   gint64 interval;
@@ -47,6 +48,7 @@ struct _BaseWidgetPrivate
   GdkRectangle rect;
   GList *mirror_children;
   GtkWidget *mirror_parent;
+  GdkModifierType saved_modifiers;
 };
 
 GType base_widget_get_type ( void );
