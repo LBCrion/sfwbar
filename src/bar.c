@@ -707,16 +707,6 @@ void bar_set_sensor ( GtkWidget *self, gchar *delay_str )
   g_list_foreach(priv->mirror_children,(GFunc)bar_set_sensor,delay_str);
 }
 
-void bar_pointer_enter_cb ( GtkWidget *self, GdkEvent *ev, gpointer d )
-{
-  gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self), TRUE);
-}
-
-void bar_pointer_leave_cb ( GtkWidget *self, GdkEvent *ev, gpointer d )
-{
-  gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self), FALSE);
-}
-
 void bar_handle_direction ( GtkWidget *self )
 {
   BarPrivate *priv;
@@ -789,12 +779,6 @@ GtkWidget *bar_new ( gchar *name )
   gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self),FALSE);
   gtk_layer_set_layer(GTK_WINDOW(self),GTK_LAYER_SHELL_LAYER_TOP);
   gtk_layer_set_monitor(GTK_WINDOW(self),priv->current_monitor);
-
-  g_signal_connect(G_OBJECT(self), "enter-notify-event",
-      G_CALLBACK(bar_pointer_enter_cb), NULL);
-  g_signal_connect(G_OBJECT(self), "leave-notify-event",
-      G_CALLBACK(bar_pointer_leave_cb), NULL);
-  gtk_widget_add_events(self, GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK);
 
   bar_handle_direction(self);
 

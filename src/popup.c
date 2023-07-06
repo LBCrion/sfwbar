@@ -58,6 +58,8 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup )
       GDK_ANCHOR_FLIP_X | GDK_ANCHOR_FLIP_Y,0,0);
   css_widget_cascade(popup,NULL);
   bar_ref(gtk_widget_get_ancestor(parent,GTK_TYPE_WINDOW),popup);
+  g_object_set_data(G_OBJECT(popup), "parent_window",
+      gtk_widget_get_ancestor(parent, GTK_TYPE_WINDOW));
 }
 
 void popup_trigger ( GtkWidget *parent, gchar *name )

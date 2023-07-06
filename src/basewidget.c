@@ -3,14 +3,19 @@
  * Copyright 2022- sfwbar maintainers
  */
 
+#include <gtk-layer-shell.h>
 #include "expr.h"
 #include "basewidget.h"
 #include "flowgrid.h"
 #include "action.h"
 #include "module.h"
 
-G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX, G_ADD_PRIVATE (BaseWidget));
+G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX,
+    G_ADD_PRIVATE (BaseWidget));
 
+static const GdkModifierType mod_mask = GDK_SHIFT_MASK | GDK_CONTROL_MASK |
+  GDK_MOD1_MASK | GDK_MOD2_MASK | GDK_MOD3_MASK | GDK_MOD4_MASK |
+  GDK_MOD5_MASK;
 static GHashTable *widgets_id;
 static GList *widgets_scan;
 static GMutex widget_mutex;
@@ -139,11 +144,35 @@ static void base_widget_init ( BaseWidget *self )
   priv->rect.height = 1;
 }
 
+static gboolean base_widget_check_mods ( GtkWidget *self, GdkModifierType mods )
+{
+  GdkModifierType state;
+  GtkWindow *win;
+
+  win = GTK_WINDOW(gtk_widget_get_ancestor(self, GTK_TYPE_WINDOW));
+  if(gtk_window_get_window_type(win)==GTK_WINDOW_POPUP)
+    win = g_object_get_data(G_OBJECT(win),"parent_window");
+
+  if(win || !gtk_layer_is_layer_window(win))
+  {
+    gtk_layer_set_keyboard_mode(win, GTK_LAYER_SHELL_KEYBOARD_MODE_EXCLUSIVE);
+    gtk_main_iteration();
+    gtk_main_iteration();
+    gtk_main_iteration();
+    state = gdk_keymap_get_modifier_state(gdk_keymap_get_for_display(
+          gdk_display_get_default())) & mod_mask;
+    gtk_layer_set_keyboard_mode(win, GTK_LAYER_SHELL_KEYBOARD_MODE_NONE);
+  }
+  else
+    state = 0;
+
+  return !(state^mods);
+}
+
 static gboolean base_widget_click_cb ( GtkWidget *self, GdkEventButton *ev,
     gpointer data )
 {
   BaseWidgetPrivate *priv;
-  GdkModifierType state;
 
   g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
 
@@ -157,8 +186,7 @@ static gboolean base_widget_click_cb ( GtkWidget *self, GdkEventButton *ev,
   else if (ev->type != GDK_BUTTON_PRESS || ev->button < 1 || ev->button > 3 )
     return FALSE;
 
-  gdk_event_get_state((GdkEvent *)ev, &state);
-  if((priv->actions[ev->button]->mod & state)==priv->actions[ev->button]->mod)
+  if(base_widget_check_mods(self, priv->actions[ev->button]->mod))
     action_exec(self,priv->actions[ev->button],
         (GdkEvent *)ev, wintree_from_id(wintree_get_focus()),NULL);
 
@@ -191,8 +219,10 @@ static gboolean base_widget_scroll_cb ( GtkWidget *self,
     default:
       return FALSE;
   }
-  action_exec(self,priv->actions[button],
-      (GdkEvent *)event, wintree_from_id(wintree_get_focus()),NULL);
+
+  if(base_widget_check_mods(self, priv->actions[button]->mod))
+    action_exec(self,priv->actions[button],
+        (GdkEvent *)event, wintree_from_id(wintree_get_focus()),NULL);
 
   return TRUE;
 }
