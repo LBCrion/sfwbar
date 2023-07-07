@@ -34,6 +34,7 @@ struct _TaskbarItemPrivate
   window_t *win;
   action_t **actions;
   gboolean invalid;
+  GdkModifierType saved_modifiers;
 };
 
 GType taskbar_item_get_type ( void );
@@ -41,7 +42,7 @@ GType taskbar_item_get_type ( void );
 GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar );
 void taskbar_item_invalidate ( GtkWidget *self );
 
-void taskbar_item_button_cb( GtkWidget *widget, gpointer self );
+gboolean taskbar_item_button_cb( GtkWidget *, GdkEventButton *, gpointer );
 gboolean taskbar_item_scroll_cb ( GtkWidget *, GdkEventScroll *, gpointer );
 gboolean taskbar_item_click_cb ( GtkWidget *, GdkEventButton *, gpointer );
 

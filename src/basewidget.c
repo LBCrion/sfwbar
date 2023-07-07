@@ -20,10 +20,34 @@ static GHashTable *widgets_id;
 static GList *widgets_scan;
 static GMutex widget_mutex;
 
+static void base_widget_attachment_free ( base_widget_attachment_t *attach )
+{
+  if(!attach)
+    return;
+
+  action_free(attach->action, NULL);
+  g_free(attach);
+}
+
+static base_widget_attachment_t *base_widget_attachment_dup (
+    base_widget_attachment_t *src )
+{
+  base_widget_attachment_t *dest;
+
+  if(!src)
+    return NULL;
+
+  dest = g_malloc0(sizeof(base_widget_attachment_t));
+  dest->event = src->event;
+  dest->mods = src->mods;
+  dest->action = action_dup(src->action);
+
+  return dest;
+}
+
 static void base_widget_destroy ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv,*ppriv;
-  gint i;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
@@ -49,11 +73,8 @@ static void base_widget_destroy ( GtkWidget *self )
   g_clear_pointer(&priv->style,expr_cache_free);
   g_clear_pointer(&priv->tooltip,expr_cache_free);
   g_clear_pointer(&priv->trigger,g_free);
-  for(i=0;i<WIDGET_MAX_BUTTON;i++)
-  {
-    action_free(priv->actions[i],NULL);
-    priv->actions[i]=NULL;
-  }
+  g_list_free_full(g_steal_pointer(&priv->actions),
+      (GDestroyNotify)base_widget_attachment_free);
 
   GTK_WIDGET_CLASS(base_widget_parent_class)->destroy(self);
 }
@@ -144,7 +165,7 @@ static void base_widget_init ( BaseWidget *self )
   priv->rect.height = 1;
 }
 
-static GdkModifierType base_widget_get_modifiers ( GtkWidget *self )
+GdkModifierType base_widget_get_modifiers ( GtkWidget *self )
 {
   GdkModifierType state;
   GtkWindow *win;
@@ -188,6 +209,7 @@ static gboolean base_widget_click_cb ( GtkWidget *self, GdkEventButton *ev,
     gpointer data )
 {
   BaseWidgetPrivate *priv;
+  action_t *action;
   GdkModifierType mods;
 
   g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
@@ -205,23 +227,23 @@ static gboolean base_widget_click_cb ( GtkWidget *self, GdkEventButton *ev,
   else
     mods = base_widget_get_modifiers(self);
 
-  if(!(mods^(priv->actions[ev->button]->mod)))
-    action_exec(self,priv->actions[ev->button],
-        (GdkEvent *)ev, wintree_from_id(wintree_get_focus()),NULL);
+  action = base_widget_get_action(self, ev->button, mods);
+  if(action)
+    action_exec(self, action, (GdkEvent *)ev,
+        wintree_from_id(wintree_get_focus()),NULL);
 
   return TRUE;
 }
 
 static gboolean base_widget_scroll_cb ( GtkWidget *self,
-    GdkEventScroll *event, gpointer *data )
+    GdkEventScroll *ev, gpointer *data )
 {
-  BaseWidgetPrivate *priv;
+  action_t *action;
   gint button;
 
   g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  switch(event->direction)
+  switch(ev->direction)
   {
     case GDK_SCROLL_UP:
       button = 4;
@@ -239,9 +261,11 @@ static gboolean base_widget_scroll_cb ( GtkWidget *self,
       return FALSE;
   }
 
-  if(!(base_widget_get_modifiers(self)^(priv->actions[button]->mod)))
-    action_exec(self,priv->actions[button],
-        (GdkEvent *)event, wintree_from_id(wintree_get_focus()),NULL);
+  action = base_widget_get_action(self, button,
+      base_widget_get_modifiers(self));
+  if(action)
+    action_exec(self, action, (GdkEvent *)ev,
+        wintree_from_id(wintree_get_focus()),NULL);
 
   return TRUE;
 }
@@ -574,17 +598,24 @@ gchar *base_widget_get_value ( GtkWidget *self )
   return priv->value->cache;
 }
 
-action_t *base_widget_get_action ( GtkWidget *self, gint n )
+action_t *base_widget_get_action ( GtkWidget *self, gint n,
+    GdkModifierType mods )
 {
   BaseWidgetPrivate *priv;
+  base_widget_attachment_t *attach;
+  GList *iter;
 
   g_return_val_if_fail(IS_BASE_WIDGET(self),NULL);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  if(n<0 || n>=WIDGET_MAX_BUTTON)
-    return NULL;
+  for(iter=priv->actions; iter; iter=g_list_next(iter))
+  {
+    attach = iter->data;
+    if(attach->event == n && attach->mods == mods)
+      return attach->action;
+  }
 
-  return priv->actions[n];
+  return NULL;
 }
 
 void base_widget_set_css ( GtkWidget *self, gchar *css )
@@ -601,24 +632,45 @@ void base_widget_set_css ( GtkWidget *self, gchar *css )
   css_widget_apply(base_widget_get_child(self),css);
 }
 
-void base_widget_set_action ( GtkWidget *self, gint n, action_t *action )
+void base_widget_set_action ( GtkWidget *self, gint n, GdkModifierType mods,
+    action_t *action )
 {
   BaseWidgetPrivate *priv;
+  base_widget_attachment_t *attach;
+  GList *iter;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  if(n<0 || n>=WIDGET_MAX_BUTTON)
+  if(n<0 || n>=8)
     return;
 
-  action_free(priv->actions[n],NULL);
-  priv->actions[n] = action;
+  for(iter=priv->actions; iter; iter=g_list_next(iter))
+  {
+    attach = iter->data;
+    if(attach->event == n && attach->mods == mods)
+      break;
+  }
+
+  if(iter)
+  {
+    attach = iter->data;
+    action_free(attach->action, NULL);
+  }
+  else
+  {
+    attach = g_malloc0(sizeof(base_widget_attachment_t));
+    attach->event = n;
+    attach->mods = mods;
+    priv->actions = g_list_prepend(priv->actions, attach);
+
+  }
+  attach->action = action;
 
   if(IS_FLOW_GRID(base_widget_get_child(self)))
     return;
 
-  if(!priv->scroll_h && (priv->actions[4] || priv->actions[5] ||
-        priv->actions[6] || priv->actions[7]) )
+  if(!priv->scroll_h && n>=4 && n<=7)
   {
     gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
     priv->scroll_h = g_signal_connect(G_OBJECT(self),"scroll-event",
@@ -626,33 +678,44 @@ void base_widget_set_action ( GtkWidget *self, gint n, action_t *action )
   }
 
   gtk_widget_add_events(GTK_WIDGET(self), GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
-  if(!priv->click_h && (priv->actions[2] || priv->actions[3] ||
-        (priv->actions[1] && !GTK_IS_BUTTON(base_widget_get_child(self))) ) )
+  if(!priv->click_h && (n==2 || n==3 ||
+        (n==1 && !GTK_IS_BUTTON(base_widget_get_child(self)))))
     priv->click_h = g_signal_connect(G_OBJECT(self),"button-press-event",
         G_CALLBACK(base_widget_click_cb),NULL);
 
-  if(!priv->button_h && GTK_IS_BUTTON(base_widget_get_child(self)) &&
-      priv->actions[1])
+  if(!priv->button_h && GTK_IS_BUTTON(base_widget_get_child(self)) && n==1)
     priv->button_h = g_signal_connect(G_OBJECT(self),"button-release-event",
         G_CALLBACK(base_widget_click_cb),NULL);
-  if(!priv->buttonp_h && GTK_IS_BUTTON(base_widget_get_child(self)) &&
-      priv->actions[1])
+  if(!priv->buttonp_h && GTK_IS_BUTTON(base_widget_get_child(self)) && n==1)
     priv->buttonp_h = g_signal_connect(G_OBJECT(base_widget_get_child(self)),
         "button-press-event", G_CALLBACK(base_widget_button_cb),self);
+}
+
+void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src )
+{
+  BaseWidgetPrivate *spriv, *dpriv;
+  GList *iter;
+
+  g_return_if_fail(IS_BASE_WIDGET(dest) && IS_BASE_WIDGET(src));
+  spriv = base_widget_get_instance_private(BASE_WIDGET(src));
+  dpriv = base_widget_get_instance_private(BASE_WIDGET(dest));
+
+  for(iter=spriv->actions; iter; iter=g_list_next(iter))
+    dpriv->actions = g_list_prepend(dpriv->actions,
+        base_widget_attachment_dup(iter->data));
 }
 
 void base_widget_copy_properties ( GtkWidget *dest, GtkWidget *src )
 {
   BaseWidgetPrivate *spriv, *dpriv;
   GList *iter;
-  gint i;
 
   g_return_if_fail(IS_BASE_WIDGET(dest) && IS_BASE_WIDGET(src));
   spriv = base_widget_get_instance_private(BASE_WIDGET(src));
   dpriv = base_widget_get_instance_private(BASE_WIDGET(dest));
 
-  for(i=0;i<WIDGET_MAX_BUTTON;i++)
-    base_widget_set_action( dest, i, action_dup(spriv->actions[i]));
+  base_widget_copy_actions(dest, src);
+
   if(spriv->tooltip)
     base_widget_set_tooltip( dest, spriv->tooltip->definition );
   if(spriv->trigger)
@@ -760,7 +823,7 @@ void base_widget_autoexec ( GtkWidget *self, gpointer data )
   if(!IS_BASE_WIDGET(self))
     return;
 
-  action = base_widget_get_action(self,0);
+  action = base_widget_get_action(self,0,0);
   if(action)
     action_exec(self,action,NULL,wintree_from_id(wintree_get_focus()),NULL);
 }

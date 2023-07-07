@@ -9,8 +9,6 @@
 G_DECLARE_DERIVABLE_TYPE (BaseWidget, base_widget, BASE, WIDGET, GtkEventBox);
 #define IS_BASE_WIDGET BASE_IS_WIDGET
 
-#define WIDGET_MAX_BUTTON 8
-
 typedef struct _BaseWidgetClass BaseWidgetClass;
 
 struct _BaseWidgetClass
@@ -33,7 +31,7 @@ struct _BaseWidgetPrivate
   ExprCache *value;
   ExprCache *tooltip;
   gulong tooltip_h;
-  action_t *actions[WIDGET_MAX_BUTTON];
+  GList *actions;
   gulong button_h;
   gulong buttonp_h;
   gulong click_h;
@@ -51,6 +49,12 @@ struct _BaseWidgetPrivate
   GdkModifierType saved_modifiers;
 };
 
+typedef struct _base_widget_attachment {
+  action_t *action;
+  gint event;
+  GdkModifierType mods;
+} base_widget_attachment_t;
+
 GType base_widget_get_type ( void );
 
 void base_widget_set_tooltip ( GtkWidget *self, gchar *tooltip );
@@ -60,7 +64,7 @@ void base_widget_set_trigger ( GtkWidget *self, gchar *trigger );
 void base_widget_set_id ( GtkWidget *self, gchar *id );
 void base_widget_set_interval ( GtkWidget *self, gint64 interval );
 void base_widget_set_state ( GtkWidget *self, guint16 mask, gboolean state );
-void base_widget_set_action ( GtkWidget *self, gint n, action_t *action );
+void base_widget_set_action ( GtkWidget *, gint, GdkModifierType, action_t *);
 void base_widget_set_max_width ( GtkWidget *self, guint x );
 void base_widget_set_max_height ( GtkWidget *self, guint x );
 gboolean base_widget_update_value ( GtkWidget *self );
@@ -73,13 +77,15 @@ gchar *base_widget_get_id ( GtkWidget *self );
 GtkWidget *base_widget_get_child ( GtkWidget *self );
 GtkWidget *base_widget_from_id ( gchar *id );
 gchar *base_widget_get_value ( GtkWidget *self );
-action_t *base_widget_get_action ( GtkWidget *self, gint n );
+action_t *base_widget_get_action ( GtkWidget *self, gint, GdkModifierType );
 gpointer base_widget_scanner_thread ( GMainContext *gmc );
 void base_widget_set_css ( GtkWidget *widget, gchar *css );
 gboolean base_widget_emit_trigger ( gchar *trigger );
 void base_widget_autoexec ( GtkWidget *self, gpointer data );
 void base_widget_set_always_update ( GtkWidget *self, gboolean update );
+void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src );
 void base_widget_copy_properties ( GtkWidget *dest, GtkWidget *src );
 GtkWidget *base_widget_mirror ( GtkWidget *src );
+GdkModifierType base_widget_get_modifiers ( GtkWidget *self );
 
 #endif

@@ -23,7 +23,7 @@ gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr);
 gchar *config_assign_string ( GScanner *scanner, gchar *expr );
 gdouble config_assign_number ( GScanner *scanner, gchar *expr );
 gint config_assign_tokens ( GScanner *scanner, gchar *, gchar *, ... );
-action_t *config_action ( GScanner *scanner, gint mod );
+action_t *config_action ( GScanner *scanner );
 void config_action_finish ( GScanner *scanner );
 gchar *config_get_value ( GScanner *, gchar *, gboolean, gchar **);
 void config_scanner ( GScanner *scanner );

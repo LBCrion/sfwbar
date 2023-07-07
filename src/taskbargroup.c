@@ -246,7 +246,7 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
 {
   GtkWidget *self;
   TaskbarGroupPrivate *priv;
-  gint dir, i;
+  gint dir;
   gboolean icons, labels;
   gint title_width;
   GtkWidget *box;
@@ -346,9 +346,7 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
       GPOINTER_TO_INT(g_object_get_data(G_OBJECT(taskbar),"g_sort")));
   g_object_set_data(G_OBJECT(priv->popover),"holds",&priv->holds);
 
-  for(i=0;i<WIDGET_MAX_BUTTON;i++)
-    base_widget_set_action(priv->tgroup,i,
-        action_dup(base_widget_get_action(taskbar,i)));
+  base_widget_copy_actions(priv->tgroup, taskbar);
 
   g_object_ref(G_OBJECT(self));
   flow_grid_add_child(taskbar,self);

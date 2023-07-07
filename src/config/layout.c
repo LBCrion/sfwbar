@@ -103,12 +103,7 @@ void config_widget_action_index ( GScanner *scanner, gint *button, gint *mod )
   switch((gint)(scanner->token))
   {
     case G_TOKEN_FLOAT:
-      if(scanner->value.v_float>=0 &&
-          scanner->value.v_float<=WIDGET_MAX_BUTTON)
-        *button = scanner->value.v_float;
-      else
-        g_scanner_error(scanner,"invalid action index %d",
-            (gint)scanner->value.v_float);
+      *button = scanner->value.v_float;
       break;
     case G_TOKEN_INIT:
       *button = 0;
@@ -158,11 +153,11 @@ void config_widget_action ( GScanner *scanner, GtkWidget *widget )
   if(scanner->max_parse_errors)
     return;
 
-  if( button<0 || button >=WIDGET_MAX_BUTTON )
+  if( button<0 || button >=8 )
     return g_scanner_error(scanner,"invalid action index %d",button);
 
-  base_widget_set_action(widget,button,config_action(scanner, mod));
-  if(!base_widget_get_action(widget,button))
+  base_widget_set_action(widget,button,mod,config_action(scanner));
+  if(!base_widget_get_action(widget,button,mod))
     return g_scanner_error(scanner,"invalid action");
 
   config_optional_semicolon(scanner);

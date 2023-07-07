@@ -172,13 +172,12 @@ void config_action_conditions ( GScanner *scanner, guchar *cond,
     g_scanner_error(scanner,"missing ']' in conditional action");
 }
 
-action_t *config_action ( GScanner *scanner, gint mod )
+action_t *config_action ( GScanner *scanner )
 {
   action_t *action;
   gchar *lname;
 
   action = action_new();
-  action->mod = mod;
   config_action_conditions ( scanner, &action->cond, &action->ncond );
 
   g_scanner_get_next_token(scanner);
@@ -263,7 +262,7 @@ GtkWidget *config_menu_item ( GScanner *scanner )
     return NULL;
   }
 
-  action = config_action(scanner, 0);
+  action = config_action(scanner);
 
   if(!action)
   {
@@ -397,7 +396,7 @@ void config_function ( GScanner *scanner )
   g_scanner_peek_next_token(scanner);
   while(scanner->next_token != G_TOKEN_EOF && scanner->next_token != '}')
   {
-    action = config_action(scanner, 0);
+    action = config_action(scanner);
     if(!action)
       g_scanner_error(scanner,"invalid action");
     else
@@ -485,7 +484,7 @@ void config_trigger_action ( GScanner *scanner )
   if(scanner->max_parse_errors)
     return g_free(trigger);
 
-  action = config_action(scanner, 0);
+  action = config_action(scanner);
   if(!action)
     return g_free(trigger);
 

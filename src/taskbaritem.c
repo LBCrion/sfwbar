@@ -20,25 +20,40 @@ gboolean taskbar_item_click_cb ( GtkWidget *widget, GdkEventButton *ev,
     gpointer self )
 {
   TaskbarItemPrivate *priv;
+  GdkModifierType mods;
   action_t *action;
 
   g_return_val_if_fail(IS_TASKBAR_ITEM(self),FALSE);
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
 
-  if(ev->type != GDK_BUTTON_PRESS || ev->button < 1 || ev->button > 3)
+  if(GTK_IS_BUTTON(gtk_bin_get_child(GTK_BIN(self))) && ev->button == 1) 
+  {
+    if(ev->type != GDK_BUTTON_RELEASE)
+      return FALSE;
+    mods = priv->saved_modifiers;
+  }
+  else if (ev->type != GDK_BUTTON_PRESS || ev->button < 1 || ev->button > 3 )
     return FALSE;
-  if(GTK_IS_BUTTON(widget) && ev->button == 1)
-    return FALSE;
+  else
+    mods = base_widget_get_modifiers(self);
 
-  action = base_widget_get_action(priv->taskbar,ev->button);
-  if(!action)
-    return FALSE;
+  action = base_widget_get_action(priv->taskbar, ev->button, mods);
+  if(action)
+    action_exec(widget, action, (GdkEvent *)ev, priv->win, NULL);
+  else if(ev->button == 1 && !mods)
+  {
+    if ( wintree_is_focused(priv->win->uid) &&
+        !(priv->win->state & WS_MINIMIZED) )
+      wintree_minimize(priv->win->uid);
+    else
+      wintree_focus(priv->win->uid);
+    taskbar_invalidate_all(priv->win,FALSE);
+  }
 
-  action_exec(widget, action,(GdkEvent *)ev, priv->win, NULL);
   return TRUE;
 }
 
-gboolean taskbar_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
+gboolean taskbar_item_scroll_cb ( GtkWidget *w, GdkEventScroll *ev,
     gpointer self )
 {
   TaskbarItemPrivate *priv;
@@ -48,7 +63,7 @@ gboolean taskbar_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
   g_return_val_if_fail(IS_TASKBAR_ITEM(self),FALSE);
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
 
-  switch(event->direction)
+  switch(ev->direction)
   {
     case GDK_SCROLL_UP:
       button = 4;
@@ -65,36 +80,27 @@ gboolean taskbar_item_scroll_cb ( GtkWidget *w, GdkEventScroll *event,
     default:
       return FALSE;
   }
-  action = base_widget_get_action(priv->taskbar,button);
-  if(!action)
-    return FALSE;
+  action = base_widget_get_action(priv->taskbar, button,
+      base_widget_get_modifiers(self));
+  if(action)
+    action_exec(w, action, (GdkEvent *)ev, priv->win, NULL);
 
-  action_exec(w, action, (GdkEvent *)event, priv->win, NULL);
   return TRUE;
 }
 
-void taskbar_item_button_cb( GtkWidget *widget, gpointer self )
+gboolean taskbar_item_button_cb( GtkWidget *widget, GdkEventButton *ev,
+    gpointer self )
 {
   TaskbarItemPrivate *priv; 
-  action_t *action;
 
-  g_return_if_fail(IS_TASKBAR_ITEM(self));
+  g_return_val_if_fail(IS_TASKBAR_ITEM(self),FALSE);
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
 
-  action = base_widget_get_action(priv->taskbar,1);
 
-  if(action)
-    action_exec(widget,action,NULL, priv->win, NULL);
-  else
-  {
-    if ( wintree_is_focused(priv->win->uid) &&
-        !(priv->win->state & WS_MINIMIZED) )
-      wintree_minimize(priv->win->uid);
-    else
-      wintree_focus(priv->win->uid);
-  }
+  if(ev->button == 1)
+    priv->saved_modifiers = base_widget_get_modifiers(self);
 
-  taskbar_invalidate_all(priv->win,FALSE);
+  return FALSE;
 }
 
 static void taskbar_item_destroy ( GtkWidget *self )
@@ -269,8 +275,10 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   g_object_ref(G_OBJECT(self));
   flow_grid_add_child(taskbar,self);
 
-  g_signal_connect(button,"clicked",G_CALLBACK(taskbar_item_button_cb),self);
-  g_signal_connect(self,"button_press_event",
+  g_signal_connect(button,"button-press-event",G_CALLBACK(taskbar_item_button_cb),self);
+  g_signal_connect(self,"button-press-event",
+      G_CALLBACK(taskbar_item_click_cb),self);
+  g_signal_connect(self,"button-release-event",
       G_CALLBACK(taskbar_item_click_cb),self);
   gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
   g_signal_connect(self,"scroll-event",
