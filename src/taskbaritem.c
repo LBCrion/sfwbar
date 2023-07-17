@@ -88,17 +88,14 @@ gboolean taskbar_item_scroll_cb ( GtkWidget *w, GdkEventScroll *ev,
   return TRUE;
 }
 
-gboolean taskbar_item_button_cb( GtkWidget *widget, GdkEventButton *ev,
-    gpointer self )
+gboolean taskbar_item_button_cb( GtkWidget *widget, gpointer self )
 {
   TaskbarItemPrivate *priv; 
 
   g_return_val_if_fail(IS_TASKBAR_ITEM(self),FALSE);
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
 
-
-  if(ev->button == 1)
-    priv->saved_modifiers = base_widget_get_modifiers(self);
+  priv->saved_modifiers = base_widget_get_modifiers(self);
 
   return FALSE;
 }
@@ -275,7 +272,7 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   g_object_ref(G_OBJECT(self));
   flow_grid_add_child(taskbar,self);
 
-  g_signal_connect(button,"button-press-event",G_CALLBACK(taskbar_item_button_cb),self);
+  g_signal_connect(button,"clicked",G_CALLBACK(taskbar_item_button_cb),self);
   g_signal_connect(self,"button-press-event",
       G_CALLBACK(taskbar_item_click_cb),self);
   g_signal_connect(self,"button-release-event",

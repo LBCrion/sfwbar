@@ -190,17 +190,14 @@ GdkModifierType base_widget_get_modifiers ( GtkWidget *self )
   return state;
 }
 
-static gboolean base_widget_button_cb ( GtkWidget *self, GdkEventButton *ev,
-    gpointer data )
+static gboolean base_widget_button_cb ( GtkWidget *self, gpointer data )
 {
   BaseWidgetPrivate *priv;
 
   g_return_val_if_fail(IS_BASE_WIDGET(data),FALSE);
-
   priv = base_widget_get_instance_private(BASE_WIDGET(data));
 
-  if(ev->button == 1)
-    priv->saved_modifiers = base_widget_get_modifiers(self);
+  priv->saved_modifiers = base_widget_get_modifiers(self);
 
   return FALSE;
 }
@@ -688,7 +685,7 @@ void base_widget_set_action ( GtkWidget *self, gint n, GdkModifierType mods,
         G_CALLBACK(base_widget_click_cb),NULL);
   if(!priv->buttonp_h && GTK_IS_BUTTON(base_widget_get_child(self)) && n==1)
     priv->buttonp_h = g_signal_connect(G_OBJECT(base_widget_get_child(self)),
-        "button-press-event", G_CALLBACK(base_widget_button_cb),self);
+        "clicked", G_CALLBACK(base_widget_button_cb),self);
 }
 
 void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src )
