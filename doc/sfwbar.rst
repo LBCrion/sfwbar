@@ -945,6 +945,7 @@ tray                  tray menus and menu items
 tray_active           active tray icon
 tray_attention        tray icon requiring user attention
 tray_passive          passive tray icon
+menu_item             menu items (each contains an image and a label)
 ===================== =============
 
 For example you can style top level grid using ``grid#layout { }``.
