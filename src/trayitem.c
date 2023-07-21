@@ -48,19 +48,16 @@ void tray_item_update ( GtkWidget *self )
     }
   }
 
-  if(priv->icon_idx != icon|| priv->pix_idx != pix)
-  {
-    priv->icon_idx = icon;
-    priv->pix_idx = pix;
-    if(icon==-1)
-      scale_image_set_image(priv->icon,NULL,NULL);
-    else if(priv->sni->string[icon] && *(priv->sni->string[icon]))
-      scale_image_set_image(priv->icon,priv->sni->string[icon],
-          priv->sni->string[SNI_PROP_THEME]);
-    else if(priv->sni->pixbuf[pix-SNI_PROP_ICONPIX])
-      scale_image_set_pixbuf(priv->icon,
-          priv->sni->pixbuf[pix-SNI_PROP_ICONPIX]);
-  }
+  priv->icon_idx = icon;
+  priv->pix_idx = pix;
+  if(icon==-1)
+    scale_image_set_image(priv->icon,NULL,NULL);
+  else if(priv->sni->string[icon] && *(priv->sni->string[icon]))
+    scale_image_set_image(priv->icon,priv->sni->string[icon],
+        priv->sni->string[SNI_PROP_THEME]);
+  else if(priv->sni->pixbuf[pix-SNI_PROP_ICONPIX])
+    scale_image_set_pixbuf(priv->icon,
+        priv->sni->pixbuf[pix-SNI_PROP_ICONPIX]);
 
   if(priv->sni->string[SNI_PROP_LABEL] &&
       *(priv->sni->string[SNI_PROP_LABEL]))
