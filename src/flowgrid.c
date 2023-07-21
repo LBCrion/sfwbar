@@ -8,6 +8,7 @@
 #include "basewidget.h"
 #include "taskbargroup.h"
 #include "config.h"
+#include "bar.h"
 
 G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, GTK_TYPE_GRID, G_ADD_PRIVATE (FlowGrid));
 
@@ -349,6 +350,18 @@ static void flow_grid_dnd_data_rec_cb ( GtkWidget *dest, GdkDragContext *ctx,
   flow_item_invalidate(dest);
 }
 
+static void flow_grid_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
+    gpointer data )
+{
+  bar_ref(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW), widget);
+}
+
+static void flow_grid_dnd_end_cb ( GtkWidget *widget, GdkDragContext *ctx,
+    gpointer data )
+{
+  bar_unref(widget, gtk_widget_get_ancestor(data, GTK_TYPE_WINDOW));
+}
+
 static void flow_grid_dnd_data_get_cb ( GtkWidget *widget, GdkDragContext *ctx,
     GtkSelectionData *sel, guint info, guint time, gpointer *data )
 {
@@ -378,6 +391,10 @@ void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
       GDK_ACTION_MOVE);
   g_signal_connect(G_OBJECT(child),"drag-data-received",
       G_CALLBACK(flow_grid_dnd_data_rec_cb),self);
+  g_signal_connect(G_OBJECT(src),"drag-begin",
+      G_CALLBACK(flow_grid_dnd_begin_cb),self);
+  g_signal_connect(G_OBJECT(src),"drag-end",
+      G_CALLBACK(flow_grid_dnd_end_cb),self);
 }
 
 void flow_grid_copy_properties ( GtkWidget *dest, GtkWidget *src )
