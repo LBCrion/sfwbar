@@ -74,5 +74,6 @@ GtkWidget *bar_mirror ( GtkWidget *, GdkMonitor * );
 void bar_ref ( GtkWidget *self, GtkWidget *child );
 void bar_unref ( GtkWidget *child, GtkWidget *self );
 void bar_handle_direction ( GtkWidget *self );
+void bar_sensor_cancel_hide ( GtkWidget *self );
 
 #endif

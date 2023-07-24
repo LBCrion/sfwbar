@@ -359,6 +359,7 @@ static void flow_grid_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
 static void flow_grid_dnd_end_cb ( GtkWidget *widget, GdkDragContext *ctx,
     gpointer data )
 {
+  bar_sensor_cancel_hide(gtk_widget_get_ancestor(data, GTK_TYPE_WINDOW));
   bar_unref(widget, gtk_widget_get_ancestor(data, GTK_TYPE_WINDOW));
 }
 

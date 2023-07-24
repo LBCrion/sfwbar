@@ -665,6 +665,20 @@ static gboolean bar_sensor_enter_cb ( GtkWidget *widget,
   return TRUE;
 }
 
+void bar_sensor_cancel_hide( GtkWidget *self )
+{
+  BarPrivate *priv;
+
+  g_return_if_fail(IS_BAR(self));
+  priv = bar_get_instance_private(BAR(self));
+
+  if(priv->sensor_handle)
+  {
+    g_source_remove(priv->sensor_handle);
+    priv->sensor_handle = 0;
+  }
+}
+
 void bar_set_sensor ( GtkWidget *self, gchar *delay_str )
 {
   BarPrivate *priv;
