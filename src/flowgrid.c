@@ -350,16 +350,25 @@ static void flow_grid_dnd_data_rec_cb ( GtkWidget *dest, GdkDragContext *ctx,
   flow_item_invalidate(dest);
 }
 
+static void flow_grid_dnd_enter_cb ( GtkWidget *widget, GdkEventCrossing *ev,
+    gpointer data )
+{
+  bar_sensor_cancel_hide(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW));
+}
+
 static void flow_grid_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
     gpointer data )
 {
+  g_signal_handlers_unblock_matched(widget, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,(GFunc)flow_grid_dnd_enter_cb,NULL);
+  gtk_grab_add(widget);
   bar_ref(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW), widget);
 }
 
 static void flow_grid_dnd_end_cb ( GtkWidget *widget, GdkDragContext *ctx,
     gpointer data )
 {
-  bar_sensor_cancel_hide(gtk_widget_get_ancestor(data, GTK_TYPE_WINDOW));
+  g_signal_handlers_block_matched(widget, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,(GFunc)flow_grid_dnd_enter_cb,NULL);
+  gtk_grab_remove(widget);
   bar_unref(widget, gtk_widget_get_ancestor(data, GTK_TYPE_WINDOW));
 }
 
@@ -396,6 +405,10 @@ void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
       G_CALLBACK(flow_grid_dnd_begin_cb),self);
   g_signal_connect(G_OBJECT(src),"drag-end",
       G_CALLBACK(flow_grid_dnd_end_cb),self);
+  g_signal_connect(G_OBJECT(src),"enter-notify-event",
+      G_CALLBACK(flow_grid_dnd_enter_cb),NULL);
+  g_signal_handlers_block_matched(src, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,
+      (GFunc)flow_grid_dnd_enter_cb,NULL);
 }
 
 void flow_grid_copy_properties ( GtkWidget *dest, GtkWidget *src )
