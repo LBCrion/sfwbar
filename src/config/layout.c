@@ -187,6 +187,8 @@ GtkWidget *config_include ( GScanner *scanner, gboolean toplevel )
 
 gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
 {
+  GtkWindow *win;
+
   if(IS_BASE_WIDGET(widget))
     switch ( (gint)scanner->token )
     {
@@ -335,6 +337,17 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         return TRUE;
     }
 
+  win = GTK_WINDOW(gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW));
+  if(win && gtk_bin_get_child(GTK_BIN(win)) == widget &&
+      gtk_window_get_window_type(win) == GTK_WINDOW_POPUP)
+    switch ( (gint)scanner->token )
+    {
+      case G_TOKEN_AUTOCLOSE:
+        popup_set_autoclose(GTK_WIDGET(win),
+            config_assign_boolean(scanner, FALSE, "autoclose"));
+        return TRUE;
+    }
+
   return FALSE;
 }
 
@@ -447,7 +460,7 @@ void config_popup ( GScanner *scanner )
   GtkWidget *win, *grid;
   if(g_scanner_peek_next_token(scanner)!=G_TOKEN_STRING)
   {
-    g_scanner_error(scanner,"missing identifier after 'window'");
+    g_scanner_error(scanner,"missing identifier after 'popup'");
     return;
   }
 

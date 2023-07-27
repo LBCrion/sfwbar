@@ -140,6 +140,8 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   g_scanner_scope_add_symbol(scanner,0, "Separator",
       (gpointer)G_TOKEN_SEPARATOR );
   g_scanner_scope_add_symbol(scanner,0, "SubMenu", (gpointer)G_TOKEN_SUBMENU );
+  g_scanner_scope_add_symbol(scanner,0, "AutoClose",
+      (gpointer)G_TOKEN_AUTOCLOSE );
   g_scanner_scope_add_symbol(scanner,0, "Minimized",
       (gpointer)G_TOKEN_MINIMIZED );
   g_scanner_scope_add_symbol(scanner,0, "Maximized",
