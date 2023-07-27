@@ -353,6 +353,7 @@ set maximum width of an application title in characters
 .B sort [true|false]
 setting of whether taskbar items should be sorted. If the items are not
 sorted, user can sort them manually via drag\-and\-drop mechanism.
+Items are sorted by default, set this to false to enable drag\-and\-drop.
 .TP
 .B rows
 a number of rows in a taskbar.
@@ -382,6 +383,7 @@ pager buttons
 .B sort [true|false]
 setting of whether pager items should be sorted. If the items are not
 sorted, user can sort them manually via drag\-and\-drop mechanism.
+Items are sorted by default, set this to false to enable drag\-and\-drop.
 .TP
 .B numeric [true|false]
 if true, the workspaces will be sorted as numbers, otherwise they will be
@@ -400,7 +402,7 @@ If both rows and cols are specified, rows will be used. If neither is
 specified, the default is rows=1
 .UNINDENT
 .sp
-\fBtray\fP widget my contain the following options
+\fBtray\fP widget may contain the following options
 .INDENT 0.0
 .TP
 .B rows
@@ -414,6 +416,15 @@ specified, the default is rows=1
 .B sort [true|false]
 setting of whether tray items should be sorted. If the items are not
 sorted, user can sort them manually via drag\-and\-drop mechanism.
+Items are sorted by default, set this to false to enable drag\-and\-drop.
+.UNINDENT
+.sp
+\fBpopup\fP window may contain the following options
+.INDENT 0.0
+.TP
+.B AutoClose [true|false]
+specify whether the popup window should close if user clicks anywhere outside
+of the window.
 .UNINDENT
 .SS PopUp
 .sp
@@ -614,6 +625,12 @@ move bar to a specified layer (supported parameters are \(dqtop\(dq, \(dqbottom\
 set size of the bar (width for top or bottom bar, height for left or right
 bar). The argument is a string. I.e. \(dq800\(dq for 800 pixels or \(dq50%\(dq for
 50% of screen size
+.TP
+.B SetBarSensor [<bar_name>],<string>
+Specify whether the bar should be hidden once the pointer leaves the bar
+window. Once hidden, the bar will popup again if the pointer touches the
+sensor located along the screen edge along which the bar is placed.
+String specifies the bar pop\-down delay in milliseconds.
 .TP
 .B SetBarID <string>
 specify bar ID to listen on for mode and hidden_state signals. If no

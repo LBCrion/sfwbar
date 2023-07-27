@@ -278,6 +278,7 @@ title_width
 sort [true|false]
   setting of whether taskbar items should be sorted. If the items are not
   sorted, user can sort them manually via drag-and-drop mechanism.
+  Items are sorted by default, set this to false to enable drag-and-drop.
 
 rows
   a number of rows in a taskbar.
@@ -306,6 +307,7 @@ preview [true|false]
 sort [true|false]
   setting of whether pager items should be sorted. If the items are not
   sorted, user can sort them manually via drag-and-drop mechanism.
+  Items are sorted by default, set this to false to enable drag-and-drop.
 
 numeric [true|false]
   if true, the workspaces will be sorted as numbers, otherwise they will be
@@ -323,7 +325,7 @@ cols
   If both rows and cols are specified, rows will be used. If neither is
   specified, the default is rows=1
 
-``tray`` widget my contain the following options
+``tray`` widget may contain the following options
 
 rows
   a number of rows in a pager.
@@ -336,6 +338,13 @@ cols
 sort [true|false]
   setting of whether tray items should be sorted. If the items are not
   sorted, user can sort them manually via drag-and-drop mechanism.
+  Items are sorted by default, set this to false to enable drag-and-drop.
+
+``popup`` window may contain the following options
+
+AutoClose [true|false]
+  specify whether the popup window should close if user clicks anywhere outside
+  of the window.
 
 PopUp
 -----
@@ -487,6 +496,12 @@ SetBarSize [<bar_name>,]<string>
   set size of the bar (width for top or bottom bar, height for left or right
   bar). The argument is a string. I.e. "800" for 800 pixels or "50%" for 
   50% of screen size
+
+SetBarSensor [<bar_name>],<string>
+  Specify whether the bar should be hidden once the pointer leaves the bar
+  window. Once hidden, the bar will popup again if the pointer touches the
+  sensor located along the screen edge along which the bar is placed.
+  String specifies the bar pop-down delay in milliseconds.
 
 SetBarID <string>
   specify bar ID to listen on for mode and hidden_state signals. If no
