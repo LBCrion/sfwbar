@@ -89,6 +89,7 @@ static void grid_class_init ( GridClass *kclass )
   GTK_WIDGET_CLASS(kclass)->destroy = grid_destroy;
   BASE_WIDGET_CLASS(kclass)->get_child = grid_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = grid_mirror;
+  BASE_WIDGET_CLASS(kclass)->action_exec = NULL;
 }
 
 static void grid_init ( Grid *self )

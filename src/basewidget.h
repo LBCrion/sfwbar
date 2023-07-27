@@ -19,6 +19,8 @@ struct _BaseWidgetClass
   void (*old_size_allocate)(GtkWidget *, GtkAllocation * );
   GtkWidget *(*get_child)(GtkWidget *self);
   GtkWidget *(*mirror)(GtkWidget *self);
+  gboolean (*action_exec)( GtkWidget *self, gint slot, GdkEvent *ev );
+
 };
 
 typedef struct _BaseWidgetPrivate BaseWidgetPrivate;
@@ -87,5 +89,7 @@ void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src );
 void base_widget_copy_properties ( GtkWidget *dest, GtkWidget *src );
 GtkWidget *base_widget_mirror ( GtkWidget *src );
 GdkModifierType base_widget_get_modifiers ( GtkWidget *self );
+gboolean base_widget_action_exec ( GtkWidget *, gint, GdkEvent *);
+gboolean base_widget_check_action_slot ( GtkWidget *self, gint slot );
 
 #endif

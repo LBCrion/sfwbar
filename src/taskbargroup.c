@@ -54,7 +54,7 @@ static gboolean taskbar_group_enter_cb ( GtkWidget *widget,
 
   flow_grid_update(priv->tgroup);
 
-  popup_show(priv->button,priv->popover);
+  popup_show(priv->button, priv->popover, (GdkEvent *)event);
 
   return TRUE;
 }
@@ -124,12 +124,14 @@ static void taskbar_group_set_single ( GtkWidget *self, GtkWidget *child )
       G_SIGNAL_MATCH_DATA | G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL,
       taskbar_group_leave_cb, self);
 
-  g_signal_connect(priv->button,"clicked",G_CALLBACK(taskbar_item_button_cb),
+/*  g_signal_connect(priv->button,"clicked",G_CALLBACK(taskbar_item_button_cb),
       child);
-  g_signal_connect(self,"button_press_event",
+  g_signal_connect(self,"button-press-event",
+      G_CALLBACK(taskbar_item_click_cb),child);
+  g_signal_connect(self,"button-release-event",
       G_CALLBACK(taskbar_item_click_cb),child);
   g_signal_connect(self,"scroll-event",
-      G_CALLBACK(taskbar_item_scroll_cb),child);
+      G_CALLBACK(taskbar_item_scroll_cb),child);*/
 }
 
 static void taskbar_group_set_multi ( GtkWidget *self )
@@ -156,12 +158,12 @@ static void taskbar_group_set_multi ( GtkWidget *self )
       G_SIGNAL_MATCH_DATA, 0, 0, NULL,
       taskbar_group_leave_cb, self);
 
-  g_signal_handlers_disconnect_matched(self, G_SIGNAL_MATCH_FUNC,
+/*  g_signal_handlers_disconnect_matched(self, G_SIGNAL_MATCH_FUNC,
     0, 0, NULL, taskbar_item_click_cb, NULL);
   g_signal_handlers_disconnect_matched(self, G_SIGNAL_MATCH_FUNC,
     0, 0, NULL, taskbar_item_scroll_cb, NULL);
   g_signal_handlers_disconnect_matched(priv->button, G_SIGNAL_MATCH_FUNC,
-    0, 0, NULL, taskbar_item_button_cb, NULL);
+    0, 0, NULL, taskbar_item_button_cb, NULL);*/
 }
 
 static void taskbar_group_update ( GtkWidget *self )
@@ -228,9 +230,43 @@ static gint taskbar_group_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *paren
   return g_strcmp0(p1->appid,p2->appid);
 }
 
+static gboolean taskbar_group_action_exec ( GtkWidget *self, gint slot,
+    GdkEvent *ev )
+{
+  TaskbarGroupPrivate *priv;
+  GList *children;
+  gint n;
+
+  g_return_val_if_fail(IS_TASKBAR_GROUP(self),FALSE);
+  priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
+
+  children = gtk_container_get_children(GTK_CONTAINER(
+        gtk_bin_get_child(GTK_BIN(priv->tgroup))));
+  n = g_list_length(children);
+  if(n!=1)
+  {
+    g_list_free(children);
+    return FALSE;
+  }
+
+  if(!base_widget_check_action_slot(priv->taskbar, slot))
+    return FALSE;
+
+  action_exec(children->data,
+      base_widget_get_action(priv->taskbar, slot,
+        base_widget_get_modifiers(self)),
+      (GdkEvent *)ev,
+      taskbar_item_get_window(children->data),
+      NULL);
+
+  g_list_free(children);
+  return TRUE;
+}
+
 static void taskbar_group_class_init ( TaskbarGroupClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = taskbar_group_destroy;
+  BASE_WIDGET_CLASS(kclass)->action_exec = taskbar_group_action_exec;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_group_update;
   FLOW_ITEM_CLASS(kclass)->comp_parent = (GCompareFunc)g_strcmp0;
   FLOW_ITEM_CLASS(kclass)->get_parent = 

@@ -138,13 +138,110 @@ static void base_widget_get_pref_height ( GtkWidget *self, gint *m, gint *n )
   }
 }
 
+GdkModifierType base_widget_get_modifiers ( GtkWidget *self )
+{
+  GdkModifierType state;
+  GtkWindow *win;
+
+  win = GTK_WINDOW(gtk_widget_get_ancestor(self, GTK_TYPE_WINDOW));
+  if(gtk_window_get_window_type(win)==GTK_WINDOW_POPUP)
+    win = g_object_get_data(G_OBJECT(win),"parent_window");
+
+  if(win && gtk_layer_is_layer_window(win))
+  {
+    gtk_layer_set_keyboard_mode(win, GTK_LAYER_SHELL_KEYBOARD_MODE_EXCLUSIVE);
+    gtk_main_iteration();
+    gtk_main_iteration();
+    gtk_main_iteration();
+    state = gdk_keymap_get_modifier_state(gdk_keymap_get_for_display(
+          gdk_display_get_default())) & mod_mask;
+    gtk_layer_set_keyboard_mode(win, GTK_LAYER_SHELL_KEYBOARD_MODE_NONE);
+  }
+  else
+    state = 0;
+
+  return state;
+}
+
+gboolean base_widget_check_action_slot ( GtkWidget *self, gint slot )
+{
+  BaseWidgetPrivate *priv;
+  GList *iter;
+
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  for(iter=priv->actions; iter; iter=g_list_next(iter))
+    if(((base_widget_attachment_t *)(iter->data))->event == slot)
+      break;
+
+  return !!iter;
+}
+
+static gboolean base_widget_button_release_event ( GtkWidget *self,
+    GdkEventButton *ev )
+{
+  g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
+
+  if (ev->type != GDK_BUTTON_RELEASE || ev->button < 1 || ev->button > 3 )
+    return FALSE;
+
+  return base_widget_action_exec(self, ev->button, (GdkEvent *)ev);
+}
+
+static gboolean base_widget_scroll_event ( GtkWidget *self,
+    GdkEventScroll *ev )
+{
+  gint slot;
+
+  g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
+
+  switch(ev->direction)
+  {
+    case GDK_SCROLL_UP:
+      slot = 4;
+      break;
+    case GDK_SCROLL_DOWN:
+      slot = 5;
+      break;
+    case GDK_SCROLL_LEFT:
+      slot = 6;
+      break;
+    case GDK_SCROLL_RIGHT:
+      slot = 7;
+      break;
+    default:
+      return FALSE;
+  }
+
+  return base_widget_action_exec(self, slot, (GdkEvent *)ev);
+}
+
+static gboolean base_widget_action_exec_impl ( GtkWidget *self, gint slot,
+    GdkEvent *ev )
+{
+  if(!base_widget_check_action_slot(self, slot))
+    return FALSE;
+
+  action_exec(self,
+      base_widget_get_action(self, slot,
+        base_widget_get_modifiers(self)),
+      (GdkEvent *)ev,
+      wintree_from_id(wintree_get_focus()),
+      NULL);
+  return TRUE;
+}
+
 static void base_widget_class_init ( BaseWidgetClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = base_widget_destroy;
   kclass->old_size_allocate = GTK_WIDGET_CLASS(kclass)->size_allocate;
+  kclass->action_exec = base_widget_action_exec_impl;
   GTK_WIDGET_CLASS(kclass)->size_allocate = base_widget_size_allocate;
   GTK_WIDGET_CLASS(kclass)->get_preferred_width = base_widget_get_pref_width;
   GTK_WIDGET_CLASS(kclass)->get_preferred_height = base_widget_get_pref_height;
+  GTK_WIDGET_CLASS(kclass)->button_release_event =
+    base_widget_button_release_event;
+  GTK_WIDGET_CLASS(kclass)->scroll_event = base_widget_scroll_event;
 }
 
 static void base_widget_init ( BaseWidget *self )
@@ -165,107 +262,6 @@ static void base_widget_init ( BaseWidget *self )
   priv->rect.height = 1;
 }
 
-GdkModifierType base_widget_get_modifiers ( GtkWidget *self )
-{
-  GdkModifierType state;
-  GtkWindow *win;
-
-  win = GTK_WINDOW(gtk_widget_get_ancestor(self, GTK_TYPE_WINDOW));
-  if(gtk_window_get_window_type(win)==GTK_WINDOW_POPUP)
-    win = g_object_get_data(G_OBJECT(win),"parent_window");
-
-  if(win || !gtk_layer_is_layer_window(win))
-  {
-    gtk_layer_set_keyboard_mode(win, GTK_LAYER_SHELL_KEYBOARD_MODE_EXCLUSIVE);
-    gtk_main_iteration();
-    gtk_main_iteration();
-    gtk_main_iteration();
-    state = gdk_keymap_get_modifier_state(gdk_keymap_get_for_display(
-          gdk_display_get_default())) & mod_mask;
-    gtk_layer_set_keyboard_mode(win, GTK_LAYER_SHELL_KEYBOARD_MODE_NONE);
-  }
-  else
-    state = 0;
-
-  return state;
-}
-
-static gboolean base_widget_button_cb ( GtkWidget *self, gpointer data )
-{
-  BaseWidgetPrivate *priv;
-
-  g_return_val_if_fail(IS_BASE_WIDGET(data),FALSE);
-  priv = base_widget_get_instance_private(BASE_WIDGET(data));
-
-  priv->saved_modifiers = base_widget_get_modifiers(self);
-
-  return FALSE;
-}
-
-static gboolean base_widget_click_cb ( GtkWidget *self, GdkEventButton *ev,
-    gpointer data )
-{
-  BaseWidgetPrivate *priv;
-  action_t *action;
-  GdkModifierType mods;
-
-  g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
-
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
-
-  if(GTK_IS_BUTTON(base_widget_get_child(self)) && ev->button == 1) 
-  {
-    if(ev->type != GDK_BUTTON_RELEASE)
-      return FALSE;
-    mods = priv->saved_modifiers;
-  }
-  else if (ev->type != GDK_BUTTON_PRESS || ev->button < 1 || ev->button > 3 )
-    return FALSE;
-  else
-    mods = base_widget_get_modifiers(self);
-
-  action = base_widget_get_action(self, ev->button, mods);
-  if(action)
-    action_exec(self, action, (GdkEvent *)ev,
-        wintree_from_id(wintree_get_focus()),NULL);
-
-  return TRUE;
-}
-
-static gboolean base_widget_scroll_cb ( GtkWidget *self,
-    GdkEventScroll *ev, gpointer *data )
-{
-  action_t *action;
-  gint button;
-
-  g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
-
-  switch(ev->direction)
-  {
-    case GDK_SCROLL_UP:
-      button = 4;
-      break;
-    case GDK_SCROLL_DOWN:
-      button = 5;
-      break;
-    case GDK_SCROLL_LEFT:
-      button = 6;
-      break;
-    case GDK_SCROLL_RIGHT:
-      button = 7;
-      break;
-    default:
-      return FALSE;
-  }
-
-  action = base_widget_get_action(self, button,
-      base_widget_get_modifiers(self));
-  if(action)
-    action_exec(self, action, (GdkEvent *)ev,
-        wintree_from_id(wintree_get_focus()),NULL);
-
-  return TRUE;
-}
 static gboolean base_widget_tooltip_update ( GtkWidget *self,
     gint x, gint y, gboolean kbmode, GtkTooltip *tooltip, gpointer data )
 {
@@ -582,19 +578,6 @@ gint64 base_widget_get_next_poll ( GtkWidget *self )
   return priv->next_poll;
 }
 
-gchar *base_widget_get_value ( GtkWidget *self )
-{
-  BaseWidgetPrivate *priv;
-
-  g_return_val_if_fail(IS_BASE_WIDGET(self),NULL);
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
-
-  if(priv->mirror_parent)
-    priv = base_widget_get_instance_private(BASE_WIDGET(priv->mirror_parent));
-
-  return priv->value->cache;
-}
-
 action_t *base_widget_get_action ( GtkWidget *self, gint n,
     GdkModifierType mods )
 {
@@ -613,6 +596,29 @@ action_t *base_widget_get_action ( GtkWidget *self, gint n,
   }
 
   return NULL;
+}
+
+gboolean base_widget_action_exec ( GtkWidget *self, gint slot,
+    GdkEvent *ev )
+{
+  g_return_val_if_fail(IS_BASE_WIDGET(self), FALSE);
+
+  if(!BASE_WIDGET_GET_CLASS(self)->action_exec)
+    return FALSE;
+  return BASE_WIDGET_GET_CLASS(self)->action_exec(self, slot, ev);
+}
+
+gchar *base_widget_get_value ( GtkWidget *self )
+{
+  BaseWidgetPrivate *priv;
+
+  g_return_val_if_fail(IS_BASE_WIDGET(self),NULL);
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  if(priv->mirror_parent)
+    priv = base_widget_get_instance_private(BASE_WIDGET(priv->mirror_parent));
+
+  return priv->value->cache;
 }
 
 void base_widget_set_css ( GtkWidget *self, gchar *css )
@@ -667,25 +673,10 @@ void base_widget_set_action ( GtkWidget *self, gint n, GdkModifierType mods,
   if(IS_FLOW_GRID(base_widget_get_child(self)))
     return;
 
-  if(!priv->scroll_h && n>=4 && n<=7)
-  {
+  if(n>=1 && n<=3)
+    gtk_widget_add_events(GTK_WIDGET(self), GDK_BUTTON_RELEASE_MASK);
+  else if(n>=4 && n<=7)
     gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
-    priv->scroll_h = g_signal_connect(G_OBJECT(self),"scroll-event",
-      G_CALLBACK(base_widget_scroll_cb),NULL);
-  }
-
-  gtk_widget_add_events(GTK_WIDGET(self), GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
-  if(!priv->click_h && (n==2 || n==3 ||
-        (n==1 && !GTK_IS_BUTTON(base_widget_get_child(self)))))
-    priv->click_h = g_signal_connect(G_OBJECT(self),"button-press-event",
-        G_CALLBACK(base_widget_click_cb),NULL);
-
-  if(!priv->button_h && GTK_IS_BUTTON(base_widget_get_child(self)) && n==1)
-    priv->button_h = g_signal_connect(G_OBJECT(self),"button-release-event",
-        G_CALLBACK(base_widget_click_cb),NULL);
-  if(!priv->buttonp_h && GTK_IS_BUTTON(base_widget_get_child(self)) && n==1)
-    priv->buttonp_h = g_signal_connect(G_OBJECT(base_widget_get_child(self)),
-        "clicked", G_CALLBACK(base_widget_button_cb),self);
 }
 
 void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src )

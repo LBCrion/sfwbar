@@ -45,6 +45,7 @@ static void tray_class_init ( TrayClass *kclass )
   BASE_WIDGET_CLASS(kclass)->get_child = tray_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = tray_mirror;
   GTK_WIDGET_CLASS(kclass)->destroy = tray_destroy;
+  BASE_WIDGET_CLASS(kclass)->action_exec = NULL;
 }
 
 static void tray_init ( Tray *self )

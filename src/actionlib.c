@@ -5,6 +5,7 @@
 
 #include "bar.h"
 #include "basewidget.h"
+#include "taskbaritem.h"
 #include "config.h"
 #include "action.h"
 #include "menu.h"
@@ -302,7 +303,7 @@ static ModuleActionHandlerV1 userstate_handler = {
 static void popup_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
-  popup_trigger(widget, cmd);
+  popup_trigger(widget, cmd, event);
 }
 
 static ModuleActionHandlerV1 popup_handler = {
@@ -394,6 +395,11 @@ static ModuleActionHandlerV1 unmaximize_handler = {
   .function = (ModuleActionFunc)unmaximize_action
 };
 
+static ModuleActionHandlerV1 taskbar_item_handler = {
+  .name = "taskbar_item_default_action",
+  .function = (ModuleActionFunc)taskbar_item_default_action
+};
+
 ModuleActionHandlerV1 *action_handlers[] = {
   &exec_handler,
   &function_handler,
@@ -425,6 +431,7 @@ ModuleActionHandlerV1 *action_handlers[] = {
   &maximize_handler,
   &unminimize_handler,
   &unmaximize_handler,
+  &taskbar_item_handler,
   NULL
 };
 

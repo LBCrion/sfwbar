@@ -76,6 +76,7 @@ static void taskbar_class_init ( TaskbarClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->get_child = taskbar_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = taskbar_mirror;
+  BASE_WIDGET_CLASS(kclass)->action_exec = NULL;
   GTK_WIDGET_CLASS(kclass)->destroy = taskbar_destroy;
 }
 
@@ -87,6 +88,7 @@ GtkWidget *taskbar_new ( gboolean toplevel )
 {
   GtkWidget *self;
   TaskbarPrivate *priv;
+  static action_t *taskbar_action;
 
   self = GTK_WIDGET(g_object_new(taskbar_get_type(), NULL));
   priv = taskbar_get_instance_private(TASKBAR(self));
@@ -95,6 +97,14 @@ GtkWidget *taskbar_new ( gboolean toplevel )
   gtk_container_add(GTK_CONTAINER(self),priv->taskbar);
   priv->toplevel = toplevel;
   taskbars = g_list_prepend(taskbars,self);
+
+  if(!taskbar_action)
+  {
+    taskbar_action = action_new();
+    taskbar_action->quark =
+      g_quark_from_static_string("taskbar_item_default_action");
+  }
+  base_widget_set_action(self, 1, 0, action_dup(taskbar_action) );
 
   flow_grid_invalidate(priv->taskbar);
   return self;

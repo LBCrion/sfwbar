@@ -90,6 +90,7 @@ static void pager_class_init ( PagerClass *kclass )
   BASE_WIDGET_CLASS(kclass)->get_child = pager_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = pager_mirror;
   GTK_WIDGET_CLASS(kclass)->destroy = pager_destroy;
+  BASE_WIDGET_CLASS(kclass)->action_exec = NULL;
 }
 
 static void pager_init ( Pager *self )
