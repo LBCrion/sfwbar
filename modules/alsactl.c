@@ -285,7 +285,7 @@ static void alsa_card_action ( gchar *cmd, gchar *name, void *d1,
 ModuleExpressionHandlerV1 handler1 = {
   .flags = MODULE_EXPR_NUMERIC,
   .name = "Alsa",
-  .parameters = "S",
+  .parameters = "Ss",
   .function = alsa_expr_func
 };
 
