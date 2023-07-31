@@ -36,8 +36,8 @@ struct _BarPrivate {
   GtkWidget *start, *center, *end;
   GtkWidget *box, *sensor;
   gint64 sensor_timeout;
+  gboolean sensor_state, sensor_block;
   guint sensor_handle;
-  gulong sensor_henter, sensor_hleave;
   GList *sensor_refs;
   gboolean hidden;
   gboolean jump;

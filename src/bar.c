@@ -18,6 +18,93 @@ G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW, G_ADD_PRIVATE (Bar));
 static GHashTable *bar_list;
 static GList *mirrors;
 
+static gboolean bar_sensor_unblock_cb ( GtkWidget *self )
+{
+  BarPrivate *priv;
+
+  g_return_val_if_fail(IS_BAR(self), FALSE);
+  priv = bar_get_instance_private(BAR(self));
+  priv->sensor_block = FALSE;
+
+  return FALSE;
+}
+
+static gboolean bar_sensor_hide ( GtkWidget *self )
+{
+  BarPrivate *priv;
+
+  g_return_val_if_fail(IS_BAR(self),FALSE);
+  priv = bar_get_instance_private(BAR(self));
+
+  if(gtk_bin_get_child(GTK_BIN(self))==priv->sensor)
+    return FALSE;
+
+  if(priv->sensor_refs)
+    return TRUE;
+  priv->sensor_block = TRUE;
+  g_idle_add((GSourceFunc)bar_sensor_unblock_cb, self);
+  css_add_class(self,"sensor");
+  gtk_container_remove(GTK_CONTAINER(self),gtk_bin_get_child(GTK_BIN(self)));
+  gtk_container_add(GTK_CONTAINER(self),priv->sensor);
+  priv->sensor_state = FALSE;
+  priv->sensor_handle = 0;
+
+  return FALSE;
+}
+
+static gboolean bar_leave_notify_event ( GtkWidget *self,
+    GdkEventCrossing *event )
+{
+  BarPrivate *priv;
+
+  g_return_val_if_fail(IS_BAR(self),FALSE);
+  priv = bar_get_instance_private(BAR(self));
+
+  if(!priv->sensor_timeout || !priv->sensor_state || priv->sensor_block)
+    return TRUE;
+
+  if(!priv->sensor_handle)
+    priv->sensor_handle = g_timeout_add(priv->sensor_timeout,
+        (GSourceFunc)bar_sensor_hide, self);
+
+  return TRUE;
+}
+
+static void bar_sensor_show_bar ( GtkWidget *self )
+{
+  BarPrivate *priv;
+
+  g_return_if_fail(IS_BAR(self));
+  priv = bar_get_instance_private(BAR(self));
+
+  bar_sensor_cancel_hide(self);
+  priv->sensor_state = TRUE;
+
+  if(gtk_bin_get_child(GTK_BIN(self))!=priv->sensor)
+    return;
+
+  priv->sensor_block = TRUE;
+  g_idle_add((GSourceFunc)bar_sensor_unblock_cb, self);
+  css_remove_class(self,"sensor");
+  gtk_container_remove(GTK_CONTAINER(self),gtk_bin_get_child(GTK_BIN(self)));
+  gtk_container_add(GTK_CONTAINER(self),priv->box);
+}
+
+static gboolean bar_enter_notify_event ( GtkWidget *self,
+    GdkEventCrossing *event )
+{
+  BarPrivate *priv;
+
+  g_return_val_if_fail(IS_BAR(self),FALSE);
+  priv = bar_get_instance_private(BAR(self));
+
+  if(!priv->sensor_timeout || priv->sensor_block)
+    return TRUE;
+
+  bar_sensor_show_bar(self);
+  return TRUE;
+}
+
 static void bar_destroy ( GtkWidget *self )
 {
   BarPrivate *priv, *ppriv;
@@ -51,6 +138,8 @@ static void bar_init ( Bar *self )
 static void bar_class_init ( BarClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = bar_destroy;
+  GTK_WIDGET_CLASS(kclass)->enter_notify_event = bar_enter_notify_event;
+  GTK_WIDGET_CLASS(kclass)->leave_notify_event = bar_leave_notify_event;
 }
 
 GtkWidget *bar_from_name ( gchar *name )
@@ -575,96 +664,6 @@ void bar_ref ( GtkWidget *self, GtkWidget *child )
   g_signal_connect(G_OBJECT(child),"unmap",G_CALLBACK(bar_unref),self);
 }
 
-static gboolean bar_sensor_enter_cb ( GtkWidget *,GdkEventCrossing *,gpointer);
-static gboolean bar_sensor_leave_cb ( GtkWidget *,GdkEventCrossing *,gpointer);
-
-static gboolean bar_sensor_hide_cb ( GtkWidget *self )
-{
-  BarPrivate *priv;
-
-  g_return_val_if_fail(IS_BAR(self),FALSE);
-  priv = bar_get_instance_private(BAR(self));
-
-  if(gtk_bin_get_child(GTK_BIN(self))==priv->sensor)
-    return FALSE;
-
-  if(priv->sensor_refs)
-    return TRUE;
-  css_add_class(self,"sensor");
-  gtk_container_remove(GTK_CONTAINER(self),gtk_bin_get_child(GTK_BIN(self)));
-  gtk_container_add(GTK_CONTAINER(self),priv->sensor);
-
-  if(g_signal_handler_find(self, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA |
-        G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL, bar_sensor_leave_cb, self))
-    g_signal_handler_block(self,priv->sensor_hleave);
-  if(!g_signal_handler_find(self, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA |
-        G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL, bar_sensor_enter_cb, self))
-    g_signal_handler_unblock(self,priv->sensor_henter);
-  priv->sensor_handle = 0;
-
-  return FALSE;
-}
-
-static gboolean bar_sensor_leave_cb ( GtkWidget *widget,
-    GdkEventCrossing *event, gpointer self )
-{
-  BarPrivate *priv;
-
-  g_return_val_if_fail(IS_BAR(self),FALSE);
-  priv = bar_get_instance_private(BAR(self));
-
-  if(!priv->sensor_handle)
-    priv->sensor_handle = g_timeout_add(priv->sensor_timeout,
-        (GSourceFunc)bar_sensor_hide_cb, self);
-
-  return TRUE;
-}
-
-static gboolean bar_sensor_enter_flip_cb ( GtkWidget *self )
-{
-  BarPrivate *priv;
-
-  g_return_val_if_fail(IS_BAR(self),FALSE);
-  priv = bar_get_instance_private(BAR(self));
-
-  if(g_signal_handler_find(self, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA |
-        G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL, bar_sensor_enter_cb, self))
-    g_signal_handler_block(self,priv->sensor_henter);
-  if(!g_signal_handler_find(self, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA |
-        G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL, bar_sensor_leave_cb, self))
-    g_signal_handler_unblock(self,priv->sensor_hleave);
-
-  return FALSE;
-}
-
-static void bar_sensor_show_bar ( GtkWidget *self )
-{
-  BarPrivate *priv;
-
-  g_return_if_fail(IS_BAR(self));
-  priv = bar_get_instance_private(BAR(self));
-
-  if(priv->sensor_handle)
-  {
-    g_source_remove(priv->sensor_handle);
-    priv->sensor_handle = 0;
-  }
-  if(gtk_bin_get_child(GTK_BIN(self))!=priv->sensor)
-    return;
-  css_remove_class(self,"sensor");
-  gtk_container_remove(GTK_CONTAINER(self),gtk_bin_get_child(GTK_BIN(self)));
-  gtk_container_add(GTK_CONTAINER(self),priv->box);
-}
-
-static gboolean bar_sensor_enter_cb ( GtkWidget *widget,
-    GdkEventCrossing *event, gpointer self )
-{
-  bar_sensor_show_bar(self);
-  g_idle_add((GSourceFunc)bar_sensor_enter_flip_cb, self);
-
-  return TRUE;
-}
-
 void bar_sensor_cancel_hide( GtkWidget *self )
 {
   BarPrivate *priv;
@@ -697,26 +696,15 @@ void bar_set_sensor ( GtkWidget *self, gchar *delay_str )
       priv->sensor = gtk_grid_new();
       g_object_ref_sink(priv->sensor);
       css_add_class(priv->sensor,"sensor");
-      gtk_widget_add_events(GTK_WIDGET(priv->sensor),GDK_ENTER_NOTIFY_MASK);
-      gtk_widget_add_events(GTK_WIDGET(priv->sensor),GDK_LEAVE_NOTIFY_MASK);
-      priv->sensor_henter = g_signal_connect(self,"enter-notify-event",
-          G_CALLBACK(bar_sensor_enter_cb),self);
-      priv->sensor_hleave = g_signal_connect(self,"leave-notify-event",
-          G_CALLBACK(bar_sensor_leave_cb),self);
+      gtk_widget_add_events(priv->sensor, GDK_STRUCTURE_MASK);
+      gtk_widget_add_events(priv->box, GDK_STRUCTURE_MASK);
       gtk_widget_show(priv->sensor);
     }
-    bar_sensor_hide_cb(self);
+    bar_sensor_hide(self);
+    priv->sensor_block = FALSE;
   }
   else if(priv->sensor_handle)
-  {
     bar_sensor_show_bar(self);
-    if(g_signal_handler_find(self, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA |
-          G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL, bar_sensor_enter_cb, self))
-      g_signal_handler_block(self,priv->sensor_henter);
-    if(g_signal_handler_find(self, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA |
-          G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL, bar_sensor_leave_cb, self))
-      g_signal_handler_block(self,priv->sensor_hleave);
-  }
 
   g_list_foreach(priv->mirror_children,(GFunc)bar_set_sensor,delay_str);
 }
