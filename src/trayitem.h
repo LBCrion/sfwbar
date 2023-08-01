@@ -35,7 +35,6 @@ struct _TrayItemPrivate
   GtkWidget *tray;
   gint icon_idx, pix_idx, old_icon, old_pix;
   gboolean invalid;
-  GdkEvent *last_event;
 };
 
 GType tray_item_get_type ( void );
