@@ -77,7 +77,7 @@ void tray_invalidate_all ( SniItem *sni )
   GList *iter;
 
   for(iter=trays; iter; iter=g_list_next(iter))
-    tray_item_invalidate(flow_grid_find_child(iter->data,sni));
+    flow_item_invalidate(flow_grid_find_child(iter->data,sni));
 }
 
 void tray_item_init_for_all ( SniItem *sni )

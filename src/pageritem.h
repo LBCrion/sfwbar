@@ -39,7 +39,5 @@ GType pager_item_get_type ( void );
 GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws );
 workspace_t *pager_item_get_workspace ( GtkWidget *self );
 void pager_item_update ( GtkWidget *self );
-gint pager_item_compare ( GtkWidget *, GtkWidget *, GtkWidget * );
-void pager_item_invalidate ( GtkWidget *self );
 
 #endif

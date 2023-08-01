@@ -40,7 +40,6 @@ struct _TaskbarItemPrivate
 GType taskbar_item_get_type ( void );
 
 GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar );
-void taskbar_item_invalidate ( GtkWidget *self );
 
 window_t *taskbar_item_get_window ( GtkWidget *self );
 void taskbar_item_default_action ( gchar *cmd, gchar *name, void *self,

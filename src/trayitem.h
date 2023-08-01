@@ -33,7 +33,6 @@ struct _TrayItemPrivate
   GtkWidget *icon;
   GtkWidget *label;
   GtkWidget *tray;
-  gint icon_idx, pix_idx, old_icon, old_pix;
   gboolean invalid;
 };
 
@@ -42,7 +41,5 @@ GType tray_item_get_type ( void );
 GtkWidget *tray_item_new( SniItem *win, GtkWidget *tray );
 SniItem*tray_item_get_sni ( GtkWidget *self );
 void tray_item_update ( GtkWidget *self );
-gint tray_item_compare ( GtkWidget *, GtkWidget *, GtkWidget * );
-void tray_item_invalidate ( GtkWidget *self );
 
 #endif

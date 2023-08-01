@@ -150,6 +150,20 @@ static gint taskbar_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent
   return wintree_compare(p1->win,p2->win);
 }
 
+static void taskbar_item_invalidate ( GtkWidget *self )
+{
+  TaskbarItemPrivate *priv;
+
+  if(!self)
+    return;
+
+  g_return_if_fail(IS_TASKBAR_ITEM(self));
+  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
+
+  flow_grid_invalidate(priv->taskbar);
+  priv->invalid = TRUE;
+}
+
 static void taskbar_item_class_init ( TaskbarItemClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = taskbar_item_destroy;
@@ -229,18 +243,4 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   taskbar_item_invalidate(self);
 
   return self;
-}
-
-void taskbar_item_invalidate ( GtkWidget *self )
-{
-  TaskbarItemPrivate *priv;
-
-  if(!self)
-    return;
-
-  g_return_if_fail(IS_TASKBAR_ITEM(self));
-  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
-
-  flow_grid_invalidate(priv->taskbar);
-  priv->invalid = TRUE;
 }

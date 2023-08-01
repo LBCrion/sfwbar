@@ -138,7 +138,7 @@ void pager_invalidate_all ( workspace_t *ws )
   GList *iter;
 
   for(iter=pagers; iter; iter=g_list_next(iter))
-    pager_item_invalidate(flow_grid_find_child(iter->data,ws));
+    flow_item_invalidate(flow_grid_find_child(iter->data,ws));
 }
 
 static gint pager_comp_id ( workspace_t *a, gpointer id )

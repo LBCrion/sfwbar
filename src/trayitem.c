@@ -48,12 +48,10 @@ void tray_item_update ( GtkWidget *self )
     }
   }
 
-  priv->icon_idx = icon;
-  priv->pix_idx = pix;
   if(icon==-1)
-    scale_image_set_image(priv->icon,NULL,NULL);
+    scale_image_set_image(priv->icon, NULL, NULL);
   else if(priv->sni->string[icon] && *(priv->sni->string[icon]))
-    scale_image_set_image(priv->icon,priv->sni->string[icon],
+    scale_image_set_image(priv->icon, priv->sni->string[icon],
         priv->sni->string[SNI_PROP_THEME]);
   else if(priv->sni->pixbuf[pix-SNI_PROP_ICONPIX])
     scale_image_set_pixbuf(priv->icon,
@@ -183,21 +181,20 @@ static gboolean tray_item_action_exec ( GtkWidget *self, gint slot,
   return FALSE;
 }
 
-static void tray_item_class_init ( TrayItemClass *kclass )
+static gint tray_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
 {
-  GTK_WIDGET_CLASS(kclass)->destroy = tray_item_destroy;
-  BASE_WIDGET_CLASS(kclass)->action_exec = tray_item_action_exec;
-  FLOW_ITEM_CLASS(kclass)->update = tray_item_update;
-  FLOW_ITEM_CLASS(kclass)->compare = tray_item_compare;
-  FLOW_ITEM_CLASS(kclass)->get_parent = 
-    (void *(*)(GtkWidget *))tray_item_get_sni;
+  TrayItemPrivate *p1,*p2;
+
+  g_return_val_if_fail(IS_TRAY_ITEM(a), 0);
+  g_return_val_if_fail(IS_TRAY_ITEM(b), 0);
+
+  p1 = tray_item_get_instance_private(TRAY_ITEM(a));
+  p2 = tray_item_get_instance_private(TRAY_ITEM(b));
+  return g_strcmp0(p1->sni->string[SNI_PROP_TITLE],
+      p2->sni->string[SNI_PROP_TITLE]);
 }
 
-static void tray_item_init ( TrayItem *self )
-{
-}
-
-void tray_item_invalidate ( GtkWidget *self )
+static void tray_item_invalidate ( GtkWidget *self )
 {
   TrayItemPrivate *priv;
 
@@ -209,6 +206,21 @@ void tray_item_invalidate ( GtkWidget *self )
 
   flow_grid_invalidate(priv->tray);
   priv->invalid = TRUE;
+}
+
+static void tray_item_class_init ( TrayItemClass *kclass )
+{
+  GTK_WIDGET_CLASS(kclass)->destroy = tray_item_destroy;
+  BASE_WIDGET_CLASS(kclass)->action_exec = tray_item_action_exec;
+  FLOW_ITEM_CLASS(kclass)->update = tray_item_update;
+  FLOW_ITEM_CLASS(kclass)->compare = tray_item_compare;
+  FLOW_ITEM_CLASS(kclass)->invalidate = tray_item_invalidate;
+  FLOW_ITEM_CLASS(kclass)->get_parent =
+    (void *(*)(GtkWidget *))tray_item_get_sni;
+}
+
+static void tray_item_init ( TrayItem *self )
+{
 }
 
 GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
@@ -223,39 +235,25 @@ GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
 
   priv->button = gtk_button_new();
-  gtk_container_add(GTK_CONTAINER(self),priv->button);
+  gtk_container_add(GTK_CONTAINER(self), priv->button);
   gtk_widget_set_name(priv->button, "tray_active");
-  gtk_widget_style_get(priv->button,"direction",&dir,NULL);
+  gtk_widget_style_get(priv->button, "direction", &dir, NULL);
   box = gtk_grid_new();
-  gtk_container_add(GTK_CONTAINER(priv->button),box);
-  flow_grid_child_dnd_enable(tray,self,priv->button);
+  gtk_container_add(GTK_CONTAINER(priv->button), box);
+  flow_grid_child_dnd_enable(tray, self, priv->button);
 
   priv->icon = scale_image_new();
   priv->label = gtk_label_new("");
   priv->sni = sni;
   priv->tray = tray;
-  priv->old_icon = -1;
-  priv->old_pix = -1;
   priv->invalid = TRUE;
 
-  gtk_grid_attach_next_to(GTK_GRID(box),priv->icon,NULL,dir,1,1);
-  gtk_grid_attach_next_to(GTK_GRID(box),priv->label,priv->icon,dir,1,1);
+  gtk_grid_attach_next_to(GTK_GRID(box),priv->icon, NULL, dir, 1, 1);
+  gtk_grid_attach_next_to(GTK_GRID(box), priv->label, priv->icon, dir, 1, 1);
 
   g_object_ref(self);
-  flow_grid_add_child(tray,self);
+  flow_grid_add_child(tray, self);
 
-  gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
+  gtk_widget_add_events(GTK_WIDGET(self), GDK_SCROLL_MASK);
   return self;
-}
-
-gint tray_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
-{
-  TrayItemPrivate *p1,*p2;
-
-  g_return_val_if_fail(IS_TRAY_ITEM(a),0);
-  g_return_val_if_fail(IS_TRAY_ITEM(b),0);
-
-  p1 = tray_item_get_instance_private(TRAY_ITEM(a));
-  p2 = tray_item_get_instance_private(TRAY_ITEM(b));
-  return g_strcmp0(p1->sni->string[SNI_PROP_TITLE],p2->sni->string[SNI_PROP_TITLE]);
 }

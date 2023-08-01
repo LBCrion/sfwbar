@@ -50,11 +50,42 @@ workspace_t *pager_item_get_workspace ( GtkWidget *self )
   return priv->ws;
 }
 
+static void pager_item_invalidate ( GtkWidget *self )
+{
+  PagerItemPrivate *priv;
+
+  if(!self)
+    return;
+
+  g_return_if_fail(IS_PAGER_ITEM(self));
+  priv = pager_item_get_instance_private(PAGER_ITEM(self));
+
+  flow_grid_invalidate(priv->pager);
+  priv->invalid = TRUE;
+}
+
+static gint pager_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent)
+{
+  PagerItemPrivate *p1,*p2;
+
+  g_return_val_if_fail(IS_PAGER_ITEM(a),0);
+  g_return_val_if_fail(IS_PAGER_ITEM(b),0);
+
+  p1 = pager_item_get_instance_private(PAGER_ITEM(a));
+  p2 = pager_item_get_instance_private(PAGER_ITEM(b));
+
+  if(g_object_get_data(G_OBJECT(parent),"sort_numeric"))
+    return strtoll(p1->ws->name, NULL, 10)-strtoll(p2->ws->name, NULL, 10);
+  else
+    return g_strcmp0(p1->ws->name, p2->ws->name);
+}
+
 static void pager_item_class_init ( PagerItemClass *kclass )
 {
   FLOW_ITEM_CLASS(kclass)->update = pager_item_update;
   FLOW_ITEM_CLASS(kclass)->get_parent = (void * (*)(GtkWidget *))pager_item_get_workspace;
   FLOW_ITEM_CLASS(kclass)->compare = pager_item_compare;
+  FLOW_ITEM_CLASS(kclass)->invalidate = pager_item_invalidate;
 }
 
 static void pager_item_init ( PagerItem *self )
@@ -148,34 +179,4 @@ GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
   pager_item_invalidate(self);
 
   return self;
-}
-
-gint pager_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
-{
-  PagerItemPrivate *p1,*p2;
-
-  g_return_val_if_fail(IS_PAGER_ITEM(a),0);
-  g_return_val_if_fail(IS_PAGER_ITEM(b),0);
-
-  p1 = pager_item_get_instance_private(PAGER_ITEM(a));
-  p2 = pager_item_get_instance_private(PAGER_ITEM(b));
-
-  if(g_object_get_data(G_OBJECT(parent),"sort_numeric"))
-    return strtoll(p1->ws->name,NULL,10)-strtoll(p2->ws->name,NULL,10);
-  else
-    return g_strcmp0(p1->ws->name,p2->ws->name);
-}
-
-void pager_item_invalidate ( GtkWidget *self )
-{
-  PagerItemPrivate *priv;
-
-  if(!self)
-    return;
-
-  g_return_if_fail(IS_PAGER_ITEM(self));
-  priv = pager_item_get_instance_private(PAGER_ITEM(self));
-
-  flow_grid_invalidate(priv->pager);
-  priv->invalid = TRUE;
 }
