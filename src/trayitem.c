@@ -88,7 +88,7 @@ static gboolean tray_item_action_exec ( GtkWidget *self, gint slot,
   TrayItemPrivate *priv;
   GtkAllocation alloc,walloc;
   GdkRectangle geo;
-  gchar *method, *dir;
+  gchar *method = NULL, *dir;
   gint32 x,y, delta;
 
   g_return_val_if_fail(IS_TRAY_ITEM(self),FALSE);
@@ -121,29 +121,19 @@ static gboolean tray_item_action_exec ( GtkWidget *self, gint slot,
   if(ev->type == GDK_BUTTON_RELEASE)
   {
     g_debug("sni %s: button: %d",priv->sni->dest, ev->button.button);
-    if(ev->button.button == 1)
+    if((ev->button.button == 1 || ev->button.button == 3) && priv->sni->menu)
     {
-      if(priv->sni->menu)
-      {
-        if(priv->sni->menu_path)
-          sni_get_menu(self, ev);
-        else
-          method = "ContextMenu";
-      }
+      if(priv->sni->menu_path)
+        sni_get_menu(self, ev);
       else
-        method = "Activate";
+        method = "ContextMenu";
     }
+    else if(ev->button.button == 1)
+      method = "Activate";
     else if(ev->button.button == 2)
       method = "SecondaryActivate";
     else if(ev->button.button == 3)
-    {
-      if(priv->sni->menu_path)
-      {
-        sni_get_menu(self, ev);
-        return TRUE;
-      }
       method = "ContextMenu";
-    }
     else
       return FALSE;
 
@@ -171,11 +161,15 @@ static gboolean tray_item_action_exec ( GtkWidget *self, gint slot,
     }
 
     // call event at 0,0 to avoid menu popping up under the bar
-    g_debug("sni: calling %s on %s at ( %d, %d )",method,priv->sni->dest,x,y);
-    g_dbus_connection_call(sni_get_connection(), priv->sni->dest,
-        priv->sni->path, priv->sni->host->item_iface, method,
-        g_variant_new("(ii)", 0, 0), NULL, G_DBUS_CALL_FLAGS_NONE, -1,
-        NULL, NULL, NULL);
+    if(method)
+    {
+      g_debug("sni: calling %s on %s at ( %d, %d )", method, priv->sni->dest,
+          x,y);
+      g_dbus_connection_call(sni_get_connection(), priv->sni->dest,
+          priv->sni->path, priv->sni->host->item_iface, method,
+          g_variant_new("(ii)", 0, 0), NULL, G_DBUS_CALL_FLAGS_NONE, -1,
+          NULL, NULL, NULL);
+    }
     return TRUE;
   }
   return FALSE;
