@@ -301,6 +301,9 @@ void scale_image_set_pixbuf ( GtkWidget *self, GdkPixbuf *pb )
   g_return_if_fail(IS_SCALE_IMAGE(self));
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
 
+  if(priv->pixbuf == pb)
+    return;
+
   scale_image_clear(self);
   priv->pixbuf = pb;
   priv->ftype = SI_BUFF;
