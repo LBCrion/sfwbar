@@ -5,7 +5,6 @@
 
 #include "sfwbar.h"
 #include "flowgrid.h"
-#include "taskbaritem.h"
 #include "taskbargroup.h"
 #include "taskbar.h"
 #include "scaleimage.h"
@@ -240,7 +239,7 @@ static gboolean taskbar_group_action_exec ( GtkWidget *self, gint slot,
       base_widget_get_action(priv->taskbar, slot,
         base_widget_get_modifiers(self)),
       (GdkEvent *)ev,
-      taskbar_item_get_window(children->data),
+      flow_item_get_parent(children->data),
       NULL);
 
   g_list_free(children);

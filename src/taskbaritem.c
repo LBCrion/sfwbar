@@ -20,6 +20,8 @@ static gboolean taskbar_item_action_exec ( GtkWidget *self, gint slot,
     GdkEvent *ev )
 {
   TaskbarItemPrivate *priv;
+  GdkModifierType mods;
+  action_t *action;
 
   g_return_val_if_fail(IS_TASKBAR_ITEM(self),FALSE);
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
@@ -27,29 +29,22 @@ static gboolean taskbar_item_action_exec ( GtkWidget *self, gint slot,
   if(!base_widget_check_action_slot(priv->taskbar, slot))
     return FALSE;
 
-  action_exec(self,
-      base_widget_get_action(priv->taskbar, slot,
-        base_widget_get_modifiers(self)),
-      (GdkEvent *)ev,
-      priv->win,
-      NULL);
-  return TRUE;
-}
+  mods = base_widget_get_modifiers(self);
+  action = base_widget_get_action(self, slot, mods);
 
-void taskbar_item_default_action ( gchar *cmd, gchar *name, void *self,
-    void *event, window_t *win, guint16 *state )
-{
-  TaskbarItemPrivate *priv;
-
-  g_return_if_fail(IS_TASKBAR_ITEM(self));
-  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
-
-  if ( wintree_is_focused(priv->win->uid) &&
-      !(priv->win->state & WS_MINIMIZED) )
-    wintree_minimize(priv->win->uid);
+  if(!action && !mods && slot==1)
+  {
+    if (wintree_is_focused(priv->win->uid) &&
+        !(priv->win->state & WS_MINIMIZED))
+     wintree_minimize(priv->win->uid);
+    else
+      wintree_focus(priv->win->uid);
+  taskbar_invalidate_all(priv->win, FALSE);
+  }
   else
-    wintree_focus(priv->win->uid);
-  taskbar_invalidate_all(priv->win,FALSE);
+    action_exec(self, action, ev, priv->win, NULL);
+
+  return TRUE;
 }
 
 static void taskbar_item_destroy ( GtkWidget *self )
@@ -125,7 +120,7 @@ static void taskbar_item_update ( GtkWidget *self )
     scale_image_set_image(priv->icon,appid,NULL);
   }
 
-  if ( wintree_is_focused(taskbar_item_get_window(self)->uid) )
+  if ( wintree_is_focused(priv->win->uid) )
     gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "taskbar_active");
   else
     gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "taskbar_normal");

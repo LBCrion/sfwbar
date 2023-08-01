@@ -41,8 +41,4 @@ GType taskbar_item_get_type ( void );
 
 GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar );
 
-window_t *taskbar_item_get_window ( GtkWidget *self );
-void taskbar_item_default_action ( gchar *cmd, gchar *name, void *self,
-    void *event, window_t *win, guint16 *state );
-
 #endif

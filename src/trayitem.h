@@ -9,7 +9,7 @@
 #define TRAY_ITEM(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), TRAY_ITEM_TYPE, TrayItem))
 #define TRAY_ITEM_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), TRAY_ITEM_TYPE, TrayItemClass))
 #define IS_TRAY_ITEM(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj), TRAY_ITEM_TYPE))
-#define IS_TRAY_ITEMCLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), TRAY_ITEM_TYPE))
+#define IS_TRAY_ITEMCLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), TRAY_ITEM_TYPE))
 
 typedef struct _TrayItem TrayItem;
 typedef struct _TrayItemClass TrayItemClass;
@@ -39,7 +39,5 @@ struct _TrayItemPrivate
 GType tray_item_get_type ( void );
 
 GtkWidget *tray_item_new( SniItem *win, GtkWidget *tray );
-SniItem*tray_item_get_sni ( GtkWidget *self );
-void tray_item_update ( GtkWidget *self );
 
 #endif

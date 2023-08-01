@@ -9,7 +9,7 @@
 #define PAGER_ITEM(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), PAGER_ITEM_TYPE, PagerItem))
 #define PAGER_ITEM_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), PAGER_ITEM_TYPE, PagerItemClass))
 #define IS_PAGER_ITEM(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj), PAGER_ITEM_TYPE))
-#define IS_PAGER_ITEMCLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), PAGER_ITEM_TYPE))
+#define IS_PAGER_ITEMCLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), PAGER_ITEM_TYPE))
 
 typedef struct _PagerItem PagerItem;
 typedef struct _PagerItemClass PagerItemClass;
@@ -37,7 +37,5 @@ struct _PagerItemPrivate
 GType pager_item_get_type ( void );
 
 GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws );
-workspace_t *pager_item_get_workspace ( GtkWidget *self );
-void pager_item_update ( GtkWidget *self );
 
 #endif
