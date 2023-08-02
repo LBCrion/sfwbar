@@ -39,7 +39,7 @@ static gboolean taskbar_item_action_exec ( GtkWidget *self, gint slot,
      wintree_minimize(priv->win->uid);
     else
       wintree_focus(priv->win->uid);
-  taskbar_invalidate_all(priv->win, FALSE);
+    taskbar_invalidate_all(priv->win, FALSE);
   }
   else
     action_exec(self, action, ev, priv->win, NULL);

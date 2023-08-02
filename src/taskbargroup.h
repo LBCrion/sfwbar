@@ -42,8 +42,6 @@ struct _TaskbarGroupPrivate
 GType taskbar_group_get_type ( void );
 
 GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar );
-void taskbar_group_invalidate ( GtkWidget *self );
-gchar *taskbar_group_get_appid ( GtkWidget *self );
 void taskbar_group_pop_child ( GtkWidget *self, GtkWidget *child );
 
 #endif

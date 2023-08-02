@@ -89,7 +89,7 @@ static void taskbar_group_destroy ( GtkWidget *self )
   GTK_WIDGET_CLASS(taskbar_group_parent_class)->destroy(self);
 }
 
-gchar *taskbar_group_get_appid ( GtkWidget *self )
+static gchar *taskbar_group_get_appid ( GtkWidget *self )
 {
   TaskbarGroupPrivate *priv;
 
@@ -246,11 +246,26 @@ static gboolean taskbar_group_action_exec ( GtkWidget *self, gint slot,
   return TRUE;
 }
 
+static void taskbar_group_invalidate ( GtkWidget *self )
+{
+  TaskbarGroupPrivate *priv;
+
+  if(!self)
+    return;
+
+  g_return_if_fail(IS_TASKBAR_GROUP(self));
+  priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
+
+  flow_grid_invalidate(priv->taskbar);
+  priv->invalid = TRUE;
+}
+
 static void taskbar_group_class_init ( TaskbarGroupClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = taskbar_group_destroy;
   BASE_WIDGET_CLASS(kclass)->action_exec = taskbar_group_action_exec;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_group_update;
+  FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_group_invalidate;
   FLOW_ITEM_CLASS(kclass)->comp_parent = (GCompareFunc)g_strcmp0;
   FLOW_ITEM_CLASS(kclass)->get_parent = 
     (void * (*)(GtkWidget *))taskbar_group_get_appid;
@@ -370,22 +385,8 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
   g_object_ref(G_OBJECT(self));
   flow_grid_add_child(taskbar,self);
 
-  taskbar_group_invalidate(self);
+  flow_item_invalidate(self);
   return priv->tgroup;
-}
-
-void taskbar_group_invalidate ( GtkWidget *self )
-{
-  TaskbarGroupPrivate *priv;
-
-  if(!self)
-    return;
-
-  g_return_if_fail(IS_TASKBAR_GROUP(self));
-  priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
-
-  flow_grid_invalidate(priv->taskbar);
-  priv->invalid = TRUE;
 }
 
 gboolean taskbar_group_child_cb ( GtkWidget *child, GtkWidget *popover )
