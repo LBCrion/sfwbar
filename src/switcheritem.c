@@ -43,7 +43,7 @@ void switcher_item_update ( GtkWidget *self )
   if(priv->icon)
     scale_image_set_image(priv->icon,priv->win->appid,NULL);
 
-  if ( wintree_is_focused(switcher_item_get_window(self)->uid) )
+  if ( wintree_is_focused(((window_t *)flow_item_get_parent(self))->uid) )
     gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "switcher_active");
   else
     gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "switcher_normal");
@@ -66,11 +66,39 @@ window_t *switcher_item_get_window ( GtkWidget *self )
   return priv->win;
 }
 
+static void switcher_item_invalidate ( GtkWidget *self )
+{
+  SwitcherItemPrivate *priv;
+
+  if(!self)
+    return;
+
+  g_return_if_fail(IS_SWITCHER_ITEM(self));
+  priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
+
+  flow_grid_invalidate(priv->switcher);
+  priv->invalid = TRUE;
+}
+
+static gint switcher_item_compare ( GtkWidget *a, GtkWidget *b,
+    GtkWidget *parent )
+{
+  SwitcherItemPrivate *p1,*p2;
+
+  g_return_val_if_fail(IS_SWITCHER_ITEM(a),0);
+  g_return_val_if_fail(IS_SWITCHER_ITEM(b),0);
+
+  p1 = switcher_item_get_instance_private(SWITCHER_ITEM(a));
+  p2 = switcher_item_get_instance_private(SWITCHER_ITEM(b));
+  return wintree_compare(p1->win,p2->win);
+}
+
 static void switcher_item_class_init ( SwitcherItemClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = switcher_item_destroy;
   FLOW_ITEM_CLASS(kclass)->update = switcher_item_update;
   FLOW_ITEM_CLASS(kclass)->compare = switcher_item_compare;
+  FLOW_ITEM_CLASS(kclass)->invalidate = switcher_item_invalidate;
   FLOW_ITEM_CLASS(kclass)->get_parent =
     (void * (*)(GtkWidget *))switcher_item_get_window;
 }
@@ -134,33 +162,7 @@ GtkWidget *switcher_item_new( window_t *win, GtkWidget *switcher )
   }
   else
     priv->label = NULL;
-  switcher_item_invalidate(self);
+  flow_item_invalidate(self);
 
   return self;
-}
-
-gint switcher_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
-{
-  SwitcherItemPrivate *p1,*p2;
-
-  g_return_val_if_fail(IS_SWITCHER_ITEM(a),0);
-  g_return_val_if_fail(IS_SWITCHER_ITEM(b),0);
-
-  p1 = switcher_item_get_instance_private(SWITCHER_ITEM(a));
-  p2 = switcher_item_get_instance_private(SWITCHER_ITEM(b));
-  return wintree_compare(p1->win,p2->win);
-}
-
-void switcher_item_invalidate ( GtkWidget *self )
-{
-  SwitcherItemPrivate *priv;
-
-  if(!self)
-    return;
-
-  g_return_if_fail(IS_SWITCHER_ITEM(self));
-  priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
-
-  flow_grid_invalidate(priv->switcher);
-  priv->invalid = TRUE;
 }
