@@ -160,6 +160,7 @@ GdkModifierType base_widget_get_modifiers ( GtkWidget *self )
   else
     state = 0;
 
+  g_debug("modifier state: %d", state);
   return state;
 }
 
