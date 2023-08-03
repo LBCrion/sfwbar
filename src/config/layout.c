@@ -94,6 +94,15 @@ void config_widget_action_index ( GScanner *scanner, gint *button, gint *mod )
       case G_TOKEN_MOD5:
         *mod |= GDK_MOD5_MASK;
         break;
+      case G_TOKEN_SUPER:
+        *mod |= GDK_SUPER_MASK;
+        break;
+      case G_TOKEN_HYPER:
+        *mod |= GDK_HYPER_MASK;
+        break;
+      case G_TOKEN_META:
+        *mod |= GDK_META_MASK;
+        break;
       default:
         g_scanner_error(scanner, "Invalid action key modifier");
     }

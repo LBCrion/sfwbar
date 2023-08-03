@@ -13,9 +13,6 @@
 G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX,
     G_ADD_PRIVATE (BaseWidget));
 
-static const GdkModifierType mod_mask = GDK_SHIFT_MASK | GDK_CONTROL_MASK |
-  GDK_MOD1_MASK | GDK_MOD2_MASK | GDK_MOD3_MASK | GDK_MOD4_MASK |
-  GDK_MOD5_MASK;
 static GHashTable *widgets_id;
 static GList *widgets_scan;
 static GMutex widget_mutex;
@@ -154,13 +151,13 @@ GdkModifierType base_widget_get_modifiers ( GtkWidget *self )
     gtk_main_iteration();
     gtk_main_iteration();
     state = gdk_keymap_get_modifier_state(gdk_keymap_get_for_display(
-          gdk_display_get_default())) & mod_mask;
+          gdk_display_get_default())) & gtk_accelerator_get_default_mod_mask();
     gtk_layer_set_keyboard_mode(win, GTK_LAYER_SHELL_KEYBOARD_MODE_NONE);
   }
   else
     state = 0;
 
-  g_debug("modifier state: %d", state);
+  g_debug("modifier state: %x", state);
   return state;
 }
 

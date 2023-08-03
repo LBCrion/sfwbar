@@ -181,6 +181,9 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   g_scanner_scope_add_symbol(scanner,0, "Mod3", (gpointer)G_TOKEN_MOD3 );
   g_scanner_scope_add_symbol(scanner,0, "Mod4", (gpointer)G_TOKEN_MOD4 );
   g_scanner_scope_add_symbol(scanner,0, "Mod5", (gpointer)G_TOKEN_MOD5 );
+  g_scanner_scope_add_symbol(scanner,0, "Super", (gpointer)G_TOKEN_SUPER );
+  g_scanner_scope_add_symbol(scanner,0, "Hyper", (gpointer)G_TOKEN_HYPER );
+  g_scanner_scope_add_symbol(scanner,0, "Meta", (gpointer)G_TOKEN_META );
 
   tmp = strstr(data,"\n#CSS");
   if(tmp)

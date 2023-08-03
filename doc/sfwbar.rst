@@ -249,11 +249,11 @@ action
   button click.
   Additionallly, modifiers can be specified using the notation of
   ``[Modifier+]Index``. I.e. ``action[Ctrl+LeftClick]``. The following
-  modifiers supported: Shift, Ctrl, Mod1, Mod2, Mod3, Mod4 and Mod5. Multiple
-  modifiers can be added, i.e. ``action[Ctrl+Shift+ScrollUp]``.
-  action[0] will be executed on startup. You can use this action to set
-  initial configuration for a widget.  See ``Actions`` section for more
-  details on how actions are specified.
+  modifiers supported: Shift, Ctrl, Mod1, Mod2, Mod3, Mod4, Mod5i, Super, Hyper
+  and Meta. Multiple modifiers can be added, i.e.
+  ``action[Ctrl+Shift+ScrollUp]``. action[0] will be executed on startup. You
+  can use this action to set initial configuration for a widget.  See
+  ``Actions`` section for more details on how actions are specified.
 
 ``Taskbar`` widget may contain the following options
 
