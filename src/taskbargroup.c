@@ -15,7 +15,8 @@
 #include "popup.h"
 #include <gtk-layer-shell.h>
 
-G_DEFINE_TYPE_WITH_CODE (TaskbarGroup, taskbar_group, FLOW_ITEM_TYPE, G_ADD_PRIVATE (TaskbarGroup));
+G_DEFINE_TYPE_WITH_CODE (TaskbarGroup, taskbar_group, FLOW_ITEM_TYPE,
+    G_ADD_PRIVATE(TaskbarGroup));
 
 static void taskbar_group_add_hold ( GtkWidget *popover, GtkWidget *hold )
 {
@@ -166,10 +167,12 @@ static void taskbar_group_update ( GtkWidget *self )
     if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)),priv->appid))
       gtk_label_set_text(GTK_LABEL(priv->label),priv->appid);
 
-  if (flow_grid_find_child(priv->tgroup,wintree_from_id(wintree_get_focus())))
-    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "taskbar_group_active");
+  if (flow_grid_find_child(priv->tgroup, wintree_from_id(wintree_get_focus())))
+    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)),
+        "taskbar_group_active");
   else
-    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "taskbar_group_normal");
+    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)),
+        "taskbar_group_normal");
 
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
@@ -200,7 +203,8 @@ static void taskbar_group_update ( GtkWidget *self )
   priv->invalid = FALSE;
 }
 
-static gint taskbar_group_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
+static gint taskbar_group_compare ( GtkWidget *a, GtkWidget *b,
+    GtkWidget *parent )
 {
   TaskbarGroupPrivate *p1,*p2;
 
@@ -287,22 +291,19 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
 
   g_return_val_if_fail(IS_TASKBAR(taskbar),NULL);
 
-  GtkWidget *old;
-  old = flow_grid_find_child(taskbar,appid);
-  if(old)
-    self = old;
-  else
+  self = flow_grid_find_child(taskbar, appid);
+  if(!self)
     self = GTK_WIDGET(g_object_new(taskbar_group_get_type(), NULL));
   priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
-  if(old)
+  if(priv->tgroup)
     return priv->tgroup;
 
   icons = GPOINTER_TO_INT(
-      g_object_get_data(G_OBJECT(taskbar),"icons"));
+      g_object_get_data(G_OBJECT(taskbar), "icons"));
   labels = GPOINTER_TO_INT(
-      g_object_get_data(G_OBJECT(taskbar),"labels"));
+      g_object_get_data(G_OBJECT(taskbar), "labels"));
   title_width = GPOINTER_TO_INT(
-      g_object_get_data(G_OBJECT(taskbar),"title_width"));
+      g_object_get_data(G_OBJECT(taskbar), "title_width"));
   if(!title_width)
     title_width = -1;
   if(!icons)
@@ -310,14 +311,14 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
 
   priv->taskbar = taskbar;
   priv->tgroup = taskbar_new(FALSE);
-  g_object_set_data(G_OBJECT(priv->tgroup),"parent_taskbar",taskbar);
+  g_object_set_data(G_OBJECT(priv->tgroup), "parent_taskbar", taskbar);
   priv->appid = g_strdup(appid);
   priv->button = gtk_button_new();
-  gtk_container_add(GTK_CONTAINER(self),priv->button);
+  gtk_container_add(GTK_CONTAINER(self), priv->button);
   gtk_widget_set_name(priv->button, "taskbar_group_normal");
-  gtk_widget_style_get(priv->button,"direction",&dir,NULL);
+  gtk_widget_style_get(priv->button, "direction", &dir, NULL);
   box = gtk_grid_new();
-  gtk_container_add(GTK_CONTAINER(priv->button),box);
+  gtk_container_add(GTK_CONTAINER(priv->button), box);
 
   if(icons)
   {
@@ -330,9 +331,9 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
   if(labels)
   {
     priv->label = gtk_label_new(appid);
-    gtk_label_set_ellipsize (GTK_LABEL(priv->label),PANGO_ELLIPSIZE_END);
-    gtk_label_set_max_width_chars(GTK_LABEL(priv->label),title_width);
-    gtk_grid_attach_next_to(GTK_GRID(box),priv->label,priv->icon,dir,1,1);
+    gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
+    gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
+    gtk_grid_attach_next_to(GTK_GRID(box), priv->label, priv->icon, dir, 1, 1);
   }
   else
     priv->label = NULL;
@@ -340,50 +341,48 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
   priv->popover = gtk_window_new(GTK_WINDOW_POPUP);
   gtk_widget_set_name(priv->button, "taskbar_group");
   g_object_ref(G_OBJECT(priv->popover));
-  gtk_container_add(GTK_CONTAINER(priv->popover),priv->tgroup);
-  css_widget_apply(priv->tgroup,g_strdup(
-        g_object_get_data(G_OBJECT(taskbar),"g_css")));
+  gtk_container_add(GTK_CONTAINER(priv->popover), priv->tgroup);
+  css_widget_apply(priv->tgroup, g_strdup(
+        g_object_get_data(G_OBJECT(taskbar), "g_css")));
   base_widget_set_style(priv->tgroup,g_strdup(
-        g_object_get_data(G_OBJECT(taskbar),"g_style")));
+        g_object_get_data(G_OBJECT(taskbar), "g_style")));
   gtk_widget_show(priv->tgroup);
 
   gtk_widget_add_events(GTK_WIDGET(self),GDK_ENTER_NOTIFY_MASK |
       GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK | GDK_SCROLL_MASK);
-  gtk_widget_add_events(GTK_WIDGET(priv->popover),GDK_ENTER_NOTIFY_MASK);
-  gtk_widget_add_events(GTK_WIDGET(priv->popover),GDK_LEAVE_NOTIFY_MASK);
-  g_signal_connect(self,"enter-notify-event",
-      G_CALLBACK(taskbar_group_enter_cb),self);
-  g_signal_connect(priv->button,"enter-notify-event",
-      G_CALLBACK(taskbar_group_enter_cb),self);
-  g_signal_connect(priv->popover,"enter-notify-event",
-      G_CALLBACK(taskbar_group_enter_cb),self);
-  g_signal_connect(self,"leave-notify-event",
-      G_CALLBACK(taskbar_group_leave_cb),priv->popover);
-  g_signal_connect(priv->button,"leave-notify-event",
-      G_CALLBACK(taskbar_group_leave_cb),priv->popover);
-  g_signal_connect(priv->popover,"leave-notify-event",
-      G_CALLBACK(taskbar_group_leave_cb),priv->popover);
+  g_signal_connect(self, "enter-notify-event",
+      G_CALLBACK(taskbar_group_enter_cb), self);
+  g_signal_connect(priv->button, "enter-notify-event",
+      G_CALLBACK(taskbar_group_enter_cb), self);
+  g_signal_connect(priv->popover, "enter-notify-event",
+      G_CALLBACK(taskbar_group_enter_cb), self);
+  g_signal_connect(self, "leave-notify-event",
+      G_CALLBACK(taskbar_group_leave_cb), priv->popover);
+  g_signal_connect(priv->button, "leave-notify-event",
+      G_CALLBACK(taskbar_group_leave_cb), priv->popover);
+  g_signal_connect(priv->popover, "leave-notify-event",
+      G_CALLBACK(taskbar_group_leave_cb), priv->popover);
 
-  if(g_object_get_data(G_OBJECT(taskbar),"g_cols"))
-    flow_grid_set_cols(base_widget_get_child(priv->tgroup),GPOINTER_TO_INT(
-        g_object_get_data(G_OBJECT(taskbar),"g_cols")));
-  if(g_object_get_data(G_OBJECT(taskbar),"g_rows"))
-    flow_grid_set_rows(base_widget_get_child(priv->tgroup),GPOINTER_TO_INT(
-        g_object_get_data(G_OBJECT(taskbar),"g_rows")));
-  g_object_set_data(G_OBJECT(priv->tgroup),"labels",
-        g_object_get_data(G_OBJECT(taskbar),"g_labels"));
-  g_object_set_data(G_OBJECT(priv->tgroup),"icons",
-        g_object_get_data(G_OBJECT(taskbar),"g_icons"));
-  g_object_set_data(G_OBJECT(priv->tgroup),"title_width",
-        g_object_get_data(G_OBJECT(taskbar),"g_title_width"));
+  if(g_object_get_data(G_OBJECT(taskbar), "g_cols"))
+    flow_grid_set_cols(base_widget_get_child(priv->tgroup), GPOINTER_TO_INT(
+        g_object_get_data(G_OBJECT(taskbar), "g_cols")));
+  if(g_object_get_data(G_OBJECT(taskbar), "g_rows"))
+    flow_grid_set_rows(base_widget_get_child(priv->tgroup), GPOINTER_TO_INT(
+        g_object_get_data(G_OBJECT(taskbar), "g_rows")));
+  g_object_set_data(G_OBJECT(priv->tgroup), "labels",
+        g_object_get_data(G_OBJECT(taskbar), "g_labels"));
+  g_object_set_data(G_OBJECT(priv->tgroup), "icons",
+        g_object_get_data(G_OBJECT(taskbar), "g_icons"));
+  g_object_set_data(G_OBJECT(priv->tgroup), "title_width",
+        g_object_get_data(G_OBJECT(taskbar), "g_title_width"));
   flow_grid_set_sort(base_widget_get_child(priv->tgroup),
-      GPOINTER_TO_INT(g_object_get_data(G_OBJECT(taskbar),"g_sort")));
-  g_object_set_data(G_OBJECT(priv->popover),"holds",&priv->holds);
+      GPOINTER_TO_INT(g_object_get_data(G_OBJECT(taskbar), "g_sort")));
+  g_object_set_data(G_OBJECT(priv->popover), "holds", &priv->holds);
 
   base_widget_copy_actions(priv->tgroup, taskbar);
 
   g_object_ref(G_OBJECT(self));
-  flow_grid_add_child(taskbar,self);
+  flow_grid_add_child(taskbar, self);
 
   flow_item_invalidate(self);
   return priv->tgroup;
@@ -391,14 +390,14 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
 
 gboolean taskbar_group_child_cb ( GtkWidget *child, GtkWidget *popover )
 {
-  taskbar_group_remove_hold(popover,child);
-  g_timeout_add(10,(GSourceFunc)taskbar_group_timeout_cb,popover);
+  taskbar_group_remove_hold(popover, child);
+  g_timeout_add(10, (GSourceFunc)taskbar_group_timeout_cb, popover);
   return FALSE;
 }
 
 void taskbar_group_pop_child ( GtkWidget *popover, GtkWidget *child )
 {
-  taskbar_group_add_hold(popover,child);
-  g_signal_connect(G_OBJECT(child),"unmap",
-      G_CALLBACK(taskbar_group_child_cb),popover);
+  taskbar_group_add_hold(popover, child);
+  g_signal_connect(G_OBJECT(child), "unmap",
+      G_CALLBACK(taskbar_group_child_cb), popover);
 }

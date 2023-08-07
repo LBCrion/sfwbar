@@ -155,10 +155,11 @@ void taskbar_invalidate_all ( window_t *win, gboolean filter )
   for(iter=taskbars; iter; iter=g_list_next(iter))
     if(!filter || taskbar_get_filter(iter->data,&floating) || floating)
     {
-      flow_item_invalidate(flow_grid_find_child(iter->data,win));
       if(taskbar_is_toplevel(iter->data) && win->appid &&
           g_object_get_data(G_OBJECT(iter->data),"group"))
         flow_item_invalidate(flow_grid_find_child(iter->data,win->appid));
+      else
+        flow_item_invalidate(flow_grid_find_child(iter->data,win));
     }
 }
 
