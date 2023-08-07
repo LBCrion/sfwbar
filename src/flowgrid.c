@@ -10,9 +10,11 @@
 #include "config.h"
 #include "bar.h"
 
-G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, GTK_TYPE_GRID, G_ADD_PRIVATE (FlowGrid));
+G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, GTK_TYPE_GRID,
+    G_ADD_PRIVATE(FlowGrid));
 
-static void flow_grid_get_preferred_width (GtkWidget *widget, gint *minimal, gint *natural)
+static void flow_grid_get_preferred_width (GtkWidget *widget, gint *minimal,
+    gint *natural)
 {
   FlowGridPrivate *priv;
 
@@ -21,13 +23,15 @@ static void flow_grid_get_preferred_width (GtkWidget *widget, gint *minimal, gin
 
   priv = flow_grid_get_instance_private(FLOW_GRID(widget));
 
-  GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_width(widget,minimal,natural);
+  GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_width(
+      widget, minimal, natural);
 
   if(priv->rows>0 && priv->limit )
-    *minimal = MIN(*natural,1);
+    *minimal = MIN(*natural, 1);
 }
 
-static void flow_grid_get_preferred_height (GtkWidget *widget, gint *minimal, gint *natural)
+static void flow_grid_get_preferred_height (GtkWidget *widget, gint *minimal,
+    gint *natural)
 {
   FlowGridPrivate *priv;
 
@@ -36,10 +40,11 @@ static void flow_grid_get_preferred_height (GtkWidget *widget, gint *minimal, gi
 
   priv = flow_grid_get_instance_private(FLOW_GRID(widget));
 
-  GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_height(widget,minimal,natural);
+  GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_height(
+      widget, minimal, natural);
 
   if(priv->cols>0 && priv->limit)
-    *minimal = MIN(*natural,1);
+    *minimal = MIN(*natural, 1);
 }
 
 static void flow_grid_destroy( GtkWidget *self )
@@ -74,12 +79,12 @@ static void flow_grid_init ( FlowGrid *self )
   priv->rows = 1;
   priv->cols = 0;
   priv->limit = TRUE;
-  sig = g_strdup_printf("flow-item-%p",self);
-  priv->dnd_target = gtk_target_entry_new(sig,0,1);
+  sig = g_strdup_printf("flow-item-%p", self);
+  priv->dnd_target = gtk_target_entry_new(sig, 0, 1);
   g_free(sig);
 
-  gtk_grid_set_row_homogeneous(GTK_GRID(self),TRUE);
-  gtk_grid_set_column_homogeneous(GTK_GRID(self),TRUE);
+  gtk_grid_set_row_homogeneous(GTK_GRID(self), TRUE);
+  gtk_grid_set_column_homogeneous(GTK_GRID(self), TRUE);
 }
 
 GtkWidget *flow_grid_new( gboolean limit)
@@ -89,7 +94,7 @@ GtkWidget *flow_grid_new( gboolean limit)
 
   w = GTK_WIDGET(g_object_new(flow_grid_get_type(), NULL));
   priv = flow_grid_get_instance_private(FLOW_GRID(w));
-  flow_grid_set_sort(w,TRUE);
+  flow_grid_set_sort(w, TRUE);
 
   priv->limit = limit;
   
@@ -176,7 +181,7 @@ void flow_grid_add_child ( GtkWidget *self, GtkWidget *child )
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   priv->children = g_list_append(priv->children,child);
-  flow_item_set_parent(child,self);
+  flow_item_set_parent(child, self);
   flow_grid_invalidate(self);
 }
 
@@ -263,22 +268,22 @@ void flow_grid_update ( GtkWidget *self )
   }
 
   i = 0;
-  for(iter=priv->children;iter;iter=g_list_next(iter))
+  for(iter=priv->children; iter; iter=g_list_next(iter))
     if(flow_item_get_active(iter->data))
     {
       if(rows>0)
-        gtk_grid_attach(GTK_GRID(self),iter->data,i/rows,i%rows,1,1);
+        gtk_grid_attach(GTK_GRID(self), iter->data, i/rows, i%rows, 1, 1);
       else if(cols>0)
-        gtk_grid_attach(GTK_GRID(self),iter->data,i%cols,i/cols,1,1);
+        gtk_grid_attach(GTK_GRID(self), iter->data, i%cols, i/cols, 1, 1);
       i++;
     }
   if(rows>0)
-    for(;i<rows;i++)
-      gtk_grid_attach(GTK_GRID(self),gtk_label_new(""),0,i,1,1);
+    for(;i<rows; i++)
+      gtk_grid_attach(GTK_GRID(self), gtk_label_new(""), 0, i, 1, 1);
   else
     for(;i<cols;i++)
-      gtk_grid_attach(GTK_GRID(self),gtk_label_new(""),i,0,1,1);
-  css_widget_cascade(self,NULL);
+      gtk_grid_attach(GTK_GRID(self), gtk_label_new(""), i, 0, 1, 1);
+  css_widget_cascade(self, NULL);
 }
 
 guint flow_grid_n_children ( GtkWidget *self )
@@ -305,13 +310,15 @@ gpointer flow_grid_find_child ( GtkWidget *self, gconstpointer parent )
 
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
-  if(!priv->children || !priv->children->data ||
-      !FLOW_ITEM_GET_CLASS(priv->children->data)->comp_parent)
+  if(!priv->children || !priv->children->data)
     return NULL;
-  comp_parent = FLOW_ITEM_GET_CLASS(priv->children->data)->comp_parent;
 
-  for(iter=priv->children;iter;iter=g_list_next(iter))
-    if(!comp_parent(flow_item_get_parent(iter->data),parent))
+  comp_parent = FLOW_ITEM_GET_CLASS(priv->children->data)->comp_parent;
+  if(!comp_parent)
+    return NULL;
+
+  for(iter=priv->children; iter; iter=g_list_next(iter))
+    if(!comp_parent(flow_item_get_parent(iter->data), parent))
       return iter->data;
 
   return NULL;
@@ -359,7 +366,8 @@ static void flow_grid_dnd_enter_cb ( GtkWidget *widget, GdkEventCrossing *ev,
 static void flow_grid_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
     gpointer data )
 {
-  g_signal_handlers_unblock_matched(widget, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,(GFunc)flow_grid_dnd_enter_cb,NULL);
+  g_signal_handlers_unblock_matched(widget, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,
+      (GFunc)flow_grid_dnd_enter_cb,NULL);
   gtk_grab_add(widget);
   bar_ref(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW), widget);
 }
@@ -367,7 +375,8 @@ static void flow_grid_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
 static void flow_grid_dnd_end_cb ( GtkWidget *widget, GdkDragContext *ctx,
     gpointer data )
 {
-  g_signal_handlers_block_matched(widget, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,(GFunc)flow_grid_dnd_enter_cb,NULL);
+  g_signal_handlers_block_matched(widget, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,
+      (GFunc)flow_grid_dnd_enter_cb,NULL);
   gtk_grab_remove(widget);
   bar_unref(widget, gtk_widget_get_ancestor(data, GTK_TYPE_WINDOW));
 }
@@ -393,20 +402,20 @@ void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
   if(!priv->dnd_target)
     return;
 
-  gtk_drag_source_set(src,GDK_BUTTON1_MASK,priv->dnd_target,1,
+  gtk_drag_source_set(src, GDK_BUTTON1_MASK, priv->dnd_target, 1,
       GDK_ACTION_MOVE);
   g_signal_connect(G_OBJECT(src),"drag-data-get",
       G_CALLBACK(flow_grid_dnd_data_get_cb),child);
-  gtk_drag_dest_set(child,GTK_DEST_DEFAULT_ALL,priv->dnd_target,1,
+  gtk_drag_dest_set(child, GTK_DEST_DEFAULT_ALL, priv->dnd_target, 1,
       GDK_ACTION_MOVE);
-  g_signal_connect(G_OBJECT(child),"drag-data-received",
-      G_CALLBACK(flow_grid_dnd_data_rec_cb),self);
-  g_signal_connect(G_OBJECT(src),"drag-begin",
-      G_CALLBACK(flow_grid_dnd_begin_cb),self);
-  g_signal_connect(G_OBJECT(src),"drag-end",
-      G_CALLBACK(flow_grid_dnd_end_cb),self);
-  g_signal_connect(G_OBJECT(src),"enter-notify-event",
-      G_CALLBACK(flow_grid_dnd_enter_cb),NULL);
+  g_signal_connect(G_OBJECT(child), "drag-data-received",
+      G_CALLBACK(flow_grid_dnd_data_rec_cb), self);
+  g_signal_connect(G_OBJECT(src), "drag-begin",
+      G_CALLBACK(flow_grid_dnd_begin_cb), self);
+  g_signal_connect(G_OBJECT(src), "drag-end",
+      G_CALLBACK(flow_grid_dnd_end_cb), self);
+  g_signal_connect(G_OBJECT(src), "enter-notify-event",
+      G_CALLBACK(flow_grid_dnd_enter_cb), NULL);
   g_signal_handlers_block_matched(src, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,
       (GFunc)flow_grid_dnd_enter_cb,NULL);
 }
@@ -416,17 +425,20 @@ void flow_grid_copy_properties ( GtkWidget *dest, GtkWidget *src )
   FlowGridPrivate *spriv, *dpriv;
 
   g_return_if_fail( IS_BASE_WIDGET(src) && IS_BASE_WIDGET(dest) );
-  g_return_if_fail( IS_FLOW_GRID(base_widget_get_child(src)) && IS_FLOW_GRID(base_widget_get_child(dest)) );
-  spriv = flow_grid_get_instance_private(FLOW_GRID(base_widget_get_child(src)));
-  dpriv = flow_grid_get_instance_private(FLOW_GRID(base_widget_get_child(dest)));
+  g_return_if_fail( IS_FLOW_GRID(base_widget_get_child(src)) &&
+      IS_FLOW_GRID(base_widget_get_child(dest)) );
+  spriv = flow_grid_get_instance_private(FLOW_GRID(
+        base_widget_get_child(src)));
+  dpriv = flow_grid_get_instance_private(FLOW_GRID(
+        base_widget_get_child(dest)));
 
   dpriv->rows = spriv->rows;
   dpriv->cols = spriv->cols;
   dpriv->sort = spriv->sort;
   dpriv->primary_axis = spriv->primary_axis;
 
-  g_object_set_data(G_OBJECT(dest),"icons",
-      g_object_get_data(G_OBJECT(src),"icons"));
-  g_object_set_data(G_OBJECT(dest),"labels",
-      g_object_get_data(G_OBJECT(src),"labels"));
+  g_object_set_data(G_OBJECT(dest), "icons",
+      g_object_get_data(G_OBJECT(src), "icons"));
+  g_object_set_data(G_OBJECT(dest), "labels",
+      g_object_get_data(G_OBJECT(src), "labels"));
 }
