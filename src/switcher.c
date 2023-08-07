@@ -198,5 +198,5 @@ gint switcher_get_filter ( GtkWidget *self )
 void switcher_invalidate ( window_t *win )
 {
   if(grid)
-    flow_item_invalidate(flow_grid_find_child(grid,win));
+    flow_item_invalidate(flow_grid_find_child(grid, win));
 }

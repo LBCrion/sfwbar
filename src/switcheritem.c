@@ -70,9 +70,6 @@ static void switcher_item_invalidate ( GtkWidget *self )
 {
   SwitcherItemPrivate *priv;
 
-  if(!self)
-    return;
-
   g_return_if_fail(IS_SWITCHER_ITEM(self));
   priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
 
