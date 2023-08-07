@@ -78,6 +78,9 @@ void flow_item_update ( GtkWidget *self )
 
 void flow_item_invalidate ( GtkWidget *self )
 {
+  if(!self)
+    return;
+
   g_return_if_fail(IS_FLOW_ITEM(self));
 
   if(FLOW_ITEM_GET_CLASS(self)->invalidate)
