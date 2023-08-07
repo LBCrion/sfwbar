@@ -134,6 +134,9 @@ window_t *wintree_from_pid ( gint64 pid )
 
 void wintree_commit ( window_t *win )
 {
+  if(!win)
+    return;
+
   taskbar_invalidate_all(win,FALSE);
   switcher_invalidate(win);
 }
@@ -219,6 +222,7 @@ void wintree_window_delete ( gpointer id )
   win = item->data;
   if(!win)
     return;
+
   taskbar_destroy_item (win);
   switcher_window_delete(win);
   g_free(win->appid);
