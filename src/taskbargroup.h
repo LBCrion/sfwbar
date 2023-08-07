@@ -36,6 +36,7 @@ struct _TaskbarGroupPrivate
   GtkWidget *popover;
   gchar *appid;
   gboolean invalid;
+  gboolean single;
   GList *holds;
 };
 

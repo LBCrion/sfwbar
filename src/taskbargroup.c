@@ -43,6 +43,8 @@ static gboolean taskbar_group_enter_cb ( GtkWidget *widget,
 
   g_return_val_if_fail(IS_TASKBAR_GROUP(self),FALSE);
   priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
+  if(priv->single)
+    return TRUE;
 
   if(gtk_widget_is_visible(priv->popover))
   {
@@ -70,11 +72,17 @@ static gboolean taskbar_group_timeout_cb ( GtkWidget *popover )
 }
 
 static gboolean taskbar_group_leave_cb ( GtkWidget *widget,
-    GdkEventCrossing *event, gpointer popover )
+    GdkEventCrossing *event, gpointer self )
 {
-  taskbar_group_remove_hold(popover,widget);
+  TaskbarGroupPrivate *priv;
 
-  g_timeout_add(10,(GSourceFunc)taskbar_group_timeout_cb,popover);
+  g_return_val_if_fail(IS_TASKBAR_GROUP(self),FALSE);
+  priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
+
+  taskbar_group_remove_hold(priv->popover, widget);
+  if(!priv->single)
+    g_timeout_add(10,(GSourceFunc)taskbar_group_timeout_cb, priv->popover);
+
   return FALSE;
 }
 
@@ -98,56 +106,6 @@ static gchar *taskbar_group_get_appid ( GtkWidget *self )
   priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
 
   return priv->appid;
-}
-
-static void taskbar_group_set_single ( GtkWidget *self, GtkWidget *child )
-{
-  TaskbarGroupPrivate *priv;
-
-  g_return_if_fail(IS_TASKBAR_GROUP(self));
-  priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
-
-  if(!g_signal_handler_find(self, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA |
-        G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL, taskbar_group_enter_cb, self))
-    return;
-
-  g_signal_handlers_block_matched(self, G_SIGNAL_MATCH_FUNC |
-      G_SIGNAL_MATCH_DATA | G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL,
-      taskbar_group_enter_cb, self);
-  g_signal_handlers_block_matched(self, G_SIGNAL_MATCH_FUNC |
-      G_SIGNAL_MATCH_DATA | G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL,
-      taskbar_group_leave_cb, self);
-  g_signal_handlers_block_matched(priv->button, G_SIGNAL_MATCH_FUNC |
-      G_SIGNAL_MATCH_DATA | G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL,
-      taskbar_group_enter_cb, self);
-  g_signal_handlers_block_matched(priv->button, G_SIGNAL_MATCH_FUNC |
-      G_SIGNAL_MATCH_DATA | G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL,
-      taskbar_group_leave_cb, self);
-}
-
-static void taskbar_group_set_multi ( GtkWidget *self )
-{
-  TaskbarGroupPrivate *priv;
-
-  g_return_if_fail(IS_TASKBAR_GROUP(self));
-  priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
-
-  if(g_signal_handler_find(self, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA |
-        G_SIGNAL_MATCH_UNBLOCKED, 0, 0, NULL, taskbar_group_enter_cb, self))
-    return;
-
-  g_signal_handlers_unblock_matched(self, G_SIGNAL_MATCH_FUNC |
-      G_SIGNAL_MATCH_DATA, 0, 0, NULL,
-      taskbar_group_enter_cb, self);
-  g_signal_handlers_unblock_matched(self, G_SIGNAL_MATCH_FUNC |
-      G_SIGNAL_MATCH_DATA, 0, 0, NULL,
-      taskbar_group_leave_cb, self);
-  g_signal_handlers_unblock_matched(priv->button, G_SIGNAL_MATCH_FUNC |
-      G_SIGNAL_MATCH_DATA, 0, 0, NULL,
-      taskbar_group_enter_cb, self);
-  g_signal_handlers_unblock_matched(priv->button, G_SIGNAL_MATCH_FUNC |
-      G_SIGNAL_MATCH_DATA, 0, 0, NULL,
-      taskbar_group_leave_cb, self);
 }
 
 static void taskbar_group_update ( GtkWidget *self )
@@ -181,10 +139,7 @@ static void taskbar_group_update ( GtkWidget *self )
   children = gtk_container_get_children(GTK_CONTAINER(
         gtk_bin_get_child(GTK_BIN(priv->tgroup))));
   flow_item_set_active(self, g_list_length(children)>0 );
-  if(g_list_length(children) == 1)
-    taskbar_group_set_single(self,children->data);
-  else
-    taskbar_group_set_multi(self);
+  priv->single = !!(g_list_length(children) == 1);
   g_list_free(children);
   for(iter=priv->holds;iter;iter=g_list_next(iter))
   {
@@ -222,29 +177,15 @@ static gboolean taskbar_group_action_exec ( GtkWidget *self, gint slot,
 {
   TaskbarGroupPrivate *priv;
   GList *children;
-  gint n;
 
   g_return_val_if_fail(IS_TASKBAR_GROUP(self),FALSE);
   priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
 
   children = gtk_container_get_children(GTK_CONTAINER(
         gtk_bin_get_child(GTK_BIN(priv->tgroup))));
-  n = g_list_length(children);
-  if(n!=1)
-  {
-    g_list_free(children);
-    return FALSE;
-  }
 
-  if(!base_widget_check_action_slot(priv->taskbar, slot))
-    return FALSE;
-
-  action_exec(children->data,
-      base_widget_get_action(priv->taskbar, slot,
-        base_widget_get_modifiers(self)),
-      (GdkEvent *)ev,
-      flow_item_get_parent(children->data),
-      NULL);
+  if(g_list_length(children) == 1)
+    base_widget_action_exec(children->data, slot, ev);
 
   g_list_free(children);
   return TRUE;
@@ -357,11 +298,11 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
   g_signal_connect(priv->popover, "enter-notify-event",
       G_CALLBACK(taskbar_group_enter_cb), self);
   g_signal_connect(self, "leave-notify-event",
-      G_CALLBACK(taskbar_group_leave_cb), priv->popover);
+      G_CALLBACK(taskbar_group_leave_cb), self);
   g_signal_connect(priv->button, "leave-notify-event",
-      G_CALLBACK(taskbar_group_leave_cb), priv->popover);
+      G_CALLBACK(taskbar_group_leave_cb), self);
   g_signal_connect(priv->popover, "leave-notify-event",
-      G_CALLBACK(taskbar_group_leave_cb), priv->popover);
+      G_CALLBACK(taskbar_group_leave_cb), self);
 
   if(g_object_get_data(G_OBJECT(taskbar), "g_cols"))
     flow_grid_set_cols(base_widget_get_child(priv->tgroup), GPOINTER_TO_INT(
