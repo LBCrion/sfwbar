@@ -121,7 +121,7 @@ static gboolean tray_item_action_exec ( GtkWidget *self, gint slot,
   if(ev->type == GDK_BUTTON_RELEASE)
   {
     g_debug("sni %s: button: %d",priv->sni->dest, ev->button.button);
-    if((ev->button.button == 1 || ev->button.button == 3) && priv->sni->menu)
+    if((ev->button.button == 1 && priv->sni->menu) || ev->button.button == 3)
     {
       if(priv->sni->menu_path)
         sni_get_menu(self, ev);
@@ -132,8 +132,6 @@ static gboolean tray_item_action_exec ( GtkWidget *self, gint slot,
       method = "Activate";
     else if(ev->button.button == 2)
       method = "SecondaryActivate";
-    else if(ev->button.button == 3)
-      method = "ContextMenu";
     else
       return FALSE;
 
