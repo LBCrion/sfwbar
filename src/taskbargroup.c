@@ -44,12 +44,12 @@ static gboolean taskbar_group_enter_cb ( GtkWidget *widget,
   g_return_val_if_fail(IS_TASKBAR_GROUP(self),FALSE);
   priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
   if(priv->single)
-    return TRUE;
+    return FALSE;
 
   if(gtk_widget_is_visible(priv->popover))
   {
     taskbar_group_add_hold(priv->popover,widget);
-    return TRUE;
+    return FALSE;
   }
   g_list_free(priv->holds);
   taskbar_group_add_hold(priv->popover,widget);
@@ -58,7 +58,7 @@ static gboolean taskbar_group_enter_cb ( GtkWidget *widget,
 
   popup_show(priv->button, priv->popover, (GdkEvent *)event);
 
-  return TRUE;
+  return FALSE;
 }
 
 static gboolean taskbar_group_timeout_cb ( GtkWidget *popover )
