@@ -1,3 +1,11 @@
+1.0beta12
+  - Implement mirroring of taskbar across multiple monitors
+  - Show on hover taskbar support
+  - Add ALSA module
+  - Emit triggers on RT signals
+  - Support modifier keys in action triggers
+  - Allow closing popup windows on focus out
+
 1.0_beta11
   - Add BSDCtl module to query BSD sysctl information
   - Stability improvements for client scanner sources
