@@ -20,11 +20,12 @@ set XAlsaVolumeIcon = Lookup(XAlsaVolume,
 set XAlsaIcon = If(XAlsaMuted,$XAlsaMutedIcon,$XAlsaVolumeIcon)
 
 PopUp "XAlsaWindow"  {
+  autoclose = true
   style = "XAlsaPopup"
-  label {
-    value = "-"
+  image {
+    value = "value-decrease-symbolic"
+    style = "XAlsaVolumeButton"
     action[1] = AlsaCmd "playback-volume -1"
-    css = "* { padding-right: 5px; -GtkWidget-valign: center; }"
   }
   scale {
     style = "alsa_volume_scale"
@@ -32,10 +33,10 @@ PopUp "XAlsaWindow"  {
     action[1] = AlsaCmd "playback-volume " + Str(GtkEvent("dir") * 100)
     trigger = "alsa"
   }
-  label {
-    value = "+"
+  image {
+    value = "value-increase-symbolic"
+    style = "XAlsaVolumeButton"
     action[1] = AlsaCmd "playback-volume +1"
-    css = "* { padding-left: 5px; -GtkWidget-valign: center;}"
   }
 }
 
@@ -47,10 +48,10 @@ layout {
     tooltip = "Volume: " + Str(XAlsaVolume,0) + "%" +
       If(XAlsaMuted," (muted)","")
     style = If(Ident(alsa),"module","hidden")
-    action[1] = AlsaCmd "playback-mute toggle"
-    action[3] = PopUp "XAlsaWindow"
-    action[4] = AlsaCmd "playback-volume +1"
-    action[5] = AlsaCmd "playback-volume -1"
+    action[Ctrl+LeftClick] = AlsaCmd "playback-mute toggle"
+    action[RightClick] = PopUp "XAlsaWindow"
+    action[ScrollUp] = AlsaCmd "playback-volume +1"
+    action[ScrollDown] = AlsaCmd "playback-volume -1"
   }
 }
 
@@ -63,16 +64,26 @@ window#XAlsaWindow {
 }
 
 grid#XAlsaPopup {
-  margin: 10px;
+  margin: 5px;
   border-radius: 10px;
-  border-image: none;
-  border-width: 1px;
-  border-style: solid;
+  border: 1px solid @borders;
   padding: 10px;
   background-color: @theme_bg_color;
 }
 
+image#XAlsaVolumeButton {
+  background-color: rgba(100, 100, 256, 0.3);
+  color: @theme_fg_color;
+  border-radius: 10px;
+  min-width: 20px;
+  min-height: 20px;
+  -GtkWidget-valign: center;
+  -GtkWidget-halign: center;
+}
+
 #alsa_volume_scale {
+  margin-left: 10px;
+  margin-right: 10px;
   -GtkWidget-direction: right;
   -GtkWidget-halign: center;
   -GtkWidget-valign: center;

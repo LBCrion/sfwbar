@@ -1,0 +1,15 @@
+scanner {
+  Exec("./switchuser icon") {
+    SwitchUserIcon = RegEx(".*<icon>(.*)</icon>")
+    SwitchUserTool = RegEx(".*<tool>(.*)</tool>")
+  }
+}
+
+layout {
+  button {
+    value = $SwitchUserIcon
+    style = "app"
+    action = Exec "./switchuser"
+    tooltip = $SwitchUserTool
+  }
+}

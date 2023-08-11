@@ -1,0 +1,9 @@
+Scanner {
+# Add up total and used swap capacity across all partitions
+  file("/proc/swaps") {
+    SwapTotal = RegEx("[\t ]([0-9]+)",Sum)
+    SwapUsed = RegEx("[\t ][0-9]+[\t ]([0-9]+)",Sum)
+  }
+}
+
+

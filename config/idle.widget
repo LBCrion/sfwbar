@@ -10,10 +10,3 @@ layout {
     action[1] = SetIdleInhibitor "toggle"
   }
 }
-
-#CSS
-
-button#mpd, button#mpd *, button#mpd ** {
-  -GtkWidget-hexpand: true;
-  -GtkWidget-vexpand: true;
-}

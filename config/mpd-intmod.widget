@@ -1,21 +1,7 @@
 include("mpd.source")
 
-Function("XMpdToggleControls") {
-    [!UserState] SetStyle "visible"
-    [UserState] SetStyle "hidden"
-    [!UserState] UserState "on"
-    [UserState] UserState "off"
-}
-
-Function("XMpdToggle") {
-    Function "XMpdPlayer", "XMpdToggleControls"
-    [!UserState] SetValue "pan-end-symbolic"
-    [UserState] SetValue "pan-start-symbolic"
-    [!UserState] UserState "on"
-    [UserState] UserState "off"
-}
-
 PopUp "XMpdWindow" {
+  autoclose = false
   trigger = "mpd"
   style = If($MpdState="","hidden","XMpdPopup")
   css = "* { -GtkWidget-direction: bottom; }"
@@ -37,6 +23,7 @@ PopUp "XMpdWindow" {
   scale {
     value = (MpdElapsed+If($MpdState="play",MpdElapsed.age/1000000,0))/MpdDuration
     style = "mpd_progress"
+    action = MpdCmd "seekcur " + Str(gtkevent("x") * MpdDuration)
   }
   grid "XMpdPlayer" {
     css = "* { -GtkWidget-direction: right; -GtkWidget-halign: center; -GtkWidget-hexpand: true; }"
@@ -104,8 +91,9 @@ grid#XMpdPopup {
   border-image: none;
   border-width: 1px;
   border-style: solid;
-  padding: 10px;
+  border-color: @borders;
   background-color: @theme_bg_color;
+  padding: 10px;
 }
 
 image#mpd_icon {
@@ -114,6 +102,7 @@ image#mpd_icon {
   min-width: 24px;
   min-height: 24px;
   padding: 4px;
+  color: @theme_fg_color;
 }
 
 image#mpd_icon_red {
@@ -131,7 +120,7 @@ label#mpd_artist {
   padding-left: 4px;
   padding-right: 4px;
   -GtkWidget-align: 0.5;
-  color: @theme_fg_color;
+  color: @theme_text_color;
   -GtkWidget-halign: center;
 }
 

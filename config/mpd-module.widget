@@ -117,6 +117,7 @@ image#mpd_icon {
   min-width: 24px;
   min-height: 24px;
   padding: 4px;
+  color: @theme_fg_color;
 }
 
 image#mpd_icon_red {
@@ -135,7 +136,7 @@ label#mpd_artist {
   padding-right: 4px;
   -GtkWidget-align: 0.5;
   -GtkWidget-halign: center;
-  color: @theme_fg_color;
+  color: @theme_text_color;
 }
 
 #mpd_progress {
