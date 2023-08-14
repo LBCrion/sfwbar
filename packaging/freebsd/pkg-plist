@@ -132,3 +132,4 @@ share/icons/hicolor/scalable/apps/sfwbar.svg
 %%PULSEAUDIO%%lib/sfwbar/pulsectl.so
 %%MPD%%lib/sfwbar/mpd.so
 %%XKB%%lib/sfwbar/xkbmap.so
+%%ALSA%%lib/sfwbar/alsactl.so
