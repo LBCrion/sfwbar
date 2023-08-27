@@ -30,7 +30,7 @@ static gboolean taskbar_item_action_exec ( GtkWidget *self, gint slot,
     return FALSE;
 
   mods = base_widget_get_modifiers(self);
-  action = base_widget_get_action(self, slot, mods);
+  action = base_widget_get_action(priv->taskbar, slot, mods);
 
   if(!action && !mods && slot==1)
   {
