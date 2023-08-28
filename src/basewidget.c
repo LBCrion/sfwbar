@@ -13,9 +13,10 @@
 G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX,
     G_ADD_PRIVATE (BaseWidget));
 
-static GHashTable *widgets_id;
+static GHashTable *base_widget_id_map;
 static GList *widgets_scan;
 static GMutex widget_mutex;
+static gint64 base_widget_default_id = 0;
 
 static void base_widget_attachment_free ( base_widget_attachment_t *attach )
 {
@@ -50,26 +51,26 @@ static void base_widget_destroy ( GtkWidget *self )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   g_mutex_lock(&widget_mutex);
-  widgets_scan = g_list_remove(widgets_scan,self);
+  widgets_scan = g_list_remove(widgets_scan, self);
   g_mutex_unlock(&widget_mutex);
 
   if(priv->mirror_parent)
   {
     ppriv = base_widget_get_instance_private(BASE_WIDGET(priv->mirror_parent));
-    ppriv->mirror_children = g_list_remove(ppriv->mirror_children,self);
+    ppriv->mirror_children = g_list_remove(ppriv->mirror_children, self);
     priv->mirror_parent = NULL;
   }
 
-  if(widgets_id && priv->id)
-    g_hash_table_remove(widgets_id,priv->id);
+  if(base_widget_id_map && priv->id)
+    g_hash_table_remove(base_widget_id_map, priv->id);
 
-  g_list_free_full(priv->css,g_free);
+  g_list_free_full(priv->css, g_free);
   priv->css = NULL;
-  g_clear_pointer(&priv->id,g_free);
-  g_clear_pointer(&priv->value,expr_cache_free);
-  g_clear_pointer(&priv->style,expr_cache_free);
-  g_clear_pointer(&priv->tooltip,expr_cache_free);
-  g_clear_pointer(&priv->trigger,g_free);
+  g_clear_pointer(&priv->id, g_free);
+  g_clear_pointer(&priv->value, expr_cache_free);
+  g_clear_pointer(&priv->style, expr_cache_free);
+  g_clear_pointer(&priv->tooltip, expr_cache_free);
+  g_clear_pointer(&priv->trigger, g_free);
   g_list_free_full(g_steal_pointer(&priv->actions),
       (GDestroyNotify)base_widget_attachment_free);
 
@@ -425,22 +426,26 @@ void base_widget_set_id ( GtkWidget *self, gchar *id )
 
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  g_free(priv->id);
-  priv->id = id;
+  if(!base_widget_id_map)
+    base_widget_id_map = g_hash_table_new_full((GHashFunc)str_nhash,
+        (GEqualFunc)str_nequal, g_free,NULL);
 
-  if(!widgets_id)
-    widgets_id = g_hash_table_new_full((GHashFunc)str_nhash,
-        (GEqualFunc)str_nequal,g_free,NULL);
-  if(!g_hash_table_lookup(widgets_id,id))
-    g_hash_table_insert(widgets_id,g_strdup(id),self);
+  if(priv->id)
+    g_hash_table_remove(base_widget_id_map, priv->id);
+
+  g_free(priv->id);
+  priv->id = id? id: g_strdup_printf("_w%ld", base_widget_default_id++);
+
+  if(!g_hash_table_lookup(base_widget_id_map, priv->id))
+    g_hash_table_insert(base_widget_id_map, g_strdup(priv->id), self);
 }
 
 GtkWidget *base_widget_from_id ( gchar *id )
 {
-  if(!widgets_id || !id)
+  if(!base_widget_id_map || !id)
     return NULL;
 
-  return g_hash_table_lookup(widgets_id,id);
+  return g_hash_table_lookup(base_widget_id_map,id);
 }
 
 void base_widget_set_interval ( GtkWidget *self, gint64 interval )
@@ -713,7 +718,7 @@ void base_widget_copy_properties ( GtkWidget *dest, GtkWidget *src )
   base_widget_set_state( dest, spriv->user_state, TRUE );
   base_widget_set_rect( dest, spriv->rect );
   for(iter=spriv->css;iter;iter=g_list_next(iter))
-    css_widget_apply(base_widget_get_child(dest),iter->data);
+    css_widget_apply(base_widget_get_child(dest), g_strdup(iter->data));
   if(!g_list_find(spriv->mirror_children, dest))
   {
     spriv->mirror_children = g_list_prepend(spriv->mirror_children, dest);
