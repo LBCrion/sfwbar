@@ -27,10 +27,15 @@ void layer_shell_register (struct wl_registry *registry, uint32_t name,
 
 GdkMonitor *wayland_monitor_get_default ( void )
 {
-  if(default_monitor)
+  GdkDisplay *gdisp = gdk_display_get_default();
+  gint n, i;
+
+  n = gdk_display_get_n_monitors(gdisp);
+  for(i=0; i<n; i++)
+    if(gdk_display_get_monitor(gdisp, i) == default_monitor)
     return default_monitor;
 
-  return gdk_display_get_monitor(gdk_display_get_default(), 0);
+  return gdk_display_get_monitor(gdisp, 0);
 }
 
 static void noop() {
