@@ -26,7 +26,7 @@ static gboolean taskbar_item_action_exec ( GtkWidget *self, gint slot,
   g_return_val_if_fail(IS_TASKBAR_ITEM(self),FALSE);
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
 
-  if(!base_widget_check_action_slot(priv->taskbar, slot))
+  if(!base_widget_check_action_slot(priv->taskbar, slot) && slot != 1)
     return FALSE;
 
   mods = base_widget_get_modifiers(self);
