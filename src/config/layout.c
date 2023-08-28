@@ -418,8 +418,7 @@ void config_widget ( GScanner *scanner, GtkWidget *widget )
       SEQ_OPT,G_TOKEN_STRING,NULL,&id,NULL,
       SEQ_OPT,'{',NULL,&curly,NULL,
       SEQ_END);
-  if(id)
-    base_widget_set_id(widget,id);
+  base_widget_set_id(widget,id);
 
   if(curly)
   {

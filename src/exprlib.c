@@ -9,6 +9,7 @@
 #include "module.h"
 #include "wintree.h"
 #include "expr.h"
+#include "basewidget.h"
 
 /* extract a substring */
 static void *expr_lib_mid ( void **params, void *widget, void *event )
@@ -276,6 +277,13 @@ static void *expr_lib_gtkevent ( void **params, void *base, void *event )
   return result;
 }
 
+static void *expr_lib_widget_id ( void **params, void *widget, void *event )
+{
+  gchar *id = base_widget_get_id(widget);
+
+  return g_strdup(id?id:"");
+}
+
 ModuleExpressionHandlerV1 mid_handler = {
   .flags = MODULE_EXPR_DETERMINISTIC,
   .name = "mid",
@@ -367,6 +375,12 @@ ModuleExpressionHandlerV1 gtkevent_handler = {
   .function = expr_lib_gtkevent
 };
 
+ModuleExpressionHandlerV1 widget_id_handler = {
+  .name = "widgetid",
+  .parameters = "",
+  .function = expr_lib_widget_id
+};
+
 ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &mid_handler,
   &pad_handler,
@@ -381,6 +395,7 @@ ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &upper_handler,
   &lower_handler,
   &gtkevent_handler,
+  &widget_id_handler,
   NULL
 };
 
