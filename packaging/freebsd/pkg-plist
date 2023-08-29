@@ -158,5 +158,5 @@ share/icons/hicolor/scalable/apps/sfwbar.svg
 %%MPD%%lib/sfwbar/mpd.so
 %%XKB%%lib/sfwbar/xkbmap.so
 %%ALSA%%lib/sfwbar/alsactl.so
-%%BSDCTL%%lib/sfwbar/bsdctl.so
-%%IDLEINHIBIT%%lib/sfwbar/idleinhibit.so
+%%BSD%%lib/sfwbar/bsdctl.so
+%%IDLE%%lib/sfwbar/idleinhibit.so

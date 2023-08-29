@@ -22,8 +22,8 @@ USE_GNOME=	cairo gdkpixbuf2 gtk30
 USE_GITHUB=	yes
 GH_ACCOUNT=	LBCrion
 
-OPTIONS_DEFINE=		MPD NETWORK PULSEAUDIO XKB ALSA
-OPTIONS_DEFAULT=	MPD NETWORK PULSEAUDIO XKB ALSA
+OPTIONS_DEFINE=		MPD NETWORK PULSEAUDIO XKB ALSA BSD IDLE
+OPTIONS_DEFAULT=	MPD NETWORK PULSEAUDIO XKB ALSA BSD IDLE
 OPTIONS_SUB=		yes
 
 MPD_DESC=		Music player daemon control
@@ -32,6 +32,12 @@ MPD_MESON_ENABLED=	mpd
 
 NETWORK_DESC=		Network interface monitor support
 NETWORK_MESON_ENABLED=	network
+
+BSD_DESC=		Support for BSD sysctl interface
+BSD_MESON_ENABLED=	bsdctl
+
+IDLE_DESC=		Support for idle inhibit protocol
+IDLE_MESON_ENABLED=	idleinhibit
 
 PULSEAUDIO_DESC=	Pulse audio volume control
 PULSEAUDIO_LIB_DEPENDS=	libpulse.so:audio/pulseaudio
