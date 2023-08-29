@@ -259,6 +259,7 @@ static void base_widget_init ( BaseWidget *self )
   priv->rect.y = -1;
   priv->rect.width = 1;
   priv->rect.height = 1;
+  base_widget_set_id(GTK_WIDGET(self), NULL);
 }
 
 static gboolean base_widget_tooltip_update ( GtkWidget *self,
