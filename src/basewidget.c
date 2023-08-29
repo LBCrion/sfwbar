@@ -741,7 +741,6 @@ gboolean base_widget_emit_trigger ( gchar *trigger )
 {
   BaseWidgetPrivate *priv;
   GList *iter;
-  action_t *action;
 
   if(!trigger)
     return FALSE;
@@ -760,9 +759,7 @@ gboolean base_widget_emit_trigger ( gchar *trigger )
       base_widget_style(iter->data);
   }
   g_mutex_unlock(&widget_mutex);
-  action = action_trigger_lookup(trigger);
-  if(action)
-    action_exec(NULL,action,NULL,NULL,NULL);
+  action_exec(NULL, action_trigger_lookup(trigger), NULL, NULL, NULL);
 
   return FALSE;
 }
