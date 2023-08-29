@@ -13,6 +13,7 @@ enum ConfigSequenceType {
 
 typedef gboolean (*parse_func) ( GScanner *, void * );
 
+gchar *config_value_string ( gchar *dest, gchar *string );
 GtkWidget *config_parse ( gchar *, gboolean );
 void config_pipe_read ( gchar *command );
 void config_string ( gchar *string );

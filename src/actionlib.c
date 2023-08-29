@@ -394,6 +394,22 @@ static ModuleActionHandlerV1 unmaximize_handler = {
   .function = (ModuleActionFunc)unmaximize_action
 };
 
+static void eval_action ( gchar *cmd, gchar *name, void *widget,
+    void *event, window_t *win, guint16 *state )
+{
+  if(!cmd || !name)
+    return;
+
+  scanner_var_new(g_strdup(name), NULL, config_value_string(g_strdup(""), cmd),
+      G_TOKEN_SET, G_TOKEN_FIRST);
+}
+
+static ModuleActionHandlerV1 eval_handler = {
+  .name = "Eval",
+  .function = (ModuleActionFunc)eval_action
+};
+
+
 ModuleActionHandlerV1 *action_handlers[] = {
   &exec_handler,
   &function_handler,
@@ -425,6 +441,7 @@ ModuleActionHandlerV1 *action_handlers[] = {
   &maximize_handler,
   &unminimize_handler,
   &unmaximize_handler,
+  &eval_handler,
   NULL
 };
 

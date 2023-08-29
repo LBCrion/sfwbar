@@ -95,7 +95,15 @@ void scanner_var_free ( ScanVar *var )
 void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
     guint type, gint flag )
 {
-  ScanVar *var = g_malloc0(sizeof(ScanVar));
+  ScanVar *var;
+
+  if(scan_list && name && type == G_TOKEN_SET)
+    var = g_hash_table_lookup(scan_list, name);
+  else
+    var = NULL;
+
+  if(!var)
+    var = g_malloc0(sizeof(ScanVar));
 
   var->file = file;
   var->type = type;
@@ -105,6 +113,7 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
   switch(var->type)
   {
     case G_TOKEN_SET:
+      expr_cache_free(var->expr);
       var->expr = expr_cache_new();
       var->expr->definition = pattern;
       var->expr->eval = TRUE;
@@ -113,7 +122,7 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
       var->definition = pattern;
       break;
     case G_TOKEN_REGEX:
-      var->definition = g_regex_new(pattern,0,0,NULL);
+      var->definition = g_regex_new(pattern, 0, 0, NULL);
       g_free(pattern);
       break;
     default:
@@ -122,14 +131,17 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
   }
 
   if(file)
-    file->vars = g_list_append(file->vars,var);
+    file->vars = g_list_append(file->vars, var);
 
   if(!scan_list)
     scan_list = g_hash_table_new_full((GHashFunc)str_nhash,
-        (GEqualFunc)str_nequal,g_free,(GDestroyNotify)scanner_var_free);
+        (GEqualFunc)str_nequal, g_free, (GDestroyNotify)scanner_var_free);
 
-  if(g_hash_table_insert(scan_list,name,var))
-    expr_dep_trigger(name);
+  if(!g_hash_table_lookup(scan_list, var))
+    if(g_hash_table_insert(scan_list, g_strdup(name), var))
+      expr_dep_trigger(name);
+
+  g_free(name);
 }
 
 void scanner_var_invalidate ( void *key, ScanVar *var, void *data )
