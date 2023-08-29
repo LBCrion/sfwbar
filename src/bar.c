@@ -416,7 +416,7 @@ void bar_set_exclusive_zone ( GtkWidget *self, gchar *zone )
     gtk_layer_set_exclusive_zone(GTK_WINDOW(self),
         MAX(-1,g_ascii_strtoll(zone,NULL,10)));
 
-  g_list_foreach(priv->mirror_children,(GFunc)bar_set_exclusive_zone,zone);
+  g_list_foreach(priv->mirror_children, (GFunc)bar_set_exclusive_zone, zone);
 }
 
 GdkMonitor *bar_get_monitor ( GtkWidget *self )
@@ -429,14 +429,17 @@ GdkMonitor *bar_get_monitor ( GtkWidget *self )
   return priv->current_monitor;
 }
 
-gchar *bar_get_output ( GtkWidget *widget )
+gchar *bar_get_output ( GtkWidget *self )
 {
   BarPrivate *priv;
 
   priv = bar_get_instance_private(
-      BAR(gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW)));
+      BAR(gtk_widget_get_ancestor(self, GTK_TYPE_WINDOW)));
 
-  return g_object_get_data( G_OBJECT(priv->current_monitor),"xdg_name");
+  if(!priv->current_monitor)
+    return NULL;
+  else
+    return g_object_get_data( G_OBJECT(priv->current_monitor), "xdg_name");
 }
 
 gboolean bar_update_monitor ( GtkWidget *self )
@@ -467,18 +470,18 @@ gboolean bar_update_monitor ( GtkWidget *self )
 
   nmon = gdk_display_get_n_monitors(gdisp);
   if(priv->output)
-    for(i=0;i<nmon;i++)
+    for(i=0; i<nmon; i++)
     {
-      gmon = gdk_display_get_monitor(gdisp,i);
-      output = g_object_get_data(G_OBJECT(gmon),"xdg_name");
-      if(output && !g_strcmp0(output,priv->output))
+      gmon = gdk_display_get_monitor(gdisp, i);
+      output = g_object_get_data(G_OBJECT(gmon), "xdg_name");
+      if(output && !g_strcmp0(output, priv->output))
         match = gmon;
     }
 
+  gtk_widget_hide(self);
+  priv->current_monitor = match;
   if(match)
   {
-    gtk_widget_hide(self);
-    priv->current_monitor = match;
     gtk_layer_set_monitor(GTK_WINDOW(self), match);
     if(priv->visible)
     {
@@ -488,17 +491,17 @@ gboolean bar_update_monitor ( GtkWidget *self )
   }
 
   /* remove any mirrors from new primary output */
-  for(iter=priv->mirror_children;iter;iter=g_list_next(iter))
+  for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
     if(bar_get_monitor(iter->data) == priv->current_monitor)
       bar_destroy(iter->data);
 
   /* add mirrors to any outputs where they are missing */
-  for(i=0;i<nmon;i++)
+  for(i=0; i<nmon; i++)
   {
-    gmon = gdk_display_get_monitor(gdisp,i);
+    gmon = gdk_display_get_monitor(gdisp, i);
     output = g_object_get_data(G_OBJECT(gmon),"xdg_name");
     present = FALSE;
-    for(iter=priv->mirror_children;iter;iter=g_list_next(iter))
+    for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
       if(bar_get_monitor(iter->data) == gmon)
         present = TRUE;
 
