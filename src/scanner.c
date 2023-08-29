@@ -137,7 +137,7 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
     scan_list = g_hash_table_new_full((GHashFunc)str_nhash,
         (GEqualFunc)str_nequal, g_free, (GDestroyNotify)scanner_var_free);
 
-  if(!g_hash_table_lookup(scan_list, var))
+  if(!g_hash_table_lookup(scan_list, name))
     if(g_hash_table_insert(scan_list, g_strdup(name), var))
       expr_dep_trigger(name);
 
