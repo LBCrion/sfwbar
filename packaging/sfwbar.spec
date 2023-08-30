@@ -1,5 +1,5 @@
 Name:           sfwbar
-Version:        1.0_beta10
+Version:        1.0_beta12
 Release:        1%{?dist}
 Summary:        S* Floating Window Bar
 License:        GPL-3.0
@@ -17,6 +17,7 @@ BuildRequires:  (pulseaudio-libs-devel or libpulseaudio-devel or libpulse-devel)
 BuildRequires:  (pulseaudio-libs-glib2 or libpulse-mainloop-glib0 or lib64pulseglib2 or lib64pulseglib20)
 BuildRequires:  (libmpdclient-devel or lib64mpdclient-devel)
 BuildRequires:  libxkbcommon-devel
+BuildRequires:  alsa-lib-devel
 
 %global debug_package %{nil}
 
@@ -44,6 +45,12 @@ SFWBar (S* Floating Window Bar) is a flexible taskbar application for wayland co
 
 
 %changelog
+* Fri Aug 11 2023 Lev Babiev <harley@hosers.org> 1.0_beta12
+- version bump
+
+* Thu May 11 2023 Lev Babiev <harley@hosers.org> 1.0_beta11
+- version bump
+
 * Mon Mar 13 2023 Lev Babiev <harley@hosers.org> 1.0_beta10
 - version bump
 - add module dependencies
