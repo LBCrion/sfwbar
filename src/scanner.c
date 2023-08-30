@@ -95,15 +95,17 @@ void scanner_var_free ( ScanVar *var )
 void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
     guint type, gint flag )
 {
-  ScanVar *var;
+  ScanVar *var, *old;
 
-  if(scan_list && name && type == G_TOKEN_SET)
-    var = g_hash_table_lookup(scan_list, name);
-  else
-    var = NULL;
+  if(!name)
+    return;
 
-  if(!var)
-    var = g_malloc0(sizeof(ScanVar));
+  old = scan_list? g_hash_table_lookup(scan_list, name): NULL;
+
+  if(old && type != G_TOKEN_SET && old->file != file)
+    return;
+
+  var = old? old: g_malloc0(sizeof(ScanVar));
 
   var->file = file;
   var->type = type;
@@ -115,33 +117,32 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
     case G_TOKEN_SET:
       expr_cache_free(var->expr);
       var->expr = expr_cache_new();
-      var->expr->definition = pattern;
+      var->expr->definition = g_strdup(pattern);
       var->expr->eval = TRUE;
       break;
     case G_TOKEN_JSON:
-      var->definition = pattern;
+      g_free(var->definition);
+      var->definition = g_strdup(pattern);
       break;
     case G_TOKEN_REGEX:
+      if(var->definition)
+        g_regex_unref(var->definition);
       var->definition = g_regex_new(pattern, 0, 0, NULL);
-      g_free(pattern);
-      break;
-    default:
-      g_free(pattern);
       break;
   }
 
-  if(file)
+  if(file && !old)
     file->vars = g_list_append(file->vars, var);
 
   if(!scan_list)
     scan_list = g_hash_table_new_full((GHashFunc)str_nhash,
         (GEqualFunc)str_nequal, g_free, (GDestroyNotify)scanner_var_free);
 
-  if(!g_hash_table_lookup(scan_list, name))
-    if(g_hash_table_insert(scan_list, g_strdup(name), var))
-      expr_dep_trigger(name);
-
-  g_free(name);
+  if(!old)
+  {
+    g_hash_table_insert(scan_list, g_strdup(name), var);
+    expr_dep_trigger(name);
+  }
 }
 
 void scanner_var_invalidate ( void *key, ScanVar *var, void *data )

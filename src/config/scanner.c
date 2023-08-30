@@ -75,6 +75,8 @@ static void config_var ( GScanner *scanner, ScanFile *file )
   }
 
   scanner_var_new(vname,file,pattern,type,flag);
+  g_free(vname);
+  g_free(pattern);
 }
 
 static gboolean config_source_flags ( GScanner *scanner, gint *flags )

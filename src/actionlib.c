@@ -397,11 +397,14 @@ static ModuleActionHandlerV1 unmaximize_handler = {
 static void eval_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
+  gchar *val;
+
   if(!cmd || !name)
     return;
 
-  scanner_var_new(g_strdup(name), NULL, config_value_string(g_strdup(""), cmd),
-      G_TOKEN_SET, G_TOKEN_FIRST);
+  val = config_value_string(g_strdup(""), cmd);
+  scanner_var_new(name, NULL, val, G_TOKEN_SET, G_TOKEN_FIRST);
+  g_free(val);
 }
 
 static ModuleActionHandlerV1 eval_handler = {

@@ -455,6 +455,8 @@ void config_set ( GScanner *scanner )
     return;
   }
   scanner_var_new(ident,NULL,value,G_TOKEN_SET,G_TOKEN_FIRST);
+  g_free(ident);
+  g_free(value);
 }
 
 void config_mappid_map ( GScanner *scanner )
