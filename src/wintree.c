@@ -91,6 +91,8 @@ void wintree_set_focus ( gpointer id )
 {
   window_t *win;
 
+  if(wt_focus == id)
+    return;
   wintree_commit(wintree_from_id(wt_focus));
   wt_focus = id;
   win = wintree_from_id(id);
@@ -98,6 +100,7 @@ void wintree_set_focus ( gpointer id )
     return;
   wintree_commit(win);
   wintree_set_active(win->title);
+  g_idle_add((GSourceFunc)base_widget_emit_trigger, "window_focus");
 }
 
 gpointer wintree_get_focus ( void )
