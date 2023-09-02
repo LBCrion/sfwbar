@@ -125,6 +125,8 @@ static void *expr_parse_identifier ( GScanner *scanner )
   gint i;
   gchar *err;
 
+  expr_dep_add(scanner->value.v_identifier,E_STATE(scanner)->expr);
+
   if(g_scanner_peek_next_token(scanner)!='(' &&
       scanner_is_variable(scanner->value.v_identifier))
     return scanner_get_value(scanner->value.v_identifier,
@@ -134,8 +136,6 @@ static void *expr_parse_identifier ( GScanner *scanner )
       module_is_function(scanner->value.v_identifier) &&
       !E_STATE(scanner)->ignore)
     return module_get_string(scanner);
-
-  expr_dep_add(scanner->value.v_identifier,E_STATE(scanner)->expr);
 
   if(g_scanner_peek_next_token(scanner)!='(')
     return g_strdup_printf("Undeclared variable: %s",

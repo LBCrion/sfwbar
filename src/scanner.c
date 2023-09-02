@@ -119,6 +119,8 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
       var->expr = expr_cache_new();
       var->expr->definition = g_strdup(pattern);
       var->expr->eval = TRUE;
+      var->vstate = 1;
+      expr_dep_trigger(name);
       break;
     case G_TOKEN_JSON:
       g_free(var->definition);

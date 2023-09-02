@@ -16,7 +16,6 @@ static GList *appid_filter_list;
 static GList *title_filter_list;
 static gpointer wt_focus;
 static gchar *wt_active;
-static guint64 seq;
 static gboolean disown;
 
 struct appid_mapper{
@@ -62,9 +61,9 @@ gchar *wintree_get_active ( void )
 window_t *wintree_window_init ( void )
 {
   window_t *w;
+
   w = g_malloc0(sizeof(window_t));
   w->pid=-1;
-  w->seq = seq++;
   return w;
 }
 
