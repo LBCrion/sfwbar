@@ -499,7 +499,7 @@ static void sway_ipc_unminimize ( gpointer id )
   window_t *win;
 
   win = wintree_from_id(id);
-  if(win && win->workspace)
+  if(win && win->workspace && pager_workspace_from_id(win->workspace))
     sway_ipc_command("[con_id=%d] move window to workspace %s",
         GPOINTER_TO_INT(id),pager_workspace_from_id(win->workspace)->name);
   else
@@ -521,7 +521,7 @@ static void sway_ipc_focus ( gpointer id )
   window_t *win;
 
   win = wintree_from_id(id);
-  if(win && win->workspace)
+  if(win && win->workspace && pager_workspace_from_id(win->workspace))
     sway_ipc_command("[con_id=%d] move window to workspace %s",
         GPOINTER_TO_INT(id),pager_workspace_from_id(win->workspace)->name);
   sway_ipc_command("[con_id=%d] focus",GPOINTER_TO_INT(id));
