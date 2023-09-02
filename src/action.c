@@ -80,16 +80,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
   if(!ahandler)
     return;
 
-  if( !(ahandler->flags & MODULE_ACT_CMD_BY_DEF) )
-  {
-    action->command->widget = widget;
-    action->command->event = event;
-    expr_cache_eval(action->command);
-    action->command->widget = NULL;
-    action->command->event = NULL;
-  }
   expr_cache_eval(action->addr);
-
   if(action->addr->cache && ahandler->flags & MODULE_ACT_WIDGET_ADDRESS )
   {
     widget = base_widget_from_id(action->addr->cache);
@@ -110,6 +101,17 @@ void action_exec ( GtkWidget *widget, action_t *action,
     return;
   if((~state & action->ncond) != action->ncond)
     return;
+
+  if( !(ahandler->flags & MODULE_ACT_CMD_BY_DEF) )
+  {
+    action->command->widget = widget;
+    if(IS_TASKBAR_ITEM(widget))
+      win = flow_item_get_parent(widget);
+    action->command->event = event;
+    expr_cache_eval(action->command);
+    action->command->widget = NULL;
+    action->command->event = NULL;
+  }
 
   g_debug("action: %s '%s', '%s', widget=%p, win=%d", ahandler->name,
       action->addr->cache,action->command->cache,widget,
