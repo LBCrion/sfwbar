@@ -11,6 +11,8 @@
 
 G_DEFINE_TYPE_WITH_CODE (Pager, pager, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Pager));
 
+#define PAGER_PIN_ID (GINT_TO_POINTER(-1))
+
 static struct pager_api api;
 static GList *pagers;
 static GList *global_pins;
@@ -241,18 +243,21 @@ void pager_workspace_set_focus ( gpointer id )
 
 void pager_workspace_delete ( gpointer id )
 {
+  GList *iter, *item;
   workspace_t *ws;
-  GList *iter;
 
-  ws = pager_workspace_from_id(id);
-  if(!ws)
+  item = g_list_find_custom(workspaces,id,
+          (GCompareFunc)pager_comp_id);
+  if(!item)
     return;
+
+  ws = item->data;
 
   if(g_list_find_custom(global_pins,ws->name,(GCompareFunc)g_strcmp0))
   {
-    ws->active = FALSE;
+    ws->id = PAGER_PIN_ID;
     ws->visible = FALSE;
-    for(iter=pagers; iter; iter=g_list_next(iter))
+    for(iter=pagers;iter;iter=g_list_next(iter))
       if(!g_list_find_custom(g_object_get_data(
               G_OBJECT(base_widget_get_child(iter->data)),"pins"),
             ws->name,(GCompareFunc)g_strcmp0))
@@ -261,7 +266,9 @@ void pager_workspace_delete ( gpointer id )
   else
   {
     g_list_foreach(pagers,(GFunc)flow_grid_delete_child,ws);
-    ws->active = FALSE;
+    g_free(ws->name);
+    g_free(ws);
+    workspaces = g_list_delete_link(workspaces,item);
   }
 }
 
@@ -272,9 +279,9 @@ void pager_workspace_new ( workspace_t *new )
 
   ws = pager_workspace_from_id(new->id);
   if(!ws)
-    for(iter=workspaces; iter; iter=g_list_next(iter))
+    for(iter=workspaces;iter;iter=g_list_next(iter))
       if(!g_strcmp0(((workspace_t *)iter->data)->name,new->name) &&
-          !((workspace_t *)iter->data)->active)
+          ((workspace_t *)iter->data)->id == PAGER_PIN_ID)
         ws = iter->data;
   if(!ws)
   {
@@ -282,7 +289,7 @@ void pager_workspace_new ( workspace_t *new )
     workspaces = g_list_prepend(workspaces,ws);
   }
 
-  if(g_strcmp0(ws->name, new->name))
+  if(g_strcmp0(ws->name,new->name))
   {
     g_free(ws->name);
     ws->name = g_strdup(new->name);
@@ -294,7 +301,6 @@ void pager_workspace_new ( workspace_t *new )
     ws->visible = new->visible;
     pager_invalidate_all(ws);
   }
-  ws->active = TRUE;
   g_list_foreach(pagers,(GFunc)pager_item_new,ws);
 
   if(new->focused)
@@ -318,7 +324,7 @@ void pager_populate ( void )
 
     {
       ws = g_malloc(sizeof(workspace_t));
-      ws->active = FALSE;
+      ws->id = PAGER_PIN_ID;
       ws->name = g_strdup(item->data);
       ws->visible = FALSE;
       workspaces = g_list_prepend(workspaces,ws);

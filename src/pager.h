@@ -37,7 +37,6 @@ typedef struct workspace_s {
   gchar *name;
   gboolean visible;
   gboolean focused;
-  gboolean active;
   GtkWidget *pager;
 } workspace_t;
 
