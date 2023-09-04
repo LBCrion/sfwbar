@@ -26,7 +26,12 @@ def main():
   cats = list()
   outp = list()
   print ('MenuClear(\\'Menugen_Applications\\')')
-  dlist = sorted(glob.glob('/usr/share/applications/*.desktop'))
+  dirlist = os.environ.get('XDG_DATA_DIRS')
+  if not dirlist:
+    dirlist = '/usr/share'
+  dlist = []
+  for dir in dirlist.split(':'):
+    dlist = dlist + sorted(glob.glob(dir + '/applications/*.desktop'))
   for dfile in dlist:
     de_name = de_icon = de_exec = de_cat = de_disp = ''
     fchan = open(dfile)
