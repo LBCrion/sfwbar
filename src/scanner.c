@@ -472,6 +472,8 @@ void *scanner_get_value ( gchar *ident, gboolean update, ExprCache *expr )
     else
       return g_malloc0(sizeof(gdouble));
   }
+  if(var->type == G_TOKEN_SET)
+    expr_dep_add(ident, expr);
 
   if(*ident == '$')
   {
