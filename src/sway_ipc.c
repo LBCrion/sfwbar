@@ -128,7 +128,7 @@ static void sway_minimized_set ( struct json_object *obj, const gchar *parent,
   else
   {
     win->state &= ~WS_MINIMIZED;
-    win->workspace = pager_workspace_id_from_name(parent);
+    win->workspace = g_strdup(parent);
   }
 
   if(!g_list_find_custom(win->outputs,monitor,(GCompareFunc)g_strcmp0) &&
@@ -488,7 +488,8 @@ static void sway_ipc_minimize ( gpointer id )
   if(wintree_get_disown())
   {
     win = wintree_from_id(id);
-    win->workspace = NULL;
+    if(win)
+      g_clear_pointer(&win->workspace, g_free);
   }
   sway_ipc_command("[con_id=%d] move window to scratchpad",
       GPOINTER_TO_INT(id));
@@ -499,9 +500,9 @@ static void sway_ipc_unminimize ( gpointer id )
   window_t *win;
 
   win = wintree_from_id(id);
-  if(win && win->workspace && pager_workspace_from_id(win->workspace))
+  if(win && win->workspace)
     sway_ipc_command("[con_id=%d] move window to workspace %s",
-        GPOINTER_TO_INT(id),pager_workspace_from_id(win->workspace)->name);
+        GPOINTER_TO_INT(id),win->workspace);
   else
     sway_ipc_command("[con_id=%d] focus",GPOINTER_TO_INT(id));
 }
@@ -521,9 +522,9 @@ static void sway_ipc_focus ( gpointer id )
   window_t *win;
 
   win = wintree_from_id(id);
-  if(win && win->workspace && pager_workspace_from_id(win->workspace))
+  if(win && win->workspace)
     sway_ipc_command("[con_id=%d] move window to workspace %s",
-        GPOINTER_TO_INT(id),pager_workspace_from_id(win->workspace)->name);
+        GPOINTER_TO_INT(id),win->workspace);
   sway_ipc_command("[con_id=%d] focus",GPOINTER_TO_INT(id));
 }
 
@@ -544,6 +545,7 @@ static struct wintree_api sway_wintree_api = {
   .unmaximize = sway_ipc_unmaximize,
   .close = sway_ipc_close,
   .focus = sway_ipc_focus,
+  .free_workspace = g_free,
 };
 
 static guint sway_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,
