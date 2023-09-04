@@ -15,7 +15,6 @@ static GList *appid_map;
 static GList *appid_filter_list;
 static GList *title_filter_list;
 static gpointer wt_focus;
-static gchar *wt_active;
 static gboolean disown;
 
 struct appid_mapper{
@@ -47,15 +46,12 @@ gboolean wintree_get_disown ( void )
   return disown;
 }
 
-void wintree_set_active ( gchar *title )
-{
-  g_free(wt_active);
-  wt_active = g_strdup(title);
-}
-
 gchar *wintree_get_active ( void )
 {
-  return wintree_from_id(wintree_get_focus())->title;
+  window_t *win;
+
+  win = wintree_from_id(wintree_get_focus());
+  return win?win->title:"";
 }
 
 window_t *wintree_window_init ( void )
@@ -98,7 +94,6 @@ void wintree_set_focus ( gpointer id )
   if(!win)
     return;
   wintree_commit(win);
-  wintree_set_active(win->title);
   g_idle_add((GSourceFunc)base_widget_emit_trigger, "window_focus");
 }
 
@@ -158,7 +153,6 @@ void wintree_set_title ( gpointer wid, const gchar *title )
 
   g_free(win->title);
   win->title = g_strdup(title);
-  wintree_set_active(win->title);
   wintree_commit(win);
 }
 
