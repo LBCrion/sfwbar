@@ -331,6 +331,7 @@ static void focus_action ( gchar *cmd, gchar *name, void *widget,
 
 static ModuleActionHandlerV1 focus_handler = {
   .name = "Focus",
+  .flags = MODULE_ACT_WIDGET_ADDRESS | MODULE_ACT_ADDRESS_ONLY,
   .function = (ModuleActionFunc)focus_action
 };
 
@@ -343,6 +344,7 @@ static void close_action ( gchar *cmd, gchar *name, void *widget,
 
 static ModuleActionHandlerV1 close_handler = {
   .name = "Close",
+  .flags = MODULE_ACT_WIDGET_ADDRESS | MODULE_ACT_ADDRESS_ONLY,
   .function = (ModuleActionFunc)close_action
 };
 
@@ -355,6 +357,7 @@ static void minimize_action ( gchar *cmd, gchar *name, void *widget,
 
 static ModuleActionHandlerV1 minimize_handler = {
   .name = "Minimize",
+  .flags = MODULE_ACT_WIDGET_ADDRESS | MODULE_ACT_ADDRESS_ONLY,
   .function = (ModuleActionFunc)minimize_action
 };
 
@@ -367,6 +370,7 @@ static void maximize_action ( gchar *cmd, gchar *name, void *widget,
 
 static ModuleActionHandlerV1 maximize_handler = {
   .name = "Maximize",
+  .flags = MODULE_ACT_WIDGET_ADDRESS | MODULE_ACT_ADDRESS_ONLY,
   .function = (ModuleActionFunc)maximize_action
 };
 
@@ -379,6 +383,7 @@ static void unminimize_action ( gchar *cmd, gchar *name, void *widget,
 
 static ModuleActionHandlerV1 unminimize_handler = {
   .name = "UnMinimize",
+  .flags = MODULE_ACT_WIDGET_ADDRESS | MODULE_ACT_ADDRESS_ONLY,
   .function = (ModuleActionFunc)unminimize_action
 };
 
@@ -391,6 +396,7 @@ static void unmaximize_action ( gchar *cmd, gchar *name, void *widget,
 
 static ModuleActionHandlerV1 unmaximize_handler = {
   .name = "UnMaximize",
+  .flags = MODULE_ACT_WIDGET_ADDRESS | MODULE_ACT_ADDRESS_ONLY,
   .function = (ModuleActionFunc)unmaximize_action
 };
 

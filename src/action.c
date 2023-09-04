@@ -72,6 +72,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
   guint16 state;
   GList *children, *iter;
   action_t *caction;
+  ExprCache *addr;
 
   if(!action)
     return;
@@ -80,10 +81,16 @@ void action_exec ( GtkWidget *widget, action_t *action,
   if(!ahandler)
     return;
 
-  expr_cache_eval(action->addr);
-  if(action->addr->cache && ahandler->flags & MODULE_ACT_WIDGET_ADDRESS )
+  if(ahandler->flags & MODULE_ACT_ADDRESS_ONLY)
+    addr = action->command;
+  else
+    addr = action->addr;
+  expr_cache_eval(addr);
+  if(addr->cache && ahandler->flags & MODULE_ACT_WIDGET_ADDRESS )
   {
-    widget = base_widget_from_id(action->addr->cache);
+    widget = base_widget_from_id(addr->cache);
+    if(IS_TASKBAR_ITEM(widget))
+      win = flow_item_get_parent(widget);
     event = NULL;
     istate = NULL;
   }
@@ -102,21 +109,20 @@ void action_exec ( GtkWidget *widget, action_t *action,
   if((~state & action->ncond) != action->ncond)
     return;
 
-  if( !(ahandler->flags & MODULE_ACT_CMD_BY_DEF) )
+  if( !(ahandler->flags & MODULE_ACT_CMD_BY_DEF) &&
+   !(ahandler->flags & MODULE_ACT_ADDRESS_ONLY) )
   {
     action->command->widget = widget;
-    if(IS_TASKBAR_ITEM(widget))
-      win = flow_item_get_parent(widget);
     action->command->event = event;
     expr_cache_eval(action->command);
     action->command->widget = NULL;
     action->command->event = NULL;
   }
 
-  g_debug("action: %s '%s', '%s', widget=%p, win=%d", ahandler->name,
-      action->addr->cache,action->command->cache,widget,
-      win?GPOINTER_TO_INT(win->uid):0);
-  g_debug("action: '%s','%s'",action->addr->definition,action->command->definition);
+  g_debug("action: %s '%s', '%s', widget=%p, win=%d from '%s', '%s'",
+      ahandler->name, action->addr->cache,action->command->cache,widget,
+      win?GPOINTER_TO_INT(win->uid):0, action->addr->definition,
+      action->command->definition);
 
   if(action->cond & WS_CHILDREN &&
       GTK_IS_CONTAINER(base_widget_get_child(widget)))

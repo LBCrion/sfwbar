@@ -38,7 +38,8 @@ enum ModuleFlags {
 
 enum ModuleActionFlags {
   MODULE_ACT_WIDGET_ADDRESS = 1,
-  MODULE_ACT_CMD_BY_DEF     = 2
+  MODULE_ACT_CMD_BY_DEF     = 2,
+  MODULE_ACT_ADDRESS_ONLY   = 4
 };
 
 #define MODULE_TRIGGER_EMIT(x) \
