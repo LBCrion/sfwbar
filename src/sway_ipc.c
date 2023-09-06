@@ -538,6 +538,11 @@ static void sway_ipc_set_workspace ( workspace_t *ws )
   sway_ipc_command("workspace '%s'",ws->name);
 }
 
+static gint sway_ipc_comp_workspace ( gpointer name, gpointer id )
+{
+  return pager_workspace_id_from_name(name) - id;
+}
+
 static struct wintree_api sway_wintree_api = {
   .minimize = sway_ipc_minimize,
   .unminimize = sway_ipc_unminimize,
@@ -546,6 +551,7 @@ static struct wintree_api sway_wintree_api = {
   .close = sway_ipc_close,
   .focus = sway_ipc_focus,
   .free_workspace = g_free,
+  .comp_workspace = sway_ipc_comp_workspace,
 };
 
 static guint sway_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,

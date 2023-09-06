@@ -30,6 +30,13 @@ void wintree_unmaximize ( gpointer id ) { api_call(unmaximize) }
 void wintree_focus ( gpointer id ) { api_call(focus) }
 void wintree_close ( gpointer id ) { api_call(close) }
 void wintree_free_workspace ( gpointer id ) { api_call(free_workspace) }
+gint wintree_comp_workspace ( gpointer id1, gpointer id2 )
+{
+  if(api.comp_workspace)
+    return api.comp_workspace(id1, id2);
+  else
+    return id1 - id2;
+}
 
 void wintree_api_register ( struct wintree_api *new )
 {
