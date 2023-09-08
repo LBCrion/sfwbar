@@ -481,6 +481,12 @@ ClientSend <string>, <string>
   input for execClient clients or written into a socket for socketClient's.
   The first parameter is the client id, the second is the string to send.
 
+SwitcherEvent <string>
+  trigger a switcher event, this action will bring up the switcher window and
+  cycle the focus either forward or back based on the argument. The string
+  argument can be either "foward" or "back". If the argument is omitted, the
+  focus will cycle forward.
+
 SetMonitor [<bar_name>,]<string>
   move bar to a given monitor. Bar_name string specifies a bar to move.
   monitor name can be prefixed by "static:", i.e. "static:eDP-1", if this
