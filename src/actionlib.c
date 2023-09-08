@@ -9,6 +9,7 @@
 #include "action.h"
 #include "menu.h"
 #include "sway_ipc.h"
+#include "switcher.h"
 #include "module.h"
 #include "popup.h"
 #include "client.h"
@@ -418,6 +419,19 @@ static ModuleActionHandlerV1 eval_handler = {
   .function = (ModuleActionFunc)eval_action
 };
 
+static void switcher_action ( gchar *cmd, gchar *name, void *widget,
+    void *event, window_t *win, guint16 *state )
+{
+  if(!cmd || g_strcasecmp(cmd,"forward"))
+    switcher_event(NULL);
+  if(cmd && g_strcasecmp(cmd,"back"))
+    switcher_event((void *)1);
+}
+
+static ModuleActionHandlerV1 switcher_handler = {
+  .name = "SwitcherEvent",
+  .function = (ModuleActionFunc)switcher_action
+};
 
 ModuleActionHandlerV1 *action_handlers[] = {
   &exec_handler,
@@ -451,6 +465,7 @@ ModuleActionHandlerV1 *action_handlers[] = {
   &unminimize_handler,
   &unmaximize_handler,
   &eval_handler,
+  &switcher_handler,
   NULL
 };
 

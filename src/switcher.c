@@ -95,6 +95,11 @@ void switcher_populate ( void )
     switcher_window_init(iter->data);
 }
 
+gboolean switcher_is_focused ( gpointer uid )
+{
+  return focus?uid==focus->uid:FALSE;
+}
+
 gboolean switcher_check ( GtkWidget *switcher, window_t *win )
 {
   switch(switcher_get_filter(switcher))
@@ -111,24 +116,27 @@ gboolean switcher_check ( GtkWidget *switcher, window_t *win )
   return !wintree_is_filtered(win);
 }
 
-gboolean switcher_event ( gpointer data )
+gboolean switcher_event ( gpointer dir )
 {
   GList *iter, *list = NULL, *flink = NULL;
 
+  if(counter<1 || !focus)
+    focus = wintree_from_id(wintree_get_focus());
   counter = interval;
+
   for (iter = wintree_get_list(); iter; iter = g_list_next(iter) )
-    if(switcher_check(grid,iter->data))
+    if(switcher_check(grid, iter->data))
       list = g_list_prepend(list, iter->data);
   list = g_list_reverse(list);
-  for (iter = list; iter; iter = g_list_next(iter) )
-    if ( wintree_is_focused(((window_t *)iter->data)->uid) )
-      flink = g_list_next(iter)?g_list_next(iter):list;
+
+  flink = g_list_find(list, focus);
+  if(!dir)
+    flink = g_list_next(flink)?g_list_next(flink):list;
+  else
+    flink = g_list_previous(flink)?g_list_previous(flink):g_list_last(list);
 
   if(flink)
-  {
     focus = flink->data;
-    wintree_set_focus(focus->uid);
-  }
 
   g_list_free(list);
 

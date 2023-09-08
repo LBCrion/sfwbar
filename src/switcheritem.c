@@ -43,7 +43,7 @@ void switcher_item_update ( GtkWidget *self )
   if(priv->icon)
     scale_image_set_image(priv->icon,priv->win->appid,NULL);
 
-  if ( wintree_is_focused(((window_t *)flow_item_get_parent(self))->uid) )
+  if ( switcher_is_focused(((window_t *)flow_item_get_parent(self))->uid) )
     gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "switcher_active");
   else
     gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "switcher_normal");
@@ -87,7 +87,11 @@ static gint switcher_item_compare ( GtkWidget *a, GtkWidget *b,
 
   p1 = switcher_item_get_instance_private(SWITCHER_ITEM(a));
   p2 = switcher_item_get_instance_private(SWITCHER_ITEM(b));
-  return wintree_compare(p1->win,p2->win);
+
+  if(g_list_find(g_list_find(wintree_get_list(), p1->win), p2->win))
+    return -1;
+  else
+    return 1;
 }
 
 static void switcher_item_class_init ( SwitcherItemClass *kclass )

@@ -91,16 +91,23 @@ gint wintree_compare ( window_t *a, window_t *b)
 
 void wintree_set_focus ( gpointer id )
 {
-  window_t *win;
+  GList *iter;
 
   if(wt_focus == id)
     return;
   wintree_commit(wintree_from_id(wt_focus));
   wt_focus = id;
-  win = wintree_from_id(id);
-  if(!win)
+  for(iter=wt_list; iter; iter=g_list_next(iter) )
+    if (((window_t *)(iter->data))->uid == id)
+      break;
+  if(!iter)
     return;
-  wintree_commit(win);
+  wt_list = g_list_remove_link(wt_list, iter);
+  if(wt_list)
+    wt_list->prev = iter;
+  iter->next = wt_list;
+  wt_list = iter;
+  wintree_commit(wt_list->data);
   g_idle_add((GSourceFunc)base_widget_emit_trigger, "window_focus");
 }
 
@@ -238,7 +245,6 @@ void wintree_window_delete ( gpointer id )
 
 GList *wintree_get_list ( void )
 {
-  wt_list = g_list_sort(wt_list, (GCompareFunc)wintree_compare);
   return wt_list;
 }
 
