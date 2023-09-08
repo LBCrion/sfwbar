@@ -145,7 +145,7 @@ static void signal_handler ( gint sig )
 {
   static gchar trigger[256];
 
-  g_snprintf(trigger,255,"sigrtmin-%d",sig-SIGRTMIN);
+  g_snprintf(trigger,255,"sigrtmin+%d",sig-SIGRTMIN);
   g_idle_add((GSourceFunc)base_widget_emit_trigger, trigger);
 }
 
