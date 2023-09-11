@@ -37,7 +37,7 @@ def main():
     fchan = open(dfile)
     for dline in fchan.readlines():
       try:
-        (tag, value) = dline.strip().split('=')
+        (tag, value) = dline.strip().split('=',1)
         if tag.strip() == 'Name' and not de_name: # Grab first name
           de_name = value.strip()
         if tag.strip() == 'Icon':
