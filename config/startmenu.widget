@@ -29,6 +29,13 @@ def main():
   dirlist = os.environ.get('XDG_DATA_DIRS')
   if not dirlist:
     dirlist = '/usr/share'
+  dhome = os.environ.get('XDG_DATA_HOME')
+  if not dhome:
+    dhome = os.environ.get('HOME')
+    if dhome:
+      dhome = dhome + '/.local/share'
+  if dhome:
+    dirlist = dirlist + ':' + dhome
   dlist = []
   for dir in dirlist.split(':'):
     dlist = dlist + sorted(glob.glob(dir + '/applications/*.desktop'))
@@ -53,7 +60,9 @@ def main():
     fchan.close()
     if (de_name != '') and (de_exec != '') and (de_disp.lower() != 'true'):
       de_cat = map_category ( catmap, de_cat )
-      de_exec = de_exec.split(' ')[0]
+      de_exec = de_exec.replace(' %f','').replace(' %F','').replace(' %u','')
+      de_exec = de_exec.replace(' %U','').replace(' %c',' '+de_name)
+      de_exec = de_exec.replace(' %k',' '+dfile).replace(' %i',' '+de_icon)
       if not (de_cat in cats):
         cats.append(de_cat)
         print ('MenuClear(\\'Menugen_' + de_cat + '\\')')
