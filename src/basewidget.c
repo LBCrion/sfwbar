@@ -573,7 +573,7 @@ gint64 base_widget_get_next_poll ( GtkWidget *self )
   g_return_val_if_fail(IS_BASE_WIDGET(self),G_MAXINT64);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  if(priv->trigger)
+  if(priv->trigger || !priv->interval)
     return G_MAXINT64;
 
   if(!priv->value->eval && !priv->style->eval)
