@@ -4,6 +4,7 @@
  */
 
 #include "../config.h"
+#include "../sfwbar.h"
 #include "../bar.h"
 #include "../button.h"
 #include "../scale.h"
@@ -16,7 +17,7 @@
 #include "../popup.h"
 #include "../tray.h"
 
-void config_widget ( GScanner *scanner, GtkWidget *widget );
+void config_widget (GScanner *scanner, GtkWidget *widget, GtkWidget *parent);
 
 GdkRectangle config_get_loc ( GScanner *scanner )
 {
@@ -362,7 +363,7 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
 
 gboolean config_widget_child ( GScanner *scanner, GtkWidget *parent )
 {
-  GtkWidget *widget;
+  GtkWidget *widget, *old;
 
   if(!IS_GRID(parent))
     return FALSE;
@@ -402,32 +403,40 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *parent )
     default:
       return FALSE;
   }
-  scanner->max_parse_errors=FALSE;
-  config_widget(scanner,widget);
-  grid_attach(parent,widget);
+  scanner->max_parse_errors = FALSE;
+
+  if(g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
+  {
+    g_scanner_get_next_token(scanner);
+    old = base_widget_from_id(scanner->value.v_string);
+    if(old && gtk_widget_get_parent(gtk_widget_get_parent(old)) == parent)
+    {
+      gtk_widget_destroy(widget);
+      widget = old;
+    }
+    else
+      base_widget_set_id(widget, g_strdup(scanner->value.v_string));
+  }
+
+  config_widget(scanner, widget, parent);
+  if(!gtk_widget_get_parent(widget))
+    grid_attach(parent, widget);
+  css_widget_cascade(widget, NULL);
 
   return TRUE;
 }
 
-void config_widget ( GScanner *scanner, GtkWidget *widget )
+void config_widget ( GScanner *scanner, GtkWidget *widget, GtkWidget *parent )
 {
-  gboolean curly = FALSE;
-  gchar *id = NULL;
-
-  config_parse_sequence(scanner,
-      SEQ_OPT,G_TOKEN_STRING,NULL,&id,NULL,
-      SEQ_OPT,'{',NULL,&curly,NULL,
-      SEQ_END);
-  base_widget_set_id(widget,id);
-
-  if(curly)
+  if(g_scanner_peek_next_token(scanner) == '{')
   {
+    g_scanner_get_next_token(scanner);
     while ( (gint)g_scanner_get_next_token ( scanner ) != '}' &&
         (gint)scanner->token != G_TOKEN_EOF )
     {
-      if(!config_widget_property(scanner,widget))
-        if(!config_widget_child(scanner,widget))
-          g_scanner_error(scanner,"Invalid property in a widget declaration");
+      if(!config_widget_property(scanner,widget) &&
+          !config_widget_child(scanner,widget))
+        g_scanner_error(scanner,"Invalid property in a widget declaration");
     }
     if(scanner->token != '}')
       g_scanner_error(scanner,"Missing '}' at the end of widget properties");
@@ -460,7 +469,7 @@ void config_layout ( GScanner *scanner, GtkWidget **widget, gboolean toplevel )
       layout = bar_grid_from_name(NULL);
   }
 
-  config_widget(scanner,layout);
+  config_widget(scanner, layout, gtk_widget_get_parent(layout));
 }
 
 void config_popup ( GScanner *scanner )
@@ -475,5 +484,5 @@ void config_popup ( GScanner *scanner )
   g_scanner_get_next_token(scanner);
   win = popup_new(scanner->value.v_string);
   grid = gtk_bin_get_child(GTK_BIN(win));
-  config_widget(scanner,grid);
+  config_widget(scanner, grid, win);
 }
