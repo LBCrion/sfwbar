@@ -9,10 +9,6 @@
 
 G_DEFINE_TYPE_WITH_CODE (Label, label, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Label));
 
-static void label_destroy ( GtkWidget *self )
-{
-}
-
 static void label_update_value ( GtkWidget *self )
 {
   LabelPrivate *priv;
@@ -46,7 +42,6 @@ static GtkWidget *label_mirror ( GtkWidget *src )
 }
 static void label_class_init ( LabelClass *kclass )
 {
-  GTK_WIDGET_CLASS(kclass)->destroy = label_destroy;
   BASE_WIDGET_CLASS(kclass)->update_value = label_update_value;
   BASE_WIDGET_CLASS(kclass)->get_child = label_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = label_mirror;

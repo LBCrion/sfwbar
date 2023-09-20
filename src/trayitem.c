@@ -11,10 +11,6 @@
 
 G_DEFINE_TYPE_WITH_CODE (TrayItem, tray_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (TrayItem));
 
-static void tray_item_destroy ( GtkWidget *self )
-{
-}
-
 void tray_item_update ( GtkWidget *self )
 {
   TrayItemPrivate *priv;
@@ -202,7 +198,6 @@ static void tray_item_invalidate ( GtkWidget *self )
 
 static void tray_item_class_init ( TrayItemClass *kclass )
 {
-  GTK_WIDGET_CLASS(kclass)->destroy = tray_item_destroy;
   BASE_WIDGET_CLASS(kclass)->action_exec = tray_item_action_exec;
   FLOW_ITEM_CLASS(kclass)->update = tray_item_update;
   FLOW_ITEM_CLASS(kclass)->compare = tray_item_compare;

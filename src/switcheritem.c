@@ -12,10 +12,6 @@
 
 G_DEFINE_TYPE_WITH_CODE (SwitcherItem, switcher_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (SwitcherItem));
 
-static void switcher_item_destroy ( GtkWidget *self )
-{
-}
-
 static gboolean switcher_item_check ( GtkWidget *self )
 {
   SwitcherItemPrivate *priv;
@@ -96,7 +92,6 @@ static gint switcher_item_compare ( GtkWidget *a, GtkWidget *b,
 
 static void switcher_item_class_init ( SwitcherItemClass *kclass )
 {
-  GTK_WIDGET_CLASS(kclass)->destroy = switcher_item_destroy;
   FLOW_ITEM_CLASS(kclass)->update = switcher_item_update;
   FLOW_ITEM_CLASS(kclass)->compare = switcher_item_compare;
   FLOW_ITEM_CLASS(kclass)->invalidate = switcher_item_invalidate;

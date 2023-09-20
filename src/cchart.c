@@ -8,10 +8,6 @@
 
 G_DEFINE_TYPE_WITH_CODE (CChart, cchart, BASE_WIDGET_TYPE, G_ADD_PRIVATE (CChart));
 
-static void cchart_destroy ( GtkWidget *self )
-{
-}
-
 static void cchart_update_value ( GtkWidget *self )
 {
   CChartPrivate *priv;
@@ -50,7 +46,6 @@ static GtkWidget *cchart_mirror ( GtkWidget *src )
 
 static void cchart_class_init ( CChartClass *kclass )
 {
-  GTK_WIDGET_CLASS(kclass)->destroy = cchart_destroy;
   BASE_WIDGET_CLASS(kclass)->update_value = cchart_update_value;
   BASE_WIDGET_CLASS(kclass)->get_child = cchart_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = cchart_mirror;

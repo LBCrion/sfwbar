@@ -47,11 +47,6 @@ static gboolean taskbar_item_action_exec ( GtkWidget *self, gint slot,
   return TRUE;
 }
 
-static void taskbar_item_destroy ( GtkWidget *self )
-{
-  GTK_WIDGET_CLASS(taskbar_item_parent_class)->destroy(self);
-}
-
 window_t *taskbar_item_get_window ( GtkWidget *self )
 {
   TaskbarItemPrivate *priv;
@@ -161,7 +156,6 @@ static void taskbar_item_invalidate ( GtkWidget *self )
 
 static void taskbar_item_class_init ( TaskbarItemClass *kclass )
 {
-  GTK_WIDGET_CLASS(kclass)->destroy = taskbar_item_destroy;
   BASE_WIDGET_CLASS(kclass)->action_exec = taskbar_item_action_exec;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_item_update;
   FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_item_invalidate;

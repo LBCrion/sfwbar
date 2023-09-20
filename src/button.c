@@ -10,10 +10,6 @@
 
 G_DEFINE_TYPE_WITH_CODE (Button, button, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Button));
 
-static void button_destroy ( GtkWidget *self )
-{
-}
-
 static void button_update_value ( GtkWidget *self )
 {
   ButtonPrivate *priv;
@@ -48,7 +44,6 @@ static GtkWidget *button_mirror ( GtkWidget *src )
 
 static void button_class_init ( ButtonClass *kclass )
 {
-  GTK_WIDGET_CLASS(kclass)->destroy = button_destroy;
   BASE_WIDGET_CLASS(kclass)->update_value = button_update_value;
   BASE_WIDGET_CLASS(kclass)->get_child = button_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = button_mirror;

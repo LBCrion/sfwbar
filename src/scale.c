@@ -9,10 +9,6 @@
 
 G_DEFINE_TYPE_WITH_CODE (Scale, scale, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Scale));
 
-static void scale_destroy ( GtkWidget *self )
-{
-}
-
 static void scale_update_value ( GtkWidget *self )
 {
   ScalePrivate *priv;
@@ -67,7 +63,6 @@ static void scale_style_updated ( GtkWidget *widget, GtkWidget *self )
 
 static void scale_class_init ( ScaleClass *kclass )
 {
-  GTK_WIDGET_CLASS(kclass)->destroy = scale_destroy;
   BASE_WIDGET_CLASS(kclass)->update_value = scale_update_value;
   BASE_WIDGET_CLASS(kclass)->get_child = scale_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = scale_mirror;

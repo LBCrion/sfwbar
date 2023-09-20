@@ -10,10 +10,6 @@
 
 G_DEFINE_TYPE_WITH_CODE (Image, image, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Image));
 
-static void image_destroy ( GtkWidget *self )
-{
-}
-
 static void image_update_value ( GtkWidget *self )
 {
   ImagePrivate *priv;
@@ -49,7 +45,6 @@ static GtkWidget *image_mirror ( GtkWidget *src )
 
 static void image_class_init ( ImageClass *kclass )
 {
-  GTK_WIDGET_CLASS(kclass)->destroy = image_destroy;
   BASE_WIDGET_CLASS(kclass)->update_value = image_update_value;
   BASE_WIDGET_CLASS(kclass)->get_child = image_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = image_mirror;
