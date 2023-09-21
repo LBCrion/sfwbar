@@ -142,7 +142,7 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkEvent *ev )
       GTK_WINDOW(gtk_widget_get_ancestor(parent, GTK_TYPE_WINDOW)));
 
   gdk_window_set_transient_for(gpopup, gparent);
-  gdk_window_move_to_rect(gpopup, &rect,wanchor,panchor,
+  gdk_window_move_to_rect(gpopup, &rect, wanchor, panchor,
       GDK_ANCHOR_FLIP_X | GDK_ANCHOR_FLIP_Y,0,0);
   css_widget_cascade(popup,NULL);
 
@@ -169,6 +169,24 @@ void popup_trigger ( GtkWidget *parent, gchar *name, GdkEvent *ev )
     gtk_widget_hide(popup);
   else
     popup_show(parent, popup, ev);
+}
+
+void popup_size_allocate_cb ( GtkWidget *grid, GdkRectangle *alloc,
+    GtkWidget *win )
+{
+  GdkRectangle *saved;
+
+  if(!gtk_widget_is_visible(win))
+    return;
+  saved = g_object_get_data(G_OBJECT(win), "saved-alloc");
+  if(!saved)
+    return;
+  if(alloc->width == saved->width && alloc->height == saved->height)
+    return;
+  *saved = *alloc;
+  gtk_widget_hide(win);
+  gtk_widget_show(win);
+  g_message("size allocate %d %d", alloc->width, alloc->height);
 }
 
 void popup_set_autoclose ( GtkWidget *win, gboolean autoclose )
@@ -199,6 +217,8 @@ GtkWidget *popup_new ( gchar *name )
   g_signal_connect(grid, "button-release-event", G_CALLBACK(popup_button_cb),
       win);
   g_signal_connect(win,"window-state-event", G_CALLBACK(popup_state_cb),NULL);
+  g_object_set_data(G_OBJECT(win), "saved-alloc", g_malloc0(sizeof(GdkRectangle)));
+  g_signal_connect(grid, "size-allocate", G_CALLBACK(popup_size_allocate_cb), win);
 
   g_hash_table_insert(popup_list,g_strdup(name),win);
   return win;
