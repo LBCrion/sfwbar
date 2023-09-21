@@ -27,7 +27,7 @@ typedef struct _GridPrivate GridPrivate;
 struct _GridPrivate
 {
   GtkWidget *grid;
-  GtkWidget *last;
+  GList *last;
   GList *children;
   gint dir;
 };
