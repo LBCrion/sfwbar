@@ -15,6 +15,7 @@ static void grid_destroy ( GtkWidget *self )
 
   priv = grid_get_instance_private(GRID(self));
   g_list_free(g_steal_pointer(&priv->children));
+  g_list_free(g_steal_pointer(&priv->last));
   GTK_WIDGET_CLASS(grid_parent_class)->destroy(self);
 }
 
@@ -79,9 +80,21 @@ static void grid_style_updated ( GtkWidget *grid, GtkWidget *self )
   gtk_container_foreach(GTK_CONTAINER(priv->grid),
       (GtkCallback)grid_child_park,priv->grid);
 
+  g_list_free(g_steal_pointer(&priv->last));
   priv->last = NULL;
   for(iter=priv->children;iter;iter=g_list_next(iter))
+  {
     grid_attach(self,iter->data);
+    g_object_unref(iter->data);
+  }
+}
+
+static void grid_remove ( GtkWidget *grid, GtkWidget *child, GtkWidget *self )
+{
+  GridPrivate *priv;
+
+  priv = grid_get_instance_private(GRID(self));
+  priv->last = g_list_remove(priv->last, child);
 }
 
 static void grid_class_init ( GridClass *kclass )
@@ -89,7 +102,6 @@ static void grid_class_init ( GridClass *kclass )
   GTK_WIDGET_CLASS(kclass)->destroy = grid_destroy;
   BASE_WIDGET_CLASS(kclass)->get_child = grid_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = grid_mirror;
-  BASE_WIDGET_CLASS(kclass)->action_exec = NULL;
 }
 
 static void grid_init ( Grid *self )
@@ -108,8 +120,19 @@ GtkWidget *grid_new ( void )
   gtk_container_add(GTK_CONTAINER(self),priv->grid);
   g_signal_connect(G_OBJECT(priv->grid),"style_updated",
       (GCallback)grid_style_updated,self);
+  g_signal_connect(G_OBJECT(priv->grid),"remove",
+      (GCallback)grid_remove,self);
 
   return self;
+}
+
+static void grid_detach( GtkWidget *child, GtkWidget *self )
+{
+  GridPrivate *priv;
+
+  priv = grid_get_instance_private(GRID(self));
+  priv->children = g_list_remove(priv->children, child);
+  priv->last = g_list_remove(priv->last, child);
 }
 
 void grid_attach ( GtkWidget *self, GtkWidget *child )
@@ -119,9 +142,12 @@ void grid_attach ( GtkWidget *self, GtkWidget *child )
   g_return_if_fail(IS_GRID(self));
   priv = grid_get_instance_private(GRID(self));
 
-  if(!g_list_find(priv->children,child))
-    priv->children = g_list_append(priv->children,child);
+  base_widget_attach(priv->grid, child, priv->last?priv->last->data:NULL);
 
-  base_widget_attach(priv->grid,child,priv->last);
-  priv->last = child;
+  if(!g_list_find(priv->children,child))
+  {
+    priv->children = g_list_append(priv->children,child);
+    priv->last = g_list_prepend(priv->last, child);
+    g_signal_connect(G_OBJECT(child), "destroy", (GCallback)grid_detach, self);
+  }
 }
