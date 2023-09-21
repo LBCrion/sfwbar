@@ -422,15 +422,33 @@ static ModuleActionHandlerV1 eval_handler = {
 static void switcher_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
-  if(!cmd || g_strcasecmp(cmd,"forward"))
+  if(!cmd || !g_strcasecmp(cmd,"forward"))
     switcher_event(NULL);
-  if(cmd && g_strcasecmp(cmd,"back"))
+  if(cmd && !g_strcasecmp(cmd,"back"))
     switcher_event((void *)1);
 }
 
 static ModuleActionHandlerV1 switcher_handler = {
   .name = "SwitcherEvent",
   .function = (ModuleActionFunc)switcher_action
+};
+
+static void clear_widget_action ( gchar *cmd, gchar *name, void *widget,
+    void *event, window_t *win, guint16 *state )
+{
+  GtkWidget *w;
+
+  if(!cmd)
+    return;
+
+  w = base_widget_from_id(cmd);
+  if(w)
+    gtk_widget_destroy(w);
+}
+
+static ModuleActionHandlerV1 clear_widget_handler = {
+  .name = "ClearWidget",
+  .function = (ModuleActionFunc)clear_widget_action
 };
 
 ModuleActionHandlerV1 *action_handlers[] = {
@@ -466,6 +484,7 @@ ModuleActionHandlerV1 *action_handlers[] = {
   &unmaximize_handler,
   &eval_handler,
   &switcher_handler,
+  &clear_widget_handler,
   NULL
 };
 
