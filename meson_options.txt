@@ -1,4 +1,5 @@
 option('alsa',type:'feature',value:'auto',description:'ALSA module')
+option('bluez',type:'feature',value:'auto',description:'Bluez module')
 option('bsdctl',type:'feature',value:'disabled',description:'BSD sysctl module')
 option('idleinhibit',type:'feature',value:'auto',description:'Idle inhibit protocol support')
 option('network',type:'feature',value:'auto',description:'Network module')

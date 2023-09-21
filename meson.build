@@ -1,6 +1,7 @@
 project('sfwbar','c')
 gtk3 = dependency('gtk+-3.0')
 glib = dependency('glib-2.0')
+ggio = dependency('gio-2.0')
 gio_unix = dependency('gio-unix-2.0')
 gmod = dependency('gmodule-2.0')
 json  = dependency('json-c')
@@ -100,6 +101,13 @@ man_pages = [ 'doc/sfwbar.1' ]
 
 if get_option('network').enabled() or get_option('network').auto()
   library('network', sources: 'modules/network.c', dependencies: glib,
+      name_prefix: '', install: true,
+      install_dir: get_option('libdir') / 'sfwbar' )
+  man_pages += 'doc/sfwbar-network.1'
+endif
+
+if get_option('bluez').enabled() or get_option('bluez').auto()
+  library('bluez', sources: 'modules/bluez.c', dependencies: [glib, ggio], 
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   man_pages += 'doc/sfwbar-network.1'
