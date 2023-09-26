@@ -16,7 +16,7 @@ static GList *adapters;
 static GList *remove_queue;
 static GList *update_queue;
 static GDBusConnection *bz_con;
-static const gchar *bz_bus = "org.bluez";
+static const gchar *bz_serv = "org.bluez";
 
 typedef struct _bz_device {
   gchar *path;
@@ -96,7 +96,7 @@ static void bz_scan_stop_cb ( GDBusConnection *con, GAsyncResult *res,
 static gboolean bz_scan_stop ( BzAdapter *adapter )
 {
   g_message("bluez: scan off");
-  g_dbus_connection_call(bz_con, bz_bus, adapter->path,
+  g_dbus_connection_call(bz_con, bz_serv, adapter->path,
       adapter->iface, "StopDiscovery", NULL, NULL, G_DBUS_CALL_FLAGS_NONE,
       -1, NULL, (GAsyncReadyCallback)bz_scan_stop_cb, NULL);
   adapter->timeout_handle = 0;
@@ -129,7 +129,7 @@ static void bz_scan_filter_cb ( GDBusConnection *con, GAsyncResult *res,
   g_variant_unref(result);
 
   g_message("bluez: scan on");
-  g_dbus_connection_call(con, bz_bus, adapter->path,
+  g_dbus_connection_call(con, bz_serv, adapter->path,
       adapter->iface, "StartDiscovery", NULL, NULL, G_DBUS_CALL_FLAGS_NONE,
       -1, NULL, (GAsyncReadyCallback)bz_scan_cb, adapter);
 }
@@ -141,7 +141,7 @@ static void bz_scan ( GDBusConnection *con, guint timeout )
   GVariant *dict;
 
   adapter = bz_adapter_get();
-  if(!adapter)
+  if(!adapter || adapter->timeout_handle)
     return;
 
   builder = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
@@ -151,10 +151,111 @@ static void bz_scan ( GDBusConnection *con, guint timeout )
   g_variant_builder_unref(builder);
 
   adapter->scan_timeout = timeout;
-  g_dbus_connection_call(con, bz_bus, adapter->path,
+  g_dbus_connection_call(con, bz_serv, adapter->path,
       adapter->iface, "SetDiscoveryFilter", g_variant_new_tuple(&dict,1),
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
       (GAsyncReadyCallback)bz_scan_filter_cb, adapter);
+}
+
+
+static void bz_connect_cb ( GDBusConnection *con, GAsyncResult *res,
+    BzDevice *device)
+{
+  GVariant *result;
+
+  result = g_dbus_connection_call_finish(con, res, NULL);
+  if(!result)
+    return;
+
+  g_message("bluez: connected %s (%s)", device->addr, device->name);
+}
+
+static void bz_connect ( BzDevice *device )
+{
+  if(device->connected)
+    return;
+  g_message("bluez: attempting to connect %s (%s)", device->addr, device->name);
+  g_dbus_connection_call(bz_con, bz_serv, device->path,
+      "org.bluez.Device1", "Connect", NULL,
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
+      (GAsyncReadyCallback)bz_connect_cb, device);
+}
+
+static void bz_disconnect_cb ( GDBusConnection *con, GAsyncResult *res,
+    BzDevice *device)
+{
+  GVariant *result;
+
+  result = g_dbus_connection_call_finish(con, res, NULL);
+  if(!result)
+    return;
+
+  g_message("bluez: disconnected %s (%s)", device->addr, device->name);
+}
+
+static void bz_disconnect ( BzDevice *device )
+{
+  if(!device->connected)
+    return;
+  g_message("bluez: attempting to disconnect %s (%s)", device->addr, device->name);
+  g_dbus_connection_call(bz_con, bz_serv, device->path,
+      "org.bluez.Device1", "Disconnect", NULL,
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
+      (GAsyncReadyCallback)bz_disconnect_cb, device);
+}
+
+static void bz_pair_cb ( GDBusConnection *con, GAsyncResult *res,
+    BzDevice *device)
+{
+  GVariant *result;
+
+  result = g_dbus_connection_call_finish(con, res, NULL);
+  if(!result)
+    return;
+
+  g_message("bluez: paired %s (%s)", device->addr, device->name);
+  bz_connect(device);
+}
+
+static void bz_pair ( BzDevice *device )
+{
+  if(device->paired)
+  {
+    bz_connect(device);
+    return;
+  }
+  g_message("bluez: attempting to pair %s (%s)", device->addr, device->name);
+  g_dbus_connection_call(bz_con, bz_serv, device->path,
+      "org.bluez.Device1", "Pair", NULL,
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
+      (GAsyncReadyCallback)bz_pair_cb, device);
+}
+
+static void bz_remove_cb ( GDBusConnection *con, GAsyncResult *res,
+    BzDevice *device)
+{
+  GVariant *result;
+
+  result = g_dbus_connection_call_finish(con, res, NULL);
+  if(!result)
+    return;
+
+  g_message("bluez: unpaired %s (%s)", device->addr, device->name);
+}
+
+static void bz_remove ( BzDevice *device )
+{
+  BzAdapter *adapter;
+
+  adapter = bz_adapter_get();
+  if(!adapter)
+    return;
+
+  g_message("bluez: attempting to remove %s (%s)", device->addr, device->name);
+  g_dbus_connection_call(bz_con, bz_serv, adapter->path,
+      "org.bluez.Adapter1", "RemoveDevice", g_variant_new("(o)",device->path),
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
+      (GAsyncReadyCallback)bz_remove_cb, device);
 }
 
 static void bz_device_properties ( BzDevice *device, GVariantIter *piter )
@@ -267,7 +368,7 @@ static void bz_device_removed ( GDBusConnection *con, const gchar *sender,
   device = g_hash_table_lookup(devices, object);
   if(device)
   {
-    remove_queue = g_list_append(remove_queue, g_strdup(device->addr));
+    remove_queue = g_list_append(remove_queue, g_strdup(device->path));
     g_message("bluez: device removed: %d %d %s %s on %s",device->paired,
         device->connected, device->addr, device->name, device->path);
     g_hash_table_remove(devices, object);
@@ -316,13 +417,13 @@ static void bz_init_cb ( GDBusConnection *con, GAsyncResult *res, gpointer data 
     bz_object_handle(path, iiter);
   g_variant_unref(result);
 
-  g_dbus_connection_signal_subscribe(con, bz_bus,
+  g_dbus_connection_signal_subscribe(con, bz_serv,
       "org.freedesktop.DBus.ObjectManager", "InterfacesAdded", NULL, NULL,
       G_DBUS_SIGNAL_FLAGS_NONE, bz_device_new, NULL, NULL);
-  g_dbus_connection_signal_subscribe(con, bz_bus,
+  g_dbus_connection_signal_subscribe(con, bz_serv,
       "org.freedesktop.DBus.ObjectManager", "InterfacesRemoved", NULL, NULL,
       G_DBUS_SIGNAL_FLAGS_NONE, bz_device_removed, NULL, NULL);
-  g_dbus_connection_signal_subscribe(con, bz_bus,
+  g_dbus_connection_signal_subscribe(con, bz_serv,
       "org.freedesktop.DBus.Properties", "PropertiesChanged", NULL,
       "org.bluez.Device1",  G_DBUS_SIGNAL_FLAGS_NONE, bz_device_changed,
       NULL, NULL);
@@ -332,7 +433,7 @@ static void bz_init_cb ( GDBusConnection *con, GAsyncResult *res, gpointer data 
 static void bz_name_appeared_cb (GDBusConnection *con, const gchar *name,
     const gchar *owner, gpointer d)
 {
-  g_dbus_connection_call(con, bz_bus,"/",
+  g_dbus_connection_call(con, bz_serv,"/",
       "org.freedesktop.DBus.ObjectManager", "GetManagedObjects", NULL,
       G_VARIANT_TYPE("(a{oa{sa{sv}}})"), G_DBUS_CALL_FLAGS_NONE, -1, NULL,
       (GAsyncReadyCallback)bz_init_cb, NULL);
@@ -348,13 +449,10 @@ static void bz_name_disappeared_cb (GDBusConnection *con, const gchar *name,
 
 void sfwbar_module_init ( ModuleApiV1 *api )
 {
-  GDBusConnection *con;
-
   sfwbar_module_api = api;
-  con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
-  bz_con = con;
 
-  g_bus_watch_name(G_BUS_TYPE_SYSTEM, bz_bus, G_BUS_NAME_WATCHER_FLAGS_NONE,
+  bz_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
+  g_bus_watch_name(G_BUS_TYPE_SYSTEM, bz_serv, G_BUS_NAME_WATCHER_FLAGS_NONE,
       bz_name_appeared_cb, bz_name_disappeared_cb, NULL, NULL);
 }
 
@@ -374,11 +472,11 @@ static void *bz_expr_get ( void **params, void *widget, void *event )
       return g_strdup(device->addr?device->addr:"");
     if(!g_ascii_strcasecmp(params[0],"Icon"))
       return g_strdup(device->icon?device->icon:"");
-    if(!g_ascii_strcasecmp(params[0],"Icon"))
-      return g_strdup(device->icon?device->icon:"");
+    if(!g_ascii_strcasecmp(params[0],"Path"))
+      return g_strdup(device->path?device->path:"");
   }
 
-  if(remove_queue && !g_ascii_strcasecmp(params[0],"RemovedAddress"))
+  if(remove_queue && !g_ascii_strcasecmp(params[0],"RemovedPath"))
     return g_strdup(remove_queue->data);
 
   return g_strdup("");
@@ -440,6 +538,59 @@ static void bz_action_scan ( gchar *cmd, gchar *name, void *d1,
 {
   bz_scan(bz_con, 10000);
 }
+
+static void bz_action_connect ( gchar *cmd, gchar *name, void *d1,
+    void *d2, void *d3, void *d4 )
+{
+  BzDevice *device;
+
+  if(!devices)
+    return;
+
+  device = g_hash_table_lookup(devices, cmd);
+  if(device)
+    bz_connect(device);
+}
+
+static void bz_action_pair ( gchar *cmd, gchar *name, void *d1,
+    void *d2, void *d3, void *d4 )
+{
+  BzDevice *device;
+
+  if(!devices)
+    return;
+
+  device = g_hash_table_lookup(devices, cmd);
+  if(device)
+    bz_pair(device);
+}
+
+static void bz_action_disconnect ( gchar *cmd, gchar *name, void *d1,
+    void *d2, void *d3, void *d4 )
+{
+  BzDevice *device;
+
+  if(!devices)
+    return;
+
+  device = g_hash_table_lookup(devices, cmd);
+  if(device)
+    bz_disconnect(device);
+}
+
+static void bz_action_remove ( gchar *cmd, gchar *name, void *d1,
+    void *d2, void *d3, void *d4 )
+{
+  BzDevice *device;
+
+  if(!devices)
+    return;
+
+  device = g_hash_table_lookup(devices, cmd);
+  if(device)
+    bz_remove(device);
+}
+
 ModuleExpressionHandlerV1 get_handler = {
   .flags = 0,
   .name = "BluezGet",
@@ -475,9 +626,33 @@ ModuleActionHandlerV1 scan_handler = {
   .function = bz_action_scan
 };
 
+ModuleActionHandlerV1 connect_handler = {
+  .name = "BluezConnect",
+  .function = bz_action_connect
+};
+
+ModuleActionHandlerV1 pair_handler = {
+  .name = "BluezPair",
+  .function = bz_action_pair
+};
+
+ModuleActionHandlerV1 remove_handler = {
+  .name = "BluezRemove",
+  .function = bz_action_remove
+};
+
+ModuleActionHandlerV1 disconnect_handler = {
+  .name = "BluezDisconnect",
+  .function = bz_action_disconnect
+};
+
 ModuleActionHandlerV1 *sfwbar_action_handlers[] = {
   &ack_handler,
   &ack_removed_handler,
   &scan_handler,
+  &connect_handler,
+  &disconnect_handler,
+  &pair_handler,
+  &remove_handler,
   NULL
 };
