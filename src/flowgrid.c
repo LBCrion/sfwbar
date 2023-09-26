@@ -8,6 +8,7 @@
 #include "basewidget.h"
 #include "taskbargroup.h"
 #include "config.h"
+#include "window.h"
 #include "bar.h"
 
 G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, GTK_TYPE_GRID,
@@ -369,7 +370,7 @@ static void flow_grid_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
   g_signal_handlers_unblock_matched(widget, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,
       (GFunc)flow_grid_dnd_enter_cb,NULL);
   gtk_grab_add(widget);
-  bar_ref(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW), widget);
+  window_ref(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW), widget);
 }
 
 static void flow_grid_dnd_end_cb ( GtkWidget *widget, GdkDragContext *ctx,
@@ -378,7 +379,7 @@ static void flow_grid_dnd_end_cb ( GtkWidget *widget, GdkDragContext *ctx,
   g_signal_handlers_block_matched(widget, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,
       (GFunc)flow_grid_dnd_enter_cb,NULL);
   gtk_grab_remove(widget);
-  bar_unref(widget, gtk_widget_get_ancestor(data, GTK_TYPE_WINDOW));
+  window_unref(widget, gtk_widget_get_ancestor(data, GTK_TYPE_WINDOW));
 }
 
 static void flow_grid_dnd_data_get_cb ( GtkWidget *widget, GdkDragContext *ctx,

@@ -12,6 +12,7 @@
 #include "grid.h"
 #include "config.h"
 #include "taskbar.h"
+#include "window.h"
 
 G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW, G_ADD_PRIVATE (Bar));
 
@@ -39,7 +40,7 @@ static gboolean bar_sensor_hide ( GtkWidget *self )
   if(gtk_bin_get_child(GTK_BIN(self))==priv->sensor)
     return FALSE;
 
-  if(priv->sensor_refs)
+  if(window_ref_check(self))
     return TRUE;
   priv->sensor_block = TRUE;
   g_idle_add((GSourceFunc)bar_sensor_unblock_cb, self);
@@ -127,7 +128,6 @@ static void bar_destroy ( GtkWidget *self )
   g_clear_pointer(&priv->mirror_blocks,g_strfreev);
   g_clear_pointer(&priv->sensor,gtk_widget_destroy);
   g_clear_pointer(&priv->box,gtk_widget_destroy);
-  g_list_free(g_steal_pointer(&priv->sensor_refs));
   GTK_WIDGET_CLASS(bar_parent_class)->destroy(self);
 }
 
@@ -563,13 +563,24 @@ void bar_monitor_added_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 
 void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 {
+  BarPrivate *priv;
   GHashTableIter iter;
   void *key, *bar;
+  GList *liter;
   static char trigger[256];
 
   g_hash_table_iter_init(&iter,bar_list);
   while(g_hash_table_iter_next(&iter,&key,&bar))
+  {
+    priv = bar_get_instance_private(BAR(bar));
+    for(liter=priv->mirror_children; liter; liter=g_list_next(liter))
+      if(bar_get_monitor(liter->data) == gmon)
+      {
+        bar_destroy(liter->data);
+        break;
+      }
     bar_update_monitor(bar);
+  }
 
   g_snprintf(trigger,255,"%s_disconnected",
       (gchar *)g_object_get_data(G_OBJECT(gmon),"xdg_name"));
@@ -642,29 +653,6 @@ void bar_set_size ( GtkWidget *self, gchar *size )
   }
 
   g_list_foreach(priv->mirror_children,(GFunc)bar_set_size,size);
-}
-
-void bar_unref ( GtkWidget *child, GtkWidget *self )
-{
-  BarPrivate *priv;
-
-  g_return_if_fail(IS_BAR(self));
-  priv = bar_get_instance_private(BAR(self));
-
-  if(g_list_find(priv->sensor_refs,child))
-    priv->sensor_refs = g_list_remove(priv->sensor_refs,child);
-}
-
-void bar_ref ( GtkWidget *self, GtkWidget *child )
-{
-  BarPrivate *priv;
-
-  g_return_if_fail(IS_BAR(self));
-  priv = bar_get_instance_private(BAR(self));
-
-  if(!g_list_find(priv->sensor_refs,child))
-    priv->sensor_refs = g_list_prepend(priv->sensor_refs,child);
-  g_signal_connect(G_OBJECT(child),"unmap",G_CALLBACK(bar_unref),self);
 }
 
 void bar_sensor_cancel_hide( GtkWidget *self )

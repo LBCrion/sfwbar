@@ -5,7 +5,7 @@
 
 #include "sfwbar.h"
 #include "menu.h"
-#include "bar.h"
+#include "window.h"
 #include "taskbargroup.h"
 #include "scaleimage.h"
 #include "popup.h"
@@ -108,8 +108,7 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
   popup_get_gravity(widget,&wanchor,&manchor);
   gtk_widget_show_all(menu);
   gtk_menu_popup_at_widget(GTK_MENU(menu),widget,wanchor,manchor,event);
-  if(gtk_window_get_window_type(GTK_WINDOW(window)) == GTK_WINDOW_TOPLEVEL)
-    bar_ref(window,menu);
+  window_ref(window,menu);
 }
 
 gboolean menu_action_cb ( GtkWidget *w ,action_t *action )

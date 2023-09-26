@@ -4,6 +4,7 @@
  */
 
 #include <gtk/gtk.h>
+#include "window.h"
 #include "grid.h"
 #include "config.h"
 #include "basewidget.h"
@@ -38,6 +39,8 @@ void popup_get_gravity ( GtkWidget *widget, GdkGravity *wanchor,
 
 static void popup_popdown ( GtkWidget * widget )
 {
+  if(window_ref_check(widget))
+    return;
   gtk_grab_remove(gtk_bin_get_child(GTK_BIN(widget)));
   gtk_widget_hide(widget);
 }
@@ -128,7 +131,7 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkEvent *ev )
   rect.width = gdk_window_get_width(gparent);
   rect.height = gdk_window_get_height(gparent);
   popup_get_gravity(parent,&wanchor,&panchor);
-  bar_ref(gtk_widget_get_ancestor(parent,GTK_TYPE_WINDOW),popup);
+  window_ref(gtk_widget_get_ancestor(parent,GTK_TYPE_WINDOW),popup);
   g_object_set_data(G_OBJECT(popup), "parent_window",
       gtk_widget_get_ancestor(parent, GTK_TYPE_WINDOW));
 
@@ -166,7 +169,7 @@ void popup_trigger ( GtkWidget *parent, gchar *name, GdkEvent *ev )
     return;
 
   if(gtk_widget_get_visible(popup))
-    gtk_widget_hide(popup);
+    popup_popdown(popup);
   else
     popup_show(parent, popup, ev);
 }
@@ -178,6 +181,8 @@ void popup_size_allocate_cb ( GtkWidget *grid, GdkRectangle *alloc,
 
   if(!gtk_widget_is_visible(win))
     return;
+  if(window_ref_check(win))
+    return;
   saved = g_object_get_data(G_OBJECT(win), "saved-alloc");
   if(!saved)
     return;
@@ -186,7 +191,6 @@ void popup_size_allocate_cb ( GtkWidget *grid, GdkRectangle *alloc,
   *saved = *alloc;
   gtk_widget_hide(win);
   gtk_widget_show(win);
-  g_message("size allocate %d %d", alloc->width, alloc->height);
 }
 
 void popup_set_autoclose ( GtkWidget *win, gboolean autoclose )
