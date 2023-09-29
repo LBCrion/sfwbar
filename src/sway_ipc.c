@@ -128,6 +128,7 @@ static void sway_minimized_set ( struct json_object *obj, const gchar *parent,
   else
   {
     win->state &= ~WS_MINIMIZED;
+    g_clear_pointer(&win->workspace, g_free);
     win->workspace = g_strdup(parent);
   }
 
