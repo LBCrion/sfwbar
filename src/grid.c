@@ -81,7 +81,6 @@ static void grid_style_updated ( GtkWidget *grid, GtkWidget *self )
       (GtkCallback)grid_child_park,priv->grid);
 
   g_list_free(g_steal_pointer(&priv->last));
-  priv->last = NULL;
   for(iter=priv->children;iter;iter=g_list_next(iter))
   {
     grid_attach(self,iter->data);

@@ -424,7 +424,6 @@ void base_widget_set_id ( GtkWidget *self, gchar *id )
   BaseWidgetPrivate *priv;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
-
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(!base_widget_id_map)
