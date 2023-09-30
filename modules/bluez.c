@@ -617,10 +617,9 @@ static void bz_action_connect ( gchar *cmd, gchar *name, void *d1,
     return;
 
   device = g_hash_table_lookup(devices, cmd);
-  if(device->connected)
+  if(!device || device->connected)
     return;
-  if(device)
-    bz_connect(device);
+  bz_connect(device);
 }
 
 static void bz_action_pair ( gchar *cmd, gchar *name, void *d1,
