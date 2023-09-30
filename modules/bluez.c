@@ -24,6 +24,7 @@ typedef struct _bz_device {
   gchar *name;
   gchar *icon;
   gboolean paired;
+  gboolean trusted;
   gboolean connected;
 } BzDevice;
 
@@ -59,6 +60,7 @@ static void bz_device_free ( BzDevice *device )
   g_free(device->addr);
   g_free(device->name);
   g_free(device->icon);
+  g_free(device);
 }
 
 static BzDevice *bz_device_dup ( BzDevice *src )
@@ -71,6 +73,7 @@ static BzDevice *bz_device_dup ( BzDevice *src )
   dest->name = g_strdup(src->name);
   dest->icon = g_strdup(src->icon);
   dest->paired = src->paired;
+  dest->trusted = src->trusted;
   dest->connected = src->connected;
 
   return dest;
@@ -88,6 +91,7 @@ static void bz_scan_stop_cb ( GDBusConnection *con, GAsyncResult *res,
 {
   GVariant *result;
 
+  MODULE_TRIGGER_EMIT("bluez_scan_complete");
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(result)
     g_variant_unref(result);
@@ -95,7 +99,7 @@ static void bz_scan_stop_cb ( GDBusConnection *con, GAsyncResult *res,
 
 static gboolean bz_scan_stop ( BzAdapter *adapter )
 {
-  g_message("bluez: scan off");
+  g_debug("bluez: scan off");
   g_dbus_connection_call(bz_con, bz_serv, adapter->path,
       adapter->iface, "StopDiscovery", NULL, NULL, G_DBUS_CALL_FLAGS_NONE,
       -1, NULL, (GAsyncReadyCallback)bz_scan_stop_cb, NULL);
@@ -110,7 +114,10 @@ static void bz_scan_cb ( GDBusConnection *con, GAsyncResult *res,
 
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(!result)
+  {
+    MODULE_TRIGGER_EMIT("bluez_scan_complete");
     return;
+  }
   g_variant_unref(result);
 
   if(adapter->scan_timeout)
@@ -125,13 +132,16 @@ static void bz_scan_filter_cb ( GDBusConnection *con, GAsyncResult *res,
 
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(!result)
+  {
+    MODULE_TRIGGER_EMIT("bluez_scan_complete");
     return;
-  g_variant_unref(result);
+  }
 
-  g_message("bluez: scan on");
+  g_debug("bluez: scan on");
   g_dbus_connection_call(con, bz_serv, adapter->path,
       adapter->iface, "StartDiscovery", NULL, NULL, G_DBUS_CALL_FLAGS_NONE,
       -1, NULL, (GAsyncReadyCallback)bz_scan_cb, adapter);
+  g_variant_unref(result);
 }
 
 static void bz_scan ( GDBusConnection *con, guint timeout )
@@ -144,6 +154,7 @@ static void bz_scan ( GDBusConnection *con, guint timeout )
   if(!adapter || adapter->timeout_handle)
     return;
 
+  MODULE_TRIGGER_EMIT("bluez_scan");
   builder = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
   g_variant_builder_add(builder, "{sv}", "Transport",
       g_variant_new_string("bredr"));
@@ -167,14 +178,13 @@ static void bz_connect_cb ( GDBusConnection *con, GAsyncResult *res,
   if(!result)
     return;
 
-  g_message("bluez: connected %s (%s)", device->addr, device->name);
+  g_debug("bluez: connected %s (%s)", device->addr, device->name);
+  g_variant_unref(result);
 }
 
 static void bz_connect ( BzDevice *device )
 {
-  if(device->connected)
-    return;
-  g_message("bluez: attempting to connect %s (%s)", device->addr, device->name);
+  g_debug("bluez: attempting to connect %s (%s)", device->addr, device->name);
   g_dbus_connection_call(bz_con, bz_serv, device->path,
       "org.bluez.Device1", "Connect", NULL,
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
@@ -190,18 +200,49 @@ static void bz_disconnect_cb ( GDBusConnection *con, GAsyncResult *res,
   if(!result)
     return;
 
-  g_message("bluez: disconnected %s (%s)", device->addr, device->name);
+  g_debug("bluez: disconnected %s (%s)", device->addr, device->name);
+  g_variant_unref(result);
 }
 
 static void bz_disconnect ( BzDevice *device )
 {
   if(!device->connected)
     return;
-  g_message("bluez: attempting to disconnect %s (%s)", device->addr, device->name);
+  g_debug("bluez: attempting to disconnect %s (%s)", device->addr, device->name);
   g_dbus_connection_call(bz_con, bz_serv, device->path,
       "org.bluez.Device1", "Disconnect", NULL,
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
       (GAsyncReadyCallback)bz_disconnect_cb, device);
+}
+
+static void bz_trust_cb ( GDBusConnection *con, GAsyncResult *res,
+    BzDevice *device)
+{
+  GVariant *result;
+
+  result = g_dbus_connection_call_finish(con, res, NULL);
+  if(!result)
+    return;
+
+  g_debug("bluez: trusted %s (%s)", device->addr, device->name);
+  bz_connect(device);
+  g_variant_unref(result);
+}
+
+static void bz_trust ( BzDevice *device )
+{
+  if(device->trusted)
+  {
+    bz_connect(device);
+    return;
+  }
+
+  g_debug("bluez: attempting to trust %s (%s)", device->addr, device->name);
+  g_dbus_connection_call(bz_con, bz_serv, device->path,
+      "org.freedesktop.DBus.Properties", "Set", g_variant_new("(ssv)",
+        "org.bluez.Device1","Trusted",g_variant_new_boolean(TRUE)),
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
+      (GAsyncReadyCallback)bz_trust_cb, device);
 }
 
 static void bz_pair_cb ( GDBusConnection *con, GAsyncResult *res,
@@ -213,18 +254,19 @@ static void bz_pair_cb ( GDBusConnection *con, GAsyncResult *res,
   if(!result)
     return;
 
-  g_message("bluez: paired %s (%s)", device->addr, device->name);
-  bz_connect(device);
+  g_debug("bluez: paired %s (%s)", device->addr, device->name);
+  bz_trust(device);
+  g_variant_unref(result);
 }
 
 static void bz_pair ( BzDevice *device )
 {
   if(device->paired)
   {
-    bz_connect(device);
+    bz_trust(device);
     return;
   }
-  g_message("bluez: attempting to pair %s (%s)", device->addr, device->name);
+  g_debug("bluez: attempting to pair %s (%s)", device->addr, device->name);
   g_dbus_connection_call(bz_con, bz_serv, device->path,
       "org.bluez.Device1", "Pair", NULL,
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
@@ -232,15 +274,17 @@ static void bz_pair ( BzDevice *device )
 }
 
 static void bz_remove_cb ( GDBusConnection *con, GAsyncResult *res,
-    BzDevice *device)
+    gchar *name)
 {
   GVariant *result;
 
   result = g_dbus_connection_call_finish(con, res, NULL);
-  if(!result)
-    return;
-
-  g_message("bluez: unpaired %s (%s)", device->addr, device->name);
+  if(result)
+  {
+    g_debug("bluez: removed %s", name);
+    g_variant_unref(result);
+  }
+  g_free(name);
 }
 
 static void bz_remove ( BzDevice *device )
@@ -251,40 +295,64 @@ static void bz_remove ( BzDevice *device )
   if(!adapter)
     return;
 
-  g_message("bluez: attempting to remove %s (%s)", device->addr, device->name);
+  g_debug("bluez: attempting to remove %s (%s)", device->addr, device->name);
   g_dbus_connection_call(bz_con, bz_serv, adapter->path,
       "org.bluez.Adapter1", "RemoveDevice", g_variant_new("(o)",device->path),
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
-      (GAsyncReadyCallback)bz_remove_cb, device);
+      (GAsyncReadyCallback)bz_remove_cb, g_strdup(device->name));
 }
 
-static void bz_device_properties ( BzDevice *device, GVariantIter *piter )
+static gboolean bz_device_property_string ( gchar **prop, GVariant *val )
 {
+  gchar *result;
+
+  g_variant_get(val, "s", &result);
+  if(!g_strcmp0(*prop, result))
+  {
+    g_free(result);
+    return FALSE;
+  }
+  g_clear_pointer(prop, g_free);
+  *prop = result;
+  return TRUE;
+}
+
+static gboolean bz_device_properties ( BzDevice *device, GVariantIter *piter )
+{
+  gboolean changed = FALSE;
   gchar *prop;
   GVariant *val;
 
   while(g_variant_iter_next(piter, "{&sv}", &prop, &val))
   {
-    if(!g_strcmp0(prop,"Name"))
+    if(!g_strcmp0(prop, "Name"))
+      changed |= bz_device_property_string(&device->name, val);
+    else if(!g_strcmp0(prop, "Icon"))
+      changed |= bz_device_property_string(&device->icon, val);
+    else if(!g_strcmp0(prop, "Address"))
+      changed |= bz_device_property_string(&device->addr, val);
+    else if(!g_strcmp0(prop, "Paired") &&
+        device->paired != g_variant_get_boolean(val))
     {
-      g_clear_pointer(&device->name, g_free);
-      g_variant_get(val, "s", &device->name);
-    }
-    if(!g_strcmp0(prop,"Icon"))
-    {
-      g_clear_pointer(&device->icon, g_free);
-      g_variant_get(val, "s", &device->icon);
-    }
-    if(!g_strcmp0(prop,"Address"))
-    {
-      g_clear_pointer(&device->addr, g_free);
-      g_variant_get(val, "s", &device->addr);
-    }
-    if(!g_strcmp0(prop,"Paired"))
       device->paired = g_variant_get_boolean(val);
-    if(!g_strcmp0(prop,"Connected"))
+      changed = TRUE;
+    }
+    else if(!g_strcmp0(prop, "Trusted") &&
+        device->trusted != g_variant_get_boolean(val))
+    {
+      device->trusted = g_variant_get_boolean(val);
+      changed = TRUE;
+    }
+    else if(!g_strcmp0(prop, "Connected") &&
+        device->connected != g_variant_get_boolean(val))
+    {
       device->connected = g_variant_get_boolean(val);
+      changed = TRUE;
+    }
+    g_variant_unref(val);
   }
+
+  return changed;
 }
 
 static void bz_device_handle ( gchar *path, gchar *iface, GVariantIter *piter )
@@ -308,7 +376,7 @@ static void bz_device_handle ( gchar *path, gchar *iface, GVariantIter *piter )
   update_queue = g_list_append(update_queue, bz_device_dup(device));
     MODULE_TRIGGER_EMIT("bluez_updated");
 
-  g_message("bluez device added: %d %d %s %s on %s",device->paired,
+  g_debug("bluez: device added: %d %d %s %s on %s",device->paired,
       device->connected, device->addr, device->name, device->path);
 }
 
@@ -369,7 +437,7 @@ static void bz_device_removed ( GDBusConnection *con, const gchar *sender,
   if(device)
   {
     remove_queue = g_list_append(remove_queue, g_strdup(device->path));
-    g_message("bluez: device removed: %d %d %s %s on %s",device->paired,
+    g_debug("bluez: device removed: %d %d %s %s on %s",device->paired,
         device->connected, device->addr, device->name, device->path);
     g_hash_table_remove(devices, object);
     if(!remove_queue->next)
@@ -391,19 +459,20 @@ static void bz_device_changed ( GDBusConnection *con, const gchar *sender,
     return;
 
   g_variant_get(params,"(&sa{sv}@as)", NULL, &piter, NULL);
-  bz_device_properties(device, piter);
-
-  update_queue = g_list_append(update_queue, bz_device_dup(device));
-  g_message("bluez device changed: %d %d %s %s on %s",device->paired,
-      device->connected, device->addr, device->name, device->path);
-
-  if(!g_list_next(update_queue))
-    MODULE_TRIGGER_EMIT("bluez_updated");
+  if(bz_device_properties(device, piter))
+  {
+    g_debug("bluez: device changed: %d %d %s %s on %s",device->paired,
+        device->connected, device->addr, device->name, device->path);
+    update_queue = g_list_append(update_queue, bz_device_dup(device));
+    if(!g_list_next(update_queue))
+      MODULE_TRIGGER_EMIT("bluez_updated");
+  }
+  g_variant_iter_free(piter);
 }
 
 static void bz_init_cb ( GDBusConnection *con, GAsyncResult *res, gpointer data )
 {
-  GVariant *result;
+  GVariant *result, *child;
   GVariantIter miter, *iiter;
   gchar *path;
 
@@ -411,10 +480,11 @@ static void bz_init_cb ( GDBusConnection *con, GAsyncResult *res, gpointer data 
   if(!result)
     return;
 
-  result = g_variant_get_child_value(result, 0);
-  g_variant_iter_init(&miter, result);
+  child = g_variant_get_child_value(result, 0);
+  g_variant_iter_init(&miter, child);
   while(g_variant_iter_next(&miter, "{&oa{sa{sv}}}", &path, &iiter))
     bz_object_handle(path, iiter);
+  g_variant_unref(child);
   g_variant_unref(result);
 
   g_dbus_connection_signal_subscribe(con, bz_serv,
@@ -427,7 +497,6 @@ static void bz_init_cb ( GDBusConnection *con, GAsyncResult *res, gpointer data 
       "org.freedesktop.DBus.Properties", "PropertiesChanged", NULL,
       "org.bluez.Device1",  G_DBUS_SIGNAL_FLAGS_NONE, bz_device_changed,
       NULL, NULL);
-  bz_scan(con, 10000);
 }
 
 static void bz_name_appeared_cb (GDBusConnection *con, const gchar *name,
@@ -514,7 +583,7 @@ static void bz_action_ack ( gchar *cmd, gchar *name, void *d1,
   update_queue = g_list_remove(update_queue, device);
   bz_device_free(device);
 
-  g_message("bluez: ack processed, queue: %d", !!update_queue);
+  g_debug("bluez: ack processed, queue: %d", !!update_queue);
   if(update_queue)
     MODULE_TRIGGER_EMIT("bluez_updated");
 }
@@ -548,6 +617,8 @@ static void bz_action_connect ( gchar *cmd, gchar *name, void *d1,
     return;
 
   device = g_hash_table_lookup(devices, cmd);
+  if(device->connected)
+    return;
   if(device)
     bz_connect(device);
 }
