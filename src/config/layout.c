@@ -17,7 +17,7 @@
 #include "../popup.h"
 #include "../tray.h"
 
-void config_widget (GScanner *scanner, GtkWidget *widget, GtkWidget *parent);
+void config_widget (GScanner *scanner, GtkWidget *widget);
 
 GdkRectangle config_get_loc ( GScanner *scanner )
 {
@@ -361,44 +361,55 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
   return FALSE;
 }
 
+GtkWidget *config_widget_new ( gint type, GScanner *scanner )
+{
+  switch(type)
+  {
+    case G_TOKEN_GRID:
+      return grid_new();
+    case G_TOKEN_LABEL:
+      return label_new();
+    case G_TOKEN_IMAGE:
+      return image_new();
+    case G_TOKEN_BUTTON:
+      return button_new();
+    case G_TOKEN_SCALE:
+      return scale_new();
+    case G_TOKEN_CHART:
+      return cchart_new();
+    case G_TOKEN_INCLUDE:
+      return config_include( scanner, FALSE );
+    case G_TOKEN_TASKBAR:
+      return taskbar_new(TRUE);
+    case G_TOKEN_PAGER:
+      return pager_new();
+    case G_TOKEN_TRAY:
+      return tray_new();
+  }
+  return NULL;
+}
+
 gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
 {
-  GtkWidget *widget, *old, *parent;
+  GtkWidget *widget, *parent;
+  gint type;
 
   if(!IS_GRID(container))
     return FALSE;
 
-  switch ((gint)scanner->token)
+  type = scanner->token;
+  switch (type)
   {
     case G_TOKEN_GRID:
-      widget = grid_new();
-      break;
     case G_TOKEN_LABEL:
-      widget = label_new();
-      break;
     case G_TOKEN_IMAGE:
-      widget = image_new();
-      break;
     case G_TOKEN_BUTTON:
-      widget = button_new();
-      break;
     case G_TOKEN_SCALE:
-      widget = scale_new();
-      break;
     case G_TOKEN_CHART:
-      widget = cchart_new();
-      break;
     case G_TOKEN_INCLUDE:
-      widget = config_include( scanner, FALSE );
-      break;
     case G_TOKEN_TASKBAR:
-      widget = taskbar_new(TRUE);
-      break;
     case G_TOKEN_PAGER:
-      widget = pager_new();
-      break;
     case G_TOKEN_TRAY:
-      widget = tray_new();
       break;
     default:
       return FALSE;
@@ -408,19 +419,19 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
   if(g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
   {
     g_scanner_get_next_token(scanner);
-    old = base_widget_from_id(scanner->value.v_string);
-    parent = old?gtk_widget_get_parent(old):NULL;
+    widget = base_widget_from_id(scanner->value.v_string);
+    parent = widget?gtk_widget_get_parent(widget):NULL;
     parent = parent?gtk_widget_get_parent(parent):NULL;
-    if(old && parent == container)
+    if(!widget || parent != container)
     {
-      gtk_widget_destroy(widget);
-      widget = old;
-    }
-    else
+      widget = config_widget_new(type, scanner);
       base_widget_set_id(widget, g_strdup(scanner->value.v_string));
+    }
   }
+  else
+    widget = config_widget_new(type, scanner);
 
-  config_widget(scanner, widget, container);
+  config_widget(scanner, widget);
   if(!gtk_widget_get_parent(widget))
     grid_attach(container, widget);
   css_widget_cascade(widget, NULL);
@@ -428,7 +439,7 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
   return TRUE;
 }
 
-void config_widget ( GScanner *scanner, GtkWidget *widget, GtkWidget *parent )
+void config_widget ( GScanner *scanner, GtkWidget *widget )
 {
   if(g_scanner_peek_next_token(scanner) == '{')
   {
@@ -471,7 +482,7 @@ void config_layout ( GScanner *scanner, GtkWidget **widget, gboolean toplevel )
       layout = bar_grid_from_name(NULL);
   }
 
-  config_widget(scanner, layout, gtk_widget_get_parent(layout));
+  config_widget(scanner, layout);
 }
 
 void config_popup ( GScanner *scanner )
@@ -486,5 +497,5 @@ void config_popup ( GScanner *scanner )
   g_scanner_get_next_token(scanner);
   win = popup_new(scanner->value.v_string);
   grid = gtk_bin_get_child(GTK_BIN(win));
-  config_widget(scanner, grid, win);
+  config_widget(scanner, grid);
 }
