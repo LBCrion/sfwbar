@@ -1,0 +1,186 @@
+module("bluez")
+
+TriggerAction "bluez_updated", Function "XBluezUpdate"
+TriggerAction "bluez_removed", Function "XBluezRemove"
+TriggerAction "bluez_scan", SetValue "XBluezScanButton", "Scanning ..."
+TriggerAction "bluez_scan_complete", SetValue "XBluezScanButton", "Scan"
+
+define XBluezID = BluezGet("Path") + "_grid" +
+  If(BluezState("Paired"), "paired", "avail")
+
+Menu("XBluezItemMenu") {
+  item("Connect", BluezConnect Extract(WidgetId(),"(.*)_grid") );
+  item("Disconnect", BluezDisConnect Extract(WidgetId(),"(.*)_grid") );
+  item("Pair", BluezPair Extract(WidgetId(),"(.*)_grid") );
+  item("Remove", BluezRemove Extract(WidgetId(),"(.*)_grid") );
+}
+
+Function("XBluezUpdate") {
+  ClearWidget BluezGet("Path") + "_grid" +
+    If(BluezState("Paired"), "avail", "paired")
+  Config "PopUp 'XBluezWindow' {" +
+    " grid 'XBluezFrame' { grid 'XBluezGrid" +
+        If(BluezState("Paired"),"Paired","Avail") + "' {" +
+      "grid '" + XBluezID + "' {" +
+        "style = 'XBluezGrid'" +
+        "action = BluezPair Extract(WidgetId(),'(.*)_grid') " +
+        "action[3] = Menu 'XBluezItemMenu' " +
+        "image '" + BluezGet("Path") + "_icon' {" +
+          "value = '" + BluezGet("Icon") + "' " +
+          "style = 'XBluezIcon'" +
+          "interval = 0 " +
+          "loc(0,0,1,2)" +
+        "} " +
+        "label '" + BluezGet("Path") + "_label' {" +
+          "value = \"" + BluezGet("Name") + "\"" +
+          "style = 'XBluezName'" +
+          "interval = 0 " +
+          "loc(1,0,1,1)" +
+        "} " +
+        "label '" + BluezGet("Path") +"_address' {" +
+          "value = '" + BluezGet("Address") + "'" +
+          "style = 'XBluezAddress' " +
+          "interval = 0 " +
+          "loc(1,1,1,1)" +
+        "} } } } }"
+  BluezAck
+}
+
+Function("XBluezRemove") {
+  ClearWidget BluezGet("RemovedPath") + "_gridavail"
+  ClearWidget BluezGet("RemovedPath") + "_gridpaired"
+#  ClearWidget BluezGet("RemovedPath") + "_label"
+#  ClearWidget BluezGet("RemovedPath") + "_address"
+#  ClearWidget BluezGet("RemovedPath") + "_icon"
+  BluezAckRemoved
+}
+
+Function("XBluezPopUp") {
+  BluezScan
+  PopUp "XBluezWindow"
+}
+
+Function("XBluezPopDown") {
+  PopUp "XBluezWindow"
+}
+
+Function("XBluezPop") {
+  [!UserState] Function "XBluezPopUp"
+  [UserState] Function "XBluezPopDown"
+  [!UserState] UserState "on"
+  [UserState] UserState "off"
+}
+
+PopUp "XBluezWindow" {
+  style = "XBluezPopup"
+  grid "XBluezFrame" {
+    label {
+      value = "Bluetooth"
+      style = "XBluezHeader"
+    }
+    style = "XBluezFrame"
+    label {
+      value = "Paired devices"
+      style = "XBluezSeparator"
+    }
+    grid "XBluezGridPaired" {
+      style = "XBluezSection"
+    }
+    label {
+      value = "Available devices"
+      style = "XBluezSeparator"
+    }
+    grid "XBluezGridAvail" {
+      style = "XBluezSection"
+    }
+    label "XBluezScanButton" {
+      value = "Scan"
+      style = "XBluezScan"
+      action = BluezScan
+    }
+  }
+}
+
+layout {
+  style = If(BluezState("Running"),"module","hidden")
+  trigger = "bluez_running"
+  button "XBluezWidget" {
+    style = "module"
+    value = "bluetooth-symbolic"
+    action = Function "XBluezPop"
+  }
+}
+
+#CSS
+
+window#XBluezWindow {
+  background: rgba(0,0,0,0);
+  -GtkWidget-direction: right;
+  padding: 5px;
+}
+
+grid#XBluezPopup {
+  -GtkWidget-hexpand: true;
+  min-width: 200px;
+  min-height: 300px;
+  margin: 5px;
+  border-radius: 10px;
+  border: 1px solid @borders;
+  padding: 10px;
+  background-color: @theme_bg_color;
+}
+
+grid#XBluezFrame {
+  -GtkWidget-direction: bottom;
+  -GtkWidget-vexpand: true;
+  -GtkWidget-hexpand: true;
+}
+
+grid#XBluezSection {
+  -GtkWidget-hexpand: true;
+  -GtkWidget-direction: bottom;
+}
+
+grid#XBluezGrid {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+image#XBluezIcon {
+  min-height: 32px;
+  min-width: 32px;
+  padding-right: 3px;
+}
+
+label#XBluezHeader {
+  font-size: 20px;
+  padding-bottom: 5px;
+  -GtkWidget-hexpand: true;
+}
+
+label#XBluezName {
+  -GtkWidget-halign: start;
+}
+
+label#XBluezAddress {
+  font-size: 10px;
+  -GtkWidget-halign: start;
+  -GtkWidget-hexpand: true;
+}
+
+label#XBluezScan {
+  -GtkWidget-vexpand: true;
+  -GtkWidget-hexpand: true;
+  -GtkWidget-valign: end;
+  -GtkLabel-align: 0.5;
+  border-top: dashed 1px @border;
+  padding-top: 3px;
+}
+
+label#XBluezSeparator {
+  padding-top: 3px;
+  font-size: 10px;
+  -GtkWidget-align: 0.0;
+  -GtkWidget-hexpand: true;
+  border-bottom: dashed 1px @border;
+}
