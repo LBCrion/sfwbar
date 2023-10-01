@@ -111,7 +111,7 @@ if get_option('bluez').enabled() or get_option('bluez').auto()
   library('bluez', sources: 'modules/bluez.c', dependencies: [glib, ggio], 
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-  man_pages += 'doc/sfwbar-network.1'
+  man_pages += 'doc/sfwbar-bluez.1'
 endif
 
 if puls.found() and pulg.found()
@@ -132,7 +132,7 @@ if alsa.found()
   library('alsactl', sources: 'modules/alsactl.c', dependencies: [glib, alsa],
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-#  man_pages += 'doc/sfwbar-alsa.1'
+  man_pages += 'doc/sfwbar-alsa.1'
 endif
 
 if xkbr.found()
