@@ -955,19 +955,6 @@ T}	T{
 Check if an identifier exists either as a variable or a function
 T}
 _
-T{
-\fBGtkEvent\fP
-T}	T{
-Get the location of an event trigger the action. This function is
-only applicable in action command expressions where an action is
-called as a result of button click. The function returns location
-of the click within the widget. The value is returned as percentage
-of the widget width or height. Acceptable arguments are \(dqX\(dq,\(dqY\(dq and
-\(dqDir\(dq. X and Y select an axis for which to return the event
-location, Dir returns the event location along the widget direction
-property.
-T}
-_
 .TE
 .sp
 The string operations are:
@@ -1032,12 +1019,6 @@ Convert a string to lower case
 T}
 _
 T{
-\fBIf\fP
-T}	T{
-conditional: If(condition,expr1,expr2)
-T}
-_
-T{
 \fBLookup\fP
 T}	T{
 lookup a numeric value within a list of tuplets, the function call
@@ -1058,13 +1039,6 @@ corresponding String, if none of the Match strings match, the
 function will return DefaultString.
 T}
 _
-T{
-\fBCached\fP
-T}	T{
-get last value from a variable without updating it:
-Cached(identifier)
-T}
-_
 .TE
 .sp
 In addition the following query functions are supported
@@ -1079,26 +1053,46 @@ Description
 T}
 _
 T{
-Time
+\fBTime\fP
 T}	T{
-get current time as a string, the first optional argument specifies
-the format, the second argument specifies a timezone. Return a
-string
+get current time as a string, the first optional argument
+specifies the format, the second argument specifies a timezone.
+Return a string
 T}
 _
 T{
-Disk
+\fBDisk\fP
 T}	T{
 get disk utilization data. You need to specify a mount point as a
 first argument and data field as a second. The supported data
-fields are \(dqtotal\(dq, \(dqavail\(dq, \(dqfree\(dq, \(dq%avail\(dq, \(dq%free\(dq or \(dq%used\(dq.
-Returns a number.
+fields are \(dqtotal\(dq, \(dqavail\(dq, \(dqfree\(dq, \(dq%avail\(dq, \(dq%free\(dq or
+\(dq%used\(dq.  Returns a number.
 T}
 _
 T{
-ActiveWin
+\fBActiveWin\fP
 T}	T{
 get the title of currently focused window. Returns a string.
+T}
+_
+T{
+\fBGtkEvent\fP
+T}	T{
+Get the location of an event that triggered the action. This
+function is only applicable in action command expressions where
+an action is called as a result of button click. The function
+returns location of the click within the widget. The value is
+returned as percentage of the widget width or height. Acceptable
+arguments are \(dqX\(dq,\(dqY\(dq and \(dqDir\(dq. X and Y select an axis for which
+to return the event location, Dir returns the event location
+along the widget direction property.
+T}
+_
+T{
+\fBWidgetID\fP
+T}	T{
+Obtain an ID of the current widget (i.e. a widget in respect to
+which the expression is being evaluated.
 T}
 _
 .TE

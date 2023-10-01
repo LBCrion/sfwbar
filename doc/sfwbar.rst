@@ -729,14 +729,6 @@ Operation    Description
 ``Cached``   get last value from a variable without updating it:
              Cached(identifier)
 ``Ident``    Check if an identifier exists either as a variable or a function
-``GtkEvent`` Get the location of an event trigger the action. This function is
-             only applicable in action command expressions where an action is
-             called as a result of button click. The function returns location
-             of the click within the widget. The value is returned as percentage
-             of the widget width or height. Acceptable arguments are "X","Y" and
-             "Dir". X and Y select an axis for which to return the event
-             location, Dir returns the event location along the widget direction
-             property.
 ============ ====================================================================
 
 The string operations are:
@@ -759,7 +751,6 @@ Operation    Description
              string parameter specifies the character to pad the string with.
 ``Upper``    Convert a string to upper case
 ``Lower``    Convert a string to lower case
-``If``       conditional: If(condition,expr1,expr2)
 ``Lookup``   lookup a numeric value within a list of tuplets, the function call
              is ``Lookup(Value, Threshold1, String1, ..., DefaultString)``. The
              function checks value against a thresholds and returns a String
@@ -771,24 +762,32 @@ Operation    Description
              match Value against all Match strings and will return a
              corresponding String, if none of the Match strings match, the
              function will return DefaultString.
-``Cached``   get last value from a variable without updating it:
-             Cached(identifier)
 ============ ===================================================================
 
 In addition the following query functions are supported
 
-=========== ==================================================================
-Function    Description
-=========== ==================================================================
-Time        get current time as a string, the first optional argument specifies
-            the format, the second argument specifies a timezone. Return a
-            string
-Disk        get disk utilization data. You need to specify a mount point as a
-            first argument and data field as a second. The supported data
-            fields are "total", "avail", "free", "%avail", "%free" or "%used".
-            Returns a number.
-ActiveWin   get the title of currently focused window. Returns a string.
-=========== ==================================================================
+============= =================================================================
+Function      Description
+============= =================================================================
+``Time``      get current time as a string, the first optional argument
+              specifies the format, the second argument specifies a timezone.
+              Return a string
+``Disk``      get disk utilization data. You need to specify a mount point as a
+              first argument and data field as a second. The supported data
+              fields are "total", "avail", "free", "%avail", "%free" or
+              "%used".  Returns a number.
+``ActiveWin``  get the title of currently focused window. Returns a string.
+``GtkEvent``  Get the location of an event that triggered the action. This
+              function is only applicable in action command expressions where
+              an action is called as a result of button click. The function
+              returns location of the click within the widget. The value is
+              returned as percentage of the widget width or height. Acceptable
+              arguments are "X","Y" and "Dir". X and Y select an axis for which
+              to return the event location, Dir returns the event location
+              along the widget direction property.
+``WidgetID``  Obtain an ID of the current widget (i.e. a widget in respect to
+              which the expression is being evaluated.
+============= =================================================================
 
 Each numeric variable contains four values
 
