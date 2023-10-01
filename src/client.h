@@ -14,6 +14,7 @@ struct _Client {
   void *data;
   gboolean (*connect) ( Client * );
   GIOStatus (*respond) ( Client * );
+  GIOStatus (*consume) ( Client *, gsize *size );
 };
 
 void client_exec ( ScanFile *file );

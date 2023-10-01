@@ -41,8 +41,13 @@ gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 
   if( cond & G_IO_IN || cond & G_IO_PRI )
   {
-    g_list_foreach(client->file->vars,(GFunc)scanner_var_reset,NULL);
-    cstat = scanner_file_update( chan, client->file, &size );
+    if(client->consume)
+      cstat = client->consume(client, &size);
+    else
+    {
+      g_list_foreach(client->file->vars,(GFunc)scanner_var_reset,NULL);
+      cstat = scanner_file_update( chan, client->file, &size );
+    }
     if(cstat == G_IO_STATUS_ERROR || !size )
     {
       g_debug("client %s: read error, status = %d, size = %ld",
