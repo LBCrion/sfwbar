@@ -47,6 +47,8 @@ static void bz_adapter_free ( gchar *object )
     return;
   adapter = iter->data;
   adapters = g_list_remove(adapters, adapter);
+  if(!adapters)
+    MODULE_TRIGGER_EMIT("bluez_running");
   if(adapter->timeout_handle)
     g_source_remove(adapter->timeout_handle);
   g_free(adapter->path);
@@ -394,6 +396,8 @@ static void bz_adapter_handle ( gchar *object, gchar *iface )
   adapter->iface = g_strdup(iface);
 
   adapters = g_list_append(adapters, adapter);
+  if(adapters && !g_list_next(adapters))
+    MODULE_TRIGGER_EMIT("bluez_running");
 }
 
 static void bz_object_handle ( gchar *object, GVariantIter *iiter )
@@ -559,6 +563,13 @@ static void *bz_expr_state ( void **params, void *widget, void *event )
   result = g_malloc0(sizeof(gdouble));
   if(!params || !params[0])
     return result;
+
+  if(!g_ascii_strcasecmp(params[0],"Running"))
+  {
+    *result = !!adapters;
+    return result;
+  }
+
   if(!update_queue)
     return result;
 
