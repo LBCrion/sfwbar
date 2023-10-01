@@ -14,7 +14,7 @@ jobs:
       with:
         usesh: true
         prepare: |
-          pkg install -y curl meson ninja gtk3 wayland-protocols gtk-layer-shell wayland json-c libmpdclient pulseaudio libxkbcommon alsa-lib
+          pkg install -y curl meson ninja pkgconf gtk3 wayland-protocols gtk-layer-shell wayland json-c libmpdclient pulseaudio libxkbcommon alsa-lib
 
         run: |
           meson setup build --werror -Dpulse=enabled -Dmpd=enabled -Dnetwork=enabled -Dalsa=enabled -Dbluez=enabled -Dxkb=enabled -Didleinhibit=enabled -Dbsdctl=enabled
