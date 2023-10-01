@@ -32,4 +32,4 @@ jobs:
           sudo apt-get -y install libgtk-3-dev meson libgtk-layer-shell-dev libjson-c-dev libmpdclient-dev libpulse-dev bluez libbluetooth-dev libasound2-dev libxkbregistry-dev
           meson build --werror -Dpulse=enabled -Dmpd=enabled -Dnetwork=enabled
           ninja -C build
-          ninja -C build install
+          DESTDIR=./install ninja -C build install
