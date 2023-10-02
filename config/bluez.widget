@@ -35,7 +35,13 @@ Function("XBluezUpdate") {
           "value = \"" + BluezGet("Name") + "\"" +
           "style = 'XBluezName'" +
           "interval = 0 " +
-          "loc(1,0,1,1)" +
+          "loc(1,0,2,1)" +
+        "} " +
+        "label '" + BluezGet("Path") +"_status' {" +
+          "value = '" + If(BluezState("Connecting")," Connecting ...","") + "' " +
+          "style = 'XBluezStatus' " +
+          "interval = 0 " +
+          "loc(2,1,1,1)" +
         "} " +
         "label '" + BluezGet("Path") +"_address' {" +
           "value = '" + BluezGet("Address") + "'" +
@@ -139,6 +145,7 @@ grid#XBluezFrame {
 grid#XBluezSection {
   -GtkWidget-hexpand: true;
   -GtkWidget-direction: bottom;
+  min-height: 20px;
 }
 
 grid#XBluezGrid {
@@ -162,6 +169,7 @@ label#XBluezName {
   -GtkWidget-halign: start;
 }
 
+label#XBluezStatus,
 label#XBluezAddress {
   font-size: 10px;
   -GtkWidget-halign: start;

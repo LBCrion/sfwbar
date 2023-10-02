@@ -25,6 +25,7 @@ typedef struct _bz_device {
   gboolean paired;
   gboolean trusted;
   gboolean connected;
+  gboolean connecting;
 } BzDevice;
 
 typedef struct _bz_adapter {
@@ -78,8 +79,18 @@ static BzDevice *bz_device_dup ( BzDevice *src )
   dest->paired = src->paired;
   dest->trusted = src->trusted;
   dest->connected = src->connected;
+  dest->connecting = src->connecting;
 
   return dest;
+}
+
+static void bz_device_update ( BzDevice *device )
+{
+  g_mutex_lock(&update_mutex);
+  update_queue = g_list_append(update_queue, bz_device_dup(device));
+  g_mutex_unlock(&update_mutex);
+  if(!g_list_next(update_queue))
+    MODULE_TRIGGER_EMIT("bluez_updated");
 }
 
 static BzAdapter *bz_adapter_get ( void )
@@ -177,6 +188,8 @@ static void bz_connect_cb ( GDBusConnection *con, GAsyncResult *res,
 {
   GVariant *result;
 
+  device->connecting =  FALSE;
+  bz_device_update(device);
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(!result)
     return;
@@ -187,6 +200,11 @@ static void bz_connect_cb ( GDBusConnection *con, GAsyncResult *res,
 
 static void bz_connect ( BzDevice *device )
 {
+  if(!device->connecting)
+  {
+    device->connecting = TRUE;
+    bz_device_update(device);
+  }
   g_debug("bluez: attempting to connect %s (%s)", device->addr, device->name);
   g_dbus_connection_call(bz_con, bz_serv, device->path,
       "org.bluez.Device1", "Connect", NULL,
@@ -225,7 +243,11 @@ static void bz_trust_cb ( GDBusConnection *con, GAsyncResult *res,
 
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(!result)
+  {
+    device->connecting =  FALSE;
+    bz_device_update(device);
     return;
+  }
 
   g_debug("bluez: trusted %s (%s)", device->addr, device->name);
   bz_connect(device);
@@ -255,7 +277,11 @@ static void bz_pair_cb ( GDBusConnection *con, GAsyncResult *res,
 
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(!result)
+  {
+    device->connecting =  FALSE;
+    bz_device_update(device);
     return;
+  }
 
   g_debug("bluez: paired %s (%s)", device->addr, device->name);
   bz_trust(device);
@@ -264,11 +290,15 @@ static void bz_pair_cb ( GDBusConnection *con, GAsyncResult *res,
 
 static void bz_pair ( BzDevice *device )
 {
+  device->connecting =  TRUE;
+  bz_device_update(device);
+
   if(device->paired)
   {
     bz_trust(device);
     return;
   }
+
   g_debug("bluez: attempting to pair %s (%s)", device->addr, device->name);
   g_dbus_connection_call(bz_con, bz_serv, device->path,
       "org.bluez.Device1", "Pair", NULL,
@@ -303,6 +333,10 @@ static void bz_remove ( BzDevice *device )
       "org.bluez.Adapter1", "RemoveDevice", g_variant_new("(o)",device->path),
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
       (GAsyncReadyCallback)bz_remove_cb, g_strdup(device->name));
+  g_dbus_connection_call(bz_con, bz_serv, device->path,
+      "org.freedesktop.DBus.Properties", "Set", g_variant_new("(ssv)",
+        "org.bluez.Device1","Trusted",g_variant_new_boolean(FALSE)),
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
 }
 
 static gboolean bz_device_property_string ( gchar **prop, GVariant *val )
@@ -376,10 +410,7 @@ static void bz_device_handle ( gchar *path, gchar *iface, GVariantIter *piter )
   }
 
   bz_device_properties (device, piter);
-  g_mutex_lock(&update_mutex);
-  update_queue = g_list_append(update_queue, bz_device_dup(device));
-  g_mutex_unlock(&update_mutex);
-  MODULE_TRIGGER_EMIT("bluez_updated");
+  bz_device_update(device);
 
   g_debug("bluez: device added: %d %d %s %s on %s",device->paired,
       device->connected, device->addr, device->name, device->path);
@@ -474,11 +505,7 @@ static void bz_device_changed ( GDBusConnection *con, const gchar *sender,
   {
     g_debug("bluez: device changed: %d %d %s %s on %s",device->paired,
         device->connected, device->addr, device->name, device->path);
-    g_mutex_lock(&update_mutex);
-    update_queue = g_list_append(update_queue, bz_device_dup(device));
-    g_mutex_unlock(&update_mutex);
-    if(!g_list_next(update_queue))
-      MODULE_TRIGGER_EMIT("bluez_updated");
+    bz_device_update(device);
   }
   g_variant_iter_free(piter);
 }
@@ -587,6 +614,10 @@ static void *bz_expr_state ( void **params, void *widget, void *event )
     *result = device->paired;
   else if(!g_ascii_strcasecmp(params[0],"Connected"))
     *result = device->connected;
+  else if(!g_ascii_strcasecmp(params[0],"Connecting"))
+    *result = device->connecting;
+  else if(!g_ascii_strcasecmp(params[0],"Trusted"))
+    *result = device->trusted;
 
   return result;
 }
