@@ -43,7 +43,7 @@ Runtime dependencies:
 
 Compile instructions:
 ```no-highlight
-meson build
+meson setup build
 ninja -C build
 sudo ninja -C build install
 ```

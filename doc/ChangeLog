@@ -1,3 +1,10 @@
+1.0beta13
+  - Implement bluez module
+  - Add WidgetId() expression function, assign id's to all widgets
+  - Add Eval action
+  - Add SwitcherEvent action. Support backwards switching.
+  - Allow config to modify widgets. Implement ClearWidget action.
+
 1.0beta12
   - Implement mirroring of taskbar across multiple monitors
   - Show on hover taskbar support
