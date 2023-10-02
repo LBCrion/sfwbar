@@ -114,8 +114,8 @@ grid#XMpdPopup {
 image#mpd_icon {
   -GtkWidget-hexpand: false;
   -GtkWidget-vexpand: false;
-  min-width: 24px;
-  min-height: 24px;
+  min-width: 16px;
+  min-height: 16px;
   padding: 4px;
   color: @theme_fg_color;
 }
@@ -123,8 +123,8 @@ image#mpd_icon {
 image#mpd_icon_red {
   -GtkWidget-hexpand: false;
   -GtkWidget-vexpand: false;
-  min-width: 24px;
-  min-height: 24px;
+  min-width: 16px;
+  min-height: 16px;
   padding: 4px;
   color: red;
 }
