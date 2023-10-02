@@ -12,9 +12,8 @@ gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 1;
 
 static GHashTable *devices;
-static GList *adapters;
-static GList *remove_queue;
-static GList *update_queue;
+static GList *adapters, *remove_queue, *update_queue;
+static GMutex adapter_mutex, remove_mutex, update_mutex;
 static GDBusConnection *bz_con;
 static const gchar *bz_serv = "org.bluez";
 
@@ -46,7 +45,9 @@ static void bz_adapter_free ( gchar *object )
   if(!iter)
     return;
   adapter = iter->data;
+  g_mutex_lock(&adapter_mutex);
   adapters = g_list_remove(adapters, adapter);
+  g_mutex_unlock(&adapter_mutex);
   if(!adapters)
     MODULE_TRIGGER_EMIT("bluez_running");
   if(adapter->timeout_handle)
@@ -375,8 +376,10 @@ static void bz_device_handle ( gchar *path, gchar *iface, GVariantIter *piter )
   }
 
   bz_device_properties (device, piter);
+  g_mutex_lock(&update_mutex);
   update_queue = g_list_append(update_queue, bz_device_dup(device));
-    MODULE_TRIGGER_EMIT("bluez_updated");
+  g_mutex_unlock(&update_mutex);
+  MODULE_TRIGGER_EMIT("bluez_updated");
 
   g_debug("bluez: device added: %d %d %s %s on %s",device->paired,
       device->connected, device->addr, device->name, device->path);
@@ -395,7 +398,9 @@ static void bz_adapter_handle ( gchar *object, gchar *iface )
   adapter->path = g_strdup(object);
   adapter->iface = g_strdup(iface);
 
+  g_mutex_lock(&adapter_mutex);
   adapters = g_list_append(adapters, adapter);
+  g_mutex_unlock(&adapter_mutex);
   if(adapters && !g_list_next(adapters))
     MODULE_TRIGGER_EMIT("bluez_running");
 }
@@ -440,7 +445,9 @@ static void bz_device_removed ( GDBusConnection *con, const gchar *sender,
   device = g_hash_table_lookup(devices, object);
   if(device)
   {
+    g_mutex_lock(&remove_mutex);
     remove_queue = g_list_append(remove_queue, g_strdup(device->path));
+    g_mutex_unlock(&remove_mutex);
     g_debug("bluez: device removed: %d %d %s %s on %s",device->paired,
         device->connected, device->addr, device->name, device->path);
     g_hash_table_remove(devices, object);
@@ -467,7 +474,9 @@ static void bz_device_changed ( GDBusConnection *con, const gchar *sender,
   {
     g_debug("bluez: device changed: %d %d %s %s on %s",device->paired,
         device->connected, device->addr, device->name, device->path);
+    g_mutex_lock(&update_mutex);
     update_queue = g_list_append(update_queue, bz_device_dup(device));
+    g_mutex_unlock(&update_mutex);
     if(!g_list_next(update_queue))
       MODULE_TRIGGER_EMIT("bluez_updated");
   }
@@ -591,7 +600,9 @@ static void bz_action_ack ( gchar *cmd, gchar *name, void *d1,
     return;
 
   device = update_queue->data;
+  g_mutex_lock(&update_mutex);
   update_queue = g_list_remove(update_queue, device);
+  g_mutex_unlock(&update_mutex);
   bz_device_free(device);
 
   g_debug("bluez: ack processed, queue: %d", !!update_queue);
@@ -607,7 +618,9 @@ static void bz_action_ack_removed ( gchar *cmd, gchar *name, void *d1,
   if(!remove_queue)
     return;
   tmp = remove_queue->data;
+  g_mutex_lock(&remove_mutex);
   remove_queue = g_list_remove(remove_queue, tmp);
+  g_mutex_unlock(&remove_mutex);
   g_free(tmp);
   if(remove_queue)
     MODULE_TRIGGER_EMIT("bluez_removed");
