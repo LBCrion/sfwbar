@@ -44,6 +44,5 @@ GType taskbar_group_get_type ( void );
 
 GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar );
 void taskbar_group_pop_child ( GtkWidget *self, GtkWidget *child );
-GtkWidget *taskbar_group_get_taskbar ( GtkWidget *self );
 
 #endif

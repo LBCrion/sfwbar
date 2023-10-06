@@ -205,10 +205,23 @@ static void taskbar_group_invalidate ( GtkWidget *self )
   priv->invalid = TRUE;
 }
 
+static GtkWidget *taskbar_group_get_taskbar ( GtkWidget *self )
+{
+  TaskbarGroupPrivate *priv;
+
+  if(!self)
+    return NULL;
+
+  g_return_val_if_fail(IS_TASKBAR_GROUP(self), NULL);
+  priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
+  return priv->tgroup;
+}
+
 static void taskbar_group_class_init ( TaskbarGroupClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = taskbar_group_destroy;
   BASE_WIDGET_CLASS(kclass)->action_exec = taskbar_group_action_exec;
+  BASE_WIDGET_CLASS(kclass)->get_child = taskbar_group_get_taskbar;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_group_update;
   FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_group_invalidate;
   FLOW_ITEM_CLASS(kclass)->comp_parent = (GCompareFunc)g_strcmp0;
@@ -337,16 +350,4 @@ void taskbar_group_pop_child ( GtkWidget *popover, GtkWidget *child )
   taskbar_group_add_hold(popover, child);
   g_signal_connect(G_OBJECT(child), "unmap",
       G_CALLBACK(taskbar_group_child_cb), popover);
-}
-
-GtkWidget *taskbar_group_get_taskbar ( GtkWidget *self )
-{
-  TaskbarGroupPrivate *priv;
-
-  if(!self)
-    return NULL;
-
-  g_return_val_if_fail(IS_TASKBAR_GROUP(self), NULL);
-  priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
-  return priv->tgroup;
 }

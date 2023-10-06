@@ -113,14 +113,14 @@ gpointer taskbar_holder_new ( GtkWidget *self, window_t *win )
 
 GtkWidget *taskbar_holder_get ( GtkWidget *self, window_t *win, gboolean new )
 {
-  GtkWidget *taskbar;
+  GtkWidget *taskbar, *holder;
 
   g_return_val_if_fail(IS_TASKBAR(self), NULL);
   if(!g_object_get_data(G_OBJECT(self),"group"))
     return self;
 
-  taskbar = taskbar_group_get_taskbar(
-      flow_grid_find_child(self, taskbar_group_id(self, win)));
+  holder = flow_grid_find_child(self, taskbar_group_id(self, win));
+  taskbar = holder?base_widget_get_child(holder):NULL;
   if(!taskbar && new)
     taskbar = taskbar_holder_new(self, win);
 
