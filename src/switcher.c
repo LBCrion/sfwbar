@@ -110,7 +110,7 @@ gboolean switcher_check ( GtkWidget *switcher, window_t *win )
           (GCompareFunc)g_strcmp0));
     case G_TOKEN_WORKSPACE:
       return (!win->workspace ||
-          wintree_comp_workspace(win->workspace, pager_get_focused()));
+          wintree_workspace_comp(win->workspace, pager_get_focused()));
   }
 
   return !wintree_is_filtered(win);

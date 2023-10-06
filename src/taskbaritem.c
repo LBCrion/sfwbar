@@ -78,7 +78,7 @@ static gboolean taskbar_item_check ( GtkWidget *self )
           (GCompareFunc)g_strcmp0));
       break;
     case G_TOKEN_WORKSPACE:
-      result = (!priv->win->workspace || !wintree_comp_workspace(
+      result = (!priv->win->workspace || !wintree_workspace_comp(
             priv->win->workspace,pager_workspace_get_active(taskbar)));
       break;
   }

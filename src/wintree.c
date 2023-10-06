@@ -27,7 +27,7 @@ void wintree_maximize ( gpointer id ) { api_call(maximize) }
 void wintree_unmaximize ( gpointer id ) { api_call(unmaximize) }
 void wintree_focus ( gpointer id ) { api_call(focus) }
 void wintree_close ( gpointer id ) { api_call(close) }
-void wintree_free_workspace ( gpointer id ) { api_call(free_workspace) }
+void wintree_workspace_free ( gpointer id ) { api_call(free_workspace) }
 
 gpointer wintree_workspace_dup ( gpointer ws )
 {
@@ -36,7 +36,7 @@ gpointer wintree_workspace_dup ( gpointer ws )
   return ws;
 }
 
-gint wintree_comp_workspace ( gpointer id1, gpointer id2 )
+gint wintree_workspace_comp ( gpointer id1, gpointer id2 )
 {
   if(api.comp_workspace)
     return api.comp_workspace(id1, id2);
@@ -246,7 +246,7 @@ void wintree_window_delete ( gpointer id )
   g_free(win->appid);
   g_free(win->title);
   g_list_free_full(win->outputs,g_free);
-  wintree_free_workspace(win->workspace);
+  wintree_workspace_free(win->workspace);
   wt_list = g_list_delete_link(wt_list,item);
   g_free(win);
 }

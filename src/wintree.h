@@ -47,7 +47,7 @@ void wintree_minimize ( gpointer id );
 void wintree_maximize ( gpointer id );
 void wintree_unminimize ( gpointer id );
 void wintree_unmaximize ( gpointer id );
-gint wintree_comp_workspace ( gpointer id1, gpointer id2 );
+gint wintree_workspace_comp ( gpointer id1, gpointer id2 );
 gpointer wintree_workspace_dup ( gpointer ws );
 gpointer wintree_get_focus ( void );
 gchar *wintree_get_active ( void );
