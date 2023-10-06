@@ -553,6 +553,7 @@ static struct wintree_api sway_wintree_api = {
   .focus = sway_ipc_focus,
   .free_workspace = g_free,
   .comp_workspace = sway_ipc_comp_workspace,
+  .dup_workspace = (gpointer (*)(gpointer))g_strdup,
 };
 
 static guint sway_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,

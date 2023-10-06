@@ -29,6 +29,13 @@ void wintree_focus ( gpointer id ) { api_call(focus) }
 void wintree_close ( gpointer id ) { api_call(close) }
 void wintree_free_workspace ( gpointer id ) { api_call(free_workspace) }
 
+gpointer wintree_workspace_dup ( gpointer ws )
+{
+  if(api.dup_workspace)
+    return api.dup_workspace(ws);
+  return ws;
+}
+
 gint wintree_comp_workspace ( gpointer id1, gpointer id2 )
 {
   if(api.comp_workspace)
