@@ -238,7 +238,7 @@ GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
   gtk_grid_attach_next_to(GTK_GRID(box),priv->icon, NULL, dir, 1, 1);
   gtk_grid_attach_next_to(GTK_GRID(box), priv->label, priv->icon, dir, 1, 1);
 
-  g_object_ref(self);
+  g_object_ref_sink(self);
   flow_grid_add_child(tray, self);
 
   gtk_widget_add_events(GTK_WIDGET(self), GDK_SCROLL_MASK);

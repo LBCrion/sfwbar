@@ -174,7 +174,7 @@ GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
   g_signal_connect(priv->button,"clicked",G_CALLBACK(pager_item_button_cb),ws);
   g_signal_connect(priv->button,"query-tooltip",
       G_CALLBACK(pager_item_draw_tooltip),ws);
-  g_object_ref(G_OBJECT(self));
+  g_object_ref_sink(G_OBJECT(self));
   flow_grid_add_child(pager,self);
   pager_item_invalidate(self);
 

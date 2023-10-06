@@ -39,7 +39,6 @@ static gboolean taskbar_item_action_exec ( GtkWidget *self, gint slot,
      wintree_minimize(priv->win->uid);
     else
       wintree_focus(priv->win->uid);
-    taskbar_invalidate_all(priv->win, FALSE);
   }
   else
     action_exec(self, action, ev, priv->win, NULL);
@@ -225,7 +224,7 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
     priv->label = NULL;
 
   priv->actions = g_object_get_data(G_OBJECT(taskbar),"actions");
-  g_object_ref(G_OBJECT(self));
+  g_object_ref_sink(G_OBJECT(self));
   flow_grid_add_child(taskbar,self);
 
   gtk_widget_add_events(self, GDK_BUTTON_RELEASE_MASK | GDK_SCROLL_MASK);

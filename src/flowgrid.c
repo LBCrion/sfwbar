@@ -205,7 +205,7 @@ void flow_grid_delete_child ( GtkWidget *self, void *parent )
   for(iter=priv->children;iter;iter=g_list_next(iter))
     if(!comp_parent(flow_item_get_parent(iter->data),parent))
     {
-      gtk_widget_destroy(iter->data);
+      g_object_unref(iter->data);
       priv->children = g_list_delete_link(priv->children,iter);
       break;
     }
@@ -290,13 +290,18 @@ void flow_grid_update ( GtkWidget *self )
 guint flow_grid_n_children ( GtkWidget *self )
 {
   FlowGridPrivate *priv;
+  GList *iter;
+  guint n = 0;
 
   if(IS_BASE_WIDGET(self))
     self = base_widget_get_child(self);
   g_return_val_if_fail(IS_FLOW_GRID(self),0);
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
+  for(iter=priv->children; iter; iter=g_list_next(iter))
+    if(flow_item_get_active(iter->data))
+      n++;
 
-  return g_list_length(priv->children);
+  return n;
 }
 
 gpointer flow_grid_find_child ( GtkWidget *self, gconstpointer parent )

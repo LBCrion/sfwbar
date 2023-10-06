@@ -139,7 +139,7 @@ GtkWidget *switcher_item_new( window_t *win, GtkWidget *switcher )
   gtk_container_add(GTK_CONTAINER(self),grid);
   gtk_widget_set_name(grid, "switcher_normal");
   gtk_widget_style_get(grid,"direction",&dir,NULL);
-  g_object_ref(G_OBJECT(self));
+  g_object_ref_sink(G_OBJECT(self));
   if(icons)
   {
     priv->icon = scale_image_new();

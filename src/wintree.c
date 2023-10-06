@@ -3,8 +3,6 @@
  * Copyright 2020- sfwbar maintainers
  */
 
-#include <gtk/gtk.h>
-#include "sfwbar.h"
 #include "wintree.h"
 #include "taskbar.h"
 #include "switcher.h"
@@ -30,6 +28,7 @@ void wintree_unmaximize ( gpointer id ) { api_call(unmaximize) }
 void wintree_focus ( gpointer id ) { api_call(focus) }
 void wintree_close ( gpointer id ) { api_call(close) }
 void wintree_free_workspace ( gpointer id ) { api_call(free_workspace) }
+
 gint wintree_comp_workspace ( gpointer id1, gpointer id2 )
 {
   if(api.comp_workspace)
@@ -148,7 +147,7 @@ void wintree_commit ( window_t *win )
   if(!win)
     return;
 
-  taskbar_invalidate_all(win,FALSE);
+  taskbar_invalidate_item(win);
   switcher_invalidate(win);
 }
 
@@ -180,11 +179,13 @@ void wintree_set_app_id ( gpointer wid, const gchar *app_id)
   win = wintree_from_id(wid);
   if(!win)
     return;
-  taskbar_reparent_item(win,app_id);
+  taskbar_destroy_item (win);
   g_free(win->appid);
   win->appid = g_strdup(app_id);
   if(!win->title)
     win->title = g_strdup(app_id);
+  taskbar_init_item (win);
+
   wintree_commit(win);
 }
 

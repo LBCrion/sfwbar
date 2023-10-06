@@ -82,33 +82,49 @@ static void taskbar_class_init ( TaskbarClass *kclass )
 
 static void taskbar_init ( Taskbar *self )
 {
+  TaskbarPrivate *priv;
+
+  priv = taskbar_get_instance_private(TASKBAR(self));
+  priv->taskbar = flow_grid_new(TRUE);
+  gtk_container_add(GTK_CONTAINER(self),priv->taskbar);
+  flow_grid_invalidate(priv->taskbar);
 }
 
 GtkWidget *taskbar_new ( gboolean toplevel )
 {
   GtkWidget *self;
-  TaskbarPrivate *priv;
 
   self = GTK_WIDGET(g_object_new(taskbar_get_type(), NULL));
-  priv = taskbar_get_instance_private(TASKBAR(self));
+  if(toplevel)
+    taskbars = g_list_prepend(taskbars, self);
 
-  priv->taskbar = flow_grid_new(TRUE);
-  gtk_container_add(GTK_CONTAINER(self),priv->taskbar);
-  priv->toplevel = toplevel;
-  taskbars = g_list_prepend(taskbars,self);
-
-  flow_grid_invalidate(priv->taskbar);
   return self;
 }
 
-gboolean taskbar_is_toplevel ( GtkWidget *self )
+gpointer taskbar_group_id ( GtkWidget *self, window_t *win )
 {
-  TaskbarPrivate *priv;
+  return win->appid;
+}
 
-  g_return_val_if_fail(IS_TASKBAR(self),FALSE);
-  priv = taskbar_get_instance_private(TASKBAR(self));
+gpointer taskbar_holder_new ( GtkWidget *self, window_t *win )
+{
+  return taskbar_group_new (win->appid, self);
+}
 
-  return priv->toplevel;
+GtkWidget *taskbar_holder_get ( GtkWidget *self, window_t *win, gboolean new )
+{
+  GtkWidget *taskbar;
+
+  g_return_val_if_fail(IS_TASKBAR(self), NULL);
+  if(!g_object_get_data(G_OBJECT(self),"group"))
+    return self;
+
+  taskbar = taskbar_group_get_taskbar(
+      flow_grid_find_child(self, taskbar_group_id(self, win)));
+  if(!taskbar && new)
+    taskbar = taskbar_holder_new(self, win);
+
+  return taskbar;
 }
 
 void taskbar_set_filter ( GtkWidget *self, gint filter )
@@ -135,47 +151,52 @@ gint taskbar_get_filter ( GtkWidget *self, gboolean *floating )
   return priv->filter;
 }
 
-void taskbar_invalidate_all ( window_t *win, gboolean filter )
-{
-  GList *iter;
-  gboolean floating;
-
-  if(!win)
-    return;
-
-  for(iter=taskbars; iter; iter=g_list_next(iter))
-    if(!filter || taskbar_get_filter(iter->data,&floating) || floating)
-    {
-      if(taskbar_is_toplevel(iter->data) && win->appid &&
-          g_object_get_data(G_OBJECT(iter->data),"group"))
-        flow_item_invalidate(flow_grid_find_child(iter->data,win->appid));
-      else
-        flow_item_invalidate(flow_grid_find_child(iter->data,win));
-    }
-}
-
-void taskbar_invalidate_conditional ( void )
-{
-  GList *iter;
-
-  for(iter=wintree_get_list();iter;iter=g_list_next(iter))
-    taskbar_invalidate_all(iter->data,TRUE);
-}
-
-void taskbar_init_item ( window_t *win )
+void taskbar_invalidate_item ( window_t *win )
 {
   GList *iter;
   GtkWidget *taskbar;
 
   for(iter=taskbars; iter; iter=g_list_next(iter))
-    if(iter->data && taskbar_is_toplevel(iter->data))
-    {
-      if(g_object_get_data(G_OBJECT(iter->data),"group"))
-        taskbar = taskbar_group_new(win->appid,iter->data);
-      else
-        taskbar = iter->data;
+  {
+    taskbar = taskbar_holder_get(iter->data, win, FALSE);
+    if(taskbar)
+      flow_item_invalidate(flow_grid_find_child(taskbar, win));
+    if(taskbar!=iter->data)
+      flow_item_invalidate(
+          flow_grid_find_child(iter->data, taskbar_group_id(taskbar, win)));
+  }
+}
 
-      taskbar_item_new(win,taskbar);
+void taskbar_invalidate_all ( void )
+{
+  GList *iter;
+
+  for(iter=wintree_get_list();iter;iter=g_list_next(iter))
+    taskbar_invalidate_item(iter->data);
+}
+
+void taskbar_init_item ( window_t *win )
+{
+  GList *iter;
+
+  for(iter=taskbars; iter; iter=g_list_next(iter))
+    taskbar_item_new(win, taskbar_holder_get(iter->data, win, TRUE));
+}
+
+void taskbar_destroy_item ( window_t *win )
+{
+  GList *iter;
+  GtkWidget *taskbar;
+
+  for(iter=taskbars; iter; iter=g_list_next(iter))
+    if( (taskbar = taskbar_holder_get(iter->data, win, FALSE)) )
+    {
+      flow_grid_delete_child(taskbar, win);
+      if(!flow_grid_n_children(taskbar) && taskbar!=iter->data)
+      {
+        taskbars = g_list_remove(taskbars, taskbar);
+        flow_grid_delete_child(iter->data, taskbar_group_id(taskbar, win));
+      }
     }
 }
 
@@ -183,57 +204,8 @@ void taskbar_populate ( void )
 {
   GList *iter;
 
-  if(!taskbars)
-    return;
-
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
     taskbar_init_item (iter->data);
-}
-
-void taskbar_reparent_item ( window_t *win, const gchar *new_appid )
-{
-  GList *iter;
-  GtkWidget *taskbar, *group;
-
-  for(iter=taskbars; iter; iter=g_list_next(iter))
-    if(iter->data && taskbar_is_toplevel(iter->data) &&
-        g_object_get_data(G_OBJECT(iter->data),"group"))
-    {
-      taskbar = iter->data;
-      group = taskbar_group_new(win->appid,taskbar);
-      flow_grid_delete_child(group,win);
-      if(!flow_grid_n_children(group))
-      {
-        taskbars = g_list_remove(taskbars,group);
-        flow_grid_delete_child(taskbar,win->appid);
-      }
-      group = taskbar_group_new(new_appid,taskbar);
-      taskbar_item_new(win,group);
-    }
-}
-
-void taskbar_destroy_item ( window_t *win )
-{
-  GList *iter;
-  GtkWidget *taskbar, *tgroup;
-
-  for(iter=taskbars; iter; iter=g_list_next(iter))
-    if(iter->data && taskbar_is_toplevel(iter->data))
-    {
-      taskbar = iter->data;
-      if(g_object_get_data(G_OBJECT(taskbar),"group"))
-      {
-        tgroup = taskbar_group_new(win->appid,taskbar);
-        flow_grid_delete_child(tgroup,win);
-        if(!flow_grid_n_children(tgroup))
-        {
-          taskbars = g_list_remove(taskbars,tgroup);
-          flow_grid_delete_child(taskbar, win->appid);
-        }
-      }
-      else
-        flow_grid_delete_child(taskbar,win);
-    }
 }
 
 void taskbar_update_all ( void )

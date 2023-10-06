@@ -486,7 +486,7 @@ gboolean bar_update_monitor ( GtkWidget *self )
     if(priv->visible)
     {
       gtk_widget_show_now(self);
-      taskbar_invalidate_conditional();
+      taskbar_invalidate_all();
     }
   }
 

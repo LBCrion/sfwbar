@@ -138,7 +138,7 @@ static void taskbar_group_update ( GtkWidget *self )
   flow_grid_update(priv->tgroup);
   children = gtk_container_get_children(GTK_CONTAINER(
         gtk_bin_get_child(GTK_BIN(priv->tgroup))));
-  flow_item_set_active(self, g_list_length(children)>0 );
+  flow_item_set_active(self, flow_grid_n_children(priv->tgroup)>0 );
   priv->single = !!(g_list_length(children) == 1);
   g_list_free(children);
   for(iter=priv->holds;iter;iter=g_list_next(iter))
@@ -232,12 +232,8 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
 
   g_return_val_if_fail(IS_TASKBAR(taskbar),NULL);
 
-  self = flow_grid_find_child(taskbar, appid);
-  if(!self)
-    self = GTK_WIDGET(g_object_new(taskbar_group_get_type(), NULL));
+  self = GTK_WIDGET(g_object_new(taskbar_group_get_type(), NULL));
   priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
-  if(priv->tgroup)
-    return priv->tgroup;
 
   icons = GPOINTER_TO_INT(
       g_object_get_data(G_OBJECT(taskbar), "icons"));
@@ -264,14 +260,14 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
   if(icons)
   {
     priv->icon = scale_image_new();
-    scale_image_set_image(priv->icon,appid,NULL);
+    scale_image_set_image(priv->icon,priv->appid,NULL);
     gtk_grid_attach_next_to(GTK_GRID(box),priv->icon,NULL,dir,1,1);
   }
   else
     priv->icon = NULL;
   if(labels)
   {
-    priv->label = gtk_label_new(appid);
+    priv->label = gtk_label_new(priv->appid);
     gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
     gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
     gtk_grid_attach_next_to(GTK_GRID(box), priv->label, priv->icon, dir, 1, 1);
@@ -322,7 +318,7 @@ GtkWidget *taskbar_group_new( const gchar *appid, GtkWidget *taskbar )
 
   base_widget_copy_actions(priv->tgroup, taskbar);
 
-  g_object_ref(G_OBJECT(self));
+  g_object_ref_sink(G_OBJECT(self));
   flow_grid_add_child(taskbar, self);
 
   flow_item_invalidate(self);
@@ -341,4 +337,16 @@ void taskbar_group_pop_child ( GtkWidget *popover, GtkWidget *child )
   taskbar_group_add_hold(popover, child);
   g_signal_connect(G_OBJECT(child), "unmap",
       G_CALLBACK(taskbar_group_child_cb), popover);
+}
+
+GtkWidget *taskbar_group_get_taskbar ( GtkWidget *self )
+{
+  TaskbarGroupPrivate *priv;
+
+  if(!self)
+    return NULL;
+
+  g_return_val_if_fail(IS_TASKBAR_GROUP(self), NULL);
+  priv = taskbar_group_get_instance_private(TASKBAR_GROUP(self));
+  return priv->tgroup;
 }
