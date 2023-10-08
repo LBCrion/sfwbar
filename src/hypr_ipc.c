@@ -141,7 +141,7 @@ static void hypr_ipc_handle_window ( json_object *obj )
   else
   {
     win->state &= ~WS_MINIMIZED;
-    win->workspace = hypr_ipc_workspace_id(obj);
+    wintree_set_workspace(win->uid, hypr_ipc_workspace_id(obj));
     monitor = hypr_ipc_workspace_data(win->workspace,"monitor");
     if(!g_list_find_custom(win->outputs,monitor,(GCompareFunc)g_strcmp0))
     {
@@ -430,10 +430,10 @@ static void hypr_ipc_minimize ( gpointer id )
   if(focus!=id)
     wintree_set_focus(id);
   if(wintree_get_disown())
-    win->workspace = NULL;
+    wintree_set_workspace(win->uid, NULL);
   else if(hypr_ipc_request(ipc_sockaddr,"j/activewindow",&json) && json)
   {
-    win->workspace = hypr_ipc_workspace_id(json);
+    wintree_set_workspace(win->uid, hypr_ipc_workspace_id(json));
     json_object_put(json);
   }
   hypr_ipc_command("dispatch movetoworkspace special");
@@ -575,6 +575,8 @@ void hypr_ipc_init ( void )
   }
 
   ipc_set(IPC_HYPR);
+  wintree_api_register(&hypr_wintree_api);
+  pager_api_register(&hypr_pager_api);
   hypr_ipc_track_focus();
 
   sockaddr = g_build_filename("/tmp","hypr",
@@ -584,6 +586,4 @@ void hypr_ipc_init ( void )
     g_io_add_watch(g_io_channel_unix_new(sock),G_IO_IN,hypr_ipc_event,NULL);
   g_free(sockaddr);
   hypr_ipc_pager_populate();
-  wintree_api_register(&hypr_wintree_api);
-  pager_api_register(&hypr_pager_api);
 }

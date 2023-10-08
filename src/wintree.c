@@ -184,7 +184,7 @@ void wintree_set_app_id ( gpointer wid, const gchar *app_id)
     return;
 
   win = wintree_from_id(wid);
-  if(!win)
+  if(!win || !g_strcmp0(win->appid, app_id))
     return;
   taskbar_destroy_item (win);
   g_free(win->appid);
@@ -194,6 +194,23 @@ void wintree_set_app_id ( gpointer wid, const gchar *app_id)
   taskbar_init_item (win);
 
   wintree_commit(win);
+}
+
+void wintree_set_workspace ( gpointer wid, gpointer wsid )
+{
+  window_t *win;
+
+  win = wintree_from_id(wid);
+  if(!win || win->workspace == wsid)
+    return;
+
+  taskbar_destroy_item (win);
+  wintree_workspace_free(win->workspace);
+  if(!wsid)
+    win->workspace = NULL;
+  else
+    win->workspace = wintree_workspace_dup(wsid);
+  taskbar_init_item (win);
 }
 
 void wintree_set_float ( gpointer wid, gboolean floating )

@@ -128,8 +128,7 @@ static void sway_minimized_set ( struct json_object *obj, const gchar *parent,
   else
   {
     win->state &= ~WS_MINIMIZED;
-    g_clear_pointer(&win->workspace, g_free);
-    win->workspace = g_strdup(parent);
+    wintree_set_workspace(win->uid, (gpointer)parent);
   }
 
   if(!g_list_find_custom(win->outputs,monitor,(GCompareFunc)g_strcmp0) &&
@@ -484,14 +483,8 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
 
 static void sway_ipc_minimize ( gpointer id )
 {
-  window_t *win;
-
   if(wintree_get_disown())
-  {
-    win = wintree_from_id(id);
-    if(win)
-      g_clear_pointer(&win->workspace, g_free);
-  }
+    wintree_set_workspace(id, NULL);
   sway_ipc_command("[con_id=%d] move window to scratchpad",
       GPOINTER_TO_INT(id));
 }
@@ -610,6 +603,9 @@ void sway_ipc_init ( void )
   if(sock==-1)
     return;
   ipc_set(IPC_SWAY);
+  wintree_api_register(&sway_wintree_api);
+  pager_api_register(&sway_pager_api);
+
   sway_ipc_send(sock,0,"bar hidden_state hide");
   obj = sway_ipc_poll(sock,&etype);
   json_object_put(obj);
@@ -632,7 +628,4 @@ void sway_ipc_init ( void )
       'bar_state_update','input']");
   GIOChannel *chan = g_io_channel_unix_new(main_ipc);
   g_io_add_watch(chan,G_IO_IN,sway_ipc_event,NULL);
-
-  wintree_api_register(&sway_wintree_api);
-  pager_api_register(&sway_pager_api);
 }
