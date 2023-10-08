@@ -218,15 +218,18 @@ static gboolean base_widget_scroll_event ( GtkWidget *self,
 static gboolean base_widget_action_exec_impl ( GtkWidget *self, gint slot,
     GdkEvent *ev )
 {
+  action_t *action;
+
   if(!base_widget_check_action_slot(self, slot))
     return FALSE;
 
-  action_exec(self,
-      base_widget_get_action(self, slot,
-        base_widget_get_modifiers(self)),
-      (GdkEvent *)ev,
-      wintree_from_id(wintree_get_focus()),
-      NULL);
+  action = base_widget_get_action(self, slot,
+        base_widget_get_modifiers(self));
+  if(!action)
+    return FALSE;
+
+  action_exec(self, action, (GdkEvent *)ev,
+      wintree_from_id(wintree_get_focus()), NULL);
   return TRUE;
 }
 
