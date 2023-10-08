@@ -9,6 +9,36 @@
 
 G_DEFINE_TYPE_WITH_CODE (PagerItem, pager_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (PagerItem));
 
+static gboolean pager_item_action_exec ( GtkWidget *self, gint slot,
+    GdkEvent *ev )
+{
+  PagerItemPrivate *priv;
+  GdkModifierType mods;
+  action_t *action;
+
+  g_return_val_if_fail(IS_PAGER_ITEM(self),FALSE);
+  priv = pager_item_get_instance_private(PAGER_ITEM(self));
+
+  if(!base_widget_check_action_slot(priv->pager, slot) && slot != 1)
+    return FALSE;
+
+  mods = base_widget_get_modifiers(self);
+  action = base_widget_get_action(priv->pager, slot, mods);
+
+  if(!action && !mods && slot==1)
+  {
+    pager_set_workspace(priv->ws);
+    return TRUE;
+  }
+
+  if(!action)
+    return FALSE;
+  else
+    action_exec(self, action, ev, wintree_from_id(wintree_get_focus()), NULL);
+
+  return TRUE;
+}
+
 void pager_item_update ( GtkWidget *self )
 {
   PagerItemPrivate *priv;
@@ -82,6 +112,7 @@ static gint pager_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent)
 
 static void pager_item_class_init ( PagerItemClass *kclass )
 {
+  BASE_WIDGET_CLASS(kclass)->action_exec = pager_item_action_exec;
   FLOW_ITEM_CLASS(kclass)->update = pager_item_update;
   FLOW_ITEM_CLASS(kclass)->get_parent = (void * (*)(GtkWidget *))pager_item_get_workspace;
   FLOW_ITEM_CLASS(kclass)->compare = pager_item_compare;
@@ -90,11 +121,6 @@ static void pager_item_class_init ( PagerItemClass *kclass )
 
 static void pager_item_init ( PagerItem *self )
 {
-}
-
-static void pager_item_button_cb( GtkWidget *self, gpointer data )
-{
-  pager_set_workspace(data);
 }
 
 static gboolean pager_item_draw_preview ( GtkWidget *widget, cairo_t *cr,
@@ -159,23 +185,21 @@ GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
   if(flow_grid_find_child(base_widget_get_child(pager),ws))
     return NULL;
 
-  if(IS_BASE_WIDGET(pager))
-    pager = base_widget_get_child(pager);
-
   self = GTK_WIDGET(g_object_new(pager_item_get_type(), NULL));
   priv = pager_item_get_instance_private(PAGER_ITEM(self));
-
   priv->ws = ws;
   priv->pager = pager;
+
+  if(IS_BASE_WIDGET(pager))
+    pager = base_widget_get_child(pager);
 
   priv->button = gtk_button_new_with_label(ws->name);
   gtk_container_add(GTK_CONTAINER(self),priv->button);
   gtk_widget_set_name(priv->button, "pager_normal");
-  g_signal_connect(priv->button,"clicked",G_CALLBACK(pager_item_button_cb),ws);
   g_signal_connect(priv->button,"query-tooltip",
       G_CALLBACK(pager_item_draw_tooltip),ws);
   g_object_ref_sink(G_OBJECT(self));
-  flow_grid_add_child(pager,self);
+  flow_grid_add_child(pager, self);
   pager_item_invalidate(self);
 
   return self;

@@ -6,7 +6,8 @@
 #include "sfwbar.h"
 #include "flowgrid.h"
 #include "taskbaritem.h"
-#include "taskbargroup.h"
+#include "taskbarpopup.h"
+#include "taskbarpager.h"
 #include "taskbar.h"
 #include "wintree.h"
 #include "config.h"
@@ -37,10 +38,9 @@ static GtkWidget *taskbar_mirror ( GtkWidget *src )
   dpriv = taskbar_get_instance_private(TASKBAR(self));
   dpriv->filter = spriv->filter;
   dpriv->floating_filter = spriv->floating_filter;
+  dpriv->grouping = spriv->grouping;
   g_object_set_data(G_OBJECT(self),"title_width",
       g_object_get_data(G_OBJECT(src),"title_width"));
-  g_object_set_data(G_OBJECT(self),"group",
-      g_object_get_data(G_OBJECT(src),"group"));
   g_object_set_data(G_OBJECT(self),"g_cols",
       g_object_get_data(G_OBJECT(src),"g_cols"));
   g_object_set_data(G_OBJECT(self),"g_rows",
@@ -103,20 +103,60 @@ GtkWidget *taskbar_new ( gboolean toplevel )
 
 gpointer taskbar_group_id ( GtkWidget *self, window_t *win )
 {
-  return win->appid;
+  TaskbarPrivate *priv;
+
+  g_return_val_if_fail(IS_TASKBAR(self), NULL);
+  priv = taskbar_get_instance_private(TASKBAR(self));
+
+  switch(priv->grouping)
+  {
+    case TASKBAR_POPUP:
+      return win->appid;
+    case TASKBAR_DESK:
+      return win->workspace;
+  }
+  return NULL;
+}
+
+void taskbar_set_grouping ( GtkWidget *self, gint grouping )
+{
+  TaskbarPrivate *priv;
+  GtkWidget *grid;
+
+  g_return_if_fail(IS_TASKBAR(self));
+  priv = taskbar_get_instance_private(TASKBAR(self));
+
+  priv->grouping = grouping;
+  grid = base_widget_get_child(self);
+  gtk_grid_set_row_homogeneous(GTK_GRID(grid), !grouping);
+  gtk_grid_set_column_homogeneous(GTK_GRID(grid), !grouping);
 }
 
 gpointer taskbar_holder_new ( GtkWidget *self, window_t *win )
 {
-  return taskbar_group_new (win->appid, self);
+  TaskbarPrivate *priv;
+
+  g_return_val_if_fail(IS_TASKBAR(self), NULL);
+  priv = taskbar_get_instance_private(TASKBAR(self));
+
+  switch(priv->grouping)
+  {
+    case TASKBAR_POPUP:
+      return taskbar_popup_new(win->appid, self);
+    case TASKBAR_DESK:
+      return taskbar_pager_new(win->workspace, self);
+  }
+  return NULL;
 }
 
 GtkWidget *taskbar_holder_get ( GtkWidget *self, window_t *win, gboolean new )
 {
+  TaskbarPrivate *priv;
   GtkWidget *taskbar, *holder;
 
   g_return_val_if_fail(IS_TASKBAR(self), NULL);
-  if(!g_object_get_data(G_OBJECT(self),"group"))
+  priv = taskbar_get_instance_private(TASKBAR(self));
+  if(!priv->grouping)
     return self;
 
   holder = flow_grid_find_child(self, taskbar_group_id(self, win));
@@ -163,7 +203,7 @@ void taskbar_invalidate_item ( window_t *win )
       flow_item_invalidate(flow_grid_find_child(taskbar, win));
     if(taskbar!=iter->data)
       flow_item_invalidate(
-          flow_grid_find_child(iter->data, taskbar_group_id(taskbar, win)));
+          flow_grid_find_child(iter->data, taskbar_group_id(iter->data, win)));
   }
 }
 
@@ -195,7 +235,7 @@ void taskbar_destroy_item ( window_t *win )
       if(!flow_grid_n_children(taskbar) && taskbar!=iter->data)
       {
         taskbars = g_list_remove(taskbars, taskbar);
-        flow_grid_delete_child(iter->data, taskbar_group_id(taskbar, win));
+        flow_grid_delete_child(iter->data, taskbar_group_id(iter->data, win));
       }
     }
 }

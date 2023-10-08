@@ -142,6 +142,7 @@ static gint taskbar_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent
 static void taskbar_item_invalidate ( GtkWidget *self )
 {
   TaskbarItemPrivate *priv;
+  GtkWidget *parent;
 
   if(!self)
     return;
@@ -149,8 +150,11 @@ static void taskbar_item_invalidate ( GtkWidget *self )
   g_return_if_fail(IS_TASKBAR_ITEM(self));
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
 
-  flow_grid_invalidate(priv->taskbar);
   priv->invalid = TRUE;
+  flow_grid_invalidate(priv->taskbar);
+  if( (parent = g_object_get_data(G_OBJECT(priv->taskbar), "parent_taskbar")) )
+    flow_item_invalidate(
+        flow_grid_find_child(parent, taskbar_group_id(parent, priv->win)));
 }
 
 static void taskbar_item_class_init ( TaskbarItemClass *kclass )

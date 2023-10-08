@@ -6,7 +6,7 @@
 #include "sfwbar.h"
 #include "menu.h"
 #include "window.h"
-#include "taskbargroup.h"
+#include "taskbarpopup.h"
 #include "scaleimage.h"
 #include "popup.h"
 
@@ -102,7 +102,7 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
 
   window = gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
   if(gtk_window_get_window_type(GTK_WINDOW(window)) == GTK_WINDOW_POPUP)
-    taskbar_group_pop_child(window, menu);
+    taskbar_popup_pop_child(window, menu);
 
   widget = GTK_IS_BIN(widget)?gtk_bin_get_child(GTK_BIN(widget)):widget;
   popup_get_gravity(widget,&wanchor,&manchor);

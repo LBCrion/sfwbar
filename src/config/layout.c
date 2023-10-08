@@ -276,8 +276,22 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
       case G_TOKEN_GROUP:
         if(g_scanner_peek_next_token(scanner) == '=')
         {
-          g_object_set_data(G_OBJECT(widget),"group",GINT_TO_POINTER(
-            config_assign_boolean(scanner,FALSE,"group")));
+          g_scanner_get_next_token(scanner);
+          switch((gint)g_scanner_get_next_token(scanner))
+          {
+            case G_TOKEN_TRUE:
+            case G_TOKEN_POPUP:
+              taskbar_set_grouping(widget, TASKBAR_POPUP);
+              break;
+            case G_TOKEN_FALSE:
+              taskbar_set_grouping(widget, TASKBAR_NORMAL);
+              break;
+            case G_TOKEN_PAGER:
+              taskbar_set_grouping(widget, TASKBAR_DESK);
+              break;
+            default:
+              g_scanner_error(scanner, "Invalid taskbar group type");
+          }
           return TRUE;
         }
         switch((gint)g_scanner_get_next_token(scanner))

@@ -6,7 +6,7 @@
 #include "sfwbar.h"
 #include "flowgrid.h"
 #include "basewidget.h"
-#include "taskbargroup.h"
+#include "taskbarpopup.h"
 #include "config.h"
 #include "window.h"
 #include "bar.h"
@@ -356,11 +356,17 @@ static void flow_grid_dnd_data_rec_cb ( GtkWidget *dest, GdkDragContext *ctx,
   dlist = g_list_find(priv->children,dest);
   if(!dlist)
     return;
+  if(!g_list_find(priv->children,src))
+  {
+    /* workspace move goes here */
+    return;
+  }
 
   priv->children = g_list_remove(priv->children, src );
   priv->children = g_list_insert_before(priv->children,
       after ? g_list_next(dlist) : dlist, src );
   flow_item_invalidate(dest);
+  flow_item_invalidate(src);
 }
 
 static void flow_grid_dnd_enter_cb ( GtkWidget *widget, GdkEventCrossing *ev,
@@ -397,13 +403,22 @@ static void flow_grid_dnd_data_get_cb ( GtkWidget *widget, GdkDragContext *ctx,
 void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
     GtkWidget *src )
 {
+  GtkWidget *marshall;
   FlowGridPrivate *priv;
 
   g_return_if_fail(IS_FLOW_ITEM(child));
+  if(g_object_get_data(G_OBJECT(self), "parent_taskbar"))
+    marshall = g_object_get_data(G_OBJECT(self), "parent_taskbar");
+  else
+    marshall = self;
   if(IS_BASE_WIDGET(self))
     self = base_widget_get_child(self);
   g_return_if_fail(IS_FLOW_GRID(self));
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  if(IS_BASE_WIDGET(marshall))
+    marshall = base_widget_get_child(marshall);
+  g_return_if_fail(IS_FLOW_GRID(marshall));
+  priv = flow_grid_get_instance_private(FLOW_GRID(marshall));
 
   if(!priv->dnd_target)
     return;
