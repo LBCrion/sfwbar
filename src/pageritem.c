@@ -65,7 +65,7 @@ void pager_item_update ( GtkWidget *self )
 
   flow_item_set_active(self, priv->ws->id != GINT_TO_POINTER(-1) ||
       g_list_find_custom(g_object_get_data(G_OBJECT(priv->pager),"pins"),
-        priv->ws->name, (GCompareFunc)g_strcmp0)!=NULL);
+        priv->ws->name, (GCompareFunc)g_strcmp0));
 
   priv->invalid = FALSE;
 }
@@ -182,7 +182,8 @@ GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
   GtkWidget *self;
   PagerItemPrivate *priv;
 
-  if(flow_grid_find_child(base_widget_get_child(pager),ws))
+  g_return_val_if_fail(IS_PAGER(pager), NULL);
+  if(flow_grid_find_child(base_widget_get_child(pager), ws))
     return NULL;
 
   self = GTK_WIDGET(g_object_new(pager_item_get_type(), NULL));
@@ -190,16 +191,13 @@ GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
   priv->ws = ws;
   priv->pager = pager;
 
-  if(IS_BASE_WIDGET(pager))
-    pager = base_widget_get_child(pager);
-
   priv->button = gtk_button_new_with_label(ws->name);
   gtk_container_add(GTK_CONTAINER(self),priv->button);
   gtk_widget_set_name(priv->button, "pager_normal");
   g_signal_connect(priv->button,"query-tooltip",
       G_CALLBACK(pager_item_draw_tooltip),ws);
   g_object_ref_sink(G_OBJECT(self));
-  flow_grid_add_child(pager, self);
+  flow_grid_add_child(base_widget_get_child(pager), self);
   pager_item_invalidate(self);
 
   return self;

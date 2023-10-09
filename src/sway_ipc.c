@@ -358,7 +358,6 @@ static void sway_ipc_pager_event ( struct json_object *obj )
   if(!g_strcmp0(change,"focus"))
     workspace_set_focus(ws->id);
 
-  pager_update();
   g_free(ws->name);
   g_free(ws);
 }

@@ -122,6 +122,7 @@ gboolean shell_timer ( gpointer data )
 {
   taskbar_update_all();
   switcher_update();
+  pager_update_all();
   tray_update();
 
   return TRUE;
@@ -182,7 +183,6 @@ static void activate (GtkApplication* app, gpointer data )
 
   config_parse(confname?confname:"sfwbar.config",TRUE);
   taskbar_populate();
-  pager_populate();
   switcher_populate();
 
   clist = gtk_window_list_toplevels();

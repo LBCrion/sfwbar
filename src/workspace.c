@@ -46,8 +46,21 @@ guint workspace_get_geometry ( workspace_t *ws, GdkRectangle **wins,
 
 void workspace_pin_add ( gchar *pin )
 {
-  if(!g_list_find_custom(global_pins, pin, (GCompareFunc)g_strcmp0))
-    global_pins = g_list_prepend(global_pins, g_strdup(pin));
+  workspace_t *ws;
+
+  if(g_list_find_custom(global_pins, pin, (GCompareFunc)g_strcmp0))
+    return;
+ 
+  global_pins = g_list_prepend(global_pins, g_strdup(pin));
+  if(!g_list_find_custom(workspaces, pin, (GCompareFunc)workspace_comp_name))
+  {
+    ws = g_malloc(sizeof(workspace_t));
+    ws->id = PAGER_PIN_ID;
+    ws->name = g_strdup(pin);
+    ws->visible = FALSE;
+    workspaces = g_list_prepend(workspaces, ws);
+    pager_item_add(ws);
+  }
 }
 
 gboolean workspace_pin_check ( gchar *pin )
@@ -58,25 +71,6 @@ gboolean workspace_pin_check ( gchar *pin )
 GList *workspace_get_list ( void )
 {
   return workspaces;
-}
-
-void workspace_populate_pins ( void )
-{
-  workspace_t *ws;
-  GList *iter;
-
-  for(iter = global_pins; iter; iter=g_list_next(iter))
-    if(!g_list_find_custom(workspaces, iter->data,
-          (GCompareFunc)workspace_comp_name))
-
-    {
-      ws = g_malloc(sizeof(workspace_t));
-      ws->id = PAGER_PIN_ID;
-      ws->name = g_strdup(iter->data);
-      ws->visible = FALSE;
-      workspaces = g_list_prepend(workspaces,ws);
-      pager_item_add(ws);
-    }
 }
 
 workspace_t *workspace_from_id ( gpointer id )
@@ -219,7 +213,7 @@ void workspace_new ( workspace_t *new )
     workspaces = g_list_prepend(workspaces,ws);
   }
 
-  if(g_strcmp0(ws->name,new->name))
+  if(g_strcmp0(ws->name, new->name))
   {
     g_free(ws->name);
     ws->name = g_strdup(new->name);
@@ -236,4 +230,3 @@ void workspace_new ( workspace_t *new )
   if(new->focused)
     workspace_set_focus(ws->id);
 }
-

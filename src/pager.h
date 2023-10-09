@@ -35,12 +35,11 @@ GType pager_get_type ( void );
 
 
 GtkWidget *pager_new();
-void pager_update ( void );
 void pager_invalidate_all ( workspace_t *ws );
-void pager_populate ( void );
 void pager_add_pin ( GtkWidget *pager, gchar *pin );
 void pager_item_add ( workspace_t *ws );
 void pager_item_delete ( workspace_t *ws );
+void pager_update_all ( void );
 gpointer pager_get_focused ( void );
 
 #endif

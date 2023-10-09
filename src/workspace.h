@@ -30,7 +30,6 @@ guint workspace_get_geometry ( workspace_t *, GdkRectangle **, GdkRectangle *,
     gint * );
 void workspace_pin_add ( gchar *pin );
 gboolean workspace_pin_check ( gchar *pin );
-void workspace_populate_pins ( void );
 GList *workspace_get_list ( void );
 
 #endif

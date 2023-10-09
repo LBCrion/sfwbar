@@ -314,7 +314,6 @@ static void hypr_ipc_pager_populate( void )
         ws->id = GINT_TO_POINTER(json_int_by_name(ptr,"id",-1));
         ws->name = g_strdup(json_string_by_name(ptr,"name"));
         workspace_new(ws);
-        pager_invalidate_all(ws->id);
         g_free(ws->name);
         g_free(ws);
       }
@@ -343,8 +342,6 @@ static void hypr_ipc_pager_populate( void )
       }
     }
   json_object_put(json);
-
-  pager_update();
 }
 
 static void hypr_ipc_track_focus ( void )
@@ -554,7 +551,6 @@ static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
     (void)g_io_channel_read_line(chan,&event,NULL,NULL,NULL);
   }
 
-  pager_update();
   return TRUE;
 }
 

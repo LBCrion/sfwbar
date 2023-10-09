@@ -45,7 +45,6 @@ static GtkWidget *pager_mirror ( GtkWidget *src )
 
   flow_grid_copy_properties(self,src);
   base_widget_copy_properties(self,src);
-  pager_populate();
 
   return self;
 }
@@ -72,8 +71,9 @@ static void pager_init ( Pager *self )
 
 GtkWidget *pager_new ( void )
 {
-  GtkWidget *self;
   PagerPrivate *priv;
+  GtkWidget *self;
+  GList *iter;
 
   self = GTK_WIDGET(g_object_new(pager_get_type(), NULL));
   priv = pager_get_instance_private(PAGER(self));
@@ -82,6 +82,10 @@ GtkWidget *pager_new ( void )
   gtk_container_add(GTK_CONTAINER(self),priv->pager);
   pagers = g_list_prepend(pagers,self);
   g_object_set_data(G_OBJECT(priv->pager),"sort_numeric",GINT_TO_POINTER(TRUE));
+
+  for(iter = workspace_get_list(); iter; iter=g_list_next(iter))
+    pager_item_new(self, iter->data);
+  flow_grid_invalidate(self);
 
   return self;
 }
@@ -92,8 +96,6 @@ void pager_add_pin ( GtkWidget *self, gchar *pin )
 
   if(ipc_get()==IPC_SWAY || ipc_get()==IPC_HYPR)
   {
-    workspace_pin_add(pin);
-
     child = G_OBJECT(base_widget_get_child(self));
     if(!child)
       return;
@@ -102,6 +104,7 @@ void pager_add_pin ( GtkWidget *self, gchar *pin )
           (GCompareFunc)g_strcmp0))
       g_object_set_data(G_OBJECT(self), "pins", g_list_prepend(
               g_object_get_data(G_OBJECT(self), "pins"), g_strdup(pin)));
+    workspace_pin_add(pin);
   }
   g_free(pin);
 }
@@ -112,25 +115,6 @@ void pager_invalidate_all ( workspace_t *ws )
 
   for(iter=pagers; iter; iter=g_list_next(iter))
     flow_item_invalidate(flow_grid_find_child(iter->data,ws));
-}
-
-void pager_populate ( void )
-{
-  GList *item;
-  
-  if(!pagers)
-    return;
-
-  for(item = workspace_get_list();item;item=g_list_next(item))
-    g_list_foreach(pagers,(GFunc)pager_item_new,item->data);
-
-  workspace_populate_pins();
-  g_list_foreach(pagers,(GFunc)flow_grid_update,NULL);
-}
-
-void pager_update ( void )
-{
-  g_list_foreach(pagers,(GFunc)flow_grid_update,NULL);
 }
 
 void pager_item_delete ( workspace_t *ws )
@@ -146,4 +130,9 @@ void pager_item_delete ( workspace_t *ws )
 void pager_item_add ( workspace_t *ws )
 {
   g_list_foreach(pagers, (GFunc)pager_item_new, ws);
+}
+
+void pager_update_all ( void )
+{
+  g_list_foreach(pagers, (GFunc)flow_grid_update, NULL);
 }
