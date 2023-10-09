@@ -27,7 +27,7 @@ static gboolean pager_item_action_exec ( GtkWidget *self, gint slot,
 
   if(!action && !mods && slot==1)
   {
-    pager_set_workspace(priv->ws);
+    workspace_activate(priv->ws);
     return TRUE;
   }
 
@@ -53,7 +53,7 @@ void pager_item_update ( GtkWidget *self )
     gtk_button_set_label(GTK_BUTTON(priv->button),priv->ws->name);
   gtk_widget_set_has_tooltip(priv->button,
       GPOINTER_TO_INT(g_object_get_data(G_OBJECT(priv->pager),"preview")));
-  if ( pager_workspace_is_focused(priv->ws) )
+  if ( workspace_is_focused(priv->ws) )
     gtk_widget_set_name(priv->button, "pager_focused");
   else if (priv->ws->visible)
     gtk_widget_set_name(priv->button, "pager_visible");
@@ -138,7 +138,7 @@ static gboolean pager_item_draw_preview ( GtkWidget *widget, cairo_t *cr,
   gtk_style_context_get_color (style,GTK_STATE_FLAG_NORMAL, &fg);
   cairo_set_line_width(cr,1);
 
-  n = pager_get_geom(ws,&wins,&spc,&focus);
+  n = workspace_get_geometry(ws, &wins, &spc, &focus);
   if(!n)
     return TRUE;
   for(i=0;i<n;i++)

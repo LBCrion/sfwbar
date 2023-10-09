@@ -313,7 +313,7 @@ static void hypr_ipc_pager_populate( void )
         ws = g_malloc0(sizeof(workspace_t));
         ws->id = GINT_TO_POINTER(json_int_by_name(ptr,"id",-1));
         ws->name = g_strdup(json_string_by_name(ptr,"name"));
-        pager_workspace_new(ws);
+        workspace_new(ws);
         pager_invalidate_all(ws->id);
         g_free(ws->name);
         g_free(ws);
@@ -332,12 +332,12 @@ static void hypr_ipc_pager_populate( void )
         if(wid!=-99)
         {
           if(json_bool_by_name(iter,"focused",FALSE))
-            pager_workspace_set_focus(GINT_TO_POINTER(wid));
-          ws = pager_workspace_from_id(GINT_TO_POINTER(wid));
+            workspace_set_focus(GINT_TO_POINTER(wid));
+          ws = workspace_from_id(GINT_TO_POINTER(wid));
           if(ws)
           {
             ws->visible = TRUE;
-            pager_workspace_set_active(ws,json_string_by_name(iter,"name"));
+            workspace_set_active(ws,json_string_by_name(iter,"name"));
           }
         }
       }
@@ -549,7 +549,7 @@ static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
     else if(!strncmp(event,"changefloatingmode>>",20))
       hypr_ipc_floating_set(event+20);
     else if(!strncmp(event,"destroyworkspace>>",18))
-      pager_workspace_delete(pager_workspace_id_from_name(event+18));
+      workspace_delete(workspace_id_from_name(event+18));
     g_free(event);
     (void)g_io_channel_read_line(chan,&event,NULL,NULL,NULL);
   }
@@ -575,8 +575,8 @@ void hypr_ipc_init ( void )
   }
 
   ipc_set(IPC_HYPR);
+  workspace_api_register(&hypr_pager_api);
   wintree_api_register(&hypr_wintree_api);
-  pager_api_register(&hypr_pager_api);
   hypr_ipc_track_focus();
 
   sockaddr = g_build_filename("/tmp","hypr",

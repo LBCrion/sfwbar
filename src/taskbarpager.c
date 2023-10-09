@@ -49,7 +49,7 @@ static void taskbar_pager_update ( GtkWidget *self )
   if(!priv->invalid)
     return;
 
-  ws = pager_workspace_from_id(priv->ws);
+  ws = workspace_from_id(priv->ws);
   title = ws?ws->name:NULL;
   if(g_strcmp0(gtk_button_get_label(GTK_BUTTON(priv->button)),title))
     gtk_button_set_label(GTK_BUTTON(priv->button),priv->ws);
@@ -101,9 +101,7 @@ static gboolean taskbar_pager_action_exec ( GtkWidget *self, gint slot,
 
   if(!mods && slot==1)
   {
-    workspace_t *ws = pager_workspace_from_id(priv->ws);
-    g_message("ws: %p", ws);
-    pager_set_workspace(pager_workspace_from_id(priv->ws));
+    workspace_activate(workspace_from_id(priv->ws));
     return TRUE;
   }
 

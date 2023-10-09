@@ -349,14 +349,14 @@ static void sway_ipc_pager_event ( struct json_object *obj )
   change = json_string_by_name(obj,"change");
 
   if(!g_strcmp0(change,"empty"))
-    pager_workspace_delete(ws->id);
+    workspace_delete(ws->id);
   else
-    pager_workspace_new(ws);
+    workspace_new(ws);
 
   if(!g_strcmp0(change,"focus") || !g_strcmp0(change,"move"))
-    pager_workspace_set_active(ws,json_string_by_name(current,"output"));
+    workspace_set_active(ws,json_string_by_name(current,"output"));
   if(!g_strcmp0(change,"focus"))
-    pager_workspace_set_focus(ws->id);
+    workspace_set_focus(ws->id);
 
   pager_update();
   g_free(ws->name);
@@ -377,9 +377,9 @@ static void sway_ipc_pager_populate ( void )
   for(i=0;i<json_object_array_length(robj);i++)
   {
     ws = sway_ipc_parse_workspace(json_object_array_get_idx(robj,i));
-    pager_workspace_new(ws);
+    workspace_new(ws);
     if(ws->visible)
-      pager_workspace_set_active(ws,
+      workspace_set_active(ws,
           json_string_by_name(json_object_array_get_idx(robj,i),"output"));
     g_free(ws->name);
     g_free(ws);
@@ -534,7 +534,7 @@ static void sway_ipc_set_workspace ( workspace_t *ws )
 
 static gint sway_ipc_comp_workspace ( gpointer name, gpointer id )
 {
-  return pager_workspace_id_from_name(name) - id;
+  return workspace_id_from_name(name) - id;
 }
 
 static struct wintree_api sway_wintree_api = {
@@ -603,8 +603,8 @@ void sway_ipc_init ( void )
   if(sock==-1)
     return;
   ipc_set(IPC_SWAY);
+  workspace_api_register(&sway_pager_api);
   wintree_api_register(&sway_wintree_api);
-  pager_api_register(&sway_pager_api);
 
   sway_ipc_send(sock,0,"bar hidden_state hide");
   obj = sway_ipc_poll(sock,&etype);

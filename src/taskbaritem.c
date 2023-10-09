@@ -79,7 +79,7 @@ static gboolean taskbar_item_check ( GtkWidget *self )
       break;
     case G_TOKEN_WORKSPACE:
       result = (!priv->win->workspace || !wintree_workspace_comp(
-            priv->win->workspace,pager_workspace_get_active(taskbar)));
+            priv->win->workspace, workspace_get_active(taskbar)));
       break;
   }
   if(floating)

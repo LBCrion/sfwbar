@@ -3,6 +3,7 @@
 
 #include "basewidget.h"
 #include "flowgrid.h"
+#include "workspace.h"
 
 #define PAGER_TYPE            (pager_get_type())
 #define PAGER(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), PAGER_TYPE, Pager))
@@ -32,35 +33,14 @@ struct _PagerPrivate
 
 GType pager_get_type ( void );
 
-typedef struct workspace_s {
-  gpointer id;
-  gchar *name;
-  gboolean visible;
-  gboolean focused;
-  GtkWidget *pager;
-} workspace_t;
-
-struct pager_api {
-  void (*set_workspace) ( workspace_t *);
-  guint (*get_geom) ( workspace_t *, GdkRectangle **, GdkRectangle *, gint *);
-};
 
 GtkWidget *pager_new();
-workspace_t *pager_workspace_from_id ( gpointer id );
-void pager_workspace_new ( workspace_t *new );
-void pager_workspace_delete ( gpointer id );
-void pager_workspace_set_focus ( gpointer id );
-void pager_workspace_set_active ( workspace_t *ws, const gchar *output );
-gpointer pager_workspace_get_active ( GtkWidget *widget );
-gboolean pager_workspace_is_focused ( workspace_t *ws );
 void pager_update ( void );
 void pager_invalidate_all ( workspace_t *ws );
 void pager_populate ( void );
 void pager_add_pin ( GtkWidget *pager, gchar *pin );
-gpointer pager_workspace_id_from_name ( const gchar *name );
-void pager_api_register ( struct pager_api *new );
-void pager_set_workspace ( workspace_t *ws );
-guint pager_get_geom ( workspace_t *, GdkRectangle **, GdkRectangle *, gint * );
+void pager_item_add ( workspace_t *ws );
+void pager_item_delete ( workspace_t *ws );
 gpointer pager_get_focused ( void );
 
 #endif
