@@ -285,3 +285,8 @@ gchar *str_replace ( gchar *str, gchar *old, gchar *new )
 
   return dest;
 }
+
+gint pointer_cmp ( gconstpointer a, gconstpointer b )
+{
+  return a - b;
+}
