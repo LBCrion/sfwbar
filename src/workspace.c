@@ -82,11 +82,6 @@ void workspace_pin_add ( gchar *pin )
   }
 }
 
-gboolean workspace_pin_check ( gchar *pin )
-{
-  return !!g_list_find_custom(global_pins, pin, (GCompareFunc)g_strcmp0);
-}
-
 GList *workspace_get_list ( void )
 {
   return workspaces;
