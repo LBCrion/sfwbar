@@ -15,19 +15,38 @@ static workspace_t *focus;
 static GList *workspaces;
 static GHashTable *actives;
 
-static gint workspace_comp_id (workspace_t *a, gpointer id )
-{
-  return a->id -  id;
-}
-
-static gint workspace_comp_name ( workspace_t *a, gchar * b)
-{
-  return g_strcmp0(a->name,b);
-}
-
 void workspace_api_register ( struct pager_api *new )
 {
   api = *new;
+}
+
+workspace_t *workspace_from_id ( gpointer id )
+{
+  GList *iter;
+
+  for(iter=workspaces; iter; iter=g_list_next(iter))
+    if(((workspace_t *)iter->data)->id == id)
+      return iter->data;
+
+  return NULL;
+}
+
+workspace_t *workspace_from_name ( const gchar *name )
+{
+  GList *iter;
+
+  for(iter=workspaces; iter; iter=g_list_next(iter))
+    if(!g_strcmp0(((workspace_t *)iter->data)->name, name))
+      return iter->data;
+  return NULL;
+}
+
+gpointer workspace_id_from_name ( const gchar *name )
+{
+  workspace_t *ws;
+
+  ws = workspace_from_name(name);
+  return ws? ws->id: NULL;
 }
 
 void workspace_activate ( workspace_t *ws )
@@ -52,7 +71,7 @@ void workspace_pin_add ( gchar *pin )
     return;
  
   global_pins = g_list_prepend(global_pins, g_strdup(pin));
-  if(!g_list_find_custom(workspaces, pin, (GCompareFunc)workspace_comp_name))
+  if(!workspace_from_name(pin))
   {
     ws = g_malloc(sizeof(workspace_t));
     ws->id = PAGER_PIN_ID;
@@ -71,26 +90,6 @@ gboolean workspace_pin_check ( gchar *pin )
 GList *workspace_get_list ( void )
 {
   return workspaces;
-}
-
-workspace_t *workspace_from_id ( gpointer id )
-{
-  GList *item;
-
-  item = g_list_find_custom(workspaces, id, (GCompareFunc)workspace_comp_id);
-  if(item)
-    return item->data;
-  return NULL;
-}
-
-workspace_t *workspace_from_name ( gchar *name )
-{
-  GList *item;
-
-  item = g_list_find_custom(workspaces,name,(GCompareFunc)workspace_comp_name);
-  if(item)
-    return item->data;
-  return NULL;
 }
 
 gpointer workspace_get_active ( GtkWidget *widget )
@@ -131,16 +130,6 @@ void workspace_set_active ( workspace_t *ws, const gchar *output )
   }
 }
 
-gpointer workspace_id_from_name ( const gchar *name )
-{
-  GList *iter;
-
-  for(iter=workspaces;iter;iter=g_list_next(iter))
-    if(!g_strcmp0(name,((workspace_t *)iter->data)->name))
-      return ((workspace_t *)iter->data)->id;
-  return NULL;
-}
-
 gboolean workspace_is_focused ( workspace_t *ws )
 {
   return (ws == focus);
@@ -170,14 +159,11 @@ void workspace_set_focus ( gpointer id )
 
 void workspace_delete ( gpointer id )
 {
-  GList *item;
   workspace_t *ws;
 
-  item = g_list_find_custom(workspaces, id, (GCompareFunc)workspace_comp_id);
-  if(!item)
+  ws = workspace_from_id(id);
+  if(!id)
     return;
-
-  ws = item->data;
 
   if(g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0))
   {
@@ -190,23 +176,21 @@ void workspace_delete ( gpointer id )
     pager_item_delete(ws);
     g_free(ws->name);
     g_free(ws);
-    workspaces = g_list_delete_link(workspaces,item);
+    workspaces = g_list_remove(workspaces, ws);
   }
 }
 
 void workspace_new ( workspace_t *new )
 {
   workspace_t *ws;
-  GList *iter;
 
   ws = workspace_from_id(new->id);
   if(!ws)
-    for(iter=workspaces; iter; iter=g_list_next(iter))
-    {
-      if(!g_strcmp0(((workspace_t *)iter->data)->name, new->name) &&
-          ((workspace_t *)iter->data)->id == PAGER_PIN_ID)
-        ws = iter->data;
-    }
+  {
+    ws = workspace_from_name(new->name);
+    if(ws && ws->id != PAGER_PIN_ID)
+      g_message("duplicate workspace names with differing id's!");
+  }
   if(!ws)
   {
     ws = g_malloc0(sizeof(workspace_t));
