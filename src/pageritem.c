@@ -64,8 +64,7 @@ void pager_item_update ( GtkWidget *self )
       GTK_STATE_FLAG_PRELIGHT);
 
   flow_item_set_active(self, priv->ws->id != GINT_TO_POINTER(-1) ||
-      g_list_find_custom(g_object_get_data(G_OBJECT(priv->pager),"pins"),
-        priv->ws->name, (GCompareFunc)g_strcmp0));
+      pager_check_pins(priv->pager, priv->ws->name));
 
   priv->invalid = FALSE;
 }

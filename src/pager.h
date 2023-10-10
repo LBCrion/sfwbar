@@ -29,6 +29,7 @@ typedef struct _PagerPrivate PagerPrivate;
 struct _PagerPrivate
 {
   GtkWidget *pager;
+  GList *pins;
 };
 
 GType pager_get_type ( void );
@@ -37,6 +38,7 @@ GType pager_get_type ( void );
 GtkWidget *pager_new();
 void pager_invalidate_all ( workspace_t *ws );
 void pager_add_pin ( GtkWidget *pager, gchar *pin );
+gboolean pager_check_pins ( GtkWidget *self, gchar *pin );
 void pager_item_add ( workspace_t *ws );
 void pager_item_delete ( workspace_t *ws );
 void pager_update_all ( void );

@@ -39,9 +39,7 @@ static GtkWidget *pager_mirror ( GtkWidget *src )
       g_object_get_data(G_OBJECT(spriv->pager),"preview"));
   g_object_set_data(G_OBJECT(dpriv->pager),"sort_numeric",
       g_object_get_data(G_OBJECT(spriv->pager),"sort_numeric"));
-  g_object_set_data(G_OBJECT(self),"pins",g_list_copy_deep(
-      g_object_get_data(G_OBJECT(src),"pins"),
-      (GCopyFunc)g_strdup,NULL));
+  spriv->pins = g_list_copy_deep(dpriv->pins, (GCopyFunc)g_strdup,NULL);
 
   flow_grid_copy_properties(self,src);
   base_widget_copy_properties(self,src);
@@ -51,9 +49,12 @@ static GtkWidget *pager_mirror ( GtkWidget *src )
 
 static void pager_destroy ( GtkWidget *self )
 {
+  PagerPrivate *priv;
+
+  g_return_if_fail(IS_PAGER(self));
+  priv = pager_get_instance_private(PAGER(self));
   pagers = g_list_remove(pagers,self);
-  g_list_free_full(g_object_get_data(G_OBJECT(self),"pins"),g_free);
-  g_object_set_data(G_OBJECT(self),"pins",NULL);
+  g_list_free_full(g_steal_pointer(&priv->pins),g_free);
   GTK_WIDGET_CLASS(pager_parent_class)->destroy(self);
 }
 
@@ -92,21 +93,28 @@ GtkWidget *pager_new ( void )
 
 void pager_add_pin ( GtkWidget *self, gchar *pin )
 {
-  GObject *child;
+  PagerPrivate *priv;
+
+  g_return_if_fail(IS_PAGER(self));
+  priv = pager_get_instance_private(PAGER(self));
 
   if(ipc_get()==IPC_SWAY || ipc_get()==IPC_HYPR)
   {
-    child = G_OBJECT(base_widget_get_child(self));
-    if(!child)
-      return;
-
-    if(!g_list_find_custom(g_object_get_data(G_OBJECT(self), "pins"), pin,
-          (GCompareFunc)g_strcmp0))
-      g_object_set_data(G_OBJECT(self), "pins", g_list_prepend(
-              g_object_get_data(G_OBJECT(self), "pins"), g_strdup(pin)));
+    if(!g_list_find_custom(priv->pins, pin, (GCompareFunc)g_strcmp0))
+      priv->pins = g_list_prepend(priv->pins, g_strdup(pin));
     workspace_pin_add(pin);
   }
   g_free(pin);
+}
+
+gboolean pager_check_pins ( GtkWidget *self, gchar *pin )
+{
+  PagerPrivate *priv;
+
+  g_return_val_if_fail(IS_PAGER(self), FALSE);
+  priv = pager_get_instance_private(PAGER(self));
+
+  return !!g_list_find_custom(priv->pins, pin, (GCompareFunc)g_strcmp0);
 }
 
 void pager_invalidate_all ( workspace_t *ws )
@@ -122,8 +130,7 @@ void pager_item_delete ( workspace_t *ws )
   GList *iter;
 
   for(iter=pagers; iter; iter=g_list_next(iter))
-    if(!g_list_find_custom(g_object_get_data(G_OBJECT(iter->data), "pins"),
-          ws->name, (GCompareFunc)g_strcmp0))
+    if(!pager_check_pins(iter->data, ws->name))
         flow_grid_delete_child(iter->data, ws);
 }
 
