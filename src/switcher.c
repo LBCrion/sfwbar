@@ -145,9 +145,7 @@ gboolean switcher_event ( gpointer dir )
 void switcher_window_delete ( window_t *win )
 {
   if(grid)
-    flow_grid_delete_child(grid,win);
-  if(win->switcher)
-    g_object_unref(g_steal_pointer(&win->switcher));
+    flow_grid_delete_child(grid, win);
 }
 
 void switcher_window_init ( window_t *win)

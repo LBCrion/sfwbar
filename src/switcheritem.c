@@ -112,10 +112,7 @@ GtkWidget *switcher_item_new( window_t *win, GtkWidget *switcher )
   gint title_width;
 
   if(!switcher)
-  {
-    win->switcher = NULL;
     return NULL;
-  }
 
   self = GTK_WIDGET(g_object_new(switcher_item_get_type(), NULL));
   priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
@@ -134,7 +131,6 @@ GtkWidget *switcher_item_new( window_t *win, GtkWidget *switcher )
   if(!icons)
     labels = TRUE;
 
-  win->switcher = self;
   grid = gtk_grid_new();
   gtk_container_add(GTK_CONTAINER(self),grid);
   gtk_widget_set_name(grid, "switcher_normal");

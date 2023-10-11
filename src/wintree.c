@@ -222,7 +222,7 @@ void wintree_window_append ( window_t *win )
     taskbar_init_item  (win);
     win->valid = TRUE;
   }
-  if( !win->switcher && (win->title || win->appid) )
+  if(win->title || win->appid)
     switcher_window_init(win);
   if(g_list_find(wt_list,win)==NULL)
     wt_list = g_list_append (wt_list,win);

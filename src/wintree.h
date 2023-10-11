@@ -5,7 +5,6 @@
 #include "workspace.h"
 
 typedef struct wt_window {
-  GtkWidget *switcher;
   gchar *title;
   gchar *appid;
   GList *outputs;
