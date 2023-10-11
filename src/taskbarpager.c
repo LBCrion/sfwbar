@@ -43,7 +43,7 @@ static void taskbar_pager_update ( GtkWidget *self )
   ws = workspace_from_id(priv->ws);
   title = ws?ws->name:NULL;
   if(g_strcmp0(gtk_button_get_label(GTK_BUTTON(priv->button)),title))
-    gtk_button_set_label(GTK_BUTTON(priv->button),priv->ws);
+    gtk_button_set_label(GTK_BUTTON(priv->button),title);
 
   if (flow_grid_find_child(priv->tgroup, wintree_from_id(wintree_get_focus())))
     gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)),
@@ -84,7 +84,6 @@ static gboolean taskbar_pager_action_exec ( GtkWidget *self, gint slot,
   g_return_val_if_fail(IS_TASKBAR_PAGER(self),FALSE);
   priv = taskbar_pager_get_instance_private(TASKBAR_PAGER(self));
   
-  g_message("action");
   if(slot != 1)
     return FALSE;
 
@@ -124,13 +123,13 @@ static GtkWidget *taskbar_pager_get_taskbar ( GtkWidget *self )
   priv = taskbar_pager_get_instance_private(TASKBAR_PAGER(self));
   return priv->tgroup;
 }
+
 static void taskbar_pager_class_init ( TaskbarPagerClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->action_exec = taskbar_pager_action_exec;
   BASE_WIDGET_CLASS(kclass)->get_child = taskbar_pager_get_taskbar;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_pager_update;
   FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_pager_invalidate;
-  FLOW_ITEM_CLASS(kclass)->comp_parent = (GCompareFunc)g_strcmp0;
   FLOW_ITEM_CLASS(kclass)->get_parent = taskbar_pager_get_ws;
   FLOW_ITEM_CLASS(kclass)->compare = taskbar_pager_compare;
 }
