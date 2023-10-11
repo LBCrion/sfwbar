@@ -42,6 +42,5 @@ gboolean pager_check_pins ( GtkWidget *self, gchar *pin );
 void pager_item_add ( workspace_t *ws );
 void pager_item_delete ( workspace_t *ws );
 void pager_update_all ( void );
-gpointer pager_get_focused ( void );
 
 #endif

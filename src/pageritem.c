@@ -63,7 +63,7 @@ void pager_item_update ( GtkWidget *self )
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
 
-  flow_item_set_active(self, priv->ws->id != GINT_TO_POINTER(-1) ||
+  flow_item_set_active(self, priv->ws->id != PAGER_PIN_ID ||
       pager_check_pins(priv->pager, priv->ws->name));
 
   priv->invalid = FALSE;

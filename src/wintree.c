@@ -27,22 +27,6 @@ void wintree_maximize ( gpointer id ) { api_call(maximize) }
 void wintree_unmaximize ( gpointer id ) { api_call(unmaximize) }
 void wintree_focus ( gpointer id ) { api_call(focus) }
 void wintree_close ( gpointer id ) { api_call(close) }
-void wintree_workspace_free ( gpointer id ) { api_call(free_workspace) }
-
-gpointer wintree_workspace_dup ( gpointer ws )
-{
-  if(api.dup_workspace)
-    return api.dup_workspace(ws);
-  return ws;
-}
-
-gint wintree_workspace_comp ( gpointer id1, gpointer id2 )
-{
-  if(api.comp_workspace)
-    return api.comp_workspace(id1, id2);
-  else
-    return id1 - id2;
-}
 
 void wintree_api_register ( struct wintree_api *new )
 {
@@ -205,11 +189,12 @@ void wintree_set_workspace ( gpointer wid, gpointer wsid )
     return;
 
   taskbar_destroy_item (win);
-  wintree_workspace_free(win->workspace);
+  workspace_unref(win->workspace);
   if(!wsid)
     win->workspace = NULL;
   else
-    win->workspace = wintree_workspace_dup(wsid);
+    win->workspace = wsid;
+  workspace_ref(wsid);
   taskbar_init_item (win);
 }
 
@@ -260,10 +245,10 @@ void wintree_window_delete ( gpointer id )
 
   taskbar_destroy_item (win);
   switcher_window_delete(win);
+  workspace_unref(win->workspace);
   g_free(win->appid);
   g_free(win->title);
   g_list_free_full(win->outputs,g_free);
-  wintree_workspace_free(win->workspace);
   wt_list = g_list_delete_link(wt_list,item);
   g_free(win);
 }

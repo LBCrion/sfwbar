@@ -546,7 +546,7 @@ static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
     else if(!strncmp(event,"changefloatingmode>>",20))
       hypr_ipc_floating_set(event+20);
     else if(!strncmp(event,"destroyworkspace>>",18))
-      workspace_delete(workspace_id_from_name(event+18));
+      workspace_unref(workspace_id_from_name(event+18));
     g_free(event);
     (void)g_io_channel_read_line(chan,&event,NULL,NULL,NULL);
   }

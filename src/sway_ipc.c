@@ -128,7 +128,7 @@ static void sway_minimized_set ( struct json_object *obj, const gchar *parent,
   else
   {
     win->state &= ~WS_MINIMIZED;
-    wintree_set_workspace(win->uid, (gpointer)parent);
+    wintree_set_workspace(win->uid, workspace_id_from_name(parent));
   }
 
   if(!g_list_find_custom(win->outputs,monitor,(GCompareFunc)g_strcmp0) &&
@@ -348,9 +348,9 @@ static void sway_ipc_pager_event ( struct json_object *obj )
   ws = sway_ipc_parse_workspace(current);
   change = json_string_by_name(obj,"change");
 
-  if(!g_strcmp0(change,"empty"))
-    workspace_delete(ws->id);
-  else
+  if(!g_strcmp0(change, "empty"))
+    workspace_unref(ws->id);
+  else if(!g_strcmp0(change, "init"))
     workspace_new(ws);
 
   if(!g_strcmp0(change,"focus") || !g_strcmp0(change,"move"))
@@ -427,8 +427,8 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
         switcher_event(NULL);
       }
     }
-    if(etype==0x00000004) // This is to capture minimized state on sway
-      sway_traverse_tree(obj,NULL,NULL,FALSE);
+    if(etype==0x00000004) // This is to map workspaces and set  minimized state
+      sway_traverse_tree(obj,NULL,NULL,TRUE);
 
     if(etype==0x80000003 && obj)
     {
@@ -439,7 +439,7 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
         wid = GINT_TO_POINTER(json_int_by_name(container,"id",G_MININT64));
 
         if(!g_strcmp0(change,"new"))
-          sway_window_new (container);
+          sway_ipc_send(main_ipc,4,"");
         else if(!g_strcmp0(change,"close"))
           wintree_window_delete(wid);
         else if(!g_strcmp0(change,"title"))
@@ -491,11 +491,15 @@ static void sway_ipc_minimize ( gpointer id )
 static void sway_ipc_unminimize ( gpointer id )
 {
   window_t *win;
+  workspace_t *ws;
 
   win = wintree_from_id(id);
-  if(win && win->workspace)
+  if(!win)
+    return;
+  ws = workspace_from_id(win->workspace);
+  if(ws)
     sway_ipc_command("[con_id=%d] move window to workspace %s",
-        GPOINTER_TO_INT(id),win->workspace);
+        GPOINTER_TO_INT(id), ws->name);
   else
     sway_ipc_command("[con_id=%d] focus",GPOINTER_TO_INT(id));
 }
@@ -513,11 +517,15 @@ static void sway_ipc_unmaximize ( gpointer id )
 static void sway_ipc_focus ( gpointer id )
 {
   window_t *win;
+  workspace_t *ws;
 
   win = wintree_from_id(id);
-  if(win && win->workspace)
+  if(!win)
+    return;
+  ws = workspace_from_id(win->workspace);
+  if(ws)
     sway_ipc_command("[con_id=%d] move window to workspace %s",
-        GPOINTER_TO_INT(id),win->workspace);
+        GPOINTER_TO_INT(id), ws->name);
   sway_ipc_command("[con_id=%d] focus",GPOINTER_TO_INT(id));
 }
 
@@ -531,11 +539,6 @@ static void sway_ipc_set_workspace ( workspace_t *ws )
   sway_ipc_command("workspace '%s'",ws->name);
 }
 
-static gint sway_ipc_comp_workspace ( gpointer name, gpointer id )
-{
-  return workspace_id_from_name(name) - id;
-}
-
 static struct wintree_api sway_wintree_api = {
   .minimize = sway_ipc_minimize,
   .unminimize = sway_ipc_unminimize,
@@ -543,9 +546,6 @@ static struct wintree_api sway_wintree_api = {
   .unmaximize = sway_ipc_unmaximize,
   .close = sway_ipc_close,
   .focus = sway_ipc_focus,
-  .free_workspace = g_free,
-  .comp_workspace = sway_ipc_comp_workspace,
-  .dup_workspace = (gpointer (*)(gpointer))g_strdup,
 };
 
 static guint sway_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,

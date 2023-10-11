@@ -7,8 +7,6 @@
 #include "pager.h"
 #include "taskbar.h"
 
-#define PAGER_PIN_ID (GINT_TO_POINTER(-1))
-
 static struct pager_api api;
 static GList *global_pins;
 static workspace_t *focus;
@@ -18,6 +16,30 @@ static GHashTable *actives;
 void workspace_api_register ( struct pager_api *new )
 {
   api = *new;
+}
+
+void workspace_ref ( gpointer id )
+{
+  workspace_t *ws;
+
+  ws = workspace_from_id(id);
+  if(ws)
+    ws->refcount++;
+}
+
+void workspace_unref ( gpointer id )
+{
+  workspace_t *ws;
+
+  ws = workspace_from_id(id);
+  if(!ws)
+    return;
+
+  ws->refcount--;
+  if(ws->refcount)
+    return;
+
+  workspace_delete(ws->id);
 }
 
 workspace_t *workspace_from_id ( gpointer id )
@@ -73,8 +95,9 @@ void workspace_pin_add ( gchar *pin )
   global_pins = g_list_prepend(global_pins, g_strdup(pin));
   if(!workspace_from_name(pin))
   {
-    ws = g_malloc(sizeof(workspace_t));
+    ws = g_malloc0(sizeof(workspace_t));
     ws->id = PAGER_PIN_ID;
+    ws->refcount = 1;
     ws->name = g_strdup(pin);
     ws->visible = FALSE;
     workspaces = g_list_prepend(workspaces, ws);
@@ -130,7 +153,7 @@ gboolean workspace_is_focused ( workspace_t *ws )
   return (ws == focus);
 }
 
-gpointer pager_get_focused ( void )
+gpointer workspace_get_focused ( void )
 {
   if(!focus)
     return NULL;
@@ -160,7 +183,8 @@ void workspace_delete ( gpointer id )
   if(!id)
     return;
 
-  if(g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0))
+  if(g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0) ||
+      ws->refcount)
   {
     ws->id = PAGER_PIN_ID;
     ws->visible = FALSE;
@@ -189,6 +213,7 @@ void workspace_new ( workspace_t *new )
   if(!ws)
   {
     ws = g_malloc0(sizeof(workspace_t));
+    ws->refcount = 1;
     workspaces = g_list_prepend(workspaces,ws);
   }
 

@@ -19,15 +19,6 @@
 G_DEFINE_TYPE_WITH_CODE (TaskbarPager, taskbar_pager, FLOW_ITEM_TYPE,
     G_ADD_PRIVATE(TaskbarPager));
 
-static void taskbar_pager_destroy ( GtkWidget *self )
-{
-  TaskbarPagerPrivate *priv;
-
-  priv = taskbar_pager_get_instance_private(TASKBAR_PAGER(self));
-  g_clear_pointer(&priv->ws, wintree_workspace_free);
-  GTK_WIDGET_CLASS(taskbar_pager_parent_class)->destroy(self);
-}
-
 static gpointer taskbar_pager_get_ws ( GtkWidget *self )
 {
   TaskbarPagerPrivate *priv;
@@ -81,7 +72,7 @@ static gint taskbar_pager_compare ( GtkWidget *a, GtkWidget *b,
   p1 = taskbar_pager_get_instance_private(TASKBAR_PAGER(a));
   p2 = taskbar_pager_get_instance_private(TASKBAR_PAGER(b));
 
-  return wintree_workspace_comp(p1->ws,p2->ws);
+  return p1->ws - p2->ws;
 }
 
 static gboolean taskbar_pager_action_exec ( GtkWidget *self, gint slot,
@@ -135,7 +126,6 @@ static GtkWidget *taskbar_pager_get_taskbar ( GtkWidget *self )
 }
 static void taskbar_pager_class_init ( TaskbarPagerClass *kclass )
 {
-  GTK_WIDGET_CLASS(kclass)->destroy = taskbar_pager_destroy;
   BASE_WIDGET_CLASS(kclass)->action_exec = taskbar_pager_action_exec;
   BASE_WIDGET_CLASS(kclass)->get_child = taskbar_pager_get_taskbar;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_pager_update;
@@ -149,7 +139,7 @@ static void taskbar_pager_init ( TaskbarPager *self )
 {
 }
 
-GtkWidget *taskbar_pager_new( gpointer ws, GtkWidget *taskbar )
+GtkWidget *taskbar_pager_new( gpointer wsid, GtkWidget *taskbar )
 {
   GtkWidget *self;
   TaskbarPagerPrivate *priv;
@@ -162,7 +152,7 @@ GtkWidget *taskbar_pager_new( gpointer ws, GtkWidget *taskbar )
   priv->taskbar = taskbar;
   priv->tgroup = taskbar_new(FALSE);
   g_object_set_data(G_OBJECT(priv->tgroup), "parent_taskbar", taskbar);
-  priv->ws = wintree_workspace_dup(ws);
+  priv->ws = wsid;
   priv->grid = gtk_grid_new();
   priv->button = gtk_button_new_with_label("");
   gtk_widget_set_name(GTK_WIDGET(priv->grid), "taskbar_pager");

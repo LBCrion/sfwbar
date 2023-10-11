@@ -109,8 +109,7 @@ gboolean switcher_check ( GtkWidget *switcher, window_t *win )
           bar_get_output(base_widget_get_child(switcher)),
           (GCompareFunc)g_strcmp0));
     case G_TOKEN_WORKSPACE:
-      return (!win->workspace ||
-          wintree_workspace_comp(win->workspace, pager_get_focused()));
+      return (!win->workspace || win->workspace==workspace_get_focused());
   }
 
   return !wintree_is_filtered(win);
@@ -148,7 +147,7 @@ void switcher_window_delete ( window_t *win )
   if(grid)
     flow_grid_delete_child(grid,win);
   if(win->switcher)
-    gtk_widget_destroy(win->switcher);
+    g_object_unref(g_steal_pointer(&win->switcher));
 }
 
 void switcher_window_init ( window_t *win)

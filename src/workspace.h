@@ -8,6 +8,7 @@ typedef struct workspace_s {
   gchar *name;
   gboolean visible;
   gboolean focused;
+  gint refcount;
 } workspace_t;
 
 struct pager_api {
@@ -15,6 +16,7 @@ struct pager_api {
   guint (*get_geom) ( workspace_t *, GdkRectangle **, GdkRectangle *, gint *);
 };
 
+#define PAGER_PIN_ID (GINT_TO_POINTER(-1))
 
 void workspace_new ( workspace_t *new );
 void workspace_delete ( gpointer id );
@@ -24,12 +26,14 @@ gpointer workspace_get_active ( GtkWidget *widget );
 gboolean workspace_is_focused ( workspace_t *ws );
 gpointer workspace_id_from_name ( const gchar *name );
 workspace_t *workspace_from_id ( gpointer id );
+gpointer workspace_get_focused ( void );
 void workspace_api_register ( struct pager_api *new );
 void workspace_activate ( workspace_t *ws );
 guint workspace_get_geometry ( workspace_t *, GdkRectangle **, GdkRectangle *,
     gint * );
 void workspace_pin_add ( gchar *pin );
-gboolean workspace_pin_check ( gchar *pin );
 GList *workspace_get_list ( void );
+void workspace_ref ( gpointer id );
+void workspace_unref ( gpointer id );
 
 #endif
