@@ -508,7 +508,7 @@ static struct wintree_api hypr_wintree_api = {
   .focus = hypr_ipc_focus
 };
 
-static struct pager_api hypr_pager_api = {
+static struct workspace_api hypr_workspace_api = {
   .set_workspace = hypr_ipc_set_workspace,
     .get_geom = hypr_ipc_get_geom
 };
@@ -571,7 +571,7 @@ void hypr_ipc_init ( void )
   }
 
   ipc_set(IPC_HYPR);
-  workspace_api_register(&hypr_pager_api);
+  workspace_api_register(&hypr_workspace_api);
   wintree_api_register(&hypr_wintree_api);
   hypr_ipc_track_focus();
 

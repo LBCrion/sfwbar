@@ -11,7 +11,7 @@ typedef struct workspace_s {
   gint refcount;
 } workspace_t;
 
-struct pager_api {
+struct workspace_api {
   void (*set_workspace) ( workspace_t *);
   guint (*get_geom) ( workspace_t *, GdkRectangle **, GdkRectangle *, gint *);
 };
@@ -27,7 +27,7 @@ gboolean workspace_is_focused ( workspace_t *ws );
 gpointer workspace_id_from_name ( const gchar *name );
 workspace_t *workspace_from_id ( gpointer id );
 gpointer workspace_get_focused ( void );
-void workspace_api_register ( struct pager_api *new );
+void workspace_api_register ( struct workspace_api *new );
 void workspace_activate ( workspace_t *ws );
 guint workspace_get_geometry ( workspace_t *, GdkRectangle **, GdkRectangle *,
     gint * );

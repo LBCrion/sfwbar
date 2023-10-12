@@ -136,7 +136,7 @@ static gint taskbar_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent
 
   p1 = taskbar_item_get_instance_private(TASKBAR_ITEM(a));
   p2 = taskbar_item_get_instance_private(TASKBAR_ITEM(b));
-  return wintree_compare(p1->win,p2->win);
+  return wintree_compare(p1->win, p2->win);
 }
 
 static void taskbar_item_invalidate ( GtkWidget *self )

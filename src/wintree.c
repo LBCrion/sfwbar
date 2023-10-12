@@ -73,10 +73,10 @@ void wintree_log ( gpointer id )
 gint wintree_compare ( window_t *a, window_t *b)
 {
   gint s;
-  s = g_strcmp0(a->title,b->title);
+  s = g_strcmp0(a->title, b->title);
   if(s)
     return s;
-  return GPOINTER_TO_INT(a->uid)-GPOINTER_TO_INT(b->uid);
+  return GPOINTER_TO_INT(a->uid - b->uid);
 }
 
 void wintree_set_focus ( gpointer id )

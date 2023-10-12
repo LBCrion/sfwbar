@@ -11,7 +11,6 @@
 #include <sys/un.h>
 #include "sfwbar.h"
 #include "bar.h"
-#include "pager.h"
 #include "switcher.h"
 #include "wintree.h"
 
@@ -112,34 +111,6 @@ static GdkRectangle sway_ipc_parse_rect ( struct json_object *obj )
   return ret;
 }
 
-static void sway_minimized_set ( struct json_object *obj, const gchar *parent,
-    const gchar *monitor )
-{
-  window_t *win;
-
-  win = wintree_from_id(
-      GINT_TO_POINTER(json_int_by_name(obj,"id",G_MININT64)));
-
-  if(!win)
-    return;
-
-  if(!g_strcmp0(parent,"__i3_scratch"))
-    win->state |= WS_MINIMIZED;
-  else
-  {
-    win->state &= ~WS_MINIMIZED;
-    wintree_set_workspace(win->uid, workspace_id_from_name(parent));
-  }
-
-  if(!g_list_find_custom(win->outputs,monitor,(GCompareFunc)g_strcmp0) &&
-      g_strcmp0(monitor,"__i3"))
-  {
-    g_list_free_full(win->outputs,g_free);
-    win->outputs = g_list_prepend(NULL,g_strdup(monitor));
-    wintree_commit(win);
-  }
-}
-
 static void sway_set_state ( struct json_object *container)
 {
   window_t *win;
@@ -233,7 +204,8 @@ static void sway_ipc_window_place ( gint wid, gint64 pid )
   json_object_put(json);
 }
 
-static void sway_window_new ( struct json_object *container )
+static void sway_window_new ( struct json_object *container,
+    const gchar *parent, const gchar *monitor )
 {
   struct json_object *ptr;
   gpointer wid;
@@ -270,10 +242,26 @@ static void sway_window_new ( struct json_object *container )
     wintree_set_focus(wid);
 
   sway_ipc_window_place(GPOINTER_TO_INT(wid), win->pid );
+
+  if(!g_strcmp0(parent,"__i3_scratch"))
+    win->state |= WS_MINIMIZED;
+  else
+  {
+    win->state &= ~WS_MINIMIZED;
+    wintree_set_workspace(win->uid, workspace_id_from_name(parent));
+  }
+
+  if(!g_list_find_custom(win->outputs,monitor,(GCompareFunc)g_strcmp0) &&
+      g_strcmp0(monitor,"__i3"))
+  {
+    g_list_free_full(win->outputs,g_free);
+    win->outputs = g_list_prepend(NULL,g_strdup(monitor));
+    wintree_commit(win);
+  }
 }
 
 static void sway_traverse_tree ( struct json_object *obj, const gchar *parent,
-    const gchar *monitor, gboolean init)
+    const gchar *monitor)
 {
   struct json_object *iter,*arr,*ptr;
   gint i;
@@ -283,9 +271,7 @@ static void sway_traverse_tree ( struct json_object *obj, const gchar *parent,
     for(i=0;i<json_object_array_length(arr);i++)
     {
       iter = json_object_array_get_idx(arr,i);
-      if(init)
-        sway_window_new (iter);
-      sway_minimized_set(iter,parent,monitor);
+      sway_window_new(iter, parent, monitor);
     }
 
   json_object_object_get_ex(obj,"nodes",&arr);
@@ -295,9 +281,7 @@ static void sway_traverse_tree ( struct json_object *obj, const gchar *parent,
       iter = json_object_array_get_idx(arr,i);
       if( json_int_by_name(iter,"app_id",G_MININT64) != G_MININT64 )
       {
-        if(init)
-          sway_window_new (iter);
-        sway_minimized_set(iter,parent,monitor);
+        sway_window_new(iter, parent, monitor);
       }
       else
       {
@@ -305,13 +289,13 @@ static void sway_traverse_tree ( struct json_object *obj, const gchar *parent,
         if(g_strcmp0(json_object_get_string(ptr),"output"))
         {
           json_object_object_get_ex(iter,"name",&ptr);
-          sway_traverse_tree(iter,json_object_get_string(ptr),monitor,init);
+          sway_traverse_tree(iter,json_object_get_string(ptr),monitor);
         }
         else
         {
           json_object_object_get_ex(iter,"name",&ptr);
           sway_traverse_tree(iter,json_object_get_string(ptr),
-              json_object_get_string(ptr),init);
+              json_object_get_string(ptr));
         }
       }
     }
@@ -322,7 +306,7 @@ void sway_ipc_client_init ( ScanFile *file )
   sway_file = file;
 }
 
-workspace_t *sway_ipc_parse_workspace ( json_object *obj )
+static workspace_t *sway_ipc_parse_workspace ( json_object *obj )
 {
   workspace_t *ws;
 
@@ -335,7 +319,7 @@ workspace_t *sway_ipc_parse_workspace ( json_object *obj )
   return ws;
 }
 
-static void sway_ipc_pager_event ( struct json_object *obj )
+static void sway_ipc_workspace_event ( struct json_object *obj )
 {
   const gchar *change;
   struct json_object *current;
@@ -362,7 +346,7 @@ static void sway_ipc_pager_event ( struct json_object *obj )
   g_free(ws);
 }
 
-static void sway_ipc_pager_populate ( void )
+static void sway_ipc_workspace_populate ( void )
 {
   gint32 etype;
   struct json_object *robj;
@@ -386,6 +370,42 @@ static void sway_ipc_pager_populate ( void )
   json_object_put(robj);
 }
 
+static void sway_ipc_window_event ( struct json_object *obj )
+{
+  gpointer *wid;
+  const gchar *change;
+  struct json_object *container;
+
+  if(!obj)
+    return;
+
+  change = json_string_by_name(obj,"change");
+  if(!change)
+    return;
+
+  json_object_object_get_ex(obj,"container",&container);
+  wid = GINT_TO_POINTER(json_int_by_name(container,"id",G_MININT64));
+
+  if(!g_strcmp0(change,"new"))
+    sway_ipc_send(main_ipc,4,""); // get tree to map workspace
+  else if(!g_strcmp0(change,"close"))
+    wintree_window_delete(wid);
+  else if(!g_strcmp0(change,"title"))
+    wintree_set_title(wid,json_string_by_name(container,"name"));
+  else if(!g_strcmp0(change,"focus"))
+  {
+    wintree_set_focus(wid);
+    sway_ipc_send(main_ipc,4,"");
+  }
+  else if(!g_strcmp0(change,"fullscreen_mode"))
+    sway_set_state(container);
+  else if(!g_strcmp0(change,"move"))
+    sway_ipc_send(main_ipc,4,"");
+  else if(!g_strcmp0(change,"floating"))
+    wintree_set_float(wid,!g_strcmp0(
+          json_string_by_name(container, "type"), "floating_con"));
+}
+
 static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
     gpointer data )
 {
@@ -401,11 +421,8 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
     "","","","","","","","","","","","",
     "bar_state_update",
     "input" };
-  struct json_object *obj,*container;
-  struct json_object *scan;
-  const gchar *change;
+  struct json_object *obj, *scan;
   gint32 etype;
-  gpointer *wid;
 
   if(main_ipc==-1)
     return FALSE;
@@ -414,7 +431,7 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
   while (obj)
   { 
     if(etype==0x80000000)
-      sway_ipc_pager_event(obj);
+      sway_ipc_workspace_event(obj);
 
     if(etype==0x80000004)
     {
@@ -428,36 +445,10 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
       }
     }
     if(etype==0x00000004) // This is to map workspaces and set  minimized state
-      sway_traverse_tree(obj,NULL,NULL,TRUE);
+      sway_traverse_tree(obj,NULL,NULL);
 
-    if(etype==0x80000003 && obj)
-    {
-      change = json_string_by_name(obj,"change");
-      if(change)
-      {
-        json_object_object_get_ex(obj,"container",&container);
-        wid = GINT_TO_POINTER(json_int_by_name(container,"id",G_MININT64));
-
-        if(!g_strcmp0(change,"new"))
-          sway_ipc_send(main_ipc,4,"");
-        else if(!g_strcmp0(change,"close"))
-          wintree_window_delete(wid);
-        else if(!g_strcmp0(change,"title"))
-          wintree_set_title(wid,json_string_by_name(container,"name"));
-        else if(!g_strcmp0(change,"focus"))
-        {
-          wintree_set_focus(wid);
-          sway_ipc_send(main_ipc,4,"");
-        }
-        else if(!g_strcmp0(change,"fullscreen_mode"))
-          sway_set_state(container);
-        else if(!g_strcmp0(change,"move"))
-          sway_ipc_send(main_ipc,4,"");
-        else if(!g_strcmp0(change,"floating"))
-          wintree_set_float(wid,!g_strcmp0(
-                json_string_by_name(container,"type"),"floating_con"));
-      }
-    }
+    if(etype==0x80000003)
+      sway_ipc_window_event(obj);
 
     if(etype==0x80000014)
       bar_set_visibility(NULL,json_string_by_name(obj,"id"),
@@ -587,7 +578,7 @@ static guint sway_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,
   return n;
 }
 
-static struct pager_api sway_pager_api = {
+static struct workspace_api sway_workspace_api = {
   .set_workspace = sway_ipc_set_workspace,
   .get_geom = sway_ipc_get_geom
 };
@@ -602,19 +593,19 @@ void sway_ipc_init ( void )
   if(sock==-1)
     return;
   ipc_set(IPC_SWAY);
-  workspace_api_register(&sway_pager_api);
+  workspace_api_register(&sway_workspace_api);
   wintree_api_register(&sway_wintree_api);
 
   sway_ipc_send(sock,0,"bar hidden_state hide");
   obj = sway_ipc_poll(sock,&etype);
   json_object_put(obj);
-  sway_ipc_pager_populate();
+  sway_ipc_workspace_populate();
   sway_ipc_send(sock,4,"");
   obj = sway_ipc_poll(sock,&etype);
   close(sock);
   if(obj)
   {
-    sway_traverse_tree(obj,NULL,NULL,TRUE);
+    sway_traverse_tree(obj,NULL,NULL);
     json_object_put(obj);
   }
 

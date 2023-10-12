@@ -7,13 +7,13 @@
 #include "pager.h"
 #include "taskbar.h"
 
-static struct pager_api api;
+static struct workspace_api api;
 static GList *global_pins;
 static workspace_t *focus;
 static GList *workspaces;
 static GHashTable *actives;
 
-void workspace_api_register ( struct pager_api *new )
+void workspace_api_register ( struct workspace_api *new )
 {
   api = *new;
 }
