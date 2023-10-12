@@ -27,7 +27,6 @@ struct _FlowItemClass
   void (*invalidate) ( GtkWidget *self );
   void* (*get_parent) ( GtkWidget *self );
   gint (*compare) (GtkWidget *, GtkWidget *, GtkWidget *);
-  GCompareFunc comp_parent;
 };
 
 typedef struct _FlowItemPrivate FlowItemPrivate;

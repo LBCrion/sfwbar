@@ -190,23 +190,20 @@ void flow_grid_delete_child ( GtkWidget *self, void *parent )
 {
   FlowGridPrivate *priv;
   GList *iter;
-  GCompareFunc comp_parent;
 
   if(IS_BASE_WIDGET(self))
     self = base_widget_get_child(self);
   g_return_if_fail(IS_FLOW_GRID(self));
 
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
-  if(!priv->children || !priv->children->data ||
-      !FLOW_ITEM_GET_CLASS(priv->children->data)->comp_parent)
+  if(!priv->children || !priv->children->data)
     return;
-  comp_parent = FLOW_ITEM_GET_CLASS(priv->children->data)->comp_parent;
 
   for(iter=priv->children;iter;iter=g_list_next(iter))
-    if(!comp_parent(flow_item_get_parent(iter->data),parent))
+    if(flow_item_get_parent(iter->data)==parent)
     {
       g_object_unref(iter->data);
-      priv->children = g_list_delete_link(priv->children,iter);
+      priv->children = g_list_delete_link(priv->children, iter);
       break;
     }
   flow_grid_invalidate(self);
@@ -308,7 +305,6 @@ gpointer flow_grid_find_child ( GtkWidget *self, gconstpointer parent )
 {
   FlowGridPrivate *priv;
   GList *iter;
-  GCompareFunc comp_parent;
 
   if(IS_BASE_WIDGET(self))
     self = base_widget_get_child(self);
@@ -319,12 +315,8 @@ gpointer flow_grid_find_child ( GtkWidget *self, gconstpointer parent )
   if(!priv->children || !priv->children->data)
     return NULL;
 
-  comp_parent = FLOW_ITEM_GET_CLASS(priv->children->data)->comp_parent;
-  if(!comp_parent)
-    return NULL;
-
   for(iter=priv->children; iter; iter=g_list_next(iter))
-    if(!comp_parent(flow_item_get_parent(iter->data), parent))
+    if(flow_item_get_parent(iter->data)==parent)
       return iter->data;
 
   return NULL;
