@@ -406,9 +406,9 @@ static void sway_ipc_window_event ( struct json_object *obj )
           json_string_by_name(container, "type"), "floating_con"));
 }
 
-static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
-    gpointer data )
+static void sway_ipc_scan_input ( struct json_object *obj, gint32 etype )
 {
+  struct json_object *scan;
   static gchar *ename[] = {
     "workspace",
     "",
@@ -421,19 +421,33 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
     "","","","","","","","","","","","",
     "bar_state_update",
     "input" };
-  struct json_object *obj, *scan;
+
+  if(!sway_file || etype<0x80000000 || etype>0x80000015)
+    return;
+
+  scan = json_object_new_object();
+  json_object_object_add_ex(scan,ename[etype-0x80000000],obj,0);
+  g_list_foreach(sway_file->vars,(GFunc)scanner_var_reset,NULL);
+  scanner_update_json (scan,sway_file);
+  json_object_get(obj);
+  json_object_put(scan);
+   base_widget_emit_trigger("sway");
+}
+
+static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
+    gpointer data )
+{
+  struct json_object *obj;
   gint32 etype;
 
   if(main_ipc==-1)
     return FALSE;
 
-  obj = sway_ipc_poll(main_ipc,&etype);
-  while (obj)
+  while ( (obj = sway_ipc_poll(main_ipc,&etype)) )
   { 
     if(etype==0x80000000)
       sway_ipc_workspace_event(obj);
-
-    if(etype==0x80000004)
+    else if(etype==0x80000004)
     {
       bar_set_visibility(NULL,json_string_by_name(obj,"id"),
           *(json_string_by_name(obj,"mode")));
@@ -444,29 +458,17 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
         switcher_event(NULL);
       }
     }
-    if(etype==0x00000004) // This is to map workspaces and set  minimized state
+    else if(etype==0x00000004)
       sway_traverse_tree(obj,NULL,NULL);
-
-    if(etype==0x80000003)
+    else if(etype==0x80000003)
       sway_ipc_window_event(obj);
-
-    if(etype==0x80000014)
+    else if(etype==0x80000014)
       bar_set_visibility(NULL,json_string_by_name(obj,"id"),
           json_bool_by_name(obj,"visible_by_modifier",FALSE)?'v':'x');
 
-    if(sway_file && etype>=0x80000000 && etype<=0x80000015)
-    {
-      scan = json_object_new_object();
-      json_object_object_add_ex(scan,ename[etype-0x80000000],obj,0);
-      g_list_foreach(sway_file->vars,(GFunc)scanner_var_reset,NULL);
-      scanner_update_json (scan,sway_file);
-      json_object_get(obj);
-      json_object_put(scan);
-      base_widget_emit_trigger("sway");
-    }
+    sway_ipc_scan_input(obj, etype);
 
     json_object_put(obj);
-    obj = sway_ipc_poll(main_ipc,&etype);
   }
   return TRUE;
 }
