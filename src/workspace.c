@@ -39,7 +39,20 @@ void workspace_unref ( gpointer id )
   if(ws->refcount)
     return;
 
-  workspace_delete(ws->id);
+  if(g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0) ||
+      ws->refcount)
+  {
+    ws->id = PAGER_PIN_ID;
+    ws->visible = FALSE;
+    pager_item_delete(ws);
+  }
+  else
+  {
+    workspaces = g_list_remove(workspaces, ws);
+    pager_item_delete(ws);
+    g_free(ws->name);
+    g_free(ws);
+  }
 }
 
 workspace_t *workspace_from_id ( gpointer id )
@@ -173,30 +186,6 @@ void workspace_set_focus ( gpointer id )
   focus = ws;
   pager_invalidate_all(focus);
   taskbar_invalidate_all();
-}
-
-void workspace_delete ( gpointer id )
-{
-  workspace_t *ws;
-
-  ws = workspace_from_id(id);
-  if(!id)
-    return;
-
-  if(g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0) ||
-      ws->refcount)
-  {
-    ws->id = PAGER_PIN_ID;
-    ws->visible = FALSE;
-    pager_item_delete(ws);
-  }
-  else
-  {
-    pager_item_delete(ws);
-    g_free(ws->name);
-    g_free(ws);
-    workspaces = g_list_remove(workspaces, ws);
-  }
 }
 
 void workspace_new ( workspace_t *new )

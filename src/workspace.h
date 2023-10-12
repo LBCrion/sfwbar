@@ -19,7 +19,6 @@ struct workspace_api {
 #define PAGER_PIN_ID (GINT_TO_POINTER(-1))
 
 void workspace_new ( workspace_t *new );
-void workspace_delete ( gpointer id );
 void workspace_set_focus ( gpointer id );
 void workspace_set_active ( workspace_t *ws, const gchar *output );
 gpointer workspace_get_active ( GtkWidget *widget );
