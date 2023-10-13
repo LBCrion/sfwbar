@@ -350,6 +350,11 @@ static void flow_grid_dnd_data_rec_cb ( GtkWidget *dest, GdkDragContext *ctx,
     return;
   if(!g_list_find(priv->children,src))
   {
+    window_t *win = flow_item_get_parent(dest);
+    window_t *wins = flow_item_get_parent(src);
+    workspace_t *ws = workspace_from_id(win->workspace);
+    if(ws)
+      wintree_move_to(wins->uid, ws->id);
     /* workspace move goes here */
     return;
   }

@@ -28,6 +28,12 @@ void wintree_unmaximize ( gpointer id ) { api_call(unmaximize) }
 void wintree_focus ( gpointer id ) { api_call(focus) }
 void wintree_close ( gpointer id ) { api_call(close) }
 
+void wintree_move_to ( gpointer id, gpointer wsid )
+{
+  if(api.move_to)
+    api.move_to(id, wsid);
+}
+
 void wintree_api_register ( struct wintree_api *new )
 {
   api = *new;

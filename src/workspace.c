@@ -197,7 +197,7 @@ void workspace_new ( workspace_t *new )
   {
     ws = workspace_from_name(new->name);
     if(ws && ws->id != PAGER_PIN_ID)
-      g_message("duplicate workspace names with differing id's!");
+      g_message("duplicate workspace names with differing id's");
   }
   if(!ws)
   {

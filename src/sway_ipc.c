@@ -204,7 +204,7 @@ static void sway_ipc_window_place ( gint wid, gint64 pid )
   json_object_put(json);
 }
 
-static void sway_window_new ( struct json_object *container,
+static void sway_window_handle ( struct json_object *container,
     const gchar *parent, const gchar *monitor )
 {
   struct json_object *ptr;
@@ -213,35 +213,34 @@ static void sway_window_new ( struct json_object *container,
   const gchar *app_id;
 
   wid = GINT_TO_POINTER(json_int_by_name(container,"id",G_MININT64));
-  if(wintree_from_id(GINT_TO_POINTER(wid)))
-    return;
-  
-  app_id = json_string_by_name(container,"app_id");
-  if(!app_id)
+  if( !(win = wintree_from_id(GINT_TO_POINTER(wid))) )
   {
-    json_object_object_get_ex(container,"window_properties",&ptr);
-    if(ptr)
-      app_id = json_string_by_name(ptr,"instance");
+    app_id = json_string_by_name(container,"app_id");
     if(!app_id)
-      app_id = "";
-  }
-  if(!app_id)
-    return;
+    {
+      json_object_object_get_ex(container,"window_properties",&ptr);
+      if(ptr)
+        app_id = json_string_by_name(ptr,"instance");
+      if(!app_id)
+        app_id = "";
+    }
+    if(!app_id)
+      return;
 
-  win = wintree_window_init();
-  win->uid = wid;
-  win->pid = json_int_by_name(container,"pid",G_MININT64);
-  wintree_window_append(win);
-  wintree_set_app_id(wid,app_id);
-  wintree_set_title(wid,json_string_by_name(container,"name"));
-          wintree_set_float(wid,!g_strcmp0(
-                json_string_by_name(container,"type"),"floating_con"));
-  wintree_log(wid);
+    win = wintree_window_init();
+    win->uid = wid;
+    win->pid = json_int_by_name(container,"pid",G_MININT64);
+    wintree_window_append(win);
+    wintree_set_app_id(wid,app_id);
+    wintree_set_title(wid,json_string_by_name(container,"name"));
+            wintree_set_float(wid,!g_strcmp0(
+                  json_string_by_name(container,"type"),"floating_con"));
+    wintree_log(wid);
+    sway_ipc_window_place(GPOINTER_TO_INT(wid), win->pid );
+  }
 
   if(json_bool_by_name(container,"focused",FALSE))
     wintree_set_focus(wid);
-
-  sway_ipc_window_place(GPOINTER_TO_INT(wid), win->pid );
 
   if(!g_strcmp0(parent,"__i3_scratch"))
     win->state |= WS_MINIMIZED;
@@ -269,10 +268,7 @@ static void sway_traverse_tree ( struct json_object *obj, const gchar *parent,
   json_object_object_get_ex(obj,"floating_nodes",&arr);
   if( arr && json_object_is_type(arr, json_type_array) )
     for(i=0;i<json_object_array_length(arr);i++)
-    {
-      iter = json_object_array_get_idx(arr,i);
-      sway_window_new(iter, parent, monitor);
-    }
+      sway_window_handle(json_object_array_get_idx(arr,i), parent, monitor);
 
   json_object_object_get_ex(obj,"nodes",&arr);
   if( arr && json_object_is_type(arr, json_type_array) )
@@ -280,9 +276,7 @@ static void sway_traverse_tree ( struct json_object *obj, const gchar *parent,
     {
       iter = json_object_array_get_idx(arr,i);
       if( json_int_by_name(iter,"app_id",G_MININT64) != G_MININT64 )
-      {
-        sway_window_new(iter, parent, monitor);
-      }
+        sway_window_handle(iter, parent, monitor);
       else
       {
         json_object_object_get_ex(iter,"type",&ptr);
@@ -532,6 +526,18 @@ static void sway_ipc_set_workspace ( workspace_t *ws )
   sway_ipc_command("workspace '%s'",ws->name);
 }
 
+static void sway_ipc_move_to ( gpointer id, gpointer wsid )
+{
+  workspace_t *ws;
+
+  ws = workspace_from_id(wsid);
+  if(!ws || !ws->name)
+    return;
+
+  sway_ipc_command("[con_id=%d] move window to workspace %s",
+      GPOINTER_TO_INT(id), ws->name);
+}
+
 static struct wintree_api sway_wintree_api = {
   .minimize = sway_ipc_minimize,
   .unminimize = sway_ipc_unminimize,
@@ -539,6 +545,7 @@ static struct wintree_api sway_wintree_api = {
   .unmaximize = sway_ipc_unmaximize,
   .close = sway_ipc_close,
   .focus = sway_ipc_focus,
+  .move_to = sway_ipc_move_to,
 };
 
 static guint sway_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,

@@ -237,6 +237,7 @@ void taskbar_destroy_item ( window_t *win )
         taskbars = g_list_remove(taskbars, taskbar);
         flow_grid_delete_child(iter->data, taskbar_group_id(iter->data, win));
       }
+      taskbar_invalidate_item(win);
     }
 }
 

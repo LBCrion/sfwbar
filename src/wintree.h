@@ -23,6 +23,7 @@ struct wintree_api {
   void (*unmaximize) ( void *);
   void (*focus) ( void *);
   void (*close) ( void *);
+  void (*move_to) (  void *, void * );
 };
 
 void wintree_api_register ( struct wintree_api *new );
@@ -45,6 +46,7 @@ void wintree_minimize ( gpointer id );
 void wintree_maximize ( gpointer id );
 void wintree_unminimize ( gpointer id );
 void wintree_unmaximize ( gpointer id );
+void wintree_move_to ( gpointer id, gpointer wsid );
 gpointer wintree_get_focus ( void );
 gchar *wintree_get_active ( void );
 gboolean wintree_is_focused ( gpointer id );

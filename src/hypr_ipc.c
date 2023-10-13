@@ -127,26 +127,27 @@ static void hypr_ipc_handle_window ( json_object *obj )
   {
     win = wintree_window_init();
     win->uid = id;
-    win->pid = json_int_by_name(obj,"pid",0);
-    win->floating = json_bool_by_name(obj,"floating",FALSE);
+    win->pid = json_int_by_name(obj, "pid", 0);
+    win->floating = json_bool_by_name(obj, "floating", FALSE);
     wintree_window_append(win);
-    wintree_set_app_id(id,json_string_by_name(obj,"class"));
-    wintree_set_title(id,json_string_by_name(obj,"title"));
+    wintree_set_app_id(id, json_string_by_name(obj, "class"));
+    wintree_set_title(id, json_string_by_name(obj, "title"));
     wintree_log(id);
   }
   else
     wintree_set_title(id,json_string_by_name(obj,"title"));
+
   if(hypr_ipc_workspace_id(obj)==GINT_TO_POINTER(-99))
     win->state |= WS_MINIMIZED;
   else
   {
     win->state &= ~WS_MINIMIZED;
     wintree_set_workspace(win->uid, hypr_ipc_workspace_id(obj));
-    monitor = hypr_ipc_workspace_data(win->workspace,"monitor");
-    if(!g_list_find_custom(win->outputs,monitor,(GCompareFunc)g_strcmp0))
+    monitor = hypr_ipc_workspace_data(win->workspace, "monitor");
+    if(!g_list_find_custom(win->outputs, monitor, (GCompareFunc)g_strcmp0))
     {
-      g_list_free_full(win->outputs,g_free);
-      win->outputs = g_list_prepend(win->outputs,monitor);
+      g_list_free_full(win->outputs, g_free);
+      win->outputs = g_list_prepend(win->outputs, monitor);
     }
     else
       g_free(monitor);
@@ -188,7 +189,10 @@ static void hypr_ipc_track_minimized ( gchar *event )
   if(ws && !strncmp(ws,",special",8))
     win->state |= WS_MINIMIZED;
   else
+  {
     win->state &= ~WS_MINIMIZED;
+    wintree_set_workspace(id, GINT_TO_POINTER(g_ascii_strtoll(ws+1, NULL, 10)));
+  }
 }
 
 static GdkRectangle hypr_ipc_get_output_geom ( gpointer wsid )
@@ -499,13 +503,20 @@ static void hypr_ipc_set_workspace ( workspace_t *ws )
   g_free(name);
 }
 
+static void hypr_ipc_move_to ( gpointer id, gpointer wsid )
+{
+  hypr_ipc_command("dispatch movetoworkspace %d,address:0x%lx",
+      wsid ,GPOINTER_TO_SIZE(id));
+}
+
 static struct wintree_api hypr_wintree_api = {
   .minimize = hypr_ipc_minimize,
   .unminimize = hypr_ipc_unminimize,
   .maximize = hypr_ipc_maximize,
   .unmaximize = hypr_ipc_unmaximize,
   .close = hypr_ipc_close,
-  .focus = hypr_ipc_focus
+  .focus = hypr_ipc_focus,
+  .move_to = hypr_ipc_move_to,
 };
 
 static struct workspace_api hypr_workspace_api = {
