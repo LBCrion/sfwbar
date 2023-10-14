@@ -215,26 +215,24 @@ static void sway_window_handle ( struct json_object *container,
   wid = GINT_TO_POINTER(json_int_by_name(container,"id",G_MININT64));
   if( !(win = wintree_from_id(GINT_TO_POINTER(wid))) )
   {
-    app_id = json_string_by_name(container,"app_id");
+    app_id = json_string_by_name(container, "app_id");
     if(!app_id)
     {
-      json_object_object_get_ex(container,"window_properties",&ptr);
+      json_object_object_get_ex(container, "window_properties", &ptr);
       if(ptr)
-        app_id = json_string_by_name(ptr,"instance");
+        app_id = json_string_by_name(ptr, "instance");
       if(!app_id)
         app_id = "";
     }
-    if(!app_id)
-      return;
 
     win = wintree_window_init();
     win->uid = wid;
-    win->pid = json_int_by_name(container,"pid",G_MININT64);
+    win->pid = json_int_by_name(container, "pid", G_MININT64);
     wintree_window_append(win);
-    wintree_set_app_id(wid,app_id);
-    wintree_set_title(wid,json_string_by_name(container,"name"));
-            wintree_set_float(wid,!g_strcmp0(
-                  json_string_by_name(container,"type"),"floating_con"));
+    wintree_set_app_id(wid, app_id);
+    wintree_set_title(wid, json_string_by_name(container, "name"));
+    wintree_set_float(wid,
+        !g_strcmp0(json_string_by_name(container, "type"), "floating_con"));
     wintree_log(wid);
     sway_ipc_window_place(GPOINTER_TO_INT(wid), win->pid );
   }
