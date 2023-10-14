@@ -132,7 +132,7 @@ GtkWidget *sni_get_menu_iter ( GVariantIter *iter, struct sni_menu_wrapper *wrap
 {
   GVariantIter *niter;
   GVariant *item, *dict;
-  GtkWidget *menu, *mitem, *smenu;
+  GtkWidget *menu, *mitem;
   const gchar *toggle;
   gint32 id;
   GSList *group = NULL;
@@ -152,10 +152,10 @@ GtkWidget *sni_get_menu_iter ( GVariantIter *iter, struct sni_menu_wrapper *wrap
       if(!g_strcmp0(sni_variant_get_string(dict, "children-display", ""),
             "submenu"))
       {
-        if((smenu=sni_get_menu_iter(niter, wrap)))
         {
           mitem = gtk_menu_item_new();
-          gtk_menu_item_set_submenu(GTK_MENU_ITEM(mitem), smenu);
+          gtk_menu_item_set_submenu(GTK_MENU_ITEM(mitem),
+              sni_get_menu_iter(niter, wrap));
         }
       }
       else if(!g_strcmp0(sni_variant_get_string(dict, "type", "standard"),
