@@ -19,43 +19,28 @@ struct sni_menu_wrapper {
 
 gint32 sni_variant_get_int32 ( GVariant *dict, gchar *key, gint def )
 {
-  GVariant *ptr;
-  gint result;
-  ptr = g_variant_lookup_value(dict,key,G_VARIANT_TYPE_INT32);
-  if(ptr)
-  {
-    result = g_variant_get_int32(ptr);
-    g_variant_unref(ptr);
+  gint32 result;
+
+  if(g_variant_lookup(dict, key, "i", &result))
     return result;
-  }
   return def;
 }
 
 const gchar *sni_variant_get_string ( GVariant *dict, gchar *key, gchar *def )
 {
-  GVariant *ptr;
-  const gchar *result;
-  ptr = g_variant_lookup_value(dict,key,G_VARIANT_TYPE_STRING);
-  if(ptr)
-  {
-    result = g_variant_get_string(ptr,NULL);
-    g_variant_unref(ptr);
+  gchar *result;
+
+  if(g_variant_lookup(dict, key, "&s", &result))
     return result;
-  }
   return def;
 }
 
 gboolean sni_variant_get_bool ( GVariant *dict, gchar *key, gboolean def )
 {
-  GVariant *ptr;
   gboolean result;
-  ptr = g_variant_lookup_value(dict,key,G_VARIANT_TYPE_BOOLEAN);
-  if(ptr)
-  {
-    result = g_variant_get_boolean(ptr);
-    g_variant_unref(ptr);
+
+  if(g_variant_lookup(dict, key, "b", &result))
     return result;
-  }
   return def;
 }
 
@@ -91,17 +76,17 @@ GtkWidget *sni_variant_get_pixbuf ( GVariant *dict, gchar *key )
 
 void sni_menu_item_cb ( GtkWidget *item, SniItem *sni )
 {
-  gint32 *id = g_object_get_data(G_OBJECT(item),"sni_id");
+  gint32 id = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(item),"sni_menu_id"));
 
   if(!id)
     return;
 
-  g_debug("sni menu call: %d (%s) %s",*id,
+  g_debug("sni menu call: %d (%s) %s",id,
       gtk_menu_item_get_label(GTK_MENU_ITEM(item)),sni->dest);
 
   g_dbus_connection_call(sni_get_connection(), sni->dest, sni->menu_path,
       "com.canonical.dbusmenu", "Event",
-      g_variant_new("(isvu)", *id, "clicked", g_variant_new_int32(0),
+      g_variant_new("(isvu)", id, "clicked", g_variant_new_int32(0),
         gtk_get_current_event_time()),
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
 }
@@ -143,79 +128,67 @@ void sni_menu_item_decorate ( GtkWidget *item, GVariant *dict  )
   gtk_container_add(GTK_CONTAINER(item),box);
 }
 
-GtkWidget *sni_get_menu_iter ( GVariant *list, struct sni_menu_wrapper *wrap)
+GtkWidget *sni_get_menu_iter ( GVariant *list, GtkWidget *menu, struct sni_menu_wrapper *wrap)
 {
   GVariantIter iter;
-  GVariant *item,*tmp;
-  GtkWidget *mitem, *menu, *smenu;
-  GVariant *dict,*idv;
-  const gchar *type, *toggle, *children;
-  gint32 active,*id;
+  GVariant *item, *dict;
+  GtkWidget *mitem, *smenu;
+  const gchar *toggle;
+  gint32 id;
   GSList *group = NULL;
 
   if(!list)
     return NULL;
   g_variant_iter_init(&iter,list);
 
-  menu = gtk_menu_new();
   gtk_menu_set_reserve_toggle_size(GTK_MENU(menu), FALSE);
-  gtk_widget_set_name(menu,"tray");
+  gtk_widget_set_name(menu, "tray");
 
-  while( (item = g_variant_iter_next_value(&iter)) )
+  while(g_variant_iter_next(&iter, "v", &item))
   {
-    if(g_variant_is_of_type(item,G_VARIANT_TYPE_VARIANT))
-    {
-      tmp = item;
-      item = g_variant_get_variant(tmp);
-      g_variant_unref(tmp);
-    }
+    g_variant_get(item, "(i@a{sv}av)", &id, &dict, NULL);
 
-    dict = g_variant_get_child_value(item, 1);
-    mitem = NULL;
-
-    if(sni_variant_get_bool(dict,"visible",TRUE))
+    if(sni_variant_get_bool(dict, "visible", TRUE))
     {
-      type = sni_variant_get_string(dict,"type","standard");
       toggle = sni_variant_get_string(dict,"toggle-type","");
-      children = sni_variant_get_string(dict,"children-display","");
-      active = sni_variant_get_int32(dict,"toggle-state",0);
 
-      if(!g_strcmp0(children,"submenu"))
+      if(!g_strcmp0(sni_variant_get_string(dict, "children-display", ""),
+            "submenu"))
       {
-        smenu = sni_get_menu_iter(g_variant_get_child_value(item, 2),wrap);
+        smenu = gtk_menu_new();
+        sni_get_menu_iter(g_variant_get_child_value(item, 2), smenu, wrap);
         if(smenu)
         {
           mitem = gtk_menu_item_new();
-          gtk_menu_item_set_submenu(GTK_MENU_ITEM(mitem),smenu);
+          gtk_menu_item_set_submenu(GTK_MENU_ITEM(mitem), smenu);
         }
       }
-      if(!mitem && !g_strcmp0(type,"separator"))
+      else if(!g_strcmp0(sni_variant_get_string(dict, "type", "standard"),
+            "separator"))
         mitem = gtk_separator_menu_item_new();
-      if(!mitem &&  !*toggle )
-        mitem= gtk_menu_item_new();
-      if(!mitem && !g_strcmp0(toggle,"checkmark"))
+      else if(!g_strcmp0(toggle, "checkmark"))
       {
-        mitem= gtk_check_menu_item_new();
-        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mitem),active);
+        mitem = gtk_check_menu_item_new();
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(mitem),
+            sni_variant_get_int32(dict, "toggle-state", 0));
       }
-      if(!mitem && !g_strcmp0(toggle,"radio"))
+      else if(!g_strcmp0(toggle, "radio"))
       {
-        mitem= gtk_radio_menu_item_new(group);
+        mitem = gtk_radio_menu_item_new(group);
         group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(mitem));
       }
+      else
+        mitem = gtk_menu_item_new();
     }
 
     if(mitem)
     {
+      g_object_set_data(G_OBJECT(mitem),"sni_menu_id", GINT_TO_POINTER(id));
       sni_menu_item_decorate(mitem,dict);
-      gtk_widget_set_sensitive(mitem,sni_variant_get_bool(dict,"enabled",TRUE));
-      idv = g_variant_get_child_value(item, 0);
-      id = g_malloc(sizeof(gint32));
-      *id = g_variant_get_int32(idv);
-      g_variant_unref(idv);
-      g_object_set_data_full(G_OBJECT(mitem),"sni_id",id,g_free);
-      g_signal_connect(G_OBJECT(mitem),"activate",
-          G_CALLBACK(sni_menu_item_cb),wrap->sni);
+      gtk_widget_set_sensitive(mitem,sni_variant_get_bool(dict, "enabled",
+            TRUE));
+      g_signal_connect(G_OBJECT(mitem), "activate",
+          G_CALLBACK(sni_menu_item_cb), wrap->sni);
       gtk_container_add(GTK_CONTAINER(menu),mitem);
     }
 
@@ -248,7 +221,8 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
     }
   }
 
-  menu = sni_get_menu_iter(list,wrap);
+  menu = gtk_menu_new();
+  sni_get_menu_iter(list, menu, wrap);
 
   if(menu)
   {
@@ -261,6 +235,22 @@ void sni_get_menu_cb ( GObject *src, GAsyncResult *res, gpointer data )
   g_free(wrap);
   if(result)
     g_variant_unref(result);
+}
+
+void sni_menu_ats_cb ( GObject *src, GAsyncResult *res, gpointer data )
+{
+  GVariant *result;
+  struct sni_menu_wrapper *wrap = data;
+
+  result = g_dbus_connection_call_finish(G_DBUS_CONNECTION(src),res,NULL);
+  if(!result)
+    return;
+  g_variant_unref(result);
+
+  g_dbus_connection_call(sni_get_connection(), wrap->sni->dest, wrap->sni->menu_path,
+      "com.canonical.dbusmenu", "GetLayout",
+      g_variant_new("(iias)", 0, -1, NULL),
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, sni_get_menu_cb, wrap);
 }
 
 void sni_get_menu ( GtkWidget *widget, GdkEvent *event )
@@ -276,7 +266,6 @@ void sni_get_menu ( GtkWidget *widget, GdkEvent *event )
   g_debug("sni %s: requesting menu",wrap->sni->dest);
 
   g_dbus_connection_call(sni_get_connection(), sni->dest, sni->menu_path,
-      "com.canonical.dbusmenu", "GetLayout",
-      g_variant_new("(iias)", 0, -1, NULL),
-      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, sni_get_menu_cb, wrap);
+      "com.canonical.dbusmenu", "AboutToShow", g_variant_new("(i)", 0),
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, sni_menu_ats_cb, wrap);
 }
