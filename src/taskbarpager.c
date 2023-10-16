@@ -130,7 +130,7 @@ static void taskbar_pager_class_init ( TaskbarPagerClass *kclass )
   BASE_WIDGET_CLASS(kclass)->get_child = taskbar_pager_get_taskbar;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_pager_update;
   FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_pager_invalidate;
-  FLOW_ITEM_CLASS(kclass)->get_parent = taskbar_pager_get_ws;
+  FLOW_ITEM_CLASS(kclass)->get_source = taskbar_pager_get_ws;
   FLOW_ITEM_CLASS(kclass)->compare = taskbar_pager_compare;
 }
 

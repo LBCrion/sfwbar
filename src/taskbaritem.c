@@ -162,7 +162,8 @@ static void taskbar_item_class_init ( TaskbarItemClass *kclass )
   BASE_WIDGET_CLASS(kclass)->action_exec = taskbar_item_action_exec;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_item_update;
   FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_item_invalidate;
-  FLOW_ITEM_CLASS(kclass)->get_parent = (void * (*)(GtkWidget *))taskbar_item_get_window;
+  FLOW_ITEM_CLASS(kclass)->get_source =
+    (void * (*)(GtkWidget *))taskbar_item_get_window;
   FLOW_ITEM_CLASS(kclass)->compare = taskbar_item_compare;
 }
 

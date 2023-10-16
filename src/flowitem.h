@@ -25,7 +25,7 @@ struct _FlowItemClass
 
   void (*update) ( GtkWidget *self );
   void (*invalidate) ( GtkWidget *self );
-  void* (*get_parent) ( GtkWidget *self );
+  void* (*get_source) ( GtkWidget *self );
   gint (*compare) (GtkWidget *, GtkWidget *, GtkWidget *);
 };
 
@@ -41,7 +41,7 @@ GType flow_item_get_type ( void );
 
 void flow_item_update ( GtkWidget *self );
 void flow_item_invalidate ( GtkWidget *self );
-void *flow_item_get_parent ( GtkWidget *self );
+void *flow_item_get_source ( GtkWidget *self );
 void flow_item_set_parent ( GtkWidget *self, GtkWidget *parent );
 void flow_item_set_active ( GtkWidget *self, gboolean );
 gboolean flow_item_get_active ( GtkWidget *self );

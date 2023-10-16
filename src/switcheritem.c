@@ -39,7 +39,7 @@ void switcher_item_update ( GtkWidget *self )
   if(priv->icon)
     scale_image_set_image(priv->icon,priv->win->appid,NULL);
 
-  if ( switcher_is_focused(((window_t *)flow_item_get_parent(self))->uid) )
+  if ( switcher_is_focused(((window_t *)flow_item_get_source(self))->uid) )
     gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "switcher_active");
   else
     gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "switcher_normal");
@@ -95,7 +95,7 @@ static void switcher_item_class_init ( SwitcherItemClass *kclass )
   FLOW_ITEM_CLASS(kclass)->update = switcher_item_update;
   FLOW_ITEM_CLASS(kclass)->compare = switcher_item_compare;
   FLOW_ITEM_CLASS(kclass)->invalidate = switcher_item_invalidate;
-  FLOW_ITEM_CLASS(kclass)->get_parent =
+  FLOW_ITEM_CLASS(kclass)->get_source =
     (void * (*)(GtkWidget *))switcher_item_get_window;
 }
 

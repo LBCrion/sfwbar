@@ -186,7 +186,7 @@ void flow_grid_add_child ( GtkWidget *self, GtkWidget *child )
   flow_grid_invalidate(self);
 }
 
-void flow_grid_delete_child ( GtkWidget *self, void *parent )
+void flow_grid_delete_child ( GtkWidget *self, void *source )
 {
   FlowGridPrivate *priv;
   GList *iter;
@@ -200,7 +200,7 @@ void flow_grid_delete_child ( GtkWidget *self, void *parent )
     return;
 
   for(iter=priv->children;iter;iter=g_list_next(iter))
-    if(flow_item_get_parent(iter->data)==parent)
+    if(flow_item_get_source(iter->data)==source)
     {
       g_object_unref(iter->data);
       priv->children = g_list_delete_link(priv->children, iter);
@@ -301,7 +301,7 @@ guint flow_grid_n_children ( GtkWidget *self )
   return n;
 }
 
-gpointer flow_grid_find_child ( GtkWidget *self, gconstpointer parent )
+gpointer flow_grid_find_child ( GtkWidget *self, gconstpointer source )
 {
   FlowGridPrivate *priv;
   GList *iter;
@@ -316,7 +316,7 @@ gpointer flow_grid_find_child ( GtkWidget *self, gconstpointer parent )
     return NULL;
 
   for(iter=priv->children; iter; iter=g_list_next(iter))
-    if(flow_item_get_parent(iter->data)==parent)
+    if(flow_item_get_source(iter->data)==source)
       return iter->data;
 
   return NULL;
@@ -350,8 +350,8 @@ static void flow_grid_dnd_data_rec_cb ( GtkWidget *dest, GdkDragContext *ctx,
     return;
   if(!g_list_find(priv->children,src))
   {
-    window_t *win = flow_item_get_parent(dest);
-    window_t *wins = flow_item_get_parent(src);
+    window_t *win = flow_item_get_source(dest);
+    window_t *wins = flow_item_get_source(src);
     workspace_t *ws = workspace_from_id(win->workspace);
     if(ws)
       wintree_move_to(wins->uid, ws->id);

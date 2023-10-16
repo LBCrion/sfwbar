@@ -202,7 +202,7 @@ static void tray_item_class_init ( TrayItemClass *kclass )
   FLOW_ITEM_CLASS(kclass)->update = tray_item_update;
   FLOW_ITEM_CLASS(kclass)->compare = tray_item_compare;
   FLOW_ITEM_CLASS(kclass)->invalidate = tray_item_invalidate;
-  FLOW_ITEM_CLASS(kclass)->get_parent =
+  FLOW_ITEM_CLASS(kclass)->get_source =
     (void *(*)(GtkWidget *))tray_item_get_sni;
 }
 

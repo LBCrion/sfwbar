@@ -90,7 +90,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
   {
     widget = base_widget_from_id(addr->cache);
     if(IS_TASKBAR_ITEM(widget))
-      win = flow_item_get_parent(widget);
+      win = flow_item_get_source(widget);
     event = NULL;
     istate = NULL;
   }
@@ -134,7 +134,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
         GTK_CONTAINER(base_widget_get_child(widget)));
     for(iter=children;iter;iter=g_list_next(iter))
       action_exec(iter->data,caction,event,
-          IS_TASKBAR_ITEM(iter->data)?flow_item_get_parent(iter->data):win,
+          IS_TASKBAR_ITEM(iter->data)?flow_item_get_source(iter->data):win,
           NULL);
     g_list_free(children);
     action_free(caction,NULL);

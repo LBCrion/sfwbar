@@ -113,7 +113,8 @@ static void pager_item_class_init ( PagerItemClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->action_exec = pager_item_action_exec;
   FLOW_ITEM_CLASS(kclass)->update = pager_item_update;
-  FLOW_ITEM_CLASS(kclass)->get_parent = (void * (*)(GtkWidget *))pager_item_get_workspace;
+  FLOW_ITEM_CLASS(kclass)->get_source =
+    (void * (*)(GtkWidget *))pager_item_get_workspace;
   FLOW_ITEM_CLASS(kclass)->compare = pager_item_compare;
   FLOW_ITEM_CLASS(kclass)->invalidate = pager_item_invalidate;
 }

@@ -224,7 +224,7 @@ static void taskbar_popup_class_init ( TaskbarPopupClass *kclass )
   BASE_WIDGET_CLASS(kclass)->get_child = taskbar_popup_get_taskbar;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_popup_update;
   FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_popup_invalidate;
-  FLOW_ITEM_CLASS(kclass)->get_parent = 
+  FLOW_ITEM_CLASS(kclass)->get_source =
     (void * (*)(GtkWidget *))taskbar_popup_get_appid;
   FLOW_ITEM_CLASS(kclass)->compare = taskbar_popup_compare;
 }

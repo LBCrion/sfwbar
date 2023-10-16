@@ -250,7 +250,7 @@ void sni_get_menu ( GtkWidget *widget, GdkEvent *event )
   SniItem *sni;
   struct sni_menu_wrapper *wrap = g_malloc(sizeof(struct sni_menu_wrapper));
 
-  sni = flow_item_get_parent(widget);
+  sni = flow_item_get_source(widget);
   wrap->event = gdk_event_copy(event);
   wrap->sni = sni;
   wrap->widget = widget;

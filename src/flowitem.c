@@ -81,12 +81,12 @@ void flow_item_invalidate ( GtkWidget *self )
     FLOW_ITEM_GET_CLASS(self)->invalidate(self);
 }
 
-void *flow_item_get_parent ( GtkWidget *self )
+void *flow_item_get_source ( GtkWidget *self )
 {
   g_return_val_if_fail(IS_FLOW_ITEM(self),NULL);
 
-  if(FLOW_ITEM_GET_CLASS(self)->get_parent)
-    return FLOW_ITEM_GET_CLASS(self)->get_parent(self);
+  if(FLOW_ITEM_GET_CLASS(self)->get_source)
+    return FLOW_ITEM_GET_CLASS(self)->get_source(self);
   else
     return NULL;
 }
