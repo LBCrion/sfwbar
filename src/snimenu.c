@@ -231,12 +231,7 @@ void sni_menu_ats_cb ( GObject *src, GAsyncResult *res, gpointer data )
   struct sni_menu_wrapper *wrap = data;
 
   result = g_dbus_connection_call_finish(G_DBUS_CONNECTION(src),res,NULL);
-  if(!result)
-  {
-    gdk_event_free(wrap->event);
-    g_free(wrap);
-  }
-  else
+  if(result)
     g_variant_unref(result);
 
   g_dbus_connection_call(sni_get_connection(), wrap->sni->dest, wrap->sni->menu_path,
