@@ -235,9 +235,9 @@ void sni_menu_ats_cb ( GObject *src, GAsyncResult *res, gpointer data )
   {
     gdk_event_free(wrap->event);
     g_free(wrap);
-    return;
   }
-  g_variant_unref(result);
+  else
+    g_variant_unref(result);
 
   g_dbus_connection_call(sni_get_connection(), wrap->sni->dest, wrap->sni->menu_path,
       "com.canonical.dbusmenu", "GetLayout",
