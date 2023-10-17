@@ -34,7 +34,9 @@ struct _FlowGridPrivate
   gboolean sort;
   GList *children;
   gint (*comp)( GtkWidget *, GtkWidget *, GtkWidget * );
+
   GtkTargetEntry *dnd_target;
+  GtkWidget *parent;
 };
 
 GType flow_grid_get_type ( void );
@@ -42,6 +44,8 @@ GType flow_grid_get_type ( void );
 GtkWidget *flow_grid_new( gboolean limit);
 void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );
 void flow_grid_set_cols ( GtkWidget *cgrid, gint cols );
+gint flow_grid_get_rows ( GtkWidget *self );
+gint flow_grid_get_cols ( GtkWidget *self );
 void flow_grid_set_primary ( GtkWidget *self, gint primary );
 void flow_grid_add_child ( GtkWidget *self, GtkWidget *child );
 void flow_grid_update ( GtkWidget *self );
@@ -52,5 +56,11 @@ gpointer flow_grid_find_child ( GtkWidget *, gconstpointer parent );
 void flow_grid_child_dnd_enable ( GtkWidget *, GtkWidget *, GtkWidget *);
 void flow_grid_set_sort ( GtkWidget *cgrid, gboolean sort );
 void flow_grid_copy_properties ( GtkWidget *dest, GtkWidget *src );
+GtkWidget *flow_grid_get_parent ( GtkWidget *self );
+void flow_grid_set_parent ( GtkWidget *self, GtkWidget *parent );
+void flow_grid_set_dnd_target ( GtkWidget *self, GtkTargetEntry *target );
+GtkTargetEntry  *flow_grid_get_dnd_target ( GtkWidget *self );
+void flow_grid_children_order ( GtkWidget *self, GtkWidget *ref,
+    GtkWidget *child, gboolean after );
 
 #endif

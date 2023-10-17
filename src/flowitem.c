@@ -22,9 +22,44 @@ static void flow_item_destroy ( GtkWidget *self )
   GTK_WIDGET_CLASS(flow_item_parent_class)->destroy(self);
 }
 
+static void flow_item_dnd_dest_impl ( GtkWidget *dest, GtkWidget *src,
+    gint x, gint y )
+{
+  FlowItemPrivate *priv, *spriv;
+  window_t *swin, *dwin;
+  workspace_t *ws;
+  GtkAllocation alloc;
+  gboolean after;
+
+  if(src==dest)
+    return;
+
+  g_return_if_fail(IS_FLOW_ITEM(dest));
+  g_return_if_fail(IS_FLOW_ITEM(src));
+  priv = flow_item_get_instance_private(FLOW_ITEM(dest));
+  spriv = flow_item_get_instance_private(FLOW_ITEM(src));
+
+  if(priv->parent == spriv->parent)
+  {
+    gtk_widget_get_allocation( dest, &alloc );
+    after = ((flow_grid_get_cols(priv->parent)>0 && y>alloc.height/2) ||
+        (flow_grid_get_rows(priv->parent)>0 && x>alloc.width/2));
+    flow_grid_children_order(priv->parent, dest, src, after);
+  }
+  else
+  {
+    swin = flow_item_get_source(src);
+    dwin = flow_item_get_source(dest);
+    ws = workspace_from_id(dwin->workspace);
+    if(swin && ws)
+      wintree_move_to(swin->uid, ws->id);
+  }
+}
+
 static void flow_item_class_init ( FlowItemClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = flow_item_destroy;
+  FLOW_ITEM_CLASS(kclass)->dnd_dest = flow_item_dnd_dest_impl;
 }
 
 void flow_item_set_parent ( GtkWidget *self, GtkWidget *parent )
@@ -102,3 +137,9 @@ gint flow_item_compare ( GtkWidget *p1, GtkWidget *p2, GtkWidget *parent )
   return FLOW_ITEM_GET_CLASS(p1)->compare(p1,p2,parent);
 }
 
+void flow_item_dnd_dest ( GtkWidget *self, GtkWidget *src, gint x, gint y )
+{
+  g_return_if_fail(IS_FLOW_ITEM(self));
+  if(FLOW_ITEM_GET_CLASS(self)->dnd_dest)
+    FLOW_ITEM_GET_CLASS(self)->dnd_dest(self, src, x, y);
+}

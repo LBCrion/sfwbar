@@ -102,14 +102,38 @@ GtkWidget *flow_grid_new( gboolean limit)
   return w;
 }
 
-void flow_grid_set_cols ( GtkWidget *cgrid, gint cols )
+void flow_grid_set_dnd_target ( GtkWidget *self, GtkTargetEntry *target )
 {
   FlowGridPrivate *priv;
 
-  g_return_if_fail(cgrid != NULL);
-  g_return_if_fail(IS_FLOW_GRID(cgrid));
+  if(IS_BASE_WIDGET(self))
+    self = base_widget_get_child(self);
+  g_return_if_fail(IS_FLOW_GRID(self));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
-  priv = flow_grid_get_instance_private(FLOW_GRID(cgrid));
+  g_clear_pointer(&priv->dnd_target, gtk_target_entry_free);
+  if(target)
+    priv->dnd_target = target;
+}
+
+GtkTargetEntry *flow_grid_get_dnd_target ( GtkWidget *self )
+{
+  FlowGridPrivate *priv;
+
+  if(IS_BASE_WIDGET(self))
+    self = base_widget_get_child(self);
+  g_return_val_if_fail(IS_FLOW_GRID(self), NULL);
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  return priv->dnd_target;
+}
+
+void flow_grid_set_cols ( GtkWidget *self, gint cols )
+{
+  FlowGridPrivate *priv;
+
+  g_return_if_fail(IS_FLOW_GRID(self));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   priv->cols = cols;
   priv->rows = 0;
@@ -117,20 +141,38 @@ void flow_grid_set_cols ( GtkWidget *cgrid, gint cols )
     priv->rows = 1;
 }
 
-void flow_grid_set_rows ( GtkWidget *cgrid, gint rows )
+void flow_grid_set_rows ( GtkWidget *self, gint rows )
 {
   FlowGridPrivate *priv;
 
-  g_return_if_fail(cgrid != NULL);
-  g_return_if_fail(IS_FLOW_GRID(cgrid));
-
-  priv = flow_grid_get_instance_private(FLOW_GRID(cgrid));
+  g_return_if_fail(IS_FLOW_GRID(self));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   priv->rows = rows;
   priv->cols = 0;
 
   if((priv->rows<1)&&(priv->cols<1))
     priv->rows = 1;
+}
+
+gint flow_grid_get_cols ( GtkWidget *self )
+{
+  FlowGridPrivate *priv;
+
+  g_return_val_if_fail(IS_FLOW_GRID(self), -1);
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  return priv->cols;
+}
+
+gint flow_grid_get_rows ( GtkWidget *self )
+{
+  FlowGridPrivate *priv;
+
+  g_return_val_if_fail(IS_FLOW_GRID(self), -1);
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  return priv->rows;
 }
 
 void flow_grid_set_primary ( GtkWidget *self, gint primary )
@@ -322,48 +364,62 @@ gpointer flow_grid_find_child ( GtkWidget *self, gconstpointer source )
   return NULL;
 }
 
+void flow_grid_set_parent ( GtkWidget *self, GtkWidget *parent )
+{
+  FlowGridPrivate *priv;
+
+  if(!IS_BASE_WIDGET(parent))
+    return;
+
+  g_return_if_fail(IS_FLOW_GRID(self));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  priv->parent = parent;
+}
+
+GtkWidget *flow_grid_get_parent ( GtkWidget *self )
+{
+  FlowGridPrivate *priv;
+
+  g_return_val_if_fail(IS_FLOW_GRID(self),NULL);
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  return priv->parent;
+}
+
+void flow_grid_children_order ( GtkWidget *self, GtkWidget *ref,
+    GtkWidget *child, gboolean after )
+{
+  FlowGridPrivate *priv;
+  GList *dlist;
+
+  g_return_if_fail(IS_FLOW_GRID(self));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  dlist = g_list_find(priv->children, ref);
+  if(!dlist || !g_list_find(priv->children, child))
+    return;
+
+  priv->children = g_list_remove(priv->children, child );
+  priv->children = g_list_insert_before(priv->children,
+      after ? g_list_next(dlist) : dlist, child );
+
+  flow_item_invalidate(child);
+  flow_item_invalidate(ref);
+}
+
 static void flow_grid_dnd_data_rec_cb ( GtkWidget *dest, GdkDragContext *ctx,
     gint x, gint y, GtkSelectionData *sel, guint info, guint time,
     gpointer parent )
 {
-  FlowGridPrivate *priv;
   GtkWidget *src;
-  GtkAllocation alloc;
-  GList *dlist;
-  gboolean after;
 
   if(IS_BASE_WIDGET(parent))
     parent = base_widget_get_child(parent);
   g_return_if_fail(IS_FLOW_GRID(parent));
   src = *(GtkWidget **)gtk_selection_data_get_data(sel);
 
-  if(src==dest)
-    return;
-
-  priv = flow_grid_get_instance_private(FLOW_GRID(parent));
-  gtk_widget_get_allocation( dest, &alloc );
-  after = ((priv->cols>0 && y>alloc.height/2) ||
-      (priv->rows>0 && x>alloc.width/2));
-
-  dlist = g_list_find(priv->children,dest);
-  if(!dlist)
-    return;
-  if(!g_list_find(priv->children,src))
-  {
-    window_t *win = flow_item_get_source(dest);
-    window_t *wins = flow_item_get_source(src);
-    workspace_t *ws = workspace_from_id(win->workspace);
-    if(ws)
-      wintree_move_to(wins->uid, ws->id);
-    /* workspace move goes here */
-    return;
-  }
-
-  priv->children = g_list_remove(priv->children, src );
-  priv->children = g_list_insert_before(priv->children,
-      after ? g_list_next(dlist) : dlist, src );
-  flow_item_invalidate(dest);
-  flow_item_invalidate(src);
+  flow_item_dnd_dest(dest, src, x, y);
 }
 
 static void flow_grid_dnd_enter_cb ( GtkWidget *widget, GdkEventCrossing *ev,
@@ -400,42 +456,38 @@ static void flow_grid_dnd_data_get_cb ( GtkWidget *widget, GdkDragContext *ctx,
 void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
     GtkWidget *src )
 {
-  GtkWidget *marshall;
   FlowGridPrivate *priv;
 
   g_return_if_fail(IS_FLOW_ITEM(child));
-  if(g_object_get_data(G_OBJECT(self), "parent_taskbar"))
-    marshall = g_object_get_data(G_OBJECT(self), "parent_taskbar");
-  else
-    marshall = self;
+
   if(IS_BASE_WIDGET(self))
     self = base_widget_get_child(self);
   g_return_if_fail(IS_FLOW_GRID(self));
-
-  if(IS_BASE_WIDGET(marshall))
-    marshall = base_widget_get_child(marshall);
-  g_return_if_fail(IS_FLOW_GRID(marshall));
-  priv = flow_grid_get_instance_private(FLOW_GRID(marshall));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   if(!priv->dnd_target)
     return;
 
-  gtk_drag_source_set(src, GDK_BUTTON1_MASK, priv->dnd_target, 1,
-      GDK_ACTION_MOVE);
-  g_signal_connect(G_OBJECT(src),"drag-data-get",
-      G_CALLBACK(flow_grid_dnd_data_get_cb),child);
   gtk_drag_dest_set(child, GTK_DEST_DEFAULT_ALL, priv->dnd_target, 1,
       GDK_ACTION_MOVE);
   g_signal_connect(G_OBJECT(child), "drag-data-received",
       G_CALLBACK(flow_grid_dnd_data_rec_cb), self);
-  g_signal_connect(G_OBJECT(src), "drag-begin",
-      G_CALLBACK(flow_grid_dnd_begin_cb), self);
-  g_signal_connect(G_OBJECT(src), "drag-end",
-      G_CALLBACK(flow_grid_dnd_end_cb), self);
-  g_signal_connect(G_OBJECT(src), "enter-notify-event",
-      G_CALLBACK(flow_grid_dnd_enter_cb), NULL);
-  g_signal_handlers_block_matched(src, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,
-      (GFunc)flow_grid_dnd_enter_cb,NULL);
+
+  if(src)
+  {
+    gtk_drag_source_set(src, GDK_BUTTON1_MASK, priv->dnd_target, 1,
+        GDK_ACTION_MOVE);
+    g_signal_connect(G_OBJECT(src),"drag-data-get",
+        G_CALLBACK(flow_grid_dnd_data_get_cb),child);
+    g_signal_connect(G_OBJECT(src), "drag-begin",
+        G_CALLBACK(flow_grid_dnd_begin_cb), self);
+    g_signal_connect(G_OBJECT(src), "drag-end",
+        G_CALLBACK(flow_grid_dnd_end_cb), self);
+    g_signal_connect(G_OBJECT(src), "enter-notify-event",
+        G_CALLBACK(flow_grid_dnd_enter_cb), NULL);
+    g_signal_handlers_block_matched(src, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,
+        (GFunc)flow_grid_dnd_enter_cb,NULL);
+  }
 }
 
 void flow_grid_copy_properties ( GtkWidget *dest, GtkWidget *src )
