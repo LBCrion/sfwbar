@@ -71,12 +71,16 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
   GVariant *result, *inner;
 
   wrap->sni->ref--;
+
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(result)
+  {
     g_variant_get(result, "(v)",&inner);
+    g_variant_unref(result);
+  }
+
   if(!result || !inner)
     return g_free(wrap);
-  g_variant_unref(result);
 
   if(wrap->prop<=SNI_PROP_THEME &&
       g_variant_is_of_type(inner,G_VARIANT_TYPE_STRING))

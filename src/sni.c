@@ -280,8 +280,7 @@ static void sni_host_register_cb ( GDBusConnection *con, const gchar *name,
   g_dbus_connection_call(con, host->watcher, "/StatusNotifierWatcher",
     host->watcher, "RegisterStatusNotifierHost",
     g_variant_new("(s)", host->iface),
-    G_VARIANT_TYPE ("(a{sv})"),
-    G_DBUS_CALL_FLAGS_NONE,-1,NULL,NULL,host);
+    G_VARIANT_TYPE("(a{sv})"), G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, host);
 
   g_dbus_connection_signal_subscribe(con,NULL,watcher->iface,
       "StatusNotifierItemRegistered","/StatusNotifierWatcher",NULL,
