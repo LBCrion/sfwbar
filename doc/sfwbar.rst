@@ -280,6 +280,11 @@ sort [true|false]
   sorted, user can sort them manually via drag-and-drop mechanism.
   Items are sorted by default, set this to false to enable drag-and-drop.
 
+numeric [true|false]
+  if true, the workspaces will be sorted as numbers, otherwise they will be
+  sorted as strings (defaults to true). (this is only applicable to taskbars
+  set to ``group = pager``).
+
 rows
   a number of rows in a taskbar.
 
@@ -288,11 +293,17 @@ cols
   If both rows and cols are specified, rows will be used. If neither is
   specified, the default is rows=1
 
-group [true|false]
-  if set to true, the taskbar items will be grouped by app_id, the main
-  taskbar will contain one item per app_id with an icon and a label set
-  to app_id. On over, it will popup a "group taskbar" containing items
-  for individual windows.
+group [popup|pager|false]
+  if set to true, the taskbar items will be grouped. Supported grouppings
+  are: popup and pager. In a popup grouping windows are grouped by app_id,
+  the main taskbar will contain one item per app_id with an icon and a
+  label set to app_id. On over, it will popup a "group taskbar" containing
+  items for individual windows. 
+  In a pager grouping mode, the taskbar is partitioned into workspaces and
+  each workspace contains windows belonging to it. Dragging windows from
+  one workspace to another moves it to a destination workspace. (currently
+  this is only supported with sway and hyprland compositors, support for
+  other compositors requires adoption of new wayland protocols).
   You can specify taskbar parameters for the group taskbars using group
   prefix, i.e. ``group cols = 1``. The properties supported for groups 
   are cols, rows, style, css, title_width, labels, icons.
@@ -955,6 +966,10 @@ sfwbar                toplevel bar window
 layout                top level layout grid
 taskbar_normal        taskbar button for a window
 taskbar_active        taskbar button for currently focused window
+takbar_popup_normal   taskbar popup button
+takbar_popup_active   taskbar popup button for group containing active window
+taskbar_pager_normal  taskbar pager grid
+taskbar_pager_active  taskbar pager grid for currently active workspace
 pager_normal          pager button for a workspace
 pager_visible         pager button for a visible workspace
 pager_focused         pager button for a currently focused workspace
