@@ -32,7 +32,6 @@ static gpointer taskbar_pager_get_ws ( GtkWidget *self )
 static void taskbar_pager_update ( GtkWidget *self )
 {
   TaskbarPagerPrivate *priv;
-  workspace_t *ws;
   gchar *title;
 
   g_return_if_fail(IS_TASKBAR_PAGER(self));
@@ -40,8 +39,7 @@ static void taskbar_pager_update ( GtkWidget *self )
   if(!priv->invalid)
     return;
 
-  ws = workspace_from_id(priv->ws);
-  title = ws?ws->name:NULL;
+  title = priv->ws? priv->ws->name: NULL;
   if(g_strcmp0(gtk_button_get_label(GTK_BUTTON(priv->button)),title))
     gtk_button_set_label(GTK_BUTTON(priv->button),title);
 
@@ -66,13 +64,16 @@ static gint taskbar_pager_compare ( GtkWidget *a, GtkWidget *b,
 {
   TaskbarPagerPrivate *p1,*p2;
 
-  g_return_val_if_fail(IS_TASKBAR_PAGER(a),0);
-  g_return_val_if_fail(IS_TASKBAR_PAGER(b),0);
+  g_return_val_if_fail(IS_TASKBAR_PAGER(a), 0);
+  g_return_val_if_fail(IS_TASKBAR_PAGER(b), 0);
 
   p1 = taskbar_pager_get_instance_private(TASKBAR_PAGER(a));
   p2 = taskbar_pager_get_instance_private(TASKBAR_PAGER(b));
 
-  return p1->ws - p2->ws;
+  if(g_object_get_data(G_OBJECT(parent), "sort_numeric"))
+    return strtoll(p1->ws->name, NULL, 10) - strtoll(p2->ws->name, NULL, 10);
+  else
+    return g_strcmp0(p1->ws->name, p2->ws->name);
 }
 
 static gboolean taskbar_pager_action_exec ( GtkWidget *self, gint slot,
@@ -91,7 +92,7 @@ static gboolean taskbar_pager_action_exec ( GtkWidget *self, gint slot,
 
   if(!mods && slot==1)
   {
-    workspace_activate(workspace_from_id(priv->ws));
+    workspace_activate(priv->ws);
     return TRUE;
   }
 
@@ -134,7 +135,7 @@ static void taskbar_pager_dnd_dest ( GtkWidget *dest, GtkWidget *src,
   ws = flow_item_get_source(dest);
   win = flow_item_get_source(src);
   if(win && ws)
-    wintree_move_to(win->uid, ws);
+    wintree_move_to(win->uid, ws->id);
 }
 
 static void taskbar_pager_class_init ( TaskbarPagerClass *kclass )
@@ -152,7 +153,7 @@ static void taskbar_pager_init ( TaskbarPager *self )
 {
 }
 
-GtkWidget *taskbar_pager_new( gpointer wsid, GtkWidget *taskbar )
+GtkWidget *taskbar_pager_new( workspace_t *ws, GtkWidget *taskbar )
 {
   GtkWidget *self;
   TaskbarPagerPrivate *priv;
@@ -168,7 +169,7 @@ GtkWidget *taskbar_pager_new( gpointer wsid, GtkWidget *taskbar )
   flow_grid_set_parent(base_widget_get_child(priv->tgroup), self);
   flow_grid_child_dnd_enable(taskbar, self, NULL);
   g_object_set_data(G_OBJECT(priv->tgroup), "parent_taskbar", taskbar);
-  priv->ws = wsid;
+  priv->ws = ws;
   priv->grid = gtk_grid_new();
   priv->button = gtk_button_new_with_label("");
   gtk_widget_set_name(GTK_WIDGET(priv->grid), "taskbar_pager");

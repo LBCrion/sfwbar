@@ -3,6 +3,7 @@
 
 #include "sfwbar.h" 
 #include "flowitem.h"
+#include "workspace.h"
 #include "action.h"
 
 #define TASKBAR_PAGER_TYPE            (taskbar_pager_get_type())
@@ -32,7 +33,7 @@ struct _TaskbarPagerPrivate
   GtkWidget *grid;
   GtkWidget *taskbar;
   GtkWidget *tgroup;
-  gpointer ws;
+  workspace_t *ws;
   gboolean invalid;
   gboolean single;
   GList *holds;
@@ -40,6 +41,6 @@ struct _TaskbarPagerPrivate
 
 GType taskbar_pager_get_type ( void );
 
-GtkWidget *taskbar_pager_new( gpointer ws, GtkWidget *taskbar );
+GtkWidget *taskbar_pager_new( workspace_t *ws, GtkWidget *taskbar );
 
 #endif

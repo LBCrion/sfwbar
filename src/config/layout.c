@@ -249,11 +249,6 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         g_object_set_data(G_OBJECT(base_widget_get_child(widget)),"preview",
             GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"preview")));
         return TRUE;
-      case G_TOKEN_NUMERIC:
-        g_object_set_data(G_OBJECT(base_widget_get_child(widget)),
-            "sort_numeric",GINT_TO_POINTER(
-              config_assign_boolean(scanner,TRUE,"numeric")));
-        return TRUE;
     }
 
   if(IS_TASKBAR(widget))
@@ -317,16 +312,16 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
               config_assign_string(scanner,"group css"),g_free);
             return TRUE;
           case G_TOKEN_STYLE:
-            g_object_set_data_full(G_OBJECT(widget),"g_style",
-              config_assign_string(scanner,"group style"),g_free);
+            g_object_set_data_full(G_OBJECT(widget), "g_style",
+              config_assign_string(scanner, "group style"), g_free);
             return TRUE;
           case G_TOKEN_TITLEWIDTH:
             g_object_set_data(G_OBJECT(widget),"g_title_width",GINT_TO_POINTER(
-              (gint)config_assign_number(scanner,"group title_width")));
+              (gint)config_assign_number(scanner, "group title_width")));
             return TRUE;
           case G_TOKEN_SORT:
-            g_object_set_data(G_OBJECT(widget),"g_sort",GINT_TO_POINTER(
-              config_assign_boolean(scanner,TRUE,"group sort")));
+            g_object_set_data(G_OBJECT(widget), "g_sort", GINT_TO_POINTER(
+              config_assign_boolean(scanner, TRUE, "group sort")));
             return TRUE;
         }
     }
@@ -344,20 +339,25 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         return TRUE;
       case G_TOKEN_PRIMARY:
         flow_grid_set_primary(base_widget_get_child(widget),
-            config_assign_tokens(scanner,"primary","rows|cols",
-              G_TOKEN_ROWS,G_TOKEN_COLS,NULL));
+            config_assign_tokens(scanner, "primary", "rows|cols",
+              G_TOKEN_ROWS,G_TOKEN_COLS, NULL));
         return TRUE;
       case G_TOKEN_ICONS:
         g_object_set_data(G_OBJECT(widget),"icons",
-          GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"icons")));
+          GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "icons")));
         return TRUE;
       case G_TOKEN_LABELS:
         g_object_set_data(G_OBJECT(widget),"labels",
-          GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"labels")));
+          GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "labels")));
         return TRUE;
       case G_TOKEN_SORT:
         flow_grid_set_sort(base_widget_get_child(widget),
-              config_assign_boolean(scanner,TRUE,"sort"));
+              config_assign_boolean(scanner, TRUE, "sort"));
+        return TRUE;
+      case G_TOKEN_NUMERIC:
+        g_object_set_data(G_OBJECT(base_widget_get_child(widget)),
+            "sort_numeric",GINT_TO_POINTER(
+              config_assign_boolean(scanner, TRUE, "numeric")));
         return TRUE;
     }
 

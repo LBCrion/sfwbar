@@ -113,7 +113,7 @@ gpointer taskbar_group_id ( GtkWidget *self, window_t *win )
     case TASKBAR_POPUP:
       return win->appid;
     case TASKBAR_DESK:
-      return win->workspace;
+      return workspace_from_id(win->workspace);
   }
   return NULL;
 }
@@ -144,7 +144,7 @@ gpointer taskbar_holder_new ( GtkWidget *self, window_t *win )
     case TASKBAR_POPUP:
       return taskbar_popup_new(win->appid, self);
     case TASKBAR_DESK:
-      return taskbar_pager_new(win->workspace, self);
+      return taskbar_pager_new(workspace_from_id(win->workspace), self);
   }
   return NULL;
 }
