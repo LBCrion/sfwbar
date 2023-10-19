@@ -127,10 +127,10 @@ static void taskbar_popup_update ( GtkWidget *self )
 
   if (flow_grid_find_child(priv->tgroup, wintree_from_id(wintree_get_focus())))
     gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)),
-        "taskbar_popup_active");
+        "taskbar_group_active");
   else
     gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)),
-        "taskbar_popup_normal");
+        "taskbar_group_normal");
 
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
@@ -224,9 +224,11 @@ static void taskbar_popup_class_init ( TaskbarPopupClass *kclass )
   BASE_WIDGET_CLASS(kclass)->get_child = taskbar_popup_get_taskbar;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_popup_update;
   FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_popup_invalidate;
+  FLOW_ITEM_CLASS(kclass)->comp_source = (GCompareFunc)g_strcmp0;
+  FLOW_ITEM_CLASS(kclass)->compare = taskbar_popup_compare;
   FLOW_ITEM_CLASS(kclass)->get_source =
     (void * (*)(GtkWidget *))taskbar_popup_get_appid;
-  FLOW_ITEM_CLASS(kclass)->compare = taskbar_popup_compare;
+
 }
 
 static void taskbar_popup_init ( TaskbarPopup *self )
@@ -264,7 +266,7 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *taskbar )
   priv->appid = g_strdup(appid);
   priv->button = gtk_button_new();
   gtk_container_add(GTK_CONTAINER(self), priv->button);
-  gtk_widget_set_name(priv->button, "taskbar_popup_normal");
+  gtk_widget_set_name(priv->button, "taskbar_group_normal");
   gtk_widget_style_get(priv->button, "direction", &dir, NULL);
   box = gtk_grid_new();
   gtk_container_add(GTK_CONTAINER(priv->button), box);
@@ -288,7 +290,7 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *taskbar )
     priv->label = NULL;
 
   priv->popover = gtk_window_new(GTK_WINDOW_POPUP);
-  gtk_widget_set_name(priv->button, "taskbar_popup");
+  gtk_widget_set_name(priv->button, "taskbar_group");
   g_object_ref(G_OBJECT(priv->popover));
   gtk_container_add(GTK_CONTAINER(priv->popover), priv->tgroup);
   css_widget_apply(priv->tgroup, g_strdup(

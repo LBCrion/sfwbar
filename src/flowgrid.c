@@ -55,7 +55,7 @@ static void flow_grid_destroy( GtkWidget *self )
   g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
-  g_clear_pointer(&priv->dnd_target,gtk_target_entry_free);
+  g_clear_pointer(&priv->dnd_target, gtk_target_entry_free);
   g_list_free_full(g_steal_pointer(&priv->children),
       (GDestroyNotify)gtk_widget_destroy);
   GTK_WIDGET_CLASS(flow_grid_parent_class)->destroy(self);
@@ -113,7 +113,7 @@ void flow_grid_set_dnd_target ( GtkWidget *self, GtkTargetEntry *target )
 
   g_clear_pointer(&priv->dnd_target, gtk_target_entry_free);
   if(target)
-    priv->dnd_target = target;
+    priv->dnd_target = gtk_target_entry_copy(target);
 }
 
 GtkTargetEntry *flow_grid_get_dnd_target ( GtkWidget *self )
@@ -241,8 +241,8 @@ void flow_grid_delete_child ( GtkWidget *self, void *source )
   if(!priv->children || !priv->children->data)
     return;
 
-  for(iter=priv->children;iter;iter=g_list_next(iter))
-    if(flow_item_get_source(iter->data)==source)
+  for(iter=priv->children; iter; iter=g_list_next(iter))
+    if(!flow_item_check_source(iter->data, source))
     {
       g_object_unref(iter->data);
       priv->children = g_list_delete_link(priv->children, iter);
@@ -358,7 +358,7 @@ gpointer flow_grid_find_child ( GtkWidget *self, gconstpointer source )
     return NULL;
 
   for(iter=priv->children; iter; iter=g_list_next(iter))
-    if(flow_item_get_source(iter->data)==source)
+    if(!flow_item_check_source(iter->data, source))
       return iter->data;
 
   return NULL;
@@ -467,7 +467,6 @@ void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
 
   if(!priv->dnd_target)
     return;
-
   gtk_drag_dest_set(child, GTK_DEST_DEFAULT_ALL, priv->dnd_target, 1,
       GDK_ACTION_MOVE);
   g_signal_connect(G_OBJECT(child), "drag-data-received",

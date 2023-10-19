@@ -28,6 +28,7 @@ struct _FlowItemClass
   void* (*get_source) ( GtkWidget *self );
   gint (*compare) (GtkWidget *, GtkWidget *, GtkWidget *);
   void (*dnd_dest) ( GtkWidget *self, GtkWidget *src, gint x, gint y );
+  GCompareFunc comp_source;
 };
 
 typedef struct _FlowItemPrivate FlowItemPrivate;
@@ -48,5 +49,6 @@ void flow_item_set_active ( GtkWidget *self, gboolean );
 gboolean flow_item_get_active ( GtkWidget *self );
 gint flow_item_compare ( GtkWidget *p1, GtkWidget *p2, GtkWidget *parent );
 void flow_item_dnd_dest ( GtkWidget *self, GtkWidget *src, gint x, gint y );
+gint flow_item_check_source ( GtkWidget *self, gconstpointer source );
 
 #endif

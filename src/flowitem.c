@@ -126,6 +126,16 @@ void *flow_item_get_source ( GtkWidget *self )
     return NULL;
 }
 
+gint flow_item_check_source ( GtkWidget *self, gconstpointer source )
+{
+  g_return_val_if_fail(IS_FLOW_ITEM(self), 1);
+  if(FLOW_ITEM_GET_CLASS(self)->comp_source)
+    return FLOW_ITEM_GET_CLASS(self)->comp_source(
+        flow_item_get_source(self), source);
+  else
+    return GPOINTER_TO_INT(flow_item_get_source(self) - source);
+}
+
 gint flow_item_compare ( GtkWidget *p1, GtkWidget *p2, GtkWidget *parent )
 {
   g_return_val_if_fail(IS_FLOW_ITEM(p1),0);
