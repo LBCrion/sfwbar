@@ -6,6 +6,7 @@ jobs:
   test:
     runs-on: macos-12
     name: FreeBSD CI
+    timeout-minutes: 20
     steps:
     - uses: actions/checkout@v3
     - name: Test in FreeBSD
