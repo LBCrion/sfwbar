@@ -40,7 +40,8 @@ static void taskbar_pager_update ( GtkWidget *self )
     return;
 
   title = priv->ws? priv->ws->name: NULL;
-  if(g_strcmp0(gtk_button_get_label(GTK_BUTTON(priv->button)),title))
+  if(g_object_get_data(G_OBJECT(priv->taskbar), "labels") &&
+      g_strcmp0(gtk_button_get_label(GTK_BUTTON(priv->button)),title))
     gtk_button_set_label(GTK_BUTTON(priv->button),title);
 
   if (flow_grid_find_child(priv->tgroup, wintree_from_id(wintree_get_focus())))
@@ -171,10 +172,13 @@ GtkWidget *taskbar_pager_new( workspace_t *ws, GtkWidget *taskbar )
   g_object_set_data(G_OBJECT(priv->tgroup), "parent_taskbar", taskbar);
   priv->ws = ws;
   priv->grid = gtk_grid_new();
-  priv->button = gtk_button_new_with_label("");
   gtk_widget_set_name(GTK_WIDGET(priv->grid), "taskbar_pager");
   gtk_container_add(GTK_CONTAINER(self), priv->grid);
-  gtk_container_add(GTK_CONTAINER(priv->grid), priv->button);
+  if(g_object_get_data(G_OBJECT(priv->taskbar), "labels"))
+  {
+    priv->button = gtk_button_new_with_label("");
+    gtk_container_add(GTK_CONTAINER(priv->grid), priv->button);
+  }
   gtk_container_add(GTK_CONTAINER(priv->grid), priv->tgroup);
   gtk_widget_show_all(self);
 

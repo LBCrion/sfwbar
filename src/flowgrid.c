@@ -61,12 +61,32 @@ static void flow_grid_destroy( GtkWidget *self )
   GTK_WIDGET_CLASS(flow_grid_parent_class)->destroy(self);
 }
 
+static void style_updated ( GtkWidget *self )
+{
+  gboolean h;
+
+  gtk_widget_style_get(self,"row-homogeneous",&h,NULL);
+  gtk_grid_set_row_homogeneous(GTK_GRID(self), h);
+  gtk_widget_style_get(self,"column-homogeneous",&h,NULL);
+  gtk_grid_set_column_homogeneous(GTK_GRID(self), h);
+
+  GTK_WIDGET_CLASS(flow_grid_parent_class)->style_updated(self);
+}
+
 static void flow_grid_class_init ( FlowGridClass *kclass )
 {
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(kclass);
   widget_class->get_preferred_width = flow_grid_get_preferred_width;
   widget_class->get_preferred_height = flow_grid_get_preferred_height;
   widget_class->destroy = flow_grid_destroy;
+  widget_class->style_updated = style_updated;
+  gtk_widget_class_install_style_property( widget_class,
+      g_param_spec_boolean("row-homogeneous","row homogeneous",
+        "make all rows within the grid equal height", TRUE, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property( widget_class,
+      g_param_spec_boolean("column-homogeneous","column homogeneous",
+        "make all columns within the grid equal width", TRUE,
+        G_PARAM_READABLE));
 }
 
 static void flow_grid_init ( FlowGrid *self )

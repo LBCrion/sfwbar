@@ -121,15 +121,11 @@ gpointer taskbar_group_id ( GtkWidget *self, window_t *win )
 void taskbar_set_grouping ( GtkWidget *self, gint grouping )
 {
   TaskbarPrivate *priv;
-  GtkWidget *grid;
 
   g_return_if_fail(IS_TASKBAR(self));
   priv = taskbar_get_instance_private(TASKBAR(self));
 
   priv->grouping = grouping;
-  grid = base_widget_get_child(self);
-  gtk_grid_set_row_homogeneous(GTK_GRID(grid), !grouping);
-  gtk_grid_set_column_homogeneous(GTK_GRID(grid), !grouping);
 }
 
 gpointer taskbar_holder_new ( GtkWidget *self, window_t *win )
