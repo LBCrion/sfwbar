@@ -147,8 +147,8 @@ man/man1/sfwbar.1.gz
 %%DATADIR%%/icons/misc/stop.svg
 %%DATADIR%%/icons/misc/unlock.svg
 share/icons/hicolor/scalable/apps/sfwbar.svg
-%%NETWORK%%lib/sfwbar/network.so
-%%NETWORK%%man/man1/sfwbar-network.1.gz
+lib/sfwbar/network.so
+man/man1/sfwbar-network.1.gz
 %%PULSEAUDIO%%lib/sfwbar/pulsectl.so
 %%PULSEAUDIO%%man/man1/sfwbar-pulse.1.gz
 %%MPD%%lib/sfwbar/mpd.so
@@ -156,9 +156,9 @@ share/icons/hicolor/scalable/apps/sfwbar.svg
 %%XKB%%lib/sfwbar/xkbmap.so
 %%XKB%%man/man1/sfwbar-xkbmap.1.gz
 %%ALSA%%lib/sfwbar/alsactl.so
-%%BSD%%lib/sfwbar/bsdctl.so
-%%BSD%%man/man1/sfwbar-bsdctl.1.gz
-%%IDLE%%lib/sfwbar/idleinhibit.so
-%%IDLE%%man/man1/sfwbar-idleinhibit.1.gz
-%%BLUEZ%%lib/sfwbar/bluez.so
-%%BLUEZ%%man/man1/sfwbar-bluez.1.gz
+lib/sfwbar/bsdctl.so
+man/man1/sfwbar-bsdctl.1.gz
+lib/sfwbar/idleinhibit.so
+man/man1/sfwbar-idleinhibit.1.gz
+lib/sfwbar/bluez.so
+man/man1/sfwbar-bluez.1.gz
