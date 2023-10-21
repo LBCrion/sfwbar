@@ -542,6 +542,10 @@ static void bz_init_cb ( GDBusConnection *con, GAsyncResult *res, gpointer data 
 static void bz_name_appeared_cb (GDBusConnection *con, const gchar *name,
     const gchar *owner, gpointer d)
 {
+  g_dbus_connection_call(bz_con, bz_serv, "/org/bluez",
+      "org.bluez.AgentManager1", "RegisterAgent",
+      g_variant_new("(os)", "/org/hosers/sfwbar", "NoInputNoOutput"),
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
   g_dbus_connection_call(con, bz_serv,"/",
       "org.freedesktop.DBus.ObjectManager", "GetManagedObjects", NULL,
       G_VARIANT_TYPE("(a{oa{sa{sv}}})"), G_DBUS_CALL_FLAGS_NONE, -1, NULL,
