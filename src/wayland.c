@@ -6,7 +6,6 @@
 #include "sfwbar.h"
 #include "wayland.h"
 #include "xdg-output-unstable-v1.h"
-#include "idle-inhibit-unstable-v1.h"
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 #include "wlr-layer-shell-unstable-v1.h"
 #include <gdk/gdkwayland.h>
