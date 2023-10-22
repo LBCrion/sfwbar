@@ -21,7 +21,7 @@ USE_GNOME=	cairo gdkpixbuf2 gtk30
 USE_GITHUB=	yes
 GH_ACCOUNT=	LBCrion
 
-MESON_ENABLED=		bsdctl network bluez idleinhibit
+MESON_ARGS=		-Dbsdctl=enabled -Dnetwork=enabled -Dbluez=enabled -Didleinhibit=enabled
 
 OPTIONS_DEFINE=		MPD PULSEAUDIO XKB ALSA
 OPTIONS_DEFAULT=	MPD PULSEAUDIO XKB ALSA
