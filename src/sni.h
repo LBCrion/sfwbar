@@ -65,5 +65,6 @@ GDBusConnection *sni_get_connection ( void );
 void sni_get_menu ( GtkWidget *widget, GdkEvent *event );
 SniItem *sni_item_new (GDBusConnection *, SniHost *, const gchar *);
 void sni_item_free ( SniItem *sni );
+GList *sni_item_get_list ( void );
 
 #endif

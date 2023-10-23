@@ -17,6 +17,8 @@ struct sni_prop_wrapper {
   SniItem *sni;
 };
 
+static GList *sni_items;
+
 static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
   "IconName", "OverlayIconName", "AttentionIconName", "AttentionMovieName",
   "XAyatanaLabel", "XAyatanaLabelGuide", "IconThemePath", "IconPixmap",
@@ -199,6 +201,7 @@ SniItem *sni_item_new (GDBusConnection *con, SniHost *host,
   sni->host = host;
   sni->signal = g_dbus_connection_signal_subscribe(con,sni->dest,
       sni->host->item_iface,NULL,sni->path,NULL,0,sni_item_signal_cb,sni,NULL);
+  sni_items = g_list_append(sni_items, sni);
   tray_item_init_for_all(sni);
   for(i=0;i<SNI_MAX_PROP;i++)
     sni_item_get_prop(con,sni,i);
@@ -226,4 +229,9 @@ void sni_item_free ( SniItem *sni )
   g_free(sni->path);
   g_free(sni->dest);
   g_free(sni);
+}
+
+GList *sni_item_get_list ( void )
+{
+  return sni_items;
 }

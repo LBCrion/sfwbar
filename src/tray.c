@@ -56,6 +56,7 @@ GtkWidget *tray_new ( void )
 {
   GtkWidget *self;
   TrayPrivate *priv;
+  GList *iter;
 
   self = GTK_WIDGET(g_object_new(tray_get_type(), NULL));
   priv = tray_get_instance_private(TRAY(self));
@@ -67,7 +68,9 @@ GtkWidget *tray_new ( void )
   if(!trays)
     sni_init();
 
-  trays = g_list_append(trays,self);
+  trays = g_list_append(trays, self);
+  for(iter = sni_item_get_list(); iter; iter=g_list_next(iter))
+    tray_item_new(iter->data, self);
 
   return self;
 }
