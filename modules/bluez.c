@@ -512,19 +512,18 @@ static void bz_device_changed ( GDBusConnection *con, const gchar *sender,
 
 static void bz_init_cb ( GDBusConnection *con, GAsyncResult *res, gpointer data )
 {
-  GVariant *result, *child;
-  GVariantIter miter, *iiter;
+  GVariant *result;
+  GVariantIter *miter, *iiter;
   gchar *path;
 
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(!result)
     return;
 
-  child = g_variant_get_child_value(result, 0);
-  g_variant_iter_init(&miter, child);
-  while(g_variant_iter_next(&miter, "{&oa{sa{sv}}}", &path, &iiter))
+  g_variant_get(result, "(a{oa{sa{sv}}})", &miter);
+  while(g_variant_iter_next(miter, "{&oa{sa{sv}}}", &path, &iiter))
     bz_object_handle(path, iiter);
-  g_variant_unref(child);
+  g_variant_iter_free(miter);
   g_variant_unref(result);
 
   g_dbus_connection_signal_subscribe(con, bz_serv,
