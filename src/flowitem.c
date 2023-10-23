@@ -13,10 +13,10 @@ G_DEFINE_TYPE_WITH_CODE(FlowItem, flow_item, BASE_WIDGET_TYPE,
 
 static void flow_item_destroy ( GtkWidget *self )
 {
-  FlowItemPrivate *priv;
+//  FlowItemPrivate *priv;
 
   g_return_if_fail(IS_FLOW_ITEM(self));
-  priv = flow_item_get_instance_private(FLOW_ITEM(self));
+//  priv = flow_item_get_instance_private(FLOW_ITEM(self));
 
 //  flow_grid_delete_child(priv->parent,self);
   GTK_WIDGET_CLASS(flow_item_parent_class)->destroy(self);
