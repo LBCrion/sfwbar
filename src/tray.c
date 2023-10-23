@@ -97,7 +97,7 @@ void tray_item_destroy ( SniItem *sni )
   GList *iter;
 
   for(iter=trays; iter; iter=g_list_next(iter))
-    flow_grid_delete_child(iter->data,sni);
+    flow_grid_delete_child(iter->data, sni);
 }
 
 void tray_update ( void )

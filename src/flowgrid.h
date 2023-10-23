@@ -34,7 +34,6 @@ struct _FlowGridPrivate
   gboolean sort;
   GList *children;
   gint (*comp)( GtkWidget *, GtkWidget *, GtkWidget * );
-
   GtkTargetEntry *dnd_target;
   GtkWidget *parent;
 };

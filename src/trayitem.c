@@ -235,7 +235,7 @@ GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
   priv->tray = tray;
   priv->invalid = TRUE;
 
-  gtk_grid_attach_next_to(GTK_GRID(box),priv->icon, NULL, dir, 1, 1);
+  gtk_grid_attach_next_to(GTK_GRID(box), priv->icon, NULL, dir, 1, 1);
   gtk_grid_attach_next_to(GTK_GRID(box), priv->label, priv->icon, dir, 1, 1);
 
   g_object_ref_sink(self);
