@@ -39,7 +39,7 @@ static GtkWidget *pager_mirror ( GtkWidget *src )
       g_object_get_data(G_OBJECT(spriv->pager),"preview"));
   g_object_set_data(G_OBJECT(dpriv->pager),"sort_numeric",
       g_object_get_data(G_OBJECT(spriv->pager),"sort_numeric"));
-  spriv->pins = g_list_copy_deep(dpriv->pins, (GCopyFunc)g_strdup,NULL);
+  dpriv->pins = g_list_copy_deep(spriv->pins, (GCopyFunc)g_strdup,NULL);
 
   flow_grid_copy_properties(self,src);
   base_widget_copy_properties(self,src);

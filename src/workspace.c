@@ -104,7 +104,7 @@ void workspace_pin_add ( gchar *pin )
 
   if(g_list_find_custom(global_pins, pin, (GCompareFunc)g_strcmp0))
     return;
- 
+
   global_pins = g_list_prepend(global_pins, g_strdup(pin));
   if(!workspace_from_name(pin))
   {
