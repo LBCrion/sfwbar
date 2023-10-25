@@ -305,7 +305,7 @@ void scale_image_set_pixbuf ( GtkWidget *self, GdkPixbuf *pb )
     return;
 
   scale_image_clear(self);
-  priv->pixbuf = pb;
+  priv->pixbuf = gdk_pixbuf_copy(pb);
   priv->ftype = SI_BUFF;
   gtk_widget_queue_draw(self);
 }
