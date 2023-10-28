@@ -121,7 +121,7 @@ gboolean switcher_event ( gpointer dir )
 
   if(counter<1 || !focus)
     focus = wintree_from_id(wintree_get_focus());
-  counter = interval;
+  counter = interval + 1;
 
   for (iter = wintree_get_list(); iter; iter = g_list_next(iter) )
     if(switcher_check(grid, iter->data))
