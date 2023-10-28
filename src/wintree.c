@@ -98,11 +98,12 @@ void wintree_set_focus ( gpointer id )
       break;
   if(!iter)
     return;
-  wt_list = g_list_remove_link(wt_list, iter);
-  if(wt_list)
-    wt_list->prev = iter;
-  iter->next = wt_list;
-  wt_list = iter;
+  if(g_list_previous(iter))
+  {
+    g_list_previous(iter)->next = NULL;
+    iter->prev = NULL;
+    wt_list = g_list_concat(iter, wt_list);
+  }
   wintree_commit(wt_list->data);
   g_idle_add((GSourceFunc)base_widget_emit_trigger, "window_focus");
 }

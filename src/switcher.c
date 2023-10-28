@@ -169,7 +169,7 @@ void switcher_update ( void )
   if(counter > 0)
   {
     for (item = wintree_get_list(); item; item = g_list_next(item) )
-      flow_item_invalidate(flow_grid_find_child(grid,item->data));
+      flow_item_invalidate(flow_grid_find_child(grid, item->data));
     flow_grid_update(grid);
     css_widget_cascade(switcher,NULL);
   }
