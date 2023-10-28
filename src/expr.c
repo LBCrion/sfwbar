@@ -47,10 +47,7 @@ gchar *expr_dtostr ( double num, gint dec )
   if(dec<0)
     return g_strdup(g_ascii_dtostr(buf,G_ASCII_DTOSTR_BUF_SIZE,num));
 
-  if(dec>99)
-    dec = 99;
-
-  g_snprintf(fbuf,16,format,dec);
+  g_snprintf(fbuf , 16, format, MIN(dec, 99));
   return g_strdup(g_ascii_formatd(buf,G_ASCII_DTOSTR_BUF_SIZE,fbuf,num));
 }
 
