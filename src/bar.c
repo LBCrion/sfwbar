@@ -153,12 +153,12 @@ static void bar_style_updated ( GtkWidget *self )
     full_size = TRUE;
   else
   {
+    win = gtk_widget_get_window(self);
+    gdk_monitor_get_geometry(gdk_display_get_monitor_at_window(
+      gdk_window_get_display(win), win), &rect);
     size = g_ascii_strtod(priv->size, &end);
     if(*end=='%')
     {
-      win = gtk_widget_get_window(self);
-      gdk_monitor_get_geometry(gdk_display_get_monitor_at_window(
-        gdk_window_get_display(win), win), &rect);
       if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
         size *= (gdouble)rect.width/100;
       else
