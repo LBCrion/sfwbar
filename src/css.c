@@ -70,7 +70,6 @@ static void css_custom_handle ( GtkWidget *widget )
     gtk_label_set_ellipsize(GTK_LABEL(widget),
         state?PANGO_ELLIPSIZE_END:PANGO_ELLIPSIZE_NONE);
   }
-  bar_handle_direction(widget);
 }
 
 static void css_style_updated ( GtkWidget *widget )

@@ -33,6 +33,7 @@ struct _BarPrivate {
   gchar *layer;
   gchar *bar_id;
   gint dir;
+  GtkAlign halign, valign;
   GtkWidget *start, *center, *end;
   GtkWidget *box, *sensor;
   gint64 sensor_timeout;
@@ -42,6 +43,7 @@ struct _BarPrivate {
   gboolean hidden;
   gboolean jump;
   gboolean visible;
+  gboolean full_size;
   gchar *output;
   GdkMonitor *current_monitor;
   gchar **mirror_targets;

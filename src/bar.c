@@ -131,6 +131,89 @@ static void bar_destroy ( GtkWidget *self )
   GTK_WIDGET_CLASS(bar_parent_class)->destroy(self);
 }
 
+static void bar_style_updated ( GtkWidget *self )
+{
+  BarPrivate *priv;
+  GtkAlign halign, valign;
+  GdkWindow *win;
+  GdkRectangle rect;
+  gint dir, size;
+  gboolean top, left, right, bottom, full_size;
+  gchar *end;
+
+  g_return_if_fail(IS_BAR(self));
+  priv = bar_get_instance_private(BAR(self));
+  GTK_WIDGET_CLASS(bar_parent_class)->style_updated(self);
+
+  gtk_widget_style_get(self,"halign",&halign,NULL);
+  gtk_widget_style_get(self,"valign",&valign,NULL);
+  gtk_widget_style_get(self,"direction",&dir,NULL);
+
+  if(!priv->size)
+    full_size = TRUE;
+  else
+  {
+    size = g_ascii_strtod(priv->size, &end);
+    if(*end=='%')
+    {
+      win = gtk_widget_get_window(self);
+      gdk_monitor_get_geometry(gdk_display_get_monitor_at_window(
+        gdk_window_get_display(win), win), &rect);
+      if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
+        size *= rect.width/100;
+      else
+        size *= rect.height/100;
+    }
+
+    if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
+      full_size = size >= rect.width;
+    else
+      full_size = size >= rect.height;
+  }
+
+  if(priv->dir == dir && priv->halign == halign && priv->valign == valign &&
+      priv->full_size == full_size)
+    return;
+
+  top = (dir == GTK_POS_TOP ||
+      ((dir == GTK_POS_LEFT || dir == GTK_POS_RIGHT) &&
+       (full_size || valign == GTK_ALIGN_START)));
+  bottom = (dir == GTK_POS_BOTTOM ||
+      ((dir == GTK_POS_LEFT || dir == GTK_POS_RIGHT) &&
+       (full_size || valign == GTK_ALIGN_END)));
+  left = (dir == GTK_POS_LEFT ||
+      ((dir == GTK_POS_TOP || dir == GTK_POS_BOTTOM) &&
+       (full_size || halign == GTK_ALIGN_START)));
+  right = (dir == GTK_POS_RIGHT ||
+      ((dir == GTK_POS_TOP || dir == GTK_POS_BOTTOM) &&
+       (full_size || halign == GTK_ALIGN_END)));
+
+  gtk_layer_set_anchor(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_TOP, top);
+  gtk_layer_set_anchor(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_LEFT, left);
+  gtk_layer_set_anchor(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_RIGHT, right);
+  gtk_layer_set_anchor(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_BOTTOM, bottom);
+
+  if(priv->dir != dir)
+    gtk_orientable_set_orientation(GTK_ORIENTABLE(priv->box),
+        (dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)?
+        GTK_ORIENTATION_HORIZONTAL:GTK_ORIENTATION_VERTICAL);
+
+  if(!full_size)
+  {
+    if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
+      gtk_widget_set_size_request(self, (gint)size, -1);
+    else
+      gtk_widget_set_size_request(self, -1, (gint)size);
+  }
+
+  priv->dir = dir;
+  priv->halign = halign;
+  priv->valign = valign;
+  priv->full_size = full_size;
+
+  g_return_if_fail(IS_BAR(self));
+}
+
 static void bar_init ( Bar *self )
 {
 }
@@ -140,6 +223,7 @@ static void bar_class_init ( BarClass *kclass )
   GTK_WIDGET_CLASS(kclass)->destroy = bar_destroy;
   GTK_WIDGET_CLASS(kclass)->enter_notify_event = bar_enter_notify_event;
   GTK_WIDGET_CLASS(kclass)->leave_notify_event = bar_leave_notify_event;
+  GTK_WIDGET_CLASS(kclass)->style_updated = bar_style_updated;
 }
 
 GtkWidget *bar_from_name ( gchar *name )
@@ -590,11 +674,6 @@ void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 void bar_set_size ( GtkWidget *self, gchar *size )
 {
   BarPrivate *priv;
-  gdouble number;
-  gchar *end;
-  GdkRectangle rect;
-  GdkWindow *win;
-  gint toplevel_dir;
 
   if(bar_address_all(self, size, bar_set_size))
     return;
@@ -604,53 +683,7 @@ void bar_set_size ( GtkWidget *self, gchar *size )
   priv = bar_get_instance_private(BAR(self));
   g_free(priv->size);
   priv->size = g_strdup(size);
-
-  number = g_ascii_strtod(size, &end);
-  win = gtk_widget_get_window(self);
-  gdk_monitor_get_geometry( gdk_display_get_monitor_at_window(
-      gdk_window_get_display(win),win), &rect );
-  toplevel_dir = bar_get_toplevel_dir(self);
-
-  if ( toplevel_dir == GTK_POS_BOTTOM || toplevel_dir == GTK_POS_TOP )
-  {
-    if(*end == '%')
-      number = number * rect.width / 100;
-    if ( number >= rect.width )
-    {
-      gtk_layer_set_anchor(GTK_WINDOW(self),
-          GTK_LAYER_SHELL_EDGE_LEFT,TRUE);
-      gtk_layer_set_anchor(GTK_WINDOW(self),
-          GTK_LAYER_SHELL_EDGE_RIGHT,TRUE);
-    }
-    else
-    {
-      gtk_layer_set_anchor(GTK_WINDOW(self),
-          GTK_LAYER_SHELL_EDGE_LEFT, FALSE );
-      gtk_layer_set_anchor(GTK_WINDOW(self),
-          GTK_LAYER_SHELL_EDGE_RIGHT, FALSE );
-      gtk_widget_set_size_request(self,(gint)number,-1);
-    }
-  }
-  else
-  {
-    if(*end == '%')
-      number = number * rect.height / 100;
-    if ( number >= rect.height )
-    {
-      gtk_layer_set_anchor (GTK_WINDOW(self),
-          GTK_LAYER_SHELL_EDGE_TOP, TRUE );
-      gtk_layer_set_anchor (GTK_WINDOW(self),
-          GTK_LAYER_SHELL_EDGE_BOTTOM, TRUE );
-    }
-    else
-    {
-      gtk_layer_set_anchor (GTK_WINDOW(self),
-          GTK_LAYER_SHELL_EDGE_TOP, FALSE );
-      gtk_layer_set_anchor (GTK_WINDOW(self),
-          GTK_LAYER_SHELL_EDGE_BOTTOM, FALSE );
-      gtk_widget_set_size_request(self,-1,(gint)number);
-    }
-  }
+  bar_style_updated(self);
 
   g_list_foreach(priv->mirror_children,(GFunc)bar_set_size,size);
 }
@@ -700,59 +733,6 @@ void bar_set_sensor ( GtkWidget *self, gchar *delay_str )
   g_list_foreach(priv->mirror_children,(GFunc)bar_set_sensor,delay_str);
 }
 
-void bar_handle_direction ( GtkWidget *self )
-{
-  BarPrivate *priv;
-  gint toplevel_dir;
-
-  if(!IS_BAR(self))
-    return;
-  priv = bar_get_instance_private(BAR(self));
-
-  gtk_widget_style_get(self,"direction",&toplevel_dir,NULL);
-
-  if(priv->dir == toplevel_dir)
-    return;
-  priv->dir = toplevel_dir;
-
-  gtk_layer_set_anchor(GTK_WINDOW(self),GTK_LAYER_SHELL_EDGE_LEFT,
-      !(toplevel_dir==GTK_POS_RIGHT));
-  gtk_layer_set_anchor(GTK_WINDOW(self),GTK_LAYER_SHELL_EDGE_RIGHT,
-      !(toplevel_dir==GTK_POS_LEFT));
-  gtk_layer_set_anchor(GTK_WINDOW(self),GTK_LAYER_SHELL_EDGE_BOTTOM,
-      !(toplevel_dir==GTK_POS_TOP));
-  gtk_layer_set_anchor(GTK_WINDOW(self),GTK_LAYER_SHELL_EDGE_TOP,
-      !(toplevel_dir==GTK_POS_BOTTOM));
-
-  if(priv->start)
-    g_object_ref(priv->start);
-  if(priv->center)
-    g_object_ref(priv->center);
-  if(priv->end)
-    g_object_ref(priv->end);
-
-  if(priv->box && gtk_bin_get_child(GTK_BIN(self))==priv->box)
-    gtk_container_remove(GTK_CONTAINER(self),priv->box);
-  if(priv->box)
-    g_object_unref(priv->box);
-
-  if(toplevel_dir == GTK_POS_LEFT || toplevel_dir == GTK_POS_RIGHT)
-    priv->box = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
-  else
-    priv->box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
-  g_object_ref_sink(priv->box);
-
-  if(!gtk_bin_get_child(GTK_BIN(self)))
-    gtk_container_add(GTK_CONTAINER(self), priv->box);
-
-  if(priv->start)
-    gtk_box_pack_start(GTK_BOX(priv->box),priv->start,TRUE,TRUE,0);
-  if(priv->center)
-    gtk_box_set_center_widget(GTK_BOX(priv->box),priv->center);
-  if(priv->end)
-    gtk_box_pack_end(GTK_BOX(priv->box),priv->end,TRUE,TRUE,0);
-}
-
 GtkWidget *bar_new ( gchar *name )
 {
   GtkWidget *self;
@@ -766,14 +746,15 @@ GtkWidget *bar_new ( gchar *name )
   priv->output = g_strdup(
       g_object_get_data(G_OBJECT(priv->current_monitor),"xdg_name"));
   priv->dir = -1;
+  priv->box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  gtk_container_add(GTK_CONTAINER(self), priv->box);
   gtk_layer_init_for_window (GTK_WINDOW(self));
   gtk_widget_set_name(self,name);
   gtk_layer_auto_exclusive_zone_enable (GTK_WINDOW(self));
   gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self),FALSE);
   gtk_layer_set_layer(GTK_WINDOW(self),GTK_LAYER_SHELL_LAYER_TOP);
   gtk_layer_set_monitor(GTK_WINDOW(self),priv->current_monitor);
-
-  bar_handle_direction(self);
+  bar_style_updated(self);
 
   if(priv->name)
   {
@@ -798,21 +779,20 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
   dpriv = bar_get_instance_private(BAR(self));
 
   gtk_widget_set_name(self,gtk_widget_get_name(src));
-  bar_handle_direction(self);
   if(spriv->start)
   {
     dpriv->start = base_widget_mirror(spriv->start);
-    gtk_box_pack_start(GTK_BOX(dpriv->box),dpriv->start,TRUE,TRUE,0);
+    gtk_box_pack_start(GTK_BOX(dpriv->box), dpriv->start, TRUE, TRUE, 0);
   }
   if(spriv->center)
   {
     dpriv->center = base_widget_mirror(spriv->center);
-    gtk_box_set_center_widget(GTK_BOX(dpriv->box),dpriv->center);
+    gtk_box_set_center_widget(GTK_BOX(dpriv->box), dpriv->center);
   }
   if(spriv->end)
   {
     dpriv->end = base_widget_mirror(spriv->end);
-    gtk_box_pack_end(GTK_BOX(dpriv->box),dpriv->end,TRUE,TRUE,0);
+    gtk_box_pack_end(GTK_BOX(dpriv->box), dpriv->end, TRUE, TRUE, 0);
   }
 
   dpriv->visible = spriv->visible;
