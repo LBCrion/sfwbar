@@ -160,9 +160,9 @@ static void bar_style_updated ( GtkWidget *self )
       gdk_monitor_get_geometry(gdk_display_get_monitor_at_window(
         gdk_window_get_display(win), win), &rect);
       if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
-        size *= rect.width/100;
+        size *= (gdouble)rect.width/100;
       else
-        size *= rect.height/100;
+        size *= (gdouble)rect.height/100;
     }
 
     if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
