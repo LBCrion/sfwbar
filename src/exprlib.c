@@ -40,6 +40,13 @@ static void *expr_lib_mid ( void **params, void *widget, void *event )
   return g_strndup( params[0]+c1*sizeof(gchar), (c2-c1+1)*sizeof(gchar));
 }
 
+ModuleExpressionHandlerV1 mid_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC,
+  .name = "mid",
+  .parameters = "SNN",
+  .function = expr_lib_mid
+};
+
 /* Extract substring using regex */
 static void *expr_lib_extract( void **params, void *widget, void *event )
 {
@@ -61,6 +68,13 @@ static void *expr_lib_extract( void **params, void *widget, void *event )
 
   return sres?sres:g_strdup("");
 }
+
+ModuleExpressionHandlerV1 extract_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC,
+  .name = "extract",
+  .parameters = "SS",
+  .function = expr_lib_extract
+};
 
 static void *expr_lib_pad ( void **params, void *widget, void *event )
 {
@@ -97,6 +111,13 @@ static void *expr_lib_pad ( void **params, void *widget, void *event )
   return result;
 }
 
+ModuleExpressionHandlerV1 pad_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC,
+  .name = "pad",
+  .parameters = "SNs",
+  .function = expr_lib_pad
+};
+
 /* Get current time string */
 static void *expr_lib_time ( void **params, void *widget, void *event )
 {
@@ -126,6 +147,13 @@ static void *expr_lib_time ( void **params, void *widget, void *event )
   return str;
 }
 
+ModuleExpressionHandlerV1 time_handler = {
+  .flags = 0,
+  .name = "time",
+  .parameters = "ss",
+  .function = expr_lib_time
+};
+
 /* generate disk space utilization for a device */
 static void *expr_lib_disk ( void **params, void *widget, void *event )
 {
@@ -152,10 +180,24 @@ static void *expr_lib_disk ( void **params, void *widget, void *event )
   return result;
 }
 
+ModuleExpressionHandlerV1 disk_handler = {
+  .flags = MODULE_EXPR_NUMERIC,
+  .name = "disk",
+  .parameters = "SS",
+  .function = expr_lib_disk
+};
+
 static void *expr_lib_active ( void **params, void *widget, void *event )
 {
   return g_strdup(wintree_get_active());
 }
+
+ModuleExpressionHandlerV1 active_handler = {
+  .flags = 0,
+  .name = "ActiveWin",
+  .parameters = "",
+  .function = expr_lib_active
+};
 
 static void *expr_lib_str ( void **params, void *widget, void *event )
 {
@@ -165,6 +207,13 @@ static void *expr_lib_str ( void **params, void *widget, void *event )
     return expr_dtostr(*(gdouble *)params[0],
         params[1]?(gint)*(gdouble *)params[1]:0);
 }
+
+ModuleExpressionHandlerV1 str_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC,
+  .name = "str",
+  .parameters = "Nn",
+  .function = expr_lib_str
+};
 
 static void *expr_lib_max ( void **params, void *widget, void *event )
 {
@@ -178,6 +227,13 @@ static void *expr_lib_max ( void **params, void *widget, void *event )
   return result;
 }
 
+ModuleExpressionHandlerV1 max_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC | MODULE_EXPR_NUMERIC,
+  .name = "max",
+  .parameters = "NN",
+  .function = expr_lib_max
+};
+
 static void *expr_lib_min ( void **params, void *widget, void *event )
 {
   gdouble *result;
@@ -189,6 +245,13 @@ static void *expr_lib_min ( void **params, void *widget, void *event )
   *result = MIN(*(gdouble *)params[0],*(gdouble *)params[1]);
   return result;
 }
+
+ModuleExpressionHandlerV1 min_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC | MODULE_EXPR_NUMERIC,
+  .name = "min",
+  .parameters = "NN",
+  .function = expr_lib_min
+};
 
 static void *expr_lib_val ( void **params, void *widget, void *event )
 {
@@ -203,6 +266,13 @@ static void *expr_lib_val ( void **params, void *widget, void *event )
   return result;
 }
 
+ModuleExpressionHandlerV1 val_handler = {
+  .flags = MODULE_EXPR_NUMERIC | MODULE_EXPR_DETERMINISTIC,
+  .name = "val",
+  .parameters = "S",
+  .function = expr_lib_val
+};
+
 static void *expr_lib_upper ( void **params, void *widget, void *event )
 {
   if(!params || !params[0])
@@ -211,6 +281,13 @@ static void *expr_lib_upper ( void **params, void *widget, void *event )
     return g_ascii_strup(params[0],-1);
 }
 
+ModuleExpressionHandlerV1 upper_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC,
+  .name = "upper",
+  .parameters = "S",
+  .function = expr_lib_upper
+};
+
 static void *expr_lib_lower ( void **params, void *widget, void *event )
 {
   if(!params || !params[0])
@@ -218,6 +295,13 @@ static void *expr_lib_lower ( void **params, void *widget, void *event )
   else
     return g_ascii_strdown(params[0],-1);
 }
+
+ModuleExpressionHandlerV1 lower_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC,
+  .name = "lower",
+  .parameters = "S",
+  .function = expr_lib_lower
+};
 
 static void *expr_lib_gtkevent ( void **params, void *base, void *event )
 {
@@ -277,97 +361,6 @@ static void *expr_lib_gtkevent ( void **params, void *base, void *event )
   return result;
 }
 
-static void *expr_lib_widget_id ( void **params, void *widget, void *event )
-{
-  gchar *id = base_widget_get_id(widget);
-
-  return g_strdup(id?id:"");
-}
-
-ModuleExpressionHandlerV1 mid_handler = {
-  .flags = MODULE_EXPR_DETERMINISTIC,
-  .name = "mid",
-  .parameters = "SNN",
-  .function = expr_lib_mid
-};
-
-ModuleExpressionHandlerV1 pad_handler = {
-  .flags = MODULE_EXPR_DETERMINISTIC,
-  .name = "pad",
-  .parameters = "SNs",
-  .function = expr_lib_pad
-};
-
-ModuleExpressionHandlerV1 extract_handler = {
-  .flags = MODULE_EXPR_DETERMINISTIC,
-  .name = "extract",
-  .parameters = "SS",
-  .function = expr_lib_extract
-};
-
-ModuleExpressionHandlerV1 time_handler = {
-  .flags = 0,
-  .name = "time",
-  .parameters = "ss",
-  .function = expr_lib_time
-};
-
-ModuleExpressionHandlerV1 disk_handler = {
-  .flags = MODULE_EXPR_NUMERIC,
-  .name = "disk",
-  .parameters = "SS",
-  .function = expr_lib_disk
-};
-
-ModuleExpressionHandlerV1 active_handler = {
-  .flags = 0,
-  .name = "ActiveWin",
-  .parameters = "",
-  .function = expr_lib_active
-};
-
-ModuleExpressionHandlerV1 str_handler = {
-  .flags = MODULE_EXPR_DETERMINISTIC,
-  .name = "str",
-  .parameters = "Nn",
-  .function = expr_lib_str
-};
-
-ModuleExpressionHandlerV1 max_handler = {
-  .flags = MODULE_EXPR_DETERMINISTIC | MODULE_EXPR_NUMERIC,
-  .name = "max",
-  .parameters = "NN",
-  .function = expr_lib_max
-};
-
-ModuleExpressionHandlerV1 min_handler = {
-  .flags = MODULE_EXPR_DETERMINISTIC | MODULE_EXPR_NUMERIC,
-  .name = "min",
-  .parameters = "NN",
-  .function = expr_lib_min
-};
-
-ModuleExpressionHandlerV1 val_handler = {
-  .flags = MODULE_EXPR_NUMERIC | MODULE_EXPR_DETERMINISTIC,
-  .name = "val",
-  .parameters = "S",
-  .function = expr_lib_val
-};
-
-ModuleExpressionHandlerV1 upper_handler = {
-  .flags = MODULE_EXPR_DETERMINISTIC,
-  .name = "upper",
-  .parameters = "S",
-  .function = expr_lib_upper
-};
-
-ModuleExpressionHandlerV1 lower_handler = {
-  .flags = MODULE_EXPR_DETERMINISTIC,
-  .name = "lower",
-  .parameters = "S",
-  .function = expr_lib_lower
-};
-
 ModuleExpressionHandlerV1 gtkevent_handler = {
   .flags = MODULE_EXPR_NUMERIC,
   .name = "gtkevent",
@@ -375,10 +368,31 @@ ModuleExpressionHandlerV1 gtkevent_handler = {
   .function = expr_lib_gtkevent
 };
 
+static void *expr_lib_widget_id ( void **params, void *widget, void *event )
+{
+  gchar *id = base_widget_get_id(widget);
+
+  return g_strdup(id?id:"");
+}
+
 ModuleExpressionHandlerV1 widget_id_handler = {
   .name = "widgetid",
   .parameters = "",
   .function = expr_lib_widget_id
+};
+
+static void *expr_lib_escape ( void **params, void *widget, void *event )
+{
+  if(!params || !params[0])
+    return g_strdup("");
+  return g_markup_escape_text(params[0], -1);
+}
+
+ModuleExpressionHandlerV1 escape_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC,
+  .name = "escape",
+  .parameters = "S",
+  .function = expr_lib_escape
 };
 
 ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
@@ -396,6 +410,7 @@ ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &lower_handler,
   &gtkevent_handler,
   &widget_id_handler,
+  &escape_handler,
   NULL
 };
 
