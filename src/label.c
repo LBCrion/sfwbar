@@ -12,11 +12,16 @@ G_DEFINE_TYPE_WITH_CODE (Label, label, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Label));
 static void label_update_value ( GtkWidget *self )
 {
   LabelPrivate *priv;
+  gchar *value;
 
   g_return_if_fail(IS_LABEL(self));
   priv = label_get_instance_private(LABEL(self));
 
-  gtk_label_set_markup(GTK_LABEL(priv->label),base_widget_get_value(self));
+  value = base_widget_get_value(self);
+  if(pango_parse_markup(value, -1, 0, NULL, NULL, NULL, NULL))
+    gtk_label_set_markup(GTK_LABEL(priv->label), value);
+  else
+    gtk_label_set_text(GTK_LABEL(priv->label), value);
 }
 
 static GtkWidget *label_get_child ( GtkWidget *self )
