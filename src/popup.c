@@ -111,14 +111,20 @@ static void popup_transfer_window_grab (GtkWidget *widget, GdkSeat *seat)
 void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkEvent *ev )
 {
   GdkRectangle rect;
-  GtkWidget *child;
+  GtkWidget *child, *old_popup;
   GdkWindow *gparent, *gpopup, *transfer;
   GdkGravity wanchor, panchor;
   GdkSeat *seat;
+  GHashTableIter iter;
 
   child = gtk_bin_get_child(GTK_BIN(popup));
   if(!child)
     return;
+
+  g_hash_table_iter_init(&iter, popup_list);
+  while(g_hash_table_iter_next(&iter, NULL, (gpointer *)&old_popup))
+    if(old_popup != popup && gtk_widget_get_visible(old_popup))
+      popup_popdown(old_popup);
 
   gtk_widget_show_all(child);
   gtk_widget_unrealize(popup);
