@@ -524,7 +524,18 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
         config_scanner(scanner);
         break;
       case G_TOKEN_LAYOUT:
-        config_layout(scanner,&w,toplevel);
+        config_layout(scanner, &w, toplevel);
+        break;
+      case G_TOKEN_GRID:
+      case G_TOKEN_LABEL:
+      case G_TOKEN_IMAGE:
+      case G_TOKEN_BUTTON:
+      case G_TOKEN_SCALE:
+      case G_TOKEN_CHART:
+      case G_TOKEN_TASKBAR:
+      case G_TOKEN_PAGER:
+      case G_TOKEN_TRAY:
+        config_widget_child(scanner, NULL);
         break;
       case G_TOKEN_POPUP:
         config_popup(scanner);

@@ -406,9 +406,10 @@ GtkWidget *config_widget_new ( gint type, GScanner *scanner )
 gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
 {
   GtkWidget *widget, *parent;
+  gboolean found = FALSE;
   gint type;
 
-  if(!IS_GRID(container))
+  if(container && !IS_GRID(container))
     return FALSE;
 
   type = scanner->token;
@@ -436,19 +437,26 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
     widget = base_widget_from_id(scanner->value.v_string);
     parent = widget?gtk_widget_get_parent(widget):NULL;
     parent = parent?gtk_widget_get_parent(parent):NULL;
-    if(!widget || parent != container)
+    if(!widget || (container && parent != container))
     {
       widget = config_widget_new(type, scanner);
       base_widget_set_id(widget, g_strdup(scanner->value.v_string));
     }
+    else
+      found = TRUE;
   }
   else
     widget = config_widget_new(type, scanner);
 
   config_widget(scanner, widget);
-  if(!gtk_widget_get_parent(widget))
+  if(container && !gtk_widget_get_parent(widget))
     grid_attach(container, widget);
   css_widget_cascade(widget, NULL);
+  if(!found && !container)
+  {
+    g_object_ref_sink(widget);
+    g_object_unref(widget);
+  }
 
   return TRUE;
 }
