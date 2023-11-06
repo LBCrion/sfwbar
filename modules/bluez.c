@@ -16,6 +16,7 @@ static GList *adapters, *remove_queue, *update_queue;
 static GMutex adapter_mutex, remove_mutex, update_mutex;
 static GDBusConnection *bz_con;
 static const gchar *bz_serv = "org.bluez";
+static guint sub_add, sub_del, sub_chg;
 
 typedef struct _bz_device {
   gchar *path;
@@ -525,22 +526,21 @@ static void bz_init_cb ( GDBusConnection *con, GAsyncResult *res, gpointer data 
     bz_object_handle(path, iiter);
   g_variant_iter_free(miter);
   g_variant_unref(result);
-
-  g_dbus_connection_signal_subscribe(con, bz_serv,
-      "org.freedesktop.DBus.ObjectManager", "InterfacesAdded", NULL, NULL,
-      G_DBUS_SIGNAL_FLAGS_NONE, bz_device_new, NULL, NULL);
-  g_dbus_connection_signal_subscribe(con, bz_serv,
-      "org.freedesktop.DBus.ObjectManager", "InterfacesRemoved", NULL, NULL,
-      G_DBUS_SIGNAL_FLAGS_NONE, bz_device_removed, NULL, NULL);
-  g_dbus_connection_signal_subscribe(con, bz_serv,
-      "org.freedesktop.DBus.Properties", "PropertiesChanged", NULL,
-      "org.bluez.Device1",  G_DBUS_SIGNAL_FLAGS_NONE, bz_device_changed,
-      NULL, NULL);
 }
 
 static void bz_name_appeared_cb (GDBusConnection *con, const gchar *name,
     const gchar *owner, gpointer d)
 {
+  sub_add = g_dbus_connection_signal_subscribe(con, owner,
+      "org.freedesktop.DBus.ObjectManager", "InterfacesAdded", NULL, NULL,
+      G_DBUS_SIGNAL_FLAGS_NONE, bz_device_new, NULL, NULL);
+  sub_del = g_dbus_connection_signal_subscribe(con, owner,
+      "org.freedesktop.DBus.ObjectManager", "InterfacesRemoved", NULL, NULL,
+      G_DBUS_SIGNAL_FLAGS_NONE, bz_device_removed, NULL, NULL);
+  sub_chg = g_dbus_connection_signal_subscribe(con, owner,
+      "org.freedesktop.DBus.Properties", "PropertiesChanged", NULL,
+      "org.bluez.Device1",  G_DBUS_SIGNAL_FLAGS_NONE, bz_device_changed,
+      NULL, NULL);
   g_dbus_connection_call(bz_con, bz_serv, "/org/bluez",
       "org.bluez.AgentManager1", "RegisterAgent",
       g_variant_new("(os)", "/org/hosers/sfwbar", "NoInputNoOutput"),
@@ -557,6 +557,9 @@ static void bz_name_disappeared_cb (GDBusConnection *con, const gchar *name,
   while(adapters)
     bz_adapter_free(adapters->data);
   g_hash_table_remove_all(devices);
+  g_dbus_connection_signal_unsubscribe(bz_con, sub_add);
+  g_dbus_connection_signal_unsubscribe(bz_con, sub_del);
+  g_dbus_connection_signal_unsubscribe(bz_con, sub_chg);
 }
 
 void sfwbar_module_init ( ModuleApiV1 *api )
