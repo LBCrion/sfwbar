@@ -15,6 +15,7 @@ static GDBusConnection *iw_con;
 static GList *iw_devices;
 static GHashTable *iw_networks, *iw_known_networks;
 static GList *iw_update_queue, *iw_remove_queue;
+static gint sub_add, sub_del, sub_chg;
 
 static const gchar *iw_iface_device = "net.connman.iwd.Device";
 static const gchar *iw_iface_station = "net.connman.iwd.Station";
@@ -657,29 +658,6 @@ static void iw_init_cb ( GDBusConnection *con, GAsyncResult *res, gpointer data 
   if(!result)
     return;
 
-  g_dbus_connection_signal_subscribe(con, iw_serv,
-      "org.freedesktop.DBus.ObjectManager", "InterfacesAdded", NULL, NULL,
-      G_DBUS_SIGNAL_FLAGS_NONE, iw_object_new_cb, NULL, NULL);
-  g_dbus_connection_signal_subscribe(con, iw_serv,
-      "org.freedesktop.DBus.ObjectManager", "InterfacesRemoved", NULL, NULL,
-      G_DBUS_SIGNAL_FLAGS_NONE, iw_object_removed_cb, NULL, NULL);
-  g_dbus_connection_signal_subscribe(con, iw_serv,
-      "org.freedesktop.DBus.Properties", "PropertiesChanged", NULL,
-      iw_iface_network,  G_DBUS_SIGNAL_FLAGS_NONE, iw_object_prop_cb,
-      NULL, NULL);
-  g_dbus_connection_signal_subscribe(con, iw_serv,
-      "org.freedesktop.DBus.Properties", "PropertiesChanged", NULL,
-      iw_iface_known,  G_DBUS_SIGNAL_FLAGS_NONE, iw_object_prop_cb, NULL,
-      NULL);
-  g_dbus_connection_signal_subscribe(con, iw_serv,
-      "org.freedesktop.DBus.Properties", "PropertiesChanged", NULL,
-      iw_iface_station,  G_DBUS_SIGNAL_FLAGS_NONE, iw_object_prop_cb,
-      NULL, NULL);
-  g_dbus_connection_signal_subscribe(con, iw_serv,
-      "org.freedesktop.DBus.Properties", "PropertiesChanged", NULL,
-      iw_iface_device,  G_DBUS_SIGNAL_FLAGS_NONE, iw_object_prop_cb,
-      NULL, NULL);
-
   g_variant_get(result, "(a{oa{sa{sv}}})", &miter );
   while(g_variant_iter_next(miter, "{&oa{sa{sv}}}", &path, &iiter))
   {
@@ -695,6 +673,16 @@ static void iw_init_cb ( GDBusConnection *con, GAsyncResult *res, gpointer data 
 void iw_name_appeared_cb (GDBusConnection *con, const gchar *name,
     const gchar *owner, gpointer d)
 {
+  sub_add = g_dbus_connection_signal_subscribe(con, owner,
+      "org.freedesktop.DBus.ObjectManager", "InterfacesAdded", NULL, NULL,
+      G_DBUS_SIGNAL_FLAGS_NONE, iw_object_new_cb, NULL, NULL);
+  sub_del = g_dbus_connection_signal_subscribe(con, owner,
+      "org.freedesktop.DBus.ObjectManager", "InterfacesRemoved", NULL, NULL,
+      G_DBUS_SIGNAL_FLAGS_NONE, iw_object_removed_cb, NULL, NULL);
+  sub_chg = g_dbus_connection_signal_subscribe(con, owner,
+      "org.freedesktop.DBus.Properties", "PropertiesChanged", NULL, NULL,
+      G_DBUS_SIGNAL_FLAGS_NONE, iw_object_prop_cb, NULL, NULL);
+
   g_dbus_connection_call(con, iw_serv,"/",
       "org.freedesktop.DBus.ObjectManager", "GetManagedObjects", NULL,
       G_VARIANT_TYPE("(a{oa{sa{sv}}})"), G_DBUS_CALL_FLAGS_NONE, -1, NULL,
