@@ -237,7 +237,7 @@ static void iw_network_updated ( iw_network_t *net )
   iw_update_queue = g_list_append(iw_update_queue, copy);
   MODULE_TRIGGER_EMIT("iwd_updated");
 
-  g_message("iwd: network: %s, type: %s, conn: %d, known: %s, strength: %d", net->ssid,
+  g_debug("iwd: network: %s, type: %s, conn: %d, known: %s, strength: %d", net->ssid,
       net->type, net->connected, net->known, net->strength);
 }
 
@@ -246,7 +246,7 @@ static void iw_network_remove ( iw_network_t *network )
   if(!network)
     return;
 
-  g_message("iwd: remove network: %s", network->ssid);
+  g_debug("iwd: remove network: %s", network->ssid);
   iw_remove_queue = g_list_append(iw_remove_queue, g_strdup(network->path));
   MODULE_TRIGGER_EMIT("iwd_removed");
 
@@ -300,7 +300,7 @@ static void iw_device_free ( iw_device_t *device )
   if(!device)
     return;
 
-  g_message("iwd: remove device: %s", device->name);
+  g_debug("iwd: remove device: %s", device->name);
 
   iw_devices = g_list_remove(iw_devices, device);
   g_free(device->path);
@@ -327,7 +327,7 @@ static void iw_signal_level_agent__method(GDBusConnection *con,
     if( (device = iw_device_get(object, FALSE)) )
         device->strength = level;
     
-    g_message("iwd: level %d on %s", level, device?device->name:object);
+    g_debug("iwd: level %d on %s", level, device?device->name:object);
     MODULE_TRIGGER_EMIT("iwd_level");
     g_dbus_method_invocation_return_value(invocation, NULL);
   }
@@ -428,7 +428,7 @@ static void iw_agent__method(GDBusConnection *con,
 
 static void iw_scan_start ( gchar *path )
 {
-  g_message("iwd: initiating scan");
+  g_debug("iwd: initiating scan");
   MODULE_TRIGGER_EMIT("iwd_scan");
   g_dbus_connection_call(iw_con, iw_serv, path, iw_iface_station, "Scan",
       NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
@@ -521,7 +521,7 @@ static void iw_device_handle ( gchar *path, gchar *iface, GVariant *dict )
   change |= iw_string_from_dict( dict, "Name", "&s", &device->name);
 
   if(change)
-    g_message("iwd: device: %s, state: %s", device->name, device->state);
+    g_debug("iwd: device: %s, state: %s", device->name, device->state);
 }
 
 static void iw_station_handle ( gchar *path, gchar *iface, GVariant *dict )
@@ -544,7 +544,7 @@ static void iw_station_handle ( gchar *path, gchar *iface, GVariant *dict )
         (GAsyncReadyCallback)iw_network_strength_cb, NULL);
   }
   if(change)
-    g_message("iwd: device: %s, state: %s, scanning: %d", device->name,
+    g_debug("iwd: device: %s, state: %s, scanning: %d", device->name,
         device->state, device->scanning);
 }
 
@@ -562,7 +562,7 @@ static void iw_known_network_handle ( gchar *path, gchar *iface, GVariant *dict 
   change |= iw_bool_from_dict(dict, "Hidden", &known->hidden);
 
   if(change)
-    g_message("iwd: known: %s, type: %s, last conn: %s, hidden: %d, auto: %d",
+    g_debug("iwd: known: %s, type: %s, last conn: %s, hidden: %d, auto: %d",
         known->ssid, known->type, known->last_time, known->hidden,
         known->auto_conn);
 }
@@ -692,7 +692,7 @@ void iw_name_appeared_cb (GDBusConnection *con, const gchar *name,
 void iw_name_disappeared_cb (GDBusConnection *con, const gchar *name,
     gpointer d)
 {
-  g_message("iwd: daemon disappeared");
+  g_debug("iwd: daemon disappeared");
 
   while(iw_devices)
     iw_device_free(iw_devices->data);
@@ -795,7 +795,7 @@ static void iw_action_ack_removed ( gchar *cmd, gchar *name, void *d1,
   iw_remove_queue = g_list_remove(iw_remove_queue, str);
   g_free(str);
 
-  g_message("iwd: ack removed processed, queue: %d", !!iw_remove_queue);
+  g_debug("iwd: ack removed processed, queue: %d", !!iw_remove_queue);
   if(iw_remove_queue)
     MODULE_TRIGGER_EMIT("iwd_removed");
 }
