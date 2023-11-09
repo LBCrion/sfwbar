@@ -47,6 +47,22 @@ ModuleExpressionHandlerV1 mid_handler = {
   .function = expr_lib_mid
 };
 
+/* replace a substring within a string */
+static void *expr_lib_replace( void **params, void *widget, void *event )
+{
+  if(!params || !params[0] || !params[1] || !params[2])
+    return g_strdup("");
+
+  return str_replace(params[0], params[1], params[2]);
+}
+
+ModuleExpressionHandlerV1 replace_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC,
+  .name = "replace",
+  .parameters = "SSS",
+  .function = expr_lib_replace
+};
+
 /* Extract substring using regex */
 static void *expr_lib_extract( void **params, void *widget, void *event )
 {
@@ -397,6 +413,7 @@ ModuleExpressionHandlerV1 escape_handler = {
 
 ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &mid_handler,
+  &replace_handler,
   &pad_handler,
   &extract_handler,
   &time_handler,
