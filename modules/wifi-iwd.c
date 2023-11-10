@@ -356,36 +356,70 @@ static void iw_passphrase_cb ( GtkEntry *entry, iw_dialog_t *dialog )
   pass = gtk_entry_get_text(GTK_ENTRY(dialog->pass));
   g_dbus_method_invocation_return_value(dialog->invocation,
       g_variant_new("(s)", pass));
-  gtk_widget_destroy(dialog->win);
+  g_object_unref(dialog->win);
+  g_free(dialog);
+}
+
+static void iw_button_clicked ( GtkButton *button, iw_dialog_t *dialog )
+{
+  if(!g_strcmp0(gtk_button_get_label(button), "Ok"))
+    g_dbus_method_invocation_return_value(dialog->invocation,
+        g_variant_new("(s)", gtk_entry_get_text(GTK_ENTRY(dialog->pass))));
+  else
+    g_dbus_method_invocation_return_value(dialog->invocation, NULL);
+  g_object_unref(dialog->win);
   g_free(dialog);
 }
 
 static void iw_passphrase_prompt ( gchar *title, gboolean user, gpointer inv )
 {
   iw_dialog_t *dialog;
-  GtkWidget *grid;
+  GtkWidget *grid, *label, *button;
 
   dialog = g_malloc0(sizeof(iw_dialog_t));
 
   dialog->invocation = inv;
   dialog->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_type_hint(GTK_WINDOW(dialog->win),
+      GDK_WINDOW_TYPE_HINT_DIALOG);
   grid = gtk_grid_new();
+  gtk_widget_set_name(grid, "iwd_dialog_grid");
   gtk_container_add(GTK_CONTAINER(dialog->win), grid);
-  gtk_grid_attach(GTK_GRID(grid), gtk_label_new(title), 1, 1, 2, 1);
+  label = gtk_label_new(title);
+  gtk_widget_set_name(label, "iwd_dialog_title");
+  gtk_grid_attach(GTK_GRID(grid), label, 1, 1, 2, 1);
 
   if(user)
   {
-    gtk_grid_attach(GTK_GRID(grid), gtk_label_new("Username:"), 1, 2, 1, 1);
+    label = gtk_label_new("Username:");
+    gtk_widget_set_name(label, "iwd_user_label");
+    gtk_grid_attach(GTK_GRID(grid),label, 1, 2, 1, 1);
     dialog->user = gtk_entry_new();
+    gtk_widget_set_name(dialog->user, "iwd_user_entry");
     gtk_grid_attach(GTK_GRID(grid), dialog->user, 2, 2, 1, 1);
   }
 
-  gtk_grid_attach(GTK_GRID(grid), gtk_label_new("Passphrase:"), 1, 3, 1, 1);
+  label = gtk_label_new("Passphrase:");
+  gtk_widget_set_name(label, "iwd_passphrase_label");
+  gtk_grid_attach(GTK_GRID(grid), label, 1, 3, 1, 1);
   dialog->pass = gtk_entry_new();
+  gtk_widget_set_name(dialog->pass, "iwd_passphrase_entry");
   gtk_entry_set_visibility(GTK_ENTRY(dialog->pass), FALSE);
   g_signal_connect(G_OBJECT(dialog->pass), "activate",
       G_CALLBACK(iw_passphrase_cb), dialog);
   gtk_grid_attach(GTK_GRID(grid), dialog->pass, 2, 3, 1, 1);
+
+  button = gtk_button_new_with_label("Ok");
+  gtk_widget_set_name(button, "iwd_button_ok");
+  gtk_grid_attach(GTK_GRID(grid), button, 1, 4, 1, 1);
+  g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(iw_button_clicked),
+      dialog);
+
+  button = gtk_button_new_with_label("Cancel");
+  gtk_widget_set_name(button, "iwd_button_cancel");
+  gtk_grid_attach(GTK_GRID(grid), button, 2, 4, 1, 1);
+  g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(iw_button_clicked),
+      dialog);
 
   gtk_widget_show_all(dialog->win);
 }
