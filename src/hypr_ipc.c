@@ -312,10 +312,11 @@ static void hypr_ipc_pager_populate( void )
     for(i=0;i<json_object_array_length(json);i++)
     {
       ptr = json_object_array_get_idx(json,i);
-      if(json_int_by_name(ptr,"id",-1)!=-99)
+      wid = json_int_by_name(ptr,"id",-1);
+      if(wid!=-99 && !workspace_from_id(GINT_TO_POINTER(wid)))
       {
         ws = g_malloc0(sizeof(workspace_t));
-        ws->id = GINT_TO_POINTER(json_int_by_name(ptr,"id",-1));
+        ws->id = GINT_TO_POINTER(wid);
         ws->name = g_strdup(json_string_by_name(ptr,"name"));
         workspace_new(ws);
         g_free(ws->name);

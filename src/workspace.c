@@ -110,7 +110,7 @@ void workspace_pin_add ( gchar *pin )
   {
     ws = g_malloc0(sizeof(workspace_t));
     ws->id = PAGER_PIN_ID;
-    ws->refcount = 1;
+    ws->refcount = 0;
     ws->name = g_strdup(pin);
     ws->visible = FALSE;
     workspaces = g_list_prepend(workspaces, ws);
@@ -197,12 +197,13 @@ void workspace_new ( workspace_t *new )
   {
     ws = workspace_from_name(new->name);
     if(ws && ws->id != PAGER_PIN_ID)
-      g_message("duplicate workspace names with differing id's");
+      g_message("duplicate workspace names with differing ids ('%s'/%p/%p)",
+          new->name, ws->id, new->id);
   }
   if(!ws)
   {
     ws = g_malloc0(sizeof(workspace_t));
-    ws->refcount = 1;
+    ws->refcount = 0;
     workspaces = g_list_prepend(workspaces,ws);
   }
 
@@ -219,6 +220,7 @@ void workspace_new ( workspace_t *new )
     pager_invalidate_all(ws);
   }
 
+  workspace_ref(ws->id);
   pager_item_add(ws);
   if(new->focused)
     workspace_set_focus(ws->id);
