@@ -8,6 +8,7 @@
 #include "switcher.h"
 
 static struct wintree_api api;
+static GMutex wt_mutex;
 static GList *wt_list;
 static GList *appid_map;
 static GList *appid_filter_list;
@@ -93,17 +94,22 @@ void wintree_set_focus ( gpointer id )
     return;
   wintree_commit(wintree_from_id(wt_focus));
   wt_focus = id;
+  g_mutex_lock(&wt_mutex);
   for(iter=wt_list; iter; iter=g_list_next(iter) )
     if (((window_t *)(iter->data))->uid == id)
       break;
   if(!iter)
+  {
+    g_mutex_unlock(&wt_mutex);
     return;
+  }
   if(g_list_previous(iter))
   {
     g_list_previous(iter)->next = NULL;
     iter->prev = NULL;
     wt_list = g_list_concat(iter, wt_list);
   }
+  g_mutex_unlock(&wt_mutex);
   wintree_commit(wt_list->data);
   g_idle_add((GSourceFunc)base_widget_emit_trigger, "window_focus");
 }
@@ -120,24 +126,28 @@ gboolean wintree_is_focused ( gpointer id )
 
 window_t *wintree_from_id ( gpointer id )
 {
-  GList *item;
-  for(item = wt_list; item; item = g_list_next(item) )
-    if ( ((window_t *)(item->data))->uid == id )
+  GList *iter;
+
+  g_mutex_lock(&wt_mutex);
+  for(iter = wt_list; iter; iter=g_list_next(iter) )
+    if ( ((window_t *)(iter->data))->uid == id )
       break;
-  if(!item)
-    return NULL;
-  return item->data;
+  g_mutex_unlock(&wt_mutex);
+
+  return iter?iter->data:NULL;
 }
 
 window_t *wintree_from_pid ( gint64 pid )
 {
-  GList *item;
-  for(item = wt_list; item; item = g_list_next(item) )
-    if ( ((window_t *)(item->data))->pid == pid )
+  GList *iter;
+
+  g_mutex_lock(&wt_mutex);
+  for(iter = wt_list; iter; iter=g_list_next(iter) )
+    if ( ((window_t *)(iter->data))->pid == pid )
       break;
-  if(!item)
-    return NULL;
-  return item->data;
+  g_mutex_unlock(&wt_mutex);
+
+  return iter?iter->data:NULL;
 }
 
 void wintree_commit ( window_t *win )
@@ -231,33 +241,38 @@ void wintree_window_append ( window_t *win )
   }
   if(win->title || win->appid)
     switcher_window_init(win);
-  if(g_list_find(wt_list,win)==NULL)
-    wt_list = g_list_append (wt_list,win);
+  g_mutex_lock(&wt_mutex);
+  if(g_list_find(wt_list, win)==NULL)
+    wt_list = g_list_append (wt_list, win);
   wintree_commit(win);
+  g_mutex_unlock(&wt_mutex);
 }
 
 void wintree_window_delete ( gpointer id )
 {
-  GList *item;
+  GList *iter;
   window_t *win;
 
-  for(item = wt_list; item; item = g_list_next(item) )
-    if ( ((window_t *)(item->data))->uid == id )
+  g_mutex_lock(&wt_mutex);
+  for(iter=wt_list; iter; iter=g_list_next(iter) )
+    if ( ((window_t *)(iter->data))->uid == id )
       break;
-  if(!item)
+  if(!iter && !iter->data)
+  {
+    g_mutex_unlock(&wt_mutex);
     return;
-  win = item->data;
-  if(!win)
-    return;
+  }
+  win = iter->data;
 
+  wt_list = g_list_delete_link(wt_list, iter);
   taskbar_destroy_item (win);
   switcher_window_delete(win);
   workspace_unref(win->workspace);
   g_free(win->appid);
   g_free(win->title);
   g_list_free_full(win->outputs,g_free);
-  wt_list = g_list_delete_link(wt_list,item);
   g_free(win);
+  g_mutex_unlock(&wt_mutex);
 }
 
 GList *wintree_get_list ( void )
@@ -363,9 +378,12 @@ gboolean wintree_placer_check ( gint pid )
 
   if(!placer)
     return FALSE;
+
+  g_mutex_lock(&wt_mutex);
   for(iter = wt_list; iter; iter = g_list_next(iter) )
     if ( ((window_t *)(iter->data))->pid == pid )
       count++;
+  g_mutex_unlock(&wt_mutex);
 
   return (count<2);
 }
