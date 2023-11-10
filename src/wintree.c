@@ -257,7 +257,7 @@ void wintree_window_delete ( gpointer id )
   for(iter=wt_list; iter; iter=g_list_next(iter) )
     if ( ((window_t *)(iter->data))->uid == id )
       break;
-  if(!iter && !iter->data)
+  if(!iter || !iter->data)
   {
     g_mutex_unlock(&wt_mutex);
     return;
