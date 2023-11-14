@@ -217,7 +217,6 @@ static void activate (GtkApplication* app, gpointer data )
   g_unix_signal_add(SIGUSR1,(GSourceFunc)switcher_event,NULL);
   g_unix_signal_add(SIGUSR2,(GSourceFunc)bar_visibility_toggle_all,NULL);
   g_unix_signal_add(SIGHUP,(GSourceFunc)sfwbar_restart,NULL);
-  signal_triggers_add();
 }
 
 int main (int argc, gchar **argv)
@@ -229,6 +228,7 @@ int main (int argc, gchar **argv)
   for(i=0; i<argc; i++)
     sargv[i] = argv[i];
 
+  signal_triggers_add();
   g_log_set_handler(NULL,G_LOG_LEVEL_MASK,log_print,NULL);
 
   parse_command_line(argc,argv);
