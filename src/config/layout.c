@@ -28,9 +28,9 @@ GdkRectangle config_get_loc ( GScanner *scanner )
   rect.height = 1;
 
   config_parse_sequence(scanner,
-      SEQ_REQ,'(',NULL,NULL,"missing '(' afer loc",
+      SEQ_REQ,'(',NULL,NULL,"missing '(' after loc",
       SEQ_REQ,G_TOKEN_INT,NULL,&rect.x,"missing x value in loc",
-      SEQ_REQ,',',NULL,NULL,"missing comma afer x value in loc",
+      SEQ_REQ,',',NULL,NULL,"missing comma after x value in loc",
       SEQ_REQ,G_TOKEN_INT,NULL,&rect.y,"missing y value in loc",
       SEQ_OPT,',',NULL,NULL,NULL,
       SEQ_CON,G_TOKEN_INT,NULL,&rect.width,"missing w value in loc",
