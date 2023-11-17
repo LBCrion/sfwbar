@@ -147,7 +147,7 @@ grid
 
 label
   a label displaying text sourced from an expression. Labels accept pango
-  markup to further theme text withing them.
+  markup to further theme text within them.
 
 scale
   a progress bar with a progress value specified by an expression
@@ -843,7 +843,7 @@ I.e. ::
 
 In the above example, value of the MyExpr variable will be calculated and
 the result will be used in computing the value expression. Intermediate
-varibles have type and have all of the fields of a scan variable (i.e. val,
+variables have type and have all of the fields of a scan variable (i.e. val,
 pval, time etc). They can be used the same way as scan variables.
 
 Miscellaneous

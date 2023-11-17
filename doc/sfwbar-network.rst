@@ -25,7 +25,7 @@ NetInfo(Query[,Interface])
 
 Function NetInfo queries the parameter of the connection on the network
 interface specified. If Interface is not specifies, NetInfo will query the
-interface of the defult gateway (if one exists). The queries supported are:
+interface of the default gateway (if one exists). The queries supported are:
 
 "ip"
   IP address of the interface.
