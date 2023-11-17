@@ -314,8 +314,8 @@ void config_menu_items ( GScanner *scanner, GtkWidget *menu )
             SEQ_REQ,G_TOKEN_STRING,NULL,&itemname,"missing submenu title",
             SEQ_OPT,',',NULL,NULL,NULL,
             SEQ_CON,G_TOKEN_STRING,NULL,&subname,"missing submenu name",
-            SEQ_REQ,')',NULL,NULL,"missing ')' afer 'submenu'",
-            SEQ_OPT,'{',NULL,&items,"missing '{' afer 'submenu'",
+            SEQ_REQ,')',NULL,NULL,"missing ')' after 'submenu'",
+            SEQ_OPT,'{',NULL,&items,"missing '{' after 'submenu'",
             SEQ_END);
         if(!scanner->max_parse_errors && itemname)
         {
@@ -350,8 +350,8 @@ void config_menu ( GScanner *scanner )
   config_parse_sequence(scanner,
       SEQ_REQ,'(',NULL,NULL,"missing '(' after 'menu'",
       SEQ_REQ,G_TOKEN_STRING,NULL,&name,"missing menu name",
-      SEQ_REQ,')',NULL,NULL,"missing ')' afer 'menu'",
-      SEQ_REQ,'{',NULL,&items,"missing '{' afer 'menu'",
+      SEQ_REQ,')',NULL,NULL,"missing ')' after 'menu'",
+      SEQ_REQ,'{',NULL,&items,"missing '{' after 'menu'",
       SEQ_END);
   if(!scanner->max_parse_errors && name)
   {
@@ -370,7 +370,7 @@ void config_menu_clear ( GScanner *scanner )
   config_parse_sequence(scanner,
       SEQ_REQ,'(',NULL,NULL,"missing '(' after 'menu'",
       SEQ_REQ,G_TOKEN_STRING,NULL,&name,"missing menu name",
-      SEQ_REQ,')',NULL,NULL,"missing ')' afer 'menu'",
+      SEQ_REQ,')',NULL,NULL,"missing ')' after 'menu'",
       SEQ_OPT,';',NULL,NULL,NULL,
       SEQ_END);
   if(!scanner->max_parse_errors && name)
@@ -387,8 +387,8 @@ void config_function ( GScanner *scanner )
   config_parse_sequence(scanner,
       SEQ_REQ,'(',NULL,NULL,"missing '(' after 'function'",
       SEQ_REQ,G_TOKEN_STRING,NULL,&name,"missing function name",
-      SEQ_REQ,')',NULL,NULL,"missing ')' afer 'function'",
-      SEQ_OPT,'{',NULL,NULL,"missing '{' afer 'function'",
+      SEQ_REQ,')',NULL,NULL,"missing ')' after 'function'",
+      SEQ_OPT,'{',NULL,NULL,"missing '{' after 'function'",
       SEQ_END);
   if(scanner->max_parse_errors)
     return g_free(name);
@@ -501,7 +501,7 @@ void config_module ( GScanner *scanner )
   config_parse_sequence(scanner,
       SEQ_REQ,'(',NULL,NULL,"missing '(' after 'module'",
       SEQ_REQ,G_TOKEN_STRING,NULL,&name,"missing module name",
-      SEQ_REQ,')',NULL,NULL,"missing ')' afer 'module'",
+      SEQ_REQ,')',NULL,NULL,"missing ')' after 'module'",
       SEQ_OPT,';',NULL,NULL,NULL,
       SEQ_END);
   if(scanner->max_parse_errors || !name)
