@@ -28,7 +28,7 @@ def main():
   print ('MenuClear(\\'Menugen_Applications\\')')
   dirlist = os.environ.get('XDG_DATA_DIRS')
   if not dirlist:
-    dirlist = '/usr/share'
+    dirlist = '/usr/local/share:/usr/share'
   dhome = os.environ.get('XDG_DATA_HOME')
   if not dhome:
     dhome = os.environ.get('HOME')
