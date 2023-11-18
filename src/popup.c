@@ -183,20 +183,22 @@ void popup_trigger ( GtkWidget *parent, gchar *name, GdkEvent *ev )
 void popup_size_allocate_cb ( GtkWidget *grid, GdkRectangle *alloc,
     GtkWidget *win )
 {
-  gint width, height, win_width, win_height;
+  gint width, height, win_width, win_height, old_width, old_height;
 
   if(!gtk_widget_is_visible(win))
     return;
   if(window_ref_check(win))
     return;
 
-  win_width = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(win), "width"));
-  win_height = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(win), "height"));
+  old_width = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(win), "width"));
+  old_height = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(win), "height"));
 
+  gtk_window_get_size(GTK_WINDOW(win), &win_width, &win_height);
   gtk_widget_get_preferred_width(grid, NULL, &width);
   gtk_widget_get_preferred_height(grid, NULL, &height);
 
-  if(width == win_width && height == win_height)
+  if(width == win_width && height == win_height &&
+      width == old_width && height == old_height)
     return;
 
   g_object_set_data(G_OBJECT(win), "width", GINT_TO_POINTER(width));
