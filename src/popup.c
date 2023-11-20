@@ -108,13 +108,12 @@ static void popup_transfer_window_grab (GtkWidget *widget, GdkSeat *seat)
       "gdk-attached-grab-window", window);
 }
 
-void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkEvent *ev )
+void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkSeat *seat )
 {
   GdkRectangle rect;
   GtkWidget *child, *old_popup;
   GdkWindow *gparent, *gpopup, *transfer;
   GdkGravity wanchor, panchor;
-  GdkSeat *seat;
   GHashTableIter iter;
 
   child = gtk_bin_get_child(GTK_BIN(popup));
@@ -126,25 +125,27 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkEvent *ev )
     if(old_popup != popup && gtk_widget_get_visible(old_popup))
       popup_popdown(old_popup);
 
-  gtk_widget_show_all(child);
+  css_widget_cascade(child, NULL);
   gtk_widget_unrealize(popup);
   gtk_widget_realize(popup);
   gparent = gtk_widget_get_window(parent);
   gpopup = gtk_widget_get_window(
       gtk_widget_get_ancestor(popup,GTK_TYPE_WINDOW));
+
   rect.x = 0;
   rect.y = 0;
   rect.width = gdk_window_get_width(gparent);
   rect.height = gdk_window_get_height(gparent);
   popup_get_gravity(parent,&wanchor,&panchor);
   window_ref(gtk_widget_get_ancestor(parent,GTK_TYPE_WINDOW),popup);
+
+  if(!seat)
+    seat = gdk_display_get_default_seat(gdk_display_get_default());
+
   g_object_set_data(G_OBJECT(popup), "parent_window",
       gtk_widget_get_ancestor(parent, GTK_TYPE_WINDOW));
-
-  if(ev && gdk_event_get_device(ev))
-    seat = gdk_device_get_seat(gdk_event_get_device(ev));
-  else
-    seat = gdk_display_get_default_seat(gdk_display_get_default());
+  g_object_set_data(G_OBJECT(popup), "parent", parent);
+  g_object_set_data(G_OBJECT(popup), "seat", seat);
 
   popup_transfer_window_grab(popup, seat);
   gtk_window_set_transient_for(GTK_WINDOW(popup),
@@ -177,13 +178,13 @@ void popup_trigger ( GtkWidget *parent, gchar *name, GdkEvent *ev )
   if(gtk_widget_get_visible(popup))
     popup_popdown(popup);
   else
-    popup_show(parent, popup, ev);
+    popup_show(parent, popup, gdk_device_get_seat(gdk_event_get_device(ev)));
 }
 
 void popup_size_allocate_cb ( GtkWidget *grid, GdkRectangle *alloc,
     GtkWidget *win )
 {
-  gint width, height, win_width, win_height, old_width, old_height;
+  gint old_width, old_height;
 
   if(!gtk_widget_is_visible(win))
     return;
@@ -193,20 +194,15 @@ void popup_size_allocate_cb ( GtkWidget *grid, GdkRectangle *alloc,
   old_width = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(win), "width"));
   old_height = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(win), "height"));
 
-  gtk_window_get_size(GTK_WINDOW(win), &win_width, &win_height);
-  gtk_widget_get_preferred_width(grid, NULL, &width);
-  gtk_widget_get_preferred_height(grid, NULL, &height);
-
-  if(width == win_width && height == win_height &&
-      width == old_width && height == old_height)
+  if(old_width==alloc->width  && old_height==alloc->height)
     return;
 
-  g_object_set_data(G_OBJECT(win), "width", GINT_TO_POINTER(width));
-  g_object_set_data(G_OBJECT(win), "height", GINT_TO_POINTER(height));
+  g_object_set_data(G_OBJECT(win), "width", GINT_TO_POINTER(alloc->width));
+  g_object_set_data(G_OBJECT(win), "height", GINT_TO_POINTER(alloc->height));
 
   gtk_widget_hide(win);
-  gtk_window_resize(GTK_WINDOW(win), width, height);
-  gtk_widget_show(win);
+  popup_show(g_object_get_data(G_OBJECT(win), "parent"), win,
+      g_object_get_data(G_OBJECT(win), "seat"));
 }
 
 void popup_set_autoclose ( GtkWidget *win, gboolean autoclose )

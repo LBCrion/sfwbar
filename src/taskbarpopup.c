@@ -56,7 +56,8 @@ static gboolean taskbar_popup_enter_cb ( GtkWidget *widget,
 
   flow_grid_update(priv->tgroup);
 
-  popup_show(priv->button, priv->popover, (GdkEvent *)event);
+  popup_show(priv->button, priv->popover,
+      gdk_device_get_seat(gdk_event_get_device((GdkEvent *)event)));
 
   return FALSE;
 }
