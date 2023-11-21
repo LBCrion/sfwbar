@@ -181,28 +181,34 @@ void popup_trigger ( GtkWidget *parent, gchar *name, GdkEvent *ev )
     popup_show(parent, popup, gdk_device_get_seat(gdk_event_get_device(ev)));
 }
 
-void popup_size_allocate_cb ( GtkWidget *grid, GdkRectangle *alloc,
-    GtkWidget *win )
+void popup_resize_maybe ( GtkWidget *self )
 {
+  GdkRectangle alloc;
   gint old_width, old_height;
 
-  if(!gtk_widget_is_visible(win))
+  if(!gtk_widget_is_visible(self))
     return;
-  if(window_ref_check(win))
-    return;
-
-  old_width = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(win), "width"));
-  old_height = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(win), "height"));
-
-  if(old_width==alloc->width  && old_height==alloc->height)
+  if(window_ref_check(self))
     return;
 
-  g_object_set_data(G_OBJECT(win), "width", GINT_TO_POINTER(alloc->width));
-  g_object_set_data(G_OBJECT(win), "height", GINT_TO_POINTER(alloc->height));
+  old_width = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(self), "width"));
+  old_height = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(self), "height"));
+  gtk_widget_get_allocation(self, &alloc);
 
-  gtk_widget_hide(win);
-  popup_show(g_object_get_data(G_OBJECT(win), "parent"), win,
-      g_object_get_data(G_OBJECT(win), "seat"));
+  if(old_width==alloc.width  && old_height==alloc.height)
+    return;
+
+  g_object_set_data(G_OBJECT(self), "width", GINT_TO_POINTER(alloc.width));
+  g_object_set_data(G_OBJECT(self), "height", GINT_TO_POINTER(alloc.height));
+
+  gtk_widget_hide(self);
+  popup_show(g_object_get_data(G_OBJECT(self), "parent"), self,
+      g_object_get_data(G_OBJECT(self), "seat"));
+}
+
+void popup_size_allocate_cb ( GtkWidget *grid, gpointer dummy, GtkWidget *win )
+{
+  popup_resize_maybe(win);
 }
 
 void popup_set_autoclose ( GtkWidget *win, gboolean autoclose )
@@ -225,6 +231,7 @@ GtkWidget *popup_new ( gchar *name )
     return win;
 
   win = gtk_window_new(GTK_WINDOW_POPUP);
+  window_set_unref_func(win, (void(*)(gpointer))popup_resize_maybe);
   grid = grid_new();
   gtk_container_add(GTK_CONTAINER(win),grid);
   gtk_widget_set_name(win,name);

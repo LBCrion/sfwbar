@@ -39,10 +39,13 @@ void window_ref ( GtkWidget *self, GtkWidget *ref )
 void window_unref ( GtkWidget *ref, GtkWidget *self )
 {
   GList **refs;
+  void (*unref_func)( gpointer);
 
   refs = g_object_get_data(G_OBJECT(self),"window_refs");
   if(refs)
     *refs = g_list_remove(*refs, ref);
+  if(!refs && (unref_func = g_object_get_data(G_OBJECT(self), "unref_func")))
+    unref_func(self);
 }
 
 gboolean window_ref_check ( GtkWidget *self )
@@ -52,4 +55,9 @@ gboolean window_ref_check ( GtkWidget *self )
   refs = g_object_get_data(G_OBJECT(self),"window_refs");
 
   return !!(refs && *refs);
+}
+
+void window_set_unref_func ( GtkWidget *self, void (*func)(gpointer) )
+{
+  g_object_set_data(G_OBJECT(self), "unref_func", func);
 }

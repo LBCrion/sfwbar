@@ -6,5 +6,6 @@
 void window_ref ( GtkWidget *self, GtkWidget *ref );
 void window_unref ( GtkWidget *ref, GtkWidget *self );
 gboolean window_ref_check ( GtkWidget *self );
+void window_set_unref_func ( GtkWidget *self, void (*func)(gpointer) );
 
 #endif
