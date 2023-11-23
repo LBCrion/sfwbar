@@ -32,16 +32,7 @@ static gboolean taskbar_item_action_exec ( GtkWidget *self, gint slot,
   mods = base_widget_get_modifiers(self);
   action = base_widget_get_action(priv->taskbar, slot, mods);
 
-  if(!action && !mods && slot==1)
-  {
-    if (wintree_is_focused(priv->win->uid) &&
-        !(priv->win->state & WS_MINIMIZED))
-     wintree_minimize(priv->win->uid);
-    else
-      wintree_focus(priv->win->uid);
-  }
-  else
-    action_exec(self, action, ev, priv->win, NULL);
+  action_exec(self, action, ev, priv->win, NULL);
 
   return TRUE;
 }
@@ -78,8 +69,8 @@ static gboolean taskbar_item_check ( GtkWidget *self )
           (GCompareFunc)g_strcmp0));
       break;
     case G_TOKEN_WORKSPACE:
-      result = (!priv->win->workspace ||
-          priv->win->workspace!=workspace_get_active(taskbar));
+      result = (!priv->win || !priv->win->workspace ||
+          priv->win->workspace==workspace_get_active(taskbar));
       break;
   }
   if(floating)

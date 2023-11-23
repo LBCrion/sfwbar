@@ -6,6 +6,7 @@
 #include "sfwbar.h"
 #include "basewidget.h"
 #include "bar.h"
+#include "window.h"
 
 static void (*css_style_updated_original)(GtkWidget *);
 
@@ -40,7 +41,11 @@ static void css_custom_handle ( GtkWidget *widget )
   if(state)
     gtk_widget_show_now(widget);
   else
+  {
+    if(GTK_IS_WINDOW(widget))
+      window_collapse_popups(widget);
     gtk_widget_hide(widget);
+  }
   if(!GTK_IS_EVENT_BOX(widget))
   {
     gtk_widget_style_get(widget,"hexpand",&state,NULL);

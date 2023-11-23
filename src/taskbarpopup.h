@@ -37,7 +37,6 @@ struct _TaskbarPopupPrivate
   gchar *appid;
   gboolean invalid;
   gboolean single;
-  GList *holds;
 };
 
 GType taskbar_popup_get_type ( void );

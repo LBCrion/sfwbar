@@ -7,7 +7,6 @@
 typedef struct user_action {
   guchar cond;
   guchar ncond;
-  gint mod;
   ExprCache *command;
   ExprCache *addr;
   GQuark quark;

@@ -13,28 +13,11 @@
 #include "wintree.h"
 #include "menu.h"
 #include "popup.h"
+#include "window.h"
 #include <gtk-layer-shell.h>
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarPopup, taskbar_popup, FLOW_ITEM_TYPE,
     G_ADD_PRIVATE(TaskbarPopup));
-
-static void taskbar_popup_add_hold ( GtkWidget *popover, GtkWidget *hold )
-{
-  GList **holds;
-
-  holds = g_object_get_data(G_OBJECT(popover),"holds");
-  if(holds && !g_list_find(*holds,hold))
-    *holds = g_list_prepend(*holds,hold);
-}
-
-static void taskbar_popup_remove_hold ( GtkWidget *popover, GtkWidget *hold )
-{
-  GList **holds;
-
-  holds = g_object_get_data(G_OBJECT(popover),"holds");
-  if(holds)
-    *holds = g_list_remove(*holds,hold);
-}
 
 static gboolean taskbar_popup_enter_cb ( GtkWidget *widget,
     GdkEventCrossing *event, gpointer self )
@@ -48,11 +31,10 @@ static gboolean taskbar_popup_enter_cb ( GtkWidget *widget,
 
   if(gtk_widget_is_visible(priv->popover))
   {
-    taskbar_popup_add_hold(priv->popover,widget);
+    window_ref(priv->popover, widget);
     return FALSE;
   }
-  g_list_free(priv->holds);
-  taskbar_popup_add_hold(priv->popover,widget);
+  window_ref(priv->popover, widget);
 
   flow_grid_update(priv->tgroup);
 
@@ -64,12 +46,27 @@ static gboolean taskbar_popup_enter_cb ( GtkWidget *widget,
 
 static gboolean taskbar_popup_timeout_cb ( GtkWidget *popover )
 {
-  GList **holds;
-
-  holds = g_object_get_data(G_OBJECT(popover),"holds");
-  if(!holds || !*holds)
+  if(!window_ref_check(popover))
+  {
+    window_collapse_popups(popover);
     gtk_widget_hide(popover);
+  }
   return FALSE;
+}
+
+static void taskbar_popup_grab_cb ( GtkWidget *popover, gboolean grab,
+    GtkWidget *self )
+{
+  if(!grab)
+  {
+    window_unref(self, popover);
+    window_unref(popover, popover);
+  }
+}
+
+static void taskbar_popup_timeout_set ( GtkWidget *popover )
+{
+  g_timeout_add(10, (GSourceFunc)taskbar_popup_timeout_cb, popover);
 }
 
 static gboolean taskbar_popup_leave_cb ( GtkWidget *widget,
@@ -80,9 +77,7 @@ static gboolean taskbar_popup_leave_cb ( GtkWidget *widget,
   g_return_val_if_fail(IS_TASKBAR_POPUP(self),FALSE);
   priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
 
-  taskbar_popup_remove_hold(priv->popover, widget);
-  if(!priv->single)
-    g_timeout_add(10,(GSourceFunc)taskbar_popup_timeout_cb, priv->popover);
+  window_unref(widget, priv->popover);
 
   return FALSE;
 }
@@ -112,7 +107,6 @@ static gchar *taskbar_popup_get_appid ( GtkWidget *self )
 static void taskbar_popup_update ( GtkWidget *self )
 {
   TaskbarPopupPrivate *priv;
-  GList *children, *iter;
 
   g_return_if_fail(IS_TASKBAR_POPUP(self));
   priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
@@ -120,40 +114,22 @@ static void taskbar_popup_update ( GtkWidget *self )
     return;
 
   if(priv->icon)
-    scale_image_set_image(priv->icon,priv->appid,NULL);
+    scale_image_set_image(priv->icon, priv->appid, NULL);
 
   if(priv->label)
-    if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)),priv->appid))
-      gtk_label_set_text(GTK_LABEL(priv->label),priv->appid);
+    if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)), priv->appid))
+      gtk_label_set_text(GTK_LABEL(priv->label), priv->appid);
 
-  if (flow_grid_find_child(priv->tgroup, wintree_from_id(wintree_get_focus())))
-    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)),
-        "taskbar_group_active");
-  else
-    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)),
-        "taskbar_group_normal");
+  gtk_widget_set_name(priv->button,
+      flow_grid_find_child(priv->tgroup, wintree_from_id(wintree_get_focus()))?
+        "taskbar_group_active":"taskbar_group_normal");
 
-  gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
-      GTK_STATE_FLAG_PRELIGHT);
+  gtk_widget_unset_state_flags(priv->button, GTK_STATE_FLAG_PRELIGHT);
 
   flow_grid_update(priv->tgroup);
-  children = gtk_container_get_children(GTK_CONTAINER(
-        gtk_bin_get_child(GTK_BIN(priv->tgroup))));
   flow_item_set_active(self, flow_grid_n_children(priv->tgroup)>0 );
-  priv->single = !!(g_list_length(children) == 1);
-  g_list_free(children);
-  for(iter=priv->holds;iter;iter=g_list_next(iter))
-  {
-    if(GTK_IS_WINDOW(iter->data))
-      gtk_widget_hide(iter->data);
-    if(GTK_IS_MENU(iter->data))
-    {
-      gtk_menu_popdown(iter->data);
-      iter = priv->holds;
-    }
-  }
-  g_list_free(priv->holds);
-  priv->holds = NULL;
+  priv->single = (flow_grid_n_children(priv->tgroup)==1);
+  window_collapse_popups(priv->popover);
   gtk_widget_hide(priv->popover);
 
   priv->invalid = FALSE;
@@ -178,17 +154,25 @@ static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
 {
   TaskbarPopupPrivate *priv;
   GList *children;
+  window_t *win;
+  action_t *action;
 
   g_return_val_if_fail(IS_TASKBAR_POPUP(self),FALSE);
   priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
 
   children = gtk_container_get_children(GTK_CONTAINER(
         gtk_bin_get_child(GTK_BIN(priv->tgroup))));
-
-  if(g_list_length(children) == 1)
-    base_widget_action_exec(children->data, slot, ev);
-
+  if(children && !g_list_next(children) &&
+      base_widget_check_action_slot(priv->tgroup, slot))
+  {
+    win = flow_item_get_source(children->data);
+    if( (action = base_widget_get_action(priv->tgroup, slot,
+        base_widget_get_modifiers(self))) )
+      action_exec(self, action, (GdkEvent *)ev,
+          win?win:wintree_from_id(wintree_get_focus()), NULL);
+  }
   g_list_free(children);
+
   return TRUE;
 }
 
@@ -229,7 +213,6 @@ static void taskbar_popup_class_init ( TaskbarPopupClass *kclass )
   FLOW_ITEM_CLASS(kclass)->compare = taskbar_popup_compare;
   FLOW_ITEM_CLASS(kclass)->get_source =
     (void * (*)(GtkWidget *))taskbar_popup_get_appid;
-
 }
 
 static void taskbar_popup_init ( TaskbarPopup *self )
@@ -291,6 +274,8 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *taskbar )
     priv->label = NULL;
 
   priv->popover = gtk_window_new(GTK_WINDOW_POPUP);
+  window_set_unref_func(priv->popover,
+      (void(*)(gpointer))taskbar_popup_timeout_set);
   gtk_widget_set_name(priv->button, "taskbar_group");
   g_object_ref(G_OBJECT(priv->popover));
   gtk_container_add(GTK_CONTAINER(priv->popover), priv->tgroup);
@@ -314,6 +299,8 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *taskbar )
       G_CALLBACK(taskbar_popup_leave_cb), self);
   g_signal_connect(priv->popover, "leave-notify-event",
       G_CALLBACK(taskbar_popup_leave_cb), self);
+  g_signal_connect(priv->popover, "grab-notify",
+      G_CALLBACK(taskbar_popup_grab_cb), self);
 
   if(g_object_get_data(G_OBJECT(taskbar), "g_cols"))
     flow_grid_set_cols(base_widget_get_child(priv->tgroup), GPOINTER_TO_INT(
@@ -329,7 +316,6 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *taskbar )
         g_object_get_data(G_OBJECT(taskbar), "g_title_width"));
   flow_grid_set_sort(base_widget_get_child(priv->tgroup),
       GPOINTER_TO_INT(g_object_get_data(G_OBJECT(taskbar), "g_sort")));
-  g_object_set_data(G_OBJECT(priv->popover), "holds", &priv->holds);
 
   base_widget_copy_actions(priv->tgroup, taskbar);
 
@@ -338,18 +324,4 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *taskbar )
 
   flow_item_invalidate(self);
   return priv->tgroup;
-}
-
-gboolean taskbar_popup_child_cb ( GtkWidget *child, GtkWidget *popover )
-{
-  taskbar_popup_remove_hold(popover, child);
-  g_timeout_add(10, (GSourceFunc)taskbar_popup_timeout_cb, popover);
-  return FALSE;
-}
-
-void taskbar_popup_pop_child ( GtkWidget *popover, GtkWidget *child )
-{
-  taskbar_popup_add_hold(popover, child);
-  g_signal_connect(G_OBJECT(child), "unmap",
-      G_CALLBACK(taskbar_popup_child_cb), popover);
 }

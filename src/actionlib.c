@@ -451,6 +451,22 @@ static ModuleActionHandlerV1 clear_widget_handler = {
   .function = (ModuleActionFunc)clear_widget_action
 };
 
+static void taskbar_item_action ( gchar *cmd, gchar *name, void *widget,
+    void *event, window_t *win, void *state )
+{
+  if(!win)
+    return;
+  if (wintree_is_focused(win->uid) && !(win->state & WS_MINIMIZED))
+    wintree_minimize(win->uid);
+  else
+    wintree_focus(win->uid);
+}
+
+static ModuleActionHandlerV1 taskbar_item_handler = {
+  .name = "TaskbarItemDefault",
+  .function = (ModuleActionFunc)taskbar_item_action
+};
+
 ModuleActionHandlerV1 *action_handlers[] = {
   &exec_handler,
   &function_handler,
@@ -485,6 +501,7 @@ ModuleActionHandlerV1 *action_handlers[] = {
   &eval_handler,
   &switcher_handler,
   &clear_widget_handler,
+  &taskbar_item_handler,
   NULL
 };
 

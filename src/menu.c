@@ -31,12 +31,12 @@ void menu_remove ( gchar *name )
   if(!menu)
     return;
   items = gtk_container_get_children(GTK_CONTAINER(menu));
-  for(iter=items;iter;iter=g_list_next(iter))
+  for(iter=items; iter; iter=g_list_next(iter))
     if(gtk_menu_item_get_submenu(iter->data))
-      gtk_menu_item_set_submenu(iter->data,NULL);
+      gtk_menu_item_set_submenu(iter->data, NULL);
   g_list_free(items);
 
-  g_hash_table_remove(menus,name);
+  g_hash_table_remove(menus, name);
 }
 
 void menu_clamp_size ( GtkMenu *menu )
@@ -48,16 +48,17 @@ void menu_clamp_size ( GtkMenu *menu )
   GdkRectangle workarea;
   gint w,h;
 
-  toplevel = GTK_WINDOW(gtk_widget_get_ancestor(GTK_WIDGET(menu),GTK_TYPE_WINDOW));
+  toplevel = GTK_WINDOW(gtk_widget_get_ancestor(GTK_WIDGET(menu),
+        GTK_TYPE_WINDOW));
   gdk_win = gtk_widget_get_window(GTK_WIDGET(toplevel));
   w = gdk_window_get_width(gdk_win);
   h = gdk_window_get_height(gdk_win);
 
   display = gdk_window_get_display(gdk_win);
-  monitor = gdk_display_get_monitor_at_window(display,gdk_win);
-  gdk_monitor_get_workarea(monitor,&workarea);
+  monitor = gdk_display_get_monitor_at_window(display, gdk_win);
+  gdk_monitor_get_workarea(monitor, &workarea);
 
-  gdk_window_resize(gdk_win,MIN(w,workarea.width),MIN(h,workarea.height));
+  gdk_window_resize(gdk_win, MIN(w, workarea.width), MIN(h, workarea.height));
 }
 
 GtkWidget *menu_new ( gchar *name )
@@ -72,7 +73,7 @@ GtkWidget *menu_new ( gchar *name )
   }
 
   menu = gtk_menu_new();
-  g_signal_connect(menu,"popped-up",G_CALLBACK(menu_clamp_size),NULL);
+  g_signal_connect(menu, "popped-up", G_CALLBACK(menu_clamp_size), NULL);
   gtk_menu_set_reserve_toggle_size(GTK_MENU(menu), FALSE);
 
   if(name)
@@ -102,28 +103,29 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
 
   window = gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
   if(gtk_window_get_window_type(GTK_WINDOW(window)) == GTK_WINDOW_POPUP)
-    taskbar_popup_pop_child(window, menu);
+    g_signal_connect(G_OBJECT(menu), "unmap",
+        G_CALLBACK(window_unref), window);
 
   widget = GTK_IS_BIN(widget)?gtk_bin_get_child(GTK_BIN(widget)):widget;
   gtk_widget_unset_state_flags(widget, GTK_STATE_FLAG_PRELIGHT);
-  popup_get_gravity(widget,&wanchor,&manchor);
+  popup_get_gravity(widget, &wanchor, &manchor);
   gtk_widget_show_all(menu);
-  gtk_menu_popup_at_widget(GTK_MENU(menu),widget,wanchor,manchor,event);
-  window_ref(window,menu);
+  gtk_menu_popup_at_widget(GTK_MENU(menu), widget, wanchor, manchor, event);
+  window_ref(window, menu);
 }
 
 gboolean menu_action_cb ( GtkWidget *w ,action_t *action )
 {
-  GtkWidget *parent = gtk_widget_get_ancestor(w,GTK_TYPE_MENU);
+  GtkWidget *parent;
   gpointer wid;
   guint16 state;
   GtkWidget *widget;
 
-  if(parent)
+  if( (parent = gtk_widget_get_ancestor(w, GTK_TYPE_MENU)) )
   {
-    wid = g_object_get_data ( G_OBJECT(parent), "wid" );
-    state = GPOINTER_TO_UINT(g_object_get_data ( G_OBJECT(parent), "state" ));
-    widget = g_object_get_data ( G_OBJECT(parent),"caller" );
+    wid = g_object_get_data (G_OBJECT(parent), "wid");
+    state = GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(parent), "state"));
+    widget = g_object_get_data (G_OBJECT(parent), "caller");
   }
   else
   {
@@ -135,44 +137,44 @@ gboolean menu_action_cb ( GtkWidget *w ,action_t *action )
   if(!wid)
     wid = wintree_get_focus();
 
-  action_exec(widget,action,NULL,wintree_from_id(wid),&state);
+  action_exec(widget, action, NULL, wintree_from_id(wid), &state);
   return TRUE;
 }
 
 GtkWidget *menu_item_new ( gchar *label, action_t *action )
 {
-  GtkWidget *item,*box,*wlabel,*img;
+  GtkWidget *item, *box, *wlabel, *img;
   gchar *text, *icon;
 
   icon = strchr(label,'%');
   if(icon)
-    text = g_strndup(label,icon-label);
+    text = g_strndup(label, icon-label);
   else
     text = g_strdup(label);
 
   item = gtk_menu_item_new();
-  gtk_widget_set_name(item,"menu_item");
+  gtk_widget_set_name(item, "menu_item");
   box = gtk_grid_new();
   if(icon)
   {
     img = scale_image_new();
-    scale_image_set_image(img,icon+1,NULL);
+    scale_image_set_image(img, icon+1, NULL);
     if(img)
-      gtk_grid_attach(GTK_GRID(box),img,1,1,1,1);
+      gtk_grid_attach(GTK_GRID(box), img, 1, 1, 1, 1);
   }
   if(text)
   {
     wlabel = gtk_label_new_with_mnemonic(text);
-    gtk_grid_attach(GTK_GRID(box),wlabel,2,1,1,1);
+    gtk_grid_attach(GTK_GRID(box), wlabel, 2, 1, 1, 1);
     g_free(text);
   }
-  gtk_container_add(GTK_CONTAINER(item),box);
+  gtk_container_add(GTK_CONTAINER(item), box);
 
   if(action)
   {
-    g_signal_connect(G_OBJECT(item),"activate",
-        G_CALLBACK(menu_action_cb),action);
-    g_object_weak_ref(G_OBJECT(item),(GWeakNotify)action_free,action);
+    g_signal_connect(G_OBJECT(item), "activate",
+        G_CALLBACK(menu_action_cb), action);
+    g_object_weak_ref(G_OBJECT(item), (GWeakNotify)action_free, action);
   }
 
   return item;

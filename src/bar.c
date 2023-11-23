@@ -420,8 +420,8 @@ void bar_set_visibility ( GtkWidget *self, const gchar *id, gchar state )
     gtk_widget_show_now(self);
   }
 
-  for(liter=priv->mirror_children;liter;liter=g_list_next(liter))
-    bar_set_visibility(liter->data,id,state);
+  for(liter=priv->mirror_children; liter; liter=g_list_next(liter))
+    bar_set_visibility(liter->data, id, state);
 }
 
 gint bar_get_toplevel_dir ( GtkWidget *widget )

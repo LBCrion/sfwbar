@@ -42,6 +42,7 @@ static void popup_popdown ( GtkWidget * widget )
   if(window_ref_check(widget))
     return;
   gtk_grab_remove(gtk_bin_get_child(GTK_BIN(widget)));
+  window_collapse_popups(widget);
   gtk_widget_hide(widget);
 }
 

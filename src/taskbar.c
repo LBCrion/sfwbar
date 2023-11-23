@@ -83,11 +83,15 @@ static void taskbar_class_init ( TaskbarClass *kclass )
 static void taskbar_init ( Taskbar *self )
 {
   TaskbarPrivate *priv;
+  action_t *action;
 
   priv = taskbar_get_instance_private(TASKBAR(self));
   priv->taskbar = flow_grid_new(TRUE);
   gtk_container_add(GTK_CONTAINER(self),priv->taskbar);
   flow_grid_invalidate(priv->taskbar);
+  action = action_new();
+  action->quark = g_quark_from_static_string("taskbaritemdefault");
+  base_widget_set_action(GTK_WIDGET(self), 1, 0, action);
 }
 
 GtkWidget *taskbar_new ( gboolean toplevel )
