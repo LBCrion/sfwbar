@@ -246,6 +246,8 @@ GIOStatus scanner_file_update ( GIOChannel *in, ScanFile *file, gsize *size )
             g_match_info_free (match);
           break;
         case G_TOKEN_GRAB:
+          if(lsize>0 && *(read_buff+lsize-1)=='\n')
+            *(read_buff+lsize-1)='\0';
           scanner_var_values_update(var,g_strdup(read_buff));
           break;
         case G_TOKEN_JSON:
