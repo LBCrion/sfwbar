@@ -42,13 +42,16 @@ static void bz_adapter_free ( gchar *object )
   BzAdapter *adapter;
   gboolean trigger;
 
+  g_mutex_lock(&adapter_mutex);
   for(iter=adapters; iter; iter=g_list_next(iter))
     if(!g_strcmp0(((BzAdapter *)(iter->data))->path, object))
       break;
   if(!iter)
+  {
+    g_mutex_unlock(&adapter_mutex);
     return;
+  }
   adapter = iter->data;
-  g_mutex_lock(&adapter_mutex);
   adapters = g_list_remove(adapters, adapter);
   trigger = !adapters;
   g_mutex_unlock(&adapter_mutex);
@@ -427,15 +430,19 @@ static void bz_adapter_handle ( gchar *object, gchar *iface )
   BzAdapter *adapter;
   GList *iter;
 
+
+  g_mutex_lock(&adapter_mutex);
   for(iter=adapters; iter; iter=g_list_next(iter))
     if(!g_strcmp0(((BzAdapter *)(iter->data))->path, object))
+    {
+      g_mutex_unlock(&adapter_mutex);
       return;
+    }
 
   adapter = g_malloc0(sizeof(BzAdapter));
   adapter->path = g_strdup(object);
   adapter->iface = g_strdup(iface);
 
-  g_mutex_lock(&adapter_mutex);
   adapters = g_list_append(adapters, adapter);
   g_mutex_unlock(&adapter_mutex);
   if(adapters && !g_list_next(adapters))
@@ -561,8 +568,10 @@ static void bz_name_appeared_cb (GDBusConnection *con, const gchar *name,
 static void bz_name_disappeared_cb (GDBusConnection *con, const gchar *name,
     gpointer d)
 {
+  g_mutex_lock(&adapter_mutex);
   while(adapters)
     bz_adapter_free(adapters->data);
+  g_mutex_unlock(&adapter_mutex);
   g_hash_table_remove_all(devices);
   g_dbus_connection_signal_unsubscribe(bz_con, sub_add);
   g_dbus_connection_signal_unsubscribe(bz_con, sub_del);
@@ -628,18 +637,18 @@ static void *bz_expr_state ( void **params, void *widget, void *event )
   }
 
   g_mutex_lock(&update_mutex);
-  if(!update_queue)
-    return result;
-
-  device = update_queue->data;
-  if(!g_ascii_strcasecmp(params[0],"Paired"))
-    *result = device->paired;
-  else if(!g_ascii_strcasecmp(params[0],"Connected"))
-    *result = device->connected;
-  else if(!g_ascii_strcasecmp(params[0],"Connecting"))
-    *result = device->connecting;
-  else if(!g_ascii_strcasecmp(params[0],"Trusted"))
-    *result = device->trusted;
+  if(update_queue)
+  {
+    device = update_queue->data;
+    if(!g_ascii_strcasecmp(params[0],"Paired"))
+      *result = device->paired;
+    else if(!g_ascii_strcasecmp(params[0],"Connected"))
+      *result = device->connected;
+    else if(!g_ascii_strcasecmp(params[0],"Connecting"))
+      *result = device->connecting;
+    else if(!g_ascii_strcasecmp(params[0],"Trusted"))
+      *result = device->trusted;
+  }
   g_mutex_unlock(&update_mutex);
 
   return result;
