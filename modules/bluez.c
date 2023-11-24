@@ -40,6 +40,7 @@ static void bz_adapter_free ( gchar *object )
 {
   GList *iter;
   BzAdapter *adapter;
+  gboolean trigger;
 
   for(iter=adapters; iter; iter=g_list_next(iter))
     if(!g_strcmp0(((BzAdapter *)(iter->data))->path, object))
@@ -49,8 +50,9 @@ static void bz_adapter_free ( gchar *object )
   adapter = iter->data;
   g_mutex_lock(&adapter_mutex);
   adapters = g_list_remove(adapters, adapter);
+  trigger = !adapters;
   g_mutex_unlock(&adapter_mutex);
-  if(!adapters)
+  if(trigger)
     MODULE_TRIGGER_EMIT("bluez_running");
   if(adapter->timeout_handle)
     g_source_remove(adapter->timeout_handle);
@@ -87,10 +89,13 @@ static BzDevice *bz_device_dup ( BzDevice *src )
 
 static void bz_device_update ( BzDevice *device )
 {
+  gboolean trigger;
+
   g_mutex_lock(&update_mutex);
   update_queue = g_list_append(update_queue, bz_device_dup(device));
+  trigger = !g_list_next(update_queue);
   g_mutex_unlock(&update_mutex);
-  if(!g_list_next(update_queue))
+  if(trigger)
     MODULE_TRIGGER_EMIT("bluez_updated");
 }
 
@@ -470,6 +475,7 @@ static void bz_device_removed ( GDBusConnection *con, const gchar *sender,
 {
   gchar *object;
   BzDevice *device;
+  gboolean trigger;
 
   g_variant_get(params, "(&o@as)", &object, NULL);
   bz_adapter_free(object);
@@ -479,11 +485,12 @@ static void bz_device_removed ( GDBusConnection *con, const gchar *sender,
   {
     g_mutex_lock(&remove_mutex);
     remove_queue = g_list_append(remove_queue, g_strdup(device->path));
+    trigger = !remove_queue->next;
     g_mutex_unlock(&remove_mutex);
     g_debug("bluez: device removed: %d %d %s %s on %s",device->paired,
         device->connected, device->addr, device->name, device->path);
     g_hash_table_remove(devices, object);
-    if(!remove_queue->next)
+    if(trigger)
       MODULE_TRIGGER_EMIT("bluez_removed");
   }
 }
@@ -574,27 +581,35 @@ void sfwbar_module_init ( ModuleApiV1 *api )
 static void *bz_expr_get ( void **params, void *widget, void *event )
 {
   BzDevice *device;
+  gchar *result = NULL;
 
   if(!params || !params[0])
     return g_strdup("");
 
+  g_mutex_lock(&update_mutex);
   if(update_queue)
   {
     device = update_queue->data;
     if(!g_ascii_strcasecmp(params[0],"Name"))
-      return g_strdup(device->name?device->name:"");
+      result = g_strdup(device->name?device->name:"");
     if(!g_ascii_strcasecmp(params[0],"Address"))
-      return g_strdup(device->addr?device->addr:"");
+      result = g_strdup(device->addr?device->addr:"");
     if(!g_ascii_strcasecmp(params[0],"Icon"))
-      return g_strdup(device->icon?device->icon:"");
+      result = g_strdup(device->icon?device->icon:"");
     if(!g_ascii_strcasecmp(params[0],"Path"))
-      return g_strdup(device->path?device->path:"");
+      result = g_strdup(device->path?device->path:"");
+  }
+  g_mutex_unlock(&update_mutex);
+
+  if(!result && !g_ascii_strcasecmp(params[0],"RemovedPath"))
+  {
+    g_mutex_lock(&remove_mutex);
+    if(remove_queue)
+      result = g_strdup(remove_queue->data);
+    g_mutex_unlock(&remove_mutex);
   }
 
-  if(remove_queue && !g_ascii_strcasecmp(params[0],"RemovedPath"))
-    return g_strdup(remove_queue->data);
-
-  return g_strdup("");
+  return result?result:g_strdup("");
 }
 
 static void *bz_expr_state ( void **params, void *widget, void *event )
@@ -612,6 +627,7 @@ static void *bz_expr_state ( void **params, void *widget, void *event )
     return result;
   }
 
+  g_mutex_lock(&update_mutex);
   if(!update_queue)
     return result;
 
@@ -624,6 +640,7 @@ static void *bz_expr_state ( void **params, void *widget, void *event )
     *result = device->connecting;
   else if(!g_ascii_strcasecmp(params[0],"Trusted"))
     *result = device->trusted;
+  g_mutex_unlock(&update_mutex);
 
   return result;
 }
@@ -632,18 +649,23 @@ static void bz_action_ack ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
   BzDevice *device;
+  gboolean trigger;
 
+  g_mutex_lock(&update_mutex);
   if(!update_queue)
+  {
+    g_mutex_unlock(&update_mutex);
     return;
+  }
 
   device = update_queue->data;
-  g_mutex_lock(&update_mutex);
   update_queue = g_list_remove(update_queue, device);
+  trigger = !!update_queue;
   g_mutex_unlock(&update_mutex);
   bz_device_free(device);
 
   g_debug("bluez: ack processed, queue: %d", !!update_queue);
-  if(update_queue)
+  if(trigger)
     MODULE_TRIGGER_EMIT("bluez_updated");
 }
 
@@ -651,15 +673,20 @@ static void bz_action_ack_removed ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
   gchar *tmp;
+  gboolean trigger;
 
-  if(!remove_queue)
-    return;
-  tmp = remove_queue->data;
   g_mutex_lock(&remove_mutex);
+  if(!remove_queue)
+  {
+    g_mutex_unlock(&remove_mutex);
+    return;
+  }
+  tmp = remove_queue->data;
   remove_queue = g_list_remove(remove_queue, tmp);
+  trigger = !!remove_queue;
   g_mutex_unlock(&remove_mutex);
   g_free(tmp);
-  if(remove_queue)
+  if(trigger)
     MODULE_TRIGGER_EMIT("bluez_removed");
 }
 
