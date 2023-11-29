@@ -259,9 +259,11 @@ static void module_queue_remove ( module_queue_t *queue )
   {
     item = queue->list->data;
     queue->list = g_list_remove(queue->list, item);
+    trigger = !!queue->list;
+    queue->free(item);
   }
-  trigger = !!queue->list;
-  queue->free(item);
+  else
+    trigger = FALSE;
   g_mutex_unlock(&(queue->mutex));
 
   if(trigger && queue->trigger)
