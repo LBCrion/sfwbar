@@ -16,9 +16,17 @@ GHashTable *expr_handlers;
 GData *act_handlers;
 GList *invalidators;
 
+static void module_queue_append ( module_queue_t *queue, void *item );
+static void module_queue_remove ( module_queue_t *queue );
+static void *module_queue_get_string ( module_queue_t *queue, gchar *param );
+static void *module_queue_get_numeric ( module_queue_t *queue, gchar *param );
 static ModuleApiV1 api_v1 = {
   .emit_trigger = base_widget_emit_trigger,
   .config_string = config_string,
+  .queue_append = module_queue_append,
+  .queue_remove = module_queue_remove,
+  .queue_get_string = module_queue_get_string,
+  .queue_get_numeric = module_queue_get_numeric,
 };
 
 void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler,gchar *name )
@@ -189,13 +197,16 @@ gchar *module_get_string ( GScanner *scanner )
   if(!expr_handlers)
     return g_strdup("");
 
-  handler = g_hash_table_lookup(expr_handlers,scanner->value.v_identifier);
+  handler = g_hash_table_lookup(expr_handlers, scanner->value.v_identifier);
   if(!handler)
     return g_strdup("");
 
-  g_debug("module: calling function `%s`",handler->name);
-  params = expr_module_parameters(scanner,handler->parameters,handler->name);
-  for(expr=E_STATE(scanner)->expr;!expr->widget&&expr->parent;expr=expr->parent);
+  g_debug("module: calling function `%s`", handler->name);
+  params = expr_module_parameters(scanner, handler->parameters, handler->name);
+
+  expr=E_STATE(scanner)->expr;
+  while(!expr->widget && expr->parent)
+    expr=expr->parent;
 
   result = handler->function(params, expr->widget, expr->event);
 
@@ -210,6 +221,78 @@ gchar *module_get_string ( GScanner *scanner )
     E_STATE(scanner)->type = EXPR_STRING;
   if(!(handler->flags & MODULE_EXPR_DETERMINISTIC))
     E_STATE(scanner)->expr->vstate = TRUE;
+
+  return result;
+}
+
+static void module_queue_append ( module_queue_t *queue, void *item )
+{
+  gboolean trigger;
+  GList *ptr;
+
+  g_mutex_lock(&(queue->mutex));
+
+  ptr = g_list_find_custom(queue->list, item, queue->compare);
+  if(ptr != queue->list)
+  {
+    queue->free(ptr->data);
+    ptr->data = queue->duplicate(item);
+  }
+  else
+    queue->list = g_list_append(queue->list, queue->duplicate(item));
+
+  trigger = !g_list_next(queue->list);
+  g_mutex_unlock(&(queue->mutex));
+
+  if(trigger && queue->trigger)
+    g_main_context_invoke(NULL,
+        (GSourceFunc)base_widget_emit_trigger, queue->trigger);
+}
+
+static void module_queue_remove ( module_queue_t *queue )
+{
+  gboolean trigger;
+  void *item;
+
+  g_mutex_lock(&(queue->mutex));
+  if(queue->list)
+  {
+    item = queue->list->data;
+    queue->list = g_list_remove(queue->list, item);
+  }
+  trigger = !!queue->list;
+  queue->free(item);
+  g_mutex_unlock(&(queue->mutex));
+
+  if(trigger && queue->trigger)
+    g_main_context_invoke(NULL,
+        (GSourceFunc)base_widget_emit_trigger, queue->trigger);
+}
+
+static void *module_queue_get_string ( module_queue_t *queue, gchar *param )
+{
+  void *result;
+
+  g_mutex_lock(&(queue->mutex));
+  if(queue->list)
+    result = queue->get_str(queue->list->data, param);
+  else
+    result = NULL;
+  g_mutex_unlock(&(queue->mutex));
+
+  return result;
+}
+
+static void *module_queue_get_numeric ( module_queue_t *queue, gchar *param )
+{
+  void *result;
+
+  g_mutex_lock(&(queue->mutex));
+  if(queue->list)
+    result = queue->get_num(queue->list->data, param);
+  else
+    result = NULL;
+  g_mutex_unlock(&(queue->mutex));
 
   return result;
 }
