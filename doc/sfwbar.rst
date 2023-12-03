@@ -762,6 +762,10 @@ Operation    Description
              string parameter specifies the character to pad the string with.
 ``Upper``    Convert a string to upper case
 ``Lower``    Convert a string to lower case
+``Escape``   Sanitize text input for label widget.
+``Read``     Read contents of a file into a string
+``Replace``  Replace one substring with another within a string
+             ``Replace (string, old, new)``
 ``Lookup``   lookup a numeric value within a list of tuplets, the function call
              is ``Lookup(Value, Threshold1, String1, ..., DefaultString)``. The
              function checks value against a thresholds and returns a String

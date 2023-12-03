@@ -411,6 +411,36 @@ ModuleExpressionHandlerV1 escape_handler = {
   .function = expr_lib_escape
 };
 
+static void *expr_lib_read ( void **params, void *widget, void *event )
+{
+  gchar *fname, *result;
+  GIOChannel *in;
+
+  if(!params || !params[0])
+    return g_strdup("");
+
+  if( !(fname = get_xdg_config_file(params[0], NULL)) )
+    return g_strdup_printf("Read: file not found '%s'", (gchar *)params[0]);
+
+  if( (in = g_io_channel_new_file(params[0], "r", NULL)) )
+    g_io_channel_read_to_end(in, &result, NULL, NULL);
+  else
+    result = NULL;
+
+
+  if(!result)
+    result = g_strdup_printf("Read: can't open file '%s'", fname);
+
+  g_free(fname);
+  return result;
+}
+
+ModuleExpressionHandlerV1 read_handler = {
+  .name = "read",
+  .parameters = "S",
+  .function = expr_lib_read
+};
+
 ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &mid_handler,
   &replace_handler,
@@ -428,6 +458,7 @@ ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &gtkevent_handler,
   &widget_id_handler,
   &escape_handler,
+  &read_handler,
   NULL
 };
 
