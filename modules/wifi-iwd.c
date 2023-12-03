@@ -462,6 +462,11 @@ static void iw_agent__method(GDBusConnection *con,
 
 static void iw_scan_start ( gchar *path )
 {
+  iw_device_t *device;
+
+  device = iw_device_get(path, FALSE);
+  if(device && device->scanning)
+    return;
   g_debug("iwd: initiating scan");
   MODULE_TRIGGER_EMIT("iwd_scan");
   g_dbus_connection_call(iw_con, iw_serv, path, iw_iface_station, "Scan",
