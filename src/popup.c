@@ -184,7 +184,7 @@ void popup_trigger ( GtkWidget *parent, gchar *name, GdkEvent *ev )
 
 void popup_resize_maybe ( GtkWidget *self )
 {
-  GdkRectangle alloc;
+  GtkRequisition req;
   gint old_width, old_height;
 
   if(!gtk_widget_is_visible(self))
@@ -194,15 +194,16 @@ void popup_resize_maybe ( GtkWidget *self )
 
   old_width = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(self), "width"));
   old_height = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(self), "height"));
-  gtk_widget_get_allocation(self, &alloc);
+  gtk_widget_get_preferred_size(gtk_bin_get_child(GTK_BIN(self)), NULL, &req);
 
-  if(old_width==alloc.width  && old_height==alloc.height)
+  if(old_width==req.width  && old_height==req.height)
     return;
 
-  g_object_set_data(G_OBJECT(self), "width", GINT_TO_POINTER(alloc.width));
-  g_object_set_data(G_OBJECT(self), "height", GINT_TO_POINTER(alloc.height));
+  g_object_set_data(G_OBJECT(self), "width", GINT_TO_POINTER(req.width));
+  g_object_set_data(G_OBJECT(self), "height", GINT_TO_POINTER(req.height));
 
   gtk_widget_hide(self);
+  gtk_window_resize(GTK_WINDOW(self), req.width, req.height);
   popup_show(g_object_get_data(G_OBJECT(self), "parent"), self,
       g_object_get_data(G_OBJECT(self), "seat"));
 }
