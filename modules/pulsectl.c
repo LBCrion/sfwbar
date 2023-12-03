@@ -397,8 +397,8 @@ static pa_cvolume *pulse_adjust_volume ( pulse_info *info, gint cidx,
       pa_cvolume_dec(&info->cvol, -vdelta);
   }
   else
-    info->cvol.values[cidx-1] = CLAMP(info->cvol.values[cidx-1] + vdelta, 0,
-        PA_VOLUME_UI_MAX);
+    info->cvol.values[cidx-1] = CLAMP((gint)(info->cvol.values[cidx-1]) +
+        vdelta, 0, PA_VOLUME_UI_MAX);
 
   return &info->cvol;
 }
