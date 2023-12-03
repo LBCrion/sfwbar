@@ -1,58 +1,135 @@
 module("pulsectl")
 
-set XPulseMutedIcon = If(!Ident($PulseMutedIcon),
-    "audio-volume-muted-symbolic", $PulseMutedIcon)
-set XPulseLowIcon = If(!Ident($PulseLowIcon),
-    "audio-volume-low-symbolic", $PulseLowIcon)
-set XPulseMediumIcon = If(!Ident($PulseMediumIcon),
-    "audio-volume-medium-symbolic", $PulseMediumIcon)
-set XPulseHighIcon = If(!Ident($PulseHighIcon),
-    "audio-volume-high-symbolic", $PulseHighIcon)
-set XPulseAction = If(!Ident($PulseAction),"pavucontrol",$PulseAction)
+set XVolumeMutedIcon = If(!Ident($VolumeMutedIcon),
+    "audio-volume-muted-symbolic", $VolumeMutedIcon)
+set XVolumeLowIcon = If(!Ident($VolumeLowIcon),
+    "audio-volume-low-symbolic", $VolumeLowIcon)
+set XVolumeMediumIcon = If(!Ident($VolumeMediumIcon),
+    "audio-volume-medium-symbolic", $VolumeMediumIcon)
+set XVolumeHighIcon = If(!Ident($VolumeHighIcon),
+    "audio-volume-high-symbolic", $VolumeHighIcon)
+set XVolumeAction = If(!Ident($VolumeAction),"pavucontrol",$VolumeAction)
 
-define XPulseMuted = Val(Pulse("sink-mute"))
-define XPulseVolume = Val(Pulse("sink-volume"))
-set XPulseVolumeIcon = Lookup(XPulseVolume,
-      80, $XPulseHighIcon,
-      50, $XPulseMediumIcon,
-      0, $XPulseLowIcon,
-      $XPulseMutedIcon)
-set XPulseIcon = If(XPulseMuted,$XPulseMutedIcon,$XPulseVolumeIcon)
+set XVolumeControlTmpl = "
+PopUp 'XVolumeWindow' {
+  Grid '@DEVICE_NAME@' {
+    style = 'volume_grid'
+    image '@DEVICE_NAME@_mute' {
+      value = If(Val(Pulse('sink-mute','@DEVICE_NAME@')),
+            $XVolumeMutedIcon,
+            Lookup(Val(Pulse('sink-volume','@DEVICE_NAME@')),
+              80, $XVolumeHighIcon,
+              50, $XVolumeMediumIcon,
+              0, $XVolumeLowIcon,
+              $XVolumeMutedIcon))
+      style = 'pulse_volume_mute'
+      action = PulseCmd '@DEVICE_NAME@', 'sink-mute toggle'
+      trigger = 'pulse'
+      loc (1,1,1,1)
+    }
+    label '@DEVICE_NAME@_name' {
+      style = 'pulse_device_name'
+      value = Pulse('sink-description','@DEVICE_NAME@')
+      trigger = 'pulse'
+      loc (3,1,1,1)
+    }
+    image '@DEVICE_NAME@_expand' {
+      value = 'pan-end-symbolic'
+      style = 'volume_control_expander'
+      action = Function 'XVolumeToggleChannels'
+      loc(2,1,1,1)
+    }
+    scale '@DEVICE_NAME@_volume' {
+      style = 'pulse_volume_scale'
+      value = Val(Pulse('sink-volume','@DEVICE_NAME@'))/100
+      action[1] = PulseCmd '@DEVICE_NAME@',
+        'sink-volume ' + Str(GtkEvent('dir') * 100)
+      trigger = 'pulse'
+      loc (1,2,3,1)
+    }
+    grid '@DEVICE_NAME@_channels' {
+      style = 'hidden'
+      loc(1,3,3,1)
+      label '@DEVICE_NAME@-@CHANNEL_NAME@_label' {
+        value = '@CHANNEL_NAME@'
+        style = 'volume_channel_name'
+        loc(1,@CHANNEL_NUM@,1,1)
+      }
+      scale '@DEVICE_NAME@-@CHANNEL_NAME@_scale' {
+        style = 'pulse_volume_scale'
+        value = Val(Pulse('sink-volume','@DEVICE_NAME@:@CHANNEL_NAME@'))/100
+        action[1] = PulseCmd '@DEVICE_NAME@:@CHANNEL_NAME@',
+          'sink-volume ' + Str(GtkEvent('dir') * 100)
+        trigger = 'pulse'
+        loc(2,@CHANNEL_NUM@,1,1)
+      }
+    }
+  }
+}"
 
-PopUp "XPulseWindow" {
-  style = "XPulsePopup"
-  image {
-    value = "value-decrease-symbolic"
-    style = "XPulseVolumeButton"
-    action[1] = PulseCmd "sink-volume -1"
-  }
-  scale {
-    style = "pulse_volume_scale"
-    value = XPulseVolume/100
-    action[1] = PulseCmd "sink-volume " + Str(GtkEvent("dir") * 100)
-    trigger = "pulse"
-  }
-  image {
-    value = "value-increase-symbolic"
-    style = "XPulseVolumeButton"
-    action[1] = PulseCmd "sink-volume +1"
-  }
+Function("XVolumeHideChannels") {
+  SetStyle $XVolumeChannels, "hidden"
+  SetStyle $XVolumeSingle, "pulse_volume_scale"
+  SetValue $XVolumeExpander, "pan-end-symbolic"
+}
+
+Function("XVolumeShowChannels") {
+  SetStyle $XVolumeChannels, "volume_channel_list"
+  SetStyle $XVolumeSingle, "hidden"
+  SetValue $XVolumeExpander, "pan-down-symbolic"
+}
+
+Function("XVolumeToggleChannels") {
+  Eval "XVolumeChannels", Extract(WidgetId(),"(.*)_expand") + "_channels"
+  Eval "XVolumeSingle", Extract(WidgetId(),"(.*)_expand") + "_volume"
+  Eval "XVolumeExpander", Extract(WidgetId(),"(.*)_expand") + "_expand"
+  [!UserState] Function "XVolumeShowChannels"
+  [UserState] Function "XVolumeHideChannels"
+  [!UserState] UserState "on"
+  [UserState] UserState "off"
+}
+
+Function("XVolumeChannelHandler") {
+  Config Replace(
+      Replace(
+        Replace($XVolumeControlTmpl, "@DEVICE_NAME@", PulseChannel("Device")),
+      "@CHANNEL_NAME@", PulseChannel("Channel")),
+      "@CHANNEL_NUM@", PulseChannel("ChannelNumber"))
+  PulseChannelAck
+}
+
+Function("XVolumeChannelRemove") {
+  SetStyle PulseChannel("RemovedDevice"), "hidden"
+#  ClearWidget PulseChannel("RemovedDevice")
+  PulseChannelAckRemoved
+}
+
+TriggerAction "pulse_channel", Function "XVolumeChannelHandler"
+TriggerAction "pulse_removed", Function "XVolumeChannelRemove"
+
+PopUp "XVolumeWindow" {
+  style = "volume_popup"
 }
 
 layout {
   style = "module"
   button {
-    value = $XPulseIcon
+    value = If(Val(Pulse("sink-mute")),$XVolumeMutedIcon,
+        Lookup(Val(Pulse("sink-volume")),
+          80, $XVolumeHighIcon,
+          50, $XVolumeMediumIcon,
+          0, $XVolumeLowIcon,
+          $XVolumeMutedIcon))
     trigger = "pulse"
-    tooltip = "Volume: " + Str(XPulseVolume,0) + "%" +
-      If(XPulseMuted," (muted)","") +
+    tooltip = "Volume: " + Str(Val(Pulse("sink-volume")),0) + "%" +
+      If(Val(Pulse("sink-mute"))," (muted)","") +
       "\nForm: " + Pulse("sink-form") +
       "\nPort: " + Pulse("sink-port") +
       "\nMonitor: " + Pulse("sink-monitor")
     style = If(Ident(pulse),"module","hidden")
-    action[1] = PulseCmd "sink-mute toggle"
+    action[3] = PulseCmd "sink-mute toggle"
     action[2] = Exec $XPulseAction
-    action[3] = PopUp "XPulseWindow"
+    action[1] = PopUp "XVolumeWindow"
     action[4] = PulseCmd "sink-volume +1"
     action[5] = PulseCmd "sink-volume -1"
   }
@@ -60,43 +137,60 @@ layout {
 
 #CSS
 
-window#XPulseWindow {
+window#XVolumeWindow {
   background: rgba(0,0,0,0);
-  -GtkWidget-direction: right;
-  padding: 5px;
 }
 
-grid#XPulsePopup {
-  margin: 5px;
+grid#volume_popup {
   border-radius: 10px;
   border: 1px solid @borders;
+  margin: 5px;
   padding: 10px;
   background-color: @theme_bg_color;
+  -GtkWidget-hexpand: true;
+  -GtkWidget-vexpand: false;
+  -GtkWidget-direction: bottom;
 }
 
-image#XPulseVolumeButton {
-  background-color: rgba(100, 100, 256, 0.3);
+image#pulse_volume_mute {
   color: @theme_fg_color;
-  border-radius: 10px;
   min-width: 20px;
   min-height: 20px;
-  -GtkWidget-valign: center;
-  -GtkWidget-halign: center;
+  padding: 3px;
+  -GtkWidget-hexpand: false;
+  -GtkWidget-halign: start;
 }
 
 #pulse_volume_scale {
-  margin-left: 10px;
-  margin-right: 10px;
+  margin: 5px;
   -GtkWidget-direction: right;
-  -GtkWidget-halign: center;
   -GtkWidget-valign: center;
+  -GtkWidget-hexpand: true;
 }
 
+#pulse_volume_scale progress,
 #pulse_volume_scale trough {
   min-height: 10px;
-  min-width: 100px;
 }
 
-#pulse_volume_scale progress {
-  min-height: 10px;
+#pulse_device_name {
+  -GtkWidget-hexpand: true;
+  -GtkWidget-align: 0;
+  -GtkWidget-halign: start;
+}
+
+#volume_control_expander {
+  -GtkWidget-halign: start;
+}
+
+#volume_channel_list {
+  -GtkWidget-direction: bottom;
+}
+
+#volume_grid {
+  -GtkWidget-hexpand: true;
+}
+
+#volume_channel_name {
+  -GtkWidget-halign: start;
 }

@@ -17,17 +17,25 @@ typedef struct _pulse_info {
   gboolean mute;
   pa_cvolume cvol;
   gdouble vol;
-  gchar *icon, *form, *port, *monitor;
+  gchar *icon, *form, *port, *monitor, *description;
+  pa_channel_map cmap;
 } pulse_info;
 
-GList *sink_list, *source_list;
+typedef struct _pulse_channel {
+  gint chan_num;
+  gchar *channel;
+  gchar *device;
+} pulse_channel;
 
 pa_mainloop_api *papi;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 1;
-pa_context *pctx;
-gchar *sink_name, *source_name;
-gboolean fixed_sink, fixed_source;
+
+static GList *sink_list, *source_list;
+static GList *chan_queue, *remove_queue;
+static pa_context *pctx;
+static gchar *sink_name, *source_name;
+static gboolean fixed_sink, fixed_source;
 
 static pulse_info *pulse_info_from_name ( GList **l, const gchar *name,
     gboolean new )
@@ -36,14 +44,14 @@ static pulse_info *pulse_info_from_name ( GList **l, const gchar *name,
   pulse_info *info;
 
   if(name)
-    for(iter=*l;iter;iter=g_list_next(iter))
-      if(!g_strcmp0(((pulse_info *)iter->data)->name,name))
+    for(iter=*l; iter; iter=g_list_next(iter))
+      if(!g_strcmp0(((pulse_info *)iter->data)->name, name))
         return iter->data;
 
   if(new)
   {
     info = g_malloc0(sizeof(pulse_info));
-    *l = g_list_prepend(*l,info);
+    *l = g_list_prepend(*l, info);
     return info;
   }
   else
@@ -68,14 +76,62 @@ static void pulse_set_source ( const gchar *source, gboolean fixed )
   source_name = g_strdup(source);
 }
 
+static void pulse_remove_device ( GList **list, guint32 idx )
+{
+  GList *iter;
+  pulse_info *info;
+
+  for(iter=*list; iter; iter=g_list_next(iter))
+    if(((pulse_info *)iter->data)->idx == idx)
+      break;
+  if(!iter)
+    return;
+
+  info = iter->data;
+  *list = g_list_delete_link(*list, iter);
+
+  if(info->name)
+  {
+    remove_queue = g_list_append(remove_queue, info->name);
+    if(!g_list_next(remove_queue))
+      MODULE_TRIGGER_EMIT("pulse_removed");
+  }
+  g_free(info->icon);
+  g_free(info->form);
+  g_free(info->port);
+  g_free(info->monitor);
+  g_free(info->description);
+  g_free(info);
+}
+
 static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
     gint eol, void *d )
 {
   pulse_info *info;
+  pulse_channel *channel;
+  gboolean trigger;
+  gint i;
 
   if(!pinfo)
     return;
-  info = pulse_info_from_name(&sink_list,pinfo->name,TRUE);
+  if(!pulse_info_from_name(&sink_list, pinfo->name, FALSE))
+  {
+    trigger = !chan_queue;
+
+    for(i=0;i<pinfo->channel_map.channels;i++)
+    {
+      channel = g_malloc0(sizeof(pulse_channel));
+      channel->chan_num = i;
+      channel->channel = g_strdup(
+            pa_channel_position_to_string(pinfo->channel_map.map[i]));
+      channel->device = g_strdup(pinfo->name);
+      chan_queue = g_list_append(chan_queue, channel);
+    }
+
+    if(trigger && chan_queue)
+      MODULE_TRIGGER_EMIT("pulse_channel");
+  }
+  info = pulse_info_from_name(&sink_list, pinfo->name, TRUE);
 
   g_free(info->name);
   info->name = g_strdup(pinfo->name);
@@ -89,10 +145,13 @@ static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
   info->port = g_strdup(pinfo->active_port?pinfo->active_port->name:NULL);
   g_free(info->monitor);
   info->monitor = g_strdup(pinfo->monitor_source_name);
+  g_free(info->description);
+  info->description = g_strdup(pinfo->description);
   info->idx = pinfo->index;
   info->cvol = pinfo->volume;
   info->vol = 100.0 * pa_cvolume_avg(&info->cvol)/PA_VOLUME_NORM;
   info->mute = pinfo->mute;
+  info->cmap = pinfo->channel_map;
   MODULE_TRIGGER_EMIT("pulse");
 }
 
@@ -117,6 +176,8 @@ static void pulse_source_cb ( pa_context *ctx, const pa_source_info *pinfo,
   info->port = g_strdup(pinfo->active_port?pinfo->active_port->name:"Unknown");
   g_free(info->monitor);
   info->monitor = g_strdup(pinfo->monitor_of_sink_name);
+  g_free(info->description);
+  info->description = g_strdup(pinfo->description);
   info->idx = pinfo->index;
   info->cvol = pinfo->volume;
   info->vol = 100.0 * pa_cvolume_avg(&info->cvol)/PA_VOLUME_NORM;
@@ -138,6 +199,18 @@ static void pulse_server_cb ( pa_context *ctx, const pa_server_info *info,
 static void pulse_subscribe_cb ( pa_context *ctx,
     pa_subscription_event_type_t type, guint idx, void *d )
 {
+  if((type & PA_SUBSCRIPTION_EVENT_TYPE_MASK) == PA_SUBSCRIPTION_EVENT_REMOVE)
+  {
+    switch(type & PA_SUBSCRIPTION_EVENT_FACILITY_MASK)
+    {
+      case PA_SUBSCRIPTION_EVENT_SINK:
+        pulse_remove_device(&sink_list, idx);
+        break;
+      case PA_SUBSCRIPTION_EVENT_SOURCE:
+        pulse_remove_device(&source_list, idx);
+        break;
+    }
+  }
   if(!(type & PA_SUBSCRIPTION_EVENT_CHANGE))
     return;
 
@@ -199,68 +272,135 @@ void sfwbar_module_invalidate ( void )
   invalid = TRUE;
 }
 
-void *pulse_expr_func ( void **params, void *widget, void *event )
+static pulse_info *pulse_addr_parse ( gchar *addr, GList **list, gchar *def,
+    gint *cidx )
 {
-  gchar *cmd;
+  pa_channel_position_t cpos;
   pulse_info *info;
+  gchar *device, *channel;
+  gint i;
+
+  *cidx = 0;
+
+  if(addr)
+  {
+    device = g_strdup(addr);
+    if( (channel = strchr(device, ':')) )
+      *channel = '\0';
+  }
+  else
+  {
+    device = NULL;
+    channel = NULL;
+  }
+
+  info = pulse_info_from_name(list, device?device:def, FALSE);
+
+  if(info && channel)
+  {
+    cpos = pa_channel_position_from_string(channel+1);
+    for(i=0; i<info->cmap.channels; i++)
+      if(info->cmap.map[i] == cpos)
+        *cidx = i+1;
+  }
+  g_free(device);
+
+  return info;
+}
+
+static void *pulse_expr_func ( void **params, void *widget, void *event )
+{
+  pulse_info *info;
+  gchar *cmd;
+  gint cidx;
 
   if(!params || !params[0])
     return g_strdup("");
 
   if(!g_ascii_strncasecmp(params[0],"sink-",5))
   {
-    info = pulse_info_from_name(&sink_list,params[1]?params[1]:sink_name,
-        FALSE);
+    info = pulse_addr_parse(params[1], &sink_list, sink_name, &cidx);
     cmd = params[0]+5;
   }
   else if(!g_ascii_strncasecmp(params[0],"source-",7))
   {
-    info = pulse_info_from_name(&source_list,params[1]?params[1]:source_name,
-        FALSE);
+    info = pulse_addr_parse(params[1], &source_list, source_name, &cidx);
     cmd = params[0]+7;
   }
   else
-    info = NULL;
-
-  if(!info || !cmd || !*cmd)
     return g_strdup("");
 
-  if(!g_ascii_strcasecmp(cmd,"volume"))
-    return g_strdup_printf("%f",info->vol);
-  else if(!g_ascii_strcasecmp(cmd,"mute"))
-    return g_strdup_printf("%d",info->mute);
-  else if(!g_ascii_strcasecmp(cmd,"icon"))
-    return g_strdup(info->icon?info->icon:"");
-  else if(!g_ascii_strcasecmp(cmd,"form"))
-    return g_strdup(info->form?info->form:"");
-  else if(!g_ascii_strcasecmp(cmd,"port"))
-    return g_strdup(info->port?info->port:"");
-  else if(!g_ascii_strcasecmp(cmd,"monitor"))
-    return g_strdup(info->monitor?info->monitor:"");
+  if(!info)
+    return g_strdup("");
 
-  return g_strdup_printf("invalid query: %s",cmd);
+  if(!g_ascii_strcasecmp(cmd, "volume"))
+    return g_strdup_printf("%f",cidx?info->cvol.values[cidx-1]*100.0/PA_VOLUME_NORM:info->vol);
+  if(!g_ascii_strcasecmp(cmd, "mute"))
+    return g_strdup_printf("%d",info->mute);
+  if(!g_ascii_strcasecmp(cmd, "icon"))
+    return g_strdup(info->icon?info->icon:"");
+  if(!g_ascii_strcasecmp(cmd, "form"))
+    return g_strdup(info->form?info->form:"");
+  if(!g_ascii_strcasecmp(cmd, "port"))
+    return g_strdup(info->port?info->port:"");
+  if(!g_ascii_strcasecmp(cmd, "monitor"))
+    return g_strdup(info->monitor?info->monitor:"");
+  if(!g_ascii_strcasecmp(cmd, "description"))
+    return g_strdup(info->description?info->description:"");
+
+  return g_strdup_printf("invalid query: %s", cmd);
 }
 
-static pa_cvolume *pulse_adjust_volume ( pa_cvolume *vol, gchar *vstr )
+static void *pulse_channel_func ( void **params, void *widget, void *event )
+{
+  pulse_channel *channel;
+
+  if(!params || !params[0])
+    return g_strdup("");
+
+  if(chan_queue)
+  {
+    channel = chan_queue->data;
+    if(!g_ascii_strcasecmp(params[0], "channel"))
+      return g_strdup(channel->channel);
+    if(!g_ascii_strcasecmp(params[0], "device"))
+      return g_strdup(channel->device);
+    if(!g_ascii_strcasecmp(params[0], "ChannelNumber"))
+      return g_strdup_printf("%d", channel->chan_num);
+  }
+  else if(remove_queue && !g_ascii_strcasecmp(params[0], "RemovedDevice"))
+    return g_strdup(remove_queue->data);
+
+  return g_strdup("");
+}
+
+static pa_cvolume *pulse_adjust_volume ( pulse_info *info, gint cidx,
+    gchar *vstr )
 {
   gint vdelta;
 
   if(!vstr)
-    return vol;
+    return &(info->cvol);
 
   while(*vstr==' ')
     vstr++;
 
-  vdelta = g_ascii_strtod(vstr,NULL)*PA_VOLUME_NORM/100;
+  vdelta = g_ascii_strtod(vstr, NULL)*PA_VOLUME_NORM/100;
   if(*vstr!='+' && *vstr!='-')
-    vdelta -= pa_cvolume_avg(vol);
+    vdelta -= cidx?info->cvol.values[cidx-1]:pa_cvolume_avg(&info->cvol);
 
-  if(vdelta > 0)
-    pa_cvolume_inc_clamp(vol,vdelta, PA_VOLUME_UI_MAX);
+  if(!cidx)
+  {
+    if(vdelta > 0)
+      pa_cvolume_inc_clamp(&info->cvol, vdelta, PA_VOLUME_UI_MAX);
+    else
+      pa_cvolume_dec(&info->cvol, -vdelta);
+  }
   else
-    pa_cvolume_dec(vol,-vdelta);
+    info->cvol.values[cidx-1] = CLAMP(info->cvol.values[cidx-1] + vdelta, 0,
+        PA_VOLUME_UI_MAX);
 
-  return vol;
+  return &info->cvol;
 }
 
 static gboolean pulse_mute_parse ( gchar *cmd, gboolean mute )
@@ -268,11 +408,11 @@ static gboolean pulse_mute_parse ( gchar *cmd, gboolean mute )
   while(*cmd==' ')
     cmd++;
 
-  if(!g_ascii_strcasecmp(cmd,"toggle"))
+  if(!g_ascii_strcasecmp(cmd, "toggle"))
     return !mute;
-  else if(!g_ascii_strcasecmp(cmd,"true"))
+  else if(!g_ascii_strcasecmp(cmd, "true"))
     return TRUE;
-  else if(!g_ascii_strcasecmp(cmd,"false"))
+  else if(!g_ascii_strcasecmp(cmd, "false"))
     return FALSE;
 
   return mute;
@@ -283,35 +423,68 @@ static void pulse_action ( gchar *cmd, gchar *name, void *d1,
 {
   pulse_info *info;
   pa_operation *op;
+  gint cidx;
 
-  if(!g_ascii_strncasecmp(cmd,"sink-",5))
-    info = pulse_info_from_name(&sink_list,name?name:sink_name,FALSE);
-  else if(!g_ascii_strncasecmp(cmd,"source-",7))
-    info = pulse_info_from_name(&source_list,name?name:source_name,FALSE);
+  if(!g_ascii_strncasecmp(cmd, "sink-", 5))
+    info = pulse_addr_parse(name, &sink_list, sink_name, &cidx);
+  else if(!g_ascii_strncasecmp(cmd, "source-", 7))
+    info = pulse_addr_parse(name, &source_list, source_name, &cidx);
   else
     info = NULL;
 
   if(!info)
     return;
 
-  if(!g_ascii_strncasecmp(cmd,"sink-volume",11))
-    op = pa_context_set_sink_volume_by_index(pctx,info->idx,
-        pulse_adjust_volume(&info->cvol,cmd+11),NULL,NULL);
-  else if(!g_ascii_strncasecmp(cmd,"source-volume",13))
-    op = pa_context_set_source_volume_by_index(pctx,info->idx,
-        pulse_adjust_volume(&info->cvol,cmd+13),
-        NULL,NULL);
-  else if(!g_ascii_strncasecmp(cmd,"sink-mute",9))
-    op = pa_context_set_sink_mute_by_index(pctx,info->idx,
-        pulse_mute_parse(cmd+9,info->mute),NULL,NULL);
-  else if(!g_ascii_strncasecmp(cmd,"source-mute",11))
-    op = pa_context_set_sink_mute_by_index(pctx,info->idx,
-        pulse_mute_parse(cmd+11,info->mute),NULL,NULL);
+  if(!g_ascii_strncasecmp(cmd, "sink-volume", 11))
+    op = pa_context_set_sink_volume_by_index(pctx, info->idx,
+        pulse_adjust_volume(info, cidx, cmd+11), NULL, NULL);
+  else if(!g_ascii_strncasecmp(cmd, "source-volume", 13))
+    op = pa_context_set_source_volume_by_index(pctx, info->idx,
+        pulse_adjust_volume(info, cidx, cmd+13), NULL,NULL);
+  else if(!g_ascii_strncasecmp(cmd, "sink-mute", 9))
+    op = pa_context_set_sink_mute_by_index(pctx, info->idx,
+        pulse_mute_parse(cmd+9,info->mute), NULL, NULL);
+  else if(!g_ascii_strncasecmp(cmd, "source-mute", 11))
+    op = pa_context_set_sink_mute_by_index(pctx, info->idx,
+        pulse_mute_parse(cmd+11,info->mute), NULL, NULL);
   else
     op = NULL;
 
   if(op)
     pa_operation_unref(op);
+}
+
+static void pulse_channel_ack_action ( gchar *cmd, gchar *name, void *d1,
+    void *d2, void *d3, void *d4 )
+{
+  pulse_channel *channel;
+
+  if(!chan_queue)
+    return;
+
+  channel = chan_queue->data;
+  chan_queue = g_list_remove(chan_queue, channel);
+  g_free(channel->channel);
+  g_free(channel->device);
+  g_free(channel);
+
+  if(chan_queue)
+    MODULE_TRIGGER_EMIT("pulse_channel");
+}
+
+static void pulse_channel_ack_removed_action ( gchar *cmd, gchar *name,
+    void *d1, void *d2, void *d3, void *d4 )
+{
+  gchar *item;
+
+  if(!remove_queue)
+    return;
+
+  item = remove_queue->data;
+  remove_queue = g_list_remove(remove_queue, item);
+  g_free(item);
+  if(remove_queue)
+    MODULE_TRIGGER_EMIT("pulse_removed");
 }
 
 static void pulse_set_sink_action ( gchar *sink, gchar *dummy, void *d1,
@@ -333,8 +506,16 @@ ModuleExpressionHandlerV1 handler1 = {
   .function = pulse_expr_func
 };
 
+ModuleExpressionHandlerV1 handler2 = {
+  .flags = 0,
+  .name = "PulseChannel",
+  .parameters = "S",
+  .function = pulse_channel_func
+};
+
 ModuleExpressionHandlerV1 *sfwbar_expression_handlers[] = {
   &handler1,
+  &handler2,
   NULL
 };
 
@@ -353,9 +534,21 @@ ModuleActionHandlerV1 act_handler3 = {
   .function = pulse_set_source_action
 };
 
+ModuleActionHandlerV1 act_handler4 = {
+  .name = "PulseChannelAck",
+  .function = pulse_channel_ack_action
+};
+
+ModuleActionHandlerV1 act_handler5 = {
+  .name = "PulseChannelAckRemoved",
+  .function = pulse_channel_ack_removed_action
+};
+
 ModuleActionHandlerV1 *sfwbar_action_handlers[] = {
   &act_handler1,
   &act_handler2,
   &act_handler3,
+  &act_handler4,
+  &act_handler5,
   NULL
 };

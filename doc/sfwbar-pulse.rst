@@ -26,9 +26,10 @@ Pulse(Query[,Interface])
 
 function Pulse queries the state of the Pulse server, the Query parameter
 specifies the information to query, the optional Interface parameter
-specifies the interface to which the query applies. If the Interface isn't
-given the query is applied to the current sink or the current source. The
-supported query types are:
+specifies the interface to which the query applies. The interface contains
+either a device name or a device name and a channel separated by a colon.
+If the Interface isn't given the query is applied to the current sink or
+the current source. The supported query types are:
 
 "sink-volume"
   the volume of a sink.
@@ -55,6 +56,21 @@ supported query types are:
 "source-monitor"
   name of the sink monitor for the source.
 
+PulseChannel("Query")
+---------------------
+
+Query device and channel information upon receipt of `pulse_channel` or
+`pulse_removed` event. The valid `Query` values are:
+
+"Device"
+  name of a device advertised by `pulse_channel` event.
+"Channel"
+  name of a channel advertised by `pulse_channel` event.
+"ChannelNumber"
+  ordinal of a channel advertised by `pulse_channel` event.
+"RemovedDevice"
+  name of a removed device advertised by `pulse_removed` event.
+
 Actions
 =======
 
@@ -73,8 +89,26 @@ Command will be applied to the current interface.
 "source-mute State"
   Change the state of the source, State can be On, Off or Toggle.
 
+PulseAck
+--------
+
+Notify the module that all information for the currently advertized
+device/channel combination has been processed. The module may then emit another
+`pulse_channel` event if further channel updates are available.
+
+PulseAckRemoved
+---------------
+
+Notify the module that all information for the currently advertized device
+removal has been processed. The module may then emit another `pulse_removed`
+event if further device removals are queued.
+
 Triggers
 ========
 
-The module defines one trigger "Pulse" which is emitted whenever the state of
-the pulse server changes.
+pulse
+  a signal emitted whenever the state of the pulse server changes.
+pulse_channel
+  emitted when a device/channel combination information is available.
+pulse_removed
+  emitted when a device is removed.
