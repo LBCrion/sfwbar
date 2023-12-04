@@ -16,10 +16,6 @@ GHashTable *expr_handlers;
 GData *act_handlers;
 GList *invalidators;
 
-static void module_queue_append ( module_queue_t *queue, void *item );
-static void module_queue_remove ( module_queue_t *queue );
-static void *module_queue_get_string ( module_queue_t *queue, gchar *param );
-static void *module_queue_get_numeric ( module_queue_t *queue, gchar *param );
 static ModuleApiV1 api_v1 = {
   .emit_trigger = base_widget_emit_trigger,
   .config_string = config_string,
@@ -225,7 +221,7 @@ gchar *module_get_string ( GScanner *scanner )
   return result;
 }
 
-static void module_queue_append ( module_queue_t *queue, void *item )
+void module_queue_append ( module_queue_t *queue, void *item )
 {
   gboolean trigger;
   GList *ptr;
@@ -249,7 +245,7 @@ static void module_queue_append ( module_queue_t *queue, void *item )
         (GSourceFunc)base_widget_emit_trigger, queue->trigger);
 }
 
-static void module_queue_remove ( module_queue_t *queue )
+void module_queue_remove ( module_queue_t *queue )
 {
   gboolean trigger;
   void *item;
@@ -271,7 +267,7 @@ static void module_queue_remove ( module_queue_t *queue )
         (GSourceFunc)base_widget_emit_trigger, queue->trigger);
 }
 
-static void *module_queue_get_string ( module_queue_t *queue, gchar *param )
+void *module_queue_get_string ( module_queue_t *queue, gchar *param )
 {
   void *result;
 
@@ -285,7 +281,7 @@ static void *module_queue_get_string ( module_queue_t *queue, gchar *param )
   return result;
 }
 
-static void *module_queue_get_numeric ( module_queue_t *queue, gchar *param )
+void *module_queue_get_numeric ( module_queue_t *queue, gchar *param )
 {
   void *result;
 

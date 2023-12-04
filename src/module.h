@@ -57,6 +57,11 @@ enum ModuleActionFlags {
   MODULE_ACT_ADDRESS_ONLY   = 4
 };
 
+void module_queue_append ( module_queue_t *queue, void *item );
+void module_queue_remove ( module_queue_t *queue );
+void *module_queue_get_string ( module_queue_t *queue, gchar *param );
+void *module_queue_get_numeric ( module_queue_t *queue, gchar *param );
+
 #define MODULE_TRIGGER_EMIT(x) \
   if(sfwbar_module_api && sfwbar_module_api->emit_trigger) \
     g_main_context_invoke(sfwbar_module_api->gmc, \

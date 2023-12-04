@@ -16,15 +16,15 @@
 #include "sway_ipc.h"
 #include "expr.h"
 
-gchar *confname;
-gchar *sockname;
+extern gchar *confname;
+extern gchar *sockname;
+
 static gchar *cssname;
 static gchar *monitor;
 static gchar *bar_id;
 static gchar *dfilter;
 static GRegex *rfilter;
 static gboolean debug = FALSE;
-static enum ipc_type ipc;
 static gchar **sargv;
 
 static GOptionEntry entries[] = {
@@ -50,22 +50,6 @@ void parse_command_line ( gint argc, gchar **argv)
   g_option_context_free(optc);
 }
 
-GdkMonitor *widget_get_monitor ( GtkWidget *self )
-{
-  GdkWindow *win;
-  GdkDisplay *disp;
-
-  g_return_val_if_fail(GTK_IS_WIDGET(self),NULL);
-
-  win = gtk_widget_get_window(self);
-  if(!win)
-    return NULL;
-  disp = gdk_window_get_display(win);
-  if(!disp)
-    return NULL;
-  return gdk_display_get_monitor_at_window(disp,win);
-}
-
 void list_monitors ( void )
 {
   GdkDisplay *gdisp;
@@ -83,16 +67,6 @@ void list_monitors ( void )
         gdk_monitor_get_model(gmon));
   }
   exit(0);
-}
-
-void ipc_set ( enum ipc_type new )
-{
-  ipc = new;
-}
-
-enum ipc_type ipc_get ( void )
-{
-  return ipc;
 }
 
 void log_print ( const gchar *log_domain, GLogLevelFlags log_level, 

@@ -43,7 +43,7 @@ foreach proto : wayland_protos
       command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@' ] )
 endforeach
 
-src = ['src/sfwbar.c',
+libsrc = [
     'src/action.c',
     'src/actionlib.c',
     'src/bar.c',
@@ -103,6 +103,14 @@ src = ['src/sfwbar.c',
 dep = [gtk3, glib, gio_unix, gmod, glsh, wayl, json ]
 man_pages = [ 'doc/sfwbar.1' ]
 
+sfwbar = library ('sfwbar', sources: libsrc,
+    c_args: ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
+    '-DGDK_DISABLE_DEPRECATED',
+    '-DGTK_DISABLE_DEPRECATED'],
+    dependencies: dep, install: true)
+
+sfwb = declare_dependency(link_with: sfwbar)
+
 if get_option('network').enabled() or get_option('network').auto()
   library('network', sources: 'modules/network.c', dependencies: glib,
       name_prefix: '', install: true,
@@ -126,7 +134,7 @@ endif
 
 if puls.found() and pulg.found()
   library('pulsectl', sources: 'modules/pulsectl.c',
-      dependencies: [glib, puls, pulg],name_prefix: '',
+      dependencies: [glib, puls, pulg, sfwb],name_prefix: '',
       install: true, install_dir: get_option('libdir') / 'sfwbar' )
   man_pages += 'doc/sfwbar-pulse.1'
 endif
@@ -178,11 +186,11 @@ if get_option('idleinhibit').enabled() or get_option('idleinhibit').auto()
   man_pages += 'doc/sfwbar-idleinhibit.1'
 endif
 
-executable ('sfwbar', sources: src,
+executable ('sfwbar', sources: 'src/sfwbar.c',
     c_args: ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
     '-DGDK_DISABLE_DEPRECATED',
     '-DGTK_DISABLE_DEPRECATED'],
-    dependencies: dep, install: true)
+    dependencies: [dep, sfwb], install: true)
 
 foreach page : man_pages
   install_man(page)

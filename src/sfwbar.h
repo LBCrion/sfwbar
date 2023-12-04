@@ -12,9 +12,6 @@ enum ipc_type {
   IPC_WAYLAND = 3
 };
 
-void hypr_ipc_init ( void );
-enum ipc_type ipc_get ( void );
-void ipc_set ( enum ipc_type new );
 void css_init ( gchar * );
 void css_file_load ( gchar * );
 void css_widget_apply ( GtkWidget *widget, gchar *css );
@@ -45,6 +42,8 @@ struct rect parse_rect ( struct json_object *obj );
 guint str_nhash ( gchar *str );
 gboolean str_nequal ( gchar *str1, gchar *str2 );
 gchar *str_replace ( gchar *str, gchar *old, gchar *new );
-gint pointer_cmp ( gconstpointer a, gconstpointer b );
+void hypr_ipc_init ( void );
+enum ipc_type ipc_get ( void );
+void ipc_set ( enum ipc_type new );
 
 #endif

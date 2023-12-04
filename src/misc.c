@@ -3,15 +3,18 @@
  * Copyright 2020- sfwbar maintainers
  */
 
-#include <glib.h>
+#include <gtk/gtk.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <json.h>
 #include <sys/time.h>
+#include "sfwbar.h"
 
-extern gchar *confname;
+gchar *confname;
+gchar *sockname;
+static enum ipc_type ipc;
 
 gint socket_connect ( const gchar *sockaddr, gint to )
 {
@@ -286,7 +289,29 @@ gchar *str_replace ( gchar *str, gchar *old, gchar *new )
   return dest;
 }
 
-gint pointer_cmp ( gconstpointer a, gconstpointer b )
+GdkMonitor *widget_get_monitor ( GtkWidget *self )
 {
-  return a - b;
+  GdkWindow *win;
+  GdkDisplay *disp;
+
+  g_return_val_if_fail(GTK_IS_WIDGET(self),NULL);
+
+  win = gtk_widget_get_window(self);
+  if(!win)
+    return NULL;
+  disp = gdk_window_get_display(win);
+  if(!disp)
+    return NULL;
+  return gdk_display_get_monitor_at_window(disp,win);
 }
+
+void ipc_set ( enum ipc_type new )
+{
+  ipc = new;
+}
+
+enum ipc_type ipc_get ( void )
+{
+  return ipc;
+}
+
