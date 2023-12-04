@@ -249,7 +249,7 @@ static void bz_connect_cb ( GDBusConnection *con, GAsyncResult *res,
   GVariant *result;
 
   device->connecting =  FALSE;
-  MODULE_QUEUE_APPEND(&update_q, device);
+  module_queue_append(&update_q, device);
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(!result)
     return;
@@ -263,7 +263,7 @@ static void bz_connect ( BzDevice *device )
   if(!device->connecting)
   {
     device->connecting = TRUE;
-    MODULE_QUEUE_APPEND(&update_q, device);
+    module_queue_append(&update_q, device);
   }
   g_debug("bluez: attempting to connect %s (%s)", device->addr, device->name);
   g_dbus_connection_call(bz_con, bz_serv, device->path,
@@ -305,7 +305,7 @@ static void bz_trust_cb ( GDBusConnection *con, GAsyncResult *res,
   if(!result)
   {
     device->connecting =  FALSE;
-    MODULE_QUEUE_APPEND(&update_q, device);
+    module_queue_append(&update_q, device);
     return;
   }
 
@@ -339,7 +339,7 @@ static void bz_pair_cb ( GDBusConnection *con, GAsyncResult *res,
   if(!result)
   {
     device->connecting =  FALSE;
-    MODULE_QUEUE_APPEND(&update_q, device);
+    module_queue_append(&update_q, device);
     return;
   }
 
@@ -351,7 +351,7 @@ static void bz_pair_cb ( GDBusConnection *con, GAsyncResult *res,
 static void bz_pair ( BzDevice *device )
 {
   device->connecting =  TRUE;
-  MODULE_QUEUE_APPEND(&update_q, device);
+  module_queue_append(&update_q, device);
 
   if(device->paired)
   {
@@ -470,7 +470,7 @@ static void bz_device_handle ( gchar *path, gchar *iface, GVariantIter *piter )
   }
 
   bz_device_properties (device, piter);
-  MODULE_QUEUE_APPEND(&update_q, device);
+  module_queue_append(&update_q, device);
 
   g_debug("bluez: device added: %d %d %s %s on %s",device->paired,
       device->connected, device->addr, device->name, device->path);
@@ -537,7 +537,7 @@ static void bz_device_removed ( GDBusConnection *con, const gchar *sender,
   {
     g_debug("bluez: device removed: %d %d %s %s on %s",device->paired,
         device->connected, device->addr, device->name, device->path);
-    MODULE_QUEUE_APPEND(&remove_q, device->path);
+    module_queue_append(&remove_q, device->path);
   }
 }
 
@@ -559,7 +559,7 @@ static void bz_device_changed ( GDBusConnection *con, const gchar *sender,
   {
     g_debug("bluez: device changed: %d %d %s %s on %s",device->paired,
         device->connected, device->addr, device->name, device->path);
-    MODULE_QUEUE_APPEND(&update_q, device);
+    module_queue_append(&update_q, device);
   }
   g_variant_iter_free(piter);
 }
@@ -631,9 +631,9 @@ static void *bz_expr_get ( void **params, void *widget, void *event )
   if(!params || !params[0])
     return g_strdup("");
 
-  if( (result = MODULE_QUEUE_GET_STRING(&update_q, params[0])) )
+  if( (result = module_queue_get_string(&update_q, params[0])) )
     return result;
-  if( (result = MODULE_QUEUE_GET_STRING(&remove_q, params[0])) )
+  if( (result = module_queue_get_string(&remove_q, params[0])) )
     return result;
 
   return strdup("");
@@ -652,7 +652,7 @@ static void *bz_expr_state ( void **params, void *widget, void *event )
       return result;
     }
 
-    if( (result = MODULE_QUEUE_GET_NUMERIC(&update_q, params[0])) )
+    if( (result = module_queue_get_numeric(&update_q, params[0])) )
       return result;
   }
 
@@ -662,13 +662,13 @@ static void *bz_expr_state ( void **params, void *widget, void *event )
 static void bz_action_ack ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
-  MODULE_QUEUE_REMOVE(&update_q);
+  module_queue_remove(&update_q);
 }
 
 static void bz_action_ack_removed ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
-  MODULE_QUEUE_REMOVE(&remove_q);
+  module_queue_remove(&remove_q);
 }
 
 static void bz_action_scan ( gchar *cmd, gchar *name, void *d1,

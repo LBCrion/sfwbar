@@ -19,10 +19,6 @@ typedef struct {
   GMainContext *gmc;
   gboolean (*emit_trigger)(gchar *);
   void (*config_string)(gchar *);
-  void (*queue_append)(module_queue_t *, void *);
-  void (*queue_remove)(module_queue_t *);
-  void *(*queue_get_string)(module_queue_t *, gchar *);
-  void *(*queue_get_numeric)(module_queue_t *, gchar *);
 } ModuleApiV1;
 
 typedef gpointer (*ModuleExpressionFunc)(gpointer *, gpointer, gpointer);
@@ -70,22 +66,6 @@ void *module_queue_get_numeric ( module_queue_t *queue, gchar *param );
 #define MODULE_CONFIG_STRING(x) \
   if(sfwbar_module_api && sfwbar_module_api->config_string) \
     sfwbar_module_api->config_string(x)
-
-#define MODULE_QUEUE_APPEND(x, y) \
-  if(sfwbar_module_api && sfwbar_module_api->queue_append) \
-    sfwbar_module_api->queue_append(x, y)
-
-#define MODULE_QUEUE_REMOVE(x) \
-  if(sfwbar_module_api && sfwbar_module_api->queue_remove) \
-    sfwbar_module_api->queue_remove(x)
-
-#define MODULE_QUEUE_GET_NUMERIC(x,y) \
-  ((sfwbar_module_api && sfwbar_module_api->queue_get_numeric)? \
-    sfwbar_module_api->queue_get_numeric(x,y):NULL)
-
-#define MODULE_QUEUE_GET_STRING(x,y) \
-  ((sfwbar_module_api && sfwbar_module_api->queue_get_string)? \
-    sfwbar_module_api->queue_get_string(x,y):NULL)
 
 gboolean module_load ( gchar *name );
 void module_invalidate_all ( void );

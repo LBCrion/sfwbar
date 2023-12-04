@@ -19,10 +19,6 @@ GList *invalidators;
 static ModuleApiV1 api_v1 = {
   .emit_trigger = base_widget_emit_trigger,
   .config_string = config_string,
-  .queue_append = module_queue_append,
-  .queue_remove = module_queue_remove,
-  .queue_get_string = module_queue_get_string,
-  .queue_get_numeric = module_queue_get_numeric,
 };
 
 void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler,gchar *name )
