@@ -14,7 +14,6 @@ static const gchar *iw_serv = "net.connman.iwd";
 static GDBusConnection *iw_con;
 static GList *iw_devices;
 static GHashTable *iw_networks, *iw_known_networks;
-static GList *iw_update_queue, *iw_remove_queue;
 static gint sub_add, sub_del, sub_chg;
 
 static const gchar *iw_iface_device = "net.connman.iwd.Device";
@@ -208,22 +207,9 @@ static iw_known_t *iw_known_network_get ( gchar *path, gboolean create )
   return known;
 }
 
-static void iw_network_free ( iw_network_t *network )
-{
-  g_free(network->path);
-  g_free(network->ssid);
-  g_free(network->type);
-  g_free(network->device);
-  g_free(network->known);
-  g_free(network);
-}
-
-static void iw_network_updated ( iw_network_t *net )
+static iw_network_t *iw_network_dup ( iw_network_t *net )
 {
   iw_network_t *copy;
-
-  if(!net)
-    return;
 
   copy = g_malloc0(sizeof(iw_network_t));
   copy->path = g_strdup(net->path);
@@ -234,8 +220,74 @@ static void iw_network_updated ( iw_network_t *net )
   copy->strength = net->strength;
   copy->connected = net->connected;
 
-  iw_update_queue = g_list_append(iw_update_queue, copy);
-  MODULE_TRIGGER_EMIT("iwd_updated");
+  return copy;
+}
+
+static void iw_network_free ( iw_network_t *network )
+{
+  g_free(network->path);
+  g_free(network->ssid);
+  g_free(network->type);
+  g_free(network->device);
+  g_free(network->known);
+  g_free(network);
+}
+
+static gboolean iw_network_compare ( iw_network_t *n1, iw_network_t *n2 )
+{
+  return g_strcmp0(n1->path, n2->path);
+}
+
+static void *iw_network_get_str ( iw_network_t *net, gchar *prop )
+{
+  if(!g_ascii_strcasecmp(prop, "ssid"))
+    return g_strdup(net->ssid?net->ssid:"");
+  if(!g_ascii_strcasecmp(prop, "path"))
+    return g_strdup(net->path?net->path:"");
+  if(!g_ascii_strcasecmp(prop, "type"))
+    return g_strdup(net->type?net->type:"");
+  if(!g_ascii_strcasecmp(prop, "known"))
+    return g_strdup(net->known?net->known:"");
+  if(!g_ascii_strcasecmp(prop, "strength"))
+    return g_strdup_printf("%d", CLAMP(2*(net->strength/100+100),0,100));
+  if(!g_ascii_strcasecmp(prop, "connected"))
+    return g_strdup_printf("%d", net->connected);
+
+  return NULL;
+}
+
+static module_queue_t update_q = {
+  .list = NULL,
+  .free = (void (*)(void *))iw_network_free,
+  .duplicate = (void *(*)(void *))iw_network_dup,
+  .get_str = (void *(*)(void *, gchar *))iw_network_get_str,
+  .get_num = (void *(*)(void *, gchar *))NULL,
+  .compare = (gboolean (*)(const void *, const void *))iw_network_compare,
+  .trigger = "iwd_updated",
+};
+
+static void *iwd_remove_get_str ( gchar *name, gchar *prop )
+{
+  if(!g_ascii_strcasecmp(prop, "RemovedPath"))
+    return g_strdup(name);
+  else
+    return NULL;
+}
+
+static module_queue_t remove_q = {
+  .list = NULL,
+  .free = g_free,
+  .duplicate = (void *(*)(void *))g_strdup,
+  .get_str = (void *(*)(void *, gchar *))iwd_remove_get_str,
+  .get_num = NULL,
+  .compare = (gboolean (*)(const void *, const void *))g_strcmp0,
+  .trigger = "iwd_removed",
+};
+
+static void iw_network_updated ( iw_network_t *net )
+{
+  if(net)
+    module_queue_append(&update_q, net);
 
   g_debug("iwd: network: %s, type: %s, conn: %d, known: %s, strength: %d", net->ssid,
       net->type, net->connected, net->known, net->strength);
@@ -247,8 +299,7 @@ static void iw_network_remove ( iw_network_t *network )
     return;
 
   g_debug("iwd: remove network: %s", network->ssid);
-  iw_remove_queue = g_list_append(iw_remove_queue, g_strdup(network->path));
-  MODULE_TRIGGER_EMIT("iwd_removed");
+  module_queue_append(&remove_q, network->path);
 
   if(iw_networks && network->path)
     g_hash_table_remove(iw_networks, network->path);
@@ -771,36 +822,23 @@ void sfwbar_module_init ( ModuleApiV1 *api )
 
 static void *iw_expr_get ( void **params, void *widget, void *event )
 {
-  iw_network_t *net;
+  gchar *result;
   iw_device_t *device;
 
   if(!params || !params[0])
     return g_strdup("");
 
-  if(iw_update_queue)
-  {
-    net = iw_update_queue->data;
-    if(!g_ascii_strcasecmp(params[0], "ssid"))
-      return g_strdup(net->ssid?net->ssid:"");
-    if(!g_ascii_strcasecmp(params[0], "path"))
-      return g_strdup(net->path?net->path:"");
-    if(!g_ascii_strcasecmp(params[0], "type"))
-      return g_strdup(net->type?net->type:"");
-    if(!g_ascii_strcasecmp(params[0], "known"))
-      return g_strdup(net->known?net->known:"");
-    if(!g_ascii_strcasecmp(params[0], "strength"))
-      return g_strdup_printf("%d", CLAMP(2*(net->strength/100+100),0,100));
-    if(!g_ascii_strcasecmp(params[0], "connected"))
-      return g_strdup_printf("%d", net->connected);
-  }
+  if( (result = module_queue_get_string(&update_q, params[0])) )
+    return result;
+
   if(iw_devices && !g_ascii_strcasecmp(params[0], "DeviceStrength"))
   {
     device = params[1]?iw_device_get(params[1], FALSE):iw_devices->data;
     return g_strdup_printf("%d",
         device?CLAMP((device->strength*-10+100),0,100):0);
   }
-  if(iw_remove_queue && !g_ascii_strcasecmp(params[0], "RemovedPath"))
-    return g_strdup(iw_remove_queue->data);
+  if( (result = module_queue_get_string(&remove_q, params[0])) )
+    return result;
 
   return g_strdup("");
 }
@@ -808,35 +846,13 @@ static void *iw_expr_get ( void **params, void *widget, void *event )
 static void iw_action_ack ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
-  iw_network_t *net;
-
-  if(!iw_update_queue)
-    return;
-
-  net = iw_update_queue->data;
-  iw_update_queue = g_list_remove(iw_update_queue, net);
-  iw_network_free(net);
-
-  g_debug("iwd: ack processed, queue: %d", !!iw_update_queue);
-  if(iw_update_queue)
-    MODULE_TRIGGER_EMIT("iwd_updated");
+  module_queue_remove(&update_q);
 }
 
 static void iw_action_ack_removed ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
-  gchar *str;
-
-  if(!iw_remove_queue)
-    return;
-
-  str = iw_remove_queue->data;
-  iw_remove_queue = g_list_remove(iw_remove_queue, str);
-  g_free(str);
-
-  g_debug("iwd: ack removed processed, queue: %d", !!iw_remove_queue);
-  if(iw_remove_queue)
-    MODULE_TRIGGER_EMIT("iwd_removed");
+  module_queue_remove(&remove_q);
 }
 
 static void iw_action_scan ( gchar *cmd, gchar *name, void *d1,
