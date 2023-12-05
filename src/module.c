@@ -225,7 +225,7 @@ void module_queue_append ( module_queue_t *queue, void *item )
   g_mutex_lock(&(queue->mutex));
 
   ptr = g_list_find_custom(queue->list, item, queue->compare);
-  if(ptr != queue->list)
+  if(ptr && ptr != queue->list)
   {
     queue->free(ptr->data);
     ptr->data = queue->duplicate(item);
