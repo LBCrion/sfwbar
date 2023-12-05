@@ -32,10 +32,65 @@ gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 1;
 
 static GList *sink_list, *source_list;
-static GList *chan_queue, *remove_queue;
 static pa_context *pctx;
 static gchar *sink_name, *source_name;
 static gboolean fixed_sink, fixed_source;
+
+static void* pulse_channel_dup_dummy ( void *d )
+{
+  return d;
+}
+
+static void pulse_channel_free ( pulse_channel *channel )
+{
+  g_free(channel->channel);
+  g_free(channel->device);
+  g_free(channel);
+}
+
+static gboolean pulse_channel_compare ( pulse_channel *c1, pulse_channel *c2 )
+{
+  return (!g_strcmp0(c1->channel, c2->channel) &&
+      !g_strcmp0(c1->device, c2->device));
+}
+
+static void *pulse_channel_get_str ( pulse_channel *channel, gchar *prop )
+{
+  if(!g_ascii_strcasecmp(prop, "channel"))
+    return g_strdup(channel->channel);
+  if(!g_ascii_strcasecmp(prop, "device"))
+    return g_strdup(channel->device);
+  if(!g_ascii_strcasecmp(prop, "ChannelNumber"))
+    return g_strdup_printf("%d", channel->chan_num);
+  return NULL;
+}
+
+static module_queue_t channel_q = {
+  .list = NULL,
+  .free = (void (*)(void *))pulse_channel_free,
+  .duplicate = (void *(*)(void *))pulse_channel_dup_dummy,
+  .get_str = (void *(*)(void *, gchar *))pulse_channel_get_str,
+  .get_num = NULL,
+  .compare = (gboolean (*)(const void *, const void *))pulse_channel_compare,
+  .trigger = "pulse_channel",
+};
+
+static void *pulse_remove_get_str ( gchar *name, gchar *prop )
+{
+  if(!g_ascii_strcasecmp(prop, "RemovedDevice"))
+    return g_strdup(name);
+  return NULL;
+}
+
+static module_queue_t remove_q = {
+  .list = NULL,
+  .free = g_free,
+  .duplicate = (void *(*)(void *))g_strdup,
+  .get_str = (void *(*)(void *, gchar *))pulse_remove_get_str,
+  .get_num = NULL,
+  .compare = (gboolean (*)(const void *, const void *))g_strcmp0,
+  .trigger = "pulse_removed",
+};
 
 static pulse_info *pulse_info_from_name ( GList **l, const gchar *name,
     gboolean new )
@@ -91,11 +146,7 @@ static void pulse_remove_device ( GList **list, guint32 idx )
   *list = g_list_delete_link(*list, iter);
 
   if(info->name)
-  {
-    remove_queue = g_list_append(remove_queue, info->name);
-    if(!g_list_next(remove_queue))
-      MODULE_TRIGGER_EMIT("pulse_removed");
-  }
+    module_queue_append(&remove_q, info->name);
   g_free(info->icon);
   g_free(info->form);
   g_free(info->port);
@@ -109,15 +160,12 @@ static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
 {
   pulse_info *info;
   pulse_channel *channel;
-  gboolean trigger;
   gint i;
 
   if(!pinfo)
     return;
   if(!pulse_info_from_name(&sink_list, pinfo->name, FALSE))
   {
-    trigger = !chan_queue;
-
     for(i=0;i<pinfo->channel_map.channels;i++)
     {
       channel = g_malloc0(sizeof(pulse_channel));
@@ -125,11 +173,8 @@ static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
       channel->channel = g_strdup(
             pa_channel_position_to_string(pinfo->channel_map.map[i]));
       channel->device = g_strdup(pinfo->name);
-      chan_queue = g_list_append(chan_queue, channel);
+      module_queue_append(&channel_q, channel);
     }
-
-    if(trigger && chan_queue)
-      MODULE_TRIGGER_EMIT("pulse_channel");
   }
   info = pulse_info_from_name(&sink_list, pinfo->name, TRUE);
 
@@ -353,23 +398,15 @@ static void *pulse_expr_func ( void **params, void *widget, void *event )
 
 static void *pulse_channel_func ( void **params, void *widget, void *event )
 {
-  pulse_channel *channel;
+  gchar *result;
 
   if(!params || !params[0])
     return g_strdup("");
 
-  if(chan_queue)
-  {
-    channel = chan_queue->data;
-    if(!g_ascii_strcasecmp(params[0], "channel"))
-      return g_strdup(channel->channel);
-    if(!g_ascii_strcasecmp(params[0], "device"))
-      return g_strdup(channel->device);
-    if(!g_ascii_strcasecmp(params[0], "ChannelNumber"))
-      return g_strdup_printf("%d", channel->chan_num);
-  }
-  else if(remove_queue && !g_ascii_strcasecmp(params[0], "RemovedDevice"))
-    return g_strdup(remove_queue->data);
+  if( (result = module_queue_get_string(&channel_q, params[0])) )
+    return result;
+  if( (result = module_queue_get_string(&remove_q, params[0])) )
+    return result;
 
   return g_strdup("");
 }
@@ -457,34 +494,13 @@ static void pulse_action ( gchar *cmd, gchar *name, void *d1,
 static void pulse_channel_ack_action ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
-  pulse_channel *channel;
-
-  if(!chan_queue)
-    return;
-
-  channel = chan_queue->data;
-  chan_queue = g_list_remove(chan_queue, channel);
-  g_free(channel->channel);
-  g_free(channel->device);
-  g_free(channel);
-
-  if(chan_queue)
-    MODULE_TRIGGER_EMIT("pulse_channel");
+  module_queue_remove(&channel_q);
 }
 
 static void pulse_channel_ack_removed_action ( gchar *cmd, gchar *name,
     void *d1, void *d2, void *d3, void *d4 )
 {
-  gchar *item;
-
-  if(!remove_queue)
-    return;
-
-  item = remove_queue->data;
-  remove_queue = g_list_remove(remove_queue, item);
-  g_free(item);
-  if(remove_queue)
-    MODULE_TRIGGER_EMIT("pulse_removed");
+  module_queue_remove(&remove_q);
 }
 
 static void pulse_set_sink_action ( gchar *sink, gchar *dummy, void *d1,
