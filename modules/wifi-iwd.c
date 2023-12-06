@@ -282,10 +282,11 @@ static module_queue_t remove_q = {
 static void iw_network_updated ( iw_network_t *net )
 {
   if(net)
+  {
     module_queue_append(&update_q, net);
-
-  g_debug("iwd: network: %s, type: %s, conn: %d, known: %s, strength: %d", net->ssid,
-      net->type, net->connected, net->known, net->strength);
+    g_debug("iwd: network: %s, type: %s, conn: %d, known: %s, strength: %d",
+        net->ssid, net->type, net->connected, net->known, net->strength);
+  }
 }
 
 static void iw_network_remove ( iw_network_t *network )
