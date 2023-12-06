@@ -194,24 +194,23 @@ void action_trigger_add ( action_t *action, gchar *trigger )
   void *old;
 
   if(!trigger_actions)
-    trigger_actions = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
+    trigger_actions = g_hash_table_new(g_direct_hash, g_direct_equal);
 
-  old = g_hash_table_lookup(trigger_actions,trigger);
-  if(old)
+  if( (old = g_hash_table_lookup(trigger_actions, trigger)) )
   {
     g_message("Action for trigger '%s' is already defined",trigger);
-    g_free(trigger);
-    action_free(action,NULL);
-    return;
+    action_free(action, NULL);
   }
-
-  g_hash_table_insert(trigger_actions, trigger, action);
+  else
+    g_hash_table_insert(trigger_actions,
+        (void *)g_intern_string(trigger), action);
+  g_free(trigger);
 }
 
-action_t *action_trigger_lookup ( gchar *trigger )
+action_t *action_trigger_lookup ( const gchar *trigger )
 {
   if(!trigger_actions)
     return NULL;
 
-  return g_hash_table_lookup(trigger_actions,trigger);
+  return g_hash_table_lookup(trigger_actions, trigger);
 }

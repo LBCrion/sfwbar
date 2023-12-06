@@ -5,10 +5,10 @@
 
 #include <glib.h>
 #include "../src/module.h"
+#include "../src/basewidget.h"
 #include <pulse/pulseaudio.h>
 #include <pulse/glib-mainloop.h>
 
-ModuleApiV1 *sfwbar_module_api;
 gboolean invalid;
 
 typedef struct _pulse_info {
@@ -66,13 +66,10 @@ static void *pulse_channel_get_str ( pulse_channel *channel, gchar *prop )
 }
 
 static module_queue_t channel_q = {
-  .list = NULL,
   .free = (void (*)(void *))pulse_channel_free,
   .duplicate = (void *(*)(void *))pulse_channel_dup_dummy,
   .get_str = (void *(*)(void *, gchar *))pulse_channel_get_str,
-  .get_num = NULL,
   .compare = (gboolean (*)(const void *, const void *))pulse_channel_compare,
-  .trigger = "pulse_channel",
 };
 
 static void *pulse_remove_get_str ( gchar *name, gchar *prop )
@@ -83,13 +80,10 @@ static void *pulse_remove_get_str ( gchar *name, gchar *prop )
 }
 
 static module_queue_t remove_q = {
-  .list = NULL,
   .free = g_free,
   .duplicate = (void *(*)(void *))g_strdup,
   .get_str = (void *(*)(void *, gchar *))pulse_remove_get_str,
-  .get_num = NULL,
   .compare = (gboolean (*)(const void *, const void *))g_strcmp0,
-  .trigger = "pulse_removed",
 };
 
 static pulse_info *pulse_info_from_name ( GList **l, const gchar *name,
@@ -197,7 +191,8 @@ static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
   info->vol = 100.0 * pa_cvolume_avg(&info->cvol)/PA_VOLUME_NORM;
   info->mute = pinfo->mute;
   info->cmap = pinfo->channel_map;
-  MODULE_TRIGGER_EMIT("pulse");
+  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+      (gpointer)g_intern_static_string("pulse"));
 }
 
 static void pulse_source_cb ( pa_context *ctx, const pa_source_info *pinfo,
@@ -227,7 +222,8 @@ static void pulse_source_cb ( pa_context *ctx, const pa_source_info *pinfo,
   info->cvol = pinfo->volume;
   info->vol = 100.0 * pa_cvolume_avg(&info->cvol)/PA_VOLUME_NORM;
   info->mute = pinfo->mute;
-  MODULE_TRIGGER_EMIT("pulse");
+  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+      (gpointer)g_intern_static_string("pulse"));
 }
 
 static void pulse_server_cb ( pa_context *ctx, const pa_server_info *info,
@@ -304,7 +300,8 @@ void sfwbar_module_init ( ModuleApiV1 *api )
 {
   pa_glib_mainloop *ploop;
 
-  sfwbar_module_api = api;
+  channel_q.trigger = g_intern_static_string("pulse_channel");
+  remove_q.trigger = g_intern_static_string("pulse_removed");
   ploop = pa_glib_mainloop_new(g_main_context_get_thread_default());
   papi = pa_glib_mainloop_get_api(ploop);
   pctx = pa_context_new(papi,"sfwbar");

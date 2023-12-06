@@ -7,9 +7,9 @@
 #include <gtk/gtk.h>
 #include <gdk/gdkwayland.h>
 #include "../src/module.h"
+#include "../src/basewidget.h"
 #include "idle-inhibit-unstable-v1.h"
 
-static ModuleApiV1 *sfwbar_module_api;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 1;
 static struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
@@ -36,8 +36,6 @@ void sfwbar_module_init ( ModuleApiV1 *api )
 {
   struct wl_display *wdisp;
   struct wl_registry *registry;
-
-  sfwbar_module_api = api;
 
   wdisp = gdk_wayland_display_get_wl_display(gdk_display_get_default());
   if(!wdisp)
@@ -84,13 +82,15 @@ static void idle_inhibitor_action ( gchar *act, gchar *dummy, void *widget,
     inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(
         idle_inhibit_manager, surface );
     g_object_set_data(G_OBJECT(widget),"inhibitor",inhibitor);
-    MODULE_TRIGGER_EMIT("idleinhibitor");
+    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+        (gpointer)g_intern_static_string("idleinhibitor"));
   }
   else if( !inhibit && inhibitor )
   {
     g_object_set_data(G_OBJECT(widget),"inhibitor",NULL);
     zwp_idle_inhibitor_v1_destroy(inhibitor);
-    MODULE_TRIGGER_EMIT("idleinhibitor");
+    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+        (gpointer)g_intern_static_string("idleinhibitor"));
   }
 }
 

@@ -17,7 +17,7 @@ enum {
 
 typedef struct scan_file {
   gchar *fname;
-  gchar *trigger;
+  const gchar *trigger;
   gint flags;
   guchar source;
   time_t mtime;
@@ -53,6 +53,6 @@ gchar *scanner_parse_identifier ( gchar *id, gchar **fname );
 ScanFile *scanner_file_get ( gchar *trigger );
 ScanFile *scanner_file_new ( gint , gchar *, gchar *, gint );
 gboolean scanner_is_variable ( gchar *identifier );
-void scanner_file_attach ( gchar *trigger, ScanFile *file );
+void scanner_file_attach ( const gchar *trigger, ScanFile *file );
 
 #endif

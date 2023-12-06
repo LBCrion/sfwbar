@@ -70,9 +70,9 @@ static void base_widget_destroy ( GtkWidget *self )
   g_clear_pointer(&priv->value, expr_cache_free);
   g_clear_pointer(&priv->style, expr_cache_free);
   g_clear_pointer(&priv->tooltip, expr_cache_free);
-  g_clear_pointer(&priv->trigger, g_free);
   g_list_free_full(g_steal_pointer(&priv->actions),
       (GDestroyNotify)base_widget_attachment_free);
+  priv->trigger = NULL;
 
   GTK_WIDGET_CLASS(base_widget_parent_class)->destroy(self);
 }
@@ -418,8 +418,7 @@ void base_widget_set_trigger ( GtkWidget *self, gchar *trigger )
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  g_free(priv->trigger);
-  priv->trigger = trigger;
+  priv->trigger = g_intern_string(trigger);
 }
 
 void base_widget_set_id ( GtkWidget *self, gchar *id )
@@ -713,7 +712,7 @@ void base_widget_copy_properties ( GtkWidget *dest, GtkWidget *src )
   if(spriv->tooltip)
     base_widget_set_tooltip( dest, spriv->tooltip->definition );
   if(spriv->trigger)
-    base_widget_set_trigger( dest, spriv->trigger );
+    base_widget_set_trigger( dest, (gchar *)spriv->trigger );
   else
     base_widget_set_interval( dest, spriv->interval );
   base_widget_set_max_width( dest, spriv->maxw );
@@ -740,21 +739,21 @@ GtkWidget *base_widget_mirror ( GtkWidget *src )
   return BASE_WIDGET_GET_CLASS(src)->mirror(src);
 }
 
-gboolean base_widget_emit_trigger ( gchar *trigger )
+gboolean base_widget_emit_trigger ( const gchar *trigger )
 {
   BaseWidgetPrivate *priv;
   GList *iter;
 
   if(!trigger)
     return FALSE;
-  g_debug("trigger: %s",trigger);
+  g_debug("trigger: %s", trigger);
 
   scanner_invalidate();
   g_mutex_lock(&widget_mutex);
   for(iter=widgets_scan;iter!=NULL;iter=g_list_next(iter))
   {
     priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
-    if(!priv->trigger || g_ascii_strcasecmp(trigger,priv->trigger))
+    if(!priv->trigger || trigger!=priv->trigger)
       continue;
     if(expr_cache_eval(priv->value) || priv->always_update)
       base_widget_update_value(iter->data);

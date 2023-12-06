@@ -74,7 +74,7 @@ gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 
 void client_attach ( Client *client )
 {
-  scanner_file_attach(client->file->trigger,client->file);
+  scanner_file_attach(client->file->trigger, client->file);
   client->connect(client);
 }
 

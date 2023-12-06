@@ -2,8 +2,8 @@
 #include <glib.h>
 #include <gio/gio.h>
 #include "../src/module.h"
+#include "../src/basewidget.h"
 
-ModuleApiV1 *sfwbar_module_api;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 1;
 
@@ -257,13 +257,11 @@ static void *iw_network_get_str ( iw_network_t *net, gchar *prop )
 }
 
 static module_queue_t update_q = {
-  .list = NULL,
   .free = (void (*)(void *))iw_network_free,
   .duplicate = (void *(*)(void *))iw_network_dup,
   .get_str = (void *(*)(void *, gchar *))iw_network_get_str,
   .get_num = (void *(*)(void *, gchar *))NULL,
   .compare = (gboolean (*)(const void *, const void *))iw_network_compare,
-  .trigger = "iwd_updated",
 };
 
 static void *iwd_remove_get_str ( gchar *name, gchar *prop )
@@ -275,13 +273,10 @@ static void *iwd_remove_get_str ( gchar *name, gchar *prop )
 }
 
 static module_queue_t remove_q = {
-  .list = NULL,
   .free = g_free,
   .duplicate = (void *(*)(void *))g_strdup,
   .get_str = (void *(*)(void *, gchar *))iwd_remove_get_str,
-  .get_num = NULL,
   .compare = (gboolean (*)(const void *, const void *))g_strcmp0,
-  .trigger = "iwd_removed",
 };
 
 static void iw_network_updated ( iw_network_t *net )
@@ -379,7 +374,8 @@ static void iw_signal_level_agent__method(GDBusConnection *con,
         device->strength = level;
     
     g_debug("iwd: level %d on %s", level, device?device->name:object);
-    MODULE_TRIGGER_EMIT("iwd_level");
+    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+        (gpointer)g_intern_static_string("iwd_level"));
     g_dbus_method_invocation_return_value(invocation, NULL);
   }
 }
@@ -519,7 +515,8 @@ static void iw_scan_start ( gchar *path )
   if(device && device->scanning)
     return;
   g_debug("iwd: initiating scan");
-  MODULE_TRIGGER_EMIT("iwd_scan");
+  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+      (gpointer)g_intern_static_string("iwd_scan"));
   g_dbus_connection_call(iw_con, iw_serv, path, iw_iface_station, "Scan",
       NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
 }
@@ -627,7 +624,8 @@ static void iw_station_handle ( gchar *path, gchar *iface, GVariant *dict )
   change |= scan;
   if(scan && !device->scanning)
   {
-    MODULE_TRIGGER_EMIT("iwd_scan_complete");
+    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+        (gpointer)g_intern_static_string("iwd_scan_complete"));
     g_dbus_connection_call(iw_con, iw_serv, path, iw_iface_station,
         "GetOrderedNetworks", NULL, G_VARIANT_TYPE("(a(on))"),
         G_DBUS_CALL_FLAGS_NONE, -1, NULL,
@@ -800,7 +798,8 @@ void sfwbar_module_init ( ModuleApiV1 *api )
   static GDBusInterfaceVTable iw_signal_level_agent_vtable = {
     (GDBusInterfaceMethodCallFunc)iw_signal_level_agent__method, NULL, NULL };
 
-  sfwbar_module_api = api;
+  update_q.trigger = g_intern_static_string("iwd_updated");
+  remove_q.trigger = g_intern_static_string("iwd_removed");
 
   iw_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
 

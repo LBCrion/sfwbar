@@ -6,9 +6,9 @@
 #include <glib.h>
 #include <mpd/client.h>
 #include "../src/module.h"
+#include "../src/basewidget.h"
 #include "stdio.h"
 
-static ModuleApiV1 *sfwbar_module_api;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 1;
 static struct mpd_status *status;
@@ -32,7 +32,8 @@ static gboolean mpd_timer ( gpointer data )
 
   current = g_get_monotonic_time();
   if((current-last)/mpd_status_get_total_time(status)/10 > 1)
-    MODULE_TRIGGER_EMIT("mpd-progress");
+    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+        (gpointer)g_intern_static_string("mpd-progress"));
 
   return TRUE;
 }
@@ -61,7 +62,8 @@ static gboolean mpd_update ( void )
     timer = 1;
   }
 
-  MODULE_TRIGGER_EMIT("mpd");
+  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+      (gpointer)g_intern_static_string("mpd"));
   return TRUE;
 }
 
@@ -76,7 +78,8 @@ static gboolean mpd_event ( GIOChannel *chan, GIOCondition cond, void *d)
     mpd_connection_free(conn);
     conn = NULL;
     g_timeout_add (1000,(GSourceFunc )mpd_connect,NULL);
-    MODULE_TRIGGER_EMIT("mpd");
+    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+        (gpointer)g_intern_static_string("mpd"));
     return FALSE;
   }
 
@@ -136,8 +139,6 @@ static void mpd_bool_set( bool (*get)(const struct mpd_status *),
 
 void sfwbar_module_init ( ModuleApiV1 *api )
 {
-  sfwbar_module_api = api;
-
   if(mpd_connect(NULL))
     g_timeout_add (1000,(GSourceFunc )mpd_connect,NULL);
 }

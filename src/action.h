@@ -20,7 +20,7 @@ void action_function_add ( gchar *, GList *);
 void action_function_exec ( gchar *, GtkWidget *, GdkEvent *, window_t *,
     guint16 *);
 void action_trigger_add ( action_t *action, gchar *trigger );
-action_t *action_trigger_lookup ( gchar *trigger );
+action_t *action_trigger_lookup ( const gchar *trigger );
 void action_lib_init ( void );
 
 #endif

@@ -40,7 +40,7 @@ struct _BaseWidgetPrivate
   gulong scroll_h;
   gint64 interval;
   guint maxw, maxh;
-  gchar *trigger;
+  const gchar *trigger;
   gint64 next_poll;
   gint dir;
   gboolean always_update;
@@ -82,7 +82,7 @@ gchar *base_widget_get_value ( GtkWidget *self );
 action_t *base_widget_get_action ( GtkWidget *self, gint, GdkModifierType );
 gpointer base_widget_scanner_thread ( GMainContext *gmc );
 void base_widget_set_css ( GtkWidget *widget, gchar *css );
-gboolean base_widget_emit_trigger ( gchar *trigger );
+gboolean base_widget_emit_trigger ( const gchar *trigger );
 void base_widget_autoexec ( GtkWidget *self, gpointer data );
 void base_widget_set_always_update ( GtkWidget *self, gboolean update );
 void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src );

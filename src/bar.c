@@ -642,7 +642,8 @@ void bar_monitor_added_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 
   g_snprintf(trigger,255,"%s_connected",
       (gchar *)g_object_get_data(G_OBJECT(gmon),"xdg_name"));
-  g_idle_add((GSourceFunc)base_widget_emit_trigger,trigger);
+  g_idle_add((GSourceFunc)base_widget_emit_trigger,
+      (gpointer)g_intern_string(trigger));
 }
 
 void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
@@ -668,7 +669,8 @@ void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 
   g_snprintf(trigger,255,"%s_disconnected",
       (gchar *)g_object_get_data(G_OBJECT(gmon),"xdg_name"));
-  g_idle_add((GSourceFunc)base_widget_emit_trigger,trigger);
+  g_idle_add((GSourceFunc)base_widget_emit_trigger,
+      (gpointer)g_intern_string(trigger));
 }
 
 void bar_set_size ( GtkWidget *self, gchar *size )

@@ -16,13 +16,12 @@ static GList *file_list;
 static GHashTable *scan_list;
 static GHashTable *trigger_list;
 
-void scanner_file_attach ( gchar *trigger, ScanFile *file )
+void scanner_file_attach ( const gchar *trigger, ScanFile *file )
 {
   if(!trigger_list)
-    trigger_list = g_hash_table_new((GHashFunc)str_nhash,
-        (GEqualFunc)str_nequal);
+    trigger_list = g_hash_table_new(g_direct_hash, g_direct_equal);
 
-  g_hash_table_insert(trigger_list,trigger,file);
+  g_hash_table_insert(trigger_list, (void *)g_intern_string(trigger), file);
 }
 
 ScanFile *scanner_file_get ( gchar *trigger )
@@ -30,7 +29,7 @@ ScanFile *scanner_file_get ( gchar *trigger )
   if(!trigger_list)
     return NULL;
 
-  return g_hash_table_lookup(trigger_list,trigger);
+  return g_hash_table_lookup(trigger_list, (void *)g_intern_string(trigger));
 }
 
 ScanFile *scanner_file_new ( gint source, gchar *fname,
@@ -63,17 +62,15 @@ ScanFile *scanner_file_new ( gint source, gchar *fname,
   if( !strchr(file->fname,'*') && !strchr(file->fname,'?') )
     file->flags |= VF_NOGLOB;
 
-  if(g_strcmp0(file->trigger,trigger))
+  if(file->trigger != g_intern_string(trigger))
   {
     if(file->trigger)
-      g_hash_table_remove(trigger_list,file->trigger);
-    g_free(file->trigger);
-    file->trigger = trigger;
+      g_hash_table_remove(trigger_list, file->trigger);
+    file->trigger = g_intern_string(trigger);
     if(file->trigger)
-      scanner_file_attach(file->trigger,file);
+      scanner_file_attach(file->trigger, file);
   }
-  else
-    g_free(trigger);
+  g_free(trigger);
 
   return file;
 }

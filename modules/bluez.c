@@ -6,8 +6,8 @@
 #include <glib.h>
 #include <gio/gio.h>
 #include "../src/module.h"
+#include "../src/basewidget.h"
 
-ModuleApiV1 *sfwbar_module_api;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 1;
 
@@ -51,7 +51,8 @@ static void bz_adapter_free ( gchar *object )
   adapters = g_list_remove(adapters, adapter);
   trigger = !adapters;
   if(trigger)
-    MODULE_TRIGGER_EMIT("bluez_running");
+    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+        (gpointer)g_intern_static_string("bluez_running"));
   if(adapter->timeout_handle)
     g_source_remove(adapter->timeout_handle);
   g_free(adapter->path);
@@ -126,13 +127,11 @@ static gpointer bz_device_get_num ( BzDevice *device, gchar *prop )
 }
 
 module_queue_t update_q = {
-  .list = NULL,
   .free = (void (*)(void *))bz_device_free,
   .duplicate = (void *(*)(void *))bz_device_dup,
   .get_str = (void *(*)(void *, gchar *))bz_device_get_str,
   .get_num = (void *(*)(void *, gchar *))bz_device_get_num,
   .compare = (gboolean (*)(const void *, const void *))bz_device_compare,
-  .trigger = "bluez_updated",
 };
 
 static void *bz_remove_get_str ( gchar *name, gchar *prop )
@@ -144,13 +143,10 @@ static void *bz_remove_get_str ( gchar *name, gchar *prop )
 }
 
 module_queue_t remove_q = {
-  .list = NULL,
   .free = g_free,
   .duplicate = (void *(*)(void *))g_strdup,
   .get_str = (void *(*)(void *, gchar *))bz_remove_get_str,
-  .get_num = NULL,
   .compare = (gboolean (*)(const void *, const void *))g_strcmp0,
-  .trigger = "bluez_removed",
 };
 
 static BzAdapter *bz_adapter_get ( void )
@@ -165,7 +161,8 @@ static void bz_scan_stop_cb ( GDBusConnection *con, GAsyncResult *res,
 {
   GVariant *result;
 
-  MODULE_TRIGGER_EMIT("bluez_scan_complete");
+  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+      (gpointer)g_intern_static_string("bluez_scan_complete"));
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(result)
     g_variant_unref(result);
@@ -189,7 +186,8 @@ static void bz_scan_cb ( GDBusConnection *con, GAsyncResult *res,
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(!result)
   {
-    MODULE_TRIGGER_EMIT("bluez_scan_complete");
+    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+        (gpointer)g_intern_static_string("bluez_scan_complete"));
     return;
   }
   g_variant_unref(result);
@@ -207,7 +205,8 @@ static void bz_scan_filter_cb ( GDBusConnection *con, GAsyncResult *res,
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(!result)
   {
-    MODULE_TRIGGER_EMIT("bluez_scan_complete");
+    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+        (gpointer)g_intern_static_string("bluez_scan_complete"));
     return;
   }
 
@@ -228,7 +227,8 @@ static void bz_scan ( GDBusConnection *con, guint timeout )
   if(!adapter || adapter->timeout_handle)
     return;
 
-  MODULE_TRIGGER_EMIT("bluez_scan");
+  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+      (gpointer)g_intern_static_string("bluez_scan"));
   builder = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
   g_variant_builder_add(builder, "{sv}", "Transport",
       g_variant_new_string("bredr"));
@@ -492,7 +492,8 @@ static void bz_adapter_handle ( gchar *object, gchar *iface )
 
   adapters = g_list_append(adapters, adapter);
   if(adapters && !g_list_next(adapters))
-    MODULE_TRIGGER_EMIT("bluez_running");
+    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+        (gpointer)g_intern_static_string("bluez_running"));
 }
 
 static void bz_object_handle ( gchar *object, GVariantIter *iiter )
@@ -617,7 +618,8 @@ static void bz_name_disappeared_cb (GDBusConnection *con, const gchar *name,
 
 void sfwbar_module_init ( ModuleApiV1 *api )
 {
-  sfwbar_module_api = api;
+  update_q.trigger = g_intern_static_string("bluez_updated");
+  remove_q.trigger = g_intern_static_string("bluez_removed");
 
   bz_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
   g_bus_watch_name(G_BUS_TYPE_SYSTEM, bz_serv, G_BUS_NAME_WATCHER_FLAGS_NONE,

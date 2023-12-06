@@ -12,12 +12,12 @@ typedef struct _module_queue {
   void *(*get_str) (void *, gchar *);
   void *(*get_num) (void *, gchar *);
   gboolean (*compare) (const void *, const void *);
-  gchar *trigger;
+  const gchar *trigger;
 } module_queue_t;
 
 typedef struct {
   GMainContext *gmc;
-  gboolean (*emit_trigger)(gchar *);
+  gboolean (*emit_trigger)( const gchar *);
   void (*config_string)(gchar *);
 } ModuleApiV1;
 
@@ -57,15 +57,6 @@ void module_queue_append ( module_queue_t *queue, void *item );
 void module_queue_remove ( module_queue_t *queue );
 void *module_queue_get_string ( module_queue_t *queue, gchar *param );
 void *module_queue_get_numeric ( module_queue_t *queue, gchar *param );
-
-#define MODULE_TRIGGER_EMIT(x) \
-  if(sfwbar_module_api && sfwbar_module_api->emit_trigger) \
-    g_main_context_invoke(sfwbar_module_api->gmc, \
-        (GSourceFunc)sfwbar_module_api->emit_trigger,x);
-
-#define MODULE_CONFIG_STRING(x) \
-  if(sfwbar_module_api && sfwbar_module_api->config_string) \
-    sfwbar_module_api->config_string(x)
 
 gboolean module_load ( gchar *name );
 void module_invalidate_all ( void );

@@ -105,7 +105,8 @@ void wintree_set_focus ( gpointer id )
     wt_list = g_list_concat(iter, wt_list);
   }
   wintree_commit(wt_list->data);
-  g_idle_add((GSourceFunc)base_widget_emit_trigger, "window_focus");
+  g_idle_add((GSourceFunc)base_widget_emit_trigger,
+      (gpointer)g_intern_static_string("window_focus"));
 }
 
 gpointer wintree_get_focus ( void )

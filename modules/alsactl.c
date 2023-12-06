@@ -6,8 +6,8 @@
 #include <glib.h>
 #include <alsa/asoundlib.h>
 #include "../src/module.h"
+#include "../src/basewidget.h"
 
-ModuleApiV1 *sfwbar_module_api;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 1;
 
@@ -66,7 +66,8 @@ gboolean alsa_source_check( GSource *source )
 gboolean alsa_source_dispatch( GSource *source,GSourceFunc cb, gpointer data)
 {
   snd_mixer_handle_events(mixer);
-  MODULE_TRIGGER_EMIT("alsa");
+  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+      (gpointer)g_intern_static_string("alsa"));
 
   return TRUE;
 }
@@ -116,7 +117,6 @@ static GSource *alsa_source_subscribe ( gchar *name )
 
 void sfwbar_module_init ( ModuleApiV1 *api )
 {
-  sfwbar_module_api = api;
   main_src = alsa_source_subscribe("default");
 }
 
@@ -269,7 +269,8 @@ static void alsa_action ( gchar *cmd, gchar *name, void *d1,
   else
     return;
 
-  MODULE_TRIGGER_EMIT("alsa");
+  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+      (gpointer)g_intern_static_string("alsa"));
 }
 
 static void alsa_card_action ( gchar *cmd, gchar *name, void *d1,

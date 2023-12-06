@@ -237,8 +237,8 @@ void module_queue_append ( module_queue_t *queue, void *item )
   g_mutex_unlock(&(queue->mutex));
 
   if(trigger && queue->trigger)
-    g_main_context_invoke(NULL,
-        (GSourceFunc)base_widget_emit_trigger, queue->trigger);
+    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+        (gpointer)queue->trigger);
 }
 
 void module_queue_remove ( module_queue_t *queue )
@@ -259,8 +259,8 @@ void module_queue_remove ( module_queue_t *queue )
   g_mutex_unlock(&(queue->mutex));
 
   if(trigger && queue->trigger)
-    g_main_context_invoke(NULL,
-        (GSourceFunc)base_widget_emit_trigger, queue->trigger);
+    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+        (gpointer)queue->trigger);
 }
 
 void *module_queue_get_string ( module_queue_t *queue, gchar *param )

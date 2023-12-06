@@ -4,6 +4,7 @@
  */
 
 #include "../src/module.h"
+#include "../src/basewidget.h"
 #include <unistd.h>
 #include <ifaddrs.h>
 #include <sys/ioctl.h>
@@ -25,7 +26,6 @@ typedef struct _iface_info {
 
 iface_info *route;
 
-ModuleApiV1 *sfwbar_module_api;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 1;
 guint32 seq;
@@ -112,7 +112,8 @@ static void net_set_interface ( gint32 iidx, struct in_addr gate,
       route->gateway.s_addr = 0;
       memset(&route->gateway6,0,sizeof(route->gateway6));
       route = NULL;
-      MODULE_TRIGGER_EMIT("network");
+      g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+          (gpointer)g_intern_static_string("network"));
     }
     return;
   }
@@ -127,7 +128,8 @@ static void net_set_interface ( gint32 iidx, struct in_addr gate,
   net_update_essid(ifname);
   net_update_ifaddrs();
   route = iface;
-  MODULE_TRIGGER_EMIT("network");
+  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+      (gpointer)g_intern_static_string("network"));
 }
 
 static gchar *net_getaddr ( void *ina, gint type  )
@@ -637,7 +639,6 @@ void sfwbar_module_init ( ModuleApiV1 *api )
   int sock;
   GIOChannel *chan;
 
-  sfwbar_module_api = api;
   sock = net_rt_connect();
   g_debug("network socket: %d",sock);
   if(sock >= 0 && net_rt_request(sock) >= 0)

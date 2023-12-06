@@ -91,8 +91,7 @@ void client_mpd ( ScanFile *file )
   MPD_STATE(client->data)->commands = g_queue_new();
   MPD_STATE(client->data)->path = g_strdup(file->fname);
 
-  g_free(file->trigger);
-  file->trigger = g_strdup("mpd");
+  file->trigger = g_intern_static_string("mpd");
   file->source = SO_CLIENT;
   file->client = client;
 

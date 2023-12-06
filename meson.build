@@ -100,68 +100,68 @@ libsrc = [
     'src/wayland/probe.c',
     'src/wayland/xdg-output.c',
     wayland_targets ]
-dep = [gtk3, glib, gio_unix, gmod, glsh, wayl, json ]
+deps = [gtk3, glib, gio_unix, gmod, glsh, wayl, json ]
 man_pages = [ 'doc/sfwbar.1' ]
 
 sfwbar = library ('sfwbar', sources: libsrc,
     c_args: ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
     '-DGDK_DISABLE_DEPRECATED',
     '-DGTK_DISABLE_DEPRECATED'],
-    dependencies: dep, install: true)
+    dependencies: deps, install: true)
 
-sfwb = declare_dependency(link_with: sfwbar)
+deps = [deps, declare_dependency(link_with: sfwbar)]
 
 if get_option('network').enabled() or get_option('network').auto()
-  library('network', sources: 'modules/network.c', dependencies: glib,
+  library('network', sources: 'modules/network.c', dependencies: deps,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   man_pages += 'doc/sfwbar-network.1'
 endif
 
 if get_option('bluez').enabled() or get_option('bluez').auto()
-  library('bluez', sources: 'modules/bluez.c', dependencies: [glib, ggio], 
-      name_prefix: '', install: true,
+  library('bluez', sources: 'modules/bluez.c',
+      dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   man_pages += 'doc/sfwbar-bluez.1'
 endif
 
 if get_option('iwd').enabled() or get_option('iwd').auto()
-  library('wifi-iwd', sources: 'modules/wifi-iwd.c', dependencies: [glib, ggio,gtk3],
-      name_prefix: '', install: true,
+  library('wifi-iwd', sources: 'modules/wifi-iwd.c',
+      dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
 #  man_pages += 'doc/sfwbar-wifi-iwd.1'
 endif
 
 if puls.found() and pulg.found()
   library('pulsectl', sources: 'modules/pulsectl.c',
-      dependencies: [glib, puls, pulg, sfwb],name_prefix: '',
+      dependencies: [deps, puls, pulg],name_prefix: '',
       install: true, install_dir: get_option('libdir') / 'sfwbar' )
   man_pages += 'doc/sfwbar-pulse.1'
 endif
 
 if mpdc.found()
-  library('mpd', sources: 'modules/mpd.c', dependencies: [glib, mpdc],
+  library('mpd', sources: 'modules/mpd.c', dependencies: [deps, mpdc],
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   man_pages += 'doc/sfwbar-mpd.1'
 endif
 
 if alsa.found()
-  library('alsactl', sources: 'modules/alsactl.c', dependencies: [glib, alsa],
+  library('alsactl', sources: 'modules/alsactl.c', dependencies: [deps, alsa],
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   man_pages += 'doc/sfwbar-alsa.1'
 endif
 
 if xkbr.found()
-  library('xkbmap', sources: 'modules/xkbmap.c', dependencies: [glib, xkbr],
+  library('xkbmap', sources: 'modules/xkbmap.c', dependencies: [deps, xkbr],
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   man_pages += 'doc/sfwbar-xkbmap.1'
 endif
 
 if get_option('bsdctl').enabled()
-  library('bsdctl', sources: 'modules/bsdctl.c', dependencies: glib,
+  library('bsdctl', sources: 'modules/bsdctl.c', dependencies: deps,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   man_pages += 'doc/sfwbar-bsdctl.1'
@@ -180,7 +180,7 @@ if get_option('idleinhibit').enabled() or get_option('idleinhibit').auto()
         'unstable/idle-inhibit/idle-inhibit-unstable-v1.xml',
       command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@' ] ) ]
 
-  library('idleinhibit', sources: ['modules/idleinhibit.c',inhibit_targets], dependencies: [glib, gtk3, wayl],
+  library('idleinhibit', sources: ['modules/idleinhibit.c',inhibit_targets], dependencies: deps,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   man_pages += 'doc/sfwbar-idleinhibit.1'
@@ -190,7 +190,7 @@ executable ('sfwbar', sources: 'src/sfwbar.c',
     c_args: ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
     '-DGDK_DISABLE_DEPRECATED',
     '-DGTK_DISABLE_DEPRECATED'],
-    dependencies: [dep, sfwb], install: true)
+    dependencies: [deps], install: true)
 
 foreach page : man_pages
   install_man(page)

@@ -41,7 +41,7 @@ static gboolean signal_source_dispatch( GSource *source, GSourceFunc cb,
     {
       g_atomic_int_dec_and_test(&signal_counter[sig-SIGRTMIN]);
       trigger = g_strdup_printf("sigrtmin+%d", sig-SIGRTMIN);
-      base_widget_emit_trigger(trigger);
+      base_widget_emit_trigger(g_intern_string(trigger));
       g_free(trigger);
     }
   return TRUE;
