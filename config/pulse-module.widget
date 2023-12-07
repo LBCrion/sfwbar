@@ -99,8 +99,8 @@ Function("XVolumeChannelHandler") {
 }
 
 Function("XVolumeChannelRemove") {
-  SetStyle PulseChannel("RemovedDevice"), "hidden"
-#  ClearWidget PulseChannel("RemovedDevice")
+#  SetStyle PulseChannel("RemovedDevice"), "hidden"
+  ClearWidget PulseChannel("RemovedDevice")
   PulseChannelAckRemoved
 }
 
