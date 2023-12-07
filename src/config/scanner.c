@@ -154,7 +154,6 @@ static ScanFile *config_source ( GScanner *scanner, gint source )
 
 void config_scanner ( GScanner *scanner )
 {
-  ScanFile *file;
   scanner->max_parse_errors = FALSE;
 
   if(!config_expect_token(scanner, '{', "Missing '{' after 'scanner'"))
@@ -173,20 +172,16 @@ void config_scanner ( GScanner *scanner )
         config_source(scanner,SO_EXEC);
         break;
       case G_TOKEN_MPDCLIENT:
-        file = config_source(scanner,SO_CLIENT);
-        client_mpd(file);
+        client_mpd(config_source(scanner,SO_CLIENT));
         break;
       case G_TOKEN_SWAYCLIENT:
-        file = config_source(scanner,SO_CLIENT);
-        sway_ipc_client_init(file);
+        sway_ipc_client_init(config_source(scanner,SO_CLIENT));
         break;
       case G_TOKEN_EXECCLIENT:
-        file = config_source(scanner,SO_CLIENT);
-        client_exec(file);
+        client_exec(config_source(scanner,SO_CLIENT));
         break;
       case G_TOKEN_SOCKETCLIENT:
-        file = config_source(scanner,SO_CLIENT);
-        client_socket(file);
+        client_socket(config_source(scanner,SO_CLIENT));
         break;
       default:
         g_scanner_error(scanner, "Unexpected declaration in scanner");
