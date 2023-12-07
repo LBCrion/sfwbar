@@ -18,8 +18,7 @@ Menu("XBluezItemMenu") {
 Function("XBluezUpdate") {
   ClearWidget BluezGet("Path") + "_grid" +
     If(BluezState("Paired"), "avail", "paired")
-  Config "PopUp 'XBluezWindow' {" +
-    " grid 'XBluezFrame' { grid 'XBluezGrid" +
+    COnfig "grid 'XBluezGrid" +
         If(BluezState("Paired"),"Paired","Avail") + "' {" +
       "grid '" + XBluezID + "' {" +
         "style = 'XBluezGrid'" +
@@ -48,16 +47,13 @@ Function("XBluezUpdate") {
           "style = 'XBluezAddress' " +
           "interval = 0 " +
           "loc(1,1,1,1)" +
-        "} } } } }"
+        "} } }"
   BluezAck
 }
 
 Function("XBluezRemove") {
   ClearWidget BluezGet("RemovedPath") + "_gridavail"
   ClearWidget BluezGet("RemovedPath") + "_gridpaired"
-#  ClearWidget BluezGet("RemovedPath") + "_label"
-#  ClearWidget BluezGet("RemovedPath") + "_address"
-#  ClearWidget BluezGet("RemovedPath") + "_icon"
   BluezAckRemoved
 }
 
