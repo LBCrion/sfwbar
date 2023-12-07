@@ -16,11 +16,6 @@ GHashTable *expr_handlers;
 GData *act_handlers;
 GList *invalidators;
 
-static ModuleApiV1 api_v1 = {
-  .emit_trigger = base_widget_emit_trigger,
-  .config_string = config_string,
-};
-
 void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler,gchar *name )
 {
   gint i;
@@ -100,7 +95,7 @@ gboolean module_load ( gchar *name )
     return FALSE;
   }
   if(!g_module_symbol(module,"sfwbar_module_version",(void **)&ver) ||
-      !ver || *ver != 1 )
+      !ver || *ver != 2 )
   {
     g_debug("module: invalid version for %s",name);
     return FALSE;
@@ -111,8 +106,8 @@ gboolean module_load ( gchar *name )
   if(g_module_symbol(module,"sfwbar_module_init",(void **)&init) && init)
   {
     g_debug("module: calling init function for %s",name);
-    api_v1.gmc = g_main_context_get_thread_default();
-    init(&api_v1);
+    if(!init())
+      return FALSE;
   }
 
   if(g_module_symbol(module,"sfwbar_module_invalidate",(void **)&invalidator))

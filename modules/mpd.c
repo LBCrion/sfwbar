@@ -10,7 +10,7 @@
 #include "stdio.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 sfwbar_module_version = 1;
+guint16 sfwbar_module_version = 2;
 static struct mpd_status *status;
 static struct mpd_song *song;
 static struct mpd_connection *conn;
@@ -137,10 +137,11 @@ static void mpd_bool_set( bool (*get)(const struct mpd_status *),
   set(conn,new);
 }
 
-void sfwbar_module_init ( ModuleApiV1 *api )
+gboolean sfwbar_module_init ( void )
 {
   if(mpd_connect(NULL))
     g_timeout_add (1000,(GSourceFunc )mpd_connect,NULL);
+  return TRUE;
 }
 
 void *mpd_expr_func ( void **params, void *widget, void *event )

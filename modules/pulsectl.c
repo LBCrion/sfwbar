@@ -29,7 +29,7 @@ typedef struct _pulse_channel {
 
 pa_mainloop_api *papi;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 sfwbar_module_version = 1;
+guint16 sfwbar_module_version = 2;
 
 static GList *sink_list, *source_list;
 static pa_context *pctx;
@@ -296,7 +296,7 @@ static void pulse_state_cb ( pa_context *ctx, gpointer data )
   }
 }
 
-void sfwbar_module_init ( ModuleApiV1 *api )
+gboolean sfwbar_module_init ( void )
 {
   pa_glib_mainloop *ploop;
 
@@ -304,9 +304,10 @@ void sfwbar_module_init ( ModuleApiV1 *api )
   remove_q.trigger = g_intern_static_string("pulse_removed");
   ploop = pa_glib_mainloop_new(g_main_context_get_thread_default());
   papi = pa_glib_mainloop_get_api(ploop);
-  pctx = pa_context_new(papi,"sfwbar");
+  pctx = pa_context_new(papi, "sfwbar");
   pa_context_connect(pctx, NULL, PA_CONTEXT_NOFAIL, NULL);
-  pa_context_set_state_callback(pctx,pulse_state_cb,NULL);
+  pa_context_set_state_callback(pctx, pulse_state_cb, NULL);
+  return TRUE;
 }
 
 void sfwbar_module_invalidate ( void )

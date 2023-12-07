@@ -9,7 +9,7 @@
 #include "../src/basewidget.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 sfwbar_module_version = 1;
+guint16 sfwbar_module_version = 2;
 
 static GSource *main_src;
 static snd_mixer_t *mixer;
@@ -115,9 +115,10 @@ static GSource *alsa_source_subscribe ( gchar *name )
   return source;
 }
 
-void sfwbar_module_init ( ModuleApiV1 *api )
+gboolean sfwbar_module_init ( void )
 {
   main_src = alsa_source_subscribe("default");
+  return TRUE;
 }
 
 static snd_mixer_elem_t *alsa_element_get ( gchar *name )

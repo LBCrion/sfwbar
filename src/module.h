@@ -15,17 +15,11 @@ typedef struct _module_queue {
   const gchar *trigger;
 } module_queue_t;
 
-typedef struct {
-  GMainContext *gmc;
-  gboolean (*emit_trigger)( const gchar *);
-  void (*config_string)(gchar *);
-} ModuleApiV1;
-
 typedef gpointer (*ModuleExpressionFunc)(gpointer *, gpointer, gpointer);
 typedef void (*ModuleActionFunc)(gchar *, gchar *, void *, void *, void *,
     void *);
 typedef void (*ModuleInvalidator)( void );
-typedef void (*ModuleInitializer)( ModuleApiV1 * );
+typedef gboolean (*ModuleInitializer)( void );
 typedef gboolean (*ModuleEmitTrigger) ( gchar * );
 typedef void (*ModuleInitTrigger) (GMainContext *, ModuleEmitTrigger );
 

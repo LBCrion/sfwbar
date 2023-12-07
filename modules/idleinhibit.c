@@ -11,7 +11,7 @@
 #include "idle-inhibit-unstable-v1.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 sfwbar_module_version = 1;
+guint16 sfwbar_module_version = 2;
 static struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
 
 static void handle_global(void *data, struct wl_registry *registry,
@@ -32,18 +32,23 @@ static const struct wl_registry_listener registry_listener = {
   .global_remove = handle_global_remove
 };
 
-void sfwbar_module_init ( ModuleApiV1 *api )
+gboolean sfwbar_module_init ( void )
 {
   struct wl_display *wdisp;
   struct wl_registry *registry;
 
-  wdisp = gdk_wayland_display_get_wl_display(gdk_display_get_default());
-  if(!wdisp)
+  if( !(wdisp = gdk_wayland_display_get_wl_display(gdk_display_get_default())) )
+  {
     g_message("Idle inhibit module: can't get wayland display\n");
+    return FALSE;
+  }
 
-  registry = wl_display_get_registry(wdisp);
+  if( !(registry = wl_display_get_registry(wdisp)) )
+    return FALSE;
   wl_registry_add_listener(registry, &registry_listener, NULL);
   wl_display_roundtrip(wdisp);
+
+  return TRUE;
 }
 
 void *idle_inhibit_expr_func ( void **params, void *widget, void *event )

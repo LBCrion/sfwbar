@@ -9,7 +9,7 @@
 #include "../src/basewidget.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 sfwbar_module_version = 1;
+guint16 sfwbar_module_version = 2;
 
 static GHashTable *devices;
 static GList *adapters;
@@ -616,14 +616,18 @@ static void bz_name_disappeared_cb (GDBusConnection *con, const gchar *name,
   g_dbus_connection_signal_unsubscribe(bz_con, sub_chg);
 }
 
-void sfwbar_module_init ( ModuleApiV1 *api )
+gboolean sfwbar_module_init ( void )
 {
+  if( !(bz_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
+    return FALSE;
+
   update_q.trigger = g_intern_static_string("bluez_updated");
   remove_q.trigger = g_intern_static_string("bluez_removed");
 
-  bz_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
   g_bus_watch_name(G_BUS_TYPE_SYSTEM, bz_serv, G_BUS_NAME_WATCHER_FLAGS_NONE,
       bz_name_appeared_cb, bz_name_disappeared_cb, NULL, NULL);
+
+  return TRUE;
 }
 
 static void *bz_expr_get ( void **params, void *widget, void *event )

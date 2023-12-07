@@ -5,7 +5,7 @@
 #include "../src/basewidget.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 sfwbar_module_version = 1;
+guint16 sfwbar_module_version = 2;
 
 static void iw_signal_level_agent_init ( gchar *path );
 static void iw_scan_start ( gchar *path );
@@ -791,7 +791,7 @@ void iw_name_disappeared_cb (GDBusConnection *con, const gchar *name,
     g_hash_table_remove_all(iw_known_networks);
 }
 
-void sfwbar_module_init ( ModuleApiV1 *api )
+gboolean sfwbar_module_init ( void )
 {
   GDBusNodeInfo *node;
   static GDBusInterfaceVTable iw_agent_vtable = {
@@ -799,10 +799,11 @@ void sfwbar_module_init ( ModuleApiV1 *api )
   static GDBusInterfaceVTable iw_signal_level_agent_vtable = {
     (GDBusInterfaceMethodCallFunc)iw_signal_level_agent__method, NULL, NULL };
 
+  if( !(iw_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
+    return FALSE;
+
   update_q.trigger = g_intern_static_string("iwd_updated");
   remove_q.trigger = g_intern_static_string("iwd_removed");
-
-  iw_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
 
   node = g_dbus_node_info_new_for_xml(iw_agent_xml, NULL);
   g_dbus_connection_register_object (iw_con,
@@ -818,6 +819,7 @@ void sfwbar_module_init ( ModuleApiV1 *api )
 
   g_bus_watch_name(G_BUS_TYPE_SYSTEM, iw_serv, G_BUS_NAME_WATCHER_FLAGS_NONE,
       iw_name_appeared_cb, iw_name_disappeared_cb, NULL, NULL);
+  return TRUE;
 }
 
 static void *iw_expr_get ( void **params, void *widget, void *event )

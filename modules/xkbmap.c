@@ -7,18 +7,17 @@
 #include <xkbcommon/xkbregistry.h>
 #include "../src/module.h"
 
-static ModuleApiV1 *sfwbar_module_api;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 sfwbar_module_version = 1;
+guint16 sfwbar_module_version = 2;
 static struct rxkb_context *ctx;
 
-void sfwbar_module_init ( ModuleApiV1 *api )
+gboolean sfwbar_module_init ( void )
 {
-  sfwbar_module_api = api;
-
-  ctx = rxkb_context_new (RXKB_CONTEXT_NO_DEFAULT_INCLUDES);
+  if( !(ctx = rxkb_context_new (RXKB_CONTEXT_NO_DEFAULT_INCLUDES)) )
+    return FALSE;
   rxkb_context_include_path_append_default(ctx);
   rxkb_context_parse_default_ruleset(ctx);
+  return TRUE;
 }
 
 static const gchar *xkb_get_value ( struct rxkb_layout *layout, gchar *type )

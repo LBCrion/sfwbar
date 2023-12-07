@@ -27,7 +27,7 @@ typedef struct _iface_info {
 iface_info *route;
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 sfwbar_module_version = 1;
+guint16 sfwbar_module_version = 2;
 guint32 seq;
 GList *iface_list;
 gint qual, level, noise;
@@ -634,7 +634,7 @@ static void network_init ( void * )
 
 #endif
 
-void sfwbar_module_init ( ModuleApiV1 *api )
+gboolean sfwbar_module_init ( void )
 {
   int sock;
   GIOChannel *chan;
@@ -643,12 +643,17 @@ void sfwbar_module_init ( ModuleApiV1 *api )
   g_debug("network socket: %d",sock);
   if(sock >= 0 && net_rt_request(sock) >= 0)
   {
-    chan = g_io_channel_unix_new(sock);
-    g_io_add_watch(chan,G_IO_IN | G_IO_PRI |G_IO_ERR | G_IO_HUP,
-        net_rt_parse,NULL);
+    if( (chan = g_io_channel_unix_new(sock)) )
+    {
+      g_io_add_watch(chan,G_IO_IN | G_IO_PRI |G_IO_ERR | G_IO_HUP,
+          net_rt_parse,NULL);
+      return TRUE;
+    }
   }
-  else if(sock >= 0)
+  if(sock >= 0)
     close(sock);
+
+  return FALSE;
 }
 
 void sfwbar_module_invalidate ( void )
