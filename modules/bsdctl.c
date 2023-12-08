@@ -14,7 +14,6 @@
 #include <memory.h>
 #include <glib.h>
 
-ModuleApiV1 *sfwbar_module_api;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
 typedef gchar *(*SysctlParseFunc)( void *, size_t );
