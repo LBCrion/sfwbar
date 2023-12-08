@@ -103,10 +103,12 @@ libsrc = [
 deps = [gtk3, glib, gio_unix, gmod, glsh, wayl, json ]
 man_pages = [ 'doc/sfwbar.1' ]
 
-sfwbar = library ('sfwbar', sources: libsrc,
-    c_args: ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
+cargs = ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
     '-DGDK_DISABLE_DEPRECATED',
-    '-DGTK_DISABLE_DEPRECATED'],
+    '-DGTK_DISABLE_DEPRECATED']
+
+sfwbar = library ('sfwbar', sources: libsrc,
+    c_args: cargs,
     dependencies: deps, install: true)
 
 deps = [deps, declare_dependency(link_with: sfwbar)]
@@ -129,7 +131,7 @@ if get_option('iwd').enabled() or get_option('iwd').auto()
   library('wifi-iwd', sources: 'modules/wifi-iwd.c',
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-#  man_pages += 'doc/sfwbar-wifi-iwd.1'
+  man_pages += 'doc/sfwbar-wifi-iwd.1'
 endif
 
 if puls.found() and pulg.found()
