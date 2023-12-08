@@ -6,7 +6,7 @@
 #include "expr.h"
 
 #define BASE_WIDGET_TYPE            (base_widget_get_type())
-G_DECLARE_DERIVABLE_TYPE (BaseWidget, base_widget, BASE, WIDGET, GtkEventBox);
+G_DECLARE_DERIVABLE_TYPE (BaseWidget, base_widget, BASE, WIDGET, GtkEventBox)
 #define IS_BASE_WIDGET BASE_IS_WIDGET
 
 typedef struct _BaseWidgetClass BaseWidgetClass;

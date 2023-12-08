@@ -17,7 +17,7 @@
 #include <gtk-layer-shell.h>
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarPopup, taskbar_popup, FLOW_ITEM_TYPE,
-    G_ADD_PRIVATE(TaskbarPopup));
+    G_ADD_PRIVATE(TaskbarPopup))
 
 static gboolean taskbar_popup_enter_cb ( GtkWidget *widget,
     GdkEventCrossing *event, gpointer self )

@@ -14,7 +14,8 @@
 #include "wintree.h"
 #include "config.h"
 
-G_DEFINE_TYPE_WITH_CODE (TaskbarItem, taskbar_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (TaskbarItem));
+G_DEFINE_TYPE_WITH_CODE (TaskbarItem, taskbar_item, FLOW_ITEM_TYPE,
+    G_ADD_PRIVATE (TaskbarItem))
 
 static gboolean taskbar_item_action_exec ( GtkWidget *self, gint slot,
     GdkEvent *ev )

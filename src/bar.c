@@ -14,7 +14,7 @@
 #include "taskbar.h"
 #include "window.h"
 
-G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW, G_ADD_PRIVATE (Bar));
+G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW, G_ADD_PRIVATE (Bar))
 
 static GHashTable *bar_list;
 static GList *mirrors;

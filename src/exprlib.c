@@ -37,7 +37,8 @@ static void *expr_lib_mid ( void **params, void *widget, void *event )
     c2^=c1;
   }
 
-  return g_strndup( params[0]+c1*sizeof(gchar), (c2-c1+1)*sizeof(gchar));
+  return g_strndup((gchar *)params[0] + c1*sizeof(gchar),
+      (c2-c1+1)*sizeof(gchar));
 }
 
 ModuleExpressionHandlerV1 mid_handler = {

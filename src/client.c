@@ -93,8 +93,9 @@ void client_subscribe ( Client *client )
         G_IO_IN | G_IO_PRI | G_IO_HUP | G_IO_ERR,
         client_event, client, (GDestroyNotify)client_reconnect);
     g_debug("client %s: connected, channel: %p, fd: %d, flags: %d, conn: %p",
-        client->file->fname,client->out,g_io_channel_unix_get_fd(client->out),
-        g_io_channel_get_flags(client->out),client->scon);
+        client->file->fname, (void *)client->out,
+        g_io_channel_unix_get_fd(client->out),
+        g_io_channel_get_flags(client->out), (void *)client->scon);
   }
 }
 

@@ -14,7 +14,8 @@
 #include "config.h"
 #include "bar.h"
 
-G_DEFINE_TYPE_WITH_CODE (Switcher, switcher, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Switcher));
+G_DEFINE_TYPE_WITH_CODE (Switcher, switcher, BASE_WIDGET_TYPE,
+    G_ADD_PRIVATE (Switcher))
 
 static GtkWidget *switcher;
 static GtkWidget *grid;

@@ -8,7 +8,7 @@
 #include "image.h"
 #include "scaleimage.h"
 
-G_DEFINE_TYPE_WITH_CODE (Image, image, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Image));
+G_DEFINE_TYPE_WITH_CODE (Image, image, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Image))
 
 static void image_update_value ( GtkWidget *self )
 {

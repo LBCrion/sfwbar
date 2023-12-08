@@ -9,7 +9,7 @@
 #include <gio/gdesktopappinfo.h>
 
 G_DEFINE_TYPE_WITH_CODE (ScaleImage, scale_image, GTK_TYPE_IMAGE,
-    G_ADD_PRIVATE (ScaleImage));
+    G_ADD_PRIVATE (ScaleImage))
 
 static void scale_image_get_preferred_width ( GtkWidget *self, gint *m,
     gint *n )

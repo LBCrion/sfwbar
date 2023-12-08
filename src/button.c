@@ -8,7 +8,7 @@
 #include "button.h"
 #include "scaleimage.h"
 
-G_DEFINE_TYPE_WITH_CODE (Button, button, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Button));
+G_DEFINE_TYPE_WITH_CODE (Button, button, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Button))
 
 static void button_update_value ( GtkWidget *self )
 {

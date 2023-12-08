@@ -6,7 +6,8 @@
 #include "cchart.h"
 #include "chart.h"
 
-G_DEFINE_TYPE_WITH_CODE (CChart, cchart, BASE_WIDGET_TYPE, G_ADD_PRIVATE (CChart));
+G_DEFINE_TYPE_WITH_CODE (CChart, cchart, BASE_WIDGET_TYPE,
+    G_ADD_PRIVATE (CChart))
 
 static void cchart_update_value ( GtkWidget *self )
 {

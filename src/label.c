@@ -7,7 +7,7 @@
 #include "basewidget.h"
 #include "label.h"
 
-G_DEFINE_TYPE_WITH_CODE (Label, label, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Label));
+G_DEFINE_TYPE_WITH_CODE (Label, label, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Label))
 
 static void label_update_value ( GtkWidget *self )
 {

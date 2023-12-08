@@ -7,7 +7,7 @@
 #include "chart.h"
 #include "basewidget.h"
 
-G_DEFINE_TYPE_WITH_CODE (Chart, chart, GTK_TYPE_BOX, G_ADD_PRIVATE (Chart));
+G_DEFINE_TYPE_WITH_CODE (Chart, chart, GTK_TYPE_BOX, G_ADD_PRIVATE (Chart))
 
 static void chart_destroy ( GtkWidget *self )
 {

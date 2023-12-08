@@ -7,7 +7,7 @@
 #include "trayitem.h"
 #include "tray.h"
 
-G_DEFINE_TYPE_WITH_CODE (Tray, tray, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Tray));
+G_DEFINE_TYPE_WITH_CODE (Tray, tray, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Tray))
 
 static GList *trays;
 

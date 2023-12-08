@@ -10,7 +10,7 @@
 #include "pageritem.h"
 #include "taskbar.h"
 
-G_DEFINE_TYPE_WITH_CODE (Pager, pager, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Pager));
+G_DEFINE_TYPE_WITH_CODE (Pager, pager, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Pager))
 
 static GList *pagers;
 

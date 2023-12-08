@@ -82,7 +82,10 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
   }
 
   if(!result || !inner)
-    return g_free(wrap);
+  {
+    g_free(wrap);
+    return;
+  }
 
   if(wrap->prop<=SNI_PROP_THEME &&
       g_variant_is_of_type(inner,G_VARIANT_TYPE_STRING))

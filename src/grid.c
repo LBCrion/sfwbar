@@ -7,7 +7,7 @@
 #include "basewidget.h"
 #include "grid.h"
 
-G_DEFINE_TYPE_WITH_CODE (Grid, grid, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Grid));
+G_DEFINE_TYPE_WITH_CODE (Grid, grid, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Grid))
 
 static void grid_destroy ( GtkWidget *self )
 {

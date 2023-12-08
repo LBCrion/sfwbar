@@ -391,7 +391,10 @@ void config_function ( GScanner *scanner )
       SEQ_OPT,'{',NULL,NULL,"missing '{' after 'function'",
       SEQ_END);
   if(scanner->max_parse_errors)
-    return g_free(name);
+  {
+    g_free(name);
+    return;
+  }
 
   g_scanner_peek_next_token(scanner);
   while(scanner->next_token != G_TOKEN_EOF && scanner->next_token != '}')
@@ -484,11 +487,17 @@ void config_trigger_action ( GScanner *scanner )
       SEQ_REQ,',',NULL,NULL,"missing ',' in TriggerAction",
       SEQ_END);
   if(scanner->max_parse_errors)
-    return g_free(trigger);
+  {
+    g_free(trigger);
+    return;
+  }
 
   action = config_action(scanner);
   if(!action)
-    return g_free(trigger);
+  {
+    g_free(trigger);
+    return;
+  }
 
   action_trigger_add(action,trigger);
   config_optional_semicolon(scanner);

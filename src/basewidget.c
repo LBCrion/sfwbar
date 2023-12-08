@@ -11,7 +11,7 @@
 #include "module.h"
 
 G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX,
-    G_ADD_PRIVATE (BaseWidget));
+    G_ADD_PRIVATE (BaseWidget))
 
 static GHashTable *base_widget_id_map;
 static GList *widgets_scan;

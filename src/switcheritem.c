@@ -10,7 +10,8 @@
 #include "pager.h"
 #include "switcher.h"
 
-G_DEFINE_TYPE_WITH_CODE (SwitcherItem, switcher_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (SwitcherItem));
+G_DEFINE_TYPE_WITH_CODE (SwitcherItem, switcher_item, FLOW_ITEM_TYPE,
+    G_ADD_PRIVATE (SwitcherItem))
 
 static gboolean switcher_item_check ( GtkWidget *self )
 {

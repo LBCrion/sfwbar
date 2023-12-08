@@ -120,9 +120,9 @@ void action_exec ( GtkWidget *widget, action_t *action,
   }
 
   g_debug("action: %s '%s', '%s', widget=%p, win=%d from '%s', '%s'",
-      ahandler->name, action->addr->cache,action->command->cache,widget,
-      win?GPOINTER_TO_INT(win->uid):0, action->addr->definition,
-      action->command->definition);
+      ahandler->name, action->addr->cache,action->command->cache,
+      (void *)widget, win?GPOINTER_TO_INT(win->uid):0,
+      action->addr->definition, action->command->definition);
 
   if(action->cond & WS_CHILDREN &&
       GTK_IS_CONTAINER(base_widget_get_child(widget)))

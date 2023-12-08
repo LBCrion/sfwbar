@@ -12,7 +12,7 @@
 #include "bar.h"
 
 G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, GTK_TYPE_GRID,
-    G_ADD_PRIVATE(FlowGrid));
+    G_ADD_PRIVATE(FlowGrid))
 
 static void flow_grid_get_preferred_width (GtkWidget *widget, gint *minimal,
     gint *natural)
@@ -100,7 +100,7 @@ static void flow_grid_init ( FlowGrid *self )
   priv->rows = 1;
   priv->cols = 0;
   priv->limit = TRUE;
-  sig = g_strdup_printf("flow-item-%p", self);
+  sig = g_strdup_printf("flow-item-%p", (void *)self);
   priv->dnd_target = gtk_target_entry_new(sig, 0, 1);
   g_free(sig);
 
@@ -452,7 +452,7 @@ static void flow_grid_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
     gpointer data )
 {
   g_signal_handlers_unblock_matched(widget, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,
-      (GFunc)flow_grid_dnd_enter_cb,NULL);
+      (GFunc)flow_grid_dnd_enter_cb, NULL);
   gtk_grab_add(widget);
   window_ref(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW), widget);
 }

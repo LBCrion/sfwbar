@@ -7,7 +7,7 @@
 #include "basewidget.h"
 #include "scale.h"
 
-G_DEFINE_TYPE_WITH_CODE (Scale, scale, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Scale));
+G_DEFINE_TYPE_WITH_CODE (Scale, scale, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Scale))
 
 static void scale_update_value ( GtkWidget *self )
 {

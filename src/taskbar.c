@@ -12,7 +12,8 @@
 #include "wintree.h"
 #include "config.h"
 
-G_DEFINE_TYPE_WITH_CODE (Taskbar, taskbar, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Taskbar));
+G_DEFINE_TYPE_WITH_CODE (Taskbar, taskbar, BASE_WIDGET_TYPE,
+    G_ADD_PRIVATE (Taskbar))
 
 static GList *taskbars;
 

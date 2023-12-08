@@ -17,7 +17,7 @@
 #include <gtk-layer-shell.h>
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarPager, taskbar_pager, FLOW_ITEM_TYPE,
-    G_ADD_PRIVATE(TaskbarPager));
+    G_ADD_PRIVATE(TaskbarPager))
 
 static gpointer taskbar_pager_get_ws ( GtkWidget *self )
 {

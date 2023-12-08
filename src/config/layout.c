@@ -48,7 +48,10 @@ void config_get_pins ( GScanner *scanner, GtkWidget *widget )
   scanner->max_parse_errors = FALSE;
 
   if(!IS_PAGER(widget))
-    return g_scanner_error(scanner,"this widget has no property 'pins'");
+  {
+    g_scanner_error(scanner,"this widget has no property 'pins'");
+    return;
+  }
 
   if(!config_expect_token(scanner, '=',"expecting pins = string [,string]"))
     return;
@@ -164,11 +167,17 @@ void config_widget_action ( GScanner *scanner, GtkWidget *widget )
     return;
 
   if( button<0 || button >=8 )
-    return g_scanner_error(scanner,"invalid action index %d",button);
+  {
+    g_scanner_error(scanner,"invalid action index %d",button);
+    return;
+  }
 
   base_widget_set_action(widget,button,mod,config_action(scanner));
   if(!base_widget_get_action(widget,button,mod))
-    return g_scanner_error(scanner,"invalid action");
+  {
+    g_scanner_error(scanner,"invalid action");
+    return;
+  }
 
   config_optional_semicolon(scanner);
 }

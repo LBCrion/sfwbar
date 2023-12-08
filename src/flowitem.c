@@ -9,7 +9,7 @@
 #include "flowgrid.h"
 
 G_DEFINE_TYPE_WITH_CODE(FlowItem, flow_item, BASE_WIDGET_TYPE,
-    G_ADD_PRIVATE(FlowItem));
+    G_ADD_PRIVATE(FlowItem))
 
 static void flow_item_destroy ( GtkWidget *self )
 {

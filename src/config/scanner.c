@@ -42,7 +42,10 @@ static void config_var ( GScanner *scanner, ScanFile *file )
       SEQ_END);
 
   if(scanner->max_parse_errors)
-    return g_free(vname);
+  {
+    g_free(vname);
+    return;
+  }
 
   switch(type)
   {
