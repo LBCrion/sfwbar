@@ -207,6 +207,7 @@ GtkWidget *config_include ( GScanner *scanner, gboolean toplevel )
 gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
 {
   GtkWindow *win;
+  gchar *trigger;
 
   if(IS_BASE_WIDGET(widget))
     switch ( (gint)scanner->token )
@@ -224,11 +225,12 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         return TRUE;
       case G_TOKEN_TRIGGER:
         base_widget_set_interval(widget,0);
-        base_widget_set_trigger(widget,
-            config_assign_string(scanner, "trigger"));
+        trigger = config_assign_string(scanner, "trigger");
+        base_widget_set_trigger(widget, trigger);
+        g_free(trigger);
         return TRUE;
       case G_TOKEN_LOC:
-        base_widget_set_rect(widget,config_get_loc(scanner));
+        base_widget_set_rect(widget, config_get_loc(scanner));
         return TRUE;
       case G_TOKEN_ACTION:
         config_widget_action(scanner, widget);
