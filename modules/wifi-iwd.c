@@ -64,10 +64,7 @@ static const gchar iw_agent_xml[] =
 
 typedef struct _iw_dialog {
   GDBusMethodInvocation *invocation;
-  GtkWidget *win;
-  GtkWidget *title;
-  GtkWidget *user;
-  GtkWidget *pass;
+  GtkWidget *win, *title, *user, *pass, *ok, *cancel;
 } iw_dialog_t;
 
 typedef struct _iw_device {
@@ -357,7 +354,7 @@ static void iw_device_free ( iw_device_t *device )
   g_free(device);
 }
 
-static void iw_signal_level_agent__method(GDBusConnection *con,
+static void iw_signal_level_agent_method(GDBusConnection *con,
     const gchar *sender, const gchar *path, const gchar *iface,
     const gchar *method, GVariant *parameters,
     GDBusMethodInvocation *invocation, gpointer data)
@@ -401,28 +398,48 @@ static void iw_passphrase_cb ( GtkEntry *entry, iw_dialog_t *dialog )
 {
   const gchar *pass;
 
+  if(gtk_entry_get_text_length(GTK_ENTRY(dialog->pass))<8 ||
+      (dialog->user && gtk_entry_get_text_length(GTK_ENTRY(dialog->user))<1))
+    return;
   pass = gtk_entry_get_text(GTK_ENTRY(dialog->pass));
   g_dbus_method_invocation_return_value(dialog->invocation,
       g_variant_new("(s)", pass));
-  g_object_unref(dialog->win);
+  gtk_widget_destroy(dialog->win);
   g_free(dialog);
 }
 
-static void iw_button_clicked ( GtkButton *button, iw_dialog_t *dialog )
+static void iw_button_clicked ( GtkWidget *button, iw_dialog_t *dialog )
 {
-  if(!g_strcmp0(gtk_button_get_label(button), "Ok"))
+  if(button==dialog->ok)
     g_dbus_method_invocation_return_value(dialog->invocation,
         g_variant_new("(s)", gtk_entry_get_text(GTK_ENTRY(dialog->pass))));
   else
-    g_dbus_method_invocation_return_value(dialog->invocation, NULL);
-  g_object_unref(dialog->win);
+    g_dbus_method_invocation_return_dbus_error(dialog->invocation,
+        "net.connman.iwd.Agent.Error.Canceled", "");
+  gtk_widget_destroy(dialog->win);
   g_free(dialog);
+}
+
+static void iw_passphrase_changed_cb ( gpointer *w, iw_dialog_t *dialog )
+{
+  gtk_widget_set_sensitive(dialog->ok,
+      gtk_entry_get_text_length(GTK_ENTRY(dialog->pass))>7 &&
+      (!dialog->user || gtk_entry_get_text_length(GTK_ENTRY(dialog->user))>0));
+}
+
+static gboolean iw_passphrase_delete_cb ( GtkWidget *w, GdkEvent *ev,
+    iw_dialog_t *dialog )
+{
+  g_dbus_method_invocation_return_dbus_error(dialog->invocation,
+      "net.connman.iwd.Agent.Error.Canceled", "");
+  g_free(dialog);
+  return FALSE;
 }
 
 static void iw_passphrase_prompt ( gchar *title, gboolean user, gpointer inv )
 {
   iw_dialog_t *dialog;
-  GtkWidget *grid, *label, *button;
+  GtkWidget *grid, *label;
 
   dialog = g_malloc0(sizeof(iw_dialog_t));
 
@@ -430,10 +447,13 @@ static void iw_passphrase_prompt ( gchar *title, gboolean user, gpointer inv )
   dialog->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_type_hint(GTK_WINDOW(dialog->win),
       GDK_WINDOW_TYPE_HINT_DIALOG);
+  g_signal_connect(G_OBJECT(dialog->win), "delete-event",
+    G_CALLBACK(iw_passphrase_delete_cb), dialog);
   grid = gtk_grid_new();
   gtk_widget_set_name(grid, "iwd_dialog_grid");
   gtk_container_add(GTK_CONTAINER(dialog->win), grid);
   label = gtk_label_new(title);
+  g_free(title);
   gtk_widget_set_name(label, "iwd_dialog_title");
   gtk_grid_attach(GTK_GRID(grid), label, 1, 1, 2, 1);
 
@@ -445,6 +465,8 @@ static void iw_passphrase_prompt ( gchar *title, gboolean user, gpointer inv )
     dialog->user = gtk_entry_new();
     gtk_widget_set_name(dialog->user, "iwd_user_entry");
     gtk_grid_attach(GTK_GRID(grid), dialog->user, 2, 2, 1, 1);
+    g_signal_connect(G_OBJECT(dialog->user), "changed",
+        G_CALLBACK(iw_passphrase_changed_cb), dialog);
   }
 
   label = gtk_label_new("Passphrase:");
@@ -455,24 +477,28 @@ static void iw_passphrase_prompt ( gchar *title, gboolean user, gpointer inv )
   gtk_entry_set_visibility(GTK_ENTRY(dialog->pass), FALSE);
   g_signal_connect(G_OBJECT(dialog->pass), "activate",
       G_CALLBACK(iw_passphrase_cb), dialog);
+    g_signal_connect(G_OBJECT(dialog->pass), "changed",
+        G_CALLBACK(iw_passphrase_changed_cb), dialog);
   gtk_grid_attach(GTK_GRID(grid), dialog->pass, 2, 3, 1, 1);
 
-  button = gtk_button_new_with_label("Ok");
-  gtk_widget_set_name(button, "iwd_button_ok");
-  gtk_grid_attach(GTK_GRID(grid), button, 1, 4, 1, 1);
-  g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(iw_button_clicked),
-      dialog);
+  dialog->ok = gtk_button_new_with_label("Ok");
+  gtk_widget_set_name(dialog->ok, "iwd_button_ok");
+  gtk_grid_attach(GTK_GRID(grid), dialog->ok, 1, 4, 1, 1);
+  gtk_widget_set_sensitive(dialog->ok, FALSE);
+  g_signal_connect(G_OBJECT(dialog->ok), "clicked",
+      G_CALLBACK(iw_button_clicked), dialog);
 
-  button = gtk_button_new_with_label("Cancel");
-  gtk_widget_set_name(button, "iwd_button_cancel");
-  gtk_grid_attach(GTK_GRID(grid), button, 2, 4, 1, 1);
-  g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(iw_button_clicked),
-      dialog);
+  dialog->cancel = gtk_button_new_with_label("Cancel");
+  gtk_widget_set_name(dialog->cancel, "iwd_button_cancel");
+  gtk_grid_attach(GTK_GRID(grid), dialog->cancel, 2, 4, 1, 1);
+  g_signal_connect(G_OBJECT(dialog->cancel), "clicked",
+      G_CALLBACK(iw_button_clicked), dialog);
 
+  g_object_ref_sink(G_OBJECT(dialog->win));
   gtk_widget_show_all(dialog->win);
 }
 
-static void iw_agent__method(GDBusConnection *con,
+static void iw_agent_method(GDBusConnection *con,
     const gchar *sender, const gchar *path, const gchar *iface,
     const gchar *method, GVariant *parameters,
     GDBusMethodInvocation *invocation, gpointer data)
@@ -795,9 +821,9 @@ gboolean sfwbar_module_init ( void )
 {
   GDBusNodeInfo *node;
   static GDBusInterfaceVTable iw_agent_vtable = {
-    (GDBusInterfaceMethodCallFunc)iw_agent__method, NULL, NULL };
+    (GDBusInterfaceMethodCallFunc)iw_agent_method, NULL, NULL };
   static GDBusInterfaceVTable iw_signal_level_agent_vtable = {
-    (GDBusInterfaceMethodCallFunc)iw_signal_level_agent__method, NULL, NULL };
+    (GDBusInterfaceMethodCallFunc)iw_signal_level_agent_method, NULL, NULL };
 
   if( !(iw_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
     return FALSE;
