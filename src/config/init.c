@@ -62,6 +62,8 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   g_scanner_scope_add_symbol(scanner,0, "Module",
       (gpointer)G_TOKEN_MODULE );
   g_scanner_scope_add_symbol(scanner,0, "Theme", (gpointer)G_TOKEN_THEME );
+  g_scanner_scope_add_symbol(scanner,0, "IconTheme",
+      (gpointer)G_TOKEN_ICON_THEME );
   g_scanner_scope_add_symbol(scanner,0, "DisownMinimized",
       (gpointer)G_TOKEN_DISOWNMINIMIZED );
   g_scanner_scope_add_symbol(scanner,0, "End", (gpointer)G_TOKEN_END );
