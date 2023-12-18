@@ -455,7 +455,7 @@ void scale_image_set_image ( GtkWidget *self, const gchar *image,
     return;
   }
 
-  if(scale_image_check_icon(self, image))
+  if(scale_image_check_icon(self, priv->file))
     return;
 
   for(i=0;i<4;i++)
@@ -478,4 +478,11 @@ void scale_image_set_image ( GtkWidget *self, const gchar *image,
         g_free(temp);
     }
   }
+
+  if((priv->ftype == SI_NONE) && (temp = g_strrstr(image, ".")))
+    if(scale_image_check_icon(self, temp+1))
+    {
+      g_free(priv->file);
+      priv->file = g_strdup(temp+1);
+    }
 }
