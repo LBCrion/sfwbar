@@ -341,7 +341,14 @@ static void scale_image_check_appinfo ( GtkWidget *self, GtkIconTheme *theme,
   g_object_unref(G_OBJECT(app));
 }
 
-static gboolean scale_image_check_icon ( GtkWidget *self, const gchar *icon )
+static gboolean scale_image_prefer_symbolic = FALSE;
+
+void scale_image_set_prefer_symbolic ( gboolean val )
+{
+  scale_image_prefer_symbolic = val;
+}
+
+static gboolean scale_image_check_icon_1 ( GtkWidget *self, const gchar *icon )
 {
   ScaleImagePrivate *priv;
   GtkIconTheme *theme;
@@ -382,6 +389,43 @@ static gboolean scale_image_check_icon ( GtkWidget *self, const gchar *icon )
   return (priv->ftype!=SI_NONE);
 }
 
+static gboolean scale_image_check_icon ( GtkWidget *self, const gchar *icon )
+{
+  ScaleImagePrivate *priv;
+  gchar *temp;
+  gboolean symbolic_suffix;
+
+  priv = scale_image_get_instance_private( SCALE_IMAGE(self));
+  symbolic_suffix = (strlen(icon) >= 9) &&
+    (!g_ascii_strcasecmp(icon+strlen(icon)-9, "-symbolic"));
+
+  if(scale_image_prefer_symbolic && !symbolic_suffix)
+  {
+    temp = g_strconcat(icon, "-symbolic", NULL);
+    scale_image_check_icon(self, temp);
+    g_free(temp);
+    if(priv->ftype == SI_ICON)
+      return TRUE;
+  }
+
+  if(scale_image_check_icon_1(self, icon))
+    return TRUE;
+
+  temp = g_ascii_strdown(icon, -1);
+  scale_image_check_icon_1(self, temp);
+  g_free(temp);
+  if(priv->ftype == SI_ICON)
+    return TRUE;
+
+  if(!scale_image_prefer_symbolic && !symbolic_suffix)
+  {
+    temp = g_strconcat(icon, "-symbolic", NULL);
+    scale_image_check_icon(self, temp);
+    g_free(temp);
+  }
+  return (priv->ftype == SI_ICON);
+}
+
 void scale_image_set_image ( GtkWidget *self, const gchar *image,
     gchar *extra )
 {
@@ -411,13 +455,7 @@ void scale_image_set_image ( GtkWidget *self, const gchar *image,
     return;
   }
 
-  if(scale_image_check_icon(self,image))
-    return;
-
-  temp = g_ascii_strdown(image,-1);
-  scale_image_check_icon(self,temp);
-  g_free(temp);
-  if(priv->ftype == SI_ICON)
+  if(scale_image_check_icon(self, image))
     return;
 
   for(i=0;i<4;i++)
