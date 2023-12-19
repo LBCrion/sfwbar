@@ -7,6 +7,7 @@
 #include "flowgrid.h"
 #include "taskbarpopup.h"
 #include "taskbar.h"
+#include "taskbaritem.h"
 #include "scaleimage.h"
 #include "action.h"
 #include "bar.h"
@@ -114,7 +115,7 @@ static void taskbar_popup_update ( GtkWidget *self )
     return;
 
   if(priv->icon)
-    scale_image_set_image(priv->icon, priv->appid, NULL);
+    taskbar_item_set_image(priv->icon, priv->appid);
 
   if(priv->label)
     if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)), priv->appid))
@@ -258,8 +259,8 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *taskbar )
   if(icons)
   {
     priv->icon = scale_image_new();
-    scale_image_set_image(priv->icon,priv->appid,NULL);
-    gtk_grid_attach_next_to(GTK_GRID(box),priv->icon,NULL,dir,1,1);
+    taskbar_item_set_image(priv->icon, priv->appid);
+    gtk_grid_attach_next_to(GTK_GRID(box), priv->icon, NULL, dir, 1, 1);
   }
   else
     priv->icon = NULL;

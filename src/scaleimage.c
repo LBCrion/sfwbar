@@ -426,7 +426,7 @@ static gboolean scale_image_check_icon ( GtkWidget *self, const gchar *icon )
   return (priv->ftype == SI_ICON);
 }
 
-void scale_image_set_image ( GtkWidget *self, const gchar *image,
+gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
     gchar *extra )
 {
   static gchar *exts[4] = {"", ".svg", ".png", ".xpm"};
@@ -435,14 +435,14 @@ void scale_image_set_image ( GtkWidget *self, const gchar *image,
   gint i;
   gchar *temp,*test;
 
-  g_return_if_fail(IS_SCALE_IMAGE(self));
+  g_return_val_if_fail(IS_SCALE_IMAGE(self), FALSE);
   priv = scale_image_get_instance_private( SCALE_IMAGE(self));
 
   if(!image)
-    return;
+    return FALSE;
 
   if( !g_strcmp0(priv->file,image) && !g_strcmp0(priv->extra,extra) )
-    return;
+    return (priv->ftype != SI_NONE);
 
   scale_image_clear(self);
   priv->file = g_strdup(image);
@@ -452,11 +452,11 @@ void scale_image_set_image ( GtkWidget *self, const gchar *image,
   if(!g_ascii_strncasecmp(priv->file,"<?xml",5))
   {
     priv->ftype = SI_DATA;
-    return;
+    return TRUE;
   }
 
   if(scale_image_check_icon(self, priv->file))
-    return;
+    return TRUE;
 
   for(i=0;i<4;i++)
   {
@@ -479,10 +479,5 @@ void scale_image_set_image ( GtkWidget *self, const gchar *image,
     }
   }
 
-  if((priv->ftype == SI_NONE) && (temp = g_strrstr(image, ".")))
-    if(scale_image_check_icon(self, temp+1))
-    {
-      g_free(priv->file);
-      priv->file = g_strdup(temp+1);
-    }
+  return priv->ftype != SI_NONE;
 }

@@ -40,5 +40,6 @@ struct _TaskbarItemPrivate
 GType taskbar_item_get_type ( void );
 
 GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar );
+void taskbar_item_set_image ( GtkWidget *icon, gchar *appid );
 
 #endif
