@@ -140,6 +140,7 @@ GdkModifierType base_widget_get_modifiers ( GtkWidget *self )
 {
   GdkModifierType state;
   GtkWindow *win;
+  gint i;
 
   win = GTK_WINDOW(gtk_widget_get_ancestor(self, GTK_TYPE_WINDOW));
   if(gtk_window_get_window_type(win)==GTK_WINDOW_POPUP)
@@ -148,12 +149,13 @@ GdkModifierType base_widget_get_modifiers ( GtkWidget *self )
   if(win && gtk_layer_is_layer_window(win))
   {
     gtk_layer_set_keyboard_mode(win, GTK_LAYER_SHELL_KEYBOARD_MODE_EXCLUSIVE);
-    gtk_main_iteration();
-    gtk_main_iteration();
-    gtk_main_iteration();
+    for(i=0; i<3; i++)
+      gtk_main_iteration();
     state = gdk_keymap_get_modifier_state(gdk_keymap_get_for_display(
           gdk_display_get_default())) & gtk_accelerator_get_default_mod_mask();
     gtk_layer_set_keyboard_mode(win, GTK_LAYER_SHELL_KEYBOARD_MODE_NONE);
+    for(i=0; i<5; i++)
+      gtk_main_iteration();
   }
   else
     state = 0;
