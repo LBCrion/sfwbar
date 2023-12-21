@@ -94,7 +94,7 @@ END"
 
 layout {
   button {
-    value = "open-menu-symbolic"
+    value = "open-menu"
     style = "startmenu"
     action = Function "StartMenu"
     tooltip = "Application menu"

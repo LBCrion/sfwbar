@@ -1,13 +1,13 @@
 module("pulsectl")
 
 set XVolumeMutedIcon = If(!Ident($VolumeMutedIcon),
-    "audio-volume-muted-symbolic", $VolumeMutedIcon)
+    "audio-volume-muted", $VolumeMutedIcon)
 set XVolumeLowIcon = If(!Ident($VolumeLowIcon),
-    "audio-volume-low-symbolic", $VolumeLowIcon)
+    "audio-volume-low", $VolumeLowIcon)
 set XVolumeMediumIcon = If(!Ident($VolumeMediumIcon),
-    "audio-volume-medium-symbolic", $VolumeMediumIcon)
+    "audio-volume-medium", $VolumeMediumIcon)
 set XVolumeHighIcon = If(!Ident($VolumeHighIcon),
-    "audio-volume-high-symbolic", $VolumeHighIcon)
+    "audio-volume-high", $VolumeHighIcon)
 set XVolumeAction = If(!Ident($VolumeAction),"pavucontrol",$VolumeAction)
 
 set XVolumeControlTmpl = "
@@ -34,7 +34,7 @@ PopUp 'XVolumeWindow' {
       loc (3,1,1,1)
     }
     image '@DEVICE_NAME@_expand' {
-      value = 'pan-end-symbolic'
+      value = 'pan-end'
       style = 'volume_control_expander'
       action = Function 'XVolumeToggleChannels'
       loc(2,1,1,1)
@@ -70,13 +70,13 @@ PopUp 'XVolumeWindow' {
 Function("XVolumeHideChannels") {
   SetStyle $XVolumeChannels, "hidden"
   SetStyle $XVolumeSingle, "pulse_volume_scale"
-  SetValue $XVolumeExpander, "pan-end-symbolic"
+  SetValue $XVolumeExpander, "pan-end"
 }
 
 Function("XVolumeShowChannels") {
   SetStyle $XVolumeChannels, "volume_channel_list"
   SetStyle $XVolumeSingle, "hidden"
-  SetValue $XVolumeExpander, "pan-down-symbolic"
+  SetValue $XVolumeExpander, "pan-down"
 }
 
 Function("XVolumeToggleChannels") {

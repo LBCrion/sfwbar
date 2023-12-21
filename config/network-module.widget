@@ -22,7 +22,7 @@ Set XNetworkWifiSvg = '<?xml version="1.0" encoding="UTF-8"?>
 </g></svg>'
 
 Set XNetworkWirelessIcon = If(Ident(NetworkWirelessIcon),$NetworkWirelessIcon,$XNetworkWifiSvg)
-Set XNetworkWiredIcon = If(Ident(NetworkWiredIcon),$NetworkWiredIcon,"network-wired-symbolic")
+Set XNetworkWiredIcon = If(Ident(NetworkWiredIcon),$NetworkWiredIcon,"network-wired")
 Set XNetworkIcon = If(Ident(NetInfo),If(NetInfo("essid")!="",$XNetworkWirelessIcon,$XNetworkWiredIcon),"")
 
 layout {

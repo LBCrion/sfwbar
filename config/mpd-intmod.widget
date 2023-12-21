@@ -28,42 +28,42 @@ PopUp "XMpdWindow" {
   grid "XMpdPlayer" {
     css = "* { -GtkWidget-direction: right; -GtkWidget-halign: center; -GtkWidget-hexpand: true; }"
     image {
-      value = "media-playlist-repeat-symbolic"
+      value = "media-playlist-repeat"
       action = MpdCmd "repeat " + If(MpdRepeat,"0","1")
       style = If(MpdRepeat,"mpd_icon_red","mpd_icon")
       trigger = "mpd"
     }
     image {
-      value = "media-playlist-shuffle-symbolic"
+      value = "media-playlist-shuffle"
       action = MpdCmd "random " + If(MpdRandom,"0","1")
       style = If(MpdRandom,"mpd_icon_red","mpd_icon")
       trigger = "mpd"
     }
     image {
-      value = "media-seek-backward-symbolic"
+      value = "media-seek-backward"
       action = MpdCmd "previous"
       style = "mpd_icon"
     }
     image {
-      value = "media-playback-start-symbolic"
+      value = "media-playback-start"
       action = MpdCmd "play"
       style = If($MpdState="play","mpd_icon_red","mpd_icon")
       trigger = "mpd"
     }
     image {
-      value = "media-playback-pause-symbolic"
+      value = "media-playback-pause"
       action = MpdCmd "pause"
       style = If($MpdState="pause","mpd_icon_red","mpd_icon")
       trigger = "mpd"
     }
     image {
-      value = "media-playback-stop-symbolic"
+      value = "media-playback-stop"
       action = MpdCmd "stop"
       style = If(mpd("state")="stop","mpd_icon_red","mpd_icon")
       trigger = "mpd"
     }
     image {
-      value = "media-seek-forward-symbolic"
+      value = "media-seek-forward"
       action = MpdCmd "next"
       style = "mpd_icon"
     }
@@ -73,7 +73,7 @@ PopUp "XMpdWindow" {
 layout {
   style = "module"
   button {
-    value = "icons/misc/music-player-symbolic"
+    value = "icons/misc/music-player"
     action = PopUp "XMpdWindow"
     style = If($MpdState="","hidden","module")
     trigger = "mpd"

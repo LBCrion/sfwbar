@@ -4,8 +4,8 @@ layout {
   button {
     style = If(!XRfKillWifiPresent, "hidden","module")
     value = If(XRfKillWifiSoft = 1,
-        "network-wireless-hardware-disabled-symbolic",
-        "network-wireless-connected-symbolic")
+        "network-wireless-hardware-disabled",
+        "network-wireless-connected")
     tooltip = "WiFi: Soft" + If(XRfKillWifiSoft,"","Un")+"blocked" +
               ", Hard" + If(XRfKillWifiHard,"","Un")+"blocked"
     trigger = "rfkill"

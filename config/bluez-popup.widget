@@ -1,5 +1,7 @@
 module("bluez")
 
+Set XSymbolicIcons = If(Ident(SymbolicIcons), SymbolicIcons, 1)
+
 TriggerAction "bluez_updated", Function "XBluezUpdate"
 TriggerAction "bluez_removed", Function "XBluezRemove"
 TriggerAction "bluez_scan", SetValue "XBluezScanButton", "Scanning ..."
@@ -25,7 +27,8 @@ Function("XBluezUpdate") {
         "action = BluezPair Extract(WidgetId(),'(.*)_grid') " +
         "action[3] = Menu 'XBluezItemMenu' " +
         "image '" + BluezGet("Path") + "_icon' {" +
-          "value = '" + BluezGet("Icon") + "' " +
+          "value = '" + BluezGet("Icon") +
+              If(XSymbolicIcons=1, "-symbolic' ","'") +
           "style = 'XBluezIcon'" +
           "interval = 0 " +
           "loc(0,0,1,2)" +
@@ -103,16 +106,6 @@ PopUp "XBluezWindow" {
   }
 }
 
-layout {
-  style = If(BluezState("Running"),"module","hidden")
-  trigger = "bluez_running"
-  button "XBluezWidget" {
-    style = "module"
-    value = "bluetooth"
-    action = Function "XBluezPop"
-  }
-}
-
 #CSS
 
 window#XBluezWindow {
@@ -159,6 +152,7 @@ label#XBluezHeader {
   font-size: 20px;
   padding-bottom: 5px;
   -GtkWidget-hexpand: true;
+  -GtkWidget-vexpand: false;
 }
 
 label#XBluezName {
@@ -186,5 +180,6 @@ label#XBluezSeparator {
   font-size: 10px;
   -GtkWidget-align: 0.0;
   -GtkWidget-hexpand: true;
+  -GtkWidget-vexpand: false;
   border-bottom: dashed 1px @border;
 }

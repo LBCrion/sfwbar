@@ -5,8 +5,8 @@ layout {
   button {
     style = If(!XRfKillBTPresent, "hidden","module")
     value = If(XRfKillBTSoft = 1,
-        "bluetooth-disabled-symbolic",
-        "bluetooth-active-symbolic")
+        "bluetooth-disabled",
+        "bluetooth-active")
     tooltip = "Bluetooth: Soft" + If(XRfKillBTSoft,"","Un")+"blocked" +
               ", Hard" + If(XRfKillBTHard,"","Un")+"blocked"
     trigger = "rfkill"

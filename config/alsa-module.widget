@@ -1,13 +1,13 @@
 module("alsactl")
 
 set XAlsaMutedIcon = If(!Ident($AlsaMutedIcon),
-    "audio-volume-muted-symbolic", $AlsaMutedIcon)
+    "audio-volume-muted", $AlsaMutedIcon)
 set XAlsaLowIcon = If(!Ident($AlsaLowIcon),
-    "audio-volume-low-symbolic", $AlsaLowIcon)
+    "audio-volume-low", $AlsaLowIcon)
 set XAlsaMediumIcon = If(!Ident($AlsaMediumIcon),
-    "audio-volume-medium-symbolic", $AlsaMediumIcon)
+    "audio-volume-medium", $AlsaMediumIcon)
 set XAlsaHighIcon = If(!Ident($AlsaHighIcon),
-    "audio-volume-high-symbolic", $AlsaHighIcon)
+    "audio-volume-high", $AlsaHighIcon)
 set XAlsaAction = If(!Ident($AlsaAction),"pavucontrol",$AlsaAction)
 
 define XAlsaMuted = Alsa("playback-mute")
@@ -23,7 +23,7 @@ PopUp "XAlsaWindow"  {
   autoclose = true
   style = "XAlsaPopup"
   image {
-    value = "value-decrease-symbolic"
+    value = "value-decrease"
     style = "XAlsaVolumeButton"
     action[1] = AlsaCmd "playback-volume -1"
   }
@@ -34,7 +34,7 @@ PopUp "XAlsaWindow"  {
     trigger = "alsa"
   }
   image {
-    value = "value-increase-symbolic"
+    value = "value-increase"
     style = "XAlsaVolumeButton"
     action[1] = AlsaCmd "playback-volume +1"
   }

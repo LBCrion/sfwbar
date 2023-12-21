@@ -9,8 +9,8 @@ Function("XMpdToggleControls") {
 
 Function("XMpdToggle") {
     Function "XMpdPlayer", "XMpdToggleControls"
-    [!UserState] SetValue "pan-end-symbolic"
-    [UserState] SetValue "pan-start-symbolic"
+    [!UserState] SetValue "pan-end"
+    [UserState] SetValue "pan-start"
     [!UserState] UserState "on"
     [UserState] UserState "off"
 }
@@ -45,42 +45,42 @@ PopUp "XMpdWindow" {
   grid "XMpdPlayer" {
     css = "* { -GtkWidget-direction: right; -GtkWidget-halign: center; -GtkWidget-hexpand: true; }"
     image {
-      value = "media-playlist-repeat-symbolic"
+      value = "media-playlist-repeat"
       action = MpdCommand "repeat toggle"
       style = If(val(mpd("repeat")),"mpd_icon_red","mpd_icon")
       trigger = "mpd"
     }
     image {
-      value = "media-playlist-shuffle-symbolic"
+      value = "media-playlist-shuffle"
       action = MpdCommand "random toggle"
       style = If(val(mpd("random")),"mpd_icon_red","mpd_icon")
       trigger = "mpd"
     }
     image {
-      value = "media-seek-backward-symbolic"
+      value = "media-seek-backward"
       action = MpdCommand "prev"
       style = "mpd_icon"
     }
     image {
-      value = "media-playback-start-symbolic"
+      value = "media-playback-start"
       action = MpdCommand "play"
       style = If(mpd("state")="play","mpd_icon_red","mpd_icon")
       trigger = "mpd"
     }
     image {
-      value = "media-playback-pause-symbolic"
+      value = "media-playback-pause"
       action = MpdCommand "pause"
       style = If(mpd("state")="pause","mpd_icon_red","mpd_icon")
       trigger = "mpd"
     }
     image {
-      value = "media-playback-stop-symbolic"
+      value = "media-playback-stop"
       action = MpdCommand "stop"
       style = If(mpd("state")="stop","mpd_icon_red","mpd_icon")
       trigger = "mpd"
     }
     image {
-      value = "media-seek-forward-symbolic"
+      value = "media-seek-forward"
       action = MpdCommand "next"
       style = "mpd_icon"
     }
@@ -90,7 +90,7 @@ PopUp "XMpdWindow" {
 layout {
   style = "module"
   button {
-    value = "icons/misc/music-player-symbolic"
+    value = "icons/misc/music-player"
     action = PopUp "XMpdWindow"
     style = If(!Ident(mpd),"hidden","module")
   }

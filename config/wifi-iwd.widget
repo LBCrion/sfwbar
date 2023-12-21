@@ -11,7 +11,7 @@ define XIwdIcon = "network-wireless-signal-" +
     60, "good",
     40, "ok",
     20, "weak",
-    "none") + "-symbolic"
+    "none")
 
 Set XIwdNetTmpl = "
   Grid 'XIwdGrid@IWD_KNOWN@' {
