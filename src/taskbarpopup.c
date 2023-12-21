@@ -114,16 +114,16 @@ static void taskbar_popup_update ( GtkWidget *self )
   if(!priv->invalid)
     return;
 
+  gtk_widget_set_name(priv->button,
+      flow_grid_find_child(priv->tgroup, wintree_from_id(wintree_get_focus()))?
+        "taskbar_group_active":"taskbar_group_normal");
+
   if(priv->icon)
     taskbar_item_set_image(priv->icon, priv->appid);
 
   if(priv->label)
     if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)), priv->appid))
       gtk_label_set_text(GTK_LABEL(priv->label), priv->appid);
-
-  gtk_widget_set_name(priv->button,
-      flow_grid_find_child(priv->tgroup, wintree_from_id(wintree_get_focus()))?
-        "taskbar_group_active":"taskbar_group_normal");
 
   gtk_widget_unset_state_flags(priv->button, GTK_STATE_FLAG_PRELIGHT);
 
@@ -259,8 +259,8 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *taskbar )
   if(icons)
   {
     priv->icon = scale_image_new();
-    taskbar_item_set_image(priv->icon, priv->appid);
     gtk_grid_attach_next_to(GTK_GRID(box), priv->icon, NULL, dir, 1, 1);
+    taskbar_item_set_image(priv->icon, priv->appid);
   }
   else
     priv->icon = NULL;

@@ -580,10 +580,6 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
       case G_TOKEN_ICON_THEME:
         bar_set_icon_theme(config_assign_string(scanner,"icon theme"));
         break;
-      case G_TOKEN_PREFER_SYMBOLIC:
-        scale_image_set_prefer_symbolic(
-            config_assign_boolean(scanner, TRUE, "PreferSymbolicIcons"));
-        break;
       case G_TOKEN_MAPAPPID:
         config_mappid_map(scanner);
         break;

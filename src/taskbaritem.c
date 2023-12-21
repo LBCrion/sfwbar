@@ -104,6 +104,11 @@ static void taskbar_item_update ( GtkWidget *self )
   if(!priv->invalid)
     return;
 
+  if ( wintree_is_focused(priv->win->uid) )
+    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "taskbar_active");
+  else
+    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "taskbar_normal");
+
   if(priv->label)
     if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)),priv->win->title))
       gtk_label_set_text(GTK_LABEL(priv->label), priv->win->title);
@@ -116,11 +121,6 @@ static void taskbar_item_update ( GtkWidget *self )
       appid = wintree_appid_map_lookup(priv->win->title);
     taskbar_item_set_image(priv->icon, appid);
   }
-
-  if ( wintree_is_focused(priv->win->uid) )
-    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "taskbar_active");
-  else
-    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "taskbar_normal");
 
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
@@ -216,8 +216,8 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   if(icons)
   {
     priv->icon = scale_image_new();
-    taskbar_item_set_image(priv->icon, win->appid);
     gtk_grid_attach_next_to(GTK_GRID(box), priv->icon, NULL, dir, 1, 1);
+    taskbar_item_set_image(priv->icon, win->appid);
   }
   else
     priv->icon = NULL;

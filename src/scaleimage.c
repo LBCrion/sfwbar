@@ -159,7 +159,6 @@ static gboolean scale_image_draw ( GtkWidget *self, cairo_t *cr )
   GtkStyleContext *style;
   GtkStateFlags flags;
   GtkBorder border, padding, margin;
-  gboolean symbolic;
   gint width, height, scale;
   gdouble x_origin, y_origin;
 
@@ -204,18 +203,13 @@ static gboolean scale_image_draw ( GtkWidget *self, cairo_t *cr )
   y_origin = margin.top + padding.top + border.top +
     (height - cairo_image_surface_get_height(priv->cs))/(2*scale);
 
-  gtk_widget_style_get(self,"color",&color,NULL);
-  if(!color)
+  gtk_widget_style_get(self, "color", &color, NULL);
+  if(!color && (priv->symbolic || priv->fallback))
   {
-    gtk_widget_style_get(self,"symbolic",&symbolic,NULL);
-    if(symbolic || priv->fallback || (priv->file && strlen(priv->file)>=9 &&
-          !g_strcmp0(priv->file+strlen(priv->file)-9,"-symbolic")))
-    {
-      gtk_style_context_get_color(gtk_widget_get_style_context(self),
-          GTK_STATE_FLAG_NORMAL,&col);
-      col.alpha = 1.0;
-      color = gdk_rgba_copy(&col);
-    }
+    gtk_style_context_get_color(gtk_widget_get_style_context(self),
+        GTK_STATE_FLAG_NORMAL, &col);
+    col.alpha = 1.0;
+    color = gdk_rgba_copy(&col);
   }
 
   if(color)
@@ -255,6 +249,28 @@ static void scale_image_destroy ( GtkWidget *self )
   GTK_WIDGET_CLASS(scale_image_parent_class)->destroy(self);
 }
 
+static void scale_image_style_updated ( GtkWidget *self )
+{
+  ScaleImagePrivate *priv;
+  gboolean prefer_symbolic;
+  gchar *image, *extra;
+
+  g_return_if_fail(IS_SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
+
+  gtk_widget_style_get(self, "symbolic", &prefer_symbolic, NULL);
+  if(priv->symbolic_pref != prefer_symbolic && priv->ftype == SI_ICON)
+  {
+    image = g_strdup(priv->file);
+    extra = g_strdup(priv->extra);
+    scale_image_clear(self);
+    scale_image_set_image(self, image, extra);
+    g_free(image);
+    g_free(extra);
+  }
+  GTK_WIDGET_CLASS(scale_image_parent_class)->style_updated(self);
+}
+
 static void scale_image_class_init ( ScaleImageClass *kclass )
 {
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(kclass);
@@ -262,6 +278,7 @@ static void scale_image_class_init ( ScaleImageClass *kclass )
   widget_class->draw = scale_image_draw;
   widget_class->get_preferred_width = scale_image_get_preferred_width;
   widget_class->get_preferred_height = scale_image_get_preferred_height;
+  widget_class->style_updated = scale_image_style_updated;
 
   gtk_widget_class_install_style_property( widget_class,
       g_param_spec_boxed("color","image color",
@@ -341,13 +358,6 @@ static void scale_image_check_appinfo ( GtkWidget *self, GtkIconTheme *theme,
   g_object_unref(G_OBJECT(app));
 }
 
-static gboolean scale_image_prefer_symbolic = FALSE;
-
-void scale_image_set_prefer_symbolic ( gboolean val )
-{
-  scale_image_prefer_symbolic = val;
-}
-
 static gboolean scale_image_check_icon_1 ( GtkWidget *self, const gchar *icon )
 {
   ScaleImagePrivate *priv;
@@ -393,20 +403,8 @@ static gboolean scale_image_check_icon ( GtkWidget *self, const gchar *icon )
 {
   ScaleImagePrivate *priv;
   gchar *temp;
-  gboolean symbolic_suffix;
 
   priv = scale_image_get_instance_private( SCALE_IMAGE(self));
-  symbolic_suffix = (strlen(icon) >= 9) &&
-    (!g_ascii_strcasecmp(icon+strlen(icon)-9, "-symbolic"));
-
-  if(scale_image_prefer_symbolic && !symbolic_suffix)
-  {
-    temp = g_strconcat(icon, "-symbolic", NULL);
-    scale_image_check_icon(self, temp);
-    g_free(temp);
-    if(priv->ftype == SI_ICON)
-      return TRUE;
-  }
 
   if(scale_image_check_icon_1(self, icon))
     return TRUE;
@@ -417,13 +415,25 @@ static gboolean scale_image_check_icon ( GtkWidget *self, const gchar *icon )
   if(priv->ftype == SI_ICON)
     return TRUE;
 
-  if(!scale_image_prefer_symbolic && !symbolic_suffix)
-  {
-    temp = g_strconcat(icon, "-symbolic", NULL);
-    scale_image_check_icon(self, temp);
-    g_free(temp);
-  }
-  return (priv->ftype == SI_ICON);
+  return FALSE;
+}
+
+static gboolean scale_image_check_icon_symbolic ( GtkWidget *self,
+    gchar *icon )
+{
+  ScaleImagePrivate *priv;
+  gchar *temp;
+
+  priv = scale_image_get_instance_private( SCALE_IMAGE(self));
+  temp = g_strconcat(icon, "-symbolic", NULL);
+  scale_image_check_icon(self, temp);
+  g_free(temp);
+
+  if(priv->ftype != SI_ICON)
+    return FALSE;
+
+  priv->symbolic = TRUE;
+  return TRUE;
 }
 
 gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
@@ -431,6 +441,7 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
 {
   static gchar *exts[4] = {"", ".svg", ".png", ".xpm"};
   ScaleImagePrivate *priv;
+  gboolean symbolic_suffix;
   GdkPixbuf *buf;
   gint i;
   gchar *temp,*test;
@@ -441,12 +452,13 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
   if(!image)
     return FALSE;
 
-  if( !g_strcmp0(priv->file,image) && !g_strcmp0(priv->extra,extra) )
+  if( !g_strcmp0(priv->file, image) && !g_strcmp0(priv->extra, extra) )
     return (priv->ftype != SI_NONE);
 
   scale_image_clear(self);
   priv->file = g_strdup(image);
   priv->extra = g_strdup(extra);
+  priv->symbolic = FALSE;
   gtk_widget_queue_draw(self);
 
   if(!g_ascii_strncasecmp(priv->file,"<?xml",5))
@@ -455,17 +467,28 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
     return TRUE;
   }
 
+  symbolic_suffix = (strlen(image) >= 9) &&
+    (!g_ascii_strcasecmp(image+strlen(image)-9, "-symbolic"));
+  gtk_widget_style_get(self, "symbolic", &priv->symbolic_pref, NULL);
+
+  if(priv->symbolic_pref && !symbolic_suffix)
+    if(scale_image_check_icon_symbolic(self, priv->file))
+      return TRUE;
   if(scale_image_check_icon(self, priv->file))
     return TRUE;
+  if(!priv->symbolic_pref && !symbolic_suffix)
+    if(scale_image_check_icon_symbolic(self, priv->file))
+      return TRUE;
 
-  for(i=0;i<4;i++)
+  for(i=0; i<8; i++)
   {
-    test = g_strconcat(priv->file,exts[i],NULL);
-    temp = get_xdg_config_file(test,extra);
+    test = g_strconcat(priv->file, (i%2!=priv->symbolic_pref)?"-symbolic":"",
+        exts[i/2], NULL);
+    temp = get_xdg_config_file(test, extra);
     g_free(test);
     if(temp)
     {
-      buf = gdk_pixbuf_new_from_file_at_scale(temp,10,10,TRUE,NULL);
+      buf = gdk_pixbuf_new_from_file_at_scale(temp, 10, 10, TRUE, NULL);
       if(buf)
       {
         g_object_unref(G_OBJECT(buf));

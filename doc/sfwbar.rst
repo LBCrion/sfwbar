@@ -694,6 +694,9 @@ Global Options
 Theme <string>
   Override a Gtk theme to name specified.
 
+IconTheme <string>
+  Override a Gtk icon theme.
+
 DisownMinimized <boolean>
   Disassociate windows from their workplaces when they are minimized.
   If this option is set, selecting a minimize window will unminimize
