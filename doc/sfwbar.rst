@@ -784,28 +784,32 @@ Operation    Description
 
 In addition the following query functions are supported
 
-============= =================================================================
-Function      Description
-============= =================================================================
-``Time``      get current time as a string, the first optional argument
-              specifies the format, the second argument specifies a timezone.
-              Return a string
-``Disk``      get disk utilization data. You need to specify a mount point as a
-              first argument and data field as a second. The supported data
-              fields are "total", "avail", "free", "%avail", "%free" or
-              "%used".  Returns a number.
+============== =================================================================
+Function       Description
+============== =================================================================
+``Time``       get current time as a string, the first optional argument
+               specifies the format, the second argument specifies a timezone.
+               Return a string
+``Disk``       get disk utilization data. You need to specify a mount point as a
+               first argument and data field as a second. The supported data
+               fields are "total", "avail", "free", "%avail", "%free" or
+               "%used".  Returns a number.
 ``ActiveWin``  get the title of currently focused window. Returns a string.
-``GtkEvent``  Get the location of an event that triggered the action. This
-              function is only applicable in action command expressions where
-              an action is called as a result of button click. The function
-              returns location of the click within the widget. The value is
-              returned as percentage of the widget width or height. Acceptable
-              arguments are "X","Y" and "Dir". X and Y select an axis for which
-              to return the event location, Dir returns the event location
-              along the widget direction property.
-``WidgetID``  Obtain an ID of the current widget (i.e. a widget in respect to
-              which the expression is being evaluated.
-============= =================================================================
+``GtkEvent``   Get the location of an event that triggered the action. This
+               function is only applicable in action command expressions where
+               an action is called as a result of button click. The function
+               returns location of the click within the widget. The value is
+               returned as percentage of the widget width or height. Acceptable
+               arguments are "X","Y" and "Dir". X and Y select an axis for which
+               to return the event location, Dir returns the event location
+               along the widget direction property.
+``WidgetID``   Obtain an ID of the current widget (i.e. a widget in respect to
+               which the expression is being evaluated.
+``WindowInfo`` Obtain information about a window. This function takes window
+               property as a single input parameter. Valid properties are:
+               `appid`, `title`, `minimized`, `maximized`, `fullscreen`,
+               `focused`
+============== =================================================================
 
 Each numeric variable contains four values
 

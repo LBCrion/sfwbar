@@ -10,6 +10,7 @@
 #include "wintree.h"
 #include "expr.h"
 #include "basewidget.h"
+#include "taskbaritem.h"
 
 /* extract a substring */
 static void *expr_lib_mid ( void **params, void *widget, void *event )
@@ -398,6 +399,37 @@ ModuleExpressionHandlerV1 widget_id_handler = {
   .function = expr_lib_widget_id
 };
 
+static void *expr_lib_window_info ( void **params, void *widget, void *event )
+{
+  window_t *win;
+  if(!params || !params[0] || !IS_TASKBAR_ITEM(widget))
+    return g_strdup("");
+
+  if( (win = flow_item_get_source(widget)) )
+  {
+    if(!g_ascii_strcasecmp(params[0], "appid"))
+      return g_strdup(win->appid);
+    if(!g_ascii_strcasecmp(params[0], "title"))
+      return g_strdup(win->title);
+    if(!g_ascii_strcasecmp(params[0], "minimized"))
+      return g_strdup_printf("%d", !!(win->state & WS_MINIMIZED));
+    if(!g_ascii_strcasecmp(params[0], "maximized"))
+      return g_strdup_printf("%d", !!(win->state & WS_MAXIMIZED));
+    if(!g_ascii_strcasecmp(params[0], "fullscreen"))
+      return g_strdup_printf("%d", !!(win->state & WS_FULLSCREEN));
+    if(!g_ascii_strcasecmp(params[0], "focused"))
+      return g_strdup_printf("%d", wintree_is_focused(win->uid));
+  }
+
+  return g_strdup("");
+}
+
+ModuleExpressionHandlerV1 window_info_handler = {
+  .name = "windowinfo",
+  .parameters = "S",
+  .function = expr_lib_window_info
+};
+
 static void *expr_lib_escape ( void **params, void *widget, void *event )
 {
   if(!params || !params[0])
@@ -458,6 +490,7 @@ ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &lower_handler,
   &gtkevent_handler,
   &widget_id_handler,
+  &window_info_handler,
   &escape_handler,
   &read_handler,
   NULL
