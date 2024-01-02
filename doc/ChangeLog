@@ -1,3 +1,9 @@
+1.0beta14
+  - Implement wifi-iwd module
+  - Implement multi-desktop taskbars
+  - Add support for multiple device/channels for pulsectl module
+  - Add Read, Escape and Replace expression functions
+
 1.0beta13
   - Implement bluez module
   - Add WidgetId() expression function, assign id's to all widgets
