@@ -130,7 +130,8 @@ void css_init ( gchar *cssname )
     {GTK_ALIGN_START,"start","start"},
     {GTK_ALIGN_END,"end","end"},
     {GTK_ALIGN_CENTER,"center","center"},
-    {GTK_ALIGN_BASELINE,"baseline","baseline"}};
+    {GTK_ALIGN_BASELINE,"baseline","baseline"},
+    {0, NULL, NULL}};
   gtk_widget_class_install_style_property( widget_class,
     g_param_spec_enum("halign","horizontal alignment","horizontal alignment",
       g_enum_register_static ("halign",align_types),
