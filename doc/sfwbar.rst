@@ -505,6 +505,21 @@ SetMonitor [<bar_name>,]<string>
   the bar will not jump to another montior, but will be hidden and won't
   reappear until the monitor is reconnected.
 
+SetMirror  [<bar_name>,]<string>
+  mirror the bar to monitors matching any of the specified patterns. If
+  bar_name is specified, mirror instruction would be applied to specific
+  bar, otherwise it will be applied to all bars. The string parameter
+  specifies a colon delimited list of patters to match the monitors against,
+  i.e. "eDP-*:HDMI-1" will mirror to any monitor with name starting with 
+  "eDP-" or monitor named "HDMI-1". The patterns are specified in glob style
+  '*' and '?' are used as wildcards. A simplest use is `SetMirror "*"` will
+  mirror all bars across all monitors.
+
+SetMirror  [<bar_name>,]<string>
+  block a bar from being mirrored to specific monitors. See SetMirror action
+  for syntax. If a monitor matches a pattern specified in both SetMirror and
+  BlockMirror, the bar will not be mirrored.
+
 SetLayer [<bar_name>,]<string>
   move bar to a specified layer (supported parameters are "top", "bottom",
   "background" and "overlay". 
