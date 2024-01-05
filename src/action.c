@@ -191,20 +191,22 @@ void action_free ( action_t *action, GObject *old )
 
 void action_trigger_add ( action_t *action, gchar *trigger )
 {
-  void *old;
+  gchar *lower;
 
   if(!trigger_actions)
     trigger_actions = g_hash_table_new(g_direct_hash, g_direct_equal);
 
-  if( (old = g_hash_table_lookup(trigger_actions, trigger)) )
+  lower = g_ascii_strdown(trigger, -1);
+  g_free(trigger);
+  if(g_hash_table_lookup(trigger_actions, g_intern_string(lower)))
   {
-    g_message("Action for trigger '%s' is already defined",trigger);
+    g_message("Action for trigger '%s' is already defined", lower);
     action_free(action, NULL);
   }
   else
     g_hash_table_insert(trigger_actions,
-        (void *)g_intern_string(trigger), action);
-  g_free(trigger);
+        (void *)g_intern_string(lower), action);
+  g_free(lower);
 }
 
 action_t *action_trigger_lookup ( const gchar *trigger )

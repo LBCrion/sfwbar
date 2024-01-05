@@ -415,12 +415,15 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
 
 void base_widget_set_trigger ( GtkWidget *self, gchar *trigger )
 {
+  gchar *lower;
   BaseWidgetPrivate *priv;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  priv->trigger = g_intern_string(trigger);
+  lower = g_ascii_strdown(trigger, -1);
+  priv->trigger = g_intern_string(lower);
+  g_free(lower);
 }
 
 void base_widget_set_id ( GtkWidget *self, gchar *id )
