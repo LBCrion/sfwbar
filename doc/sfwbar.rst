@@ -515,7 +515,7 @@ SetMirror  [<bar_name>,]<string>
   '*' and '?' are used as wildcards. A simplest use is `SetMirror "*"` will
   mirror all bars across all monitors.
 
-SetMirror  [<bar_name>,]<string>
+BlockMirror  [<bar_name>,]<string>
   block a bar from being mirrored to specific monitors. See SetMirror action
   for syntax. If a monitor matches a pattern specified in both SetMirror and
   BlockMirror, the bar will not be mirrored.
