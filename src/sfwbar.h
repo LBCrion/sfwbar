@@ -6,6 +6,10 @@
 #include <json.h>
 #include "scanner.h"
 
+#if GLIB_MINOR_VERSION < 68
+#define g_memdup2(x,y) g_memdup(x,y)
+#endif
+
 enum ipc_type {
   IPC_SWAY    = 1,
   IPC_HYPR    = 2,
