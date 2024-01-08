@@ -1,4 +1,6 @@
 project('sfwbar','c')
+cc = meson.get_compiler('c')
+lbrt = cc.find_library('rt', required: false)
 gtk3 = dependency('gtk+-3.0')
 glib = dependency('glib-2.0')
 ggio = dependency('gio-2.0')
@@ -100,7 +102,7 @@ libsrc = [
     'src/wayland/probe.c',
     'src/wayland/xdg-output.c',
     wayland_targets ]
-deps = [gtk3, glib, gio_unix, gmod, glsh, wayl, json ]
+deps = [gtk3, glib, gio_unix, gmod, glsh, wayl, json, lbrt ]
 man_pages = [ 'doc/sfwbar.1' ]
 
 cargs = ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
