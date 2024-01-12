@@ -87,11 +87,6 @@ gchar *get_xdg_config_file ( gchar *fname, gchar *extra )
     else
       return NULL;
   }
-  full = g_build_filename( ".", fname, NULL );
-  if( file_test_read(full) )
-    return full;
-  else
-    g_free(full);
 
   if(confname!=NULL)
   {
