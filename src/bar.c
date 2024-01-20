@@ -636,9 +636,12 @@ void bar_monitor_added_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
   char trigger[256];
 
   xdg_output_new(gmon);
-  g_hash_table_iter_init(&iter,bar_list);
-  while(g_hash_table_iter_next(&iter,&key,&bar))
-    g_idle_add((GSourceFunc)bar_update_monitor,bar);
+  if(bar_list)
+  {
+    g_hash_table_iter_init(&iter,bar_list);
+    while(g_hash_table_iter_next(&iter,&key,&bar))
+      g_idle_add((GSourceFunc)bar_update_monitor,bar);
+  }
 
   g_snprintf(trigger,255,"%s_connected",
       (gchar *)g_object_get_data(G_OBJECT(gmon),"xdg_name"));
@@ -654,17 +657,20 @@ void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
   GList *liter;
   static char trigger[256];
 
-  g_hash_table_iter_init(&iter,bar_list);
-  while(g_hash_table_iter_next(&iter,&key,&bar))
+  if(bar_list)
   {
-    priv = bar_get_instance_private(BAR(bar));
-    for(liter=priv->mirror_children; liter; liter=g_list_next(liter))
-      if(bar_get_monitor(liter->data) == gmon)
-      {
-        bar_destroy(liter->data);
-        break;
-      }
-    bar_update_monitor(bar);
+    g_hash_table_iter_init(&iter,bar_list);
+    while(g_hash_table_iter_next(&iter,&key,&bar))
+    {
+      priv = bar_get_instance_private(BAR(bar));
+      for(liter=priv->mirror_children; liter; liter=g_list_next(liter))
+        if(bar_get_monitor(liter->data) == gmon)
+        {
+          bar_destroy(liter->data);
+          break;
+        }
+      bar_update_monitor(bar);
+    }
   }
 
   g_snprintf(trigger,255,"%s_disconnected",
