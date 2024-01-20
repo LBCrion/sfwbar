@@ -749,6 +749,7 @@ GtkWidget *bar_new ( gchar *name )
       g_object_get_data(G_OBJECT(priv->current_monitor),"xdg_name"));
   priv->dir = -1;
   priv->box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  g_object_ref_sink(priv->box);
   gtk_container_add(GTK_CONTAINER(self), priv->box);
   gtk_layer_init_for_window (GTK_WINDOW(self));
   gtk_widget_set_name(self,name);
