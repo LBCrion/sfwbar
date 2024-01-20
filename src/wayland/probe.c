@@ -24,7 +24,6 @@ void layer_shell_register (struct wl_registry *registry, uint32_t name,
   if(version >= 3)
     layer_shell = wl_registry_bind(registry, name,
         &zwlr_layer_shell_v1_interface, MIN(version, zwlr_layer_shell_v1_interface.version));
-  g_message("layer shell: %d", MIN(version, zwlr_layer_shell_v1_interface.version));
 }
 
 GdkMonitor *wayland_monitor_get_default ( void )
