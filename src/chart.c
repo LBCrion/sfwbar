@@ -16,7 +16,7 @@ static void chart_destroy ( GtkWidget *self )
   g_return_if_fail(IS_CHART(self));
   priv = chart_get_instance_private(CHART(self));
 
-  g_queue_free(priv->data);
+  g_clear_pointer(&priv->data, g_queue_free);
   GTK_WIDGET_CLASS(chart_parent_class)->destroy(self);
 }
 
