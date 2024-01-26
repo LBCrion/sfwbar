@@ -792,47 +792,55 @@ static void nm_object_removed ( GDBusConnection *con, const gchar *sender,
     const gchar *path, const gchar *oiface, const gchar *signal,
     GVariant *params, gpointer data )
 {
-  gchar *object;
+  GVariantIter *iter;
+  gchar *object, *iface;
 
-  g_variant_get(params, "(&o@as)", &object, NULL);
-  nm_device_free(object);
-  g_hash_table_remove(ap_nodes, object);
-  nm_conn_free(object);
-  nm_active_free(object);
-}
-
-static void nm_active_changed ( GDBusConnection *con, const gchar *sender,
-    const gchar *path, const gchar *iface, const gchar *signal,
-    GVariant *params, gpointer data )
-{
-  nm_active_t *active;
-  GVariant *dict;
-  guint32 state;
-
-  g_variant_get(params,"(&s@a{sv}@as)", NULL, &dict, NULL);
-  if(g_variant_lookup(dict, "State", "u", &state))
+  g_variant_get(params, "(&oas)", &object, &iter);
+  while(g_variant_iter_next(iter, "&s", &iface))
   {
-    g_message("state: %d %s", state, path);
-    if(state == 2)
-      g_hash_table_remove(new_conns, path);
-    else if(state == 4 && g_hash_table_lookup(new_conns, path))
-    {
-      if( (active = g_hash_table_lookup(active_list, path)) )
-        nm_conn_forget(g_hash_table_lookup(conn_list, active->conn));
-    }
+    if(!g_strcmp0(iface, nm_iface_device))
+      nm_device_free(object);
+    else if(!g_strcmp0(iface, nm_iface_apoint))
+      g_hash_table_remove(ap_nodes, object);
+    else if(!g_strcmp0(iface, nm_iface_conn))
+      nm_conn_free(object);
+    else if(!g_strcmp0(iface, nm_iface_active))
+      nm_active_free(object);
   }
-
-  g_variant_unref(dict);
+  g_variant_iter_unref(iter);
 }
 
 static void nm_object_changed ( GDBusConnection *con, const gchar *sender,
-    const gchar *path, const gchar *iface, const gchar *signal,
+    const gchar *path, const gchar *ifa, const gchar *signal,
     GVariant *params, gpointer data )
 {
   GVariant *dict;
+  gchar *iface;
+  nm_active_t *active;
+  guint32 state;
 
-  g_variant_get(params,"(&s@a{sv}@as)", NULL, &dict, NULL);
-  nm_ap_node_handle((gchar *)path, NULL, dict);
+  g_variant_get(params,"(&s@a{sv}@as)", &iface, &dict, NULL);
+  if(!g_strcmp0(iface, nm_iface_apoint))
+    nm_ap_node_handle((gchar *)path, NULL, dict);
+  else if(!g_strcmp0(iface, nm_iface_wireless))
+  {
+    if(g_variant_lookup(dict, "LastScan", "x", NULL))
+      g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+          (gpointer)g_intern_static_string("nm_scan_complete"));
+  }
+  else if(!g_strcmp0(iface, nm_iface_active))
+  {
+    if(g_variant_lookup(dict, "State", "u", &state))
+    {
+      if(state == 2)
+        g_hash_table_remove(new_conns, path);
+      else if(state == 4 && g_hash_table_lookup(new_conns, path))
+      {
+        if( (active = g_hash_table_lookup(active_list, path)) )
+          nm_conn_forget(g_hash_table_lookup(conn_list, active->conn));
+      }
+    }
+  }
   g_variant_unref(dict);
 }
 
@@ -854,19 +862,6 @@ static void nm_object_list_cb ( GDBusConnection *con, GAsyncResult *res,
   g_variant_unref(result);
 }
 
-static void nm_device_wireless_changed ( GDBusConnection *con,
-    const gchar *sender, const gchar *path, const gchar *iface,
-    const gchar *signal, GVariant *params, gpointer data )
-{
-  GVariant *dict;
-
-  g_variant_get(params,"(&s@a{sv}@as)", NULL, &dict, NULL);
-  if(g_variant_lookup(dict, "LastScan", "x", NULL))
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("nm_scan_complete"));
-  g_variant_unref(dict);
-}
-
 void nm_name_appeared_cb (GDBusConnection *con, const gchar *name,
     const gchar *owner, gpointer d)
 {
@@ -879,16 +874,8 @@ void nm_name_appeared_cb (GDBusConnection *con, const gchar *name,
       nm_object_removed, NULL, NULL);
 
   sub_chg = g_dbus_connection_signal_subscribe(con, owner, nm_iface_objprop,
-      "PropertiesChanged", NULL, nm_iface_apoint, G_DBUS_SIGNAL_FLAGS_NONE,
+      "PropertiesChanged", NULL, NULL, G_DBUS_SIGNAL_FLAGS_NONE,
       nm_object_changed, NULL, NULL);
-
-  sub_chg = g_dbus_connection_signal_subscribe(con, owner, nm_iface_objprop,
-      "PropertiesChanged", NULL, nm_iface_wireless, G_DBUS_SIGNAL_FLAGS_NONE,
-      nm_device_wireless_changed, NULL, NULL);
-
-  sub_chg = g_dbus_connection_signal_subscribe(con, owner, nm_iface_objprop,
-      "PropertiesChanged", NULL, nm_iface_active, G_DBUS_SIGNAL_FLAGS_NONE,
-      nm_active_changed, NULL, NULL);
 
   g_dbus_connection_call(con, nm_iface, "/org/freedesktop", nm_iface_objmgr,
       "GetManagedObjects", NULL, G_VARIANT_TYPE("(a{oa{sa{sv}}})"),
