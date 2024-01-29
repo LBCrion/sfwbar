@@ -102,6 +102,8 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
   g_object_set_data( G_OBJECT(menu), "caller", widget );
 
   window = gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
+  g_signal_handlers_disconnect_matched(G_OBJECT(menu),G_SIGNAL_MATCH_FUNC,
+      0, 0, NULL, G_CALLBACK(window_unref), NULL);
   if(gtk_window_get_window_type(GTK_WINDOW(window)) == GTK_WINDOW_POPUP)
     g_signal_connect(G_OBJECT(menu), "unmap",
         G_CALLBACK(window_unref), window);
@@ -110,8 +112,8 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
   gtk_widget_unset_state_flags(widget, GTK_STATE_FLAG_PRELIGHT);
   popup_get_gravity(widget, &wanchor, &manchor);
   gtk_widget_show_all(menu);
-  gtk_menu_popup_at_widget(GTK_MENU(menu), widget, wanchor, manchor, event);
   window_ref(window, menu);
+  gtk_menu_popup_at_widget(GTK_MENU(menu), widget, wanchor, manchor, event);
 }
 
 gboolean menu_action_cb ( GtkWidget *w ,action_t *action )
