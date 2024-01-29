@@ -28,6 +28,7 @@ struct _nm_apoint {
   gchar *hash;
   guint flags, wpa, rsn, mode;
   guint8 strength;
+  gboolean visible;
   nm_conn_t *conn;
   nm_active_t *active;
 };
@@ -112,6 +113,7 @@ static GHashTable *active_list, *apoint_list;
 static GList *interfaces;
 static nm_device_t *default_iface;
 static guint sub_add, sub_del, sub_chg;
+static guint32 nm_strength_threshold;
 
 static gchar *nm_ssid_get ( GVariant *dict, gchar *key )
 {
@@ -236,7 +238,11 @@ static module_queue_t remove_q = {
 
 static void nm_apoint_update ( nm_apoint_t *ap )
 {
-  module_queue_append(&update_q, ap);
+  if(ap->visible)
+    module_queue_append(&update_q, ap);
+  else
+    module_queue_append(&remove_q, ap->hash);
+
   g_message("ap: %s, %s, known: %d, conn: %d, strength: %d", ap->ssid,
       nm_apoint_get_type(ap), !!ap->conn, !!ap->active, ap->strength);
 }
@@ -434,7 +440,7 @@ static void nm_conn_new_cb ( GDBusConnection *con, GAsyncResult *res,
   if( (result = g_dbus_connection_call_finish(con, res, NULL)) )
   {
     g_variant_get(result, "(&o&o)", NULL, &path);
-    g_hash_table_insert(new_conns, g_strdup(path), NULL);
+    g_hash_table_insert(new_conns, g_strdup(path), path);
 
     g_variant_unref(result);
   }
@@ -568,7 +574,7 @@ static void nm_ap_node_handle ( const gchar *path, gchar *ifa, GVariant *dict )
   gchar *ssid, *hash;
   guint flags, wpa, rsn, mode;
   guint8 strength, ap_strength;
-  gboolean change = FALSE;
+  gboolean visible, change = FALSE;
 
   if( !(node = g_hash_table_lookup(ap_nodes, path)) )
   {
@@ -614,12 +620,19 @@ static void nm_ap_node_handle ( const gchar *path, gchar *ifa, GVariant *dict )
     ap_strength = 0;
     for(iter=apoint->nodes; iter; iter=g_list_next(iter))
       ap_strength = MAX(ap_strength, NM_AP_NODE(iter->data)->strength);
-    if(apoint->strength != ap_strength)
+    if((gint)(apoint->strength/10) != (gint)(ap_strength/10))
     {
       node->ap->strength = ap_strength;
       change = TRUE;
     }
   }
+
+  visible = node->ap->strength >= nm_strength_threshold;
+  if(!visible && !node->ap->visible)
+    change = FALSE; // ignore changes while signal strength is below threshold
+  else
+    node->ap->visible = visible;
+
   if(change)
     nm_apoint_update(apoint);
 }
@@ -807,7 +820,7 @@ static void nm_object_removed ( GDBusConnection *con, const gchar *sender,
     else if(!g_strcmp0(iface, nm_iface_active))
       nm_active_free(object);
   }
-  g_variant_iter_unref(iter);
+  g_variant_iter_free(iter);
 }
 
 static void nm_object_changed ( GDBusConnection *con, const gchar *sender,
