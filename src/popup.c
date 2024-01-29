@@ -184,6 +184,7 @@ void popup_trigger ( GtkWidget *parent, gchar *name, GdkEvent *ev )
 
 void popup_resize_maybe ( GtkWidget *self )
 {
+  GtkWidget *grab;
   GtkRequisition req;
   gint old_width, old_height;
 
@@ -198,6 +199,9 @@ void popup_resize_maybe ( GtkWidget *self )
 
   if(old_width==req.width  && old_height==req.height)
     return;
+
+  if( (grab = gtk_grab_get_current()) )
+    gtk_grab_remove(grab);
 
   g_object_set_data(G_OBJECT(self), "width", GINT_TO_POINTER(req.width));
   g_object_set_data(G_OBJECT(self), "height", GINT_TO_POINTER(req.height));
