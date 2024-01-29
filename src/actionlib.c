@@ -438,12 +438,10 @@ static void clear_widget_action ( gchar *cmd, gchar *name, void *widget,
 {
   GtkWidget *w;
 
-  if(!cmd)
+  if(!cmd || !(w = base_widget_from_id(cmd)) )
     return;
 
-  w = base_widget_from_id(cmd);
-  if(w)
-    gtk_widget_destroy(w);
+  gtk_widget_destroy(w);
 }
 
 static ModuleActionHandlerV1 clear_widget_handler = {
