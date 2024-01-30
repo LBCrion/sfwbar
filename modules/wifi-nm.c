@@ -267,7 +267,8 @@ static gboolean nm_apoint_xref ( nm_apoint_t *ap )
     if(active)
       active->ap = NULL;
     ap->active = active;
-    active->ap = ap;
+    if(active)
+      active->ap = ap;
     change = TRUE;
     g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
         (gpointer)g_intern_static_string("nm"));
@@ -287,14 +288,8 @@ static void nm_apoint_xref_all ( void )
       nm_apoint_update(ap);
 }
 
-static void nm_conn_free ( gchar *path )
+static void nm_conn_free ( nm_conn_t *conn )
 {
-  nm_conn_t *conn;
-
-  if( !(conn = g_hash_table_lookup(conn_list, path)) )
-    return;
-
-  g_hash_table_remove(conn_list, path);
   g_free(conn->ssid);
   g_free(conn->path);
   g_free(conn);
@@ -445,8 +440,8 @@ static void nm_conn_new_cb ( GDBusConnection *con, GAsyncResult *res,
   g_message("connected");
   if( (result = g_dbus_connection_call_finish(con, res, NULL)) )
   {
-    g_variant_get(result, "(&o&o)", NULL, &path);
-    g_hash_table_insert(new_conns, g_strdup(path), path);
+    g_variant_get(result, "(&oo)", NULL, &path);
+    g_hash_table_insert(new_conns, path, path);
 
     g_variant_unref(result);
   }
@@ -562,12 +557,11 @@ static void nm_ap_node_free ( nm_ap_node_t *node )
   if( (apoint=node->ap) )
     if( !(apoint->nodes = g_list_remove(apoint->nodes, node)) )
     {
-      g_hash_table_remove(apoint_list, apoint->hash);
       g_message("ap removed: %s", apoint->ssid);
       module_queue_append(&remove_q, apoint->hash);
       if(apoint->active)
         apoint->active->ap = NULL;
-      nm_apoint_free(apoint);
+      g_hash_table_remove(apoint_list, apoint->hash);
     }
 
   g_free(node->path);
@@ -708,21 +702,17 @@ static void nm_active_handle ( const gchar *path, gchar *ifa, GVariant *dict )
   g_message("nm: connected: %s", path);
 }
 
-static void nm_active_free ( gchar *path )
+static void nm_active_free ( nm_active_t *active )
 {
-  nm_active_t *active;
   nm_conn_t *conn;
 
-  if( !(active = g_hash_table_lookup(active_list, path)) )
-    return;
-  g_debug("nm: disconnected: %s", path);
+  g_debug("nm: disconnected: %s", active->path);
 
   if( (conn = g_hash_table_lookup(conn_list, active->conn)) )
   {
     conn->active = NULL;
     nm_apoint_xref_all();
   }
-  g_hash_table_remove(active_list, active->path);
   if(active->device)
     active->device->active = NULL;
   if(active->ap)
@@ -845,9 +835,9 @@ static void nm_object_removed ( GDBusConnection *con, const gchar *sender,
     else if(!g_strcmp0(iface, nm_iface_apoint))
       g_hash_table_remove(ap_nodes, object);
     else if(!g_strcmp0(iface, nm_iface_conn))
-      nm_conn_free(object);
+      g_hash_table_remove(conn_list, object);
     else if(!g_strcmp0(iface, nm_iface_active))
-      nm_active_free(object);
+      g_hash_table_remove(active_list, object);
   }
   g_variant_iter_free(iter);
 }
@@ -904,7 +894,7 @@ static void nm_object_list_cb ( GDBusConnection *con, GAsyncResult *res,
   g_variant_unref(result);
 }
 
-void nm_name_appeared_cb (GDBusConnection *con, const gchar *name,
+static void nm_name_appeared_cb (GDBusConnection *con, const gchar *name,
     const gchar *owner, gpointer d)
 {
   sub_add = g_dbus_connection_signal_subscribe(con, owner, nm_iface_objmgr,
@@ -925,9 +915,17 @@ void nm_name_appeared_cb (GDBusConnection *con, const gchar *name,
       NULL);
 }
 
-void nm_name_disappeared_cb (GDBusConnection *con, const gchar *name,
+static void nm_name_disappeared_cb (GDBusConnection *con, const gchar *name,
     gpointer d)
 {
+  g_dbus_connection_signal_unsubscribe(nm_con, sub_add);
+  g_dbus_connection_signal_unsubscribe(nm_con, sub_del);
+  g_dbus_connection_signal_unsubscribe(nm_con, sub_chg);
+  g_hash_table_remove_all(dialog_list);
+  g_hash_table_remove_all(new_conns);
+  g_hash_table_remove_all(active_list);
+  g_hash_table_remove_all(conn_list);
+  g_hash_table_remove_all(ap_nodes);
 }
 
 static void nm_secret_agent_method(GDBusConnection *con,
@@ -966,10 +964,13 @@ gboolean sfwbar_module_init ( void )
   ap_nodes = g_hash_table_new_full(g_str_hash, g_str_equal,
       NULL, (GDestroyNotify)nm_ap_node_free);
   dialog_list = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
-  new_conns = g_hash_table_new(g_str_hash, g_str_equal);
-  conn_list = g_hash_table_new(g_str_hash, g_str_equal);
-  active_list = g_hash_table_new(g_str_hash, g_str_equal);
-  apoint_list = g_hash_table_new(g_str_hash, g_str_equal);
+  new_conns = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, g_free);
+  conn_list = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
+      (GDestroyNotify)nm_conn_free);
+  active_list = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
+      (GDestroyNotify)nm_active_free);
+  apoint_list = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
+      (GDestroyNotify)nm_apoint_free);
 
   nm_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
   node = g_dbus_node_info_new_for_xml(nm_secret_agent_xml, NULL);
