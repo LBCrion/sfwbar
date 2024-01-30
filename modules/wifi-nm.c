@@ -42,13 +42,14 @@ struct _nm_conn {
 struct _nm_active {
   gchar *path;
   gchar *conn;
+  nm_device_t *device;
+  nm_apoint_t *ap;
 };
 
 struct _nm_device {
   gchar *path;
   gchar *name;
-  guint sub;
-  guint del;
+  nm_active_t *active;
 };
 
 struct _nm_dialog {
@@ -110,8 +111,8 @@ static const gchar *nm_path_secret =
 static GDBusConnection *nm_con;
 static GHashTable *ap_nodes, *dialog_list, *new_conns, *conn_list;
 static GHashTable *active_list, *apoint_list;
-static GList *interfaces;
-static nm_device_t *default_iface;
+static GList *devices;
+static nm_device_t *default_dev;
 static guint sub_add, sub_del, sub_chg;
 static guint32 nm_strength_threshold;
 
@@ -263,8 +264,13 @@ static gboolean nm_apoint_xref ( nm_apoint_t *ap )
   active = conn?conn->active:NULL;
   if(ap->active != active)
   {
+    if(active)
+      active->ap = NULL;
     ap->active = active;
+    active->ap = ap;
     change = TRUE;
+    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+        (gpointer)g_intern_static_string("nm"));
   }
 
   return change;
@@ -504,7 +510,7 @@ static void nm_conn_new ( nm_apoint_t *ap )
 
   g_dbus_connection_call(nm_con, nm_iface, nm_path, nm_iface,
       "AddAndActivateConnection",
-      g_variant_new("(@a{sa{sv}}oo)", dict, default_iface->path, "/"),
+      g_variant_new("(@a{sa{sv}}oo)", dict, default_dev->path, "/"),
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
       (GAsyncReadyCallback)nm_conn_new_cb, NULL);
 }
@@ -559,6 +565,8 @@ static void nm_ap_node_free ( nm_ap_node_t *node )
       g_hash_table_remove(apoint_list, apoint->hash);
       g_message("ap removed: %s", apoint->ssid);
       module_queue_append(&remove_q, apoint->hash);
+      if(apoint->active)
+        apoint->active->ap = NULL;
       nm_apoint_free(apoint);
     }
 
@@ -624,6 +632,8 @@ static void nm_ap_node_handle ( const gchar *path, gchar *ifa, GVariant *dict )
     {
       node->ap->strength = ap_strength;
       change = TRUE;
+      g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+          (gpointer)g_intern_static_string("nm"));
     }
   }
 
@@ -659,9 +669,11 @@ static void nm_conn_forget ( nm_conn_t *conn )
 
 static void nm_active_handle ( const gchar *path, gchar *ifa, GVariant *dict )
 {
+  GVariantIter *iter;
+  GList *liter;
   nm_active_t *active;
   nm_conn_t *conn;
-  gchar *conn_path, *type;
+  gchar *conn_path, *dev_path, *type;
 
   if(!g_variant_lookup(dict, "Type", "&s", &type) ||
       g_strcmp0(type, "802-11-wireless"))
@@ -675,6 +687,17 @@ static void nm_active_handle ( const gchar *path, gchar *ifa, GVariant *dict )
   active = g_malloc0(sizeof(nm_active_t));
   active->path = g_strdup(path);
   active->conn = g_strdup(conn_path);
+
+  if(g_variant_lookup(dict, "Devices", "ao", &iter))
+    while(g_variant_iter_next(iter, "&o", &dev_path))
+      for(liter=devices; liter; liter=g_list_next(liter))
+        if(!g_strcmp0(NM_DEVICE(liter->data)->path, dev_path))
+        {
+          active->device = liter->data;
+          active->device->active = active;
+          g_message("active mapped to: %s", active->device->name);
+        }
+
   g_hash_table_insert(active_list, active->path, active);
 
   if((conn = g_hash_table_lookup(conn_list, conn_path)) && !conn->active)
@@ -700,6 +723,10 @@ static void nm_active_free ( gchar *path )
     nm_apoint_xref_all();
   }
   g_hash_table_remove(active_list, active->path);
+  if(active->device)
+    active->device->active = NULL;
+  if(active->ap)
+    active->ap->active = NULL;
   g_free(active->path);
   g_free(active->conn);
   g_free(active);
@@ -708,26 +735,28 @@ static void nm_active_free ( gchar *path )
 static void nm_device_free ( gchar *path )
 {
   GList *iter;
-  nm_device_t *iface;
+  nm_device_t *device;
 
-  for(iter=interfaces; iter; iter=g_list_next(iter))
+  for(iter=devices; iter; iter=g_list_next(iter))
     if(!g_strcmp0(path, NM_DEVICE(iter->data)->path))
       break;
 
   if(!iter)
     return;
-  iface = iter->data;
-  g_debug("nm: removing interface %s", iface->name);
+  device = iter->data;
+  g_debug("nm: removing interface %s", device->name);
 
-  interfaces = g_list_remove(interfaces, iface);
-  if(default_iface==iface)
-    default_iface = NULL;
-  if(!default_iface && interfaces)
-    default_iface = interfaces->data;
+  devices = g_list_remove(devices, device);
+  if(default_dev==device)
+    default_dev = NULL;
+  if(!default_dev && devices)
+    default_dev = devices->data;
 
-  g_free(iface->name);
-  g_free(iface->path);
-  g_free(iface);
+  if(device->active)
+    device->active->device = NULL;
+  g_free(device->name);
+  g_free(device->path);
+  g_free(device);
 }
 
 static void nm_device_handle ( const gchar *path, gchar *ifa, GVariant *dict )
@@ -742,7 +771,7 @@ static void nm_device_handle ( const gchar *path, gchar *ifa, GVariant *dict )
   if(!g_variant_lookup(dict, "Interface", "&s", &name))
     return;
 
-  for(iter=interfaces; iter; iter=g_list_next(iter))
+  for(iter=devices; iter; iter=g_list_next(iter))
     if(!g_strcmp0(((nm_device_t *)iter->data)->path, path))
       break;
 
@@ -752,9 +781,9 @@ static void nm_device_handle ( const gchar *path, gchar *ifa, GVariant *dict )
   {
     iface = g_malloc0(sizeof(nm_device_t));
     iface->path = g_strdup(path);
-    interfaces = g_list_append(interfaces, iface);
-    if(!default_iface)
-      default_iface = iface;
+    devices = g_list_append(devices, iface);
+    if(!default_dev)
+      default_dev = iface;
   }
   if(g_strcmp0(iface->name, name))
   {
@@ -955,6 +984,8 @@ gboolean sfwbar_module_init ( void )
 
 static void *nm_expr_get ( void **params, void *widget, void *event )
 {
+  nm_device_t *device;
+  GList *iter;
   gchar *result;
 
   if(!params || !params[0])
@@ -966,6 +997,19 @@ static void *nm_expr_get ( void **params, void *widget, void *event )
   if( (result = module_queue_get_string(&remove_q, params[0])) )
     return result;
 
+  if(default_dev && !g_ascii_strcasecmp(params[0], "DeviceStrength"))
+  {
+    iter = NULL;
+    if(params[1])
+      for(iter=devices; iter; iter=g_list_next(iter))
+        if(!g_strcmp0(NM_DEVICE(iter->data)->name, params[1]))
+          break;
+
+    device = iter?iter->data:default_dev;
+    return g_strdup_printf("%d",
+        (device && device->active && device->active->ap)?
+        device->active->ap->strength:0);
+  }
   return g_strdup("");
 }
 
@@ -984,11 +1028,11 @@ static void nm_action_ack_removed ( gchar *cmd, gchar *name, void *d1,
 static void nm_action_scan ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
-  if(!default_iface)
+  if(!default_dev)
     return;
   g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
       (gpointer)g_intern_static_string("nm_scan"));
-  g_dbus_connection_call(nm_con, nm_iface, default_iface->path,
+  g_dbus_connection_call(nm_con, nm_iface, default_dev->path,
       nm_iface_wireless, "RequestScan", g_variant_new("(a{sv})", NULL),
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
 }
