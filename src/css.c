@@ -39,7 +39,7 @@ static void css_custom_handle ( GtkWidget *widget )
 
   gtk_widget_style_get(widget,"visible",&state,NULL);
   if(state)
-    gtk_widget_show_now(widget);
+    gtk_widget_show(widget);
   else
   {
     if(GTK_IS_WINDOW(widget))
