@@ -244,7 +244,7 @@ static void nm_apoint_update ( nm_apoint_t *ap )
   else
     module_queue_append(&remove_q, ap->hash);
 
-  g_message("ap: %s, %s, known: %d, conn: %d, strength: %d", ap->ssid,
+  g_debug("nm: ap: %s, %s, known: %d, conn: %d, strength: %d", ap->ssid,
       nm_apoint_get_type(ap), !!ap->conn, !!ap->active, ap->strength);
 }
 
@@ -301,7 +301,7 @@ static void nm_conn_free ( nm_conn_t *conn )
 
 static void nm_conn_connect ( gchar *path )
 {
-  g_message("connecting: %s", path);
+  g_debug("nm connecting to: %s", path);
   g_dbus_connection_call(nm_con, nm_iface, nm_path, nm_iface,
       "ActivateConnection", g_variant_new("(ooo)", path, "/", "/"),
       G_VARIANT_TYPE("(o)"), G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
@@ -423,7 +423,7 @@ static gboolean nm_passphrase_prompt ( GVariant *vconn, gpointer inv )
   g_signal_connect(G_OBJECT(dialog->cancel), "clicked",
       G_CALLBACK(nm_button_clicked), dialog);
 
-  g_message("dialog: %s", path);
+  g_debug("nm: secrets dialog: %s", path);
   g_object_ref_sink(G_OBJECT(dialog->win));
   dialog->path = g_strdup(path);
   g_hash_table_insert(dialog_list, dialog->path, dialog);
@@ -438,10 +438,10 @@ static void nm_conn_new_cb ( GDBusConnection *con, GAsyncResult *res,
   GVariant *result;
   gchar *path;
 
-  g_message("connected");
   if( (result = g_dbus_connection_call_finish(con, res, NULL)) )
   {
     g_variant_get(result, "(&oo)", NULL, &path);
+    g_debug("nm: new connection: %s", path);
     g_hash_table_insert(new_conns, path, path);
 
     g_variant_unref(result);
@@ -538,7 +538,7 @@ static void nm_conn_handle_cb ( GDBusConnection *con, GAsyncResult *res,
             if(!g_strcmp0(active->conn, conn->path))
               conn->active = active;
           nm_apoint_xref_all();
-          g_message("conn: %s (%s)", ssid, path);
+          g_debug("nm: new connection: %s (%s)", ssid, path);
         }
         else
           g_free(ssid);
@@ -558,7 +558,7 @@ static void nm_ap_node_free ( nm_ap_node_t *node )
   if( (apoint=node->ap) )
     if( !(apoint->nodes = g_list_remove(apoint->nodes, node)) )
     {
-      g_message("ap removed: %s", apoint->ssid);
+      g_debug("nm: ap removed: %s", apoint->ssid);
       module_queue_append(&remove_q, apoint->hash);
       if(apoint->active)
         apoint->active->ap = NULL;
@@ -647,7 +647,7 @@ static void nm_active_disconnect ( nm_active_t *active )
   if(!active)
     return;
 
-  g_message("deactivate: %s", active->path);
+  g_debug("nm: deactivating: %s", active->path);
   g_dbus_connection_call(nm_con, nm_iface, nm_path, nm_iface,
       "DeactivateConnection", g_variant_new("(o)", active->path),
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
@@ -657,7 +657,7 @@ static void nm_conn_forget ( nm_conn_t *conn )
 {
   if(!conn)
     return;
-  g_message("forget: %s", conn->path);
+  g_debug("nm: forgetting: %s", conn->path);
   g_dbus_connection_call(nm_con, nm_iface, conn->path, nm_iface_conn, "Delete",
       NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
 }
@@ -690,7 +690,6 @@ static void nm_active_handle ( const gchar *path, gchar *ifa, GVariant *dict )
         {
           active->device = liter->data;
           active->device->active = active;
-          g_message("active mapped to: %s", active->device->name);
         }
 
   g_hash_table_insert(active_list, active->path, active);
@@ -700,14 +699,14 @@ static void nm_active_handle ( const gchar *path, gchar *ifa, GVariant *dict )
     conn->active = active;
     nm_apoint_xref_all();
   }
-  g_message("nm: connected: %s", path);
+  g_debug("nm: connected to: %s", path);
 }
 
 static void nm_active_free ( nm_active_t *active )
 {
   nm_conn_t *conn;
 
-  g_debug("nm: disconnected: %s", active->path);
+  g_debug("nm: disconnected from: %s", active->path);
 
   if( (conn = g_hash_table_lookup(conn_list, active->conn)) )
   {
@@ -944,7 +943,6 @@ static void nm_secret_agent_method(GDBusConnection *con,
     g_variant_get(parameters, "(&o&s)", &opath, NULL);
     if( (dialog = g_hash_table_lookup(dialog_list, opath)) )
     {
-      g_message("CancelGetSecrets: %p %s", dialog, opath);
       nm_button_clicked(dialog->cancel, dialog);
       return;
     }
