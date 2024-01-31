@@ -254,6 +254,7 @@ static gboolean nm_apoint_xref ( nm_apoint_t *ap )
   nm_active_t *active;
   gboolean change = FALSE;
 
+  g_return_val_if_fail(ap, FALSE);
   conn = nm_apoint_get_conn(ap);
   if(ap->conn != conn)
   {
@@ -618,7 +619,7 @@ static void nm_ap_node_handle ( const gchar *path, gchar *ifa, GVariant *dict )
 
   if(g_variant_lookup(dict, "Strength", "y", &strength))
   {
-    node->strength = CLAMP(strength, 0, 100);
+    node->strength = MIN(strength, 100);
     ap_strength = 0;
     for(iter=apoint->nodes; iter; iter=g_list_next(iter))
       ap_strength = MAX(ap_strength, NM_AP_NODE(iter->data)->strength);
