@@ -73,6 +73,7 @@ GtkWidget *menu_new ( gchar *name )
   }
 
   menu = gtk_menu_new();
+  gtk_widget_set_name(menu, name);
   g_signal_connect(menu, "popped-up", G_CALLBACK(menu_clamp_size), NULL);
   gtk_menu_set_reserve_toggle_size(GTK_MENU(menu), FALSE);
 
