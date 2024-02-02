@@ -11,10 +11,10 @@
 #include "basewidget.h"
 #include "../meson.h"
 
-GList *module_list;
-GHashTable *expr_handlers;
-GData *act_handlers;
-GList *invalidators;
+static GList *module_list;
+static GHashTable *expr_handlers, *interfaces;
+static GData *act_handlers;
+static GList *invalidators;
 
 void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler,gchar *name )
 {
@@ -47,14 +47,97 @@ void module_actions_add ( ModuleActionHandlerV1 **ahandler, gchar *name )
     if(ahandler[i]->function && ahandler[i]->name)
     {
       lname = g_ascii_strdown(ahandler[i]->name,-1);
+      ahandler[i]->quark = g_quark_from_string(lname);
       g_debug("module: register action '%s'",ahandler[i]->name);
-      if(g_datalist_get_data(&act_handlers,lname))
+      if(g_datalist_id_get_data(&act_handlers, ahandler[i]->quark))
         g_message("Duplicate module action: %s in module %s",
-            ahandler[i]->name,name);
+            ahandler[i]->name, name);
       else
-        g_datalist_set_data(&act_handlers,lname,ahandler[i]);
+        g_datalist_id_set_data(&act_handlers, ahandler[i]->quark, ahandler[i]);
       g_free(lname);
     }
+}
+
+void module_interface_select ( gchar *interface )
+{
+  ModuleInterfaceList *list;
+  ModuleInterfaceV1 *new;
+  GList *iter;
+  gint i;
+
+  if( !(list = g_hash_table_lookup(interfaces, interface)) )
+    return;
+
+  for(iter=list->list; iter; iter=g_list_next(iter))
+    if(((ModuleInterfaceV1 *)iter->data)->ready)
+      break;
+
+  new = iter?iter->data:NULL;
+  if(list->active == new)
+    return;
+
+  if(list->active && list->active->active)
+  {
+    list->active->deactivate();
+    list->active->ready = FALSE;
+    if(!list->active->active)
+      module_interface_select(interface);
+    return;
+  }
+
+  g_debug("module: switching interface '%s' from '%s' to '%s'", interface,
+      list->active?list->active->provider:"none", new?new->provider:"none");
+
+  if(list->active)
+  {
+    for(i=0; list->active->expr_handlers[i]; i++)
+      g_hash_table_remove(expr_handlers, list->active->expr_handlers[i]->name);
+    for(i=0; list->active->act_handlers[i]; i++)
+      g_datalist_id_remove_data(&act_handlers,
+          list->active->act_handlers[i]->quark);
+  }
+  list->active = new;
+  if(new)
+  {
+    module_actions_add(new->act_handlers, new->provider);
+    module_expr_funcs_add(new->expr_handlers, new->provider);
+    new->activate();
+  }
+}
+
+void module_interface_activate ( ModuleInterfaceV1 *iface )
+{
+  iface->ready = TRUE;
+  module_interface_select(iface->interface);
+}
+
+void module_interface_deactivate ( ModuleInterfaceV1 *iface )
+{
+  iface->ready = FALSE;
+  module_interface_select(iface->interface);
+}
+
+static void module_interface_add ( ModuleInterfaceV1 *iface,
+    gchar *name )
+{
+  ModuleInterfaceList *list;
+
+  if(!iface || !iface->interface || !iface->activate || !iface->deactivate)
+    return;
+
+  if(!interfaces)
+    interfaces = g_hash_table_new_full((GHashFunc)str_nhash,
+        (GEqualFunc)str_nequal, g_free, NULL);
+
+  if( !(list=g_hash_table_lookup(interfaces, iface->interface)) )
+  {
+    list = g_malloc0(sizeof(ModuleInterfaceList));
+    g_hash_table_insert(interfaces, g_strdup(iface->interface), list);
+  }
+  g_debug("module: adding provider: '%s' for interface '%s'",
+      iface->provider, iface->interface);
+  list->list = g_list_append(list->list, iface);
+  module_interface_select(iface->interface);
 }
 
 gboolean module_load ( gchar *name )
@@ -64,6 +147,7 @@ gboolean module_load ( gchar *name )
   ModuleActionHandlerV1 **ahandler;
   ModuleInvalidator invalidator;
   ModuleInitializer init;
+  ModuleInterfaceV1 *iface;
   gint64 *sig;
   guint16 *ver;
   gchar *fname, *path;
@@ -118,6 +202,9 @@ gboolean module_load ( gchar *name )
 
   if(g_module_symbol(module,"sfwbar_action_handlers",(void **)&ahandler))
     module_actions_add(ahandler, name);
+
+  if(g_module_symbol(module,"sfwbar_interface",(void **)&iface))
+    module_interface_add(iface, name);
 
   return TRUE;
 }

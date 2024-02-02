@@ -33,8 +33,25 @@ typedef struct {
 typedef struct {
   gchar *name;
   gint flags;
+  GQuark quark;
   ModuleActionFunc function;
 } ModuleActionHandlerV1;
+
+typedef struct {
+  gboolean ready;
+  gboolean active;
+  gchar *interface;
+  gchar *provider;
+  ModuleExpressionHandlerV1 **expr_handlers;
+  ModuleActionHandlerV1 **act_handlers;
+  void (*activate) (void);
+  void (*deactivate) (void);
+} ModuleInterfaceV1;
+
+typedef struct {
+  GList *list;
+  ModuleInterfaceV1 *active;
+} ModuleInterfaceList;
 
 enum ModuleFlags {
   MODULE_EXPR_NUMERIC       = 1,
@@ -62,5 +79,8 @@ void module_action_exec ( GQuark quark, gchar *param, gchar *addr, void *,
     void *, void *, void * );
 void module_actions_add ( ModuleActionHandlerV1 **ahandler, gchar *name );
 void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler,gchar *name);
+void module_interface_select ( gchar *interface );
+void module_interface_activate ( ModuleInterfaceV1 *iface );
+void module_interface_deactivate ( ModuleInterfaceV1 *iface );
 
 #endif
