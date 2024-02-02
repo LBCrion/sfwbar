@@ -27,38 +27,41 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "SFWBAR-WIFI-IWD" 1 "" ""
+.TH "SFWBAR-WIFI" 1 "" ""
 .SH NAME
-sfwbar-wifi-iwd \- Sfwbar Iwd Wifi module
+sfwbar-wifi \- Sfwbar Wifi interface
 .sp
 Filename: wifi\-iwd.so
+Filename: wifi\-nm.so
 .sp
 Requires: none
 .SH SYNOPSIS
 .sp
-Wifi Iwd module provides means to query and control the wifi network using
-iwd wireless daemon.
+Wifi module interface provides means to query and control the wifi network.
+There are currently two modules providing this interface: wifi\-iwd provides
+support for IWD daemon and wifi\-nm provides support for NetworkManager.
+.sp
 \fB* In order to use wifi\-iwd module, the user must have permission to control
 iwd daemon. Usually permissions are granted by adding the user to \(ganetdev\(ga or
 \(gawheel\(ga user group *\fP
 .SH EXPRESSION FUNCTIONS
-.SS IwdGet(Property)
+.SS WifiGet(Property)
 .sp
-function IwdGet queries a property for a currently advertized iwd network.
+function WifiGet queries a property for a currently advertized iwd network.
 The supported properties are:
 .INDENT 0.0
 .TP
 .B \(dqPath\(dq
 an object path of the device, this is used as a unique id to provide
 notifications of changes or destruction of the device and to control
-the device. This property is valid upon receipt of \fIiwd_updated\fP trigger.
+the device. This property is valid upon receipt of \fIwifi_updated\fP trigger.
 .TP
 .B \(dqRemovedPath\(dq
 an object path of the most recently removed device. This is populated
-upon emission of the \(dqiwd_removed\(dq trigger.
+upon emission of the \fIwifi_removed\fP trigger.
 .TP
-.B \(dqESSID\(dq
-an ESSID of the network.
+.B \(dqSSID\(dq
+an SSID of the network.
 .TP
 .B \(dqType\(dq
 a Type of the network (\(aqopen\(aq, \(aqwep\(aq, \(aqpsk\(aq or \(aq8021x\(aq)
@@ -74,26 +77,26 @@ an indicator of whether the daemon is connected to the network
 (\(dq1\(dq = connected, \(dq0\(dq = not connected)
 .UNINDENT
 .SH ACTIONS
-.SS IwdScan <Duration>
+.SS WifiScan <Duration>
 .sp
 Initiate scan for wireless networks.
-.SS IwdAck
+.SS WifiAck
 .sp
 Notify the module that all information for the currently advertized network has
-been processed. The module may then emit another \fIiwd_updated\fP event if further
+been processed. The module may then emit another \fIwifi_updated\fP event if further
 network updates are available.
-.SS IwdAckRemoved
+.SS WifiAckRemoved
 .sp
 Notify the module that all information for the currently advertized network
-removal has been processed. The module may then emit another \fIiwd_removed\fP
+removal has been processed. The module may then emit another \fIwifi_removed\fP
 event if further network removals are queued.
-.SS IwdConnect <path>
+.SS WifiConnect <path>
 .sp
 Attempt to connect to a netowrk specified by the path.
-.SS IwdDisconnect <path>
+.SS WifiDisconnect <path>
 .sp
 Disconnect from a netowrk specified by the path.
-.SS IwdForget <path>
+.SS WifiForget <path>
 .sp
 Forget a known network specified by the path.
 .SH TRIGGERS
@@ -101,29 +104,30 @@ Forget a known network specified by the path.
 The module defines the following triggers:
 .INDENT 0.0
 .TP
-.B \(dqiwd_level\(dq
+.B \(dqwifi_level\(dq
 This signal is emitted when signal strength for the current connection
 changes.
 .TP
-.B \(dqiwd_updated\(dq
+.B \(dqwifi_updated\(dq
 this trigger is emitted when a new network is discovered or properties of
 a network are changed. Once the trigger is emitted, the information for the
-relevant network will be available via IwdGet expression function. Once the
-config finished handling the network update, it should call action \fIIwdAck\fP\&.
-Upon receipt of this action, the module may emit \fIiwd_updated\fP again if
-further network updates are queued.
+relevant network will be available via \fIWifiGet\fP expression function. Once
+the config finished handling the network update, it should call action
+\fIWifiAck\fP\&.  Upon receipt of this action, the module may emit \fIwifi_updated\fP
+again if further network updates are queued.
 .TP
-.B \(dqiwd_removed\(dq
+.B \(dqwifi_removed\(dq
 this trigger is emitted when a network is no longer available and should be
 removed from the layout. The path of the removed network is available via
-IwdGet(\(dqRemovedPath\(dq). Once the config finished removing the netowrk, it
-should call action IwdAckRemoved. Upon receipt of this action, the module may
-emit another \fIiwd_removed\fP trigger if further networks have been removed.
+\fIWifiGet(\(dqRemovedPath\(dq)\fP\&. Once the config finished removing the netowrk, it
+should call action \fIWifiAckRemoved\fP\&. Upon receipt of this action, the module
+may emit another \fIwifi_removed\fP trigger if further networks have been
+removed.
 .TP
-.B \(dqiwd_scan\(dq
+.B \(dqwifi_scan\(dq
 this trigger is emitted when scan for networks has been initiated.
 .TP
-.B \(dqiwd_scan_complete\(dq
+.B \(dqwifi_scan_complete\(dq
 this trigger is emitted when scan for networks is complete.
 .UNINDENT
 .SH COPYRIGHT
