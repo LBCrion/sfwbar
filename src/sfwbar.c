@@ -18,6 +18,7 @@
 
 extern gchar *confname;
 extern gchar *sockname;
+extern GtkApplication *application;
 
 static gchar *cssname;
 static gchar *monitor;
@@ -121,6 +122,7 @@ static void activate (GtkApplication* app, gpointer data )
   GdkDisplay *gdisp;
   GList *clist, *iter;
 
+  application = app;
   expr_lib_init();
   action_lib_init();
   css_init(cssname);
@@ -147,7 +149,6 @@ static void activate (GtkApplication* app, gpointer data )
   for(iter = clist; iter; iter = g_list_next(iter) )
     if(GTK_IS_BOX(gtk_bin_get_child(GTK_BIN(iter->data))))
     {
-      gtk_application_add_window(app,GTK_WINDOW(iter->data));
       css_widget_cascade(GTK_WIDGET(iter->data),NULL);
       base_widget_autoexec(iter->data,NULL);
       if(monitor)
