@@ -34,6 +34,7 @@ struct _TaskbarItemPrivate
   window_t *win;
   action_t **actions;
   gboolean invalid;
+  gboolean is_drag_dest;
   GdkModifierType saved_modifiers;
 };
 

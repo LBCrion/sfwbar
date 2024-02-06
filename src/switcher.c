@@ -25,6 +25,8 @@ static gint counter;
 static gint title_width = -1;
 static window_t *focus;
 
+GtkApplication *application;
+
 static GtkWidget *switcher_get_child ( GtkWidget *self )
 {
   SwitcherPrivate *priv;
@@ -67,7 +69,7 @@ GtkWidget *switcher_new ( void )
   {
     grid = self;
     gtk_widget_set_name(base_widget_get_child(grid), "switcher");
-    switcher = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    switcher = gtk_application_window_new(application);
     gtk_layer_init_for_window (GTK_WINDOW(switcher));
     gtk_layer_set_layer(GTK_WINDOW(switcher),GTK_LAYER_SHELL_LAYER_OVERLAY);
     gtk_widget_set_name(switcher, "switcher");

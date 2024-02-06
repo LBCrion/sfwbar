@@ -474,7 +474,7 @@ ModuleExpressionHandlerV1 read_handler = {
   .function = expr_lib_read
 };
 
-ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
+static ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &mid_handler,
   &replace_handler,
   &pad_handler,

@@ -664,7 +664,7 @@ void base_widget_set_action ( GtkWidget *self, gint n, GdkModifierType mods,
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  if(n<0 || n>=8)
+  if(n<0 || n>=9)
     return;
 
   for(iter=priv->actions; iter; iter=g_list_next(iter))

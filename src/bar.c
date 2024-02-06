@@ -18,6 +18,7 @@ G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW, G_ADD_PRIVATE (Bar))
 
 static GHashTable *bar_list;
 static GList *mirrors;
+extern GtkApplication *application;
 
 static gboolean bar_sensor_unblock_cb ( GtkWidget *self )
 {
@@ -747,6 +748,7 @@ GtkWidget *bar_new ( gchar *name )
   BarPrivate *priv;
 
   self = GTK_WIDGET(g_object_new(bar_get_type(), NULL));
+  gtk_application_add_window(application, GTK_WINDOW(self));
   priv = bar_get_instance_private(BAR(self));
   priv->name = g_strdup(name);
   priv->visible = TRUE;

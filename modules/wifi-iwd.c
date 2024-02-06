@@ -7,6 +7,8 @@
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
 
+extern ModuleInterfaceV1 sfwbar_interface;
+
 static void iw_signal_level_agent_init ( gchar *path );
 static void iw_scan_start ( gchar *path );
 
@@ -15,6 +17,7 @@ static GDBusConnection *iw_con;
 static GList *iw_devices;
 static GHashTable *iw_networks, *iw_known_networks;
 static gint sub_add, sub_del, sub_chg;
+static gchar *iw_owner;
 
 static const gchar *iw_iface_device = "net.connman.iwd.Device";
 static const gchar *iw_iface_station = "net.connman.iwd.Station";
@@ -261,7 +264,7 @@ static module_queue_t update_q = {
   .compare = (gboolean (*)(const void *, const void *))iw_network_compare,
 };
 
-static void *iwd_remove_get_str ( gchar *name, gchar *prop )
+static void *iw_remove_get_str ( gchar *name, gchar *prop )
 {
   if(!g_ascii_strcasecmp(prop, "RemovedPath"))
     return g_strdup(name);
@@ -272,7 +275,7 @@ static void *iwd_remove_get_str ( gchar *name, gchar *prop )
 static module_queue_t remove_q = {
   .free = g_free,
   .duplicate = (void *(*)(void *))g_strdup,
-  .get_str = (void *(*)(void *, gchar *))iwd_remove_get_str,
+  .get_str = (void *(*)(void *, gchar *))iw_remove_get_str,
   .compare = (gboolean (*)(const void *, const void *))g_strcmp0,
 };
 
@@ -373,7 +376,7 @@ static void iw_signal_level_agent_method(GDBusConnection *con,
     
     g_debug("iwd: level %d on %s", level, device?device->name:object);
     g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("iwd_level"));
+        (gpointer)g_intern_static_string("wifi_level"));
     g_dbus_method_invocation_return_value(invocation, NULL);
   }
 }
@@ -450,30 +453,30 @@ static void iw_passphrase_prompt ( gchar *title, gboolean user, gpointer inv )
   g_signal_connect(G_OBJECT(dialog->win), "delete-event",
     G_CALLBACK(iw_passphrase_delete_cb), dialog);
   grid = gtk_grid_new();
-  gtk_widget_set_name(grid, "iwd_dialog_grid");
+  gtk_widget_set_name(grid, "wifi_dialog_grid");
   gtk_container_add(GTK_CONTAINER(dialog->win), grid);
   label = gtk_label_new(title);
   g_free(title);
-  gtk_widget_set_name(label, "iwd_dialog_title");
+  gtk_widget_set_name(label, "wifi_dialog_title");
   gtk_grid_attach(GTK_GRID(grid), label, 1, 1, 2, 1);
 
   if(user)
   {
     label = gtk_label_new("Username:");
-    gtk_widget_set_name(label, "iwd_user_label");
+    gtk_widget_set_name(label, "wifi_user_label");
     gtk_grid_attach(GTK_GRID(grid),label, 1, 2, 1, 1);
     dialog->user = gtk_entry_new();
-    gtk_widget_set_name(dialog->user, "iwd_user_entry");
+    gtk_widget_set_name(dialog->user, "wifi_user_entry");
     gtk_grid_attach(GTK_GRID(grid), dialog->user, 2, 2, 1, 1);
     g_signal_connect(G_OBJECT(dialog->user), "changed",
         G_CALLBACK(iw_passphrase_changed_cb), dialog);
   }
 
   label = gtk_label_new("Passphrase:");
-  gtk_widget_set_name(label, "iwd_passphrase_label");
+  gtk_widget_set_name(label, "wifi_passphrase_label");
   gtk_grid_attach(GTK_GRID(grid), label, 1, 3, 1, 1);
   dialog->pass = gtk_entry_new();
-  gtk_widget_set_name(dialog->pass, "iwd_passphrase_entry");
+  gtk_widget_set_name(dialog->pass, "wifi_passphrase_entry");
   gtk_entry_set_visibility(GTK_ENTRY(dialog->pass), FALSE);
   g_signal_connect(G_OBJECT(dialog->pass), "activate",
       G_CALLBACK(iw_passphrase_cb), dialog);
@@ -482,14 +485,14 @@ static void iw_passphrase_prompt ( gchar *title, gboolean user, gpointer inv )
   gtk_grid_attach(GTK_GRID(grid), dialog->pass, 2, 3, 1, 1);
 
   dialog->ok = gtk_button_new_with_label("Ok");
-  gtk_widget_set_name(dialog->ok, "iwd_button_ok");
+  gtk_widget_set_name(dialog->ok, "wifi_button_ok");
   gtk_grid_attach(GTK_GRID(grid), dialog->ok, 1, 4, 1, 1);
   gtk_widget_set_sensitive(dialog->ok, FALSE);
   g_signal_connect(G_OBJECT(dialog->ok), "clicked",
       G_CALLBACK(iw_button_clicked), dialog);
 
   dialog->cancel = gtk_button_new_with_label("Cancel");
-  gtk_widget_set_name(dialog->cancel, "iwd_button_cancel");
+  gtk_widget_set_name(dialog->cancel, "wifi_button_cancel");
   gtk_grid_attach(GTK_GRID(grid), dialog->cancel, 2, 4, 1, 1);
   g_signal_connect(G_OBJECT(dialog->cancel), "clicked",
       G_CALLBACK(iw_button_clicked), dialog);
@@ -543,7 +546,7 @@ static void iw_scan_start ( gchar *path )
     return;
   g_debug("iwd: initiating scan");
   g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("iwd_scan"));
+      (gpointer)g_intern_static_string("wifi_scan"));
   g_dbus_connection_call(iw_con, iw_serv, path, iw_iface_station, "Scan",
       NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
 }
@@ -652,7 +655,7 @@ static void iw_station_handle ( gchar *path, gchar *iface, GVariant *dict )
   if(scan && !device->scanning)
   {
     g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("iwd_scan_complete"));
+        (gpointer)g_intern_static_string("wifi_scan_complete"));
     g_dbus_connection_call(iw_con, iw_serv, path, iw_iface_station,
         "GetOrderedNetworks", NULL, G_VARIANT_TYPE("(a(on))"),
         G_DBUS_CALL_FLAGS_NONE, -1, NULL,
@@ -785,27 +788,33 @@ static void iw_init_cb ( GDBusConnection *con, GAsyncResult *res, gpointer data 
 
 }
 
-void iw_name_appeared_cb (GDBusConnection *con, const gchar *name,
-    const gchar *owner, gpointer d)
+static void iw_activate ( void )
 {
-  sub_add = g_dbus_connection_signal_subscribe(con, owner,
+  sub_add = g_dbus_connection_signal_subscribe(iw_con, iw_owner,
       "org.freedesktop.DBus.ObjectManager", "InterfacesAdded", NULL, NULL,
       G_DBUS_SIGNAL_FLAGS_NONE, iw_object_new_cb, NULL, NULL);
-  sub_del = g_dbus_connection_signal_subscribe(con, owner,
+  sub_del = g_dbus_connection_signal_subscribe(iw_con, iw_owner,
       "org.freedesktop.DBus.ObjectManager", "InterfacesRemoved", NULL, NULL,
       G_DBUS_SIGNAL_FLAGS_NONE, iw_object_removed_cb, NULL, NULL);
-  sub_chg = g_dbus_connection_signal_subscribe(con, owner,
+  sub_chg = g_dbus_connection_signal_subscribe(iw_con, iw_owner,
       "org.freedesktop.DBus.Properties", "PropertiesChanged", NULL, NULL,
       G_DBUS_SIGNAL_FLAGS_NONE, iw_object_prop_cb, NULL, NULL);
 
-  g_dbus_connection_call(con, iw_serv,"/",
+  g_dbus_connection_call(iw_con, iw_serv,"/",
       "org.freedesktop.DBus.ObjectManager", "GetManagedObjects", NULL,
       G_VARIANT_TYPE("(a{oa{sa{sv}}})"), G_DBUS_CALL_FLAGS_NONE, -1, NULL,
       (GAsyncReadyCallback)iw_init_cb, NULL);
 }
 
-void iw_name_disappeared_cb (GDBusConnection *con, const gchar *name,
-    gpointer d)
+static void iw_name_appeared_cb (GDBusConnection *con, const gchar *name,
+    const gchar *owner, gpointer d)
+{
+  g_free(iw_owner);
+  iw_owner = g_strdup(owner);
+  module_interface_activate(&sfwbar_interface);
+}
+
+static void iw_deactivate ( void )
 {
   g_debug("iwd: daemon disappeared");
 
@@ -815,6 +824,14 @@ void iw_name_disappeared_cb (GDBusConnection *con, const gchar *name,
     g_hash_table_remove_all(iw_networks);
   if(iw_known_networks)
     g_hash_table_remove_all(iw_known_networks);
+
+  sfwbar_interface.active = !!update_q.list | !!remove_q.list;
+}
+
+static void iw_name_disappeared_cb (GDBusConnection *con, const gchar *name,
+    gpointer d)
+{
+  module_interface_deactivate(&sfwbar_interface);
 }
 
 gboolean sfwbar_module_init ( void )
@@ -828,8 +845,8 @@ gboolean sfwbar_module_init ( void )
   if( !(iw_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
     return FALSE;
 
-  update_q.trigger = g_intern_static_string("iwd_updated");
-  remove_q.trigger = g_intern_static_string("iwd_removed");
+  update_q.trigger = g_intern_static_string("wifi_updated");
+  remove_q.trigger = g_intern_static_string("wifi_removed");
 
   node = g_dbus_node_info_new_for_xml(iw_agent_xml, NULL);
   g_dbus_connection_register_object (iw_con,
@@ -875,12 +892,22 @@ static void iw_action_ack ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
   module_queue_remove(&update_q);
+  if(!sfwbar_interface.ready)
+  {
+    sfwbar_interface.active = !!update_q.list | !!remove_q.list;
+    module_interface_select(sfwbar_interface.interface);
+  }
 }
 
 static void iw_action_ack_removed ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
   module_queue_remove(&remove_q);
+  if(!sfwbar_interface.ready)
+  {
+    sfwbar_interface.active = !!update_q.list | !!remove_q.list;
+    module_interface_select(sfwbar_interface.interface);
+  }
 }
 
 static void iw_action_scan ( gchar *cmd, gchar *name, void *d1,
@@ -923,49 +950,49 @@ static void iw_action_forget ( gchar *cmd, gchar *name, void *d1,
     iw_network_forget(cmd);
 }
 
-ModuleExpressionHandlerV1 get_handler = {
+static ModuleExpressionHandlerV1 get_handler = {
   .flags = 0,
-  .name = "IwdGet",
+  .name = "WifiGet",
   .parameters = "Ss",
   .function = iw_expr_get
 };
 
-ModuleExpressionHandlerV1 *sfwbar_expression_handlers[] = {
+static ModuleExpressionHandlerV1 *iw_expr_handlers[] = {
   &get_handler,
   NULL
 };
 
-ModuleActionHandlerV1 ack_handler = {
-  .name = "IwdAck",
+static ModuleActionHandlerV1 ack_handler = {
+  .name = "WifiAck",
   .function = iw_action_ack
 };
 
-ModuleActionHandlerV1 ack_removed_handler = {
-  .name = "IwdAckRemoved",
+static ModuleActionHandlerV1 ack_removed_handler = {
+  .name = "WifiAckRemoved",
   .function = iw_action_ack_removed
 };
 
-ModuleActionHandlerV1 scan_handler = {
-  .name = "IwdScan",
+static ModuleActionHandlerV1 scan_handler = {
+  .name = "WifiScan",
   .function = iw_action_scan
 };
 
-ModuleActionHandlerV1 connect_handler = {
-  .name = "IwdConnect",
+static ModuleActionHandlerV1 connect_handler = {
+  .name = "WifiConnect",
   .function = iw_action_connect
 };
 
-ModuleActionHandlerV1 disconnect_handler = {
-  .name = "IwdDisconnect",
+static ModuleActionHandlerV1 disconnect_handler = {
+  .name = "WifiDisconnect",
   .function = iw_action_disconnect
 };
 
-ModuleActionHandlerV1 forget_handler = {
-  .name = "IwdForget",
+static ModuleActionHandlerV1 forget_handler = {
+  .name = "WifiForget",
   .function = iw_action_forget
 };
 
-ModuleActionHandlerV1 *sfwbar_action_handlers[] = {
+static ModuleActionHandlerV1 *iw_action_handlers[] = {
   &ack_handler,
   &ack_removed_handler,
   &scan_handler,
@@ -973,4 +1000,13 @@ ModuleActionHandlerV1 *sfwbar_action_handlers[] = {
   &disconnect_handler,
   &forget_handler,
   NULL
+};
+
+ModuleInterfaceV1 sfwbar_interface = {
+  .interface = "wifi",
+  .provider = "IWD",
+  .expr_handlers = iw_expr_handlers,
+  .act_handlers = iw_action_handlers,
+  .activate = iw_activate,
+  .deactivate = iw_deactivate
 };

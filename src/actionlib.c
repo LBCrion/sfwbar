@@ -465,7 +465,7 @@ static ModuleActionHandlerV1 taskbar_item_handler = {
   .function = (ModuleActionFunc)taskbar_item_action
 };
 
-ModuleActionHandlerV1 *action_handlers[] = {
+static ModuleActionHandlerV1 *action_handlers[] = {
   &exec_handler,
   &function_handler,
   &piperead_handler,
