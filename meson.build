@@ -133,14 +133,14 @@ if get_option('iwd').enabled() or get_option('iwd').auto()
   library('wifi-iwd', sources: 'modules/wifi-iwd.c',
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-  man_pages += 'doc/sfwbar-wifi-iwd.1'
+  man_pages += 'doc/sfwbar-wifi.1'
 endif
 
 if get_option('nm').enabled() or get_option('nm').auto()
   library('wifi-nm', sources: 'modules/wifi-nm.c',
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-  man_pages += 'doc/sfwbar-wifi-iwd.1'
+  man_pages += 'doc/sfwbar-wifi.1'
 endif
 
 if puls.found() and pulg.found()
