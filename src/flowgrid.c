@@ -101,7 +101,7 @@ static void flow_grid_init ( FlowGrid *self )
   priv->cols = 0;
   priv->limit = TRUE;
   sig = g_strdup_printf("flow-item-%p", (void *)self);
-  priv->dnd_target = gtk_target_entry_new(sig, 0, 1);
+  priv->dnd_target = gtk_target_entry_new(sig, 0, SFWB_DND_TARGET_FLOW_ITEM);
   g_free(sig);
 
   gtk_grid_set_row_homogeneous(GTK_GRID(self), TRUE);
@@ -433,6 +433,8 @@ static void flow_grid_dnd_data_rec_cb ( GtkWidget *dest, GdkDragContext *ctx,
     gpointer parent )
 {
   GtkWidget *src;
+  if (info != SFWB_DND_TARGET_FLOW_ITEM)
+    return;
 
   if(IS_BASE_WIDGET(parent))
     parent = base_widget_get_child(parent);
@@ -489,6 +491,8 @@ void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
     return;
   gtk_drag_dest_set(child, GTK_DEST_DEFAULT_ALL, priv->dnd_target, 1,
       GDK_ACTION_MOVE);
+  gtk_drag_dest_add_uri_targets(child);
+  gtk_drag_dest_add_text_targets(child);
   g_signal_connect(G_OBJECT(child), "drag-data-received",
       G_CALLBACK(flow_grid_dnd_data_rec_cb), self);
 
