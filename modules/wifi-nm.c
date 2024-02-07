@@ -146,7 +146,7 @@ static const gchar *nm_apoint_get_type ( nm_apoint_t *ap )
     return "wep";
   if((ap->rsn & 0x00000200) || (ap->wpa & 0x00000200))
     return "8021x";
-  return "wpa";
+  return "psk";
 }
 
 static nm_apoint_t *nm_apoint_dup ( nm_apoint_t *src )

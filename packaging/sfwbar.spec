@@ -1,5 +1,5 @@
 Name:           sfwbar
-Version:        1.0_beta13
+Version:        1.0_beta14
 Release:        1%{?dist}
 Summary:        S* Floating Window Bar
 License:        GPL-3.0
@@ -37,6 +37,7 @@ SFWBar (S* Floating Window Bar) is a flexible taskbar application for wayland co
 
 %files
 %{_libdir}/sfwbar
+%{_libdir}/libsfwbar.so
 %{_bindir}/*
 %{_mandir}/man*/*
 %{_datadir}/sfwbar
@@ -45,6 +46,9 @@ SFWBar (S* Floating Window Bar) is a flexible taskbar application for wayland co
 
 
 %changelog
+* Tue Jan 2 2024 Lev Babiev <harley@hosers.org> 1.0_beta14
+- version bump
+
 * Mon Oct 2 2023 Lev Babiev <harley@hosers.org> 1.0_beta13
 - version bump
 

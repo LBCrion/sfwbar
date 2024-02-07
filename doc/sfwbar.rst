@@ -244,13 +244,13 @@ action
   to any widget. Multiple actions can be attached to various pointer events.
   The notation is ``action[<event>] = <action>``.  Event values are 1,2,3 or
   LeftClick, MiddleClick or RightClick respectively. For mouse scroll events,
-  use values 4,5,6,7 or ScrollUp, ScrollDown, ScrollLeft and ScrollRight
-  respectively. If no index is specified the action is attached to a left mouse
-  button click.
+  use values 4,5,6,7,8 or ScrollUp, ScrollDown, ScrollLeft, ScrollRight and
+  Hover respectively. If no index is specified the action is attached to a left
+  mouse button click.
   Additionallly, modifiers can be specified using the notation of
   ``[Modifier+]Index``. I.e. ``action[Ctrl+LeftClick]``. The following
-  modifiers supported: Shift, Ctrl, Mod1, Mod2, Mod3, Mod4, Mod5i, Super, Hyper
-  and Meta. Multiple modifiers can be added, i.e.
+  modifiers supported: Shift, Ctrl, Mod1, Mod2, Mod3, Mod4, Mod5, Super, Hyper,
+  Meta and Drag. Multiple modifiers can be added, i.e.
   ``action[Ctrl+Shift+ScrollUp]``. action[0] will be executed on startup. You
   can use this action to set initial configuration for a widget.  See
   ``Actions`` section for more details on how actions are specified.
