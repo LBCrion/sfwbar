@@ -10,6 +10,12 @@
 #define IS_FLOW_GRID(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj), FLOW_GRID_TYPE))
 #define IS_FLOW_GRIDCLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), FLOW_GRID_TYPE))
 
+enum {
+  /* drag_dest_add_(image|text|uri)_targets sets info to 0 */
+  SFWB_DND_TARGET_GENERIC_GTK_API,
+  SFWB_DND_TARGET_FLOW_ITEM
+};
+
 typedef struct _FlowGrid FlowGrid;
 typedef struct _FlowGridClass FlowGridClass;
 

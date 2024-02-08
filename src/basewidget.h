@@ -44,6 +44,7 @@ struct _BaseWidgetPrivate
   gint64 next_poll;
   gint dir;
   gboolean always_update;
+  gboolean is_drag_dest;
   guint16 user_state;
   GdkRectangle rect;
   GList *mirror_children;

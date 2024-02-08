@@ -101,7 +101,7 @@ static void flow_grid_init ( FlowGrid *self )
   priv->cols = 0;
   priv->limit = TRUE;
   sig = g_strdup_printf("flow-item-%p", (void *)self);
-  priv->dnd_target = gtk_target_entry_new(sig, 0, 1);
+  priv->dnd_target = gtk_target_entry_new(sig, 0, SFWB_DND_TARGET_FLOW_ITEM);
   g_free(sig);
 
   gtk_grid_set_row_homogeneous(GTK_GRID(self), TRUE);
@@ -434,12 +434,16 @@ static void flow_grid_dnd_data_rec_cb ( GtkWidget *dest, GdkDragContext *ctx,
 {
   GtkWidget *src;
 
-  if(IS_BASE_WIDGET(parent))
-    parent = base_widget_get_child(parent);
-  g_return_if_fail(IS_FLOW_GRID(parent));
-  src = *(GtkWidget **)gtk_selection_data_get_data(sel);
+  if(info == SFWB_DND_TARGET_FLOW_ITEM)
+  {
+    if(IS_BASE_WIDGET(parent))
+      parent = base_widget_get_child(parent);
+    g_return_if_fail(IS_FLOW_GRID(parent));
 
-  flow_item_dnd_dest(dest, src, x, y);
+    src = *(GtkWidget **)gtk_selection_data_get_data(sel);
+    flow_item_dnd_dest(dest, src, x, y);
+  }
+  gtk_drag_finish(ctx, TRUE, FALSE, time);
 }
 
 static void flow_grid_dnd_enter_cb ( GtkWidget *widget, GdkEventCrossing *ev,
@@ -491,6 +495,7 @@ void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
       GDK_ACTION_MOVE);
   g_signal_connect(G_OBJECT(child), "drag-data-received",
       G_CALLBACK(flow_grid_dnd_data_rec_cb), self);
+  gtk_drag_dest_set_track_motion(child, TRUE);
 
   if(src)
   {
