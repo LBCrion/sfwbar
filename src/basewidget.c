@@ -254,9 +254,7 @@ static gboolean base_widget_drag_motion( GtkWidget *self, GdkDragContext *ctx,
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if (priv->is_drag_dest)
-  {
     return TRUE;
-  }
 
   priv->is_drag_dest = TRUE;
 
