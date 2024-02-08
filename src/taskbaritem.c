@@ -174,41 +174,6 @@ static void taskbar_item_init ( TaskbarItem *self )
 {
 }
 
-static gboolean taskbar_item_on_drag_motion(GtkWidget *self, 
-    GdkDragContext *ctx, gint x, gint y, guint time, gpointer user_data)
-{
-  TaskbarItemPrivate *priv;
-  GList *target;
-
-  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
-
-  if (priv->is_drag_dest)
-  {
-    return TRUE;
-  }
-
-  priv->is_drag_dest = TRUE;
-
-  for (target = gdk_drag_context_list_targets(ctx); target; target = target->next) {
-    gchar *name = gdk_atom_name(target->data);
-    if(g_str_has_prefix(name, "flow-item-")) {
-      g_free(name);
-      return TRUE;
-    }
-    g_free(name);
-  }
-
-  taskbar_item_action_exec(self, 8, NULL);
-  return TRUE;
-}
-
-static void taskbar_item_on_drag_leave (GtkWidget *self,
-    GdkDragContext *context, guint time, gpointer user_data)
-{
-  TaskbarItemPrivate *priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
-  priv->is_drag_dest = FALSE;
-}
-
 GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
 {
   GtkWidget *self;
@@ -271,8 +236,6 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   flow_grid_add_child(taskbar, self);
 
   gtk_widget_add_events(self, GDK_BUTTON_RELEASE_MASK | GDK_SCROLL_MASK);
-  g_signal_connect(self, "drag-motion", G_CALLBACK(taskbar_item_on_drag_motion), NULL);
-  g_signal_connect (self, "drag-leave", G_CALLBACK(taskbar_item_on_drag_leave), NULL);
   taskbar_item_invalidate(self);
 
   return self;

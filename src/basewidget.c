@@ -244,6 +244,46 @@ static gboolean base_widget_action_exec_impl ( GtkWidget *self, gint slot,
   return TRUE;
 }
 
+static gboolean base_widget_drag_motion( GtkWidget *self, GdkDragContext *ctx,
+    gint x, gint y, guint time )
+{
+  BaseWidgetPrivate *priv;
+  GList *target;
+  gchar *name;
+
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  if (priv->is_drag_dest)
+  {
+    return TRUE;
+  }
+
+  priv->is_drag_dest = TRUE;
+
+  for(target=gdk_drag_context_list_targets(ctx); target; target=target->next)
+  {
+    name = gdk_atom_name(target->data);
+    if(g_str_has_prefix(name, "flow-item-"))
+    {
+      g_free(name);
+      return TRUE;
+    }
+    g_free(name);
+  }
+
+  base_widget_action_exec(self, 8, NULL);
+  return TRUE;
+}
+
+static void base_widget_drag_leave (GtkWidget *self,
+    GdkDragContext *context, guint time )
+{
+  BaseWidgetPrivate *priv;
+
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+  priv->is_drag_dest = FALSE;
+}
+
 static void base_widget_class_init ( BaseWidgetClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = base_widget_destroy;
@@ -255,6 +295,8 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
   GTK_WIDGET_CLASS(kclass)->button_release_event =
     base_widget_button_release_event;
   GTK_WIDGET_CLASS(kclass)->scroll_event = base_widget_scroll_event;
+  GTK_WIDGET_CLASS(kclass)->drag_motion = base_widget_drag_motion;
+  GTK_WIDGET_CLASS(kclass)->drag_leave = base_widget_drag_leave;
 }
 
 static void base_widget_init ( BaseWidget *self )
@@ -696,6 +738,11 @@ void base_widget_set_action ( GtkWidget *self, gint n, GdkModifierType mods,
     gtk_widget_add_events(GTK_WIDGET(self), GDK_BUTTON_RELEASE_MASK);
   else if(n>=4 && n<=7)
     gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
+  else if(n==8)
+  {
+    gtk_drag_dest_set(self, GTK_DEST_DEFAULT_ALL, NULL, 1, GDK_ACTION_MOVE);
+    gtk_drag_dest_set_track_motion(self, TRUE);
+  }
 }
 
 void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src )
