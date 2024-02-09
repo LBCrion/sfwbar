@@ -142,6 +142,9 @@ void config_widget_action_index ( GScanner *scanner, gint *button, gint *mod )
     case G_TOKEN_SCROLL_RIGHT:
       *button = 7;
       break;
+    case G_TOKEN_DRAG:
+      *button = 8;
+      break;
     default:
       g_scanner_error(scanner,"invalid action index");
       break;

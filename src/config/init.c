@@ -176,6 +176,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
       (gpointer)G_TOKEN_SCROLL_RIGHT );
   g_scanner_scope_add_symbol(scanner,0, "ScrollDown",
       (gpointer)G_TOKEN_SCROLL_DOWN );
+  g_scanner_scope_add_symbol(scanner,0, "Drag", (gpointer)G_TOKEN_DRAG );
   g_scanner_scope_add_symbol(scanner,0, "Shift", (gpointer)G_TOKEN_SHIFT );
   g_scanner_scope_add_symbol(scanner,0, "Ctrl", (gpointer)G_TOKEN_CTRL );
   g_scanner_scope_add_symbol(scanner,0, "Mod1", (gpointer)G_TOKEN_MOD1 );
