@@ -19,7 +19,7 @@ Set XWifiNetTmpl = "
     grid '@WIFI_PATH@_grid@WIFI_KNOWN@' {
       style = 'XWifiGrid'
       action = Function 'XWifiConnect'
-      action[3] = Menu 'XWifiItemMenu'
+      action[RightClick] = Menu 'XWifiItemMenu'
       image '@WIFI_PATH@_icon' {
         value = '@WIFI_ICON@'
         style = 'XWifiIcon@WIFI_CONNECTED@'

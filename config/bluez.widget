@@ -23,7 +23,7 @@ Function("XBluezUpdate") {
       "grid '" + XBluezID + "' {" +
         "style = 'XBluezGrid'" +
         "action = BluezPair Extract(WidgetId(),'(.*)_grid') " +
-        "action[3] = Menu 'XBluezItemMenu' " +
+        "action[RIghtClick] = Menu 'XBluezItemMenu' " +
         "image '" + BluezGet("Path") + "_icon' {" +
           "value = '" + BluezGet("Icon") + "' " +
           "style = 'XBluezIcon'" +

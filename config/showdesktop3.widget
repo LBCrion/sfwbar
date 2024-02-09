@@ -1,0 +1,70 @@
+TriggerAction "window_focus", Function "XShowDesktopTaskbar", "XShowDesktopHide"
+
+Function("NoOp") {
+}
+
+Function("XShowDesktopRestoreList") {
+  Eval "XShowDesktopId", Extract($XShowDesktopOld, ":([^:]*)")
+  Eval "XShowDesktopOld", Extract($XShowDesktopOld, ":[^:]*:(.*)")
+  Focus $XShowDesktopId
+  Function If($XShowDesktopOld="","NoOp","XShowDesktopRestoreList")  # recurse
+}
+
+Function("XShowDesktopRestore") {
+  Function "XShowDesktopRestoreList"
+  Eval "XShowDesktopOld", $ShowDesktopList
+  Eval "XShowDesktopId", ""
+  Function "XShowDesktopRestoreList"
+  Function "XShowDesktopReset"
+}
+
+Function("XShowDesktopSave") {
+  Eval "XShowDesktopOld", $XShowDesktopList
+  Eval "XShowDesktopList", ""
+}
+
+Function("XShowDesktopCheck") {
+  [UserState2] UserState "Off"
+  [UserState2] Function If($XShowDesktopOld="", "XShowDesktopSave", "XShowDesktopRestore"
+}
+
+Function("XShowDesktopNotDone") {
+  UserState "XShowDesktopTaskbar", "2:Off"
+}
+
+Function("XShowDesktopHideOne") {
+  [Focused] Minimize
+  [Focused] Eval "XShowDesktopList", ":" + widgetid() + ":" + $XShowDesktopList
+  [!Minimized | !Focused] Function "XShowDesktopNotDone"
+}
+
+Function("XShowDesktopHide") {
+  UserState "2:On"
+  [UserState | Children] Function "XShowDesktopHideOne"
+  [UserState] Function "XShowDesktopTaskbar", "XShowDesktopCheck"
+}
+
+Function("XShowDesktop") {
+  UserState "On"
+  Function "XShowDesktopTaskbar", "XShowDesktopHide"
+}
+
+Function("XShowDesktopReset") {
+  Eval "XShowDesktopList", ""
+  Eval "XShowDesktopOld", ""
+  UserState "XShowDesktopTaskbar", "off"
+}
+
+layout {
+  button {
+    value = "user-desktop-symbolic"
+    style = "module"
+    tooltip = "Show Desktop"
+    action[0] = Function "XShowDesktopReset"
+    action = Function "XShowDesktopTaskbar", "XShowDesktop"
+  }
+  taskbar "XShowDesktopTaskbar" {
+    css = "* { -GtkWidget-visible: false; }"
+    filter = workspace
+  }
+}

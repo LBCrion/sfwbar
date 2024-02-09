@@ -127,11 +127,11 @@ layout {
       "\nPort: " + Pulse("sink-port") +
       "\nMonitor: " + Pulse("sink-monitor")
     style = If(Ident(pulse),"module","hidden")
-    action[3] = PulseCmd "sink-mute toggle"
-    action[2] = Exec $XPulseAction
-    action[1] = PopUp "XVolumeWindow"
-    action[4] = PulseCmd "sink-volume +1"
-    action[5] = PulseCmd "sink-volume -1"
+    action[RightClick] = PulseCmd "sink-mute toggle"
+    action[MiddleClick] = Exec $XPulseAction
+    action[LeftClick] = PopUp "XVolumeWindow"
+    action[ScrollUp] = PulseCmd "sink-volume +1"
+    action[ScrollDown] = PulseCmd "sink-volume -1"
   }
 }
 
