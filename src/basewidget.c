@@ -28,22 +28,6 @@ static void base_widget_attachment_free ( base_widget_attachment_t *attach )
   g_free(attach);
 }
 
-static base_widget_attachment_t *base_widget_attachment_dup (
-    base_widget_attachment_t *src )
-{
-  base_widget_attachment_t *dest;
-
-  if(!src)
-    return NULL;
-
-  dest = g_malloc0(sizeof(base_widget_attachment_t));
-  dest->event = src->event;
-  dest->mods = src->mods;
-  dest->action = action_dup(src->action);
-
-  return dest;
-}
-
 static void base_widget_destroy ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv,*ppriv;
@@ -745,16 +729,18 @@ void base_widget_set_action ( GtkWidget *self, gint n, GdkModifierType mods,
 
 void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src )
 {
-  BaseWidgetPrivate *spriv, *dpriv;
+  BaseWidgetPrivate *spriv;
+  base_widget_attachment_t *attach;
   GList *iter;
 
   g_return_if_fail(IS_BASE_WIDGET(dest) && IS_BASE_WIDGET(src));
   spriv = base_widget_get_instance_private(BASE_WIDGET(src));
-  dpriv = base_widget_get_instance_private(BASE_WIDGET(dest));
 
   for(iter=spriv->actions; iter; iter=g_list_next(iter))
-    dpriv->actions = g_list_prepend(dpriv->actions,
-        base_widget_attachment_dup(iter->data));
+  {
+    attach = iter->data;
+    base_widget_set_action(dest, attach->event, attach->mods, attach->action);
+  }
 }
 
 void base_widget_copy_properties ( GtkWidget *dest, GtkWidget *src )
