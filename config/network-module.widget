@@ -42,8 +42,4 @@ layout {
               "</span>"
     style = If(Ident(NetInfo),"module","hidden")
   }
-  label {
-    value = NmGet("DeviceStrength")
-    trigger = "nm"
-  }
 }
