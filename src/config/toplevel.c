@@ -382,7 +382,6 @@ void config_menu_clear ( GScanner *scanner )
 void config_function ( GScanner *scanner )
 {
   gchar *name = NULL;
-  GList *actions = NULL;
   action_t *action;
 
   config_parse_sequence(scanner,
@@ -404,16 +403,15 @@ void config_function ( GScanner *scanner )
     if(!action)
       g_scanner_error(scanner,"invalid action");
     else
-      actions = g_list_append(actions, action);
+      action_function_add(name, action);
   g_scanner_peek_next_token(scanner);
   }
+  g_free(name);
 
   config_parse_sequence(scanner,
       SEQ_REQ,'}',NULL,NULL,"Expecting an action or '}'",
       SEQ_OPT,';',NULL,NULL,NULL,
       SEQ_END);
-
-  action_function_add(name,actions);
 }
 
 void config_define ( GScanner *scanner )
@@ -427,7 +425,7 @@ void config_define ( GScanner *scanner )
   g_scanner_get_next_token(scanner);
   ident = g_strdup(scanner->value.v_identifier);
 
-  value = config_get_value(scanner,"define",TRUE,NULL);
+  value = config_get_value(scanner, "define", TRUE, NULL);
   if(!value)
   {
     g_free(ident);
@@ -436,9 +434,9 @@ void config_define ( GScanner *scanner )
 
   if(!defines)
     defines = g_hash_table_new_full((GHashFunc)str_nhash,
-        (GEqualFunc)str_nequal,g_free,g_free);
+        (GEqualFunc)str_nequal, g_free, g_free);
 
-  g_hash_table_insert(defines,ident,value);
+  g_hash_table_insert(defines, ident, value);
 }
 
 void config_set ( GScanner *scanner )
@@ -452,13 +450,13 @@ void config_set ( GScanner *scanner )
   g_scanner_get_next_token(scanner);
   ident = g_strdup(scanner->value.v_identifier);
 
-  value = config_get_value(scanner,"set",TRUE,NULL);
+  value = config_get_value(scanner, "set", TRUE, NULL);
   if(!value)
   {
     g_free(ident);
     return;
   }
-  scanner_var_new(ident,NULL,value,G_TOKEN_SET,G_TOKEN_FIRST);
+  scanner_var_new(ident, NULL, value, G_TOKEN_SET, G_TOKEN_FIRST);
   g_free(ident);
   g_free(value);
 }
@@ -467,13 +465,13 @@ void config_mappid_map ( GScanner *scanner )
 {
   gchar *pattern, *appid;
   config_parse_sequence(scanner,
-      SEQ_REQ,G_TOKEN_STRING,NULL,&pattern,"missing pattern in MapAppId",
-      SEQ_REQ,',',NULL,NULL,"missing comma after pattern in MapAppId",
-      SEQ_REQ,G_TOKEN_STRING,NULL,&appid,"missing app_id in MapAppId",
-      SEQ_OPT,';',NULL,NULL,NULL,
+      SEQ_REQ, G_TOKEN_STRING, NULL, &pattern, "missing pattern in MapAppId",
+      SEQ_REQ, ',', NULL, NULL, "missing comma after pattern in MapAppId",
+      SEQ_REQ, G_TOKEN_STRING, NULL, &appid, "missing app_id in MapAppId",
+      SEQ_OPT, ';', NULL, NULL, NULL,
       SEQ_END);
   if(!scanner->max_parse_errors)
-    wintree_appid_map_add(pattern,appid);
+    wintree_appid_map_add(pattern, appid);
   g_free(pattern);
   g_free(appid);
 }

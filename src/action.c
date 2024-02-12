@@ -12,22 +12,14 @@
 static GHashTable *functions;
 static GHashTable *trigger_actions;
 
-void action_function_add ( gchar *name, GList *actions )
+void action_function_add ( gchar *name, action_t *action )
 {
-  GList *list;
-
   if(!functions)
-    functions = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
+    functions = g_hash_table_new_full((GHashFunc)str_nhash,
+        (GEqualFunc)str_nequal, g_free, NULL);
 
-  list = g_hash_table_lookup(functions,name);
-  if(list)
-  {
-    list = g_list_concat(list,actions);
-    g_hash_table_replace(functions,name,list);
-    g_free(name);
-  }
-  else
-    g_hash_table_insert(functions, name, actions);
+  g_hash_table_insert(functions, g_strdup(name),
+        g_list_append(g_hash_table_lookup(functions, name), action));
 }
 
 void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
@@ -40,12 +32,12 @@ void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
     return;
 
   if(win)
-    stat_win = g_memdup2(win,sizeof(window_t));
+    stat_win = g_memdup2(win, sizeof(window_t));
   else
     stat_win = NULL;
 
   for(iter=g_hash_table_lookup(functions, name); iter; iter=g_list_next(iter))
-    action_exec(w,iter->data,ev,stat_win,state);
+    action_exec(w, iter->data, ev, stat_win, state);
 
   g_free(stat_win);
 }
@@ -69,22 +61,20 @@ void action_exec ( GtkWidget *widget, action_t *action,
     GdkEvent *event, window_t *win, guint16 *istate )
 {
   ModuleActionHandlerV1 *ahandler;
-  guint16 state;
-  GList *children, *iter;
-  action_t *caction;
   ExprCache *addr;
+  GList *children, *iter;
+  guint16 state;
+  action_t *caction;
 
   if(!action)
     return;
 
-  ahandler = module_action_get(action->quark);
-  if(!ahandler)
+  if( !(ahandler = module_action_get(action->quark)) )
     return;
 
-  if(ahandler->flags & MODULE_ACT_ADDRESS_ONLY)
-    addr = action->command;
-  else
-    addr = action->addr;
+  addr = (ahandler->flags & MODULE_ACT_ADDRESS_ONLY)?
+    action->command:action->addr;
+
   expr_cache_eval(addr);
   if(addr->cache && ahandler->flags & MODULE_ACT_WIDGET_ADDRESS )
   {
@@ -133,11 +123,11 @@ void action_exec ( GtkWidget *widget, action_t *action,
     children = gtk_container_get_children(
         GTK_CONTAINER(base_widget_get_child(widget)));
     for(iter=children;iter;iter=g_list_next(iter))
-      action_exec(iter->data,caction,event,
+      action_exec(iter->data, caction, event,
           IS_TASKBAR_ITEM(iter->data)?flow_item_get_source(iter->data):win,
           NULL);
     g_list_free(children);
-    action_free(caction,NULL);
+    action_free(caction, NULL);
     return;
   }
 
