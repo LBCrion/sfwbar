@@ -722,7 +722,7 @@ void base_widget_set_action ( GtkWidget *self, gint n, GdkModifierType mods,
     gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
   else if(n==8)
   {
-    gtk_drag_dest_set(self, GTK_DEST_DEFAULT_ALL, NULL, 1, GDK_ACTION_MOVE);
+    gtk_drag_dest_set(self, GTK_DEST_DEFAULT_ALL, NULL, 0, GDK_ACTION_MOVE);
     gtk_drag_dest_set_track_motion(self, TRUE);
   }
 }
@@ -739,7 +739,8 @@ void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src )
   for(iter=spriv->actions; iter; iter=g_list_next(iter))
   {
     attach = iter->data;
-    base_widget_set_action(dest, attach->event, attach->mods, attach->action);
+    base_widget_set_action(dest, attach->event, attach->mods,
+        action_dup(attach->action));
   }
 }
 
