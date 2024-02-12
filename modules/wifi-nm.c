@@ -687,6 +687,7 @@ static void nm_active_handle ( const gchar *path, gchar *ifa, GVariant *dict )
   active->conn = g_strdup(conn_path);
 
   if(g_variant_lookup(dict, "Devices", "ao", &iter))
+  {
     while(g_variant_iter_next(iter, "&o", &dev_path))
       for(liter=devices; liter; liter=g_list_next(liter))
         if(!g_strcmp0(NM_DEVICE(liter->data)->path, dev_path))
@@ -694,6 +695,8 @@ static void nm_active_handle ( const gchar *path, gchar *ifa, GVariant *dict )
           active->device = liter->data;
           active->device->active = active;
         }
+    g_variant_iter_free(iter);
+  }
 
   g_hash_table_insert(active_list, active->path, active);
 
