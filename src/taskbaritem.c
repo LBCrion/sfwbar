@@ -40,12 +40,19 @@ static gboolean taskbar_item_action_exec ( GtkWidget *self, gint slot,
 
 void taskbar_item_set_image ( GtkWidget *icon, gchar *appid )
 {
-  gchar *ptr;
+  gchar *ptr, *tmp;
 
-  if(scale_image_set_image(icon, appid, NULL))
+  if(!appid || scale_image_set_image(icon, appid, NULL))
     return;
-  if( (ptr = g_strrstr(appid, ".")) )
-    scale_image_set_image(icon, ptr+1, NULL);
+  if( (ptr = strrchr(appid, '.')) &&
+    scale_image_set_image(icon, ptr+1, NULL))
+    return;
+  if( (ptr = strchr(appid, ' ')) )
+  {
+    tmp = g_strndup(appid, ptr - appid);
+    scale_image_set_image(icon, tmp, NULL);
+    g_free(tmp);
+  }
 }
 
 window_t *taskbar_item_get_window ( GtkWidget *self )
