@@ -45,13 +45,11 @@ static void taskbar_pager_update ( GtkWidget *self )
     gtk_button_set_label(GTK_BUTTON(priv->button),title);
 
   if (flow_grid_find_child(priv->tgroup, wintree_from_id(wintree_get_focus())))
-    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)),
-        "taskbar_pager_active");
+    gtk_widget_set_name(base_widget_get_child(self), "taskbar_pager_active");
   else
-    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)),
-        "taskbar_pager_normal");
+    gtk_widget_set_name(base_widget_get_child(self), "taskbar_pager_normal");
 
-  gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
+  gtk_widget_unset_state_flags(base_widget_get_child(self),
       GTK_STATE_FLAG_PRELIGHT);
 
   flow_grid_update(priv->tgroup);
@@ -167,7 +165,7 @@ GtkWidget *taskbar_pager_new( workspace_t *ws, GtkWidget *taskbar )
   priv->taskbar = taskbar;
   priv->tgroup = taskbar_new(FALSE);
   flow_grid_set_dnd_target(priv->tgroup, flow_grid_get_dnd_target(taskbar));
-  flow_grid_set_parent(base_widget_get_child(priv->tgroup), self);
+  flow_grid_set_parent(priv->tgroup, self);
   flow_grid_child_dnd_enable(taskbar, self, NULL);
   g_object_set_data(G_OBJECT(priv->tgroup), "parent_taskbar", taskbar);
   priv->ws = ws;
@@ -200,7 +198,7 @@ GtkWidget *taskbar_pager_new( workspace_t *ws, GtkWidget *taskbar )
         g_object_get_data(G_OBJECT(taskbar), "g_icons"));
   g_object_set_data(G_OBJECT(priv->tgroup), "title_width",
         g_object_get_data(G_OBJECT(taskbar), "g_title_width"));
-  flow_grid_set_sort(base_widget_get_child(priv->tgroup),
+  flow_grid_set_sort(priv->tgroup,
       GPOINTER_TO_INT(g_object_get_data(G_OBJECT(taskbar), "g_sort")));
 
   base_widget_copy_actions(priv->tgroup, taskbar);

@@ -28,7 +28,6 @@ typedef struct _PagerPrivate PagerPrivate;
 
 struct _PagerPrivate
 {
-  GtkWidget *pager;
   GList *pins;
 };
 

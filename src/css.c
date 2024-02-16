@@ -69,9 +69,9 @@ static void css_custom_handle ( GtkWidget *widget )
 
   if(GTK_IS_LABEL(widget))
   {
-    gtk_widget_style_get(widget,"align",&xalign,NULL);
-    gtk_label_set_xalign(GTK_LABEL(widget),xalign);
-    gtk_widget_style_get(widget,"ellipsize",&state,NULL);
+    gtk_widget_style_get(widget, "align", &xalign, NULL);
+    gtk_label_set_xalign(GTK_LABEL(widget), xalign);
+    gtk_widget_style_get(widget, "ellipsize", &state, NULL);
     gtk_label_set_ellipsize(GTK_LABEL(widget),
         state?PANGO_ELLIPSIZE_END:PANGO_ELLIPSIZE_NONE);
   }
@@ -89,31 +89,38 @@ void css_init ( gchar *cssname )
   GtkCssProvider *css;
   GtkWidgetClass *widget_class = g_type_class_ref(GTK_TYPE_WIDGET);
 
-  gtk_widget_class_install_style_property( widget_class,
+  gtk_widget_class_install_style_property(widget_class,
     g_param_spec_double("align","text alignment","text alignment",
       0.0,1.0,0.5, G_PARAM_READABLE));
-  gtk_widget_class_install_style_property( widget_class,
+  gtk_widget_class_install_style_property(widget_class,
     g_param_spec_boolean("ellipsize","ellipsize text","ellipsize text",
       TRUE, G_PARAM_READABLE));
 
-  gtk_widget_class_install_style_property( widget_class,
+  gtk_widget_class_install_style_property(widget_class,
     g_param_spec_boolean("hexpand","horizonal expansion","horizontal expansion",
        FALSE, G_PARAM_READABLE));
-  gtk_widget_class_install_style_property( widget_class,
+  gtk_widget_class_install_style_property(widget_class,
     g_param_spec_boolean("vexpand","vertical expansion","vertical expansion",
       FALSE, G_PARAM_READABLE));
-  gtk_widget_class_install_style_property( widget_class,
+  gtk_widget_class_install_style_property(widget_class,
     g_param_spec_boolean("visible","show/hide a widget","show/hide a widget",
       TRUE, G_PARAM_READABLE));
-  gtk_widget_class_install_style_property( widget_class,
+  gtk_widget_class_install_style_property(widget_class,
     g_param_spec_int("icon-size","icon size","icon size",
       0,500,48, G_PARAM_READABLE));
-  gtk_widget_class_install_style_property( widget_class,
+  gtk_widget_class_install_style_property(widget_class,
     g_param_spec_uint("max-width","maximum width","maximum width",
       0,G_MAXUINT,0, G_PARAM_READABLE));
-  gtk_widget_class_install_style_property( widget_class,
+  gtk_widget_class_install_style_property(widget_class,
     g_param_spec_uint("max-height","maximum height","maximum height",
       0,G_MAXUINT,0, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property(widget_class,
+      g_param_spec_boolean("row-homogeneous","row homogeneous",
+        "make all rows within the grid equal height", TRUE, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property(widget_class,
+      g_param_spec_boolean("column-homogeneous","column homogeneous",
+        "make all columns within the grid equal width", TRUE,
+        G_PARAM_READABLE));
 
   static GEnumValue dir_types [] = {
     {GTK_POS_TOP,"top","top"},
@@ -147,7 +154,9 @@ void css_init ( gchar *cssname )
   css_str =
     "window { -GtkWidget-direction: bottom; } " \
     ".sensor { min-width: 1px; min-height: 1px; background: none; }" \
-    ".hidden { -GtkWidget-visible: false; }";
+    ".hidden { -GtkWidget-visible: false; }"\
+    ".flowgrid {-GtkWidget-row-homogeneous: true; }"\
+    ".flowgrid {-GtkWidget-column-homogeneous: true; }";
   css = gtk_css_provider_new();
   gtk_css_provider_load_from_data(css,css_str,strlen(css_str),NULL);
   gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),

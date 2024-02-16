@@ -5,6 +5,7 @@
 
 #include "bar.h"
 #include "basewidget.h"
+#include "pageritem.h"
 #include "config.h"
 #include "action.h"
 #include "menu.h"
@@ -465,6 +466,21 @@ static ModuleActionHandlerV1 taskbar_item_handler = {
   .function = (ModuleActionFunc)taskbar_item_action
 };
 
+static void workspace_activate_action ( gchar *cmd, gchar *name, void *widget,
+    void *event, window_t *win, void *state )
+{
+  if(cmd)
+    widget = base_widget_from_id(cmd);
+
+  if(widget && IS_PAGER_ITEM(widget))
+    workspace_activate(flow_item_get_source(widget));
+}
+
+static ModuleActionHandlerV1 workspace_activate_handler = {
+  .name = "WorkspaceActivate",
+  .function = (ModuleActionFunc)workspace_activate_action
+};
+
 static ModuleActionHandlerV1 *action_handlers[] = {
   &exec_handler,
   &function_handler,
@@ -500,6 +516,7 @@ static ModuleActionHandlerV1 *action_handlers[] = {
   &switcher_handler,
   &clear_widget_handler,
   &taskbar_item_handler,
+  &workspace_activate_handler,
   NULL
 };
 

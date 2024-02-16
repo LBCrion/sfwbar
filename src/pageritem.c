@@ -183,7 +183,7 @@ GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
   PagerItemPrivate *priv;
 
   g_return_val_if_fail(IS_PAGER(pager), NULL);
-  if(flow_grid_find_child(base_widget_get_child(pager), ws))
+  if(flow_grid_find_child(pager, ws))
     return NULL;
 
   self = GTK_WIDGET(g_object_new(pager_item_get_type(), NULL));
@@ -197,7 +197,7 @@ GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
   g_signal_connect(priv->button,"query-tooltip",
       G_CALLBACK(pager_item_draw_tooltip),ws);
   g_object_ref_sink(G_OBJECT(self));
-  flow_grid_add_child(base_widget_get_child(pager), self);
+  flow_grid_add_child(pager, self);
   pager_item_invalidate(self);
 
   return self;

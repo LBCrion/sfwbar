@@ -16,19 +16,19 @@ typedef struct _TrayClass TrayClass;
 
 struct _Tray
 {
-  BaseWidget item;
+  FlowGrid item;
 };
 
 struct _TrayClass
 {
-  BaseWidgetClass parent_class;
+  FlowGridClass parent_class;
 };
 
 typedef struct _TrayPrivate TrayPrivate;
 
 struct _TrayPrivate
 {
-  GtkWidget *tray;
+  gboolean holder;
 };
 
 GType tray_get_type ( void );

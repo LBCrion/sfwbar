@@ -7,19 +7,9 @@
 #include "trayitem.h"
 #include "tray.h"
 
-G_DEFINE_TYPE_WITH_CODE (Tray, tray, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Tray))
+G_DEFINE_TYPE_WITH_CODE (Tray, tray, FLOW_GRID_TYPE, G_ADD_PRIVATE (Tray))
 
 static GList *trays;
-
-static GtkWidget *tray_get_child ( GtkWidget *self )
-{
-  TrayPrivate *priv;
-
-  g_return_val_if_fail(IS_TRAY(self),NULL);
-  priv = tray_get_instance_private(TRAY(self));
-
-  return priv->tray;
-}
 
 static GtkWidget *tray_mirror ( GtkWidget *src )
 {
@@ -42,7 +32,6 @@ static void tray_destroy ( GtkWidget *self )
 
 static void tray_class_init ( TrayClass *kclass )
 {
-  BASE_WIDGET_CLASS(kclass)->get_child = tray_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = tray_mirror;
   GTK_WIDGET_CLASS(kclass)->destroy = tray_destroy;
   BASE_WIDGET_CLASS(kclass)->action_exec = NULL;
@@ -55,15 +44,10 @@ static void tray_init ( Tray *self )
 GtkWidget *tray_new ( void )
 {
   GtkWidget *self;
-  TrayPrivate *priv;
   GList *iter;
 
   self = GTK_WIDGET(g_object_new(tray_get_type(), NULL));
-  priv = tray_get_instance_private(TRAY(self));
-
-  priv->tray = flow_grid_new(TRUE);
-  gtk_grid_set_column_homogeneous(GTK_GRID(priv->tray),FALSE);
-  gtk_container_add(GTK_CONTAINER(self),priv->tray);
+  gtk_grid_set_column_homogeneous(GTK_GRID(gtk_bin_get_child(GTK_BIN(self))), FALSE);
 
   if(!trays)
     sni_init();

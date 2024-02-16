@@ -8,7 +8,7 @@
 #define FLOW_GRID(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), FLOW_GRID_TYPE, FlowGrid))
 #define FLOW_GRID_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), FLOW_GRID_TYPE, FlowGridClass))
 #define IS_FLOW_GRID(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj), FLOW_GRID_TYPE))
-#define IS_FLOW_GRIDCLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), FLOW_GRID_TYPE))
+#define IS_FLOW_GRIDCLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), FLOW_GRID_TYPE))
 
 enum {
   /* drag_dest_add_(image|text|uri)_targets sets info to 0 */
@@ -21,12 +21,12 @@ typedef struct _FlowGridClass FlowGridClass;
 
 struct _FlowGrid
 {
-  GtkGrid grid;
+  BaseWidget item;
 };
 
 struct _FlowGridClass
 {
-  GtkGridClass parent_class;
+  BaseWidgetClass parent_class;
 };
 
 typedef struct _FlowGridPrivate FlowGridPrivate;
@@ -42,16 +42,17 @@ struct _FlowGridPrivate
   gint (*comp)( GtkWidget *, GtkWidget *, GtkWidget * );
   GtkTargetEntry *dnd_target;
   GtkWidget *parent;
+  GtkGrid *grid;
 };
 
 GType flow_grid_get_type ( void );
 
-GtkWidget *flow_grid_new( gboolean limit);
 void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );
 void flow_grid_set_cols ( GtkWidget *cgrid, gint cols );
 gint flow_grid_get_rows ( GtkWidget *self );
 gint flow_grid_get_cols ( GtkWidget *self );
 void flow_grid_set_primary ( GtkWidget *self, gint primary );
+void flow_grid_set_limit ( GtkWidget *self, gboolean limit );
 void flow_grid_add_child ( GtkWidget *self, GtkWidget *child );
 void flow_grid_update ( GtkWidget *self );
 void flow_grid_invalidate ( GtkWidget *self );

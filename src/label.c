@@ -45,6 +45,7 @@ static GtkWidget *label_mirror ( GtkWidget *src )
 
   return self;
 }
+
 static void label_class_init ( LabelClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->update_value = label_update_value;

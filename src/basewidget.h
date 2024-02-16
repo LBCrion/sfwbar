@@ -5,6 +5,8 @@
 #include "action.h"
 #include "expr.h"
 
+#define BASE_WIDGET_MAX_ACTION  8
+
 #define BASE_WIDGET_TYPE            (base_widget_get_type())
 G_DECLARE_DERIVABLE_TYPE (BaseWidget, base_widget, BASE, WIDGET, GtkEventBox)
 #define IS_BASE_WIDGET BASE_IS_WIDGET
@@ -20,7 +22,7 @@ struct _BaseWidgetClass
   GtkWidget *(*get_child)(GtkWidget *self);
   GtkWidget *(*mirror)(GtkWidget *self);
   gboolean (*action_exec)( GtkWidget *self, gint slot, GdkEvent *ev );
-
+  void (*action_configure)( GtkWidget *self, gint slot );
 };
 
 typedef struct _BaseWidgetPrivate BaseWidgetPrivate;
@@ -92,5 +94,6 @@ GtkWidget *base_widget_mirror ( GtkWidget *src );
 GdkModifierType base_widget_get_modifiers ( GtkWidget *self );
 gboolean base_widget_action_exec ( GtkWidget *, gint, GdkEvent *);
 gboolean base_widget_check_action_slot ( GtkWidget *self, gint slot );
+void base_widget_action_configure ( GtkWidget *self, gint slot );
 
 #endif

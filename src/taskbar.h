@@ -26,7 +26,6 @@ typedef struct _TaskbarPrivate TaskbarPrivate;
 
 struct _TaskbarPrivate
 {
-  GtkWidget *taskbar;
   gboolean floating_filter;
   gint filter;
   gint grouping;

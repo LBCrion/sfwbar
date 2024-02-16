@@ -169,7 +169,7 @@ void config_widget_action ( GScanner *scanner, GtkWidget *widget )
   if(scanner->max_parse_errors)
     return;
 
-  if( button<0 || button >=9 )
+  if(button<0 || button>BASE_WIDGET_MAX_ACTION)
   {
     g_scanner_error(scanner,"invalid action index %d",button);
     return;
@@ -240,7 +240,7 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         return TRUE;
     }
 
-  if(IS_BASE_WIDGET(widget) && !IS_FLOW_GRID(base_widget_get_child(widget)))
+  if(IS_BASE_WIDGET(widget) && !IS_FLOW_GRID(widget))
     switch ( (gint)scanner->token )
     {
       case G_TOKEN_VALUE:
@@ -340,21 +340,18 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         }
     }
 
-  if(IS_FLOW_GRID(base_widget_get_child(widget)))
+  if(IS_FLOW_GRID(widget))
     switch ( (gint)scanner->token )
     {
       case G_TOKEN_COLS:
-        flow_grid_set_cols(base_widget_get_child(widget),
-          config_assign_number(scanner, "cols"));
+        flow_grid_set_cols(widget, config_assign_number(scanner, "cols"));
         return TRUE;
       case G_TOKEN_ROWS:
-        flow_grid_set_rows(base_widget_get_child(widget),
-          config_assign_number(scanner, "rows"));
+        flow_grid_set_rows(widget, config_assign_number(scanner, "rows"));
         return TRUE;
       case G_TOKEN_PRIMARY:
-        flow_grid_set_primary(base_widget_get_child(widget),
-            config_assign_tokens(scanner, "primary", "rows|cols",
-              G_TOKEN_ROWS,G_TOKEN_COLS, NULL));
+        flow_grid_set_primary(widget, config_assign_tokens(scanner, "primary",
+              "rows|cols", G_TOKEN_ROWS,G_TOKEN_COLS, NULL));
         return TRUE;
       case G_TOKEN_ICONS:
         g_object_set_data(G_OBJECT(widget),"icons",
@@ -365,12 +362,11 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
           GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "labels")));
         return TRUE;
       case G_TOKEN_SORT:
-        flow_grid_set_sort(base_widget_get_child(widget),
-              config_assign_boolean(scanner, TRUE, "sort"));
+        flow_grid_set_sort(widget,
+            config_assign_boolean(scanner, TRUE, "sort"));
         return TRUE;
       case G_TOKEN_NUMERIC:
-        g_object_set_data(G_OBJECT(base_widget_get_child(widget)),
-            "sort_numeric",GINT_TO_POINTER(
+        g_object_set_data(G_OBJECT(widget), "sort_numeric",GINT_TO_POINTER(
               config_assign_boolean(scanner, TRUE, "numeric")));
         return TRUE;
     }

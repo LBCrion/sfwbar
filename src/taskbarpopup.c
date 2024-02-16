@@ -162,7 +162,7 @@ static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
   priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
 
   children = gtk_container_get_children(GTK_CONTAINER(
-        gtk_bin_get_child(GTK_BIN(priv->tgroup))));
+        base_widget_get_child(priv->tgroup)));
   if(children && !g_list_next(children) &&
       base_widget_check_action_slot(priv->tgroup, slot))
   {
@@ -304,18 +304,18 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *taskbar )
       G_CALLBACK(taskbar_popup_grab_cb), self);
 
   if(g_object_get_data(G_OBJECT(taskbar), "g_cols"))
-    flow_grid_set_cols(base_widget_get_child(priv->tgroup), GPOINTER_TO_INT(
-        g_object_get_data(G_OBJECT(taskbar), "g_cols")));
+    flow_grid_set_cols(priv->tgroup,
+        GPOINTER_TO_INT(g_object_get_data(G_OBJECT(taskbar), "g_cols")));
   if(g_object_get_data(G_OBJECT(taskbar), "g_rows"))
-    flow_grid_set_rows(base_widget_get_child(priv->tgroup), GPOINTER_TO_INT(
-        g_object_get_data(G_OBJECT(taskbar), "g_rows")));
+    flow_grid_set_rows(priv->tgroup,
+        GPOINTER_TO_INT(g_object_get_data(G_OBJECT(taskbar), "g_rows")));
   g_object_set_data(G_OBJECT(priv->tgroup), "labels",
         g_object_get_data(G_OBJECT(taskbar), "g_labels"));
   g_object_set_data(G_OBJECT(priv->tgroup), "icons",
         g_object_get_data(G_OBJECT(taskbar), "g_icons"));
   g_object_set_data(G_OBJECT(priv->tgroup), "title_width",
         g_object_get_data(G_OBJECT(taskbar), "g_title_width"));
-  flow_grid_set_sort(base_widget_get_child(priv->tgroup),
+  flow_grid_set_sort(priv->tgroup,
       GPOINTER_TO_INT(g_object_get_data(G_OBJECT(taskbar), "g_sort")));
 
   base_widget_copy_actions(priv->tgroup, taskbar);

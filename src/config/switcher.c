@@ -27,34 +27,32 @@ void config_switcher ( GScanner *scanner )
           GINT_TO_POINTER(config_assign_number(scanner,"interval")/100));
         break;
       case G_TOKEN_COLS: 
-        flow_grid_set_cols(base_widget_get_child(widget),
-          config_assign_number(scanner, "cols"));
+        flow_grid_set_cols(widget, config_assign_number(scanner, "cols"));
         break;
       case G_TOKEN_ROWS:
-        flow_grid_set_rows(base_widget_get_child(widget),
-          config_assign_number(scanner, "rows"));
+        flow_grid_set_rows(widget, config_assign_number(scanner, "rows"));
         break;
       case G_TOKEN_CSS:
-        css_widget_apply(widget,config_assign_string(scanner,"css"));
+        css_widget_apply(widget, config_assign_string(scanner, "css"));
         break;
       case G_TOKEN_ICONS:
-        g_object_set_data(G_OBJECT(widget),"icons",
-          GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"icons")));
+        g_object_set_data(G_OBJECT(widget), "icons",
+          GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "icons")));
         break;
       case G_TOKEN_LABELS:
-        g_object_set_data(G_OBJECT(widget),"labels",
-          GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"labels")));
+        g_object_set_data(G_OBJECT(widget), "labels",
+          GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "labels")));
         break;
       case G_TOKEN_FILTER:
-        switcher_set_filter(widget,config_assign_tokens(scanner,"filter",
-              "output|workspace", G_TOKEN_OUTPUT,G_TOKEN_WORKSPACE,0));
+        switcher_set_filter(widget, config_assign_tokens(scanner,"filter",
+              "output|workspace", G_TOKEN_OUTPUT, G_TOKEN_WORKSPACE, 0));
         break;
       case G_TOKEN_TITLEWIDTH:
-        g_object_set_data(G_OBJECT(widget),"title_width",
-          GINT_TO_POINTER(config_assign_number(scanner,"title_width")));
+        g_object_set_data(G_OBJECT(widget), "title_width",
+          GINT_TO_POINTER(config_assign_number(scanner, "title_width")));
         break;
       default:
-        g_scanner_error(scanner,"Unexpected token in 'switcher'");
+        g_scanner_error(scanner, "Unexpected token in 'switcher'");
         break;
     }
   }

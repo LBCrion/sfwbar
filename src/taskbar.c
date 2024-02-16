@@ -12,20 +12,10 @@
 #include "wintree.h"
 #include "config.h"
 
-G_DEFINE_TYPE_WITH_CODE (Taskbar, taskbar, BASE_WIDGET_TYPE,
+G_DEFINE_TYPE_WITH_CODE (Taskbar, taskbar, FLOW_GRID_TYPE,
     G_ADD_PRIVATE (Taskbar))
 
 static GList *taskbars;
-
-static GtkWidget *taskbar_get_child ( GtkWidget *self )
-{
-  TaskbarPrivate *priv;
-
-  g_return_val_if_fail(IS_TASKBAR(self),NULL);
-  priv = taskbar_get_instance_private(TASKBAR(self));
-
-  return priv->taskbar;
-}
 
 static GtkWidget *taskbar_mirror ( GtkWidget *src )
 {
@@ -69,13 +59,12 @@ static GtkWidget *taskbar_mirror ( GtkWidget *src )
 
 static void taskbar_destroy ( GtkWidget *self )
 {
-  taskbars = g_list_remove(taskbars,self);
+  taskbars = g_list_remove(taskbars, self);
   GTK_WIDGET_CLASS(taskbar_parent_class)->destroy(self);
 }
 
 static void taskbar_class_init ( TaskbarClass *kclass )
 {
-  BASE_WIDGET_CLASS(kclass)->get_child = taskbar_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = taskbar_mirror;
   BASE_WIDGET_CLASS(kclass)->action_exec = NULL;
   GTK_WIDGET_CLASS(kclass)->destroy = taskbar_destroy;
@@ -83,13 +72,9 @@ static void taskbar_class_init ( TaskbarClass *kclass )
 
 static void taskbar_init ( Taskbar *self )
 {
-  TaskbarPrivate *priv;
   action_t *action;
 
-  priv = taskbar_get_instance_private(TASKBAR(self));
-  priv->taskbar = flow_grid_new(TRUE);
-  gtk_container_add(GTK_CONTAINER(self),priv->taskbar);
-  flow_grid_invalidate(priv->taskbar);
+  flow_grid_invalidate(GTK_WIDGET(self));
   action = action_new();
   action->quark = g_quark_from_static_string("taskbaritemdefault");
   base_widget_set_action(GTK_WIDGET(self), 1, 0, action);
@@ -157,6 +142,7 @@ GtkWidget *taskbar_holder_get ( GtkWidget *self, window_t *win, gboolean new )
 
   g_return_val_if_fail(IS_TASKBAR(self), NULL);
   priv = taskbar_get_instance_private(TASKBAR(self));
+
   if(!priv->grouping)
     return self;
 
@@ -249,8 +235,5 @@ void taskbar_populate ( void )
 
 void taskbar_update_all ( void )
 {
-  GList *iter;
-
-  for(iter=taskbars; iter; iter=g_list_next(iter))
-    flow_grid_update(iter->data);
+  g_list_foreach(taskbars, (GFunc)flow_grid_update, NULL);
 }

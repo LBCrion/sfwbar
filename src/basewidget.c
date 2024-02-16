@@ -266,11 +266,25 @@ static void base_widget_drag_leave (GtkWidget *self,
   priv->is_drag_dest = FALSE;
 }
 
+static void base_widget_action_configure_impl ( GtkWidget *self, gint slot )
+{
+  if(slot>=1 && slot<=3)
+    gtk_widget_add_events(GTK_WIDGET(self), GDK_BUTTON_RELEASE_MASK);
+  else if(slot>=4 && slot<=7)
+    gtk_widget_add_events(GTK_WIDGET(self), GDK_SCROLL_MASK);
+  else if(slot==8)
+  {
+    gtk_drag_dest_set(self, GTK_DEST_DEFAULT_ALL, NULL, 0, GDK_ACTION_MOVE);
+    gtk_drag_dest_set_track_motion(self, TRUE);
+  }
+}
+
 static void base_widget_class_init ( BaseWidgetClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = base_widget_destroy;
   kclass->old_size_allocate = GTK_WIDGET_CLASS(kclass)->size_allocate;
   kclass->action_exec = base_widget_action_exec_impl;
+  kclass->action_configure = base_widget_action_configure_impl;
   GTK_WIDGET_CLASS(kclass)->size_allocate = base_widget_size_allocate;
   GTK_WIDGET_CLASS(kclass)->get_preferred_width = base_widget_get_pref_width;
   GTK_WIDGET_CLASS(kclass)->get_preferred_height = base_widget_get_pref_height;
@@ -641,6 +655,14 @@ action_t *base_widget_get_action ( GtkWidget *self, gint n,
   return NULL;
 }
 
+void base_widget_action_configure ( GtkWidget *self, gint slot )
+{
+  g_return_if_fail(IS_BASE_WIDGET(self));
+
+  if(BASE_WIDGET_GET_CLASS(self)->action_configure)
+    BASE_WIDGET_GET_CLASS(self)->action_configure(self, slot);
+}
+
 gboolean base_widget_action_exec ( GtkWidget *self, gint slot,
     GdkEvent *ev )
 {
@@ -675,11 +697,11 @@ void base_widget_set_css ( GtkWidget *self, gchar *css )
     return;
 
   priv->css = g_list_append(priv->css,g_strdup(css));
-  css_widget_apply(base_widget_get_child(self),css);
+  css_widget_apply(base_widget_get_child(self), css);
 }
 
-void base_widget_set_action ( GtkWidget *self, gint n, GdkModifierType mods,
-    action_t *action )
+void base_widget_set_action ( GtkWidget *self, gint slot,
+    GdkModifierType mods, action_t *action )
 {
   BaseWidgetPrivate *priv;
   base_widget_attachment_t *attach;
@@ -688,13 +710,13 @@ void base_widget_set_action ( GtkWidget *self, gint n, GdkModifierType mods,
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  if(n<0 || n>=9)
+  if(slot<0 || slot>BASE_WIDGET_MAX_ACTION)
     return;
 
   for(iter=priv->actions; iter; iter=g_list_next(iter))
   {
     attach = iter->data;
-    if(attach->event == n && attach->mods == mods)
+    if(attach->event == slot && attach->mods == mods)
       break;
   }
 
@@ -706,7 +728,7 @@ void base_widget_set_action ( GtkWidget *self, gint n, GdkModifierType mods,
   else
   {
     attach = g_malloc0(sizeof(base_widget_attachment_t));
-    attach->event = n;
+    attach->event = slot;
     attach->mods = mods;
     priv->actions = g_list_prepend(priv->actions, attach);
 
@@ -716,15 +738,7 @@ void base_widget_set_action ( GtkWidget *self, gint n, GdkModifierType mods,
   if(IS_FLOW_GRID(base_widget_get_child(self)))
     return;
 
-  if(n>=1 && n<=3)
-    gtk_widget_add_events(GTK_WIDGET(self), GDK_BUTTON_RELEASE_MASK);
-  else if(n>=4 && n<=7)
-    gtk_widget_add_events(GTK_WIDGET(self),GDK_SCROLL_MASK);
-  else if(n==8)
-  {
-    gtk_drag_dest_set(self, GTK_DEST_DEFAULT_ALL, NULL, 0, GDK_ACTION_MOVE);
-    gtk_drag_dest_set_track_motion(self, TRUE);
-  }
+  base_widget_action_configure(self, slot);
 }
 
 void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src )

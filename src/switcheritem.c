@@ -20,7 +20,7 @@ static gboolean switcher_item_check ( GtkWidget *self )
   g_return_val_if_fail(IS_SWITCHER_ITEM(self),FALSE);
   priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
 
-  return switcher_check(priv->switcher,priv->win);
+  return switcher_check(priv->switcher, priv->win);
 }
 
 void switcher_item_update ( GtkWidget *self )
@@ -133,25 +133,25 @@ GtkWidget *switcher_item_new( window_t *win, GtkWidget *switcher )
     labels = TRUE;
 
   grid = gtk_grid_new();
-  gtk_container_add(GTK_CONTAINER(self),grid);
+  gtk_container_add(GTK_CONTAINER(self), grid);
   gtk_widget_set_name(grid, "switcher_normal");
-  gtk_widget_style_get(grid,"direction",&dir,NULL);
+  gtk_widget_style_get(grid, "direction", &dir, NULL);
   g_object_ref_sink(G_OBJECT(self));
   if(icons)
   {
     priv->icon = scale_image_new();
-    scale_image_set_image(priv->icon,win->appid,NULL);
-    gtk_grid_attach_next_to(GTK_GRID(grid),priv->icon,NULL,dir,1,1);
+    scale_image_set_image(priv->icon, win->appid, NULL);
+    gtk_grid_attach_next_to(GTK_GRID(grid), priv->icon, NULL, dir, 1, 1);
   }
   else
     priv->icon = NULL;
   if(labels)
   {
     priv->label = gtk_label_new(win->title);
-    gtk_label_set_ellipsize (GTK_LABEL(priv->label),PANGO_ELLIPSIZE_END);
-    gtk_label_set_max_width_chars(GTK_LABEL(priv->label),title_width);
-    gtk_grid_attach_next_to(GTK_GRID(grid),priv->label,
-        priv->icon,dir,1,1);
+    gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
+    gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
+    gtk_grid_attach_next_to(GTK_GRID(grid), priv->label,
+        priv->icon, dir, 1, 1);
   }
   else
     priv->label = NULL;

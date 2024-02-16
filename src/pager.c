@@ -10,20 +10,9 @@
 #include "pageritem.h"
 #include "taskbar.h"
 
-G_DEFINE_TYPE_WITH_CODE (Pager, pager, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Pager))
+G_DEFINE_TYPE_WITH_CODE (Pager, pager, FLOW_GRID_TYPE, G_ADD_PRIVATE (Pager))
 
 static GList *pagers;
-
-
-static GtkWidget *pager_get_child ( GtkWidget *self )
-{
-  PagerPrivate *priv;
-
-  g_return_val_if_fail(IS_PAGER(self),NULL);
-  priv = pager_get_instance_private(PAGER(self));
-
-  return priv->pager;
-}
 
 static GtkWidget *pager_mirror ( GtkWidget *src )
 {
@@ -35,14 +24,14 @@ static GtkWidget *pager_mirror ( GtkWidget *src )
   dpriv = pager_get_instance_private(PAGER(self));
   spriv = pager_get_instance_private(PAGER(src));
 
-  g_object_set_data(G_OBJECT(dpriv->pager),"preview",
-      g_object_get_data(G_OBJECT(spriv->pager),"preview"));
-  g_object_set_data(G_OBJECT(dpriv->pager),"sort_numeric",
-      g_object_get_data(G_OBJECT(spriv->pager),"sort_numeric"));
+  g_object_set_data(G_OBJECT(self), "preview",
+      g_object_get_data(G_OBJECT(src), "preview"));
+  g_object_set_data(G_OBJECT(self), "sort_numeric",
+      g_object_get_data(G_OBJECT(src), "sort_numeric"));
   dpriv->pins = g_list_copy_deep(spriv->pins, (GCopyFunc)g_strdup,NULL);
 
-  flow_grid_copy_properties(self,src);
-  base_widget_copy_properties(self,src);
+  flow_grid_copy_properties(self, src);
+  base_widget_copy_properties(self, src);
 
   return self;
 }
@@ -60,7 +49,6 @@ static void pager_destroy ( GtkWidget *self )
 
 static void pager_class_init ( PagerClass *kclass )
 {
-  BASE_WIDGET_CLASS(kclass)->get_child = pager_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = pager_mirror;
   GTK_WIDGET_CLASS(kclass)->destroy = pager_destroy;
   BASE_WIDGET_CLASS(kclass)->action_exec = NULL;
@@ -72,17 +60,13 @@ static void pager_init ( Pager *self )
 
 GtkWidget *pager_new ( void )
 {
-  PagerPrivate *priv;
   GtkWidget *self;
   GList *iter;
 
   self = GTK_WIDGET(g_object_new(pager_get_type(), NULL));
-  priv = pager_get_instance_private(PAGER(self));
 
-  priv->pager = flow_grid_new(TRUE);
-  gtk_container_add(GTK_CONTAINER(self),priv->pager);
-  pagers = g_list_prepend(pagers,self);
-  g_object_set_data(G_OBJECT(priv->pager),"sort_numeric",GINT_TO_POINTER(TRUE));
+  pagers = g_list_prepend(pagers, self);
+  g_object_set_data(G_OBJECT(self), "sort_numeric", GINT_TO_POINTER(TRUE));
 
   for(iter = workspace_get_list(); iter; iter=g_list_next(iter))
     pager_item_new(self, iter->data);
@@ -122,7 +106,7 @@ void pager_invalidate_all ( workspace_t *ws )
   GList *iter;
 
   for(iter=pagers; iter; iter=g_list_next(iter))
-    flow_item_invalidate(flow_grid_find_child(iter->data,ws));
+    flow_item_invalidate(flow_grid_find_child(iter->data, ws));
 }
 
 void pager_item_delete ( workspace_t *ws )

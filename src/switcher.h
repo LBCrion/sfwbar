@@ -8,19 +8,19 @@
 #define SWITCHER(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), SWITCHER_TYPE, Switcher))
 #define SWITCHER_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), SWITCHER_TYPE, SwitcherClass))
 #define IS_SWITCHER(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj), SWITCHER_TYPE))
-#define IS_SWITCHERCLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), SWITCHER_TYPE))
+#define IS_SWITCHERCLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), SWITCHER_TYPE))
 
 typedef struct _Switcher Switcher;
 typedef struct _SwitcherClass SwitcherClass;
 
 struct _Switcher
 {
-  BaseWidget item;
+  FlowGrid item;
 };
 
 struct _SwitcherClass
 {
-  BaseWidgetClass parent_class;
+  FlowGridClass parent_class;
 };
 
 typedef struct _SwitcherPrivate SwitcherPrivate;
