@@ -274,7 +274,8 @@ static void base_widget_action_configure_impl ( GtkWidget *self, gint slot )
     gtk_widget_add_events(GTK_WIDGET(self), GDK_SCROLL_MASK);
   else if(slot==8)
   {
-    gtk_drag_dest_set(self, GTK_DEST_DEFAULT_ALL, NULL, 0, GDK_ACTION_MOVE);
+    if(!gtk_drag_dest_get_target_list(self))
+      gtk_drag_dest_set(self, GTK_DEST_DEFAULT_ALL, NULL, 0, GDK_ACTION_MOVE);
     gtk_drag_dest_set_track_motion(self, TRUE);
   }
 }
