@@ -218,7 +218,7 @@ GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
   TrayItemPrivate *priv;
   gint dir;
 
-  g_return_val_if_fail(sni,NULL);
+  g_return_val_if_fail(sni && tray, NULL);
   self = GTK_WIDGET(g_object_new(tray_item_get_type(), NULL));
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
 

@@ -44,17 +44,15 @@ static void tray_init ( Tray *self )
 GtkWidget *tray_new ( void )
 {
   GtkWidget *self;
-  GList *iter;
 
   self = GTK_WIDGET(g_object_new(tray_get_type(), NULL));
-  gtk_grid_set_column_homogeneous(GTK_GRID(gtk_bin_get_child(GTK_BIN(self))), FALSE);
+  gtk_grid_set_column_homogeneous(GTK_GRID(base_widget_get_child(self)), FALSE);
 
   if(!trays)
     sni_init();
 
   trays = g_list_append(trays, self);
-  for(iter = sni_item_get_list(); iter; iter=g_list_next(iter))
-    tray_item_new(iter->data, self);
+  g_list_foreach(sni_item_get_list(), (GFunc)tray_item_new, self);
 
   return self;
 }
@@ -72,16 +70,12 @@ void tray_item_init_for_all ( SniItem *sni )
   GList *iter;
 
   for(iter=trays; iter; iter=g_list_next(iter))
-    if(iter->data)
-      tray_item_new(sni,iter->data);
+    tray_item_new(sni, iter->data);
 }
 
 void tray_item_destroy ( SniItem *sni )
 {
-  GList *iter;
-
-  for(iter=trays; iter; iter=g_list_next(iter))
-    flow_grid_delete_child(iter->data, sni);
+  g_list_foreach(trays, (GFunc)flow_grid_delete_child, sni);
 }
 
 void tray_update ( void )
@@ -89,6 +83,5 @@ void tray_update ( void )
   GList *iter;
 
   for(iter=trays; iter; iter=g_list_next(iter))
-    if(iter->data)
-      flow_grid_update(iter->data);
+    flow_grid_update(iter->data);
 }
