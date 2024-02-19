@@ -110,7 +110,7 @@ cargs = ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
     '-DGTK_DISABLE_DEPRECATED']
 
 sfwbar = library ('sfwbar', sources: libsrc,
-    c_args: cargs,
+    c_args: cargs, install_dir: get_option('libdir') / 'sfwbar',
     dependencies: deps, install: true)
 
 deps = [deps, declare_dependency(link_with: sfwbar)]
@@ -201,6 +201,7 @@ executable ('sfwbar', sources: 'src/sfwbar.c',
     c_args: ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
     '-DGDK_DISABLE_DEPRECATED',
     '-DGTK_DISABLE_DEPRECATED'],
+    install_rpath: get_option('prefix') / get_option('libdir') / 'sfwbar',
     dependencies: [deps], install: true)
 
 foreach page : man_pages
