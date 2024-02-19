@@ -4,7 +4,7 @@ define BatIcon = "battery-level-" + BatChargeStr + "0" +
           If(BatChargeStr = "10","","-charging"))
 
 Function("BatteryInitScanner"){
-  PipeRead "python << END
+  PipeRead "/usr/bin/env python3 << END
 import os
 sysdir = '/sys/class/power_supply'
 list = os.scandir(sysdir)
