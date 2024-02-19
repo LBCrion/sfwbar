@@ -83,12 +83,12 @@ event if further network removals are queued.
 WifiConnect <path>
 ------------------
 
-Attempt to connect to a netowrk specified by the path.
+Attempt to connect to a network specified by the path.
 
 WifiDisconnect <path>
 ---------------------
 
-Disconnect from a netowrk specified by the path.
+Disconnect from a network specified by the path.
 
 WifiForget <path>
 -----------------
