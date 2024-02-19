@@ -286,18 +286,27 @@ gchar *str_replace ( gchar *str, gchar *old, gchar *new )
 
 GdkMonitor *widget_get_monitor ( GtkWidget *self )
 {
+  GtkWidget *parent, *w;
   GdkWindow *win;
   GdkDisplay *disp;
 
   g_return_val_if_fail(GTK_IS_WIDGET(self),NULL);
 
-  win = gtk_widget_get_window(self);
-  if(!win)
-    return NULL;
-  disp = gdk_window_get_display(win);
-  if(!disp)
-    return NULL;
-  return gdk_display_get_monitor_at_window(disp,win);
+  if(gtk_widget_get_mapped(self))
+    win = gtk_widget_get_window(self);
+  else
+  {
+    for(w=self; w; w=gtk_widget_get_parent(w))
+      if( (parent=g_object_get_data(G_OBJECT(w), "parent_window")) )
+        break;
+    if(!w)
+      return NULL;
+    win = gtk_widget_get_window(parent);
+  }
+
+  if(!win || !(disp = gdk_window_get_display(win)) )
+      return NULL;
+  return gdk_display_get_monitor_at_window(disp, win);
 }
 
 void ipc_set ( enum ipc_type new )

@@ -759,6 +759,7 @@ GtkWidget *bar_new ( gchar *name )
   priv->box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   g_object_ref_sink(priv->box);
   gtk_container_add(GTK_CONTAINER(self), priv->box);
+  g_object_set_data(G_OBJECT(priv->box), "parent_window", self);
   gtk_layer_init_for_window (GTK_WINDOW(self));
   gtk_widget_set_name(self,name);
   gtk_layer_auto_exclusive_zone_enable (GTK_WINDOW(self));
