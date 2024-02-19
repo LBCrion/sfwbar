@@ -260,35 +260,31 @@ static void sway_window_handle ( struct json_object *container,
 static void sway_traverse_tree ( struct json_object *obj, const gchar *parent,
     const gchar *monitor)
 {
-  struct json_object *iter,*arr,*ptr;
+  struct json_object *iter, *arr;
+  const gchar *type;
   gint i;
 
-  json_object_object_get_ex(obj,"floating_nodes",&arr);
-  if( arr && json_object_is_type(arr, json_type_array) )
-    for(i=0;i<json_object_array_length(arr);i++)
-      sway_window_handle(json_object_array_get_idx(arr,i), parent, monitor);
+  json_object_object_get_ex(obj, "floating_nodes", &arr);
+  if(arr && json_object_is_type(arr, json_type_array))
+    for(i=0; i<json_object_array_length(arr); i++)
+      sway_window_handle(json_object_array_get_idx(arr, i), parent, monitor);
 
-  json_object_object_get_ex(obj,"nodes",&arr);
-  if( arr && json_object_is_type(arr, json_type_array) )
-    for(i=0;i<json_object_array_length(arr);i++)
+  json_object_object_get_ex(obj, "nodes", &arr);
+  if(arr && json_object_is_type(arr, json_type_array))
+    for(i=0; i<json_object_array_length(arr); i++)
     {
-      iter = json_object_array_get_idx(arr,i);
-      if( json_int_by_name(iter,"app_id",G_MININT64) != G_MININT64 )
+      iter = json_object_array_get_idx(arr, i);
+      if(json_int_by_name(iter, "app_id", G_MININT64) != G_MININT64)
         sway_window_handle(iter, parent, monitor);
       else
       {
-        json_object_object_get_ex(iter,"type",&ptr);
-        if(g_strcmp0(json_object_get_string(ptr),"output"))
-        {
-          json_object_object_get_ex(iter,"name",&ptr);
-          sway_traverse_tree(iter,json_object_get_string(ptr),monitor);
-        }
+        type = json_string_by_name(iter, "type");
+        if(!g_strcmp0(type, "output"))
+          sway_traverse_tree(iter, NULL, json_string_by_name(iter, "name"));
+        else if(!g_strcmp0(type, "workspace"))
+          sway_traverse_tree(iter, json_string_by_name(iter, "name"), monitor);
         else
-        {
-          json_object_object_get_ex(iter,"name",&ptr);
-          sway_traverse_tree(iter,json_object_get_string(ptr),
-              json_object_get_string(ptr));
-        }
+          sway_traverse_tree(iter, parent, monitor);
       }
     }
 }
