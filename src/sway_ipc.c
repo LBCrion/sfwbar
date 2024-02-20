@@ -246,6 +246,7 @@ static void sway_window_handle ( struct json_object *container,
   {
     win->state &= ~WS_MINIMIZED;
     wintree_set_workspace(win->uid, workspace_id_from_name(parent));
+    g_message("window %p mapped to %p (%s)", win, win->workspace, parent);
   }
 
   if(!g_list_find_custom(win->outputs,monitor,(GCompareFunc)g_strcmp0) &&
@@ -504,7 +505,7 @@ static void sway_ipc_focus ( gpointer id )
   if(!win)
     return;
   ws = workspace_from_id(win->workspace);
-  if(ws)
+  if(ws && win->floating)
     sway_ipc_command("[con_id=%d] move window to workspace %s",
         GPOINTER_TO_INT(id), ws->name);
   sway_ipc_command("[con_id=%d] focus",GPOINTER_TO_INT(id));
