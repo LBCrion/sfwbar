@@ -246,7 +246,6 @@ static void sway_window_handle ( struct json_object *container,
   {
     win->state &= ~WS_MINIMIZED;
     wintree_set_workspace(win->uid, workspace_id_from_name(parent));
-    g_message("window %p mapped to %p (%s)", win, win->workspace, parent);
   }
 
   if(!g_list_find_custom(win->outputs,monitor,(GCompareFunc)g_strcmp0) &&
