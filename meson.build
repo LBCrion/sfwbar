@@ -204,7 +204,9 @@ executable ('sfwbar', sources: 'src/sfwbar.c',
     install_rpath: get_option('prefix') / get_option('libdir') / 'sfwbar',
     dependencies: [deps], install: true)
 
-rst2man = find_program('rst2man', 'rst2man.py', required: false)
+build_docs = get_option('build-docs')
+rst2man = find_program('rst2man', 'rst2man.py',
+    required: build_docs )
 foreach doc: doc_list
   if rst2man.found()
     custom_target(input: 'doc' / doc + '.rst' , output: '@BASENAME@.1',
@@ -212,7 +214,7 @@ foreach doc: doc_list
         install: true,
         install_dir: get_option('mandir') / 'man1' )
   else
-      install_man('doc' / doct + '.1' )
+      install_man('doc' / doc + '.1' )
   endif
 endforeach
 
