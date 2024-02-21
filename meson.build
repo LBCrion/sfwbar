@@ -103,7 +103,7 @@ libsrc = [
     'src/wayland/xdg-output.c',
     wayland_targets ]
 deps = [gtk3, glib, gio_unix, gmod, glsh, wayl, json, lbrt ]
-man_pages = [ 'doc/sfwbar.1' ]
+doc_list = [ 'sfwbar' ]
 
 cargs = ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
     '-DGDK_DISABLE_DEPRECATED',
@@ -119,63 +119,65 @@ if get_option('network').enabled() or get_option('network').auto()
   library('network', sources: 'modules/network.c', dependencies: deps,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-  man_pages += 'doc/sfwbar-network.1'
+  doc_list += 'sfwbar-network'
 endif
 
 if get_option('bluez').enabled() or get_option('bluez').auto()
   library('bluez', sources: 'modules/bluez.c',
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-  man_pages += 'doc/sfwbar-bluez.1'
+  doc_list += 'sfwbar-bluez'
 endif
 
 if get_option('iwd').enabled() or get_option('iwd').auto()
   library('wifi-iwd', sources: 'modules/wifi-iwd.c',
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-  man_pages += 'doc/sfwbar-wifi.1'
+  doc_list += 'sfwbar-wifi'
 endif
 
 if get_option('nm').enabled() or get_option('nm').auto()
   library('wifi-nm', sources: 'modules/wifi-nm.c',
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-  man_pages += 'doc/sfwbar-wifi.1'
+  if 'sfwbar-wifi' not in doc_list
+    doc_list += 'sfwbar-wifi'
+  endif
 endif
 
 if puls.found() and pulg.found()
   library('pulsectl', sources: 'modules/pulsectl.c',
       dependencies: [deps, puls, pulg],name_prefix: '',
       install: true, install_dir: get_option('libdir') / 'sfwbar' )
-  man_pages += 'doc/sfwbar-pulse.1'
+  doc_list += 'sfwbar-pulse'
 endif
 
 if mpdc.found()
   library('mpd', sources: 'modules/mpd.c', dependencies: [deps, mpdc],
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-  man_pages += 'doc/sfwbar-mpd.1'
+  doc_list += 'sfwbar-mpd'
 endif
 
 if alsa.found()
   library('alsactl', sources: 'modules/alsactl.c', dependencies: [deps, alsa],
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-  man_pages += 'doc/sfwbar-alsa.1'
+  doc_list += 'sfwbar-alsa'
 endif
 
 if xkbr.found()
   library('xkbmap', sources: 'modules/xkbmap.c', dependencies: [deps, xkbr],
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-  man_pages += 'doc/sfwbar-xkbmap.1'
+  doc_list += 'sfwbar-xkbmap'
 endif
 
 if get_option('bsdctl').enabled()
   library('bsdctl', sources: 'modules/bsdctl.c', dependencies: deps,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-  man_pages += 'doc/sfwbar-bsdctl.1'
+  doc_list += 'sfwbar-bsdctl'
 endif
 
 if get_option('idleinhibit').enabled() or get_option('idleinhibit').auto()
@@ -194,7 +196,7 @@ if get_option('idleinhibit').enabled() or get_option('idleinhibit').auto()
   library('idleinhibit', sources: ['modules/idleinhibit.c',inhibit_targets], dependencies: deps,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-  man_pages += 'doc/sfwbar-idleinhibit.1'
+  doc_list += 'sfwbar-idleinhibit'
 endif
 
 executable ('sfwbar', sources: 'src/sfwbar.c',
@@ -204,9 +206,18 @@ executable ('sfwbar', sources: 'src/sfwbar.c',
     install_rpath: get_option('prefix') / get_option('libdir') / 'sfwbar',
     dependencies: [deps], install: true)
 
-foreach page : man_pages
-  install_man(page)
+rst2man = find_program('rst2man', 'rst2man.py', required: false)
+foreach doc: doc_list
+  if rst2man.found()
+    custom_target(input: 'doc' / doc + '.rst' , output: '@BASENAME@.1',
+        command: [rst2man, '@INPUT@', '@OUTPUT@' ],
+        install: true,
+        install_dir: get_option('mandir') / 'man1' )
+  else
+      install_man('doc' / doct + '.1' )
+  endif
 endforeach
+
 install_subdir('config',
     install_dir: get_option('datadir') / 'sfwbar', strip_directory : true )
 install_subdir('icons/weather',
