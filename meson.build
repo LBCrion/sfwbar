@@ -28,21 +28,19 @@ configure_file(input: 'meson.h.meson', output: 'meson.h',
 
 wayland_scanner = find_program('wayland-scanner')
 wayland_protodir = wayp.get_pkgconfig_variable('pkgdatadir')
-wayland_protos = [
-  'protocols/wlr-foreign-toplevel-management-unstable-v1',
-  'protocols/xdg-output-unstable-v1',
-  'protocols/wlr-layer-shell-unstable-v1'
+wayland_protos = ['wlr-foreign-toplevel-management-unstable-v1',
+                  'xdg-output-unstable-v1',
+                  'wlr-layer-shell-unstable-v1'
 ]
 wayland_targets=[]
 
 foreach proto : wayland_protos
-  xml  = ''.join([proto,'.xml']) 
-  header = ''.join([proto.split('/').get(-1),'.h'])
-  cfile = ''.join([proto.split('/').get(-1),'.c'])
-  wayland_targets += custom_target(header,output:header,input:xml,
-      command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@' ] )
-  wayland_targets += custom_target(cfile,output:cfile,input:xml,
-      command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@' ] )
+  wayland_targets += custom_target(
+      input: 'protocols' / proto + '.xml', output:  proto + '.h',
+      command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@' ])
+  wayland_targets += custom_target(
+      input: 'protocols' / proto + '.xml', output:  proto + '.c',
+      command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@' ])
 endforeach
 
 libsrc = [
