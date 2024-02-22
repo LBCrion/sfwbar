@@ -208,7 +208,7 @@ build_docs = get_option('build-docs')
 rst2man = find_program('rst2man', 'rst2man.py',
     required: build_docs )
 foreach doc: doc_list
-  if rst2man.found()
+  if rst2man.found() and not get_option('build-docs').disabled()
     custom_target(input: 'doc' / doc + '.rst' , output: '@BASENAME@.1',
         command: [rst2man, '@INPUT@', '@OUTPUT@' ],
         install: true,
