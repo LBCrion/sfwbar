@@ -5,6 +5,7 @@
 
 #include "sfwbar.h"
 #include "scaleimage.h"
+#include "appinfo.h"
 #include <gtk/gtk.h>
 #include <gio/gdesktopappinfo.h>
 
@@ -327,121 +328,11 @@ void scale_image_set_pixbuf ( GtkWidget *self, GdkPixbuf *pb )
   gtk_widget_queue_draw(self);
 }
 
-static void scale_image_check_appinfo ( GtkWidget *self, GtkIconTheme *theme,
-    const gchar *icon )
-{
-  ScaleImagePrivate *priv;
-  GDesktopAppInfo *app;
-  GtkIconInfo *info;
-  gchar *file;
-
-  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
-  if(priv->ftype != SI_NONE)
-    return;
-
-  app = g_desktop_app_info_new(icon);
-  if(!app)
-    return;
-
-  if( !g_desktop_app_info_get_nodisplay(app) )
-  {
-    file = g_desktop_app_info_get_string(app,"Icon");
-    if( (info = gtk_icon_theme_lookup_icon(theme,file,10,0)) )
-    {
-      g_object_unref(G_OBJECT(info));
-      priv->fname = g_strdup(file);
-      priv->ftype = SI_ICON;
-    }
-    g_free(file);
-  }
-
-  g_object_unref(G_OBJECT(app));
-}
-
-static gboolean scale_image_check_icon_1 ( GtkWidget *self, const gchar *icon )
-{
-  ScaleImagePrivate *priv;
-  GtkIconTheme *theme;
-  GtkIconInfo *info;
-  gint i,j;
-  gchar *temp;
-  gchar ***desktop;
-
-  theme = gtk_icon_theme_get_default();
-  if(!theme)
-    return FALSE;
-
-  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
-
-  if( (info = gtk_icon_theme_lookup_icon(theme,icon,10,0)) )
-  {
-    g_object_unref(G_OBJECT(info));
-    priv->fname = g_strdup(icon);
-    priv->ftype = SI_ICON;
-    return TRUE;
-  }
-
-  desktop = g_desktop_app_info_search(icon);
-  for(j=0;desktop[j];j++)
-  {
-    for(i=0;desktop[j][i];i++)
-      scale_image_check_appinfo(self, theme, desktop[j][i]);
-    g_strfreev(desktop[j]);
-  }
-  g_free(desktop);
-  
-  if(priv->ftype!=SI_NONE)
-    return TRUE;
-  temp = g_strconcat(icon,".desktop",NULL);
-  scale_image_check_appinfo(self, theme, temp);
-  g_free(temp);
-
-  return (priv->ftype!=SI_NONE);
-}
-
-static gboolean scale_image_check_icon ( GtkWidget *self, const gchar *icon )
-{
-  ScaleImagePrivate *priv;
-  gchar *temp;
-
-  priv = scale_image_get_instance_private( SCALE_IMAGE(self));
-
-  if(scale_image_check_icon_1(self, icon))
-    return TRUE;
-
-  temp = g_ascii_strdown(icon, -1);
-  scale_image_check_icon_1(self, temp);
-  g_free(temp);
-  if(priv->ftype == SI_ICON)
-    return TRUE;
-
-  return FALSE;
-}
-
-static gboolean scale_image_check_icon_symbolic ( GtkWidget *self,
-    gchar *icon )
-{
-  ScaleImagePrivate *priv;
-  gchar *temp;
-
-  priv = scale_image_get_instance_private( SCALE_IMAGE(self));
-  temp = g_strconcat(icon, "-symbolic", NULL);
-  scale_image_check_icon(self, temp);
-  g_free(temp);
-
-  if(priv->ftype != SI_ICON)
-    return FALSE;
-
-  priv->symbolic = TRUE;
-  return TRUE;
-}
-
 gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
     gchar *extra )
 {
   static gchar *exts[4] = {"", ".svg", ".png", ".xpm"};
   ScaleImagePrivate *priv;
-  gboolean symbolic_suffix;
   GdkPixbuf *buf;
   gint i;
   gchar *temp,*test;
@@ -461,24 +352,19 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
   priv->symbolic = FALSE;
   gtk_widget_queue_draw(self);
 
-  if(!g_ascii_strncasecmp(priv->file,"<?xml",5))
+  if(!g_ascii_strncasecmp(priv->file, "<?xml", 5))
   {
     priv->ftype = SI_DATA;
     return TRUE;
   }
 
-  symbolic_suffix = (strlen(image) >= 9) &&
-    (!g_ascii_strcasecmp(image+strlen(image)-9, "-symbolic"));
   gtk_widget_style_get(self, "symbolic", &priv->symbolic_pref, NULL);
-
-  if(priv->symbolic_pref && !symbolic_suffix)
-    if(scale_image_check_icon_symbolic(self, priv->file))
-      return TRUE;
-  if(scale_image_check_icon(self, priv->file))
+  if( (priv->fname = app_info_icon_lookup(priv->file, priv->symbolic_pref)) )
+  {
+    priv->ftype = SI_ICON;
+    priv->symbolic = g_str_has_suffix(priv->fname, "-symbolic");
     return TRUE;
-  if(!priv->symbolic_pref && !symbolic_suffix)
-    if(scale_image_check_icon_symbolic(self, priv->file))
-      return TRUE;
+  }
 
   for(i=0; i<8; i++)
   {

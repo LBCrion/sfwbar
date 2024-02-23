@@ -46,6 +46,7 @@ endforeach
 libsrc = [
     'src/action.c',
     'src/actionlib.c',
+    'src/appinfo.c',
     'src/bar.c',
     'src/basewidget.c',
     'src/button.c',

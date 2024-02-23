@@ -15,6 +15,7 @@
 #include "config.h"
 #include "sway_ipc.h"
 #include "expr.h"
+#include "appinfo.h"
 
 extern gchar *confname;
 extern gchar *sockname;
@@ -130,6 +131,7 @@ static void activate (GtkApplication* app, gpointer data )
   sway_ipc_init();
   hypr_ipc_init();
   wayland_ipc_init();
+  app_info_init();
 
   if( monitor && !g_ascii_strcasecmp(monitor,"list") )
     list_monitors();
