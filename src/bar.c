@@ -62,6 +62,9 @@ static gboolean bar_leave_notify_event ( GtkWidget *self,
   g_return_val_if_fail(IS_BAR(self),FALSE);
   priv = bar_get_instance_private(BAR(self));
 
+  if(event->detail==GDK_NOTIFY_INFERIOR)
+    return TRUE;
+
   if(!priv->sensor_timeout || !priv->sensor_state || priv->sensor_block)
     return TRUE;
 
