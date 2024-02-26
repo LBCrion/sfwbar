@@ -99,11 +99,6 @@ gchar *get_xdg_config_file ( gchar *fname, gchar *extra )
     g_free(full);
   }
 
-  full = g_build_filename( SYSTEM_CONF_DIR, fname, NULL);
-  if( file_test_read(full) )
-    return full;
-  g_free(full);
-
   full = g_build_filename ( g_get_user_config_dir(), "sfwbar", fname, NULL );
   if( file_test_read(full) )
     return full;
@@ -117,6 +112,11 @@ gchar *get_xdg_config_file ( gchar *fname, gchar *extra )
       return full;
     g_free(full);
   }
+
+  full = g_build_filename( SYSTEM_CONF_DIR, fname, NULL);
+  if( file_test_read(full) )
+    return full;
+  g_free(full);
 
   if(!extra)
     return NULL;
