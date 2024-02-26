@@ -11,6 +11,7 @@
 #include <json.h>
 #include <sys/time.h>
 #include "sfwbar.h"
+#include "meson.h"
 
 gchar *confname;
 gchar *sockname;
@@ -88,7 +89,7 @@ gchar *get_xdg_config_file ( gchar *fname, gchar *extra )
       return NULL;
   }
 
-  if(confname!=NULL)
+  if(confname)
   {
     dir = g_path_get_dirname(confname);
     full = g_build_filename ( dir, fname, NULL );
@@ -97,6 +98,11 @@ gchar *get_xdg_config_file ( gchar *fname, gchar *extra )
       return full;
     g_free(full);
   }
+
+  full = g_build_filename( SYSTEM_CONF_DIR, fname, NULL);
+  if( file_test_read(full) )
+    return full;
+  g_free(full);
 
   full = g_build_filename ( g_get_user_config_dir(), "sfwbar", fname, NULL );
   if( file_test_read(full) )

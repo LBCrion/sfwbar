@@ -3,3 +3,4 @@
 #define GTK_LAYER_VER_MINOR @glsh_minor@
 #define GTK_LAYER_VER_MICRO @glsh_micro@
 #define MODULE_DIR "@module_dir@"
+#define SYSTEM_CONF_DIR "@conf_dir@"

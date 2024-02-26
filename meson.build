@@ -23,6 +23,8 @@ conf_data.set('glsh_minor',glsh_ver[1])
 conf_data.set('glsh_micro',glsh_ver[2])
 conf_data.set('module_dir',
     get_option('prefix') / get_option('libdir') / 'sfwbar')
+conf_data.set('conf_dir',
+    get_option('prefix') / get_option('datadir') / 'sfwbar')
 configure_file(input: 'meson.h.meson', output: 'meson.h',
     configuration: conf_data )
 
