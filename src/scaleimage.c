@@ -24,10 +24,10 @@ static void scale_image_get_preferred_width ( GtkWidget *self, gint *m,
 
   style = gtk_widget_get_style_context(self);
   flags = gtk_style_context_get_state(style);
-  gtk_style_context_get_border(style,flags,&border);
-  gtk_style_context_get_padding(style,flags,&padding);
-  gtk_style_context_get_margin(style,flags,&margin);
-  gtk_style_context_get(style,flags,"min-width",&w,NULL);
+  gtk_style_context_get_border(style,flags, &border);
+  gtk_style_context_get_padding(style,flags, &padding);
+  gtk_style_context_get_margin(style,flags, &margin);
+  gtk_style_context_get(style, flags, "min-width", &w, NULL);
 
   *m = (w?w:16) + border.left + border.right + padding.left +
       padding.right + margin.left + margin.right;
@@ -46,18 +46,17 @@ static void scale_image_get_preferred_height ( GtkWidget *self, gint *m,
 
   style = gtk_widget_get_style_context(self);
   flags = gtk_style_context_get_state(style);
-  gtk_style_context_get_border(style,flags,&border);
-  gtk_style_context_get_padding(style,flags,&padding);
-  gtk_style_context_get_margin(style,flags,&margin);
-  gtk_style_context_get(style,flags,"min-height",&h,NULL);
+  gtk_style_context_get_border(style, flags, &border);
+  gtk_style_context_get_padding(style, flags, &padding);
+  gtk_style_context_get_margin(style, flags, &margin);
+  gtk_style_context_get(style, flags, "min-height", &h, NULL);
 
   *m = (h?h:16) + border.top + border.bottom + padding.top +
       padding.bottom + margin.top + margin.bottom;
   *n = *m;
 }
 
-static void scale_image_surface_update ( GtkWidget *self, gint width,
-    gint height )
+static void scale_image_surface_update ( GtkWidget *self, gint w, gint h )
 {
   ScaleImagePrivate *priv;
   GdkPixbuf *buf, *tmp;
@@ -70,10 +69,10 @@ static void scale_image_surface_update ( GtkWidget *self, gint width,
 
   if(priv->ftype == SI_ICON)
     buf =  gtk_icon_theme_load_icon(gtk_icon_theme_get_default(),
-        priv->fname,MIN(width,height),0,NULL);
+        priv->fname, MIN(w, h), 0, NULL);
 
   else if(priv->ftype == SI_FILE && priv->fname)
-    buf = gdk_pixbuf_new_from_file_at_scale(priv->fname,width,height,TRUE,NULL);
+    buf = gdk_pixbuf_new_from_file_at_scale(priv->fname, w, h, TRUE, NULL);
 
   else if(priv->ftype == SI_BUFF && priv->pixbuf)
     buf = g_object_ref(priv->pixbuf);
@@ -81,24 +80,24 @@ static void scale_image_surface_update ( GtkWidget *self, gint width,
   else if (priv->ftype == SI_DATA && priv->file)
   {
     loader = gdk_pixbuf_loader_new();
-    gdk_pixbuf_loader_set_size(loader,width,height);
+    gdk_pixbuf_loader_set_size(loader, w, h);
     GdkRGBA col;
     gtk_style_context_get_color(gtk_widget_get_style_context(self),
-        GTK_STATE_FLAG_NORMAL,&col);
+        GTK_STATE_FLAG_NORMAL, &col);
     gchar *svg;
     gchar *rgba;
     if(strstr(priv->file,"@theme_fg_color"))
     {
-      rgba = g_strdup_printf("Rgba(%d,%d,%d,%f)",(gint)(col.red*256),
-          (gint)(col.green*256),(gint)(col.blue*256),col.alpha);
-      svg = str_replace(priv->file,"@theme_fg_color",rgba);
+      rgba = g_strdup_printf("Rgba(%d,%d,%d,%f)", (gint)(col.red*256),
+          (gint)(col.green*256), (gint)(col.blue*256), col.alpha);
+      svg = str_replace(priv->file, "@theme_fg_color", rgba);
       g_free(rgba);
     }
     else
       svg = NULL;
-    gdk_pixbuf_loader_write(loader,(guchar *)(svg?svg:priv->file),
+    gdk_pixbuf_loader_write(loader, (guchar *)(svg?svg:priv->file),
         strlen(svg?svg:priv->file), NULL);
-    gdk_pixbuf_loader_close(loader,NULL);
+    gdk_pixbuf_loader_close(loader, NULL);
     buf = gdk_pixbuf_loader_get_pixbuf(loader);
     if(buf)
       buf = gdk_pixbuf_copy(buf);
@@ -110,11 +109,10 @@ static void scale_image_surface_update ( GtkWidget *self, gint width,
 
   if(!buf)
   {
-    fallback = get_xdg_config_file("icons/misc/missing.svg",NULL);
+    fallback = get_xdg_config_file("icons/misc/missing.svg", NULL);
     if(fallback)
     {
-      buf = gdk_pixbuf_new_from_file_at_scale(fallback, width, height,
-          TRUE, NULL);
+      buf = gdk_pixbuf_new_from_file_at_scale(fallback, w, h, TRUE, NULL);
       g_free(fallback);
       priv->fallback = TRUE;
     }
@@ -125,17 +123,17 @@ static void scale_image_surface_update ( GtkWidget *self, gint width,
     aspect = (gboolean)gdk_pixbuf_get_width(buf) /
       (gboolean)gdk_pixbuf_get_height(buf);
 
-    if((gboolean)width/(gboolean)height > aspect)
-      width = (gboolean)height * aspect;
-    else if((gboolean)width/(gboolean)height < aspect)
-      height = (gboolean)width / aspect;
+    if((gboolean)w/(gboolean)h > aspect)
+      w = (gboolean)h * aspect;
+    else if((gboolean)w/(gboolean)h < aspect)
+      h  = (gboolean)w / aspect;
   }
 
-  if(buf && gdk_pixbuf_get_width(buf) != width &&
-      gdk_pixbuf_get_height(buf) != height )
+  if(buf && gdk_pixbuf_get_width(buf) != w &&
+      gdk_pixbuf_get_height(buf) != h)
   {
     tmp = buf;
-    buf = gdk_pixbuf_scale_simple(tmp, width, height, GDK_INTERP_BILINEAR);
+    buf = gdk_pixbuf_scale_simple(tmp, w, h, GDK_INTERP_BILINEAR);
     g_object_unref(G_OBJECT(tmp));
   }
 
@@ -146,9 +144,9 @@ static void scale_image_surface_update ( GtkWidget *self, gint width,
     return;
   }
 
-  priv->width = width;
-  priv->height = height;
-  priv->cs = gdk_cairo_surface_create_from_pixbuf(buf,0,
+  priv->width = w;
+  priv->height = h;
+  priv->cs = gdk_cairo_surface_create_from_pixbuf(buf, 0,
       gtk_widget_get_window(self));
   g_object_unref(G_OBJECT(buf));
 }
