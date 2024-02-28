@@ -524,7 +524,7 @@ static void net_update_essid ( gchar *interface )
   (void)net_get_signal(interface);
 }
 
-#endif
+#endif /* FreeBSD || OpenBSD */
 
 static gint net_rt_connect ( void )
 {
@@ -632,7 +632,7 @@ static void network_init ( void * )
 {
 }
 
-#endif
+#endif /* Linux || FreeBSD || OpenBSD */
 
 gboolean sfwbar_module_init ( void )
 {
