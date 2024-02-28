@@ -205,17 +205,18 @@ static void pulse_remove_device ( pulse_interface_t *iface, guint32 idx )
   g_free(info);
 }
 
-static void pulse_device_advertise ( gint iface_idx, pa_channel_map cmap, gint idx )
+static void pulse_device_advertise ( gint iface_idx,
+    const pa_channel_map *cmap, gint idx )
 {
   pulse_channel_t *channel;
   gint i;
 
-  for(i=0; i<cmap.channels; i++)
+  for(i=0; i<cmap->channels; i++)
   {
     channel = g_malloc0(sizeof(pulse_channel_t));
     channel->iface_idx = iface_idx;
     channel->chan_num = i;
-    channel->channel = g_strdup(pa_channel_position_to_string(cmap.map[i]));
+    channel->channel = g_strdup(pa_channel_position_to_string(cmap->map[i]));
     channel->device = g_strdup_printf("@pulse-%s-%d",
         pulse_interfaces[iface_idx].prefix, idx );
     module_queue_append(&channel_q, channel);
@@ -230,7 +231,7 @@ static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
   if(!pinfo)
     return;
   if(!pulse_info_from_idx(&pulse_interfaces[0], pinfo->index, FALSE))
-    pulse_device_advertise(0, pinfo->channel_map, pinfo->index);
+    pulse_device_advertise(0, &pinfo->channel_map, pinfo->index);
 
   info = pulse_info_from_idx(&pulse_interfaces[0], pinfo->index, TRUE);
 
@@ -292,7 +293,7 @@ static void pulse_sink_input_cb ( pa_context *ctx,
     return;
 
   if(!pulse_info_from_idx(&pulse_interfaces[2], pinfo->index, FALSE))
-    pulse_device_advertise(2, pinfo->channel_map, pinfo->index);
+    pulse_device_advertise(2, &pinfo->channel_map, pinfo->index);
   info = pulse_info_from_idx(&pulse_interfaces[2], pinfo->index, TRUE);
   g_free(info->name);
   info->name = g_strdup(pinfo->name);
@@ -474,7 +475,8 @@ static pulse_info *pulse_addr_parse ( gchar *addr, pulse_interface_t *iface,
   else
   {
     for(iter=iface->list; iter; iter=g_list_next(iter))
-      if(!g_strcmp0(((pulse_info *)iter->data)->name, device?device:iface->name))
+      if(!g_strcmp0(((pulse_info *)iter->data)->name,
+            device?device:iface->name))
         break;
     info = iter?iter->data:NULL;
   }
@@ -509,7 +511,8 @@ static void *pulse_expr_func ( void **params, void *widget, void *event )
     return g_strdup("");
 
   if(!g_ascii_strcasecmp(cmd, "volume"))
-    return g_strdup_printf("%f",cidx?info->cvol.values[cidx-1]*100.0/PA_VOLUME_NORM:info->vol);
+    return g_strdup_printf("%f",
+        cidx?info->cvol.values[cidx-1]*100.0/PA_VOLUME_NORM:info->vol);
   if(!g_ascii_strcasecmp(cmd, "mute"))
     return g_strdup_printf("%d",info->mute);
   if(!g_ascii_strcasecmp(cmd, "icon"))
