@@ -17,9 +17,13 @@ static void app_info_monitor_cb ( GAppInfoMonitor *mon, gpointer d )
   for(iter=list; iter; iter=g_list_next(iter))
   {
     if( (id = g_app_info_get_id(iter->data)) &&
-        (app = g_desktop_app_info_new(id)) &&
-        (class = g_desktop_app_info_get_startup_wm_class(app)) )
-      g_hash_table_insert(app_info_wm_class_map, g_strdup(class), g_strdup(id));
+        (app = g_desktop_app_info_new(id)) )
+    {
+      if( (class = g_desktop_app_info_get_startup_wm_class(app)) )
+        g_hash_table_insert(app_info_wm_class_map, g_strdup(class),
+            g_strdup(id));
+      g_object_unref(G_OBJECT(app));
+    }
   }
 }
 
