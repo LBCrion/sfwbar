@@ -11,25 +11,25 @@ set XVolumeHighIcon = If(!Ident($VolumeHighIcon),
 set XVolumeAction = If(!Ident($VolumeAction),"pavucontrol",$VolumeAction)
 
 set XVolumeControlTmpl = "
-PopUp 'XVolumeWindow' {
-  Grid '@DEVICE_NAME@' {
+grid 'volume_section_@DEVICE_IFACE@' {
+  grid '@DEVICE_NAME@' {
     style = 'volume_grid'
     image '@DEVICE_NAME@_mute' {
-      value = If(Val(Pulse('sink-mute','@DEVICE_NAME@')),
+      value = If(Val(Pulse('@DEVICE_IFACE@-mute','@DEVICE_NAME@')),
             $XVolumeMutedIcon,
-            Lookup(Val(Pulse('sink-volume','@DEVICE_NAME@')),
+            Lookup(Val(Pulse('@DEVICE_IFACE@-volume','@DEVICE_NAME@')),
               80, $XVolumeHighIcon,
               50, $XVolumeMediumIcon,
               0, $XVolumeLowIcon,
               $XVolumeMutedIcon))
       style = 'pulse_volume_mute'
-      action = PulseCmd '@DEVICE_NAME@', 'sink-mute toggle'
+      action = PulseCmd '@DEVICE_NAME@', '@DEVICE_IFACE@-mute toggle'
       trigger = 'pulse'
       loc (1,1,1,1)
     }
     label '@DEVICE_NAME@_name' {
       style = 'pulse_device_name'
-      value = Pulse('sink-description','@DEVICE_NAME@')
+      value = Pulse('@DEVICE_IFACE@-description','@DEVICE_NAME@')
       trigger = 'pulse'
       loc (3,1,1,1)
     }
@@ -41,9 +41,9 @@ PopUp 'XVolumeWindow' {
     }
     scale '@DEVICE_NAME@_volume' {
       style = 'pulse_volume_scale'
-      value = Val(Pulse('sink-volume','@DEVICE_NAME@'))/100
+      value = Val(Pulse('@DEVICE_IFACE@-volume','@DEVICE_NAME@'))/100
       action[1] = PulseCmd '@DEVICE_NAME@',
-        'sink-volume ' + Str(GtkEvent('dir') * 100)
+        '@DEVICE_IFACE@-volume ' + Str(GtkEvent('dir') * 100)
       trigger = 'pulse'
       loc (1,2,3,1)
     }
@@ -57,9 +57,9 @@ PopUp 'XVolumeWindow' {
       }
       scale '@DEVICE_NAME@-@CHANNEL_NAME@_scale' {
         style = 'pulse_volume_scale'
-        value = Val(Pulse('sink-volume','@DEVICE_NAME@:@CHANNEL_NAME@'))/100
+        value = Val(Pulse('@DEVICE_IFACE@-volume','@DEVICE_NAME@:@CHANNEL_NAME@'))/100
         action[1] = PulseCmd '@DEVICE_NAME@:@CHANNEL_NAME@',
-          'sink-volume ' + Str(GtkEvent('dir') * 100)
+          '@DEVICE_IFACE@-volume ' + Str(GtkEvent('dir') * 100)
         trigger = 'pulse'
         loc(2,@CHANNEL_NUM@,1,1)
       }
@@ -92,9 +92,11 @@ Function("XVolumeToggleChannels") {
 Function("XVolumeChannelHandler") {
   Config Replace(
       Replace(
-        Replace($XVolumeControlTmpl, "@DEVICE_NAME@", PulseChannel("Device")),
-      "@CHANNEL_NAME@", PulseChannel("Channel")),
-      "@CHANNEL_NUM@", PulseChannel("ChannelNumber"))
+        Replace(
+          Replace($XVolumeControlTmpl, "@DEVICE_NAME@", PulseChannel("Device")),
+          "@CHANNEL_NAME@", PulseChannel("Channel")),
+        "@CHANNEL_NUM@", PulseChannel("ChannelNumber"))
+      "@DEVICE_IFACE@", PulseChannel("interface"))
   PulseChannelAck
 }
 
@@ -109,6 +111,21 @@ TriggerAction "pulse_removed", Function "XVolumeChannelRemove"
 
 PopUp "XVolumeWindow" {
   style = "volume_popup"
+  label {
+    value = "sinks"
+    style = "volume_separator"
+  }
+  grid "volume_section_sink" {
+    style = "volume_section"
+  }
+  label {
+    value = "clients"
+    style = "volume_separator"
+  }
+  grid "volume_section_client" {
+    style = "volume_section"
+  }
+
 }
 
 layout {
@@ -173,6 +190,19 @@ image#pulse_volume_mute {
   min-height: 10px;
 }
 
+label#volume_separator {
+  padding-top: 3px;
+  font-size: 10px;
+  -GtkWidget-align: 0.0;
+  -GtkWidget-hexpand: true;
+  border-bottom: dashed 1px @border;
+}
+
+grid#volume_section {
+  -GtkWidget-hexpand: true;
+  -GtkWidget-direction: bottom;
+  min-height: 20px;
+}
 #pulse_device_name {
   -GtkWidget-hexpand: true;
   -GtkWidget-align: 0;
