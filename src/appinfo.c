@@ -41,6 +41,9 @@ gchar *app_info_icon_test ( const gchar *icon, gboolean symbolic_pref )
   GtkIconInfo *info;
   gchar *sym_icon;
 
+  if(!icon)
+    return NULL;
+
 /* if symbolic icon is preferred test for symbolic first */
   if(symbolic_pref)
   {
@@ -78,22 +81,22 @@ gchar *app_info_icon_test ( const gchar *icon, gboolean symbolic_pref )
 gchar *app_info_icon_get ( const gchar *app_id, gboolean symbolic_pref )
 {
   GDesktopAppInfo *app;
-  char *icon, *result;
+  char *icon, *icon_name;
 
   if( !(app = g_desktop_app_info_new(app_id)) )
     return NULL;
 
   if(g_desktop_app_info_get_nodisplay(app))
-    result = NULL;
+    icon = NULL;
   else
   {
-    icon = g_desktop_app_info_get_string(app, "Icon");
-    result = app_info_icon_test(icon, symbolic_pref);
-    g_free(icon);
+    icon_name = g_desktop_app_info_get_string(app, "Icon");
+    icon = app_info_icon_test(icon_name, symbolic_pref);
+    g_free(icon_name);
   }
 
   g_object_unref(G_OBJECT(app));
-  return result;
+  return icon;
 }
 
 static gchar *app_info_lookup_id ( gchar *app_id, gboolean symbolic_pref )
@@ -131,13 +134,17 @@ gchar *app_info_icon_lookup ( gchar *app_id, gboolean symbolic_pref )
     clean_app_id = g_strndup(app_id, strlen(app_id) - 9);
   }
   else
-    clean_app_id = app_id;
+    clean_app_id = g_strdup(app_id);
 
   if( (icon = app_info_lookup_id(clean_app_id, symbolic_pref)) )
+  {
+    g_free(clean_app_id);
     return icon;
+  }
   lower_app_id = g_ascii_strdown(clean_app_id, -1);
   icon = app_info_lookup_id(lower_app_id, symbolic_pref);
   g_free(lower_app_id);
+  g_free(clean_app_id);
 
   return icon;
 }
