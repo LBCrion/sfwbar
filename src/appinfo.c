@@ -89,6 +89,7 @@ gchar *app_info_icon_get ( const gchar *app_id, gboolean symbolic_pref )
   {
     icon = g_desktop_app_info_get_string(app, "Icon");
     result = app_info_icon_test(icon, symbolic_pref);
+    g_free(icon);
   }
 
   g_object_unref(G_OBJECT(app));
