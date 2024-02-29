@@ -25,6 +25,7 @@ static void app_info_monitor_cb ( GAppInfoMonitor *mon, gpointer d )
       g_object_unref(G_OBJECT(app));
     }
   }
+  g_list_free_full(list, g_object_unref);
 }
 
 void app_info_init ( void )
