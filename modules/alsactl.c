@@ -11,10 +11,16 @@
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
 
-static GSource *main_src;
-static snd_mixer_t *mixer;
-static  struct pollfd *pfds;
-static  int pfdcount;
+typedef struct _alsa_source {
+  GSource src;
+  gchar *name;
+  snd_mixer_t *mixer;
+  struct pollfd *pfds;
+  int pfdcount;
+} alsa_source_t;
+
+static alsa_source_t *main_src;
+GHashTable *alsa_sources;
 
 typedef struct _mixer_api {
   int (*has_volume)( snd_mixer_elem_t *);
@@ -55,27 +61,34 @@ gboolean alsa_source_prepare(GSource *source, gint *timeout)
   return FALSE;
 }
 
-gboolean alsa_source_check( GSource *source )
+gboolean alsa_source_check( GSource *gsrc )
 {
+  alsa_source_t *src = (alsa_source_t *)gsrc;
   gushort revents;
 
-  snd_mixer_poll_descriptors_revents(mixer, pfds, pfdcount, &revents);
+  snd_mixer_poll_descriptors_revents(src->mixer, src->pfds, src->pfdcount,
+      &revents);
   return !!(revents & POLLIN);
 }
 
-gboolean alsa_source_dispatch( GSource *source,GSourceFunc cb, gpointer data)
+gboolean alsa_source_dispatch( GSource *gsrc, GSourceFunc cb, gpointer data)
 {
-  snd_mixer_handle_events(mixer);
+  alsa_source_t *src = (alsa_source_t *)gsrc;
+
+  snd_mixer_handle_events(src->mixer);
   g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
       (gpointer)g_intern_static_string("alsa"));
 
   return TRUE;
 }
 
-static void alsa_source_finalize ( GSource *source )
+static void alsa_source_finalize ( GSource *gsrc )
 {
-  g_clear_pointer(&mixer,snd_mixer_close);
-  g_clear_pointer(&pfds,g_free);
+  alsa_source_t *src = (alsa_source_t *)gsrc;
+
+  g_clear_pointer(&src->mixer, snd_mixer_close);
+  g_clear_pointer(&src->pfds, g_free);
+  g_clear_pointer(&src->name, g_free);
 }
 
 static GSourceFuncs alsa_source_funcs = {
@@ -85,43 +98,64 @@ static GSourceFuncs alsa_source_funcs = {
   alsa_source_finalize
 };
 
-#define alsa_source_bail(x) { g_source_destroy(x); return NULL; }
+#define alsa_source_bail(x) { g_source_destroy((GSource *)x); return NULL; }
 
-static GSource *alsa_source_subscribe ( gchar *name )
+static alsa_source_t *alsa_source_subscribe ( gchar *name )
 {
-  GSource *source;
+  alsa_source_t *src;
 
-  source = g_source_new(&alsa_source_funcs, sizeof(GSource));
+  src = (alsa_source_t *)g_source_new(&alsa_source_funcs,
+      sizeof(alsa_source_t));
 
-  if(snd_mixer_open(&mixer, 0) < 0)
-    alsa_source_bail(source);
-  if(snd_mixer_attach(mixer, name) < 0)
-    alsa_source_bail(source);
-  if(snd_mixer_selem_register(mixer, NULL, NULL) < 0)
-    alsa_source_bail(source);
-  if(snd_mixer_load(mixer) < 0)
-    alsa_source_bail(source);
-  pfdcount = snd_mixer_poll_descriptors_count (mixer);
-  if(pfdcount <= 0)
-    alsa_source_bail(source);
-  pfds = g_malloc(sizeof(struct pollfd) * pfdcount);
-  if(snd_mixer_poll_descriptors(mixer, pfds, pfdcount) < 0)
-    alsa_source_bail(source);
+  if(snd_mixer_open(&src->mixer, 0) < 0)
+    alsa_source_bail(src);
+  if(snd_mixer_attach(src->mixer, name) < 0)
+    alsa_source_bail(src);
+  if(snd_mixer_selem_register(src->mixer, NULL, NULL) < 0)
+    alsa_source_bail(src);
+  if(snd_mixer_load(src->mixer) < 0)
+    alsa_source_bail(src);
+  src->pfdcount = snd_mixer_poll_descriptors_count (src->mixer);
+  if(src->pfdcount <= 0)
+    alsa_source_bail(src);
+  src->pfds = g_malloc(sizeof(struct pollfd) * src->pfdcount);
+  if(snd_mixer_poll_descriptors(src->mixer, src->pfds, src->pfdcount) < 0)
+    alsa_source_bail(src);
 
-  g_source_attach(source,NULL);
-  g_source_set_priority(source,G_PRIORITY_DEFAULT);
-  g_source_add_poll(source,(GPollFD *)pfds);
+  src->name = g_strdup(name);
 
-  return source;
+  g_source_attach((GSource *)src,NULL);
+  g_source_set_priority((GSource *)src,G_PRIORITY_DEFAULT);
+  g_source_add_poll((GSource *)src,(GPollFD *)src->pfds);
+
+  g_hash_table_insert(alsa_sources, src->name, src);
+
+  return src;
+}
+
+void alsa_source_subscribe_all ( void )
+{
+  gchar *id;
+  gint i;
+
+  main_src = alsa_source_subscribe("default");
+  for(i=-1; snd_card_next(&i)>=0 && i>=0;)
+  {
+    id = g_strdup_printf("hw:%d", i);
+    alsa_source_subscribe(id);
+    g_free(id);
+  }
 }
 
 gboolean sfwbar_module_init ( void )
 {
-  main_src = alsa_source_subscribe("default");
+  alsa_sources = g_hash_table_new_full( g_str_hash, g_str_equal, NULL,
+      (GDestroyNotify)alsa_source_finalize );
+  alsa_source_subscribe_all();
   return TRUE;
 }
 
-static snd_mixer_elem_t *alsa_element_get ( gchar *name )
+static snd_mixer_elem_t *alsa_element_get ( snd_mixer_t *mixer, gchar *name )
 {
   snd_mixer_selem_id_t *sid;
 
@@ -173,13 +207,17 @@ static gdouble alsa_mute_get ( snd_mixer_elem_t *element, mixer_api_t *api )
 void *alsa_expr_func ( void **params, void *widget, void *event )
 {
   snd_mixer_elem_t *element;
+  alsa_source_t *src;
   gdouble *result;
 
   result = g_malloc0(sizeof(gdouble));
   if(!params || !params[0])
     return result;
 
-  element = alsa_element_get(params[1]);
+  if( !(src = g_hash_table_lookup(alsa_sources, "default")) )
+    return result;
+
+  element = alsa_element_get(src->mixer, params[1]);
 
   if(!g_ascii_strcasecmp(params[0],"playback-volume"))
     *result = alsa_volume_get(element, &playback_api);
@@ -255,9 +293,13 @@ static void alsa_mute_set ( snd_mixer_elem_t *element, gchar *vstr,
 static void alsa_action ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
+  alsa_source_t *src;
   snd_mixer_elem_t *element;
 
-  element = alsa_element_get ( name );
+  if( !(src = g_hash_table_lookup(alsa_sources, "default")) )
+    return;
+
+  element = alsa_element_get ( src->mixer, name );
 
   if(!g_ascii_strncasecmp(cmd,"playback-volume",15))
     alsa_volume_adjust(element, cmd+15, &playback_api);
