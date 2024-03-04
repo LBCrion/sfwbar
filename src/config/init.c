@@ -214,7 +214,7 @@ void config_string ( gchar *string )
 {
   gchar *conf;
 
-  if(!string)
+  if(!string || !*string)
     return;
 
   conf = g_strdup(string);
