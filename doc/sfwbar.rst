@@ -5,6 +5,7 @@ SFWBar
 S* Floating Window taskBar
 ##########################
 
+test
 :Copyright: GPLv3+
 :Manual section: 1
 
@@ -405,8 +406,9 @@ to clear the original menu.
 The following menu items are supported:
 
 item
-  an actionable menu item. This item has two parameters, the first one
-  is a label, the second is an action to execute when the item is activated.
+  an actionable menu item. This item has three parameters, the first one
+  is a label, the second is an action to execute when the item is activated,
+  the third is an option id you can use to delete the item later if needed.
   See ``Actions`` section for more details on supported actions.
 
 separator
@@ -415,7 +417,9 @@ separator
 submenu
   attach a submenu. The first parameter parameter is a label to display in the
   parent menu, the second optional parameter is a menu name, if a menu name is
-  assigned, further items can be added to a submenu as to any other menu.
+  assigned, the third optional parameter is an id you can use later to delete
+  the submenu using `MenuItemClear` action. Further items can be added to a
+  submenu as to any other menu.
 
 Triggers
 --------
@@ -474,6 +478,10 @@ MenuClear <string>
   delete a menu with a given name (This is useful if you want to generate
   menus dynamically via PipeRead and would like to delete a previously
   generated menu)
+
+MenuItemClear <string>
+  delete a menu item with an id corresponding to the string. The menu item
+  must be declared with an id if you want to use this action on it.
 
 PipeRead <string>
   Process a snippet of configuration sourced from an output of a shell command

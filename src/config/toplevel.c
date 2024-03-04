@@ -248,7 +248,7 @@ action_t *config_action ( GScanner *scanner )
 
 GtkWidget *config_menu_item ( GScanner *scanner )
 {
-  gchar *label = NULL;
+  gchar *label = NULL, *id = NULL;
   action_t *action;
   GtkWidget *item;
 
@@ -272,6 +272,11 @@ GtkWidget *config_menu_item ( GScanner *scanner )
     return NULL;
   }
 
+  config_parse_sequence(scanner,
+      SEQ_OPT, ',', NULL, NULL, NULL,
+      SEQ_CON, G_TOKEN_STRING, NULL, &id, "missing id in 'item'",
+      SEQ_END);
+
   if(g_scanner_get_next_token(scanner)!=')')
   {
     g_scanner_error(scanner,"missing ')' after 'item'");
@@ -282,7 +287,7 @@ GtkWidget *config_menu_item ( GScanner *scanner )
 
   config_optional_semicolon(scanner);
 
-  item = menu_item_new(label,action);
+  item = menu_item_new(label, action, id);
   g_free(label);
   return item;
 }
@@ -290,7 +295,7 @@ GtkWidget *config_menu_item ( GScanner *scanner )
 void config_menu_items ( GScanner *scanner, GtkWidget *menu )
 {
   GtkWidget *item, *submenu;
-  gchar *itemname, *subname;
+  gchar *itemname, *subname, *subid;
   gboolean items;
 
   g_scanner_peek_next_token(scanner);
@@ -311,20 +316,22 @@ void config_menu_items ( GScanner *scanner, GtkWidget *menu )
         subname = NULL;
         items = FALSE;
         config_parse_sequence(scanner,
-            SEQ_REQ,'(',NULL,NULL,"missing '(' after 'submenu'",
-            SEQ_REQ,G_TOKEN_STRING,NULL,&itemname,"missing submenu title",
-            SEQ_OPT,',',NULL,NULL,NULL,
-            SEQ_CON,G_TOKEN_STRING,NULL,&subname,"missing submenu name",
-            SEQ_REQ,')',NULL,NULL,"missing ')' after 'submenu'",
-            SEQ_OPT,'{',NULL,&items,"missing '{' after 'submenu'",
+            SEQ_REQ, '(', NULL, NULL,"missing '(' after 'submenu'",
+            SEQ_REQ, G_TOKEN_STRING, NULL, &itemname, "missing submenu title",
+            SEQ_OPT, ',', NULL, NULL, NULL,
+            SEQ_CON, G_TOKEN_STRING, NULL, &subname, "missing submenu name",
+            SEQ_OPT, ',', NULL, NULL, NULL,
+            SEQ_CON, G_TOKEN_STRING, NULL, &subid, "missing submenu id",
+            SEQ_REQ, ')', NULL, NULL,"missing ')' after 'submenu'",
+            SEQ_OPT, '{', NULL, &items, "missing '{' after 'submenu'",
             SEQ_END);
         if(!scanner->max_parse_errors && itemname)
         {
-          item = menu_item_new(itemname,NULL);
+          item = menu_item_new(itemname, NULL, subid);
           submenu = menu_new(subname);
-          gtk_menu_item_set_submenu(GTK_MENU_ITEM(item),submenu);
+          gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), submenu);
           if(items)
-            config_menu_items(scanner,submenu);
+            config_menu_items(scanner, submenu);
         }
         g_free(itemname);
         g_free(subname);

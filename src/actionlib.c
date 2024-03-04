@@ -68,6 +68,17 @@ static ModuleActionHandlerV1 menuclear_handler = {
   .function = menuclear_action
 };
 
+static void menuitemclear_action ( gchar *cmd, gchar *name, void *widget,
+    void *event, void *win, void *state )
+{
+  menu_item_remove(cmd);
+}
+
+static ModuleActionHandlerV1 menuitemclear_handler = {
+  .name = "MenuItemClear",
+  .function = menuitemclear_action
+};
+
 static void menu_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
@@ -486,6 +497,7 @@ static ModuleActionHandlerV1 *action_handlers[] = {
   &function_handler,
   &piperead_handler,
   &menuclear_handler,
+  &menuitemclear_handler,
   &menu_handler,
   &swaycmd_handler,
   &swaywincmd_handler,

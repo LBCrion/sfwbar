@@ -11,7 +11,7 @@
 #include "popup.h"
 
 
-static GHashTable *menus;
+static GHashTable *menus, *menu_items;
 
 GtkWidget *menu_from_name ( gchar *name )
 {
@@ -37,6 +37,19 @@ void menu_remove ( gchar *name )
   g_list_free(items);
 
   g_hash_table_remove(menus, name);
+}
+
+void menu_item_remove ( gchar *id )
+{
+  GtkWidget *item;
+
+  if( !(item = g_hash_table_lookup(menu_items, id)) )
+    return;
+
+  if(gtk_menu_item_get_submenu(GTK_MENU_ITEM(item)))
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), NULL);
+
+  g_hash_table_remove(menu_items, id);
 }
 
 void menu_clamp_size ( GtkMenu *menu )
@@ -144,7 +157,7 @@ gboolean menu_action_cb ( GtkWidget *w ,action_t *action )
   return TRUE;
 }
 
-GtkWidget *menu_item_new ( gchar *label, action_t *action )
+GtkWidget *menu_item_new ( gchar *label, action_t *action, gchar *id )
 {
   GtkWidget *item, *box, *wlabel, *img;
   gchar *text, *icon;
@@ -178,6 +191,17 @@ GtkWidget *menu_item_new ( gchar *label, action_t *action )
     g_signal_connect(G_OBJECT(item), "activate",
         G_CALLBACK(menu_action_cb), action);
     g_object_weak_ref(G_OBJECT(item), (GWeakNotify)action_free, action);
+  }
+
+  if(id)
+  {
+    if(!menu_items)
+      menu_items = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
+          g_object_unref);
+    if(g_hash_table_lookup(menu_items, id))
+      g_message("duplicate menu item id: '%s'", id);
+    else
+      g_hash_table_insert(menu_items, id, item);
   }
 
   return item;
