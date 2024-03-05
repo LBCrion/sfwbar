@@ -43,7 +43,7 @@ void menu_item_remove ( gchar *id )
 {
   GtkWidget *item;
 
-  if( !(item = g_hash_table_lookup(menu_items, id)) )
+  if(!menu_items || !(item = g_hash_table_lookup(menu_items, id)) )
     return;
 
   if(gtk_menu_item_get_submenu(GTK_MENU_ITEM(item)))
@@ -197,7 +197,7 @@ GtkWidget *menu_item_new ( gchar *label, action_t *action, gchar *id )
   {
     if(!menu_items)
       menu_items = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
-          g_object_unref);
+          (GDestroyNotify)gtk_widget_destroy);
     if(g_hash_table_lookup(menu_items, id))
       g_message("duplicate menu item id: '%s'", id);
     else
