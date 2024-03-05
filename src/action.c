@@ -75,6 +75,8 @@ void action_exec ( GtkWidget *widget, action_t *action,
   addr = (ahandler->flags & MODULE_ACT_ADDRESS_ONLY)?
     action->command:action->addr;
 
+  addr->widget = widget;
+  addr->event = event;
   expr_cache_eval(addr);
   if(addr->cache && ahandler->flags & MODULE_ACT_WIDGET_ADDRESS )
   {
