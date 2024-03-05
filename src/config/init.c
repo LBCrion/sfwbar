@@ -218,6 +218,7 @@ void config_string ( gchar *string )
     return;
 
   conf = g_strdup(string);
+  g_debug("parsing config string: %s", conf);
   config_parse_data("config string",conf,TRUE);
   g_free(conf);
 }
