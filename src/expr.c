@@ -78,6 +78,7 @@ static gboolean expr_is_string ( GScanner *scanner )
   g_scanner_peek_next_token(scanner);
   if(scanner->next_token == G_TOKEN_STRING ||
       scanner->next_token == (GTokenType)G_TOKEN_MAP ||
+      scanner->next_token == (GTokenType)G_TOKEN_REPLACEALL ||
       scanner->next_token == (GTokenType)G_TOKEN_LOOKUP )
     return TRUE;
 
@@ -176,7 +177,7 @@ static gchar *expr_parse_map ( GScanner *scanner )
       break;
     }
     parser_expect_symbol(scanner,',',"Map(... match , string ...)");
-    if(!g_strcmp0(comp,match))
+    if(!g_strcmp0(comp, match))
       result = expr_parse_str(scanner,NULL);
     else
     {
@@ -234,6 +235,36 @@ static gchar *expr_parse_lookup ( GScanner *scanner )
   parser_expect_symbol(scanner,')',"Lookup(...)");
 
   return str?str:g_strdup("");
+}
+
+static gchar *expr_replace_all ( GScanner *scanner )
+{
+  gchar *str, *tmp, *old, *new;
+
+
+  parser_expect_symbol(scanner, '(', "ReplaceAll(...)");
+  str = expr_parse_str(scanner, NULL);
+  parser_expect_symbol(scanner, ',', "ReplaceAll(value,...)");
+
+  while(scanner->token==',' && expr_is_string(scanner))
+  {
+    old = expr_parse_str(scanner, NULL);
+    parser_expect_symbol(scanner, ',', "ReplaceAll(value,..old,..)");
+    new = expr_parse_str(scanner, NULL);
+    if(str && old && new)
+    {
+      tmp = str_replace(str, old, new);
+      g_free(str);
+      str = tmp;
+    }
+    g_free(old);
+    g_free(new);
+    if(g_scanner_peek_next_token(scanner)==',')
+      g_scanner_get_next_token(scanner);
+  }
+  parser_expect_symbol(scanner, ')', "ReplaceAll(...)");
+
+  return str;
 }
 
 static gchar *expr_parse_cached ( GScanner *scanner )
@@ -407,6 +438,8 @@ static gchar *expr_parse_str_l1 ( GScanner *scanner )
       return expr_parse_lookup ( scanner );
     case G_TOKEN_MAP:
       return expr_parse_map ( scanner );
+    case G_TOKEN_REPLACEALL:
+      return expr_replace_all ( scanner );
     case G_TOKEN_IDENTIFIER:
       return expr_parse_identifier(scanner);
     default:
@@ -711,6 +744,8 @@ static GScanner *expr_scanner_new ( void )
   g_scanner_scope_add_symbol(scanner,0, "Cached", (gpointer)G_TOKEN_CACHED );
   g_scanner_scope_add_symbol(scanner,0, "Lookup", (gpointer)G_TOKEN_LOOKUP );
   g_scanner_scope_add_symbol(scanner,0, "Map", (gpointer)G_TOKEN_MAP );
+  g_scanner_scope_add_symbol(scanner,0, "ReplaceAll",
+      (gpointer)G_TOKEN_REPLACEALL );
   g_scanner_scope_add_symbol(scanner,0, "Ident", (gpointer)G_TOKEN_IDENT );
   g_scanner_set_scope(scanner,0);
 

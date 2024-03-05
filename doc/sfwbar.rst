@@ -770,40 +770,42 @@ Operation    Description
 
 The string operations are:
 
-============ ===================================================================
-Operation    Description
-============ ===================================================================
-``+``        concatenate strings i.e. ``"'String'+$Var"``.
-``Mid``      extract substring i.e. ``Mid($Var,2,5)``
-``Extract``  extract a regex pattern i.e.
-             ``Extract($Var,'FindThis: (GrabThat)')``
-``Str``      convert a number into a string, the first argument is a number (or
-             a numeric expression), the second argument is decimal precision.
-             If precision is omitted, the number is rounded to the nearest 
-             integer.
-``Pad``      pad a string to be n characters long, the first parameter is a
-             string to pad, the second is the desired number of characters,
-             if the number is negative, the string is padded at the end, if
-             positive, the string is padded at the front. The third optional
-             string parameter specifies the character to pad the string with.
-``Upper``    Convert a string to upper case
-``Lower``    Convert a string to lower case
-``Escape``   Sanitize text input for label widget.
-``Read``     Read contents of a file into a string
-``Replace``  Replace one substring with another within a string
-             ``Replace (string, old, new)``
-``Lookup``   lookup a numeric value within a list of tuplets, the function call
-             is ``Lookup(Value, Threshold1, String1, ..., DefaultString)``. The
-             function checks value against a thresholds and returns a String
-             associated with the highest threshold matched by the Value. If the
-             Value is lower than all thresholds, DefaultString is returned. 
-             Thresholds in the function call must be in decreasing order.
-``Map``      Match a string within a list of tuplets, the usage is:
-             ``Map(Value, Match1,String`,...,DefaultString)``. THe function will
-             match Value against all Match strings and will return a
-             corresponding String, if none of the Match strings match, the
-             function will return DefaultString.
-============ ===================================================================
+============== ===================================================================
+Operation      Description
+============== ===================================================================
+``+``          concatenate strings i.e. ``"'String'+$Var"``.
+``Mid``        extract substring i.e. ``Mid($Var,2,5)``
+``Extract``    extract a regex pattern i.e.
+               ``Extract($Var,'FindThis: (GrabThat)')``
+``Str``        convert a number into a string, the first argument is a number (or
+               a numeric expression), the second argument is decimal precision.
+               If precision is omitted, the number is rounded to the nearest 
+               integer.
+``Pad``        pad a string to be n characters long, the first parameter is a
+               string to pad, the second is the desired number of characters,
+               if the number is negative, the string is padded at the end, if
+               positive, the string is padded at the front. The third optional
+               string parameter specifies the character to pad the string with.
+``Upper``      Convert a string to upper case
+``Lower``      Convert a string to lower case
+``Escape``     Sanitize text input for label widget.
+``Read``       Read contents of a file into a string
+``Replace``    Replace one substring with another within a string
+               ``Replace (string, old, new)``
+``Lookup``     lookup a numeric value within a list of tuplets, the function call
+               is ``Lookup(Value, Threshold1, String1, ..., DefaultString)``. The
+               function checks value against a thresholds and returns a String
+               associated with the highest threshold matched by the Value. If the
+               Value is lower than all thresholds, DefaultString is returned. 
+               Thresholds in the function call must be in decreasing order.
+``Map``        Match a string within a list of tuplets, the usage is:
+               ``Map(Value, Match1,String`,...,DefaultString)``. THe function will
+               match Value against all Match strings and will return a
+               corresponding String, if none of the Match strings match, the
+               function will return DefaultString.
+``ReplaceAll`` Perform multiple substring replacements in a string,
+               ``ReplaceAll(string, old1, new1, ... )``
+============== ===================================================================
 
 In addition the following query functions are supported
 
