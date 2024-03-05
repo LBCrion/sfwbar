@@ -227,11 +227,11 @@ static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
     gint eol, void *d )
 {
   pulse_info *info;
+  gboolean new;
 
   if(!pinfo)
     return;
-  if(!pulse_info_from_idx(&pulse_interfaces[0], pinfo->index, FALSE))
-    pulse_device_advertise(0, &pinfo->channel_map, pinfo->index);
+  new = !pulse_info_from_idx(&pulse_interfaces[0], pinfo->index, FALSE);
 
   info = pulse_info_from_idx(&pulse_interfaces[0], pinfo->index, TRUE);
 
@@ -254,6 +254,10 @@ static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
   info->vol = 100.0 * pa_cvolume_avg(&info->cvol)/PA_VOLUME_NORM;
   info->mute = pinfo->mute;
   info->cmap = pinfo->channel_map;
+
+  if(new)
+    pulse_device_advertise(0, &pinfo->channel_map, pinfo->index);
+
   g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
       (gpointer)g_intern_static_string("pulse"));
 }
@@ -288,12 +292,12 @@ static void pulse_sink_input_cb ( pa_context *ctx,
     const pa_sink_input_info *pinfo, gint eol, void *d )
 {
   pulse_info *info;
+  gboolean new;
 
   if(!pinfo)
     return;
 
-  if(!pulse_info_from_idx(&pulse_interfaces[2], pinfo->index, FALSE))
-    pulse_device_advertise(2, &pinfo->channel_map, pinfo->index);
+  new = !pulse_info_from_idx(&pulse_interfaces[2], pinfo->index, FALSE);
   info = pulse_info_from_idx(&pulse_interfaces[2], pinfo->index, TRUE);
   g_free(info->name);
   info->name = g_strdup(pinfo->name);
@@ -311,6 +315,9 @@ static void pulse_sink_input_cb ( pa_context *ctx,
   info->client = pinfo->client;
   g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
       (gpointer)g_intern_static_string("pulse"));
+
+  if(new)
+    pulse_device_advertise(2, &pinfo->channel_map, pinfo->index);
 
   pa_operation_unref(pa_context_get_client_info(ctx, pinfo->client,
         pulse_client_cb, (void *)info ));
@@ -457,7 +464,8 @@ static pulse_info *pulse_addr_parse ( gchar *addr, pulse_interface_t *iface,
   gint i;
   gchar *ptr;
 
-  *cidx = 0;
+  if(cidx)
+    *cidx = 0;
 
   if(addr)
   {
@@ -487,7 +495,7 @@ static pulse_info *pulse_addr_parse ( gchar *addr, pulse_interface_t *iface,
     info = iter?iter->data:NULL;
   }
 
-  if(info && channel)
+  if(cidx && info && channel)
   {
     cpos = pa_channel_position_from_string(channel+1);
     for(i=0; i<info->cmap.channels; i++)
@@ -512,8 +520,7 @@ static void *pulse_expr_func ( void **params, void *widget, void *event )
   if( !(iface = pulse_interface_get(params[0], &cmd)) )
     return g_strdup("");
 
-  info = pulse_addr_parse(params[1], iface, &cidx);
-  if(!info)
+  if( !(info = pulse_addr_parse(params[1], iface, &cidx)) )
     return g_strdup("");
 
   if(!g_ascii_strcasecmp(cmd, "volume"))
@@ -594,6 +601,23 @@ static gboolean pulse_mute_parse ( gchar *cmd, gboolean mute )
   return mute;
 }
 
+static pa_operation *pulse_client_set_sink ( pulse_info *info, gchar *dest )
+{
+  pulse_info *dinfo;
+
+  if(!info || !dest || !info->client)
+    return NULL;
+
+  while(*dest == ' ')
+    dest++;
+
+  if( !(dinfo = pulse_addr_parse(dest, &pulse_interfaces[0], NULL)) )
+    return NULL;
+
+  return pa_context_move_sink_input_by_index(pctx, info->idx, dinfo->idx,
+      NULL, NULL);
+}
+
 static void pulse_action ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
@@ -615,6 +639,9 @@ static void pulse_action ( gchar *cmd, gchar *name, void *d1,
   else if(!g_ascii_strncasecmp(command, "mute", 4))
     op = iface->set_mute(pctx, info->idx,
         pulse_mute_parse(command+4, info->mute), NULL, NULL);
+  else if(!g_ascii_strncasecmp(command, "set-sink", 8))
+    op = pulse_client_set_sink(info, command+8);
+
   else
     op = NULL;
 
