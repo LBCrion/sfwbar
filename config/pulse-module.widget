@@ -10,6 +10,13 @@ set XVolumeHighIcon = If(!Ident($VolumeHighIcon),
     "audio-volume-high", $VolumeHighIcon)
 set XVolumeAction = If(!Ident($VolumeAction),"pavucontrol",$VolumeAction)
 
+set XVolumeSinkMenuTmpl = "
+Menu('XVolumeSinkMenu') {
+  Item('@SINK_DESC@',
+      PulseCmd Extract(WidgetId(),'(.*)_menu'), 'client-set-sink @SINK_NAME@',
+      '@SINK_NAME@')
+}"
+
 set XVolumeControlTmpl = "
 grid 'volume_section_@DEVICE_IFACE@' {
   grid '@DEVICE_NAME@' {
@@ -27,17 +34,24 @@ grid 'volume_section_@DEVICE_IFACE@' {
       trigger = 'pulse'
       loc (1,1,1,1)
     }
+    image '@DEVICE_NAME@_expand' {
+      value = 'pan-end'
+      style = 'volume_control_expander'
+      action = Function 'XVolumeToggleChannels'
+      loc(2,1,1,1)
+    }
     label '@DEVICE_NAME@_name' {
       style = 'pulse_device_name'
       value = Pulse('@DEVICE_IFACE@-description','@DEVICE_NAME@')
       trigger = 'pulse'
       loc (3,1,1,1)
     }
-    image '@DEVICE_NAME@_expand' {
-      value = 'pan-end'
-      style = 'volume_control_expander'
-      action = Function 'XVolumeToggleChannels'
-      loc(2,1,1,1)
+    image '@DEVICE_NAME@_menu' {
+      value = 'open-menu'
+      style = If('@DEVICE_IFACE@' = 'client', 'volume_client_menu', 'hidden')
+      action = Menu 'XVolumeSinkMenu'
+      trigger = 'pulse'
+      loc (4,1,1,1)
     }
     scale '@DEVICE_NAME@_volume' {
       style = 'pulse_volume_scale'
@@ -45,11 +59,11 @@ grid 'volume_section_@DEVICE_IFACE@' {
       action[1] = PulseCmd '@DEVICE_NAME@',
         '@DEVICE_IFACE@-volume ' + Str(GtkEvent('dir') * 100)
       trigger = 'pulse'
-      loc (1,2,3,1)
+      loc (1,2,4,1)
     }
     grid '@DEVICE_NAME@_channels' {
       style = 'hidden'
-      loc(1,3,3,1)
+      loc(1,3,4,1)
       label '@DEVICE_NAME@-@CHANNEL_NAME@_label' {
         value = '@CHANNEL_NAME@'
         style = 'volume_channel_name'
@@ -90,19 +104,22 @@ Function("XVolumeToggleChannels") {
 }
 
 Function("XVolumeChannelHandler") {
-  Config Replace(
-      Replace(
-        Replace(
-          Replace($XVolumeControlTmpl, "@DEVICE_NAME@", PulseChannel("Device")),
-          "@CHANNEL_NAME@", PulseChannel("Channel")),
-        "@CHANNEL_NUM@", PulseChannel("ChannelNumber"))
+  Config ReplaceAll($XVolumeControlTmpl,
+      "@DEVICE_NAME@", PulseChannel("Device"),
+      "@CHANNEL_NAME@", PulseChannel("Channel"),
+      "@CHANNEL_NUM@", PulseChannel("ChannelNumber"),
       "@DEVICE_IFACE@", PulseChannel("interface"))
+  MenuItemClear PulseChannel("Device")
+  Config If(PulseChannel("interface")!="sink", "",
+      ReplaceAll($XVolumeSinkMenuTmpl, "@SINK_NAME@", PulseChannel("Device"),
+           "@SINK_DESC@", Pulse("sink-description", PulseChannel("Device"))))
   PulseChannelAck
 }
 
 Function("XVolumeChannelRemove") {
 #  SetStyle PulseChannel("RemovedDevice"), "hidden"
   ClearWidget PulseChannel("RemovedDevice")
+  ClearMenuItem PulseChannel("RemovedDevice")
   PulseChannelAckRemoved
 }
 
@@ -169,6 +186,7 @@ grid#volume_popup {
   -GtkWidget-direction: bottom;
 }
 
+image#volume_client_menu,
 image#pulse_volume_mute {
   color: @theme_fg_color;
   min-width: 20px;
