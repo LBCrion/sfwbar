@@ -538,6 +538,8 @@ static void *pulse_expr_func ( void **params, void *widget, void *event )
     return g_strdup(info->monitor?info->monitor:"");
   if(!g_ascii_strcasecmp(cmd, "description"))
     return g_strdup(info->description?info->description:"");
+  if(!g_ascii_strcasecmp(cmd, "count"))
+    return g_strdup_printf("%d", iface?g_list_length(iface->list):0);
 
   return g_strdup_printf("invalid query: %s", cmd);
 }

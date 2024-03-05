@@ -48,7 +48,7 @@ grid 'volume_section_@DEVICE_IFACE@' {
     }
     image '@DEVICE_NAME@_menu' {
       value = 'open-menu'
-      style = If('@DEVICE_IFACE@' = 'client', 'volume_client_menu', 'hidden')
+      style = If('@DEVICE_IFACE@' = 'client' & Val(Pulse('sink-count'))>1, 'volume_client_menu', 'hidden')
       action = Menu 'XVolumeSinkMenu'
       trigger = 'pulse'
       loc (4,1,1,1)
