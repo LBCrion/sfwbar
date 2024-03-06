@@ -38,16 +38,12 @@ Set XWifiNetTmpl = "
 Function("XWifiUpdate") {
   ClearWidget WifiGet("Path") + "_grid" +
     If(WifiGet("known")="", "Known", "Other")
-  Config Replace(
-      Replace(
-        Replace(
-          Replace(
-            Replace(
-              Replace($XWifiNetTmpl, "@WIFI_PATH@", Escape(WifiGet("Path"))),
-              "@WIFI_TYPE@", WifiGet("Type")),
-            "@WIFI_SSID@", Replace(WifiGet("SSID"),"'","\"")),
-          "@WIFI_ICON@", XWifiIcon),
-        "@WIFI_KNOWN@",If(WifiGet("Known")="","Other","Known")),
+  Config ReplaceAll( $XWifiNetTmpl,
+      "@WIFI_PATH@", Escape(WifiGet("Path")),
+      "@WIFI_TYPE@", WifiGet("Type"),
+      "@WIFI_SSID@", Replace(WifiGet("SSID"),"'","\""),
+      "@WIFI_ICON@", XWifiIcon,
+      "@WIFI_KNOWN@",If(WifiGet("Known")="","Other","Known"),
       "@WIFI_CONNECTED@", If(WifiGet("Connected")="1","Connected",""))
   WifiAck
 }

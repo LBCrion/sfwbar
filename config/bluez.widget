@@ -5,8 +5,38 @@ TriggerAction "bluez_removed", Function "XBluezRemove"
 TriggerAction "bluez_scan", SetValue "XBluezScanButton", "Scanning ..."
 TriggerAction "bluez_scan_complete", SetValue "XBluezScanButton", "Scan"
 
-define XBluezID = BluezGet("Path") + "_grid" +
-  If(BluezState("Paired"), "paired", "avail")
+set XBluezTmpl = "
+grid 'XBluezGrid@BLUEZ_PAIRED@' {
+  grid '@BLUEZ_PATH@_@BLUEZ_PAIRED@' {
+    style = 'XBluezGrid'
+    action = BluezPair Extract(WidgetId(),'(.*)_grid')
+    action[RIghtClick] = Menu 'XBluezItemMenu'
+    image '@BLUEZ_PATH@_icon' {
+      value = '@BLUEZ_ICON@'
+      style = 'XBluezIcon'
+      interval = 0
+      loc(0,0,1,2)
+    } 
+    label '@BLUEZ_PATH@_label' {
+      value = \"@BLUEZ_NAME@\"
+      style = 'XBluezName'
+      interval = 0
+      loc(1,0,2,1)
+    }
+    label '@BLUEZ_PATH@_status' {
+      value = '@BLUEZ_CONN@'
+      style = 'XBluezStatus'
+      interval = 0
+      loc(2,1,1,1)
+    }
+    label '@BLUEZ_PATH@_address' {
+      value = '@BLUEZ_ADDR@'
+      style = 'XBluezAddress'
+      interval = 0
+      loc(1,1,1,1)
+    }
+  }
+}"
 
 Menu("XBluezItemMenu") {
   item("Connect", BluezConnect Extract(WidgetId(),"(.*)_grid") );
@@ -18,36 +48,14 @@ Menu("XBluezItemMenu") {
 Function("XBluezUpdate") {
   ClearWidget BluezGet("Path") + "_grid" +
     If(BluezState("Paired"), "avail", "paired")
-    COnfig "grid 'XBluezGrid" +
-        If(BluezState("Paired"),"Paired","Avail") + "' {" +
-      "grid '" + XBluezID + "' {" +
-        "style = 'XBluezGrid'" +
-        "action = BluezPair Extract(WidgetId(),'(.*)_grid') " +
-        "action[RIghtClick] = Menu 'XBluezItemMenu' " +
-        "image '" + BluezGet("Path") + "_icon' {" +
-          "value = '" + BluezGet("Icon") + "' " +
-          "style = 'XBluezIcon'" +
-          "interval = 0 " +
-          "loc(0,0,1,2)" +
-        "} " +
-        "label '" + BluezGet("Path") + "_label' {" +
-          "value = \"" + BluezGet("Name") + "\"" +
-          "style = 'XBluezName'" +
-          "interval = 0 " +
-          "loc(1,0,2,1)" +
-        "} " +
-        "label '" + BluezGet("Path") +"_status' {" +
-          "value = '" + If(BluezState("Connecting")," Connecting ...","") + "' " +
-          "style = 'XBluezStatus' " +
-          "interval = 0 " +
-          "loc(2,1,1,1)" +
-        "} " +
-        "label '" + BluezGet("Path") +"_address' {" +
-          "value = '" + BluezGet("Address") + "'" +
-          "style = 'XBluezAddress' " +
-          "interval = 0 " +
-          "loc(1,1,1,1)" +
-        "} } }"
+  Config ReplaceAll( $XBluezTmpl,
+    "@BLUEZ_PAIRED@", If(BluezState("Paired"),"Paired","Avail"),
+    "@BLUEZ_CONN@", If(BluezState("Connecting")," Connecting ...",""),
+    "@BLUEZ_PATH@", BluezGet("Path"),
+    "@BLUEZ_ICON@", BluezGet("Icon"),
+    "@BLUEZ_ADDR@", BluezGet("Address"),
+    "@BLUEZ_NAME@", BluezGet("Name"),
+    "@BLUEZ_ID@", BluezGet("Id"))
   BluezAck
 }
 
