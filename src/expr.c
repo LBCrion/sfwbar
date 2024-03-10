@@ -126,12 +126,12 @@ static void *expr_parse_identifier ( GScanner *scanner )
   if(g_scanner_peek_next_token(scanner)!='(' &&
       scanner_is_variable(scanner->value.v_identifier))
     return scanner_get_value(scanner->value.v_identifier,
-        !E_STATE(scanner)->ignore,E_STATE(scanner)->expr);
+        !E_STATE(scanner)->ignore, E_STATE(scanner)->expr);
 
   if(g_scanner_peek_next_token(scanner)=='(' &&
       module_is_function(scanner->value.v_identifier) &&
       !E_STATE(scanner)->ignore)
-    return module_get_string(scanner);
+    return module_get_value(scanner);
 
   expr_dep_add(scanner->value.v_identifier,E_STATE(scanner)->expr);
 
@@ -380,6 +380,8 @@ static gdouble expr_parse_compare ( GScanner *scanner, gchar *prev )
 
 static gchar *expr_parse_variant_token ( GScanner *scanner )
 {
+  void *val;
+
   E_STATE(scanner)->type = EXPR_VARIANT;
   switch((gint)g_scanner_peek_next_token(scanner))
   {
@@ -391,7 +393,9 @@ static gchar *expr_parse_variant_token ( GScanner *scanner )
       return expr_parse_cached(scanner);
     case G_TOKEN_IDENTIFIER:
       g_scanner_get_next_token(scanner);
-      return expr_parse_identifier(scanner);
+      if( (val = expr_parse_identifier(scanner)) )
+        return val;
+      return g_strdup("");
     default:
       return g_strdup("");
   }
@@ -441,7 +445,9 @@ static gchar *expr_parse_str_l1 ( GScanner *scanner )
     case G_TOKEN_REPLACEALL:
       return expr_replace_all ( scanner );
     case G_TOKEN_IDENTIFIER:
-      return expr_parse_identifier(scanner);
+      if( (str = expr_parse_identifier(scanner)) )
+        return str;
+      return g_strdup("");
     default:
       g_scanner_unexp_token(scanner,G_TOKEN_STRING,NULL,NULL,"","",TRUE);
       return g_strdup("");
@@ -520,8 +526,7 @@ static gdouble expr_parse_num_value ( GScanner *scanner, gdouble *prev )
       parser_expect_symbol(scanner, ')',"(Number)");
       return val;
     case G_TOKEN_IDENTIFIER:
-      ptr = expr_parse_identifier(scanner);
-      val = *ptr;
+      val = (ptr = expr_parse_identifier(scanner))? *ptr: 0;
       g_free(ptr);
       return val;
     default:
@@ -833,14 +838,14 @@ void expr_dep_add ( gchar *ident, ExprCache *expr )
 
   if(!expr_deps)
     expr_deps = g_hash_table_new_full((GHashFunc)str_nhash,
-          (GEqualFunc)str_nequal,g_free,NULL);
+          (GEqualFunc)str_nequal, g_free, NULL);
 
-  vname = scanner_parse_identifier(ident,NULL);
-  list = g_hash_table_lookup(expr_deps,vname);
-  for(iter=expr;iter;iter=iter->parent)
-    if(!g_list_find(list,iter))
-      list = g_list_prepend(list,iter);
-  g_hash_table_replace(expr_deps,vname,list);
+  vname = scanner_parse_identifier(ident, NULL);
+  list = g_hash_table_lookup(expr_deps, vname);
+  for(iter=expr; iter; iter=iter->parent)
+    if(!g_list_find(list, iter))
+      list = g_list_prepend(list, iter);
+  g_hash_table_replace(expr_deps, vname, list);
 }
 
 void expr_dep_trigger ( gchar *ident )

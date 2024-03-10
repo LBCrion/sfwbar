@@ -73,7 +73,7 @@ gboolean module_load ( gchar *name );
 void module_invalidate_all ( void );
 gboolean module_is_function ( gchar *identifier );
 gboolean module_check_flag ( gchar *identifier, gint flag );
-gchar *module_get_string ( GScanner *scanner );
+void *module_get_value ( GScanner *scanner );
 ModuleActionHandlerV1 *module_action_get ( GQuark quark );
 void module_action_exec ( GQuark quark, gchar *param, gchar *addr, void *,
     void *, void *, void * );

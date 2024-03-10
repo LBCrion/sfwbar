@@ -259,7 +259,7 @@ gboolean module_check_flag ( gchar *identifier, gint flag )
   return !!(handler->flags & flag);
 }
 
-gchar *module_get_string ( GScanner *scanner )
+void *module_get_value ( GScanner *scanner )
 {
   ModuleExpressionHandlerV1 *handler;
   void **params;
@@ -269,11 +269,11 @@ gchar *module_get_string ( GScanner *scanner )
 
   E_STATE(scanner)->type = EXPR_VARIANT;
   if(!expr_handlers)
-    return g_strdup("");
+    return NULL;
 
-  handler = g_hash_table_lookup(expr_handlers, scanner->value.v_identifier);
-  if(!handler)
-    return g_strdup("");
+  if(!(handler =
+        g_hash_table_lookup(expr_handlers, scanner->value.v_identifier)))
+    return NULL;
 
   g_debug("module: calling function `%s`", handler->name);
   params = expr_module_parameters(scanner, handler->parameters, handler->name);
@@ -285,7 +285,7 @@ gchar *module_get_string ( GScanner *scanner )
   result = handler->function(params, expr->widget, expr->event);
 
   if(params)
-    for(i=0;i<strlen(handler->parameters);i++)
+    for(i=0; i<strlen(handler->parameters); i++)
       g_free(params[i]);
   g_free(params);
 

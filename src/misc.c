@@ -290,6 +290,11 @@ gchar *str_replace ( gchar *str, gchar *old, gchar *new )
   return dest;
 }
 
+void *ptr_pass ( void *ptr )
+{
+  return ptr;
+}
+
 GdkMonitor *widget_get_monitor ( GtkWidget *self )
 {
   GtkWidget *parent, *w;

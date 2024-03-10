@@ -45,6 +45,7 @@ int md5_file( gchar *path, guchar output[16] );
 struct rect parse_rect ( struct json_object *obj );
 guint str_nhash ( gchar *str );
 gboolean str_nequal ( gchar *str1, gchar *str2 );
+void *ptr_pass ( void *ptr );
 gchar *str_replace ( gchar *str, gchar *old, gchar *new );
 void hypr_ipc_init ( void );
 enum ipc_type ipc_get ( void );
