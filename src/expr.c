@@ -333,16 +333,15 @@ gdouble expr_parse_ident ( GScanner *scanner )
 {
   gdouble result;
 
-  parser_expect_symbol(scanner,'(',"Ident(Identifier)");
-  if(!parser_expect_symbol(scanner,G_TOKEN_IDENTIFIER,"Ident(Identifier)"))
+  parser_expect_symbol(scanner, '(', "Ident(Identifier)");
+  if(!parser_expect_symbol(scanner, G_TOKEN_IDENTIFIER, "Ident(Identifier)"))
     return FALSE;
 
   result = scanner_is_variable(scanner->value.v_identifier) ||
     module_is_function(scanner->value.v_identifier);
-  if(!result)
-    expr_dep_add(scanner->value.v_identifier,E_STATE(scanner)->expr);
+  expr_dep_add(scanner->value.v_identifier, E_STATE(scanner)->expr);
 
-  parser_expect_symbol(scanner,')',"Ident(iIdentifier)");
+  parser_expect_symbol(scanner, ')', "Ident(iIdentifier)");
 
   return result;
 }
@@ -825,6 +824,7 @@ void expr_cache_free ( ExprCache *expr )
 {
   if(!expr)
     return;
+  expr_dep_remove(expr);
   g_free(expr->definition);
   g_free(expr->cache);
   g_free(expr);
@@ -848,6 +848,19 @@ void expr_dep_add ( gchar *ident, ExprCache *expr )
   g_hash_table_replace(expr_deps, vname, list);
 }
 
+void expr_dep_remove ( ExprCache *expr )
+{
+  GHashTableIter hiter;
+  void *list, *key;
+
+  if(!expr_deps)
+    return;
+
+  g_hash_table_iter_init(&hiter, expr_deps);
+  while(g_hash_table_iter_next(&hiter, &key, &list))
+    g_hash_table_iter_replace(&hiter, g_list_remove(list, expr));
+}
+
 void expr_dep_trigger ( gchar *ident )
 {
   GList *iter,*list;
@@ -855,12 +868,10 @@ void expr_dep_trigger ( gchar *ident )
   if(!expr_deps)
     return;
 
-  list = g_hash_table_lookup(expr_deps,ident);
+  list = g_hash_table_lookup(expr_deps, ident);
 
-  for(iter=list;iter;iter=g_list_next(iter))
+  for(iter=list; iter; iter=g_list_next(iter))
     ((ExprCache *)(iter->data))->eval = TRUE;
-  g_hash_table_remove(expr_deps,ident);
-  g_list_free(list);
 }
 
 void expr_dep_dump_each ( void *key, void *value, void *d )

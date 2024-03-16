@@ -44,6 +44,7 @@ void expr_lib_init ( void );
 ExprCache *expr_cache_new ( void );
 void expr_cache_free ( ExprCache *expr );
 void expr_dep_add ( gchar *ident, ExprCache *expr );
+void expr_dep_remove ( ExprCache *expr );
 void expr_dep_trigger ( gchar *ident );
 void expr_dep_dump ( void );
 
