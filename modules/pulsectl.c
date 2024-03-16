@@ -9,6 +9,7 @@
 #include <pulse/pulseaudio.h>
 #include <pulse/glib-mainloop.h>
 
+static gboolean pulse_connect_try ( void *data );
 gboolean invalid;
 
 typedef struct _pulse_info {
@@ -16,7 +17,6 @@ typedef struct _pulse_info {
   gchar *name;
   gboolean mute;
   pa_cvolume cvol;
-  gdouble vol;
   gchar *icon, *form, *port, *monitor, *description;
   pa_channel_map cmap;
 } pulse_info;
@@ -44,14 +44,10 @@ typedef struct _pulse_interface {
 pa_mainloop_api *papi;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
+extern ModuleInterfaceV1 sfwbar_interface;
 
 static pa_context *pctx;
 static pulse_interface_t pulse_interfaces[];
-
-static void* pulse_channel_dup_dummy ( void *d )
-{
-  return d;
-}
 
 static void pulse_channel_free ( pulse_channel_t *channel )
 {
@@ -71,32 +67,34 @@ static void *pulse_channel_get_str ( pulse_channel_t *channel, gchar *prop )
   if(!g_ascii_strcasecmp(prop, "interface"))
     return g_strdup(channel->iface_idx<3?
         pulse_interfaces[channel->iface_idx].prefix:"none");
-  if(!g_ascii_strcasecmp(prop, "channel"))
+  if(!g_ascii_strcasecmp(prop, "id"))
+    return g_strdup(channel->channel);
+  if(!g_ascii_strcasecmp(prop, "name"))
     return g_strdup(channel->channel);
   if(!g_ascii_strcasecmp(prop, "device"))
     return g_strdup(channel->device);
-  if(!g_ascii_strcasecmp(prop, "ChannelNumber"))
+  if(!g_ascii_strcasecmp(prop, "index"))
     return g_strdup_printf("%d", channel->chan_num);
   return NULL;
 }
 
 static module_queue_t channel_q = {
   .free = (void (*)(void *))pulse_channel_free,
-  .duplicate = (void *(*)(void *))pulse_channel_dup_dummy,
+  .duplicate = (void *(*)(void *))ptr_pass,
   .get_str = (void *(*)(void *, gchar *))pulse_channel_get_str,
   .compare = (gboolean (*)(const void *, const void *))pulse_channel_comp,
 };
 
 static void *pulse_remove_get_str ( gchar *name, gchar *prop )
 {
-  if(!g_ascii_strcasecmp(prop, "RemovedDevice"))
+  if(!g_ascii_strcasecmp(prop, "removed-id"))
     return g_strdup(name);
   return NULL;
 }
 
 static module_queue_t remove_q = {
   .free = g_free,
-  .duplicate = (void *(*)(void *))g_strdup,
+  .duplicate = (void *(*)(void *))ptr_pass,
   .get_str = (void *(*)(void *, gchar *))pulse_remove_get_str,
   .compare = (gboolean (*)(const void *, const void *))g_strcmp0,
 };
@@ -160,49 +158,110 @@ pulse_interface_t *pulse_interface_get ( gchar *name, gchar **ptr )
   return NULL;
 }
 
-static void pulse_set_name ( gchar *ifname, const gchar *name, gboolean fixed )
+static pulse_info *pulse_addr_parse ( const gchar *addr,
+    pulse_interface_t *iface, gint *cidx )
 {
-  pulse_interface_t *iface;
+  pa_channel_position_t cpos;
+  pulse_info *info;
+  GList *iter;
+  gchar *device, *channel;
+  gint i;
+  gchar *ptr;
 
-  if( !(iface = pulse_interface_get(ifname, NULL)) )
+  if(cidx)
+    *cidx = 0;
+
+  if(addr)
+  {
+    device = g_strdup(addr);
+    if( (channel = strchr(device, ':')) )
+      *channel = '\0';
+  }
+  else
+  {
+    device = NULL;
+    channel = NULL;
+  }
+
+  if(device && g_str_has_prefix(device, "@pulse-"))
+  {
+    if( device && (ptr = strrchr(device, '-')) )
+      info = pulse_info_from_idx(iface, atoi(ptr+1), FALSE);
+    else
+      info = NULL;
+  }
+  else
+  {
+    for(iter=iface->list; iter; iter=g_list_next(iter))
+      if(!g_strcmp0(((pulse_info *)iter->data)->name,
+            device?device:iface->name))
+        break;
+    info = iter?iter->data:NULL;
+  }
+
+  if(cidx && info && channel)
+  {
+    cpos = pa_channel_position_from_string(channel+1);
+    for(i=0; i<info->cmap.channels; i++)
+      if(info->cmap.map[i] == cpos)
+        *cidx = i+1;
+  }
+  g_free(device);
+
+  return info;
+}
+
+static void pulse_set_name ( pulse_interface_t *iface, const gchar *name,
+    gboolean fixed )
+{
+  pulse_info *info;
+
+  if( !iface || !name || (!fixed && iface->fixed))
     return;
 
-  if(!fixed && iface->fixed)
-    return;
+  while(*name == ' ')
+    name++;
+
+  if(g_str_has_prefix(name, "@pulse"))
+  {
+    if( (info=pulse_addr_parse(name, iface, NULL)) )
+      name = info->name;
+  }
 
   iface->fixed = fixed;
   g_free(iface->name);
   iface->name = g_strdup(name);
+  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+      (gpointer)g_intern_static_string("volume"));
 }
 
 static void pulse_remove_device ( pulse_interface_t *iface, guint32 idx )
 {
   GList *iter;
   pulse_info *info;
-  gchar *tmp;
 
   for(iter=iface->list; iter; iter=g_list_next(iter))
     if(((pulse_info *)iter->data)->idx == idx)
       break;
-  if(!iter)
-    return;
 
-  info = iter->data;
-  iface->list = g_list_delete_link(iface->list, iter);
-
-  if(info->name)
+  if(iter)
   {
-    tmp = g_strdup_printf("@pulse-%s-%d", iface->prefix, idx);
-    module_queue_append(&remove_q, tmp);
-    g_free(tmp);
+    info = iter->data;
+    iface->list = g_list_delete_link(iface->list, iter);
+
+    if(info->name)
+    {
+      module_queue_append(&remove_q,
+          g_strdup_printf("@pulse-%s-%d", iface->prefix, idx));
+    }
+    g_free(info->name);
+    g_free(info->icon);
+    g_free(info->form);
+    g_free(info->port);
+    g_free(info->monitor);
+    g_free(info->description);
+    g_free(info);
   }
-  g_free(info->name);
-  g_free(info->icon);
-  g_free(info->form);
-  g_free(info->port);
-  g_free(info->monitor);
-  g_free(info->description);
-  g_free(info);
 }
 
 static void pulse_device_advertise ( gint iface_idx,
@@ -251,7 +310,6 @@ static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
   info->description = g_strdup(pinfo->description);
   info->idx = pinfo->index;
   info->cvol = pinfo->volume;
-  info->vol = 100.0 * pa_cvolume_avg(&info->cvol)/PA_VOLUME_NORM;
   info->mute = pinfo->mute;
   info->cmap = pinfo->channel_map;
 
@@ -259,7 +317,7 @@ static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
     pulse_device_advertise(0, &pinfo->channel_map, pinfo->index);
 
   g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("pulse"));
+      (gpointer)g_intern_static_string("volume"));
 }
 
 static void pulse_client_cb ( pa_context *ctx, const pa_client_info *cinfo,
@@ -285,7 +343,7 @@ static void pulse_client_cb ( pa_context *ctx, const pa_client_info *cinfo,
 
   if(change)
     g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("pulse"));
+        (gpointer)g_intern_static_string("volume"));
 }
 
 static void pulse_sink_input_cb ( pa_context *ctx,
@@ -309,12 +367,11 @@ static void pulse_sink_input_cb ( pa_context *ctx,
         PA_PROP_DEVICE_FORM_FACTOR));
   info->idx = pinfo->index;
   info->cvol = pinfo->volume;
-  info->vol = 100.0 * pa_cvolume_avg(&info->cvol)/PA_VOLUME_NORM;
   info->mute = pinfo->mute;
   info->cmap = pinfo->channel_map;
   info->client = pinfo->client;
   g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("pulse"));
+      (gpointer)g_intern_static_string("volume"));
 
   if(new)
     pulse_device_advertise(2, &pinfo->channel_map, pinfo->index);
@@ -348,17 +405,16 @@ static void pulse_source_cb ( pa_context *ctx, const pa_source_info *pinfo,
   info->description = g_strdup(pinfo->description);
   info->idx = pinfo->index;
   info->cvol = pinfo->volume;
-  info->vol = 100.0 * pa_cvolume_avg(&info->cvol)/PA_VOLUME_NORM;
   info->mute = pinfo->mute;
   g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("pulse"));
+      (gpointer)g_intern_static_string("volume"));
 }
 
 static void pulse_server_cb ( pa_context *ctx, const pa_server_info *info,
     void *d )
 {
-  pulse_set_name("sink", info->default_sink_name, FALSE);
-  pulse_set_name("source", info->default_source_name, FALSE);
+  pulse_set_name(&pulse_interfaces[0], info->default_sink_name, FALSE);
+  pulse_set_name(&pulse_interfaces[1], info->default_source_name, FALSE);
   pa_operation_unref(
       pa_context_get_sink_info_list(ctx, pulse_sink_cb, NULL));
   pa_operation_unref(
@@ -421,31 +477,76 @@ static void pulse_state_cb ( pa_context *ctx, gpointer data )
   state = pa_context_get_state(ctx);
 
   if(state == PA_CONTEXT_FAILED || state == PA_CONTEXT_TERMINATED)
-    papi->quit(papi,0);
+  {
+    module_interface_deactivate(&sfwbar_interface);
+    g_message("pulse terminated %d %d", sfwbar_interface.ready, sfwbar_interface.active);
+    g_timeout_add (1000,(GSourceFunc )pulse_connect_try, NULL);
+    pa_context_disconnect(pctx);
+    pa_context_unref(pctx);
+    module_interface_select(sfwbar_interface.interface);
+    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+        (gpointer)g_intern_static_string("volume"));
+  }
   else if(state == PA_CONTEXT_READY)
   {
     pa_operation_unref(
         pa_context_get_server_info(ctx,pulse_server_cb,NULL));
-    pa_context_set_subscribe_callback(ctx,pulse_subscribe_cb,NULL);
-    pa_operation_unref(
-      pa_context_subscribe(ctx,PA_SUBSCRIPTION_MASK_SERVER |
-          PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SINK_INPUT |
-          PA_SUBSCRIPTION_MASK_SOURCE | PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT,
-          NULL, NULL));
+    module_interface_activate(&sfwbar_interface);
   }
+}
+
+static void pulse_activate ( void )
+{
+  pa_context_set_subscribe_callback(pctx, pulse_subscribe_cb, NULL);
+  pa_operation_unref( pa_context_subscribe(pctx,PA_SUBSCRIPTION_MASK_SERVER |
+        PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SINK_INPUT |
+        PA_SUBSCRIPTION_MASK_SOURCE | PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT,
+        NULL, NULL));
+}
+
+static void pulse_deactivate ( void )
+{
+  gint i;
+
+  g_message("deactivating pulse");
+  pa_context_subscribe(pctx,PA_SUBSCRIPTION_MASK_NULL,
+        NULL, NULL);
+  pa_context_set_subscribe_callback(pctx, NULL ,NULL);
+
+  for(i=0; i<3; i++)
+      while(pulse_interfaces[i].list)
+        pulse_remove_device(&pulse_interfaces[i],
+            ((pulse_info *)pulse_interfaces[i].list->data)->idx);
+
+  sfwbar_interface.active = !!channel_q.list | !!remove_q.list;
+}
+
+static gboolean pulse_connect_try ( void *data )
+{
+  if(sfwbar_interface.active)
+    return TRUE;
+
+  pctx = pa_context_new(papi, "sfwbar");
+  if(pa_context_connect(pctx, NULL, PA_CONTEXT_NOFLAGS, NULL) >= 0)
+  {
+    pa_context_set_state_callback(pctx, pulse_state_cb, NULL);
+    return FALSE;
+  }
+  pa_context_disconnect(pctx);
+  pa_context_unref(pctx);
+  return TRUE;
 }
 
 gboolean sfwbar_module_init ( void )
 {
   pa_glib_mainloop *ploop;
 
-  channel_q.trigger = g_intern_static_string("pulse_channel");
-  remove_q.trigger = g_intern_static_string("pulse_removed");
+  channel_q.trigger = g_intern_static_string("volume-conf");
+  remove_q.trigger = g_intern_static_string("volume-conf-removed");
   ploop = pa_glib_mainloop_new(g_main_context_get_thread_default());
   papi = pa_glib_mainloop_get_api(ploop);
-  pctx = pa_context_new(papi, "sfwbar");
-  pa_context_connect(pctx, NULL, PA_CONTEXT_NOFAIL, NULL);
-  pa_context_set_state_callback(pctx, pulse_state_cb, NULL);
+  g_timeout_add (1000,(GSourceFunc )pulse_connect_try, NULL);
+
   return TRUE;
 }
 
@@ -454,57 +555,75 @@ void sfwbar_module_invalidate ( void )
   invalid = TRUE;
 }
 
-static pulse_info *pulse_addr_parse ( gchar *addr, pulse_interface_t *iface,
-    gint *cidx )
+static gint pulse_volume_get ( pulse_info *info, gint cidx )
 {
-  pa_channel_position_t cpos;
-  pulse_info *info;
-  GList *iter;
-  gchar *device, *channel;
-  gint i;
-  gchar *ptr;
+  return cidx?info->cvol.values[cidx-1]:pa_cvolume_avg(&info->cvol);
+}
 
-  if(cidx)
-    *cidx = 0;
+static void pulse_volume_adjust ( pulse_interface_t *iface, pulse_info *info,
+    gint cidx, gchar *vstr )
+{
+  gint vdelta;
 
-  if(addr)
-  {
-    device = g_strdup(addr);
-    if( (channel = strchr(device, ':')) )
-      *channel = '\0';
-  }
-  else
-  {
-    device = NULL;
-    channel = NULL;
-  }
+  if(!vstr)
+    return;
 
-  if(device && g_str_has_prefix(device, "@pulse-"))
+  while(*vstr==' ')
+    vstr++;
+
+  vdelta = g_ascii_strtod(vstr, NULL)*PA_VOLUME_NORM/100;
+  if(*vstr!='+' && *vstr!='-')
+    vdelta -= pulse_volume_get(info, cidx);
+
+  if(!cidx)
   {
-    if( device && (ptr = strrchr(device, '-')) )
-      info = pulse_info_from_idx(iface, atoi(ptr+1), FALSE);
+    if(vdelta > 0)
+      pa_cvolume_inc_clamp(&info->cvol, vdelta, PA_VOLUME_UI_MAX);
     else
-      info = NULL;
+      pa_cvolume_dec(&info->cvol, -vdelta);
   }
   else
-  {
-    for(iter=iface->list; iter; iter=g_list_next(iter))
-      if(!g_strcmp0(((pulse_info *)iter->data)->name,
-            device?device:iface->name))
-        break;
-    info = iter?iter->data:NULL;
-  }
+    info->cvol.values[cidx-1] = CLAMP((gint)(info->cvol.values[cidx-1]) +
+        vdelta, 0, PA_VOLUME_UI_MAX);
 
-  if(cidx && info && channel)
-  {
-    cpos = pa_channel_position_from_string(channel+1);
-    for(i=0; i<info->cmap.channels; i++)
-      if(info->cmap.map[i] == cpos)
-        *cidx = i+1;
-  }
-  g_free(device);
+  pa_operation_unref(
+      iface->set_volume(pctx, info->idx, &info->cvol, NULL, NULL));
+}
 
-  return info;
+static void pulse_mute_adjust ( pulse_interface_t *iface, pulse_info *info,
+    gchar *cmd )
+{
+  gboolean new;
+  while(*cmd==' ')
+    cmd++;
+
+  if(!g_ascii_strcasecmp(cmd, "toggle"))
+    new = !info->mute;
+  else if(!g_ascii_strcasecmp(cmd, "true"))
+    new = TRUE;
+  else if(!g_ascii_strcasecmp(cmd, "false"))
+    new = FALSE;
+  else
+    new = info->mute;
+
+  pa_operation_unref( iface->set_mute(pctx, info->idx, new, NULL, NULL));
+}
+
+static void pulse_client_set_sink ( pulse_info *info, gchar *dest )
+{
+  pulse_info *dinfo;
+
+  if(!info || !dest || !info->client)
+    return;
+
+  while(*dest == ' ')
+    dest++;
+
+  if( !(dinfo = pulse_addr_parse(dest, &pulse_interfaces[0], NULL)) )
+    return;
+
+  pa_operation_unref(pa_context_move_sink_input_by_index(pctx, info->idx,
+        dinfo->idx, NULL, NULL));
 }
 
 static void *pulse_expr_func ( void **params, void *widget, void *event )
@@ -512,22 +631,45 @@ static void *pulse_expr_func ( void **params, void *widget, void *event )
   pulse_info *info;
   pulse_interface_t *iface;
   gchar *cmd;
+  gdouble *result = g_malloc0(sizeof(gdouble));
   gint cidx;
 
   if(!params || !params[0])
-    return g_strdup("");
+    return result;
 
   if( !(iface = pulse_interface_get(params[0], &cmd)) )
-    return g_strdup("");
+    return result;
+
+  info = pulse_addr_parse(params[1], iface, &cidx);
+
+  if(info && !g_ascii_strcasecmp(cmd, "volume"))
+    *result = 100.0*pulse_volume_get(info, cidx)/PA_VOLUME_NORM;
+  else if(info && !g_ascii_strcasecmp(cmd, "mute"))
+    *result = (gdouble)info->mute;
+  else if(!g_ascii_strcasecmp(cmd, "count"))
+    *result = (gdouble)g_list_length(iface->list);
+  else if(info && !g_ascii_strcasecmp(cmd, "is-default"))
+    *result = !g_strcmp0(info->name, iface->name);
+
+  return result;
+}
+
+static void *pulse_info_expr_func ( void **params, void *widget, void *event )
+{
+  pulse_info *info;
+  pulse_interface_t *iface;
+  gchar *cmd;
+  gint cidx;
+
+  if(!params || !params[0])
+    return NULL;
+
+  if( !(iface = pulse_interface_get(params[0], &cmd)) )
+    return NULL;
 
   if( !(info = pulse_addr_parse(params[1], iface, &cidx)) )
-    return g_strdup("");
+    return NULL;
 
-  if(!g_ascii_strcasecmp(cmd, "volume"))
-    return g_strdup_printf("%f",
-        cidx?info->cvol.values[cidx-1]*100.0/PA_VOLUME_NORM:info->vol);
-  if(!g_ascii_strcasecmp(cmd, "mute"))
-    return g_strdup_printf("%d",info->mute);
   if(!g_ascii_strcasecmp(cmd, "icon"))
     return g_strdup(info->icon?info->icon:"");
   if(!g_ascii_strcasecmp(cmd, "form"))
@@ -538,8 +680,6 @@ static void *pulse_expr_func ( void **params, void *widget, void *event )
     return g_strdup(info->monitor?info->monitor:"");
   if(!g_ascii_strcasecmp(cmd, "description"))
     return g_strdup(info->description?info->description:"");
-  if(!g_ascii_strcasecmp(cmd, "count"))
-    return g_strdup_printf("%d", g_list_length(iface->list));
 
   return g_strdup_printf("invalid query: %s", cmd);
 }
@@ -559,73 +699,11 @@ static void *pulse_channel_func ( void **params, void *widget, void *event )
   return g_strdup("");
 }
 
-static pa_cvolume *pulse_adjust_volume ( pulse_info *info, gint cidx,
-    gchar *vstr )
-{
-  gint vdelta;
-
-  if(!vstr)
-    return &(info->cvol);
-
-  while(*vstr==' ')
-    vstr++;
-
-  vdelta = g_ascii_strtod(vstr, NULL)*PA_VOLUME_NORM/100;
-  if(*vstr!='+' && *vstr!='-')
-    vdelta -= cidx?info->cvol.values[cidx-1]:pa_cvolume_avg(&info->cvol);
-
-  if(!cidx)
-  {
-    if(vdelta > 0)
-      pa_cvolume_inc_clamp(&info->cvol, vdelta, PA_VOLUME_UI_MAX);
-    else
-      pa_cvolume_dec(&info->cvol, -vdelta);
-  }
-  else
-    info->cvol.values[cidx-1] = CLAMP((gint)(info->cvol.values[cidx-1]) +
-        vdelta, 0, PA_VOLUME_UI_MAX);
-
-  return &info->cvol;
-}
-
-static gboolean pulse_mute_parse ( gchar *cmd, gboolean mute )
-{
-  while(*cmd==' ')
-    cmd++;
-
-  if(!g_ascii_strcasecmp(cmd, "toggle"))
-    return !mute;
-  else if(!g_ascii_strcasecmp(cmd, "true"))
-    return TRUE;
-  else if(!g_ascii_strcasecmp(cmd, "false"))
-    return FALSE;
-
-  return mute;
-}
-
-static pa_operation *pulse_client_set_sink ( pulse_info *info, gchar *dest )
-{
-  pulse_info *dinfo;
-
-  if(!info || !dest || !info->client)
-    return NULL;
-
-  while(*dest == ' ')
-    dest++;
-
-  if( !(dinfo = pulse_addr_parse(dest, &pulse_interfaces[0], NULL)) )
-    return NULL;
-
-  return pa_context_move_sink_input_by_index(pctx, info->idx, dinfo->idx,
-      NULL, NULL);
-}
-
 static void pulse_action ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
   pulse_info *info;
   pulse_interface_t *iface;
-  pa_operation *op;
   gint cidx;
   gchar *command;
 
@@ -636,95 +714,78 @@ static void pulse_action ( gchar *cmd, gchar *name, void *d1,
     return;
 
   if(!g_ascii_strncasecmp(command, "volume", 6))
-    op = iface->set_volume(pctx, info->idx,
-        pulse_adjust_volume(info, cidx, command+6), NULL, NULL);
+    pulse_volume_adjust(iface, info, cidx, command+6);
   else if(!g_ascii_strncasecmp(command, "mute", 4))
-    op = iface->set_mute(pctx, info->idx,
-        pulse_mute_parse(command+4, info->mute), NULL, NULL);
+    pulse_mute_adjust(iface, info, command+4);
   else if(!g_ascii_strncasecmp(command, "set-sink", 8))
-    op = pulse_client_set_sink(info, command+8);
-
-  else
-    op = NULL;
-
-  if(op)
-    pa_operation_unref(op);
+    pulse_client_set_sink(info, command+8);
+  else if(!g_ascii_strncasecmp(command, "set-default", 11))
+    pulse_set_name(iface, command+11, TRUE);
 }
 
 static void pulse_channel_ack_action ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
-  module_queue_remove(&channel_q);
-}
-
-static void pulse_channel_ack_removed_action ( gchar *cmd, gchar *name,
-    void *d1, void *d2, void *d3, void *d4 )
-{
-  module_queue_remove(&remove_q);
-}
-
-static void pulse_set_sink_action ( gchar *sink, gchar *dummy, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  pulse_set_name("sink", sink, TRUE);
-}
-
-static void pulse_set_source_action ( gchar *source, gchar *dummy, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  pulse_set_name("source", source, TRUE);
+  if(!g_ascii_strcasecmp(cmd, "volume-conf"))
+    module_queue_remove(&channel_q);
+  if(!g_ascii_strcasecmp(cmd, "volume-conf-removed"))
+    module_queue_remove(&remove_q);
+  if(!sfwbar_interface.ready)
+  {
+    sfwbar_interface.active = !!channel_q.list | !!remove_q.list;
+    module_interface_select(sfwbar_interface.interface);
+  }
 }
 
 ModuleExpressionHandlerV1 handler1 = {
-  .flags = 0,
-  .name = "Pulse",
+  .flags = MODULE_EXPR_NUMERIC,
+  .name = "Volume",
   .parameters = "Ss",
   .function = pulse_expr_func
 };
 
 ModuleExpressionHandlerV1 handler2 = {
   .flags = 0,
-  .name = "PulseChannel",
+  .name = "VolumeInfo",
+  .parameters = "Ss",
+  .function = pulse_info_expr_func
+};
+
+ModuleExpressionHandlerV1 handler3 = {
+  .flags = 0,
+  .name = "VolumeConf",
   .parameters = "S",
   .function = pulse_channel_func
 };
 
-ModuleExpressionHandlerV1 *sfwbar_expression_handlers[] = {
+ModuleExpressionHandlerV1 *pulse_expr_handlers[] = {
   &handler1,
   &handler2,
+  &handler3,
   NULL
 };
 
 ModuleActionHandlerV1 act_handler1 = {
-  .name = "PulseCmd",
+  .name = "VolumeCtl",
   .function = pulse_action
 };
 
 ModuleActionHandlerV1 act_handler2 = {
-  .name = "PulseSetDefaultSink",
-  .function = pulse_set_sink_action
-};
-
-ModuleActionHandlerV1 act_handler3 = {
-  .name = "PulseSetDefaultSource",
-  .function = pulse_set_source_action
-};
-
-ModuleActionHandlerV1 act_handler4 = {
-  .name = "PulseChannelAck",
+  .name = "VolumeAck",
   .function = pulse_channel_ack_action
 };
 
-ModuleActionHandlerV1 act_handler5 = {
-  .name = "PulseChannelAckRemoved",
-  .function = pulse_channel_ack_removed_action
-};
-
-ModuleActionHandlerV1 *sfwbar_action_handlers[] = {
+ModuleActionHandlerV1 *pulse_action_handlers[] = {
   &act_handler1,
   &act_handler2,
-  &act_handler3,
-  &act_handler4,
-  &act_handler5,
   NULL
+};
+
+ModuleInterfaceV1 sfwbar_interface = {
+  .interface = "volume-control",
+  .provider = "pulse",
+  .expr_handlers = pulse_expr_handlers,
+  .act_handlers = pulse_action_handlers,
+  .activate = pulse_activate,
+  .deactivate = pulse_deactivate
 };
