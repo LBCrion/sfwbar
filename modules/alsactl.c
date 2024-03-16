@@ -10,19 +10,19 @@
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
+extern ModuleInterfaceV1 sfwbar_interface;
 
 typedef struct _alsa_source {
   GSource src;
-  gchar *name;
+  gchar *name, *desc;
   snd_mixer_t *mixer;
   struct pollfd *pfds;
   int pfdcount;
 } alsa_source_t;
 
-static alsa_source_t *main_src;
-GHashTable *alsa_sources;
-
 typedef struct _mixer_api {
+  gchar *prefix;
+  gchar *default_name;
   int (*has_volume)( snd_mixer_elem_t *);
   int (*has_channel)( snd_mixer_elem_t *, snd_mixer_selem_channel_id_t );
   int (*get_range) ( snd_mixer_elem_t *, long *, long *);
@@ -33,10 +33,21 @@ typedef struct _mixer_api {
   int (*set_switch) ( snd_mixer_elem_t *, int );
 } mixer_api_t;
 
+typedef struct _alsa_channel {
+  gchar *card, *element;
+  snd_mixer_selem_channel_id_t channel;
+  gchar *name;
+  mixer_api_t *api;
+} alsa_channel_t;
+
+static alsa_source_t *main_src;
+GHashTable *alsa_sources;
+
 static mixer_api_t playback_api = {
+  .prefix = "sink",
   .has_volume = snd_mixer_selem_has_playback_volume,
-  .has_channel = snd_mixer_selem_has_playback_channel,
   .get_range = snd_mixer_selem_get_playback_volume_range,
+  .has_channel = snd_mixer_selem_has_playback_channel,
   .get_channel = snd_mixer_selem_get_playback_volume,
   .set_channel = snd_mixer_selem_set_playback_volume,
   .has_switch = snd_mixer_selem_has_playback_switch,
@@ -45,6 +56,7 @@ static mixer_api_t playback_api = {
 };
 
 static mixer_api_t capture_api = {
+  .prefix = "source",
   .has_volume = snd_mixer_selem_has_capture_volume,
   .has_channel = snd_mixer_selem_has_capture_channel,
   .get_range = snd_mixer_selem_get_capture_volume_range,
@@ -54,6 +66,159 @@ static mixer_api_t capture_api = {
   .get_switch = snd_mixer_selem_get_capture_switch,
   .set_switch = snd_mixer_selem_set_capture_switch_all
 };
+
+static void alsa_channel_free ( alsa_channel_t *channel )
+{
+  g_free(channel->card);
+  g_free(channel->element);
+  g_free(channel->name);
+  g_free(channel);
+}
+
+static gboolean alsa_channel_comp ( alsa_channel_t *c1, alsa_channel_t *c2 )
+{
+  return (c1->channel==c2->channel && c1->api==c2->api &&
+    !g_strcmp0(c1->card, c2->card) && !g_strcmp0(c1->element, c2->element));
+}
+
+static void *alsa_channel_get_str ( alsa_channel_t *channel, gchar *prop )
+{
+  if(!g_ascii_strcasecmp(prop, "interface"))
+    return g_strdup(channel->api->prefix);
+  if(!g_ascii_strcasecmp(prop, "name"))
+    return g_strconcat(channel->element, " ", channel->name, NULL);
+  if(!g_ascii_strcasecmp(prop, "id"))
+    return g_strconcat(channel->element, ":", channel->name, NULL);
+  if(!g_ascii_strcasecmp(prop, "device"))
+    return g_strdup(channel->card);
+  if(!g_ascii_strcasecmp(prop, "index"))
+    return g_strdup_printf("%d", channel->channel);
+  return NULL;
+}
+
+static module_queue_t channel_q = {
+  .free = (void (*)(void *))alsa_channel_free,
+  .duplicate = (void *(*)(void *))ptr_pass,
+  .get_str = (void *(*)(void *, gchar *))alsa_channel_get_str,
+  .compare = (gboolean (*)(const void *, const void *))alsa_channel_comp,
+};
+
+static void *alsa_remove_get_str ( gchar *name, gchar *prop )
+{
+  if(!g_ascii_strcasecmp(prop, "removed-id"))
+    return g_strdup(name);
+  return NULL;
+}
+
+static module_queue_t remove_q = {
+  .free = g_free,
+  .duplicate = (void *(*)(void *))g_strdup,
+  .get_str = (void *(*)(void *, gchar *))alsa_remove_get_str,
+  .compare = (gboolean (*)(const void *, const void *))g_strcmp0,
+};
+
+static snd_mixer_elem_t *alsa_element_get ( snd_mixer_t *mixer, gchar *name )
+{
+  snd_mixer_selem_id_t *sid;
+
+  snd_mixer_selem_id_alloca(&sid);
+  snd_mixer_selem_id_set_index(sid, 0);
+  snd_mixer_selem_id_set_name(sid, (name && *name)?name:"Master");
+  return snd_mixer_find_selem(mixer, sid);
+}
+
+static snd_mixer_selem_channel_id_t alsa_channel_parse ( gchar *name )
+{
+  snd_mixer_selem_channel_id_t i;
+
+  if(!g_ascii_strcasecmp(name, "mono"))
+    return SND_MIXER_SCHN_MONO;
+
+  for(i=0;i<=SND_MIXER_SCHN_LAST;i++)
+    if(!g_ascii_strcasecmp(name, snd_mixer_selem_channel_name(i)))
+      return i;
+
+  return -1;
+}
+
+static gchar *alsa_device_get ( gchar *addr, gchar **remnant )
+{
+  gchar *ptr;
+
+  ptr = strchr(addr + (g_str_has_prefix(addr, "hw:")? 3: 0), ':');
+  if(remnant)
+    *remnant = ptr;
+  if(ptr)
+    return g_strndup(addr, ptr-addr);
+  else
+    return g_strdup(addr);
+}
+
+static gboolean alsa_addr_parse ( mixer_api_t *api, gchar *address,
+    alsa_source_t **src, snd_mixer_elem_t **elem,
+    snd_mixer_selem_channel_id_t *channel )
+{
+  gchar *ptr, *device, *chan_ptr, *elem_str;
+
+  if(!address)
+    address = api->default_name?api->default_name:"default";
+
+  device = alsa_device_get(address, &ptr);
+
+  *src = g_hash_table_lookup(alsa_sources, device);
+  g_free(device);
+
+  if(!*src)
+    return FALSE;
+
+  if(!ptr)
+  {
+    *elem = alsa_element_get((*src)->mixer, NULL);
+    *channel = -1;
+    return TRUE;
+  }
+
+  ptr++;
+  if( (chan_ptr = strchr(ptr, ':')) )
+  {
+    elem_str = g_strndup(ptr, chan_ptr-ptr);
+    *elem = alsa_element_get((*src)->mixer, elem_str);
+    g_free(elem_str);
+    *channel = alsa_channel_parse(chan_ptr+1);
+  }
+  else
+  {
+    *elem = alsa_element_get((*src)->mixer, ptr);
+    *channel = -1;
+  }
+
+  return TRUE;
+}
+
+static void alsa_iface_advertise ( mixer_api_t *api, alsa_source_t *src )
+{
+  snd_mixer_elem_t *elem;
+  alsa_channel_t *channel;
+  gint i, cnum=0;
+
+  for(elem=snd_mixer_first_elem(src->mixer); elem;
+      elem=snd_mixer_elem_next(elem))
+  {
+    if(api->has_volume(elem) && !snd_mixer_selem_has_common_volume(elem))
+      for(i=0;i<=SND_MIXER_SCHN_LAST;i++)
+        if(api->has_channel(elem, i))
+        {
+          channel = g_malloc0(sizeof(alsa_channel_t));
+          channel->api = api;
+          channel->channel = cnum++;
+          channel->card = g_strdup(src->name);
+          channel->element = g_strdup(snd_mixer_selem_get_name(elem));
+          channel->name = g_strdup( snd_mixer_selem_is_playback_mono(elem)?
+              "Mono": snd_mixer_selem_channel_name(i));
+          module_queue_append(&channel_q, channel);
+        }
+  }
+}
 
 gboolean alsa_source_prepare(GSource *source, gint *timeout)
 {
@@ -66,6 +231,8 @@ gboolean alsa_source_check( GSource *gsrc )
   alsa_source_t *src = (alsa_source_t *)gsrc;
   gushort revents;
 
+  if(!src->pfds)
+    return FALSE;
   snd_mixer_poll_descriptors_revents(src->mixer, src->pfds, src->pfdcount,
       &revents);
   return !!(revents & POLLIN);
@@ -77,7 +244,7 @@ gboolean alsa_source_dispatch( GSource *gsrc, GSourceFunc cb, gpointer data)
 
   snd_mixer_handle_events(src->mixer);
   g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("alsa"));
+      (gpointer)g_intern_static_string("volume"));
 
   return TRUE;
 }
@@ -86,16 +253,20 @@ static void alsa_source_finalize ( GSource *gsrc )
 {
   alsa_source_t *src = (alsa_source_t *)gsrc;
 
+  if(src->name)
+    module_queue_append(&remove_q, src->name);
+
   g_clear_pointer(&src->mixer, snd_mixer_close);
   g_clear_pointer(&src->pfds, g_free);
   g_clear_pointer(&src->name, g_free);
+  g_clear_pointer(&src->desc, g_free);
 }
 
 static GSourceFuncs alsa_source_funcs = {
-  alsa_source_prepare,
-  alsa_source_check,
-  alsa_source_dispatch,
-  alsa_source_finalize
+  .prepare = alsa_source_prepare,
+  .check = alsa_source_check,
+  .dispatch = alsa_source_dispatch,
+  .finalize = alsa_source_finalize
 };
 
 #define alsa_source_bail(x) { g_source_destroy((GSource *)x); return NULL; }
@@ -124,9 +295,27 @@ static alsa_source_t *alsa_source_subscribe ( gchar *name )
 
   src->name = g_strdup(name);
 
-  g_source_attach((GSource *)src,NULL);
-  g_source_set_priority((GSource *)src,G_PRIORITY_DEFAULT);
-  g_source_add_poll((GSource *)src,(GPollFD *)src->pfds);
+  snd_ctl_t *ctl;
+  snd_ctl_card_info_t *info;
+  snd_ctl_card_info_alloca(&info);
+  if(snd_ctl_open(&ctl, name, 0) == 0)
+  {
+    if(snd_ctl_card_info(ctl, info)==0)
+      src->desc  = g_strdup(snd_ctl_card_info_get_name(info));
+    snd_ctl_close(ctl);
+  }
+
+  g_source_attach((GSource *)src, NULL);
+  g_source_set_priority((GSource *)src, G_PRIORITY_DEFAULT);
+  g_source_add_poll((GSource *)src, (GPollFD *)src->pfds);
+
+  if(!playback_api.default_name)
+    playback_api.default_name = g_strdup(src->name);
+  if(!capture_api.default_name)
+    capture_api.default_name = g_strdup(src->name);
+
+  alsa_iface_advertise(&playback_api, src);
+  alsa_iface_advertise(&capture_api, src);
 
   g_hash_table_insert(alsa_sources, src->name, src);
 
@@ -145,24 +334,41 @@ void alsa_source_subscribe_all ( void )
     alsa_source_subscribe(id);
     g_free(id);
   }
+  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+      (gpointer)g_intern_static_string("volume"));
+}
+
+void alsa_source_remove ( GSource *src )
+{
+  g_source_unref(src);
+  g_source_destroy(src);
+}
+
+void alsa_activate ( void )
+{
+  g_idle_add((GSourceFunc)alsa_source_subscribe_all, NULL);
+}
+
+void alsa_deactivate ( void )
+{
+  g_hash_table_remove_all(alsa_sources);
+  g_clear_pointer(&playback_api.default_name, g_free);
+  g_clear_pointer(&capture_api.default_name, g_free);
+  sfwbar_interface.active = !!channel_q.list | !!remove_q.list;
 }
 
 gboolean sfwbar_module_init ( void )
 {
+  gint card = -1;
+
+  channel_q.trigger = g_intern_static_string("volume-conf");
+  remove_q.trigger = g_intern_static_string("volume-conf-removed");
   alsa_sources = g_hash_table_new_full( g_str_hash, g_str_equal, NULL,
-      (GDestroyNotify)alsa_source_finalize );
-  alsa_source_subscribe_all();
+      (GDestroyNotify)alsa_source_remove );
+
+  if(snd_card_next(&card) >=0 && card >= 0)
+    module_interface_activate(&sfwbar_interface);
   return TRUE;
-}
-
-static snd_mixer_elem_t *alsa_element_get ( snd_mixer_t *mixer, gchar *name )
-{
-  snd_mixer_selem_id_t *sid;
-
-  snd_mixer_selem_id_alloca(&sid);
-  snd_mixer_selem_id_set_index(sid, 0);
-  snd_mixer_selem_id_set_name(sid, name?name:"Master");
-  return snd_mixer_find_selem(mixer, sid);
 }
 
 static glong alsa_volume_avg_get ( snd_mixer_elem_t *element, mixer_api_t *api )
@@ -181,7 +387,8 @@ static glong alsa_volume_avg_get ( snd_mixer_elem_t *element, mixer_api_t *api )
   return tvol/count;
 }
 
-static gdouble alsa_volume_get ( snd_mixer_elem_t *element, mixer_api_t *api )
+static gdouble alsa_volume_get ( snd_mixer_elem_t *element,
+    snd_mixer_selem_channel_id_t channel, mixer_api_t *api )
 {
   glong min, max, vol;
 
@@ -189,7 +396,10 @@ static gdouble alsa_volume_get ( snd_mixer_elem_t *element, mixer_api_t *api )
     return 0;
 
   api->get_range(element, &min, &max);
-  vol = alsa_volume_avg_get(element, api );
+  if(channel < 0)
+    vol = alsa_volume_avg_get(element, api );
+  else
+    api->get_channel(element, channel, &vol);
   return ((gdouble)vol-min)/(max-min)*100;
 }
 
@@ -204,34 +414,97 @@ static gdouble alsa_mute_get ( snd_mixer_elem_t *element, mixer_api_t *api )
   return !pb;
 }
 
+mixer_api_t *alsa_api_parse ( gchar *cmd, gchar **verb )
+{
+  if(!g_ascii_strncasecmp(cmd, "sink-", 5))
+  {
+    *verb = cmd + 5;
+    return &playback_api;
+  }
+  if(!g_ascii_strncasecmp(cmd, "source-", 7))
+  {
+    *verb = cmd + 7;
+    return &playback_api;
+  }
+    return NULL;
+}
+
 void *alsa_expr_func ( void **params, void *widget, void *event )
 {
   snd_mixer_elem_t *element;
+  snd_mixer_selem_channel_id_t channel;
   alsa_source_t *src;
   gdouble *result;
+  gchar *verb;
+  mixer_api_t *api;
 
   result = g_malloc0(sizeof(gdouble));
   if(!params || !params[0])
     return result;
 
-  if( !(src = g_hash_table_lookup(alsa_sources, "default")) )
+  if( !(api = alsa_api_parse(params[0], &verb)) )
     return result;
 
-  element = alsa_element_get(src->mixer, params[1]);
+  if(!g_ascii_strcasecmp(verb, "count"))
+  {
+    *result = g_hash_table_size(alsa_sources);
+    return result;
+  }
 
-  if(!g_ascii_strcasecmp(params[0],"playback-volume"))
-    *result = alsa_volume_get(element, &playback_api);
-  else if(!g_ascii_strcasecmp(params[0],"capture-volume"))
-    *result = alsa_volume_get(element, &capture_api);
-  else if(!g_ascii_strcasecmp(params[0],"playback-mute"))
-    *result = alsa_mute_get(element, &playback_api);
-  else if(!g_ascii_strcasecmp(params[0],"capture-mute"))
-    *result = alsa_mute_get(element, &capture_api);
+  if(!alsa_addr_parse(api, params[1], &src, &element, &channel) || !element)
+    return result;
+
+  if(!g_ascii_strcasecmp(verb, "volume"))
+    *result = alsa_volume_get(element, channel, api);
+  else if(!g_ascii_strcasecmp(verb, "mute"))
+    *result = alsa_mute_get(element, api);
+  else if(!g_ascii_strcasecmp(verb, "is-default"))
+    *result = !g_strcmp0(api->default_name?api->default_name:"default",
+        src->name);
+
   return result;
 }
 
-static void alsa_volume_adjust ( snd_mixer_elem_t *element, gchar *vstr,
-    mixer_api_t *api )
+void *alsa_info_expr_func ( void **params, void *widget, void *event )
+{
+  snd_mixer_elem_t *element;
+  snd_mixer_selem_channel_id_t channel;
+  alsa_source_t *src;
+  gchar *verb;
+  mixer_api_t *api;
+
+  if(!params || !params[0])
+    return NULL;
+
+  if( !(api = alsa_api_parse(params[0], &verb)) )
+    return NULL;
+
+  if(!alsa_addr_parse(api, params[1], &src, &element, &channel) || !element)
+    return NULL;
+
+  if(!g_ascii_strcasecmp(verb, "description"))
+    return g_strdup(src->desc);
+
+  return NULL;
+}
+
+static void *alsa_channel_func ( void **params, void *widget, void *event )
+{
+  gchar *result;
+
+  if(!params || !params[0])
+    return g_strdup("");
+
+  if( (result = module_queue_get_string(&channel_q, params[0])) )
+    return result;
+  if( (result = module_queue_get_string(&remove_q, params[0])) )
+    return result;
+
+  return g_strdup("");
+}
+
+static void alsa_volume_set ( snd_mixer_elem_t *element,
+    snd_mixer_selem_channel_id_t channel, gchar *vstr, mixer_api_t *api )
 {
   long min, max, vol, vdelta;
   gint i;
@@ -240,7 +513,7 @@ static void alsa_volume_adjust ( snd_mixer_elem_t *element, gchar *vstr,
     return;
 
   api->get_range(element, &min, &max);
-  vol = alsa_volume_avg_get(element, api);
+  vol = alsa_volume_get(element, channel, api)*(max-min)/100 + min;
 
   while(*vstr==' ')
     vstr++;
@@ -260,12 +533,17 @@ static void alsa_volume_adjust ( snd_mixer_elem_t *element, gchar *vstr,
       break;
   }
 
-  for(i=0;i<=SND_MIXER_SCHN_LAST;i++)
-    if(api->has_channel(element, i))
-    {
-      api->get_channel(element, i, &vol);
-      api->set_channel(element, i, CLAMP(vol + vdelta,min,max));
-    }
+  if(channel < 0)
+  {
+    for(i=0;i<=SND_MIXER_SCHN_LAST;i++)
+      if(api->has_channel(element, i))
+      {
+        api->get_channel(element, i, &vol);
+        api->set_channel(element, i, CLAMP(vol + vdelta, min, max));
+      }
+  }
+  else
+    api->set_channel(element, channel, CLAMP(vol + vdelta, min, max));
 }
 
 static void alsa_mute_set ( snd_mixer_elem_t *element, gchar *vstr,
@@ -290,66 +568,121 @@ static void alsa_mute_set ( snd_mixer_elem_t *element, gchar *vstr,
   }
 }
 
+static void alsa_default_set ( mixer_api_t *api, gchar *name )
+{
+  gchar *new;
+
+  if(!api || !name)
+    return;
+
+  while(*name==' ')
+    name++;
+
+  if( (new = alsa_device_get(name, NULL)) )
+  {
+    g_free(api->default_name);
+    api->default_name = new;
+    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+        (gpointer)g_intern_static_string("volume"));
+  }
+}
+
 static void alsa_action ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
   alsa_source_t *src;
   snd_mixer_elem_t *element;
+  snd_mixer_selem_channel_id_t channel;
+  gchar *verb;
+  mixer_api_t *api;
 
-  if( !(src = g_hash_table_lookup(alsa_sources, "default")) )
+  if( !(api = alsa_api_parse(cmd, &verb)) )
     return;
 
-  element = alsa_element_get ( src->mixer, name );
+  if(!g_ascii_strncasecmp(verb, "set-default",11))
+  {
+    alsa_default_set(api, verb+11);
+    return;
+  }
 
-  if(!g_ascii_strncasecmp(cmd,"playback-volume",15))
-    alsa_volume_adjust(element, cmd+15, &playback_api);
-  else if(!g_ascii_strncasecmp(cmd,"playback-mute",13))
-    alsa_mute_set(element, cmd+13, &playback_api);
-  else if(!g_ascii_strncasecmp(cmd,"capture-volume",14))
-    alsa_volume_adjust(element, cmd+14, &capture_api);
-  else if(!g_ascii_strncasecmp(cmd,"capture-mute",12))
-    alsa_mute_set(element, cmd+12, &capture_api);
+  if(!alsa_addr_parse(api, name, &src, &element, &channel) || !element)
+    return;
+
+  if(!g_ascii_strncasecmp(verb ,"volume", 6))
+    alsa_volume_set(element, channel, verb+6, api);
+  else if(!g_ascii_strncasecmp(verb, "mute", 4))
+    alsa_mute_set(element, verb+4, api);
   else
     return;
 
   g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("alsa"));
+      (gpointer)g_intern_static_string("volume"));
 }
 
-static void alsa_card_action ( gchar *cmd, gchar *name, void *d1,
+static void alsa_channel_ack_action ( gchar *cmd, gchar *name, void *d1,
     void *d2, void *d3, void *d4 )
 {
-  if(!cmd)
-    return;
-
-  g_clear_pointer((GSource **)&main_src,g_source_destroy);
-  main_src = alsa_source_subscribe(cmd);
+  if(!g_ascii_strcasecmp(cmd, "volume-conf"))
+    module_queue_remove(&channel_q);
+  else if(!g_ascii_strcasecmp(cmd, "volume-conf-removed"))
+    module_queue_remove(&remove_q);
+  if(!sfwbar_interface.ready)
+  {
+    sfwbar_interface.active = !!channel_q.list | !!remove_q.list;
+    module_interface_select(sfwbar_interface.interface);
+    if(!sfwbar_interface.active)
+      sfwbar_interface.ready = TRUE;
+  }
 }
 
 ModuleExpressionHandlerV1 handler1 = {
   .flags = MODULE_EXPR_NUMERIC,
-  .name = "Alsa",
+  .name = "Volume",
   .parameters = "Ss",
   .function = alsa_expr_func
 };
 
-ModuleExpressionHandlerV1 *sfwbar_expression_handlers[] = {
+ModuleExpressionHandlerV1 handler2 = {
+  .name = "VolumeInfo",
+  .parameters = "Ss",
+  .function = alsa_info_expr_func
+};
+
+ModuleExpressionHandlerV1 handler3 = {
+  .flags = 0,
+  .name = "VolumeConf",
+  .parameters = "S",
+  .function = alsa_channel_func
+};
+
+ModuleExpressionHandlerV1 *alsa_expr_handlers[] = {
   &handler1,
+  &handler2,
+  &handler3,
   NULL
 };
 
 ModuleActionHandlerV1 act_handler1 = {
-  .name = "AlsaCmd",
+  .name = "VolumeCtl",
   .function = alsa_action
 };
 
 ModuleActionHandlerV1 act_handler2 = {
-  .name = "AlsaSetCard",
-  .function = alsa_card_action
+  .name = "VolumeAck",
+  .function = alsa_channel_ack_action
 };
 
-ModuleActionHandlerV1 *sfwbar_action_handlers[] = {
+ModuleActionHandlerV1 *alsa_action_handlers[] = {
   &act_handler1,
   &act_handler2,
   NULL
+};
+
+ModuleInterfaceV1 sfwbar_interface = {
+  .interface = "volume-control",
+  .provider = "ALSA",
+  .expr_handlers = alsa_expr_handlers,
+  .act_handlers = alsa_action_handlers,
+  .activate = alsa_activate,
+  .deactivate = alsa_deactivate
 };
