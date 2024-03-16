@@ -82,5 +82,6 @@ void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler,gchar *name);
 void module_interface_select ( gchar *interface );
 void module_interface_activate ( ModuleInterfaceV1 *iface );
 void module_interface_deactivate ( ModuleInterfaceV1 *iface );
+gchar *module_interface_provider_get ( gchar *interface );
 
 #endif

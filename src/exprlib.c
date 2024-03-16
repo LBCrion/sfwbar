@@ -474,6 +474,20 @@ ModuleExpressionHandlerV1 read_handler = {
   .function = expr_lib_read
 };
 
+static void *expr_iface_provider ( void **params, void *widget, void *event )
+{
+  if(!params || !params[0])
+    return NULL;
+  else
+    return module_interface_provider_get(params[0]);
+}
+
+ModuleExpressionHandlerV1 iface_provider_handler = {
+  .name = "interfaceprovider",
+  .parameters = "S",
+  .function = expr_iface_provider
+};
+
 static ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &mid_handler,
   &replace_handler,
@@ -493,6 +507,7 @@ static ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &window_info_handler,
   &escape_handler,
   &read_handler,
+  &iface_provider_handler,
   NULL
 };
 

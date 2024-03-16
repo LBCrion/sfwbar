@@ -144,6 +144,16 @@ static void module_interface_add ( ModuleInterfaceV1 *iface,
   module_interface_select(iface->interface);
 }
 
+gchar *module_interface_provider_get ( gchar *interface )
+{
+  ModuleInterfaceList *list;
+
+  if( !(list = g_hash_table_lookup(interfaces, interface)) || !list->active )
+    return g_strdup("");
+
+  return g_strdup(list->active->provider);
+}
+
 gboolean module_load ( gchar *name )
 {
   GModule *module;
