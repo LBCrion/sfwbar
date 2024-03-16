@@ -78,9 +78,9 @@ void module_interface_select ( gchar *interface )
 
   if(list->active && list->active->active)
   {
-    list->active->deactivate();
     list->active->ready = FALSE;
-    if(!list->active->active)
+    list->active->deactivate();
+    if(list->active && !list->active->active)
       module_interface_select(interface);
     return;
   }
@@ -91,7 +91,10 @@ void module_interface_select ( gchar *interface )
   if(list->active)
   {
     for(i=0; list->active->expr_handlers[i]; i++)
+    {
       g_hash_table_remove(expr_handlers, list->active->expr_handlers[i]->name);
+      expr_dep_trigger(list->active->expr_handlers[i]->name);
+    }
     for(i=0; list->active->act_handlers[i]; i++)
       g_datalist_id_remove_data(&act_handlers,
           list->active->act_handlers[i]->quark);
@@ -102,6 +105,7 @@ void module_interface_select ( gchar *interface )
     module_actions_add(new->act_handlers, new->provider);
     module_expr_funcs_add(new->expr_handlers, new->provider);
     new->activate();
+    new->active = TRUE;
   }
 }
 
@@ -319,7 +323,7 @@ void module_queue_append ( module_queue_t *queue, void *item )
   g_mutex_unlock(&(queue->mutex));
 
   if(trigger && queue->trigger)
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+    g_idle_add((GSourceFunc)base_widget_emit_trigger,
         (gpointer)queue->trigger);
 }
 
