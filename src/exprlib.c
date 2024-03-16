@@ -77,10 +77,9 @@ static void *expr_lib_extract( void **params, void *widget, void *event )
 
   regex = g_regex_new(params[1],0,0,NULL);
   if(regex && g_regex_match (regex, params[0], 0, &match) && match)
-  {
     sres = g_match_info_fetch (match, 1);
+  if(match)
     g_match_info_free (match);
-  }
   if(regex)
     g_regex_unref (regex);
 
