@@ -24,6 +24,7 @@ PopUp "XMpdWindow" {
     value = (MpdElapsed+If($MpdState="play",MpdElapsed.age/1000000,0))/MpdDuration
     style = "mpd_progress"
     action = MpdCmd "seekcur " + Str(gtkevent("x") * MpdDuration)
+    trigger = "mpd"
   }
   grid "XMpdPlayer" {
     css = "* { -GtkWidget-direction: right; -GtkWidget-halign: center; -GtkWidget-hexpand: true; }"

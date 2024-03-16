@@ -30,7 +30,7 @@ PopUp "XAlsaWindow"  {
   scale {
     style = "alsa_volume_scale"
     value = XAlsaVolume/100
-    action[1] = AlsaCmd "playback-volume " + Str(GtkEvent("dir") * 100)
+    action[1] = AlsaCmd "default:Master:Front Right", "playback-volume " + Str(GtkEvent("dir") * 100)
     trigger = "alsa"
   }
   image {
