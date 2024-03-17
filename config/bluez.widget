@@ -7,7 +7,7 @@ TriggerAction "bluez_scan_complete", SetValue "XBluezScanButton", "Scan"
 
 set XBluezTmpl = "
 grid 'XBluezGrid@BLUEZ_PAIRED@' {
-  grid '@BLUEZ_PATH@_@BLUEZ_PAIRED@' {
+  grid '@BLUEZ_PATH@_grid_@BLUEZ_PAIRED@' {
     style = 'XBluezGrid'
     action = BluezPair Extract(WidgetId(),'(.*)_grid')
     action[RIghtClick] = Menu 'XBluezItemMenu'
