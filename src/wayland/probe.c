@@ -97,7 +97,7 @@ void wayland_monitor_probe ( void )
 
   do
   {
-    name = g_strdup_printf("/sfwbar-probe-%ld", g_get_monotonic_time());
+    name = g_strdup_printf("/sfwbar-probe-%lld", g_get_monotonic_time());
     fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0600);
     if (fd >= 0)
       shm_unlink(name);

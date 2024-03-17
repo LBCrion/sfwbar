@@ -50,12 +50,12 @@ gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
     }
     if(cstat == G_IO_STATUS_ERROR || !size )
     {
-      g_debug("client %s: read error, status = %d, size = %ld",
+      g_debug("client %s: read error, status = %d, size = %u",
           client->file->fname,cstat,size);
       return FALSE;
     }
     else
-      g_debug("client %s: status %d, read %ld bytes",
+      g_debug("client %s: status %d, read %u bytes",
           client->file->fname,cstat,size);
   }
   if(client->respond)
