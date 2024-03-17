@@ -68,22 +68,27 @@ ModuleExpressionHandlerV1 replace_handler = {
 /* Extract substring using regex */
 static void *expr_lib_extract( void **params, void *widget, void *event )
 {
-  gchar *sres=NULL;
+  gchar *sres;
   GRegex *regex;
   GMatchInfo *match;
 
   if(!params || !params[0] || !params[1])
     return g_strdup("");
 
-  regex = g_regex_new(params[1],0,0,NULL);
-  if(regex && g_regex_match (regex, params[0], 0, &match) && match)
+  if( !(regex = g_regex_new(params[1],0,0,NULL)) )
+    return NULL;
+
+  if(g_regex_match (regex, params[0], 0, &match) && match)
     sres = g_match_info_fetch (match, 1);
+  else
+    sres = NULL;
+
   if(match)
     g_match_info_free (match);
   if(regex)
     g_regex_unref (regex);
 
-  return sres?sres:g_strdup("");
+  return sres;
 }
 
 ModuleExpressionHandlerV1 extract_handler = {
