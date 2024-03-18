@@ -51,10 +51,10 @@ grid 'volume_section_@DEVICE_IFACE@' {
     grid {
       loc(4,1,1,1)
       image '@DEVICE_ID@_set_default' {
-        value = 'selection-mode'
+        value = If(Volume('@DEVICE_IFACE@-is-default','@DEVICE_ID@'),
+            'checkbox-checked', 'checkbox')
         style = If('@DEVICE_IFACE@' = 'sink' & Volume('sink-count')>1,
-            If(Volume('@DEVICE_IFACE@-is-default','@DEVICE_ID@'),
-            'volume_default_active', 'volume_default_inactive'), 'hidden')
+            'volume_default', 'hidden')
         tooltip = 'set as default @DEVICE_IFACE@'
         trigger = 'volume'
         action = VolumeCtl '@DEVICE_IFACE@-set-default @DEVICE_ID@'
@@ -205,18 +205,13 @@ grid#volume_popup {
 }
 
 image#volume_control_expander,
-image#volume_default_active,
-image#volume_default_inactive,
+image#volume_default,
 image#volume_client_menu,
 image#volume_mute {
   color: @theme_fg_color;
   padding: 3px;
   -GtkWidget-hexpand: false;
   -GtkWidget-halign: start;
-}
-
-image#volume_default_active {
-  color: red;
 }
 
 #volume_scale {
