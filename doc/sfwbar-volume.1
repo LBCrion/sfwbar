@@ -1,0 +1,218 @@
+.\" Man page generated from reStructuredText.
+.
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.TH "SFWBAR-VOLUME" 1 "" ""
+.SH NAME
+sfwbar-volume \- Sfwbar volume control interface
+.sp
+Filename: alsactl.so
+Filename: pulsectl.so
+.sp
+Requires: libpulse (pulsectl.so)
+Requires: libasound (alsactl.so)
+.SH SYNOPSIS
+.sp
+The volume control interface provides means to query and adjust the volume
+settings.
+.SH EXPRESSION FUNCTIONS
+.SS Volume(Query[,Address])
+.sp
+function Volume queries the volume settings. The Query parameter
+specifies the information to query, the optional Address parameter
+specifies the volume control element to which the query applies.
+The addresses are server specific. Pulse address is specified in a
+format \fIDevice[:Channel]\fP\&. Pulse also supports an internal address
+format \fI@pulse\-interface\-index\fP, this format is used for elements
+returned by VolumeConf and shouldn\(aqt be used directly.
+ALSA interface is specified as \fIDevice[:Element][:Channel]\fP\&.
+.sp
+This function returns a numberic value.
+.sp
+The supported queries are:
+.INDENT 0.0
+.TP
+.B \(dqsink\-volume\(dq
+the volume of a sink.
+.TP
+.B \(dqsink\-mute\(dq
+muted state of a sink.
+.TP
+.B \(dqsink\-count\(dq
+a number of sinks currently available.
+.TP
+.B \(dqsink\-is\-default\(dq
+query whether the sink is the default sink.
+.TP
+.B \(dqsource\-volume\(dq
+the volume of a source.
+.TP
+.B \(dqsource\-mute\(dq
+muted state of a source.
+.TP
+.B \(dqsource\-count\(dq
+a number of sources currently available.
+.TP
+.B \(dqsource\-is\-default\(dq
+query whether the source is the default source.
+.TP
+.B \(dqclient\-volume\(dq
+the volume of a client.
+.TP
+.B \(dqclient\-mute\(dq
+muted state of a client.
+.TP
+.B \(dqsink\-count\(dq
+a number of clients currently available.
+.UNINDENT
+.SS VolumeInfo(Query[,Address])
+.sp
+Returns additional information about a volume control element. The
+Query parameter specified the information to get. The Address parameter
+specifies the address to query.
+.sp
+This function returns a string value.
+.INDENT 0.0
+.TP
+.B \(dqsink\-description\(dq
+a description of the sink.
+.TP
+.B \(dqsink\-icon\(dq
+sink icon.
+.TP
+.B \(dqsink\-form\(dq
+the form of the sink.
+.TP
+.B \(dqsink\-port\(dq
+the port name of the sink.
+.TP
+.B \(dqsink\-monitor\(dq
+name of the source monitor for the sink.
+.TP
+.B \(dqsource\-description\(dq
+a description of the source.
+.TP
+.B \(dqsource\-icon\(dq
+source icon.
+.TP
+.B \(dqsource\-form\(dq
+the form of the source.
+.TP
+.B \(dqsource\-port\(dq
+the port name of the source.
+.TP
+.B \(dqsource\-monitor\(dq
+name of the sink monitor for the source.
+.TP
+.B \(dqclient\-description\(dq
+a description of the client.
+.UNINDENT
+.SS VolumeConf(\(dqQuery\(dq)
+.sp
+Query device and channel information upon receipt of \fIvolume\-conf\fP or
+\fIvolume\-conf\-removed\fP event. The valid \fIQuery\fP values are:
+.INDENT 0.0
+.TP
+.B \(dqdevice\(dq
+an id of a device advertised by \fIvolume\-conf\fP event.
+.TP
+.B \(dqid\(dq
+an address of a device/channel advertised by \fIvolume\-conf\fP event.
+.TP
+.B \(dqname\(dq
+name of a channel advertised by \fIvolume\-conf\fP event.
+.TP
+.B \(dqindex\(dq
+ordinal of a channel advertised by \fIvolume\-conf\fP event.
+.TP
+.B \(dqremoved\-id\(dq
+an address of a removed device advertised by \fIvolume\-conf\-removed\fP event.
+.UNINDENT
+.SH ACTIONS
+.SS VolumeCtl [Address,],Command
+.sp
+Manipulate the state of the volume control. if the address isn\(aqt specified,
+the command will be applied to the default device for the interface.
+.INDENT 0.0
+.TP
+.B \(dqsink\-volume +/\-X\(dq
+Adjust the volume of a sink by X%. If the value is prefixed by netiher
+a \(aq+\(aq or a \(aq\-\(aq, the volume will be set to value X.
+.TP
+.B \(dqsink\-mute State\(dq
+Change the state of a sink, State can be On, Off or Toggle.
+.TP
+.B \(dqsink\-set\-default\(dq
+Set a sink as a default sink.
+.TP
+.B \(dqsource\-volume +/\-X\(dq
+Adjust the volume of a source by X%. If the value is prefixed by netiher
+a \(aq+\(aq or a \(aq\-\(aq, the volume will be set to value X.
+.TP
+.B \(dqsource\-mute State\(dq
+Change the state of a source, State can be On, Off or Toggle.
+.TP
+.B \(dqsource\-set\-default\(dq
+Set a source as a default source.
+.TP
+.B \(dqclient\-volume +/\-X\(dq
+Adjust the volume of a client by X%. If the value is prefixed by netiher
+a \(aq+\(aq or a \(aq\-\(aq, the volume will be set to value X.
+.TP
+.B \(dqclient\-mute State\(dq
+Change the state of a client, State can be On, Off or Toggle.
+.TP
+.B \(dqclient\-set\-default\(dq
+Set a client as a default client.
+.TP
+.B \(dqclient\-set\-sink\(dq
+Redirect a client to a specified sink.
+.UNINDENT
+.SS VolumeAck Type
+.sp
+Notify the module that all information for the currently advertised element
+been processed. The Type corresponds to a trigger event ack\(aqed, i.e.
+\fIvolume\-conf\fP or \fIvolume\-conf\-removed\fP\&.  The module may then emit another
+conf event if further updates are available.
+.SH TRIGGERS
+.INDENT 0.0
+.TP
+.B volume
+a signal emitted whenever the state of the sound server changes.
+.TP
+.B volume\-conf
+emitted when a new or updared volume control element information is
+available.
+.TP
+.B volume\-conf\-removed
+emitted when a volume control element is removed.
+.UNINDENT
+.SH COPYRIGHT
+GPLv3+
+.\" Generated by docutils manpage writer.
+.

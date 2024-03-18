@@ -150,7 +150,7 @@ if puls.found() and pulg.found()
   library('pulsectl', sources: 'modules/pulsectl.c',
       dependencies: [deps, puls, pulg],name_prefix: '',
       install: true, install_dir: get_option('libdir') / 'sfwbar' )
-  doc_list += 'sfwbar-pulse'
+  doc_list += 'sfwbar-volume'
 endif
 
 if mpdc.found()
@@ -164,7 +164,9 @@ if alsa.found()
   library('alsactl', sources: 'modules/alsactl.c', dependencies: [deps, alsa],
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-  doc_list += 'sfwbar-alsa'
+  if 'sfwbar-volume' not in doc_list
+    doc_list += 'sfwbar-volume'
+  endif
 endif
 
 if xkbr.found()
