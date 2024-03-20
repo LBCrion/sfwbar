@@ -820,7 +820,7 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
   dpriv->output = g_strdup(g_object_get_data(G_OBJECT(monitor),"xdg_name"));
   mirrors = g_list_prepend(mirrors,self);
 
-  tmp = g_strdup_printf("%ld",spriv->sensor_timeout);
+  tmp = g_strdup_printf("%lld", (long long int)spriv->sensor_timeout);
   bar_set_sensor(self, tmp);
   g_free(tmp);
 

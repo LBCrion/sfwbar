@@ -200,7 +200,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   }
 
   scanner->input_name = fname;
-  g_scanner_input_text( scanner, data, -1 );
+  g_scanner_input_text( scanner, data, strlen(data) );
 
   w = config_parse_toplevel ( scanner, toplevel );
   g_free(scanner->config->cset_identifier_first);

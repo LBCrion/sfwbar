@@ -172,9 +172,9 @@ void *mpd_expr_func ( void **params, void *widget, void *event )
   else if(!g_ascii_strcasecmp(params[0],"queue_pos"))
     return g_strdup_printf("%d",status?mpd_status_get_song_pos(status):0);
   else if(!g_ascii_strcasecmp(params[0],"elapsed"))
-    return g_strdup_printf("%lu",status?mpd_status_get_elapsed_ms(status) +
-        (mpd_status_get_state(status)==MPD_STATE_PLAY?
-         (g_get_monotonic_time()-last_update)/1000:0):0);
+    return g_strdup_printf("%llu", (long long unsigned int)(status?
+      (mpd_status_get_elapsed_ms(status) + mpd_status_get_state(status)==MPD_STATE_PLAY?
+         (g_get_monotonic_time()-last_update)/1000:0):0));
   else if(!g_ascii_strcasecmp(params[0],"length"))
     return g_strdup_printf("%u",status?mpd_status_get_total_time(status):0);
   else if(!g_ascii_strcasecmp(params[0],"rate"))
