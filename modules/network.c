@@ -305,7 +305,6 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
             ((struct ifinfomsg *)NLMSG_DATA(hdr))->ifi_index,ifname)))
     {
       net_set_interface(0,gate,gate6);
-      break;
     }
     else if(hdr->nlmsg_type == RTM_NEWLINK)
     {
@@ -316,7 +315,6 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
         for(;rtl && RTA_OK(rta,rtl);rta=RTA_NEXT(rta,rtl))
           if(rta->rta_type==IFLA_WIRELESS)
             net_update_essid(if_indextoname(ifmsg->ifi_index,ifname));
-      break;
     }
     else if(hdr->nlmsg_type == RTM_NEWROUTE || hdr->nlmsg_type == RTM_DELROUTE)
     {
