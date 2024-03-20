@@ -785,7 +785,6 @@ static void iw_init_cb ( GDBusConnection *con, GAsyncResult *res, gpointer data 
   }
   g_variant_iter_free(miter);
   g_variant_unref(result);
-
 }
 
 static void iw_activate ( void )
@@ -871,7 +870,7 @@ static void *iw_expr_get ( void **params, void *widget, void *event )
   iw_device_t *device;
 
   if(!params || !params[0])
-    return g_strdup("");
+    return NULL;
 
   if( (result = module_queue_get_string(&update_q, params[0])) )
     return result;
@@ -885,7 +884,7 @@ static void *iw_expr_get ( void **params, void *widget, void *event )
   if( (result = module_queue_get_string(&remove_q, params[0])) )
     return result;
 
-  return g_strdup("");
+  return NULL;
 }
 
 static void iw_action_ack ( gchar *cmd, gchar *name, void *d1,
