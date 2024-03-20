@@ -173,7 +173,7 @@ void *mpd_expr_func ( void **params, void *widget, void *event )
     return g_strdup_printf("%d",status?mpd_status_get_song_pos(status):0);
   else if(!g_ascii_strcasecmp(params[0],"elapsed"))
     return g_strdup_printf("%llu",status?
-      (long long int)(mpd_status_get_elapsed_ms(status) +
+      (long long unsigned int)(mpd_status_get_elapsed_ms(status) +
         mpd_status_get_state(status)==MPD_STATE_PLAY?
          (g_get_monotonic_time()-last_update)/1000:0)):0);
   else if(!g_ascii_strcasecmp(params[0],"length"))
