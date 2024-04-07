@@ -314,6 +314,7 @@ void config_menu_items ( GScanner *scanner, GtkWidget *menu )
       case G_TOKEN_SUBMENU:
         itemname = NULL;
         subname = NULL;
+        subid = NULL;
         items = FALSE;
         config_parse_sequence(scanner,
             SEQ_REQ, '(', NULL, NULL,"missing '(' after 'submenu'",
