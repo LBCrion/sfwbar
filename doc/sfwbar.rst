@@ -537,6 +537,9 @@ SetBarSize [<bar_name>,]<string>
   bar). The argument is a string. I.e. "800" for 800 pixels or "50%" for 
   50% of screen size
 
+SetBarMargin [<bar_name>,]<string>
+  set margin around the bar to the number of pixels specified by string.
+
 SetBarSensor [<bar_name>],<string>
   Specify whether the bar should be hidden once the pointer leaves the bar
   window. Once hidden, the bar will popup again if the pointer touches the

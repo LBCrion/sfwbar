@@ -13,6 +13,7 @@
 #include "config.h"
 #include "taskbar.h"
 #include "window.h"
+#include "meson.h"
 
 G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW, G_ADD_PRIVATE (Bar))
 
@@ -683,6 +684,32 @@ void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
       (gpointer)g_intern_string(trigger));
 }
 
+void bar_set_margin ( GtkWidget *self, gchar *margin )
+{
+  BarPrivate *priv;
+
+  if(bar_address_all(self, margin, bar_set_margin))
+    return;
+
+  g_return_if_fail(IS_BAR(self));
+  g_return_if_fail(margin != NULL);
+  priv = bar_get_instance_private(BAR(self));
+  g_free(priv->margin);
+  priv->margin = g_strdup(margin);
+#if GTK_LAYER_VER_MINOR > 5 || GTK_LAYER_VER_MAJOR > 0
+  gtk_layer_set_margin(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_TOP,
+      g_ascii_strtoll(priv->margin, NULL, 10));
+  gtk_layer_set_margin(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_BOTTOM,
+      g_ascii_strtoll(priv->margin, NULL, 10));
+  gtk_layer_set_margin(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_LEFT,
+      g_ascii_strtoll(priv->margin, NULL, 10));
+  gtk_layer_set_margin(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_RIGHT,
+      g_ascii_strtoll(priv->margin, NULL, 10));
+#endif
+
+  g_list_foreach(priv->mirror_children,(GFunc)bar_set_margin, margin);
+}
+
 void bar_set_size ( GtkWidget *self, gchar *size )
 {
   BarPrivate *priv;
@@ -829,11 +856,13 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
   gtk_widget_show(self);
   css_widget_cascade(GTK_WIDGET(self),NULL);
   if(spriv->size)
-    bar_set_size(self,spriv->size);
+    bar_set_size(self, spriv->size);
+  if(spriv->margin)
+    bar_set_margin(self, spriv->margin);
   if(spriv->layer)
-    bar_set_layer(self,spriv->layer);
+    bar_set_layer(self, spriv->layer);
   if(spriv->ezone)
-    bar_set_exclusive_zone(self,spriv->ezone);
+    bar_set_exclusive_zone(self, spriv->ezone);
   return self;
 }
 

@@ -29,6 +29,7 @@ typedef struct _BarPrivate BarPrivate;
 struct _BarPrivate {
   gchar *name;
   gchar *size;
+  gchar *margin;
   gchar *ezone;
   gchar *layer;
   gchar *bar_id;
@@ -56,6 +57,7 @@ GtkWidget *bar_new ( gchar * );
 void bar_set_monitor ( GtkWidget *, gchar * );
 void bar_set_layer ( GtkWidget *, gchar * );
 void bar_set_size ( GtkWidget *, gchar * );
+void bar_set_margin ( GtkWidget *, gchar * );
 void bar_set_exclusive_zone ( GtkWidget *, gchar * );
 gchar *bar_get_output ( GtkWidget * );
 gint bar_get_toplevel_dir ( GtkWidget * );

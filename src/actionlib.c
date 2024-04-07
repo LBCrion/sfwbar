@@ -192,6 +192,17 @@ static ModuleActionHandlerV1 setbarsize_handler = {
   .function = (ModuleActionFunc)setbarsize_action
 };
 
+static void setbarmargin_action ( gchar *cmd, gchar *name, void *widget,
+    void *event, window_t *win, guint16 *state )
+{
+  bar_set_margin(bar_from_name(name), cmd);
+}
+
+static ModuleActionHandlerV1 setbarmargin_handler = {
+  .name = "SetBarMargin",
+  .function = (ModuleActionFunc)setbarmargin_action
+};
+
 static void setbarid_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
@@ -508,6 +519,7 @@ static ModuleActionHandlerV1 *action_handlers[] = {
   &setmirror_handler,
   &blockmirror_handler,
   &setbarsize_handler,
+  &setbarmargin_handler,
   &setbarid_handler,
   &setexclusivezone_handler,
   &setbarsensor_handler,
