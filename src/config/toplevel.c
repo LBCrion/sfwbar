@@ -471,7 +471,7 @@ void config_set ( GScanner *scanner )
 
 void config_mappid_map ( GScanner *scanner )
 {
-  gchar *pattern, *appid;
+  gchar *pattern = NULL, *appid = NULL;
   config_parse_sequence(scanner,
       SEQ_REQ, G_TOKEN_STRING, NULL, &pattern, "missing pattern in MapAppId",
       SEQ_REQ, ',', NULL, NULL, "missing comma after pattern in MapAppId",

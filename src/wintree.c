@@ -15,7 +15,7 @@ static GList *title_filter_list;
 static gpointer wt_focus;
 static gboolean disown;
 
-struct appid_mapper{
+struct appid_mapper {
   GRegex *regex;
   gchar *app_id;
 };
@@ -268,6 +268,9 @@ void wintree_appid_map_add ( gchar *pattern, gchar *appid )
 {
   struct appid_mapper *map;
   GList *iter;
+
+  if(!pattern || !appid)
+    return;
 
   for(iter=appid_map;iter;iter=g_list_next(iter))
     if(!g_strcmp0(pattern,
