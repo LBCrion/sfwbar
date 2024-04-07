@@ -63,6 +63,7 @@ def main():
       de_exec = de_exec.replace(' %f','').replace(' %F','').replace(' %u','')
       de_exec = de_exec.replace(' %U','').replace(' %c',' '+de_name)
       de_exec = de_exec.replace(' %k',' '+dfile).replace(' %i',' '+de_icon)
+      de_name = de_name.replace('\\'', '\\`')
       if not (de_cat in cats):
         cats.append(de_cat)
         print ('MenuClear(\\'Menugen_' + de_cat + '\\')')
