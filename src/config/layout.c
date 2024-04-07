@@ -227,7 +227,6 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
             1000*config_assign_number(scanner, "interval"));
         return TRUE;
       case G_TOKEN_TRIGGER:
-        base_widget_set_interval(widget,0);
         trigger = config_assign_string(scanner, "trigger");
         base_widget_set_trigger(widget, trigger);
         g_free(trigger);

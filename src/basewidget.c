@@ -469,6 +469,7 @@ void base_widget_set_trigger ( GtkWidget *self, gchar *trigger )
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
+  base_widget_set_interval(self, 0);
   lower = g_ascii_strdown(trigger, -1);
   priv->trigger = g_intern_string(lower);
   g_free(lower);
