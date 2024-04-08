@@ -14,6 +14,7 @@
 #include "module.h"
 #include "popup.h"
 #include "client.h"
+#include "appinfo.h"
 
 static void exec_action ( gchar *cmd, gchar *name, void *widget,
     void *event, void *win, void *state )
@@ -126,7 +127,7 @@ static ModuleActionHandlerV1 mpdcmd_handler = {
   .function = (ModuleActionFunc)mpdcmd_action
 };
 
-static void config_action_handler ( gchar *cmd, gchar *name, void *widget,
+static void config_func_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
   config_string(cmd);
@@ -134,7 +135,19 @@ static void config_action_handler ( gchar *cmd, gchar *name, void *widget,
 
 static ModuleActionHandlerV1 config_handler = {
   .name = "Config",
-  .function = (ModuleActionFunc)config_action_handler
+  .function = (ModuleActionFunc)config_func_action
+};
+
+static void map_icon_action ( gchar *cmd, gchar *name, void *widget,
+    void *event, window_t *win, guint16 *state )
+{
+  if(cmd && name)
+    app_icon_map_add(name, cmd);
+}
+
+static ModuleActionHandlerV1 map_icon_handler = {
+  .name = "MapIcon",
+  .function = (ModuleActionFunc)map_icon_action
 };
 
 static void setmonitor_action ( gchar *cmd, gchar *name, void *widget,
@@ -559,6 +572,7 @@ static ModuleActionHandlerV1 *action_handlers[] = {
   &swaywincmd_handler,
   &mpdcmd_handler,
   &config_handler,
+  &map_icon_handler,
   &setmonitor_handler,
   &setlayer_handler,
   &setmirror_handler,

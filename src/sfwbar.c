@@ -140,8 +140,6 @@ static void activate (GtkApplication* app, gpointer data )
     bar_address_all(NULL, bar_id, bar_set_id);
 
   config_parse(confname?confname:"sfwbar.config",TRUE);
-  taskbar_populate();
-  switcher_populate();
 
   clist = gtk_window_list_toplevels();
 
@@ -169,6 +167,8 @@ static void activate (GtkApplication* app, gpointer data )
         g_main_context_get_thread_default()));
 
   action_function_exec("SfwBarInit",NULL,NULL,NULL,NULL);
+  taskbar_populate();
+  switcher_populate();
 
   g_timeout_add (100,(GSourceFunc )shell_timer,NULL);
   g_unix_signal_add(SIGUSR1,(GSourceFunc)switcher_event,NULL);

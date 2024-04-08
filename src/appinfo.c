@@ -3,8 +3,17 @@
 #include <gtk/gtk.h>
 #include <gio/gdesktopappinfo.h>
 
-GHashTable *app_info_wm_class_map;
-GtkIconTheme *app_info_theme;
+static GHashTable *app_info_wm_class_map;
+static GHashTable *icon_map;
+static GtkIconTheme *app_info_theme;
+
+void app_icon_map_add ( gchar *appid, gchar *icon )
+{
+  if(!icon_map)
+    icon_map = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+
+  g_hash_table_insert(icon_map, g_strdup(appid), g_strdup(icon));
+}
 
 static void app_info_monitor_cb ( GAppInfoMonitor *mon, gpointer d )
 {
@@ -129,9 +138,12 @@ static gchar *app_info_lookup_id ( gchar *app_id, gboolean symbolic_pref )
   return icon;
 }
 
-gchar *app_info_icon_lookup ( gchar *app_id, gboolean symbolic_pref )
+gchar *app_info_icon_lookup ( gchar *app_id_in, gboolean symbolic_pref )
 {
-  gchar *clean_app_id, *lower_app_id, *icon;
+  gchar *app_id,*clean_app_id, *lower_app_id, *icon;
+
+  if(!icon_map || !(app_id = g_hash_table_lookup(icon_map, app_id_in)) )
+    app_id = app_id_in;
 
   if(g_str_has_suffix(app_id, "-symbolic"))
   {
