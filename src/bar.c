@@ -319,25 +319,21 @@ gboolean bar_address_all ( GtkWidget *self, gchar *value,
   void *bar,*key;
   GHashTableIter iter;
 
-  if(!self)
-  {
-    if(bar_list)
-    {
-      g_hash_table_iter_init(&iter,bar_list);
-      while(g_hash_table_iter_next(&iter,&key,&bar))
-        bar_set_mirrors(bar, value);
-    }
+  if(self)
+    return FALSE;
+  if(!bar_list)
     return TRUE;
-  }
-  return FALSE;
+
+  g_hash_table_iter_init(&iter,bar_list);
+  while(g_hash_table_iter_next(&iter,&key,&bar))
+    bar_func(bar, value);
+
+  return TRUE;
 }
 
 void bar_set_mirrors ( GtkWidget *self, gchar *mirror )
 {
   BarPrivate *priv;
-
-  if(bar_address_all(self, mirror, bar_set_mirrors))
-    return;
 
   g_return_if_fail(IS_BAR(self));
   priv = bar_get_instance_private(BAR(self));
@@ -351,9 +347,6 @@ void bar_set_mirror_blocks ( GtkWidget *self, gchar *mirror )
 {
   BarPrivate *priv;
 
-  if(bar_address_all(self, mirror, bar_set_mirror_blocks))
-    return;
-
   g_return_if_fail(IS_BAR(self));
   priv = bar_get_instance_private(BAR(self));
 
@@ -365,10 +358,6 @@ void bar_set_mirror_blocks ( GtkWidget *self, gchar *mirror )
 void bar_set_id ( GtkWidget *self, gchar *id )
 {
   BarPrivate *priv;
-
-
-  if(bar_address_all(self, id, bar_set_id))
-    return;
 
   g_return_if_fail(IS_BAR(self));
   priv = bar_get_instance_private(BAR(self));
@@ -451,11 +440,8 @@ void bar_set_layer ( GtkWidget *self, gchar *layer_str )
   BarPrivate *priv;
   GtkLayerShellLayer layer;
 
-  if(bar_address_all(self, layer_str, bar_set_layer))
-    return;
-
   g_return_if_fail(IS_BAR(self));
-  g_return_if_fail(layer_str!=NULL);
+  g_return_if_fail(layer_str);
   priv = bar_get_instance_private(BAR(self));
 
   g_free(priv->layer);
@@ -489,9 +475,6 @@ void bar_set_exclusive_zone ( GtkWidget *self, gchar *zone )
 {
   BarPrivate *priv;
 
-  if(bar_address_all(self, zone, bar_set_exclusive_zone))
-    return;
-
   g_return_if_fail(IS_BAR(self));
   g_return_if_fail(zone!=NULL);
   priv = bar_get_instance_private(BAR(self));
@@ -503,7 +486,7 @@ void bar_set_exclusive_zone ( GtkWidget *self, gchar *zone )
     gtk_layer_auto_exclusive_zone_enable(GTK_WINDOW(self));
   else
     gtk_layer_set_exclusive_zone(GTK_WINDOW(self),
-        MAX(-1,g_ascii_strtoll(zone,NULL,10)));
+        MAX(-1, g_ascii_strtoll(zone, NULL, 10)));
 
   g_list_foreach(priv->mirror_children, (GFunc)bar_set_exclusive_zone, zone);
 }
@@ -608,9 +591,6 @@ void bar_set_monitor ( GtkWidget *self, gchar *monitor )
   BarPrivate *priv;
   gchar *mon_name;
 
-  if(bar_address_all(self, monitor, bar_set_monitor))
-    return;
-
   g_return_if_fail(IS_BAR(self));
   g_return_if_fail(monitor!=NULL);
   priv = bar_get_instance_private(BAR(self));
@@ -688,9 +668,6 @@ void bar_set_margin ( GtkWidget *self, gchar *margin )
 {
   BarPrivate *priv;
 
-  if(bar_address_all(self, margin, bar_set_margin))
-    return;
-
   g_return_if_fail(IS_BAR(self));
   g_return_if_fail(margin != NULL);
   priv = bar_get_instance_private(BAR(self));
@@ -713,9 +690,6 @@ void bar_set_margin ( GtkWidget *self, gchar *margin )
 void bar_set_size ( GtkWidget *self, gchar *size )
 {
   BarPrivate *priv;
-
-  if(bar_address_all(self, size, bar_set_size))
-    return;
 
   g_return_if_fail(IS_BAR(self));
   g_return_if_fail(size!=NULL);
@@ -745,12 +719,9 @@ void bar_set_sensor ( GtkWidget *self, gchar *delay_str )
 {
   BarPrivate *priv;
 
-  if(bar_address_all(self, delay_str, bar_set_sensor))
-    return;
-
   g_return_if_fail(IS_BAR(self));
   priv = bar_get_instance_private(BAR(self));
-  priv->sensor_timeout = g_ascii_strtoll(delay_str,NULL,10);
+  priv->sensor_timeout = g_ascii_strtoll(delay_str, NULL, 10);
 
   if(priv->sensor_timeout)
   {

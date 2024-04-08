@@ -140,7 +140,12 @@ static ModuleActionHandlerV1 config_handler = {
 static void setmonitor_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
-  bar_set_monitor(bar_from_name(name), cmd);
+  GtkWidget *bar;
+
+  if( (bar = bar_from_name(name)) )
+    bar_set_monitor(bar, cmd);
+  else
+    bar_address_all(NULL, cmd, bar_set_monitor);
 }
 
 static ModuleActionHandlerV1 setmonitor_handler = {
@@ -151,7 +156,12 @@ static ModuleActionHandlerV1 setmonitor_handler = {
 static void setlayer_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
-  bar_set_layer(bar_from_name(name), cmd);
+  GtkWidget *bar;
+
+  if( (bar = bar_from_name(name)) )
+    bar_set_layer(bar, cmd);
+  else
+    bar_address_all(NULL, cmd, bar_set_layer);
 }
 
 static ModuleActionHandlerV1 setlayer_handler = {
@@ -162,7 +172,12 @@ static ModuleActionHandlerV1 setlayer_handler = {
 static void setmirror_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
-  bar_set_mirrors(bar_from_name(name), cmd);
+  GtkWidget *bar;
+
+  if( (bar = bar_from_name(name)) )
+    bar_set_mirrors(bar, cmd);
+  else
+    bar_address_all(NULL, cmd, bar_set_mirrors);
 }
 
 static ModuleActionHandlerV1 setmirror_handler = {
@@ -173,7 +188,12 @@ static ModuleActionHandlerV1 setmirror_handler = {
 static void blockmirror_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
-  bar_set_mirror_blocks(bar_from_name(name), cmd);
+  GtkWidget *bar;
+
+  if( (bar = bar_from_name(name)) )
+    bar_set_mirror_blocks(bar, cmd);
+  else
+    bar_address_all(NULL, cmd, bar_set_mirror_blocks);
 }
 
 static ModuleActionHandlerV1 blockmirror_handler = {
@@ -184,7 +204,12 @@ static ModuleActionHandlerV1 blockmirror_handler = {
 static void setbarsize_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
-  bar_set_size(bar_from_name(name), cmd);
+  GtkWidget *bar;
+
+  if( (bar = bar_from_name(name)) )
+    bar_set_size(bar, cmd);
+  else
+    bar_address_all(NULL, cmd, bar_set_size);
 }
 
 static ModuleActionHandlerV1 setbarsize_handler = {
@@ -195,7 +220,12 @@ static ModuleActionHandlerV1 setbarsize_handler = {
 static void setbarmargin_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
-  bar_set_margin(bar_from_name(name), cmd);
+  GtkWidget *bar;
+
+  if( (bar = bar_from_name(name)) )
+    bar_set_margin(bar, cmd);
+  else
+    bar_address_all(NULL, cmd, bar_set_margin);
 }
 
 static ModuleActionHandlerV1 setbarmargin_handler = {
@@ -206,7 +236,12 @@ static ModuleActionHandlerV1 setbarmargin_handler = {
 static void setbarid_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
-  bar_set_id(bar_from_name(name), cmd);
+  GtkWidget *bar;
+
+  if( (bar = bar_from_name(name)) )
+    bar_set_id(bar, cmd);
+  else
+    bar_address_all(NULL, cmd, bar_set_id);
 }
 
 static ModuleActionHandlerV1 setbarid_handler = {
@@ -217,7 +252,12 @@ static ModuleActionHandlerV1 setbarid_handler = {
 static void setbarsensor_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
-  bar_set_sensor(bar_from_name(name), cmd);
+  GtkWidget *bar;
+
+  if( (bar = bar_from_name(name)) )
+    bar_set_sensor(bar, cmd);
+  else
+    bar_address_all(NULL, cmd, bar_set_sensor);
 }
 
 static ModuleActionHandlerV1 setbarsensor_handler = {
@@ -228,7 +268,12 @@ static ModuleActionHandlerV1 setbarsensor_handler = {
 static void setexclusivezone_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
-  bar_set_exclusive_zone(bar_from_name(name), cmd);
+  GtkWidget *bar;
+
+  if( (bar = bar_from_name(name)) )
+    bar_set_exclusive_zone(bar, cmd);
+  else
+    bar_address_all(NULL, cmd, bar_set_exclusive_zone);
 }
 
 static ModuleActionHandlerV1 setexclusivezone_handler = {

@@ -137,7 +137,7 @@ static void activate (GtkApplication* app, gpointer data )
     list_monitors();
 
   if(bar_id)
-    bar_set_id(NULL,bar_id);
+    bar_address_all(NULL, bar_id, bar_set_id);
 
   config_parse(confname?confname:"sfwbar.config",TRUE);
   taskbar_populate();

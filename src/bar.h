@@ -54,6 +54,8 @@ struct _BarPrivate {
 };
 
 GtkWidget *bar_new ( gchar * );
+gboolean bar_address_all ( GtkWidget *self, gchar *value,
+    void (*bar_func)( GtkWidget *, gchar * ) );
 void bar_set_monitor ( GtkWidget *, gchar * );
 void bar_set_layer ( GtkWidget *, gchar * );
 void bar_set_size ( GtkWidget *, gchar * );
