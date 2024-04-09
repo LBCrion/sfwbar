@@ -506,6 +506,9 @@ SwitcherEvent <string>
   argument can be either "foward" or "back". If the argument is omitted, the
   focus will cycle forward.
 
+MapIcon <app_id>, <icon>
+  use icon <icon> for applications with app id <app_id>.
+
 SetMonitor [<bar_name>,]<string>
   move bar to a given monitor. Bar_name string specifies a bar to move.
   monitor name can be prefixed by "static:", i.e. "static:eDP-1", if this
