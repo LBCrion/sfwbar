@@ -11,22 +11,36 @@ enum ConfigSequenceType {
   SEQ_END
 };
 
+extern GHashTable *config_mods, *config_events, *config_var_types;
+extern GHashTable *config_act_cond, *config_toplevel_keys, *config_menu_keys;
+extern GHashTable *config_scanner_keys, *config_scanner_types;
+extern GHashTable *config_scanner_flags, *config_filter_keys;
+extern GHashTable *config_axis_keys, *config_taskbar_types;
+extern GHashTable *config_widget_keys, *config_prop_keys, *config_placer_keys;
+extern GHashTable *config_flowgrid_props;
+
 typedef gboolean (*parse_func) ( GScanner *, void * );
 
+void config_init ( void );
+gint config_lookup_key ( GScanner *scanner, GHashTable *table );
 gchar *config_value_string ( gchar *dest, gchar *string );
 GtkWidget *config_parse ( gchar *, gboolean );
 void config_pipe_read ( gchar *command );
 void config_string ( gchar *string );
 gboolean config_expect_token ( GScanner *scan, gint token, gchar *fmt, ...);
+gboolean config_is_section_end ( GScanner *scanner );
 void config_optional_semicolon ( GScanner *scanner );
 void config_parse_sequence ( GScanner *scanner, ... );
 gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr);
 gchar *config_assign_string ( GScanner *scanner, gchar *expr );
 gdouble config_assign_number ( GScanner *scanner, gchar *expr );
-gint config_assign_tokens ( GScanner *scanner, gchar *, gchar *, ... );
-action_t *config_action ( GScanner *scanner );
+gint config_assign_tokens ( GScanner *scanner, GHashTable *keys, gchar *err );
+gboolean config_action ( GScanner *scanner, action_t **action_dst );
 void config_action_finish ( GScanner *scanner );
+void config_define ( GScanner *scanner );
 gchar *config_get_value ( GScanner *, gchar *, gboolean, gchar **);
+void config_menu_items ( GScanner *scanner, GtkWidget *menu );
+gboolean config_flowgrid_property ( GScanner *scanner, GtkWidget *widget );
 void config_scanner ( GScanner *scanner );
 void config_layout ( GScanner *, GtkWidget **, gboolean );
 gboolean config_widget_child ( GScanner *scanner, GtkWidget *container );
@@ -62,10 +76,6 @@ enum {
   G_TOKEN_STRINGW,
   G_TOKEN_NOGLOB,
   G_TOKEN_CHTIME,
-  G_TOKEN_SUM,
-  G_TOKEN_PRODUCT,
-  G_TOKEN_LASTW,
-  G_TOKEN_FIRST,
   G_TOKEN_GRID,
   G_TOKEN_SCALE,
   G_TOKEN_LABEL,
@@ -109,44 +119,17 @@ enum {
   G_TOKEN_AUTOCLOSE,
   G_TOKEN_MENUCLEAR,
   G_TOKEN_FUNCTION,
-  G_TOKEN_USERSTATE,
-  G_TOKEN_USERSTATE2,
   G_TOKEN_CLIENTSEND,
   G_TOKEN_ITEM,
   G_TOKEN_SEPARATOR,
   G_TOKEN_SUBMENU,
-  G_TOKEN_MAXIMIZED,
-  G_TOKEN_MINIMIZED,
-  G_TOKEN_FULLSCREEN,
-  G_TOKEN_FOCUSED,
   G_TOKEN_REGEX,
   G_TOKEN_JSON,
   G_TOKEN_SET,
   G_TOKEN_GRAB,
-  G_TOKEN_TITLE,
-  G_TOKEN_APPID,
   G_TOKEN_WORKSPACE,
   G_TOKEN_OUTPUT,
   G_TOKEN_FLOATING,
-  G_TOKEN_INIT,
-  G_TOKEN_LEFT,
-  G_TOKEN_MIDDLE,
-  G_TOKEN_RIGHT,
-  G_TOKEN_SCROLL_UP,
-  G_TOKEN_SCROLL_LEFT,
-  G_TOKEN_SCROLL_RIGHT,
-  G_TOKEN_SCROLL_DOWN,
-  G_TOKEN_DRAG,
-  G_TOKEN_SHIFT,
-  G_TOKEN_CTRL,
-  G_TOKEN_MOD1,
-  G_TOKEN_MOD2,
-  G_TOKEN_MOD3,
-  G_TOKEN_MOD4,
-  G_TOKEN_MOD5,
-  G_TOKEN_SUPER,
-  G_TOKEN_HYPER,
-  G_TOKEN_META
 };
 
 #endif

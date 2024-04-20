@@ -201,7 +201,7 @@ GtkWidget *menu_item_new ( gchar *label, action_t *action, gchar *id )
     if(g_hash_table_lookup(menu_items, id))
       g_message("duplicate menu item id: '%s'", id);
     else
-      g_hash_table_insert(menu_items, id, item);
+      g_hash_table_insert(menu_items, g_strdup(id), item);
   }
 
   return item;

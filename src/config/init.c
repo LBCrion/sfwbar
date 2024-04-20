@@ -5,6 +5,193 @@
 
 #include "../config.h"
 #include "../sfwbar.h"
+#include "../taskbar.h"
+
+GHashTable *config_mods, *config_events, *config_var_types, *config_act_cond;
+GHashTable *config_toplevel_keys, *config_menu_keys, *config_scanner_keys;
+GHashTable *config_scanner_types, *config_scanner_flags, *config_filter_keys;
+GHashTable *config_axis_keys, *config_taskbar_types, *config_widget_keys;
+GHashTable *config_prop_keys, *config_placer_keys, *config_flowgrid_props;
+
+#define config_add_key(table, str, key) \
+  g_hash_table_insert(table, str, GINT_TO_POINTER(key))
+
+void config_init ( void )
+{
+  config_mods = g_hash_table_new((GHashFunc)str_nhash, (GEqualFunc)str_nequal);
+  config_add_key(config_mods, "shift", GDK_SHIFT_MASK);
+  config_add_key(config_mods, "ctrl", GDK_CONTROL_MASK);
+  config_add_key(config_mods, "super", GDK_SUPER_MASK);
+  config_add_key(config_mods, "hyper", GDK_HYPER_MASK);
+  config_add_key(config_mods, "meta", GDK_META_MASK);
+  config_add_key(config_mods, "mod1", GDK_MOD1_MASK);
+  config_add_key(config_mods, "mod2", GDK_MOD2_MASK);
+  config_add_key(config_mods, "mod3", GDK_MOD3_MASK);
+  config_add_key(config_mods, "mod4", GDK_MOD4_MASK);
+  config_add_key(config_mods, "mod5", GDK_MOD5_MASK);
+
+  config_events = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_events, "Init", 0);
+  config_add_key(config_events, "LeftClick", 1);
+  config_add_key(config_events, "MiddleClick", 2);
+  config_add_key(config_events, "RightClick", 3);
+  config_add_key(config_events, "ScrollUp", 4);
+  config_add_key(config_events, "ScrollDown", 5);
+  config_add_key(config_events, "ScrollLeft", 6);
+  config_add_key(config_events, "ScrollRight", 7);
+  config_add_key(config_events, "Drag", 8);
+
+  config_var_types = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_var_types, "Sum", VT_SUM);
+  config_add_key(config_var_types, "Product", VT_PROD);
+  config_add_key(config_var_types, "Last", VT_LAST);
+  config_add_key(config_var_types, "FIrst", VT_FIRST);
+
+  config_act_cond = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_act_cond, "UserState", WS_USERSTATE);
+  config_add_key(config_act_cond, "UserState2", WS_USERSTATE2);
+  config_add_key(config_act_cond, "Minimized", WS_MINIMIZED);
+  config_add_key(config_act_cond, "Maximized", WS_MAXIMIZED);
+  config_add_key(config_act_cond, "FullScreen", WS_FULLSCREEN);
+  config_add_key(config_act_cond, "Focused", WS_FOCUSED);
+  config_add_key(config_act_cond, "Children", WS_CHILDREN);
+
+  config_toplevel_keys = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_toplevel_keys, "Scanner", G_TOKEN_SCANNER);
+  config_add_key(config_toplevel_keys, "Layout", G_TOKEN_LAYOUT);
+  config_add_key(config_toplevel_keys, "PopUp", G_TOKEN_POPUP);
+  config_add_key(config_toplevel_keys, "Placer", G_TOKEN_PLACER);
+  config_add_key(config_toplevel_keys, "Switcher", G_TOKEN_SWITCHER);
+  config_add_key(config_toplevel_keys, "Define", G_TOKEN_DEFINE);
+  config_add_key(config_toplevel_keys, "TriggerAction", G_TOKEN_TRIGGERACTION);
+  config_add_key(config_toplevel_keys, "MapAppId", G_TOKEN_MAPAPPID);
+  config_add_key(config_toplevel_keys, "FilterAppId", G_TOKEN_FILTERAPPID);
+  config_add_key(config_toplevel_keys, "FilterTitle", G_TOKEN_FILTERTITLE);
+  config_add_key(config_toplevel_keys, "Module", G_TOKEN_MODULE);
+  config_add_key(config_toplevel_keys, "Theme", G_TOKEN_THEME);
+  config_add_key(config_toplevel_keys, "IconTheme", G_TOKEN_ICON_THEME);
+  config_add_key(config_toplevel_keys, "DisownMinimized",
+      G_TOKEN_DISOWNMINIMIZED);
+  config_add_key(config_toplevel_keys, "Function", G_TOKEN_FUNCTION);
+  config_add_key(config_toplevel_keys, "Set", G_TOKEN_SET);
+  config_add_key(config_toplevel_keys, "MenuClear", G_TOKEN_MENUCLEAR);
+  config_add_key(config_toplevel_keys, "Menu", G_TOKEN_MENU);
+  config_add_key(config_toplevel_keys, "Include", G_TOKEN_INCLUDE);
+  config_add_key(config_toplevel_keys, "Grid", G_TOKEN_GRID);
+  config_add_key(config_toplevel_keys, "Scale", G_TOKEN_SCALE);
+  config_add_key(config_toplevel_keys, "Label", G_TOKEN_LABEL);
+  config_add_key(config_toplevel_keys, "Button", G_TOKEN_BUTTON);
+  config_add_key(config_toplevel_keys, "Image", G_TOKEN_IMAGE);
+  config_add_key(config_toplevel_keys, "Chart", G_TOKEN_CHART);
+  config_add_key(config_toplevel_keys, "Taskbar", G_TOKEN_TASKBAR);
+  config_add_key(config_toplevel_keys, "Pager", G_TOKEN_PAGER);
+  config_add_key(config_toplevel_keys, "Tray", G_TOKEN_TRAY);
+
+  config_menu_keys = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_menu_keys, "Item", G_TOKEN_ITEM);
+  config_add_key(config_menu_keys, "Separator", G_TOKEN_SEPARATOR);
+  config_add_key(config_menu_keys, "SubMenu", G_TOKEN_SUBMENU);
+
+  config_scanner_keys = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_scanner_keys, "File", G_TOKEN_FILE);
+  config_add_key(config_scanner_keys, "Exec", G_TOKEN_EXEC);
+  config_add_key(config_scanner_keys, "MpdClient", G_TOKEN_MPDCLIENT);
+  config_add_key(config_scanner_keys, "SwayClient", G_TOKEN_SWAYCLIENT);
+  config_add_key(config_scanner_keys, "ExecClient", G_TOKEN_EXECCLIENT);
+  config_add_key(config_scanner_keys, "SocketClient", G_TOKEN_SOCKETCLIENT);
+
+  config_scanner_types = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_scanner_types, "RegEx", G_TOKEN_REGEX);
+  config_add_key(config_scanner_types, "Json", G_TOKEN_JSON);
+  config_add_key(config_scanner_types, "Grab", G_TOKEN_GRAB);
+
+  config_scanner_flags = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_scanner_flags, "NoGlob", VF_NOGLOB);
+  config_add_key(config_scanner_flags, "CheckTime", VF_CHTIME);
+
+  config_filter_keys = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_filter_keys, "Workspace", G_TOKEN_WORKSPACE);
+  config_add_key(config_filter_keys, "Output", G_TOKEN_OUTPUT);
+  config_add_key(config_filter_keys, "Floating", G_TOKEN_FLOATING);
+
+  config_axis_keys = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_axis_keys, "Cols", G_TOKEN_COLS);
+  config_add_key(config_axis_keys, "Rows", G_TOKEN_ROWS);
+
+  config_taskbar_types = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_taskbar_types, "True", TASKBAR_POPUP);
+  config_add_key(config_taskbar_types, "False", TASKBAR_NORMAL);
+  config_add_key(config_taskbar_types, "PopUp", TASKBAR_POPUP);
+  config_add_key(config_taskbar_types, "Pager", TASKBAR_DESK);
+
+  config_widget_keys = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_widget_keys, "Pager", G_TOKEN_PAGER);
+  config_add_key(config_widget_keys, "Grid", G_TOKEN_GRID);
+  config_add_key(config_widget_keys, "Scale", G_TOKEN_SCALE);
+  config_add_key(config_widget_keys, "Label", G_TOKEN_LABEL);
+  config_add_key(config_widget_keys, "Button", G_TOKEN_BUTTON);
+  config_add_key(config_widget_keys, "Image", G_TOKEN_IMAGE);
+  config_add_key(config_widget_keys, "Chart", G_TOKEN_CHART);
+  config_add_key(config_widget_keys, "Include", G_TOKEN_INCLUDE);
+  config_add_key(config_widget_keys, "Taskbar", G_TOKEN_TASKBAR);
+  config_add_key(config_widget_keys, "Tray", G_TOKEN_TRAY);
+
+  config_prop_keys = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_prop_keys, "Style", G_TOKEN_STYLE);
+  config_add_key(config_prop_keys, "Value", G_TOKEN_VALUE);
+  config_add_key(config_prop_keys, "Css", G_TOKEN_CSS);
+  config_add_key(config_prop_keys, "Interval", G_TOKEN_INTERVAL);
+  config_add_key(config_prop_keys, "Trigger", G_TOKEN_TRIGGER);
+  config_add_key(config_prop_keys, "Pins", G_TOKEN_PINS);
+  config_add_key(config_prop_keys, "Preview", G_TOKEN_PREVIEW);
+  config_add_key(config_prop_keys, "Action", G_TOKEN_ACTION);
+  config_add_key(config_prop_keys, "Loc", G_TOKEN_LOC);
+  config_add_key(config_prop_keys, "Filter_output", G_TOKEN_PEROUTPUT);
+  config_add_key(config_prop_keys, "Title_width", G_TOKEN_TITLEWIDTH);
+  config_add_key(config_prop_keys, "AutoClose", G_TOKEN_AUTOCLOSE);
+  config_add_key(config_prop_keys, "Tooltip", G_TOKEN_TOOLTIP);
+  config_add_key(config_prop_keys, "Group", G_TOKEN_GROUP);
+  config_add_key(config_prop_keys, "Filter", G_TOKEN_FILTER);
+
+config_flowgrid_props = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_flowgrid_props, "Cols", G_TOKEN_COLS);
+  config_add_key(config_flowgrid_props, "Rows", G_TOKEN_ROWS);
+  config_add_key(config_flowgrid_props, "Icons", G_TOKEN_ICONS);
+  config_add_key(config_flowgrid_props, "Labels", G_TOKEN_LABELS);
+  config_add_key(config_flowgrid_props, "Sort", G_TOKEN_SORT);
+  config_add_key(config_flowgrid_props, "Numeric", G_TOKEN_NUMERIC);
+  config_add_key(config_flowgrid_props, "Primary", G_TOKEN_PRIMARY);
+
+  config_placer_keys = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_placer_keys, "XStep", G_TOKEN_XSTEP);
+  config_add_key(config_placer_keys, "YStep", G_TOKEN_YSTEP);
+  config_add_key(config_placer_keys, "XOrigin", G_TOKEN_XORIGIN);
+  config_add_key(config_placer_keys, "YOrigin", G_TOKEN_YORIGIN);
+  config_add_key(config_placer_keys, "Children", G_TOKEN_CHILDREN);
+}
+
+gint config_lookup_key ( GScanner *scanner, GHashTable *table )
+{
+  if(scanner->token != G_TOKEN_IDENTIFIER)
+    return 0;
+
+  return GPOINTER_TO_INT(g_hash_table_lookup(table, scanner->value.v_identifier));
+}
 
 void config_log_error ( GScanner *scanner, gchar *message, gboolean error )
 {
@@ -34,7 +221,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   scanner->config->case_sensitive = 0;
   scanner->config->numbers_2_int = 1;
   scanner->config->int_2_float = 1;
-  scanner->config->scope_0_fallback = 0;
+  scanner->config->scope_0_fallback = 1;
 
   scanner->config->cset_identifier_nth = g_strconcat(".",
       scanner->config->cset_identifier_nth,NULL);
@@ -43,150 +230,6 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
 
   scanner->msg_handler = config_log_error;
   scanner->max_parse_errors = FALSE;
-
-  g_scanner_scope_add_symbol(scanner,0, "Scanner", (gpointer)G_TOKEN_SCANNER );
-  g_scanner_scope_add_symbol(scanner,0, "Layout", (gpointer)G_TOKEN_LAYOUT );
-  g_scanner_scope_add_symbol(scanner,0, "PopUp", (gpointer)G_TOKEN_POPUP );
-  g_scanner_scope_add_symbol(scanner,0, "Placer", (gpointer)G_TOKEN_PLACER );
-  g_scanner_scope_add_symbol(scanner,0, "Switcher",
-      (gpointer)G_TOKEN_SWITCHER );
-  g_scanner_scope_add_symbol(scanner,0, "Define", (gpointer)G_TOKEN_DEFINE );
-  g_scanner_scope_add_symbol(scanner,0, "TriggerAction",
-      (gpointer)G_TOKEN_TRIGGERACTION );
-  g_scanner_scope_add_symbol(scanner,0, "MapAppId",
-      (gpointer)G_TOKEN_MAPAPPID );
-  g_scanner_scope_add_symbol(scanner,0, "FilterAppId",
-      (gpointer)G_TOKEN_FILTERAPPID );
-  g_scanner_scope_add_symbol(scanner,0, "FilterTitle",
-      (gpointer)G_TOKEN_FILTERTITLE );
-  g_scanner_scope_add_symbol(scanner,0, "Module",
-      (gpointer)G_TOKEN_MODULE );
-  g_scanner_scope_add_symbol(scanner,0, "Theme", (gpointer)G_TOKEN_THEME );
-  g_scanner_scope_add_symbol(scanner,0, "IconTheme",
-      (gpointer)G_TOKEN_ICON_THEME );
-  g_scanner_scope_add_symbol(scanner,0, "DisownMinimized",
-      (gpointer)G_TOKEN_DISOWNMINIMIZED );
-  g_scanner_scope_add_symbol(scanner,0, "End", (gpointer)G_TOKEN_END );
-  g_scanner_scope_add_symbol(scanner,0, "File", (gpointer)G_TOKEN_FILE );
-  g_scanner_scope_add_symbol(scanner,0, "Exec", (gpointer)G_TOKEN_EXEC );
-  g_scanner_scope_add_symbol(scanner,0, "MpdClient",
-      (gpointer)G_TOKEN_MPDCLIENT );
-  g_scanner_scope_add_symbol(scanner,0, "SwayClient",
-      (gpointer)G_TOKEN_SWAYCLIENT );
-  g_scanner_scope_add_symbol(scanner,0, "ExecClient",
-      (gpointer)G_TOKEN_EXECCLIENT );
-  g_scanner_scope_add_symbol(scanner,0, "SocketClient",
-      (gpointer)G_TOKEN_SOCKETCLIENT );
-  g_scanner_scope_add_symbol(scanner,0, "Number", (gpointer)G_TOKEN_NUMBERW );
-  g_scanner_scope_add_symbol(scanner,0, "String", (gpointer)G_TOKEN_STRINGW );
-  g_scanner_scope_add_symbol(scanner,0, "NoGlob", (gpointer)G_TOKEN_NOGLOB );
-  g_scanner_scope_add_symbol(scanner,0, "CheckTime",
-      (gpointer)G_TOKEN_CHTIME );
-  g_scanner_scope_add_symbol(scanner,0, "Sum", (gpointer)G_TOKEN_SUM );
-  g_scanner_scope_add_symbol(scanner,0, "Product", (gpointer)G_TOKEN_PRODUCT );
-  g_scanner_scope_add_symbol(scanner,0, "Last", (gpointer)G_TOKEN_LASTW );
-  g_scanner_scope_add_symbol(scanner,0, "First", (gpointer)G_TOKEN_FIRST );
-  g_scanner_scope_add_symbol(scanner,0, "Grid", (gpointer)G_TOKEN_GRID );
-  g_scanner_scope_add_symbol(scanner,0, "Scale", (gpointer)G_TOKEN_SCALE );
-  g_scanner_scope_add_symbol(scanner,0, "Label", (gpointer)G_TOKEN_LABEL );
-  g_scanner_scope_add_symbol(scanner,0, "Button", (gpointer)G_TOKEN_BUTTON );
-  g_scanner_scope_add_symbol(scanner,0, "Image", (gpointer)G_TOKEN_IMAGE );
-  g_scanner_scope_add_symbol(scanner,0, "Chart", (gpointer)G_TOKEN_CHART );
-  g_scanner_scope_add_symbol(scanner,0, "Include", (gpointer)G_TOKEN_INCLUDE );
-  g_scanner_scope_add_symbol(scanner,0, "TaskBar", (gpointer)G_TOKEN_TASKBAR );
-  g_scanner_scope_add_symbol(scanner,0, "Pager", (gpointer)G_TOKEN_PAGER );
-  g_scanner_scope_add_symbol(scanner,0, "Tray", (gpointer)G_TOKEN_TRAY );
-  g_scanner_scope_add_symbol(scanner,0, "Style", (gpointer)G_TOKEN_STYLE );
-  g_scanner_scope_add_symbol(scanner,0, "Css", (gpointer)G_TOKEN_CSS );
-  g_scanner_scope_add_symbol(scanner,0, "Interval",
-      (gpointer)G_TOKEN_INTERVAL );
-  g_scanner_scope_add_symbol(scanner,0, "Value", (gpointer)G_TOKEN_VALUE );
-  g_scanner_scope_add_symbol(scanner,0, "Pins", (gpointer)G_TOKEN_PINS );
-  g_scanner_scope_add_symbol(scanner,0, "Preview", (gpointer)G_TOKEN_PREVIEW );
-  g_scanner_scope_add_symbol(scanner,0, "Cols", (gpointer)G_TOKEN_COLS );
-  g_scanner_scope_add_symbol(scanner,0, "Rows", (gpointer)G_TOKEN_ROWS );
-  g_scanner_scope_add_symbol(scanner,0, "Action", (gpointer)G_TOKEN_ACTION );
-  g_scanner_scope_add_symbol(scanner,0, "Display", (gpointer)G_TOKEN_DISPLAY );
-  g_scanner_scope_add_symbol(scanner,0, "Icons", (gpointer)G_TOKEN_ICONS );
-  g_scanner_scope_add_symbol(scanner,0, "Labels", (gpointer)G_TOKEN_LABELS );
-  g_scanner_scope_add_symbol(scanner,0, "Loc", (gpointer)G_TOKEN_LOC );
-  g_scanner_scope_add_symbol(scanner,0, "Numeric", (gpointer)G_TOKEN_NUMERIC );
-  g_scanner_scope_add_symbol(scanner,0, "Filter_output", 
-      (gpointer)G_TOKEN_PEROUTPUT );
-  g_scanner_scope_add_symbol(scanner,0, "Title_width", 
-      (gpointer)G_TOKEN_TITLEWIDTH );
-  g_scanner_scope_add_symbol(scanner,0, "Tooltip", (gpointer)G_TOKEN_TOOLTIP );
-  g_scanner_scope_add_symbol(scanner,0, "Trigger", (gpointer)G_TOKEN_TRIGGER );
-  g_scanner_scope_add_symbol(scanner,0, "Group", (gpointer)G_TOKEN_GROUP );
-  g_scanner_scope_add_symbol(scanner,0, "XStep", (gpointer)G_TOKEN_XSTEP );
-  g_scanner_scope_add_symbol(scanner,0, "YStep", (gpointer)G_TOKEN_YSTEP );
-  g_scanner_scope_add_symbol(scanner,0, "XOrigin", (gpointer)G_TOKEN_XORIGIN );
-  g_scanner_scope_add_symbol(scanner,0, "YOrigin", (gpointer)G_TOKEN_YORIGIN );
-  g_scanner_scope_add_symbol(scanner,0, "Children", 
-      (gpointer)G_TOKEN_CHILDREN );
-  g_scanner_scope_add_symbol(scanner,0, "Sort", (gpointer)G_TOKEN_SORT );
-  g_scanner_scope_add_symbol(scanner,0, "Filter", (gpointer)G_TOKEN_FILTER );
-  g_scanner_scope_add_symbol(scanner,0, "Primary", (gpointer)G_TOKEN_PRIMARY );
-  g_scanner_scope_add_symbol(scanner,0, "True", (gpointer)G_TOKEN_TRUE );
-  g_scanner_scope_add_symbol(scanner,0, "False", (gpointer)G_TOKEN_FALSE );
-  g_scanner_scope_add_symbol(scanner,0, "Menu", (gpointer)G_TOKEN_MENU );
-  g_scanner_scope_add_symbol(scanner,0, "MenuClear", 
-      (gpointer)G_TOKEN_MENUCLEAR );
-  g_scanner_scope_add_symbol(scanner,0, "UserState",
-      (gpointer)G_TOKEN_USERSTATE );
-  g_scanner_scope_add_symbol(scanner,0, "UserState2",
-      (gpointer)G_TOKEN_USERSTATE2 );
-  g_scanner_scope_add_symbol(scanner,0, "Function",
-      (gpointer)G_TOKEN_FUNCTION );
-  g_scanner_scope_add_symbol(scanner,0, "Item", (gpointer)G_TOKEN_ITEM );
-  g_scanner_scope_add_symbol(scanner,0, "Separator",
-      (gpointer)G_TOKEN_SEPARATOR );
-  g_scanner_scope_add_symbol(scanner,0, "SubMenu", (gpointer)G_TOKEN_SUBMENU );
-  g_scanner_scope_add_symbol(scanner,0, "AutoClose",
-      (gpointer)G_TOKEN_AUTOCLOSE );
-  g_scanner_scope_add_symbol(scanner,0, "Minimized",
-      (gpointer)G_TOKEN_MINIMIZED );
-  g_scanner_scope_add_symbol(scanner,0, "Maximized",
-      (gpointer)G_TOKEN_MAXIMIZED );
-  g_scanner_scope_add_symbol(scanner,0, "FullScreen",
-      (gpointer)G_TOKEN_FULLSCREEN );
-  g_scanner_scope_add_symbol(scanner,0, "Focused", (gpointer)G_TOKEN_FOCUSED );
-  g_scanner_scope_add_symbol(scanner,0, "RegEx", (gpointer)G_TOKEN_REGEX );
-  g_scanner_scope_add_symbol(scanner,0, "Json", (gpointer)G_TOKEN_JSON );
-  g_scanner_scope_add_symbol(scanner,0, "Set", (gpointer)G_TOKEN_SET );
-  g_scanner_scope_add_symbol(scanner,0, "Grab", (gpointer)G_TOKEN_GRAB );
-  g_scanner_scope_add_symbol(scanner,0, "Title", (gpointer)G_TOKEN_TITLE );
-  g_scanner_scope_add_symbol(scanner,0, "AppId", (gpointer)G_TOKEN_APPID );
-  g_scanner_scope_add_symbol(scanner,0, "Workspace",
-      (gpointer)G_TOKEN_WORKSPACE );
-  g_scanner_scope_add_symbol(scanner,0, "Output", (gpointer)G_TOKEN_OUTPUT );
-  g_scanner_scope_add_symbol(scanner,0, "Floating",
-      (gpointer)G_TOKEN_FLOATING );
-  g_scanner_scope_add_symbol(scanner,0, "Init", (gpointer)G_TOKEN_INIT );
-  g_scanner_scope_add_symbol(scanner,0, "LeftClick", (gpointer)G_TOKEN_LEFT );
-  g_scanner_scope_add_symbol(scanner,0, "MiddleClick",
-      (gpointer)G_TOKEN_MIDDLE );
-  g_scanner_scope_add_symbol(scanner,0, "RightClick",
-      (gpointer)G_TOKEN_RIGHT );
-  g_scanner_scope_add_symbol(scanner,0, "ScrollUp",
-      (gpointer)G_TOKEN_SCROLL_UP );
-  g_scanner_scope_add_symbol(scanner,0, "ScrollLeft",
-      (gpointer)G_TOKEN_SCROLL_LEFT );
-  g_scanner_scope_add_symbol(scanner,0, "ScrollRight",
-      (gpointer)G_TOKEN_SCROLL_RIGHT );
-  g_scanner_scope_add_symbol(scanner,0, "ScrollDown",
-      (gpointer)G_TOKEN_SCROLL_DOWN );
-  g_scanner_scope_add_symbol(scanner,0, "Drag", (gpointer)G_TOKEN_DRAG );
-  g_scanner_scope_add_symbol(scanner,0, "Shift", (gpointer)G_TOKEN_SHIFT );
-  g_scanner_scope_add_symbol(scanner,0, "Ctrl", (gpointer)G_TOKEN_CTRL );
-  g_scanner_scope_add_symbol(scanner,0, "Mod1", (gpointer)G_TOKEN_MOD1 );
-  g_scanner_scope_add_symbol(scanner,0, "Mod2", (gpointer)G_TOKEN_MOD2 );
-  g_scanner_scope_add_symbol(scanner,0, "Mod3", (gpointer)G_TOKEN_MOD3 );
-  g_scanner_scope_add_symbol(scanner,0, "Mod4", (gpointer)G_TOKEN_MOD4 );
-  g_scanner_scope_add_symbol(scanner,0, "Mod5", (gpointer)G_TOKEN_MOD5 );
-  g_scanner_scope_add_symbol(scanner,0, "Super", (gpointer)G_TOKEN_SUPER );
-  g_scanner_scope_add_symbol(scanner,0, "Hyper", (gpointer)G_TOKEN_HYPER );
-  g_scanner_scope_add_symbol(scanner,0, "Meta", (gpointer)G_TOKEN_META );
 
   tmp = strstr(data,"\n#CSS");
   if(tmp)

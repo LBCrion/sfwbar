@@ -124,6 +124,7 @@ static void activate (GtkApplication* app, gpointer data )
   GList *clist, *iter;
 
   application = app;
+  config_init();
   expr_lib_init();
   action_lib_init();
   css_init(cssname);

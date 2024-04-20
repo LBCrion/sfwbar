@@ -82,11 +82,11 @@ static gboolean taskbar_item_check ( GtkWidget *self )
   {
     case G_TOKEN_OUTPUT:
       result = (!priv->win->outputs || g_list_find_custom(priv->win->outputs,
-          bar_get_output(priv->taskbar), (GCompareFunc)g_strcmp0));
+          bar_get_output(taskbar), (GCompareFunc)g_strcmp0));
       break;
     case G_TOKEN_WORKSPACE:
       result = (!priv->win->workspace ||
-          priv->win->workspace==workspace_get_active(priv->taskbar));
+          priv->win->workspace==workspace_get_active(taskbar));
       break;
     default:
       result = TRUE;

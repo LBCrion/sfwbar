@@ -162,22 +162,22 @@ void scanner_var_values_update ( ScanVar *var, gchar *value)
   if(!value)
     return;
 
-  if(var->multi!=G_TOKEN_FIRST || !var->count)
+  if(var->multi!=VT_FIRST || !var->count)
   {
     g_free(var->str);
     var->str = value;
     switch(var->multi)
     {
-      case G_TOKEN_SUM:
+      case VT_SUM:
         var->val += g_ascii_strtod(var->str,NULL);
         break;
-      case G_TOKEN_PRODUCT:
+      case VT_PROD:
         var->val *= g_ascii_strtod(var->str,NULL);
         break;
-      case G_TOKEN_LASTW:
+      case VT_LAST:
         var->val = g_ascii_strtod(var->str,NULL);
         break;
-      case G_TOKEN_FIRST:
+      case VT_FIRST:
         if(!var->count)
           var->val = g_ascii_strtod(var->str,NULL);
         break;

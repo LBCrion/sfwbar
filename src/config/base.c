@@ -4,6 +4,9 @@
  */
 
 #include "../config.h"
+#include "../sfwbar.h"
+
+static GHashTable *defines;
 
 gboolean config_expect_token ( GScanner *scanner, gint token, gchar *fmt, ...)
 {
@@ -47,19 +50,30 @@ void config_parse_sequence ( GScanner *scanner, ... )
     func = va_arg(args, parse_func );
     dest  = va_arg(args, void * );
     err = va_arg(args, char * );
+    
+    if(dest)
+    {
+      if(type == G_TOKEN_STRING || type == G_TOKEN_VALUE ||
+          type == G_TOKEN_IDENTIFIER)
+        *((gchar **)dest) = NULL;
+      else if (type > 0 && type != G_TOKEN_INT && type != G_TOKEN_FLOAT)
+        *((gboolean *)dest) = FALSE;
+    }
+
     if( (matched || req != SEQ_CON) &&
         ( type < 0 || type==G_TOKEN_VALUE ||
           g_scanner_peek_next_token(scanner) == type ||
           (scanner->next_token == G_TOKEN_FLOAT && type == G_TOKEN_INT) ))
     {
+      if(type != G_TOKEN_VALUE && type != -2)
+        g_scanner_get_next_token(scanner);
+
       if(type == -2)
       {
-        if(func && !func(scanner,dest))
+        if(func && !func(scanner, dest))
           if(err)
-            g_scanner_error(scanner,"%s",err);
+            g_scanner_error(scanner, "%s", err);
       }
-      else if(type != G_TOKEN_VALUE)
-        g_scanner_get_next_token(scanner);
 
       matched = TRUE;
       if(dest)
@@ -72,11 +86,11 @@ void config_parse_sequence ( GScanner *scanner, ... )
             *((gchar **)dest) = g_strdup(scanner->value.v_identifier);
             break;
           case G_TOKEN_VALUE:
-            *((gchar **)dest) = config_get_value(scanner,err,FALSE,NULL);
+            *((gchar **)dest) = config_get_value(scanner, err, FALSE, NULL);
             if(!**((gchar **)dest))
             {
               g_free(*((gchar **)dest));
-              *((char **)dest)=NULL;
+              *((char **)dest) = NULL;
             }
             break;
           case G_TOKEN_FLOAT:
@@ -112,21 +126,16 @@ gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr)
   scanner->max_parse_errors = FALSE;
   if(!config_expect_token(scanner, '=', "Missing '=' in %s = <boolean>",expr))
     return FALSE;
+
+  g_scanner_get_next_token(scanner);
   g_scanner_get_next_token(scanner);
 
-  switch((gint)g_scanner_get_next_token(scanner))
-  {
-    case G_TOKEN_TRUE:
-      result = TRUE;
-      break;
-    case G_TOKEN_FALSE:
-      result = FALSE;
-      break;
-    default:
-      g_scanner_error(scanner, "Missing <boolean> value in %s = <boolean>",
-          expr);
-      break;
-  }
+  if(!g_ascii_strcasecmp(scanner->value.v_identifier, "true"))
+    result = TRUE;
+  else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "false"))
+    result = FALSE;
+  else
+    g_scanner_error(scanner, "Missing value in %s = <boolean>", expr);
 
   config_optional_semicolon(scanner);
 
@@ -175,33 +184,170 @@ gdouble config_assign_number ( GScanner *scanner, gchar *expr )
   return result;
 }
 
-gint config_assign_tokens ( GScanner *scanner, gchar *name, gchar *type, ... )
+gint config_assign_tokens ( GScanner *scanner, GHashTable *keys, gchar *error )
 {
-  va_list args;
-  gint token, res = 0;
+  gint res;
 
   scanner->max_parse_errors = FALSE;
-  if(!config_expect_token(scanner, '=', "Missing '=' in %s = %s",name,type))
+  if(!config_expect_token(scanner, '=', "Missing '=' after '%s'",
+        scanner->value.v_identifier ))
     return 0;
 
   g_scanner_get_next_token(scanner);
-  g_scanner_peek_next_token(scanner);
+  g_scanner_get_next_token(scanner);
 
-  va_start(args,type);
-  token = va_arg(args, gint );
-
-  while(token!=0)
-  {
-    if(token == scanner->next_token)
-      res = g_scanner_get_next_token(scanner);
-
-    token = va_arg(args, gint );
-  }
-  va_end(args);
-
-  if(!res)
-    g_scanner_error(scanner,"missing %s in %s = %s",name,type,name);
+  if( !(res = config_lookup_key(scanner, keys)) )
+    g_scanner_error(scanner, error);
   config_optional_semicolon(scanner);
 
   return res;
+}
+
+gboolean config_is_section_end ( GScanner *scanner )
+{
+  if(g_scanner_peek_next_token(scanner) == G_TOKEN_EOF)
+    return TRUE;
+
+  if(scanner->next_token != '}')
+    return FALSE;
+
+  g_scanner_get_next_token(scanner);
+  config_optional_semicolon(scanner);
+  return TRUE;
+}
+
+gchar *config_value_string ( gchar *dest, gchar *string )
+{
+  gint i,j=0,l;
+  gchar *result;
+
+  l = strlen(dest);
+
+  for(i=0;string[i];i++)
+    if(string[i] == '"' || string[i] == '\\')
+      j++;
+  result = g_malloc(l+i+j+3);
+  memcpy(result,dest,l);
+
+  result[l++]='"';
+  for(i=0;string[i];i++)
+  {
+    if(string[i] == '"' || string[i] == '\\')
+      result[l++]='\\';
+    result[l++] = string[i];
+  }
+  result[l++]='"';
+  result[l]=0;
+
+  g_free(dest);
+  return result;
+}
+
+gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign,
+    gchar **id )
+{
+  gchar *value, *temp;
+  gint pcount = 0;
+  static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+
+  scanner->max_parse_errors = FALSE;
+  if(assign)
+  {
+    if(!config_expect_token(scanner, '=', "expecting %s = expression", prop))
+      return NULL;
+    g_scanner_get_next_token(scanner);
+  }
+  if(id && g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
+  {
+    g_scanner_get_next_token(scanner);
+    temp = g_strdup(scanner->value.v_string);
+    if(g_scanner_peek_next_token(scanner)==',')
+    {
+      g_scanner_get_next_token(scanner);
+      value = g_strdup("");;
+      *id = temp;
+    }
+    else
+    {
+      value = config_value_string(g_strdup(""),temp);
+      g_free(temp);
+    }
+  }
+  else
+    value = g_strdup("");;
+  g_scanner_peek_next_token(scanner);
+  scanner->token = '+';
+  while(((gint)scanner->next_token<G_TOKEN_SCANNER)&&
+      (scanner->next_token!='}')&&
+      (scanner->next_token!=';')&&
+      (scanner->next_token!='[')&&
+      (scanner->next_token!=',' || pcount)&&
+      (scanner->next_token!=')' || pcount)&&
+      (scanner->next_token!=G_TOKEN_IDENTIFIER ||
+        strchr(",(+-*/%=<>!|&",scanner->token))&&
+      (scanner->next_token!=G_TOKEN_EOF))
+  {
+    switch((gint)g_scanner_get_next_token(scanner))
+    {
+      case G_TOKEN_STRING:
+        value = config_value_string(value, scanner->value.v_string);
+        break;
+      case G_TOKEN_IDENTIFIER:
+        temp = value;
+        if(defines && g_hash_table_contains(defines, scanner->value.v_identifier))
+          value = g_strconcat(value, 
+              g_hash_table_lookup(defines, scanner->value.v_identifier), NULL);
+        else
+          value = g_strconcat(value, scanner->value.v_identifier, NULL);
+        g_free(temp);
+        break;
+      case G_TOKEN_FLOAT:
+        temp = value;
+        value = g_strconcat(temp,g_ascii_dtostr(buf,G_ASCII_DTOSTR_BUF_SIZE,
+              scanner->value.v_float),NULL);
+        g_free(temp);
+        break;
+      default:
+        temp = value;
+        buf[0] = scanner->token;
+        buf[1] = 0;
+        value = g_strconcat(temp,buf,NULL);
+        g_free(temp);
+        break;
+    }
+    if(scanner->token == '(')
+      pcount++;
+    else if(scanner->token == ')')
+      pcount--;
+    g_scanner_peek_next_token(scanner);
+  }
+  config_optional_semicolon(scanner);
+  return value;
+}
+
+void config_define ( GScanner *scanner )
+{
+  gchar *ident, *value;
+
+  scanner->max_parse_errors = FALSE;
+  config_parse_sequence(scanner,
+      SEQ_REQ, G_TOKEN_IDENTIFIER, NULL, &ident,
+        "missing identifier after 'define'",
+      SEQ_REQ, '=', NULL, NULL, "missing '=' after 'define'",
+      SEQ_REQ, G_TOKEN_VALUE, NULL, &value, "missing value in 'define'",
+      SEQ_OPT, ';', NULL, NULL, NULL,
+      SEQ_END);
+
+  if(scanner->max_parse_errors || !ident || !value)
+  {
+    g_free(ident);
+    g_free(value);
+    return;
+  }
+
+  if(!defines)
+    defines = g_hash_table_new_full((GHashFunc)str_nhash,
+        (GEqualFunc)str_nequal, g_free, g_free);
+
+  g_hash_table_insert(defines, ident, value);
 }

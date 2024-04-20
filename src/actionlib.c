@@ -491,7 +491,7 @@ static void eval_action ( gchar *cmd, gchar *name, void *widget,
     return;
 
   val = config_value_string(g_strdup(""), cmd);
-  scanner_var_new(name, NULL, val, G_TOKEN_SET, G_TOKEN_FIRST);
+  scanner_var_new(name, NULL, val, G_TOKEN_SET, VT_FIRST);
   g_free(val);
 }
 

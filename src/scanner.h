@@ -15,6 +15,13 @@ enum {
   VF_NOGLOB = 2
 };
 
+enum {
+  VT_SUM = 1,
+  VT_PROD,
+  VT_LAST,
+  VT_FIRST
+};
+
 typedef struct scan_file {
   gchar *fname;
   const gchar *trigger;

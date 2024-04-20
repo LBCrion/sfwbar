@@ -503,10 +503,12 @@ GdkMonitor *bar_get_monitor ( GtkWidget *self )
 
 gchar *bar_get_output ( GtkWidget *self )
 {
+  Bar *bar;
   BarPrivate *priv;
 
-  priv = bar_get_instance_private(
-      BAR(gtk_widget_get_ancestor(self, GTK_TYPE_WINDOW)));
+  if( !(bar = BAR(gtk_widget_get_ancestor(self, BAR_TYPE))) )
+    return NULL;
+  priv = bar_get_instance_private(bar);
 
   if(!priv->current_monitor)
     return NULL;
