@@ -197,7 +197,7 @@ gint config_assign_tokens ( GScanner *scanner, GHashTable *keys, gchar *error )
   g_scanner_get_next_token(scanner);
 
   if( !(res = config_lookup_key(scanner, keys)) )
-    g_scanner_error(scanner, error);
+    g_scanner_error(scanner, "%s", error);
   config_optional_semicolon(scanner);
 
   return res;
