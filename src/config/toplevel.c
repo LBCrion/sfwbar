@@ -131,6 +131,7 @@ GtkWidget *config_submenu ( GScanner *scanner )
       SEQ_REQ, ')', NULL, NULL,"missing ')' after 'submenu'",
       SEQ_OPT, '{', NULL, &items, "missing '{' after 'submenu'",
       SEQ_END);
+
   if(!scanner->max_parse_errors && itemname)
   {
     item = menu_item_new(itemname, NULL, subid);
@@ -139,6 +140,8 @@ GtkWidget *config_submenu ( GScanner *scanner )
     if(items)
       config_menu_items(scanner, submenu);
   }
+  else
+    item = NULL;
   g_free(itemname);
   g_free(subname);
 
