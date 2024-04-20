@@ -284,34 +284,36 @@ void flow_grid_delete_child ( GtkWidget *self, void *source )
 
 void flow_grid_update ( GtkWidget *self )
 {
-  FlowGridPrivate *priv;
+  FlowGridPrivate *priv, *ppriv;
   GList *iter;
   gint count, i, cols, rows;
 
   g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
+  ppriv = flow_grid_get_instance_private(
+      FLOW_GRID(base_widget_get_mirror_parent(self)));
 
   if(!priv->invalid)
     return;
   priv->invalid = FALSE;
 
-  if(!priv->primary_axis)
+  if(!ppriv->primary_axis)
   {
-    if(priv->rows>0)
-      priv->primary_axis = G_TOKEN_COLS;
+    if(ppriv->rows>0)
+      ppriv->primary_axis = G_TOKEN_COLS;
     else
-      priv->primary_axis = G_TOKEN_ROWS;
+      ppriv->primary_axis = G_TOKEN_ROWS;
   }
 
   gtk_container_foreach(GTK_CONTAINER(priv->grid),
-      (GtkCallback)flow_grid_remove_widget,self);
+      (GtkCallback)flow_grid_remove_widget, self);
 
-  if(priv->sort)
+  if(ppriv->sort)
     priv->children = g_list_sort_with_data(priv->children,
-        (GCompareDataFunc)flow_item_compare,self);
+        (GCompareDataFunc)flow_item_compare, self);
 
   count = 0;
-  for(iter=priv->children;iter;iter=g_list_next(iter))
+  for(iter=priv->children; iter; iter=g_list_next(iter))
   {
     flow_item_update(iter->data);
     if(flow_item_get_active(iter->data))
@@ -320,19 +322,19 @@ void flow_grid_update ( GtkWidget *self )
 
   rows = 0;
   cols = 0;
-  if(priv->rows>0)
+  if(ppriv->rows>0)
   {
-    if(priv->primary_axis == G_TOKEN_COLS)
-      rows = priv->rows;
+    if(ppriv->primary_axis == G_TOKEN_COLS)
+      rows = ppriv->rows;
     else
-      cols = (count/priv->rows) + ((count%priv->rows)?1:0);
+      cols = (count/ppriv->rows) + ((count%ppriv->rows)?1:0);
   }
   else
   {
-    if(priv->primary_axis == G_TOKEN_ROWS)
-      cols = priv->cols;
+    if(ppriv->primary_axis == G_TOKEN_ROWS)
+      cols = ppriv->cols;
     else
-      rows = (count/priv->cols) + ((count%priv->cols)?1:0);
+      rows = (count/ppriv->cols) + ((count%ppriv->cols)?1:0);
   }
 
   i = 0;
@@ -519,12 +521,9 @@ void flow_grid_copy_properties ( GtkWidget *dest, GtkWidget *src )
   FlowGridPrivate *spriv, *dpriv;
 
   g_return_if_fail( IS_BASE_WIDGET(src) && IS_BASE_WIDGET(dest) );
-  g_return_if_fail( IS_FLOW_GRID(base_widget_get_child(src)) &&
-      IS_FLOW_GRID(base_widget_get_child(dest)) );
-  spriv = flow_grid_get_instance_private(FLOW_GRID(
-        base_widget_get_child(src)));
-  dpriv = flow_grid_get_instance_private(FLOW_GRID(
-        base_widget_get_child(dest)));
+  g_return_if_fail( IS_FLOW_GRID(src) && IS_FLOW_GRID(dest) );
+  spriv = flow_grid_get_instance_private(FLOW_GRID(src));
+  dpriv = flow_grid_get_instance_private(FLOW_GRID(dest));
 
   dpriv->rows = spriv->rows;
   dpriv->cols = spriv->cols;

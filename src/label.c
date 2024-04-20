@@ -18,7 +18,7 @@ static void label_update_value ( GtkWidget *self )
   priv = label_get_instance_private(LABEL(self));
 
   value = base_widget_get_value(self);
-  if(pango_parse_markup(value, -1, 0, NULL, NULL, NULL, NULL))
+  if(value && pango_parse_markup(value, -1, 0, NULL, NULL, NULL, NULL))
     gtk_label_set_markup(GTK_LABEL(priv->label), value);
   else
     gtk_label_set_text(GTK_LABEL(priv->label), value);

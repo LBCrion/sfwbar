@@ -802,6 +802,19 @@ GtkWidget *base_widget_mirror ( GtkWidget *src )
   return BASE_WIDGET_GET_CLASS(src)->mirror(src);
 }
 
+GtkWidget *base_widget_get_mirror_parent ( GtkWidget *self )
+{
+  BaseWidgetPrivate *priv;
+
+  g_return_val_if_fail(IS_BASE_WIDGET(self), NULL);
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  if(priv->mirror_parent)
+    return priv->mirror_parent;
+  else
+    return self;
+}
+
 gboolean base_widget_emit_trigger ( const gchar *trigger )
 {
   BaseWidgetPrivate *priv;

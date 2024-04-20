@@ -75,6 +75,7 @@ void base_widget_set_max_height ( GtkWidget *self, guint x );
 gboolean base_widget_update_value ( GtkWidget *self );
 void base_widget_set_rect ( GtkWidget *self, GdkRectangle rect );
 void base_widget_attach ( GtkWidget *, GtkWidget *, GtkWidget *);
+GtkWidget *base_widget_get_mirror_parent ( GtkWidget *self );
 guint16 base_widget_get_state ( GtkWidget *self );
 gint64 base_widget_get_next_poll ( GtkWidget *self );
 void base_widget_set_next_poll ( GtkWidget *self, gint64 ctime );

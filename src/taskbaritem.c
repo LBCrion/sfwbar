@@ -192,7 +192,7 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
 
   g_return_val_if_fail(IS_TASKBAR(taskbar),NULL);
 
-  if(flow_grid_find_child(taskbar,win))
+  if(flow_grid_find_child(taskbar, win))
     return NULL;
 
   self = GTK_WIDGET(g_object_new(taskbar_item_get_type(), NULL));
@@ -201,10 +201,10 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   priv->win = win;
   priv->taskbar = taskbar;
 
-  icons = GPOINTER_TO_INT(
-      g_object_get_data(G_OBJECT(taskbar), "icons"));
-  labels = GPOINTER_TO_INT(
-      g_object_get_data(G_OBJECT(taskbar), "labels"));
+  icons = GPOINTER_TO_INT(g_object_get_data(
+        G_OBJECT(base_widget_get_mirror_parent(taskbar)), "icons"));
+  labels = GPOINTER_TO_INT(g_object_get_data(
+        G_OBJECT(base_widget_get_mirror_parent(taskbar)), "labels"));
   title_width = GPOINTER_TO_INT(
       g_object_get_data(G_OBJECT(taskbar), "title_width"));
   if(!title_width)

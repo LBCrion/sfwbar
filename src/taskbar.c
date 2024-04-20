@@ -51,7 +51,7 @@ static GtkWidget *taskbar_mirror ( GtkWidget *src )
   g_object_set_data(G_OBJECT(self),"title_width",
       g_object_get_data(G_OBJECT(src),"title_width"));
   flow_grid_copy_properties(self, src);
-  base_widget_copy_properties(self,src);
+  base_widget_copy_properties(self, src);
   taskbar_populate();
 
   return self;
