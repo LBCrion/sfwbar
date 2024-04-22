@@ -14,10 +14,10 @@ static gboolean config_var_flag ( GScanner *scanner, gint *flag )
 {
   gint fval;
 
-  g_scanner_get_next_token(scanner);
-  if( !(fval = config_lookup_key(scanner, config_var_types)) )
+  if( !(fval = config_lookup_next_key(scanner, config_var_types)) )
     return FALSE;
 
+  g_scanner_get_next_token(scanner);
   *flag = fval;
   return TRUE;
 }

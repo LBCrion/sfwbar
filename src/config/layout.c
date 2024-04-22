@@ -270,7 +270,7 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
           return TRUE;
         }
         g_scanner_get_next_token(scanner);
-        switch(config_lookup_key(scanner, config_prop_keys))
+        switch(config_lookup_key(scanner, config_flowgrid_props))
         {
           case G_TOKEN_COLS:
             g_object_set_data(G_OBJECT(widget),"g_cols",GINT_TO_POINTER(
@@ -288,6 +288,13 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
             g_object_set_data(G_OBJECT(widget),"g_labels",
               GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"group labels")));
             return TRUE;
+          case G_TOKEN_SORT:
+            g_object_set_data(G_OBJECT(widget), "g_sort", GINT_TO_POINTER(
+              config_assign_boolean(scanner, TRUE, "group sort")));
+            return TRUE;
+        }
+        switch(config_lookup_key(scanner, config_prop_keys))
+        {
           case G_TOKEN_CSS:
             g_object_set_data_full(G_OBJECT(widget),"g_css",
               config_assign_string(scanner,"group css"),g_free);
@@ -299,10 +306,6 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
           case G_TOKEN_TITLEWIDTH:
             g_object_set_data(G_OBJECT(widget),"g_title_width",GINT_TO_POINTER(
               (gint)config_assign_number(scanner, "group title_width")));
-            return TRUE;
-          case G_TOKEN_SORT:
-            g_object_set_data(G_OBJECT(widget), "g_sort", GINT_TO_POINTER(
-              config_assign_boolean(scanner, TRUE, "group sort")));
             return TRUE;
         }
     }

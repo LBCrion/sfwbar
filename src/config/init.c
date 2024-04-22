@@ -190,7 +190,17 @@ gint config_lookup_key ( GScanner *scanner, GHashTable *table )
   if(scanner->token != G_TOKEN_IDENTIFIER)
     return 0;
 
-  return GPOINTER_TO_INT(g_hash_table_lookup(table, scanner->value.v_identifier));
+  return GPOINTER_TO_INT(g_hash_table_lookup(table,
+        scanner->value.v_identifier));
+}
+
+gint config_lookup_next_key ( GScanner *scanner, GHashTable *table )
+{
+  if(g_scanner_peek_next_token(scanner) != G_TOKEN_IDENTIFIER)
+    return 0;
+
+  return GPOINTER_TO_INT( g_hash_table_lookup(table,
+        scanner->next_value.v_identifier) );
 }
 
 void config_log_error ( GScanner *scanner, gchar *message, gboolean error )

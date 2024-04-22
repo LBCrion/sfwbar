@@ -49,12 +49,18 @@ gboolean config_action ( GScanner *scanner, action_t **action_dst )
       SEQ_CON, -2, config_action_conditions, action, NULL,
       SEQ_CON, ']', NULL, NULL, "missing ']' in conditional action",
       SEQ_OPT, G_TOKEN_IDENTIFIER, NULL, &ident, NULL,
-      SEQ_OPT, G_TOKEN_VALUE, NULL, &action->addr->definition, NULL,
-      SEQ_OPT, ',', NULL, NULL, NULL,
-      SEQ_CON, G_TOKEN_VALUE, NULL, &action->command->definition,
-        "Missing argument after ',' in action",
-      SEQ_OPT, ';', NULL, NULL, NULL,
       SEQ_END);
+
+  if( !config_lookup_next_key(scanner, config_toplevel_keys) &&
+      !config_lookup_next_key(scanner, config_prop_keys) &&
+      !config_lookup_next_key(scanner, config_flowgrid_props))
+    config_parse_sequence(scanner,
+        SEQ_OPT, G_TOKEN_VALUE, NULL, &action->addr->definition, NULL,
+        SEQ_OPT, ',', NULL, NULL, NULL,
+        SEQ_CON, G_TOKEN_VALUE, NULL, &action->command->definition,
+          "Missing argument after ',' in action",
+        SEQ_OPT, ';', NULL, NULL, NULL,
+        SEQ_END);
 
   if(scanner->max_parse_errors)
   {

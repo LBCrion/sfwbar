@@ -284,7 +284,7 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign,
       (scanner->next_token!=',' || pcount)&&
       (scanner->next_token!=')' || pcount)&&
       (scanner->next_token!=G_TOKEN_IDENTIFIER ||
-        strchr(",(+-*/%=<>!|&",scanner->token))&&
+        strchr(",(+-*/%=<>!|&", scanner->token))&&
       (scanner->next_token!=G_TOKEN_EOF))
   {
     switch((gint)g_scanner_get_next_token(scanner))
@@ -311,7 +311,7 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign,
         temp = value;
         buf[0] = scanner->token;
         buf[1] = 0;
-        value = g_strconcat(temp,buf,NULL);
+        value = g_strconcat(temp, buf, NULL);
         g_free(temp);
         break;
     }
