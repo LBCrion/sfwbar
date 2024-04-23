@@ -169,6 +169,8 @@ void flow_grid_set_cols ( GtkWidget *self, gint cols )
   priv->rows = 0;
   if((priv->rows<1)&&(priv->cols<1))
     priv->rows = 1;
+
+  flow_grid_invalidate(self);
 }
 
 void flow_grid_set_rows ( GtkWidget *self, gint rows )
@@ -183,6 +185,8 @@ void flow_grid_set_rows ( GtkWidget *self, gint rows )
 
   if((priv->rows<1)&&(priv->cols<1))
     priv->rows = 1;
+
+  flow_grid_invalidate(self);
 }
 
 gint flow_grid_get_cols ( GtkWidget *self )
@@ -190,7 +194,8 @@ gint flow_grid_get_cols ( GtkWidget *self )
   FlowGridPrivate *priv;
 
   g_return_val_if_fail(IS_FLOW_GRID(self), -1);
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+  priv = flow_grid_get_instance_private(
+      FLOW_GRID(base_widget_get_mirror_parent(self)));
 
   return priv->cols;
 }
@@ -200,7 +205,8 @@ gint flow_grid_get_rows ( GtkWidget *self )
   FlowGridPrivate *priv;
 
   g_return_val_if_fail(IS_FLOW_GRID(self), -1);
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+  priv = flow_grid_get_instance_private(
+      FLOW_GRID(base_widget_get_mirror_parent(self)));
 
   return priv->rows;
 }
@@ -213,17 +219,18 @@ void flow_grid_set_primary ( GtkWidget *self, gint primary )
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   priv->primary_axis = primary;
+  flow_grid_invalidate(self);
 }
 
-void flow_grid_set_sort ( GtkWidget *cgrid, gboolean sort )
+void flow_grid_set_sort ( GtkWidget *self, gboolean sort )
 {
   FlowGridPrivate *priv;
 
-  g_return_if_fail(cgrid != NULL);
-  g_return_if_fail(IS_FLOW_GRID(cgrid));
-  priv = flow_grid_get_instance_private(FLOW_GRID(cgrid));
+  g_return_if_fail(IS_FLOW_GRID(self));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   priv->sort = sort;
+  flow_grid_invalidate(self);
 }
 
 void flow_grid_remove_widget ( GtkWidget *widget, GtkWidget *self )
@@ -239,9 +246,13 @@ void flow_grid_remove_widget ( GtkWidget *widget, GtkWidget *self )
 void flow_grid_invalidate ( GtkWidget *self )
 {
   FlowGridPrivate *priv;
+  GList *iter;
 
   g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  for(iter=base_widget_get_mirror_children(self); iter; iter=g_list_next(iter))
+    flow_grid_invalidate(iter->data);
 
   priv->invalid = TRUE;
 }
@@ -258,7 +269,7 @@ void flow_grid_add_child ( GtkWidget *self, GtkWidget *child )
     base_widget_action_configure(child, i);
   priv->children = g_list_append(priv->children, child);
   flow_item_set_parent(child, self);
-  flow_grid_invalidate(self);
+  priv->invalid = TRUE;
 }
 
 void flow_grid_delete_child ( GtkWidget *self, void *source )
@@ -279,7 +290,7 @@ void flow_grid_delete_child ( GtkWidget *self, void *source )
       priv->children = g_list_delete_link(priv->children, iter);
       break;
     }
-  flow_grid_invalidate(self);
+  priv->invalid = TRUE;
 }
 
 void flow_grid_update ( GtkWidget *self )
@@ -388,29 +399,6 @@ gpointer flow_grid_find_child ( GtkWidget *self, gconstpointer source )
       return iter->data;
 
   return NULL;
-}
-
-void flow_grid_set_parent ( GtkWidget *self, GtkWidget *parent )
-{
-  FlowGridPrivate *priv;
-
-  if(!IS_BASE_WIDGET(parent))
-    return;
-
-  g_return_if_fail(IS_FLOW_GRID(self));
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
-
-  priv->parent = parent;
-}
-
-GtkWidget *flow_grid_get_parent ( GtkWidget *self )
-{
-  FlowGridPrivate *priv;
-
-  g_return_val_if_fail(IS_FLOW_GRID(self),NULL);
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
-
-  return priv->parent;
 }
 
 void flow_grid_children_order ( GtkWidget *self, GtkWidget *ref,

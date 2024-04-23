@@ -418,10 +418,7 @@ void config_layout ( GScanner *scanner, GtkWidget **widget, gboolean toplevel )
   if(!toplevel)
   {
     if(!*widget)
-    {
       *widget = grid_new();
-      gtk_widget_set_name(*widget,"layout");
-    }
     layout = *widget;
   }
   else

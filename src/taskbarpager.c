@@ -165,7 +165,6 @@ GtkWidget *taskbar_pager_new( workspace_t *ws, GtkWidget *taskbar )
   priv->taskbar = taskbar;
   priv->tgroup = taskbar_new(FALSE);
   flow_grid_set_dnd_target(priv->tgroup, flow_grid_get_dnd_target(taskbar));
-  flow_grid_set_parent(priv->tgroup, self);
   flow_grid_child_dnd_enable(taskbar, self, NULL);
   g_object_set_data(G_OBJECT(priv->tgroup), "parent_taskbar", taskbar);
   priv->ws = ws;

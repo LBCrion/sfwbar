@@ -36,12 +36,8 @@ static GtkWidget *scale_get_child ( GtkWidget *self )
 
 static GtkWidget *scale_mirror ( GtkWidget *src )
 {
-  GtkWidget *self;
-
   g_return_val_if_fail(IS_SCALE(src),NULL);
-  self = scale_new();
-  base_widget_copy_properties(self,src);
-  return self;
+  return scale_new();
 }
 
 static void scale_style_updated ( GtkWidget *widget, GtkWidget *self )

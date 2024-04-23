@@ -31,30 +31,15 @@ static GtkWidget *grid_get_child ( GtkWidget *self )
 
 static GtkWidget *grid_mirror ( GtkWidget *src )
 {
-  GtkWidget *self, *grid, *item;
-  GdkRectangle rect;
-  GList *children,*iter;
+  GridPrivate *priv;
+  GtkWidget *self;
+  GList *iter;
 
+  priv = grid_get_instance_private(GRID(src));
   self = grid_new();
-  base_widget_copy_properties(self,src);
-  grid = base_widget_get_child(src);
-  children = gtk_container_get_children(GTK_CONTAINER(grid));
-  for(iter=children;iter;iter=g_list_next(iter))
-  {
-    item = base_widget_mirror(iter->data);
-    if(item)
-    {
-      gtk_container_child_get(GTK_CONTAINER(grid),iter->data,
-          "left-attach",&rect.x,
-          "top-attach",&rect.y,
-          "width",&rect.width,
-          "height",&rect.height,
-          NULL);
-      base_widget_set_rect(item,rect);
-      grid_attach(self,item);
-    }
-  }
-  g_list_free(children);
+
+  for(iter=priv->children; iter; iter=g_list_next(iter))
+    grid_attach(self, base_widget_mirror(iter->data));
 
   return self;
 }
@@ -62,7 +47,7 @@ static GtkWidget *grid_mirror ( GtkWidget *src )
 static void grid_child_park ( GtkWidget *widget, GtkWidget *grid )
 {
   g_object_ref(widget);
-  gtk_container_remove(GTK_CONTAINER(grid),widget);
+  gtk_container_remove(GTK_CONTAINER(grid), widget);
 }
 
 static void grid_style_updated ( GtkWidget *grid, GtkWidget *self )
@@ -72,18 +57,18 @@ static void grid_style_updated ( GtkWidget *grid, GtkWidget *self )
   GList *iter;
 
   priv = grid_get_instance_private(GRID(self));
-  gtk_widget_style_get(priv->grid,"direction",&dir,NULL);
+  gtk_widget_style_get(priv->grid, "direction", &dir, NULL);
   if(priv->dir == dir)
     return;
   priv->dir = dir;
 
   gtk_container_foreach(GTK_CONTAINER(priv->grid),
-      (GtkCallback)grid_child_park,priv->grid);
+      (GtkCallback)grid_child_park, priv->grid);
 
   g_list_free(g_steal_pointer(&priv->last));
-  for(iter=priv->children;iter;iter=g_list_next(iter))
+  for(iter=priv->children; iter; iter=g_list_next(iter))
   {
-    grid_attach(self,iter->data);
+    grid_attach(self, iter->data);
     g_object_unref(iter->data);
   }
 }
@@ -139,6 +124,8 @@ void grid_attach ( GtkWidget *self, GtkWidget *child )
   GridPrivate *priv;
 
   g_return_if_fail(IS_GRID(self));
+  g_return_if_fail(IS_BASE_WIDGET(child));
+
   priv = grid_get_instance_private(GRID(self));
 
   base_widget_attach(priv->grid, child, priv->last?priv->last->data:NULL);

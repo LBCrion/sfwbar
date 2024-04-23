@@ -37,7 +37,7 @@ static void css_custom_handle ( GtkWidget *widget )
   GtkAlign align;
   guint x;
 
-  gtk_widget_style_get(widget,"visible",&state,NULL);
+  gtk_widget_style_get(widget, "visible", &state, NULL);
   if(state)
     gtk_widget_show(widget);
   else
@@ -48,23 +48,21 @@ static void css_custom_handle ( GtkWidget *widget )
   }
   if(!GTK_IS_EVENT_BOX(widget))
   {
-    gtk_widget_style_get(widget,"hexpand",&state,NULL);
-    gtk_widget_set_hexpand(widget,state);
-    gtk_widget_style_get(widget,"vexpand",&state,NULL);
-    gtk_widget_set_vexpand(widget,state);
-    gtk_widget_style_get(widget,"halign",&align,NULL);
-    gtk_widget_set_halign(widget,align);
-    gtk_widget_style_get(widget,"valign",&align,NULL);
-    gtk_widget_set_valign(widget,align);
+    gtk_widget_style_get(widget, "hexpand", &state, NULL);
+    gtk_widget_set_hexpand(widget, state);
+    gtk_widget_style_get(widget, "vexpand", &state, NULL);
+    gtk_widget_set_vexpand(widget, state);
+    gtk_widget_style_get(widget, "halign", &align, NULL);
+    gtk_widget_set_halign(widget, align);
+    gtk_widget_style_get(widget, "valign", &align, NULL);
+    gtk_widget_set_valign(widget, align);
   }
   if(IS_BASE_WIDGET(widget))
   {
-    gtk_widget_style_get(gtk_bin_get_child(GTK_BIN(widget)),"max-width",&x,
-        NULL);
-    base_widget_set_max_width(widget,x);
-    gtk_widget_style_get(gtk_bin_get_child(GTK_BIN(widget)),"max-height",&x,
-        NULL);
-    base_widget_set_max_height(widget,x);
+    gtk_widget_style_get(base_widget_get_child(widget), "max-width", &x,NULL);
+    base_widget_set_max_width(widget, x);
+    gtk_widget_style_get(base_widget_get_child(widget), "max-height", &x,NULL);
+    base_widget_set_max_height(widget, x);
   }
 
   if(GTK_IS_LABEL(widget))

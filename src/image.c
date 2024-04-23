@@ -33,14 +33,8 @@ static GtkWidget *image_get_child ( GtkWidget *self )
 
 static GtkWidget *image_mirror ( GtkWidget *src )
 {
-  GtkWidget *self;
-
   g_return_val_if_fail(IS_IMAGE(src),NULL);
-  self = image_new();
-
-  base_widget_copy_properties(self,src);
-
-  return self;
+  return image_new();
 }
 
 static void image_class_init ( ImageClass *kclass )

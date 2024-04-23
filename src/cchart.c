@@ -36,13 +36,8 @@ static GtkWidget *cchart_get_child ( GtkWidget *self )
 
 static GtkWidget *cchart_mirror ( GtkWidget *src )
 {
-  GtkWidget *self;
-
-  g_return_val_if_fail(IS_CCHART(src),NULL);
-  self = cchart_new();
-  base_widget_copy_properties(self,src);
-
-  return self;
+  g_return_val_if_fail(IS_CCHART(src), NULL);
+  return cchart_new();
 }
 
 static void cchart_class_init ( CChartClass *kclass )

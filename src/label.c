@@ -36,14 +36,8 @@ static GtkWidget *label_get_child ( GtkWidget *self )
 
 static GtkWidget *label_mirror ( GtkWidget *src )
 {
-  GtkWidget *self;
-
-  g_return_val_if_fail(IS_LABEL(src),NULL);
-
-  self = label_new();
-  base_widget_copy_properties(self,src);
-
-  return self;
+  g_return_val_if_fail(IS_LABEL(src), NULL);
+  return label_new();
 }
 
 static void label_class_init ( LabelClass *kclass )

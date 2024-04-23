@@ -162,7 +162,8 @@ gboolean base_widget_check_action_slot ( GtkWidget *self, gint slot )
   BaseWidgetPrivate *priv;
   GList *iter;
 
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+  priv = base_widget_get_instance_private(
+      BASE_WIDGET(base_widget_get_mirror_parent(self)));
 
   for(iter=priv->actions; iter; iter=g_list_next(iter))
     if(((base_widget_attachment_t *)(iter->data))->event == slot)
@@ -280,12 +281,19 @@ static void base_widget_action_configure_impl ( GtkWidget *self, gint slot )
   }
 }
 
+GtkWidget *base_widget_get_child_impl ( GtkWidget *self )
+{
+  g_return_val_if_fail(IS_BASE_WIDGET(self), NULL);
+  return gtk_bin_get_child(GTK_BIN(self));
+}
+
 static void base_widget_class_init ( BaseWidgetClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = base_widget_destroy;
   kclass->old_size_allocate = GTK_WIDGET_CLASS(kclass)->size_allocate;
   kclass->action_exec = base_widget_action_exec_impl;
   kclass->action_configure = base_widget_action_configure_impl;
+  kclass->get_child = base_widget_get_child_impl;
   GTK_WIDGET_CLASS(kclass)->size_allocate = base_widget_size_allocate;
   GTK_WIDGET_CLASS(kclass)->get_preferred_width = base_widget_get_pref_width;
   GTK_WIDGET_CLASS(kclass)->get_preferred_height = base_widget_get_pref_height;
@@ -349,14 +357,14 @@ gboolean base_widget_update_value ( GtkWidget *self )
   BaseWidgetPrivate *priv;
   GList *iter;
 
-  g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
+  g_return_val_if_fail(IS_BASE_WIDGET(self), FALSE);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(BASE_WIDGET_GET_CLASS(self)->update_value)
     BASE_WIDGET_GET_CLASS(self)->update_value(self);
 
-  for(iter=priv->mirror_children;iter;iter=g_list_next(iter))
-    BASE_WIDGET_GET_CLASS(self)->update_value(iter->data);
+  for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
+      BASE_WIDGET_GET_CLASS(self)->update_value(iter->data);
 
   return FALSE;
 }
@@ -364,24 +372,19 @@ gboolean base_widget_update_value ( GtkWidget *self )
 gboolean base_widget_style ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
-  GtkWidget *child;
   GList *iter;
 
-  g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
-
-  if(!BASE_WIDGET_GET_CLASS(self)->get_child)
-    return FALSE;
-
+  g_return_val_if_fail(IS_BASE_WIDGET(self), FALSE);
+  self = base_widget_get_mirror_parent(self);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
-  child = BASE_WIDGET_GET_CLASS(self)->get_child(self);
-  if(priv->mirror_parent)
-    priv = base_widget_get_instance_private(BASE_WIDGET(priv->mirror_parent));
-  gtk_widget_set_name(child,priv->style->cache);
-  css_widget_cascade(child,NULL);
 
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
-  for(iter=priv->mirror_children;iter;iter=g_list_next(iter))
-    base_widget_style(iter->data);
+  gtk_widget_set_name(base_widget_get_child(self), priv->style->cache);
+  css_widget_cascade(self, NULL);
+  for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
+  {
+    gtk_widget_set_name(base_widget_get_child(iter->data), priv->style->cache);
+    css_widget_cascade(iter->data, NULL);
+  }
 
   return FALSE;
 }
@@ -403,18 +406,18 @@ void base_widget_set_tooltip ( GtkWidget *self, gchar *tooltip )
 
   if(!tooltip)
   {
-    gtk_widget_set_has_tooltip(self,FALSE);
+    gtk_widget_set_has_tooltip(self, FALSE);
     return;
   }
 
   if(expr_cache_eval(priv->tooltip))
   {
-    gtk_widget_set_has_tooltip(self,TRUE);
-    gtk_widget_set_tooltip_markup(self,priv->tooltip->cache);
+    gtk_widget_set_has_tooltip(self, TRUE);
+    gtk_widget_set_tooltip_markup(self, priv->tooltip->cache);
   }
   if(!priv->tooltip_h)
-    priv->tooltip_h = g_signal_connect(self,"query-tooltip",
-        G_CALLBACK(base_widget_tooltip_update),self);
+    priv->tooltip_h = g_signal_connect(self, "query-tooltip",
+        G_CALLBACK(base_widget_tooltip_update), self);
 }
 
 void base_widget_set_value ( GtkWidget *self, gchar *value )
@@ -443,6 +446,7 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
   BaseWidgetPrivate *priv;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
+  self = base_widget_get_mirror_parent(self);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   g_free(priv->style->definition);
@@ -451,13 +455,11 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
   priv->value->widget = self;
 
   if(expr_cache_eval(priv->style))
-  {
     base_widget_style(self);
-  }
 
   g_mutex_lock(&widget_mutex);
-  if(!g_list_find(widgets_scan,self))
-    widgets_scan = g_list_append(widgets_scan,self);
+  if(!g_list_find(widgets_scan, self))
+    widgets_scan = g_list_append(widgets_scan, self);
   g_mutex_unlock(&widget_mutex);
 }
 
@@ -646,7 +648,8 @@ action_t *base_widget_get_action ( GtkWidget *self, gint n,
   GList *iter;
 
   g_return_val_if_fail(IS_BASE_WIDGET(self),NULL);
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+  priv = base_widget_get_instance_private(
+      BASE_WIDGET(base_widget_get_mirror_parent(self)));
 
   for(iter=priv->actions; iter; iter=g_list_next(iter))
   {
@@ -681,10 +684,8 @@ gchar *base_widget_get_value ( GtkWidget *self )
   BaseWidgetPrivate *priv;
 
   g_return_val_if_fail(IS_BASE_WIDGET(self),NULL);
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
-
-  if(priv->mirror_parent)
-    priv = base_widget_get_instance_private(BASE_WIDGET(priv->mirror_parent));
+  priv = base_widget_get_instance_private(
+      BASE_WIDGET(base_widget_get_mirror_parent(self)));
 
   return priv->value->cache;
 }
@@ -761,28 +762,27 @@ void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src )
   }
 }
 
-void base_widget_copy_properties ( GtkWidget *dest, GtkWidget *src )
+GtkWidget *base_widget_mirror ( GtkWidget *src )
 {
   BaseWidgetPrivate *spriv, *dpriv;
   GList *iter;
 
-  g_return_if_fail(IS_BASE_WIDGET(dest) && IS_BASE_WIDGET(src));
+  GtkWidget *dest;
+
+  g_return_val_if_fail(IS_BASE_WIDGET(src),NULL);
+  if(!BASE_WIDGET_GET_CLASS(src)->mirror)
+    return NULL;
+
+  dest = BASE_WIDGET_GET_CLASS(src)->mirror(src);
+
   spriv = base_widget_get_instance_private(BASE_WIDGET(src));
   dpriv = base_widget_get_instance_private(BASE_WIDGET(dest));
 
-  base_widget_copy_actions(dest, src);
-
   if(spriv->tooltip)
     base_widget_set_tooltip( dest, spriv->tooltip->definition );
-  if(spriv->trigger)
-    base_widget_set_trigger( dest, (gchar *)spriv->trigger );
-  else
-    base_widget_set_interval( dest, spriv->interval );
-  base_widget_set_max_width( dest, spriv->maxw );
-  base_widget_set_max_height( dest, spriv->maxh );
-  base_widget_set_state( dest, spriv->user_state, TRUE );
-  base_widget_set_rect( dest, spriv->rect );
-  for(iter=spriv->css;iter;iter=g_list_next(iter))
+  base_widget_set_state(dest, spriv->user_state, TRUE);
+  base_widget_set_rect(dest, spriv->rect);
+  for(iter=spriv->css; iter; iter=g_list_next(iter))
     css_widget_apply(base_widget_get_child(dest), g_strdup(iter->data));
   if(!g_list_find(spriv->mirror_children, dest))
   {
@@ -791,15 +791,18 @@ void base_widget_copy_properties ( GtkWidget *dest, GtkWidget *src )
     base_widget_style(dest);
     base_widget_update_value(dest);
   }
+
+  return dest;
 }
 
-GtkWidget *base_widget_mirror ( GtkWidget *src )
+GList *base_widget_get_mirror_children ( GtkWidget *self )
 {
-  g_return_val_if_fail(IS_BASE_WIDGET(src),NULL);
-  if(!BASE_WIDGET_GET_CLASS(src)->mirror)
-    return NULL;
+  BaseWidgetPrivate *priv;
 
-  return BASE_WIDGET_GET_CLASS(src)->mirror(src);
+  g_return_val_if_fail(IS_BASE_WIDGET(self), NULL);
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  return priv->mirror_children;
 }
 
 GtkWidget *base_widget_get_mirror_parent ( GtkWidget *self )
@@ -826,7 +829,7 @@ gboolean base_widget_emit_trigger ( const gchar *trigger )
 
   scanner_invalidate();
   g_mutex_lock(&widget_mutex);
-  for(iter=widgets_scan;iter!=NULL;iter=g_list_next(iter))
+  for(iter=widgets_scan; iter!=NULL; iter=g_list_next(iter))
   {
     priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
     if(!priv->trigger || trigger!=priv->trigger)
@@ -856,7 +859,7 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
     ctime = g_get_monotonic_time();
 
     g_mutex_lock(&widget_mutex);
-    for(iter=widgets_scan;iter!=NULL;iter=g_list_next(iter))
+    for(iter=widgets_scan; iter!=NULL; iter=g_list_next(iter))
     {
       priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
       if(base_widget_get_next_poll(iter->data)<=ctime)
@@ -865,11 +868,11 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
           g_main_context_invoke(gmc,(GSourceFunc)base_widget_update_value,
               iter->data);
         if(expr_cache_eval(priv->style))
-          g_main_context_invoke(gmc,(GSourceFunc)base_widget_style,
+          g_main_context_invoke(gmc, (GSourceFunc)base_widget_style,
               iter->data);
         base_widget_set_next_poll(iter->data,ctime);
       }
-      timer = MIN(timer,base_widget_get_next_poll(iter->data));
+      timer = MIN(timer, base_widget_get_next_poll(iter->data));
     }
     g_mutex_unlock(&widget_mutex);
 
@@ -884,12 +887,12 @@ void base_widget_autoexec ( GtkWidget *self, gpointer data )
   action_t *action;
 
   if(GTK_IS_CONTAINER(self))
-    gtk_container_forall(GTK_CONTAINER(self),base_widget_autoexec, data);
+    gtk_container_forall(GTK_CONTAINER(self), base_widget_autoexec, data);
 
   if(!IS_BASE_WIDGET(self))
     return;
 
-  action = base_widget_get_action(self,0,0);
+  action = base_widget_get_action(self, 0, 0);
   if(action)
-    action_exec(self,action,NULL,wintree_from_id(wintree_get_focus()),NULL);
+    action_exec(self, action, NULL, wintree_from_id(wintree_get_focus()),NULL);
 }

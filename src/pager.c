@@ -31,7 +31,6 @@ static GtkWidget *pager_mirror ( GtkWidget *src )
   dpriv->pins = g_list_copy_deep(spriv->pins, (GCopyFunc)g_strdup,NULL);
 
   flow_grid_copy_properties(self, src);
-  base_widget_copy_properties(self, src);
 
   return self;
 }

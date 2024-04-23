@@ -23,6 +23,7 @@ typedef gboolean (*parse_func) ( GScanner *, void * );
 
 void config_init ( void );
 gint config_lookup_key ( GScanner *scanner, GHashTable *table );
+gint config_lookup_next_key ( GScanner *scanner, GHashTable *table );
 gchar *config_value_string ( gchar *dest, gchar *string );
 GtkWidget *config_parse ( gchar *, gboolean );
 void config_pipe_read ( gchar *command );
