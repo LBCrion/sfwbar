@@ -208,10 +208,13 @@ void taskbar_shell_set_group_css ( GtkWidget *self, gchar *css )
   g_return_if_fail(IS_TASKBAR_SHELL(self));
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
 
+  if(!css || g_list_find_custom(priv->css, css, (GCompareFunc)g_strcmp0))
+    return;
+
   priv->css = g_list_append(priv->css, g_strdup(css));
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
     if( (taskbar = priv->get_taskbar(self, iter->data, FALSE)) )
-      base_widget_set_css(taskbar, css);
+      base_widget_set_css(taskbar, g_strdup(css));
 
   g_list_foreach(base_widget_get_mirror_children(self),
       (GFunc)taskbar_shell_set_group_css, css);

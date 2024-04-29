@@ -687,9 +687,12 @@ void base_widget_set_css ( GtkWidget *self, gchar *css )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(!css || g_list_find_custom(priv->css, css, (GCompareFunc)g_strcmp0))
+  {
+    g_free(css);
     return;
+  }
 
-  priv->css = g_list_append(priv->css,g_strdup(css));
+  priv->css = g_list_append(priv->css, g_strdup(css));
   css_widget_apply(base_widget_get_child(self), css);
 }
 
