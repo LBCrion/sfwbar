@@ -186,12 +186,12 @@ gdouble config_assign_number ( GScanner *scanner, gchar *expr )
 
 void *config_assign_tokens ( GScanner *scanner, GHashTable *keys, gchar *err )
 {
-  void *res;
+  void *res = NULL;
 
   scanner->max_parse_errors = FALSE;
   if(!config_expect_token(scanner, '=', "Missing '=' after '%s'",
         scanner->value.v_identifier ))
-    return 0;
+    return NULL;
 
   g_scanner_get_next_token(scanner);
   g_scanner_get_next_token(scanner);
