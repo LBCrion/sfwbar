@@ -5,6 +5,7 @@
 #include "flowitem.h"
 #include "workspace.h"
 #include "action.h"
+#include "taskbar.h"
 
 #define TASKBAR_PAGER_TYPE            (taskbar_pager_get_type())
 #define TASKBAR_PAGER(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), TASKBAR_PAGER_TYPE, TaskbarPager))
@@ -31,8 +32,8 @@ struct _TaskbarPagerPrivate
 {
   GtkWidget *button;
   GtkWidget *grid;
+  GtkWidget *shell;
   GtkWidget *taskbar;
-  GtkWidget *tgroup;
   workspace_t *ws;
   gboolean invalid;
   gboolean single;
@@ -42,5 +43,6 @@ struct _TaskbarPagerPrivate
 GType taskbar_pager_get_type ( void );
 
 GtkWidget *taskbar_pager_new( workspace_t *ws, GtkWidget *taskbar );
+GtkWidget *taskbar_pager_get_taskbar ( GtkWidget *, window_t *, gboolean );
 
 #endif

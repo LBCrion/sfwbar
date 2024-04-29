@@ -30,6 +30,7 @@ struct _TaskbarItemPrivate
 {
   GtkWidget *icon;
   GtkWidget *label;
+  GtkWidget *box;
   GtkWidget *taskbar;
   window_t *win;
   action_t **actions;

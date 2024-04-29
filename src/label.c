@@ -24,16 +24,6 @@ static void label_update_value ( GtkWidget *self )
     gtk_label_set_text(GTK_LABEL(priv->label), value);
 }
 
-static GtkWidget *label_get_child ( GtkWidget *self )
-{
-  LabelPrivate *priv;
-
-  g_return_val_if_fail(IS_LABEL(self),NULL);
-  priv = label_get_instance_private(LABEL(self));
-
-  return priv->label;
-}
-
 static GtkWidget *label_mirror ( GtkWidget *src )
 {
   g_return_val_if_fail(IS_LABEL(src), NULL);
@@ -43,25 +33,21 @@ static GtkWidget *label_mirror ( GtkWidget *src )
 static void label_class_init ( LabelClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->update_value = label_update_value;
-  BASE_WIDGET_CLASS(kclass)->get_child = label_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = label_mirror;
 }
 
 static void label_init ( Label *self )
 {
+  LabelPrivate *priv;
+
+  priv = label_get_instance_private(LABEL(self));
+
+  priv->label = gtk_label_new("");
+  gtk_label_set_ellipsize(GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
+  gtk_container_add(GTK_CONTAINER(self), priv->label);
 }
 
 GtkWidget *label_new ( void )
 {
-  GtkWidget *self;
-  LabelPrivate *priv;
-
-  self = GTK_WIDGET(g_object_new(label_get_type(), NULL));
-  priv = label_get_instance_private(LABEL(self));
-
-  priv->label = gtk_label_new("");
-  gtk_label_set_ellipsize(GTK_LABEL(priv->label),PANGO_ELLIPSIZE_END);
-  gtk_container_add(GTK_CONTAINER(self),priv->label);
-
-  return self;
+  return GTK_WIDGET(g_object_new(label_get_type(), NULL));
 }

@@ -38,22 +38,19 @@ static void tray_class_init ( TrayClass *kclass )
 
 static void tray_init ( Tray *self )
 {
-}
-
-GtkWidget *tray_new ( void )
-{
-  GtkWidget *self;
-
-  self = GTK_WIDGET(g_object_new(tray_get_type(), NULL));
-  gtk_grid_set_column_homogeneous(GTK_GRID(base_widget_get_child(self)), FALSE);
+  gtk_grid_set_column_homogeneous(
+      GTK_GRID(base_widget_get_child(GTK_WIDGET(self))), FALSE);
 
   if(!trays)
     sni_init();
 
   trays = g_list_append(trays, self);
   g_list_foreach(sni_item_get_list(), (GFunc)tray_item_new, self);
+}
 
-  return self;
+GtkWidget *tray_new ( void )
+{
+  return GTK_WIDGET(g_object_new(tray_get_type(), NULL));
 }
 
 void tray_invalidate_all ( SniItem *sni )

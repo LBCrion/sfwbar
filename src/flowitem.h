@@ -24,6 +24,8 @@ struct _FlowItemClass
   BaseWidgetClass parent_class;
 
   void (*update) ( GtkWidget *self );
+  void (*decorate) (GtkWidget *, gboolean, gboolean);
+  void (*set_title_width) (GtkWidget *, gint);
   void (*invalidate) ( GtkWidget *self );
   void* (*get_source) ( GtkWidget *self );
   gint (*compare) (GtkWidget *, GtkWidget *, GtkWidget *);
@@ -46,9 +48,12 @@ void flow_item_invalidate ( GtkWidget *self );
 void *flow_item_get_source ( GtkWidget *self );
 void flow_item_set_parent ( GtkWidget *self, GtkWidget *parent );
 void flow_item_set_active ( GtkWidget *self, gboolean );
+GtkWidget *flow_item_get_parent ( GtkWidget *self );
 gboolean flow_item_get_active ( GtkWidget *self );
 gint flow_item_compare ( GtkWidget *p1, GtkWidget *p2, GtkWidget *parent );
 void flow_item_dnd_dest ( GtkWidget *self, GtkWidget *src, gint x, gint y );
 gint flow_item_check_source ( GtkWidget *self, gconstpointer source );
+void flow_item_decorate ( GtkWidget *, gboolean, gboolean );
+void flow_item_set_title_width ( GtkWidget *, gint );
 
 #endif

@@ -5,6 +5,7 @@
 
 #include "wintree.h"
 #include "taskbar.h"
+#include "taskbarshell.h"
 #include "switcher.h"
 
 static struct wintree_api api;
@@ -146,7 +147,7 @@ void wintree_commit ( window_t *win )
   if(!win)
     return;
 
-  taskbar_invalidate_item(win);
+  taskbar_shell_invalidate_item(win);
   switcher_invalidate(win);
 }
 
@@ -178,12 +179,12 @@ void wintree_set_app_id ( gpointer wid, const gchar *app_id)
   win = wintree_from_id(wid);
   if(!win || !g_strcmp0(win->appid, app_id))
     return;
-  taskbar_destroy_item (win);
+  taskbar_shell_destroy_item (win);
   g_free(win->appid);
   win->appid = g_strdup(app_id);
   if(!win->title)
     win->title = g_strdup(app_id);
-  taskbar_init_item (win);
+  taskbar_shell_init_item (win);
 
   wintree_commit(win);
 }
@@ -196,14 +197,14 @@ void wintree_set_workspace ( gpointer wid, gpointer wsid )
   if(!win || win->workspace == wsid)
     return;
 
-  taskbar_destroy_item (win);
+  taskbar_shell_destroy_item (win);
   workspace_unref(win->workspace);
   if(!wsid)
     win->workspace = NULL;
   else
     win->workspace = wsid;
   workspace_ref(wsid);
-  taskbar_init_item (win);
+  taskbar_shell_init_item (win);
 }
 
 void wintree_set_float ( gpointer wid, gboolean floating )
@@ -227,7 +228,7 @@ void wintree_window_append ( window_t *win )
     win->appid = g_strdup("");
   if( !win->valid )
   {
-    taskbar_init_item  (win);
+    taskbar_shell_init_item  (win);
     win->valid = TRUE;
   }
   if(win->title || win->appid)
@@ -250,7 +251,7 @@ void wintree_window_delete ( gpointer id )
   win = iter->data;
 
   wt_list = g_list_delete_link(wt_list, iter);
-  taskbar_destroy_item (win);
+  taskbar_shell_destroy_item (win);
   switcher_window_delete(win);
   workspace_unref(win->workspace);
   g_free(win->appid);

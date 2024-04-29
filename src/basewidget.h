@@ -19,7 +19,6 @@ struct _BaseWidgetClass
 
   void (*update_value)(GtkWidget *self);
   void (*old_size_allocate)(GtkWidget *, GtkAllocation * );
-  GtkWidget *(*get_child)(GtkWidget *self);
   GtkWidget *(*mirror)(GtkWidget *self);
   gboolean (*action_exec)( GtkWidget *self, gint slot, GdkEvent *ev );
   void (*action_configure)( GtkWidget *self, gint slot );

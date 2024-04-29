@@ -59,7 +59,7 @@ static void css_custom_handle ( GtkWidget *widget )
   }
   if(IS_BASE_WIDGET(widget))
   {
-    gtk_widget_style_get(base_widget_get_child(widget), "max-width", &x,NULL);
+    gtk_widget_style_get(base_widget_get_child(widget), "max-width", &x, NULL);
     base_widget_set_max_width(widget, x);
     gtk_widget_style_get(base_widget_get_child(widget), "max-height", &x,NULL);
     base_widget_set_max_height(widget, x);

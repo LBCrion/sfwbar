@@ -12,6 +12,7 @@
 #include "../label.h"
 #include "../cchart.h"
 #include "../grid.h"
+#include "../taskbarshell.h"
 #include "../taskbar.h"
 #include "../pager.h"
 #include "../popup.h"
@@ -157,16 +158,21 @@ gboolean config_flowgrid_property ( GScanner *scanner, GtkWidget *widget )
       flow_grid_set_rows(widget, config_assign_number(scanner, "rows"));
       return TRUE;
     case G_TOKEN_PRIMARY:
-      flow_grid_set_primary(widget, config_assign_tokens(scanner,
-            config_axis_keys, "Invalid value in 'primary = rows|cols'"));
+      flow_grid_set_primary(widget, GPOINTER_TO_INT(config_assign_tokens(
+              scanner, config_axis_keys,
+              "Invalid value in 'primary = rows|cols'")));
       return TRUE;
     case G_TOKEN_ICONS:
-      g_object_set_data(G_OBJECT(widget),"icons",
-        GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "icons")));
+//      g_object_set_data(G_OBJECT(widget),"icons",
+//        GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "icons")));
+      flow_grid_set_icons(widget,
+          config_assign_boolean(scanner, FALSE, "icons"));
       return TRUE;
     case G_TOKEN_LABELS:
-      g_object_set_data(G_OBJECT(widget),"labels",
-        GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "labels")));
+//      g_object_set_data(G_OBJECT(widget),"labels",
+//        GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "labels")));
+      flow_grid_set_labels(widget,
+          config_assign_boolean(scanner, FALSE, "labels"));
       return TRUE;
     case G_TOKEN_SORT:
       flow_grid_set_sort(widget,
@@ -244,18 +250,18 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         return TRUE;
     }
 
-  if(IS_TASKBAR(widget))
+  if(IS_TASKBAR_SHELL(widget))
     switch(key)
     {
       case G_TOKEN_PEROUTPUT:
         if(config_assign_boolean(scanner,FALSE,"filter_output"))
-          taskbar_set_filter(widget,G_TOKEN_OUTPUT);
+          taskbar_shell_set_filter(widget,G_TOKEN_OUTPUT);
         g_message("'filter_output' is deprecated, please use 'filter = output' instead");
         return TRUE;
       case G_TOKEN_FILTER:
-        taskbar_set_filter(widget,config_assign_tokens(scanner,
-              config_filter_keys,
-              "Invalid value in 'filter = output|workspace|floating'"));
+        taskbar_shell_set_filter(widget, GPOINTER_TO_INT(config_assign_tokens(
+                scanner, config_filter_keys,
+              "Invalid value in 'filter = output|workspace|floating'")));
         return TRUE;
       case G_TOKEN_TITLEWIDTH:
         g_object_set_data(G_OBJECT(widget),"title_width",
@@ -264,7 +270,7 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
       case G_TOKEN_GROUP:
         if(g_scanner_peek_next_token(scanner) == '=')
         {
-          taskbar_set_grouping(widget, config_assign_tokens(scanner,
+          taskbar_shell_set_api(widget, config_assign_tokens(scanner,
                 config_taskbar_types,
                 "Invalid value in taskbar = false|popup|pager"));
           return TRUE;
@@ -273,39 +279,39 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         switch(config_lookup_key(scanner, config_flowgrid_props))
         {
           case G_TOKEN_COLS:
-            g_object_set_data(G_OBJECT(widget),"g_cols",GINT_TO_POINTER(
-              (gint)config_assign_number(scanner,"group cols")));
+            taskbar_shell_set_group_cols(widget,
+                (gint)config_assign_number(scanner, "group cols"));
             return TRUE;
           case G_TOKEN_ROWS:
-            g_object_set_data(G_OBJECT(widget),"g_rows",GINT_TO_POINTER(
-              (gint)config_assign_number(scanner,"group rows")));
+            taskbar_shell_set_group_rows(widget,
+                (gint)config_assign_number(scanner, "group rows"));
             return TRUE;
           case G_TOKEN_ICONS:
-            g_object_set_data(G_OBJECT(widget),"g_icons",
-              GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"group icons")));
+            taskbar_shell_set_group_icons(widget,
+                config_assign_boolean(scanner, FALSE, "group icons"));
             return TRUE;
           case G_TOKEN_LABELS:
-            g_object_set_data(G_OBJECT(widget),"g_labels",
-              GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"group labels")));
+            taskbar_shell_set_group_labels(widget,
+                config_assign_boolean(scanner, FALSE, "group labels"));
             return TRUE;
           case G_TOKEN_SORT:
-            g_object_set_data(G_OBJECT(widget), "g_sort", GINT_TO_POINTER(
-              config_assign_boolean(scanner, TRUE, "group sort")));
+            taskbar_shell_set_group_sort(widget,
+                config_assign_boolean(scanner, TRUE, "group sort"));
+            return TRUE;
+          case G_TOKEN_TITLEWIDTH:
+            taskbar_shell_set_group_title_width(widget,
+                (gint)config_assign_number(scanner, "group title_width"));
             return TRUE;
         }
         switch(config_lookup_key(scanner, config_prop_keys))
         {
           case G_TOKEN_CSS:
-            g_object_set_data_full(G_OBJECT(widget),"g_css",
-              config_assign_string(scanner,"group css"),g_free);
+            taskbar_shell_set_group_css(widget,
+                config_assign_string(scanner,"group css"));
             return TRUE;
           case G_TOKEN_STYLE:
-            g_object_set_data_full(G_OBJECT(widget), "g_style",
-              config_assign_string(scanner, "group style"), g_free);
-            return TRUE;
-          case G_TOKEN_TITLEWIDTH:
-            g_object_set_data(G_OBJECT(widget),"g_title_width",GINT_TO_POINTER(
-              (gint)config_assign_number(scanner, "group title_width")));
+            taskbar_shell_set_group_style(widget,
+                config_assign_string(scanner, "group style"));
             return TRUE;
         }
     }
@@ -343,7 +349,7 @@ GtkWidget *config_widget_new ( gint type, GScanner *scanner )
     case G_TOKEN_INCLUDE:
       return config_include( scanner, FALSE );
     case G_TOKEN_TASKBAR:
-      return taskbar_new(TRUE);
+      return taskbar_shell_new();
     case G_TOKEN_PAGER:
       return pager_new();
     case G_TOKEN_TRAY:

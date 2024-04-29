@@ -4,9 +4,10 @@
  */
 
 #include "sfwbar.h"
+#include "grid.h"
 #include "flowgrid.h"
 #include "taskbaritem.h"
-#include "taskbar.h"
+#include "taskbarshell.h"
 #include "scaleimage.h"
 #include "action.h"
 #include "pager.h"
@@ -68,17 +69,18 @@ window_t *taskbar_item_get_window ( GtkWidget *self )
 static gboolean taskbar_item_check ( GtkWidget *self )
 {
   TaskbarItemPrivate *priv;
-  GtkWidget *taskbar;
+  GtkWidget *taskbar, *holder;
   gboolean floating, result;
 
   g_return_val_if_fail(IS_TASKBAR_ITEM(self), FALSE);
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
 
-  taskbar = g_object_get_data(G_OBJECT(priv->taskbar), "parent_taskbar");
-  if(!taskbar)
+  if( (holder = taskbar_get_parent(priv->taskbar)) )
+    taskbar = flow_item_get_parent(holder);
+  else
     taskbar = priv->taskbar;
 
-  switch(taskbar_get_filter(taskbar, &floating))
+  switch(taskbar_shell_get_filter(taskbar, &floating))
   {
     case G_TOKEN_OUTPUT:
       result = (!priv->win->outputs || g_list_find_custom(priv->win->outputs,
@@ -99,6 +101,52 @@ static gboolean taskbar_item_check ( GtkWidget *self )
     result = !wintree_is_filtered(priv->win);
 
   return result;
+}
+
+static void taskbar_item_decorate ( GtkWidget *self, gboolean labels,
+    gboolean icons )
+{
+  TaskbarItemPrivate *priv;
+  gint dir;
+
+  g_return_if_fail(IS_TASKBAR_ITEM(self));
+  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
+
+  if(!labels && !icons)
+    labels = TRUE;
+
+  if(!!priv->icon == icons && !!priv->label == labels)
+    return;
+
+  g_clear_pointer(&priv->label, gtk_widget_destroy);
+  g_clear_pointer(&priv->icon, gtk_widget_destroy);
+  gtk_widget_style_get(gtk_bin_get_child(GTK_BIN(self)), "direction", &dir,
+      NULL);
+
+  if(icons)
+  {
+    priv->icon = scale_image_new();
+    gtk_grid_attach_next_to(GTK_GRID(priv->box), priv->icon, NULL, dir, 1,1 );
+    if(priv->win)
+      taskbar_item_set_image(priv->icon, priv->win->appid);
+  }
+  if(labels)
+  {
+    priv->label = gtk_label_new(priv->win?priv->win->title:"");
+    gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
+    gtk_grid_attach_next_to(GTK_GRID(priv->box), priv->label, priv->icon, dir, 1,1 );
+  }
+}
+
+static void taskbar_item_set_title_width ( GtkWidget *self, gint title_width )
+{
+  TaskbarItemPrivate *priv;
+
+  g_return_if_fail(IS_TASKBAR_ITEM(self));
+  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
+
+  if(priv->label)
+    gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
 }
 
 static void taskbar_item_update ( GtkWidget *self )
@@ -152,7 +200,7 @@ static gint taskbar_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent
 static void taskbar_item_invalidate ( GtkWidget *self )
 {
   TaskbarItemPrivate *priv;
-  GtkWidget *parent;
+  GtkWidget *holder;
 
   if(!self)
     return;
@@ -162,15 +210,16 @@ static void taskbar_item_invalidate ( GtkWidget *self )
 
   priv->invalid = TRUE;
   flow_grid_invalidate(priv->taskbar);
-  if( (parent = g_object_get_data(G_OBJECT(priv->taskbar), "parent_taskbar")) )
-    flow_item_invalidate(
-        flow_grid_find_child(parent, taskbar_group_id(parent, priv->win)));
+  if( (holder = taskbar_get_parent(priv->taskbar)) )
+      flow_item_invalidate(holder);
 }
 
 static void taskbar_item_class_init ( TaskbarItemClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->action_exec = taskbar_item_action_exec;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_item_update;
+  FLOW_ITEM_CLASS(kclass)->decorate = taskbar_item_decorate;
+  FLOW_ITEM_CLASS(kclass)->set_title_width = taskbar_item_set_title_width;
   FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_item_invalidate;
   FLOW_ITEM_CLASS(kclass)->get_source =
     (void * (*)(GtkWidget *))taskbar_item_get_window;
@@ -185,9 +234,8 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
 {
   GtkWidget *self;
   TaskbarItemPrivate *priv;
-  GtkWidget *box, *button;
+  GtkWidget *button;
   gint dir;
-  gboolean icons, labels;
   gint title_width;
 
   g_return_val_if_fail(IS_TASKBAR(taskbar),NULL);
@@ -201,42 +249,18 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   priv->win = win;
   priv->taskbar = taskbar;
 
-  icons = GPOINTER_TO_INT(g_object_get_data(
-        G_OBJECT(base_widget_get_mirror_parent(taskbar)), "icons"));
-  labels = GPOINTER_TO_INT(g_object_get_data(
-        G_OBJECT(base_widget_get_mirror_parent(taskbar)), "labels"));
   title_width = GPOINTER_TO_INT(
       g_object_get_data(G_OBJECT(taskbar), "title_width"));
   if(!title_width)
     title_width = -1;
-  if(!icons)
-    labels = TRUE;
 
   button = gtk_button_new();
   gtk_container_add(GTK_CONTAINER(self), button);
   gtk_widget_set_name(button, "taskbar_normal");
   gtk_widget_style_get(button,"direction", &dir, NULL);
-  box = gtk_grid_new();
-  gtk_container_add(GTK_CONTAINER(button), box);
+  priv->box = gtk_grid_new();
+  gtk_container_add(GTK_CONTAINER(button), priv->box);
   flow_grid_child_dnd_enable(taskbar, self, button);
-
-  if(icons)
-  {
-    priv->icon = scale_image_new();
-    gtk_grid_attach_next_to(GTK_GRID(box), priv->icon, NULL, dir, 1, 1);
-    taskbar_item_set_image(priv->icon, win->appid);
-  }
-  else
-    priv->icon = NULL;
-  if(labels)
-  {
-    priv->label = gtk_label_new(win->title);
-    gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
-    gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
-    gtk_grid_attach_next_to(GTK_GRID(box), priv->label, priv->icon, dir, 1, 1);
-  }
-  else
-    priv->label = NULL;
 
   priv->actions = g_object_get_data(G_OBJECT(taskbar), "actions");
   g_object_ref_sink(G_OBJECT(self));

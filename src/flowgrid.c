@@ -14,16 +14,6 @@
 G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, BASE_WIDGET_TYPE,
     G_ADD_PRIVATE(FlowGrid))
 
-static GtkWidget *flow_grid_get_child ( GtkWidget *self )
-{
-  FlowGridPrivate *priv;
-
-  g_return_val_if_fail(IS_FLOW_GRID(self), NULL);
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
-
-  return GTK_WIDGET(priv->grid);
-}
-
 static void flow_grid_get_preferred_width (GtkWidget *self, gint *minimal,
     gint *natural)
 {
@@ -102,7 +92,6 @@ static void flow_grid_class_init ( FlowGridClass *kclass )
   widget_class->get_preferred_height = flow_grid_get_preferred_height;
   widget_class->destroy = flow_grid_destroy;
   widget_class->style_updated = flow_grid_style_updated;
-  BASE_WIDGET_CLASS(kclass)->get_child = flow_grid_get_child;
   BASE_WIDGET_CLASS(kclass)->action_configure = flow_grid_action_configure;
 }
 
@@ -121,6 +110,9 @@ static void flow_grid_init ( FlowGrid *self )
   priv->rows = 1;
   priv->cols = 0;
   priv->limit = TRUE;
+  priv->labels = TRUE;
+  priv->icons = FALSE;
+  priv->title_width = -1;
   sig = g_strdup_printf("flow-item-%p", (void *)self);
   priv->dnd_target = gtk_target_entry_new(sig, 0, SFWB_DND_TARGET_FLOW_ITEM);
   g_free(sig);
@@ -161,6 +153,7 @@ GtkTargetEntry *flow_grid_get_dnd_target ( GtkWidget *self )
 void flow_grid_set_cols ( GtkWidget *self, gint cols )
 {
   FlowGridPrivate *priv;
+  GList *iter;
 
   g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
@@ -171,11 +164,14 @@ void flow_grid_set_cols ( GtkWidget *self, gint cols )
     priv->rows = 1;
 
   flow_grid_invalidate(self);
+  for(iter=base_widget_get_mirror_children(self); iter; iter=g_list_next(iter))
+    flow_grid_set_cols(iter->data, priv->cols);
 }
 
 void flow_grid_set_rows ( GtkWidget *self, gint rows )
 {
   FlowGridPrivate *priv;
+  GList *iter;
 
   g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
@@ -187,6 +183,8 @@ void flow_grid_set_rows ( GtkWidget *self, gint rows )
     priv->rows = 1;
 
   flow_grid_invalidate(self);
+  for(iter=base_widget_get_mirror_children(self); iter; iter=g_list_next(iter))
+    flow_grid_set_rows(iter->data, priv->cols);
 }
 
 gint flow_grid_get_cols ( GtkWidget *self )
@@ -269,6 +267,10 @@ void flow_grid_add_child ( GtkWidget *self, GtkWidget *child )
     base_widget_action_configure(child, i);
   priv->children = g_list_append(priv->children, child);
   flow_item_set_parent(child, self);
+  if(FLOW_ITEM_GET_CLASS(child)->decorate)
+    FLOW_ITEM_GET_CLASS(child)->decorate(child, priv->labels, priv->icons);
+  if(FLOW_ITEM_GET_CLASS(child)->set_title_width)
+    FLOW_ITEM_GET_CLASS(child)->set_title_width(child, priv->title_width);
   priv->invalid = TRUE;
 }
 
@@ -367,6 +369,16 @@ void flow_grid_update ( GtkWidget *self )
   css_widget_cascade(self, NULL);
 }
 
+GList *flow_grid_get_children ( GtkWidget *self )
+{
+  FlowGridPrivate *priv;
+
+  g_return_val_if_fail(IS_FLOW_GRID(self),0);
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  return priv->children;
+}
+
 guint flow_grid_n_children ( GtkWidget *self )
 {
   FlowGridPrivate *priv;
@@ -420,6 +432,57 @@ void flow_grid_children_order ( GtkWidget *self, GtkWidget *ref,
 
   flow_item_invalidate(child);
   flow_item_invalidate(ref);
+}
+
+void flow_grid_set_labels ( GtkWidget *self, gboolean labels )
+{
+  FlowGridPrivate *priv;
+  GList *iter;
+
+  g_return_if_fail(IS_FLOW_GRID(self));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  if(priv->labels == labels)
+    return;
+
+  priv->labels = labels;
+  for(iter=priv->children; iter; iter=g_list_next(iter))
+    flow_item_decorate(iter->data, priv->labels, priv->icons);
+}
+
+void flow_grid_set_icons ( GtkWidget *self, gboolean icons )
+{
+  FlowGridPrivate *priv;
+  GList *iter;
+
+  g_return_if_fail(IS_FLOW_GRID(self));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  if(priv->icons == icons)
+    return;
+
+  if(!icons && !priv->labels)
+    priv->labels = TRUE;
+
+  priv->icons = icons;
+  for(iter=priv->children; iter; iter=g_list_next(iter))
+    flow_item_decorate(iter->data, priv->labels, priv->icons);
+}
+
+void flow_grid_set_title_width ( GtkWidget *self, gint width )
+{
+  FlowGridPrivate *priv;
+  GList *iter;
+
+  g_return_if_fail(IS_FLOW_GRID(self));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  if(priv->title_width == width)
+    return;
+
+  priv->title_width = width;
+  for(iter=priv->children; iter; iter=g_list_next(iter))
+    flow_item_set_title_width(iter->data, priv->title_width);
 }
 
 static void flow_grid_dnd_data_rec_cb ( GtkWidget *dest, GdkDragContext *ctx,

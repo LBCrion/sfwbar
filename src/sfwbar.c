@@ -9,7 +9,7 @@
 #include "wayland.h"
 #include "bar.h"
 #include "tray.h"
-#include "taskbar.h"
+#include "taskbarshell.h"
 #include "pager.h"
 #include "switcher.h"
 #include "config.h"
@@ -96,7 +96,7 @@ void log_print ( const gchar *log_domain, GLogLevelFlags log_level,
 
 gboolean shell_timer ( gpointer data )
 {
-  taskbar_update_all();
+  taskbar_shell_update_all();
   switcher_update();
   pager_update_all();
   tray_update();
@@ -168,7 +168,7 @@ static void activate (GtkApplication* app, gpointer data )
         g_main_context_get_thread_default()));
 
   action_function_exec("SfwBarInit",NULL,NULL,NULL,NULL);
-  taskbar_populate();
+  taskbar_shell_populate();
   switcher_populate();
 
   g_timeout_add (100,(GSourceFunc )shell_timer,NULL);

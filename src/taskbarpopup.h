@@ -4,6 +4,7 @@
 #include "sfwbar.h" 
 #include "flowitem.h"
 #include "action.h"
+#include "taskbar.h"
 
 #define TASKBAR_POPUP_TYPE            (taskbar_popup_get_type())
 #define TASKBAR_POPUP(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), TASKBAR_POPUP_TYPE, TaskbarPopup))
@@ -31,7 +32,7 @@ struct _TaskbarPopupPrivate
   GtkWidget *icon;
   GtkWidget *label;
   GtkWidget *button;
-  GtkWidget *taskbar;
+  GtkWidget *shell;
   GtkWidget *tgroup;
   GtkWidget *popover;
   gchar *appid;
@@ -43,5 +44,6 @@ GType taskbar_popup_get_type ( void );
 
 GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *taskbar );
 void taskbar_popup_pop_child ( GtkWidget *self, GtkWidget *child );
+GtkWidget *taskbar_popup_get_taskbar ( GtkWidget *, window_t *, gboolean );
 
 #endif

@@ -72,15 +72,15 @@ static void base_widget_size_allocate ( GtkWidget *self, GtkAllocation *alloc )
 
   if(priv->maxw)
   {
-    gtk_widget_get_preferred_width(gtk_bin_get_child(GTK_BIN(self)),&m,&n);
-    alloc->width = MAX(m,MIN(priv->maxw,alloc->width));
+    gtk_widget_get_preferred_width(base_widget_get_child(self), &m, &n);
+    alloc->width = MAX(m,MIN(priv->maxw, alloc->width));
   }
   if(priv->maxh)
   {
-    gtk_widget_get_preferred_height(gtk_bin_get_child(GTK_BIN(self)),&m,&n);
-    alloc->height = MAX(m,MIN(priv->maxh,alloc->height));
+    gtk_widget_get_preferred_height(base_widget_get_child(self), &m, &n);
+    alloc->height = MAX(m,MIN(priv->maxh, alloc->height));
   }
-  BASE_WIDGET_GET_CLASS(self)->old_size_allocate(self,alloc);
+  BASE_WIDGET_GET_CLASS(self)->old_size_allocate(self, alloc);
 }
 
 static void base_widget_get_pref_width ( GtkWidget *self, gint *m, gint *n )
@@ -92,7 +92,7 @@ static void base_widget_get_pref_width ( GtkWidget *self, gint *m, gint *n )
   *n = 0;
   g_return_if_fail(IS_BASE_WIDGET(self));
 
-  child = gtk_bin_get_child(GTK_BIN(self));
+  child = base_widget_get_child(self);
   if(child && gtk_widget_get_visible(child))
   {
     priv = base_widget_get_instance_private(BASE_WIDGET(self));
@@ -111,7 +111,7 @@ static void base_widget_get_pref_height ( GtkWidget *self, gint *m, gint *n )
   *n = 0;
   g_return_if_fail(IS_BASE_WIDGET(self));
 
-  child = gtk_bin_get_child(GTK_BIN(self));
+  child = base_widget_get_child(self);
   if(child && gtk_widget_get_visible(child))
   {
     priv = base_widget_get_instance_private(BASE_WIDGET(self));
@@ -281,19 +281,12 @@ static void base_widget_action_configure_impl ( GtkWidget *self, gint slot )
   }
 }
 
-GtkWidget *base_widget_get_child_impl ( GtkWidget *self )
-{
-  g_return_val_if_fail(IS_BASE_WIDGET(self), NULL);
-  return gtk_bin_get_child(GTK_BIN(self));
-}
-
 static void base_widget_class_init ( BaseWidgetClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = base_widget_destroy;
   kclass->old_size_allocate = GTK_WIDGET_CLASS(kclass)->size_allocate;
   kclass->action_exec = base_widget_action_exec_impl;
   kclass->action_configure = base_widget_action_configure_impl;
-  kclass->get_child = base_widget_get_child_impl;
   GTK_WIDGET_CLASS(kclass)->size_allocate = base_widget_size_allocate;
   GTK_WIDGET_CLASS(kclass)->get_preferred_width = base_widget_get_pref_width;
   GTK_WIDGET_CLASS(kclass)->get_preferred_height = base_widget_get_pref_height;
@@ -344,12 +337,8 @@ static gboolean base_widget_tooltip_update ( GtkWidget *self,
 
 GtkWidget *base_widget_get_child ( GtkWidget *self )
 {
-  g_return_val_if_fail(IS_BASE_WIDGET(self),NULL);
-
-  if(BASE_WIDGET_GET_CLASS(self)->get_child)
-    return BASE_WIDGET_GET_CLASS(self)->get_child(self);
-  else
-    return NULL;
+  g_return_val_if_fail(IS_BASE_WIDGET(self), NULL);
+  return gtk_bin_get_child(GTK_BIN(self));
 }
 
 gboolean base_widget_update_value ( GtkWidget *self )

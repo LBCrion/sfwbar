@@ -6,6 +6,8 @@
 #include "../config.h"
 #include "../sfwbar.h"
 #include "../taskbar.h"
+#include "../taskbarpager.h"
+#include "../taskbarpopup.h"
 
 GHashTable *config_mods, *config_events, *config_var_types, *config_act_cond;
 GHashTable *config_toplevel_keys, *config_menu_keys, *config_scanner_keys;
@@ -130,10 +132,10 @@ void config_init ( void )
 
   config_taskbar_types = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);
-  config_add_key(config_taskbar_types, "True", TASKBAR_POPUP);
-  config_add_key(config_taskbar_types, "False", TASKBAR_NORMAL);
-  config_add_key(config_taskbar_types, "PopUp", TASKBAR_POPUP);
-  config_add_key(config_taskbar_types, "Pager", TASKBAR_DESK);
+  g_hash_table_insert(config_taskbar_types, "False", taskbar_get_taskbar); 
+  g_hash_table_insert(config_taskbar_types, "True", taskbar_popup_get_taskbar); 
+  g_hash_table_insert(config_taskbar_types, "PopUp", taskbar_popup_get_taskbar); 
+  g_hash_table_insert(config_taskbar_types, "Pager", taskbar_pager_get_taskbar); 
 
   config_widget_keys = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);

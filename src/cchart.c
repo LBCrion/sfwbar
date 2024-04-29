@@ -21,17 +21,6 @@ static void cchart_update_value ( GtkWidget *self )
 
   if(!g_strrstr(value,"nan"))
       chart_update(priv->chart,g_ascii_strtod(value,NULL));
-
-}
-
-static GtkWidget *cchart_get_child ( GtkWidget *self )
-{
-  CChartPrivate *priv;
-
-  g_return_val_if_fail(IS_CCHART(self),NULL);
-  priv = cchart_get_instance_private(CCHART(self));
-
-  return priv->chart;
 }
 
 static GtkWidget *cchart_mirror ( GtkWidget *src )
@@ -43,25 +32,21 @@ static GtkWidget *cchart_mirror ( GtkWidget *src )
 static void cchart_class_init ( CChartClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->update_value = cchart_update_value;
-  BASE_WIDGET_CLASS(kclass)->get_child = cchart_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = cchart_mirror;
 }
 
 static void cchart_init ( CChart *self )
 {
-  base_widget_set_always_update(GTK_WIDGET(self),TRUE);
+  CChartPrivate *priv;
+
+  priv = cchart_get_instance_private(CCHART(self));
+
+  base_widget_set_always_update(GTK_WIDGET(self), TRUE);
+  priv->chart = chart_new();
+  gtk_container_add(GTK_CONTAINER(self),priv->chart);
 }
 
 GtkWidget *cchart_new ( void )
 {
-  GtkWidget *self;
-  CChartPrivate *priv;
-
-  self = GTK_WIDGET(g_object_new(cchart_get_type(), NULL));
-  priv = cchart_get_instance_private(CCHART(self));
-
-  priv->chart = chart_new();
-  gtk_container_add(GTK_CONTAINER(self),priv->chart);
-
-  return self;
+  return GTK_WIDGET(g_object_new(cchart_get_type(), NULL));
 }

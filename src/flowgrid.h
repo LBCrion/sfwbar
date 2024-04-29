@@ -35,6 +35,8 @@ struct _FlowGridPrivate
 {
   gint cols,rows;
   gint primary_axis;
+  gboolean icons, labels;
+  gint title_width;
   gboolean limit;
   gboolean invalid;
   gboolean sort;
@@ -57,6 +59,7 @@ void flow_grid_add_child ( GtkWidget *self, GtkWidget *child );
 void flow_grid_update ( GtkWidget *self );
 void flow_grid_invalidate ( GtkWidget *self );
 void flow_grid_delete_child ( GtkWidget *, void *parent );
+GList *flow_grid_get_children ( GtkWidget *self );
 guint flow_grid_n_children ( GtkWidget *self );
 gpointer flow_grid_find_child ( GtkWidget *, gconstpointer parent );
 void flow_grid_child_dnd_enable ( GtkWidget *, GtkWidget *, GtkWidget *);
@@ -68,5 +71,8 @@ void flow_grid_set_dnd_target ( GtkWidget *self, GtkTargetEntry *target );
 GtkTargetEntry  *flow_grid_get_dnd_target ( GtkWidget *self );
 void flow_grid_children_order ( GtkWidget *self, GtkWidget *ref,
     GtkWidget *child, gboolean after );
+void flow_grid_set_icons ( GtkWidget *self, gboolean icons );
+void flow_grid_set_labels ( GtkWidget *self, gboolean labels );
+void flow_grid_set_title_width ( GtkWidget *self, gint width );
 
 #endif

@@ -55,23 +55,19 @@ static void pager_class_init ( PagerClass *kclass )
 
 static void pager_init ( Pager *self )
 {
-}
-
-GtkWidget *pager_new ( void )
-{
-  GtkWidget *self;
   GList *iter;
-
-  self = GTK_WIDGET(g_object_new(pager_get_type(), NULL));
 
   pagers = g_list_prepend(pagers, self);
   g_object_set_data(G_OBJECT(self), "sort_numeric", GINT_TO_POINTER(TRUE));
 
   for(iter = workspace_get_list(); iter; iter=g_list_next(iter))
-    pager_item_new(self, iter->data);
-  flow_grid_invalidate(self);
+    pager_item_new(GTK_WIDGET(self), iter->data);
+  flow_grid_invalidate(GTK_WIDGET(self));
+}
 
-  return self;
+GtkWidget *pager_new ( void )
+{
+  return GTK_WIDGET(g_object_new(pager_get_type(), NULL));
 }
 
 void pager_add_pin ( GtkWidget *self, gchar *pin )

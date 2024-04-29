@@ -11,7 +11,7 @@
 #include "wayland.h"
 #include "grid.h"
 #include "config.h"
-#include "taskbar.h"
+#include "taskbarshell.h"
 #include "window.h"
 #include "meson.h"
 
@@ -560,7 +560,7 @@ gboolean bar_update_monitor ( GtkWidget *self )
     if(priv->visible)
     {
       gtk_widget_show_now(self);
-      taskbar_invalidate_all();
+      taskbar_shell_invalidate_all();
     }
   }
 

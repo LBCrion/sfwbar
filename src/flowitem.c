@@ -72,6 +72,16 @@ void flow_item_set_parent ( GtkWidget *self, GtkWidget *parent )
   priv->parent = parent;
 }
 
+GtkWidget *flow_item_get_parent ( GtkWidget *self )
+{
+  FlowItemPrivate *priv;
+
+  g_return_val_if_fail(IS_FLOW_ITEM(self), NULL);
+
+  priv = flow_item_get_instance_private(FLOW_ITEM(self));
+  return priv->parent;
+}
+
 void flow_item_set_active ( GtkWidget *self, gboolean active )
 {
   FlowItemPrivate *priv;
@@ -124,6 +134,20 @@ void *flow_item_get_source ( GtkWidget *self )
     return FLOW_ITEM_GET_CLASS(self)->get_source(self);
   else
     return NULL;
+}
+
+void flow_item_decorate ( GtkWidget *self, gboolean labels, gboolean icons )
+{
+  g_return_if_fail(IS_FLOW_ITEM(self));
+  if(FLOW_ITEM_GET_CLASS(self)->decorate)
+    FLOW_ITEM_GET_CLASS(self)->decorate(self, labels, icons);
+}
+
+void flow_item_set_title_width ( GtkWidget *self, gint title_width )
+{
+  g_return_if_fail(IS_FLOW_ITEM(self));
+  if(FLOW_ITEM_GET_CLASS(self)->set_title_width)
+    FLOW_ITEM_GET_CLASS(self)->set_title_width(self, title_width);
 }
 
 gint flow_item_check_source ( GtkWidget *self, gconstpointer source )

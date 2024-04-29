@@ -19,16 +19,6 @@ static void grid_destroy ( GtkWidget *self )
   GTK_WIDGET_CLASS(grid_parent_class)->destroy(self);
 }
 
-static GtkWidget *grid_get_child ( GtkWidget *self )
-{
-  GridPrivate *priv;
-
-  g_return_val_if_fail(IS_GRID(self),NULL);
-  priv = grid_get_instance_private(GRID(self));
-
-  return priv->grid;
-}
-
 static GtkWidget *grid_mirror ( GtkWidget *src )
 {
   GridPrivate *priv;
@@ -84,20 +74,13 @@ static void grid_remove ( GtkWidget *grid, GtkWidget *child, GtkWidget *self )
 static void grid_class_init ( GridClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = grid_destroy;
-  BASE_WIDGET_CLASS(kclass)->get_child = grid_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = grid_mirror;
 }
 
 static void grid_init ( Grid *self )
 {
-}
-
-GtkWidget *grid_new ( void )
-{
-  GtkWidget *self;
   GridPrivate *priv;
 
-  self = GTK_WIDGET(g_object_new(grid_get_type(), NULL));
   priv = grid_get_instance_private(GRID(self));
 
   priv->grid = gtk_grid_new();
@@ -106,8 +89,11 @@ GtkWidget *grid_new ( void )
       (GCallback)grid_style_updated,self);
   g_signal_connect(G_OBJECT(priv->grid),"remove",
       (GCallback)grid_remove,self);
+}
 
-  return self;
+GtkWidget *grid_new ( void )
+{
+  return GTK_WIDGET(g_object_new(grid_get_type(), NULL));
 }
 
 static void grid_detach( GtkWidget *child, GtkWidget *self )

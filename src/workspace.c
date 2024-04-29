@@ -5,7 +5,7 @@
 
 #include "workspace.h"
 #include "pager.h"
-#include "taskbar.h"
+#include "taskbarshell.h"
 
 static struct workspace_api api;
 static GList *global_pins;
@@ -185,7 +185,7 @@ void workspace_set_focus ( gpointer id )
   pager_invalidate_all(focus);
   focus = ws;
   pager_invalidate_all(focus);
-  taskbar_invalidate_all();
+  taskbar_shell_invalidate_all();
 }
 
 void workspace_new ( workspace_t *new )

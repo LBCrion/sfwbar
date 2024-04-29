@@ -184,9 +184,9 @@ gdouble config_assign_number ( GScanner *scanner, gchar *expr )
   return result;
 }
 
-gint config_assign_tokens ( GScanner *scanner, GHashTable *keys, gchar *error )
+void *config_assign_tokens ( GScanner *scanner, GHashTable *keys, gchar *err )
 {
-  gint res;
+  void *res;
 
   scanner->max_parse_errors = FALSE;
   if(!config_expect_token(scanner, '=', "Missing '=' after '%s'",
@@ -196,8 +196,9 @@ gint config_assign_tokens ( GScanner *scanner, GHashTable *keys, gchar *error )
   g_scanner_get_next_token(scanner);
   g_scanner_get_next_token(scanner);
 
-  if( !(res = config_lookup_key(scanner, keys)) )
-    g_scanner_error(scanner, "%s", error);
+  if( scanner->token != G_TOKEN_IDENTIFIER ||
+      !(res = g_hash_table_lookup(keys, scanner->value.v_identifier)) )
+    g_scanner_error(scanner, "%s", err);
   config_optional_semicolon(scanner);
 
   return res;

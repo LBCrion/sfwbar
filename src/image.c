@@ -21,16 +21,6 @@ static void image_update_value ( GtkWidget *self )
       base_widget_get_value(self),NULL);
 }
 
-static GtkWidget *image_get_child ( GtkWidget *self )
-{
-  ImagePrivate *priv;
-
-  g_return_val_if_fail(IS_IMAGE(self),NULL);
-  priv = image_get_instance_private(IMAGE(self));
-
-  return priv->image;
-}
-
 static GtkWidget *image_mirror ( GtkWidget *src )
 {
   g_return_val_if_fail(IS_IMAGE(src),NULL);
@@ -40,24 +30,20 @@ static GtkWidget *image_mirror ( GtkWidget *src )
 static void image_class_init ( ImageClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->update_value = image_update_value;
-  BASE_WIDGET_CLASS(kclass)->get_child = image_get_child;
   BASE_WIDGET_CLASS(kclass)->mirror = image_mirror;
 }
 
 static void image_init ( Image *self )
 {
-}
-
-GtkWidget *image_new ( void )
-{
-  GtkWidget *self;
   ImagePrivate *priv;
 
-  self = GTK_WIDGET(g_object_new(image_get_type(), NULL));
   priv = image_get_instance_private(IMAGE(self));
 
   priv->image = scale_image_new();
   gtk_container_add(GTK_CONTAINER(self),priv->image);
+}
 
-  return self;
+GtkWidget *image_new ( void )
+{
+  return GTK_WIDGET(g_object_new(image_get_type(), NULL));
 }

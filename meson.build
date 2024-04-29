@@ -86,6 +86,7 @@ libsrc = [
     'src/taskbaritem.c',
     'src/taskbarpager.c',
     'src/taskbarpopup.c',
+    'src/taskbarshell.c',
     'src/tray.c',
     'src/trayitem.c',
     'src/wayland.c',

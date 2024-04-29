@@ -6,7 +6,8 @@
 #include "sfwbar.h"
 #include "flowgrid.h"
 #include "taskbarpager.h"
-#include "taskbar.h"
+#include "taskbarshell.h"
+#include "taskbaritem.h"
 #include "pager.h"
 #include "scaleimage.h"
 #include "action.h"
@@ -19,6 +20,27 @@
 G_DEFINE_TYPE_WITH_CODE (TaskbarPager, taskbar_pager, FLOW_ITEM_TYPE,
     G_ADD_PRIVATE(TaskbarPager))
 
+GtkWidget *taskbar_pager_get_taskbar ( GtkWidget *shell, window_t *win,
+    gboolean create )
+{
+  TaskbarPagerPrivate *priv;
+  workspace_t *ws;
+  GtkWidget *holder;
+
+  if( !(ws = workspace_from_id(win->workspace)) )
+    return NULL;
+
+  if( !(holder = flow_grid_find_child(shell, ws)) )
+  {
+    if(!create)
+      return NULL;
+    holder = taskbar_pager_new(ws, shell);
+  }
+
+  priv = taskbar_pager_get_instance_private(TASKBAR_PAGER(holder));
+  return priv->taskbar;
+}
+
 static gpointer taskbar_pager_get_ws ( GtkWidget *self )
 {
   TaskbarPagerPrivate *priv;
@@ -27,6 +49,30 @@ static gpointer taskbar_pager_get_ws ( GtkWidget *self )
   priv = taskbar_pager_get_instance_private(TASKBAR_PAGER(self));
 
   return priv->ws;
+}
+
+static void taskbar_pager_decorate ( GtkWidget *self, gboolean labels,
+    gboolean icons )
+{
+  TaskbarPagerPrivate *priv;
+
+  g_return_if_fail(IS_TASKBAR_PAGER(self));
+  priv = taskbar_pager_get_instance_private(TASKBAR_PAGER(self));
+
+  if(labels == !!priv->button)
+    return;
+
+  if(!labels && priv->button)
+    gtk_widget_destroy(priv->button);
+  else
+  {
+    g_object_ref(priv->taskbar);
+    gtk_container_remove(GTK_CONTAINER(priv->grid), priv->taskbar);
+    priv->button = gtk_button_new_with_label("");
+    gtk_container_add(GTK_CONTAINER(priv->grid), priv->button);
+    gtk_container_add(GTK_CONTAINER(priv->grid), priv->taskbar);
+    g_object_unref(priv->taskbar);
+  }
 }
 
 static void taskbar_pager_update ( GtkWidget *self )
@@ -40,11 +86,11 @@ static void taskbar_pager_update ( GtkWidget *self )
     return;
 
   title = priv->ws? priv->ws->name: NULL;
-  if(g_object_get_data(G_OBJECT(priv->taskbar), "labels") &&
-      g_strcmp0(gtk_button_get_label(GTK_BUTTON(priv->button)),title))
-    gtk_button_set_label(GTK_BUTTON(priv->button),title);
+  if(priv->button &&
+      g_strcmp0(gtk_button_get_label(GTK_BUTTON(priv->button)), title))
+    gtk_button_set_label(GTK_BUTTON(priv->button), title);
 
-  if (flow_grid_find_child(priv->tgroup, wintree_from_id(wintree_get_focus())))
+  if (flow_grid_find_child(priv->taskbar, wintree_from_id(wintree_get_focus())))
     gtk_widget_set_name(base_widget_get_child(self), "taskbar_pager_active");
   else
     gtk_widget_set_name(base_widget_get_child(self), "taskbar_pager_normal");
@@ -52,8 +98,8 @@ static void taskbar_pager_update ( GtkWidget *self )
   gtk_widget_unset_state_flags(base_widget_get_child(self),
       GTK_STATE_FLAG_PRELIGHT);
 
-  flow_grid_update(priv->tgroup);
-  flow_item_set_active(self, flow_grid_n_children(priv->tgroup)>0 );
+  flow_grid_update(priv->taskbar);
+  flow_item_set_active(self, flow_grid_n_children(priv->taskbar)>0 );
 
   priv->invalid = FALSE;
 }
@@ -108,20 +154,8 @@ static void taskbar_pager_invalidate ( GtkWidget *self )
   g_return_if_fail(IS_TASKBAR_PAGER(self));
   priv = taskbar_pager_get_instance_private(TASKBAR_PAGER(self));
 
-  flow_grid_invalidate(priv->taskbar);
+  flow_grid_invalidate(priv->shell);
   priv->invalid = TRUE;
-}
-
-static GtkWidget *taskbar_pager_get_taskbar ( GtkWidget *self )
-{
-  TaskbarPagerPrivate *priv;
-
-  if(!self)
-    return NULL;
-
-  g_return_val_if_fail(IS_TASKBAR_PAGER(self), NULL);
-  priv = taskbar_pager_get_instance_private(TASKBAR_PAGER(self));
-  return priv->tgroup;
 }
 
 static void taskbar_pager_dnd_dest ( GtkWidget *dest, GtkWidget *src,
@@ -140,7 +174,7 @@ static void taskbar_pager_dnd_dest ( GtkWidget *dest, GtkWidget *src,
 static void taskbar_pager_class_init ( TaskbarPagerClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->action_exec = taskbar_pager_action_exec;
-  BASE_WIDGET_CLASS(kclass)->get_child = taskbar_pager_get_taskbar;
+  FLOW_ITEM_CLASS(kclass)->decorate = taskbar_pager_decorate;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_pager_update;
   FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_pager_invalidate;
   FLOW_ITEM_CLASS(kclass)->get_source = taskbar_pager_get_ws;
@@ -152,58 +186,31 @@ static void taskbar_pager_init ( TaskbarPager *self )
 {
 }
 
-GtkWidget *taskbar_pager_new( workspace_t *ws, GtkWidget *taskbar )
+GtkWidget *taskbar_pager_new( workspace_t *ws, GtkWidget *shell )
 {
   GtkWidget *self;
   TaskbarPagerPrivate *priv;
 
-  g_return_val_if_fail(IS_TASKBAR(taskbar),NULL);
+  g_return_val_if_fail(IS_TASKBAR_SHELL(shell), NULL);
 
   self = GTK_WIDGET(g_object_new(taskbar_pager_get_type(), NULL));
   priv = taskbar_pager_get_instance_private(TASKBAR_PAGER(self));
 
-  priv->taskbar = taskbar;
-  priv->tgroup = taskbar_new(FALSE);
-  flow_grid_set_dnd_target(priv->tgroup, flow_grid_get_dnd_target(taskbar));
-  flow_grid_child_dnd_enable(taskbar, self, NULL);
-  g_object_set_data(G_OBJECT(priv->tgroup), "parent_taskbar", taskbar);
+  priv->shell = shell;
+  priv->taskbar = taskbar_new(self);
+  flow_grid_set_dnd_target(priv->taskbar, flow_grid_get_dnd_target(shell));
+  flow_grid_child_dnd_enable(shell, self, NULL);
   priv->ws = ws;
   priv->grid = gtk_grid_new();
   gtk_widget_set_name(GTK_WIDGET(priv->grid), "taskbar_pager");
   gtk_container_add(GTK_CONTAINER(self), priv->grid);
-  if(g_object_get_data(G_OBJECT(priv->taskbar), "labels"))
-  {
-    priv->button = gtk_button_new_with_label("");
-    gtk_container_add(GTK_CONTAINER(priv->grid), priv->button);
-  }
-  gtk_container_add(GTK_CONTAINER(priv->grid), priv->tgroup);
+  gtk_container_add(GTK_CONTAINER(priv->grid), priv->taskbar);
   gtk_widget_show_all(self);
 
-  css_widget_apply(priv->tgroup, g_strdup(
-        g_object_get_data(G_OBJECT(taskbar), "g_css")));
-  base_widget_set_style(priv->tgroup,g_strdup(
-        g_object_get_data(G_OBJECT(taskbar), "g_style")));
-  gtk_widget_show(priv->tgroup);
-
-  if(g_object_get_data(G_OBJECT(taskbar), "g_cols"))
-    flow_grid_set_cols(base_widget_get_child(priv->tgroup), GPOINTER_TO_INT(
-        g_object_get_data(G_OBJECT(taskbar), "g_cols")));
-  if(g_object_get_data(G_OBJECT(taskbar), "g_rows"))
-    flow_grid_set_rows(base_widget_get_child(priv->tgroup), GPOINTER_TO_INT(
-        g_object_get_data(G_OBJECT(taskbar), "g_rows")));
-  g_object_set_data(G_OBJECT(priv->tgroup), "labels",
-        g_object_get_data(G_OBJECT(taskbar), "g_labels"));
-  g_object_set_data(G_OBJECT(priv->tgroup), "icons",
-        g_object_get_data(G_OBJECT(taskbar), "g_icons"));
-  g_object_set_data(G_OBJECT(priv->tgroup), "title_width",
-        g_object_get_data(G_OBJECT(taskbar), "g_title_width"));
-  flow_grid_set_sort(priv->tgroup,
-      GPOINTER_TO_INT(g_object_get_data(G_OBJECT(taskbar), "g_sort")));
-
-  base_widget_copy_actions(priv->tgroup, taskbar);
+  base_widget_copy_actions(priv->taskbar, shell);
 
   g_object_ref_sink(G_OBJECT(self));
-  flow_grid_add_child(taskbar, self);
+  flow_grid_add_child(shell, self);
   flow_item_invalidate(self);
-  return priv->tgroup;
+  return self;
 }

@@ -6,7 +6,7 @@
 #include "sfwbar.h"
 #include "flowgrid.h"
 #include "taskbarpopup.h"
-#include "taskbar.h"
+#include "taskbarshell.h"
 #include "taskbaritem.h"
 #include "scaleimage.h"
 #include "action.h"
@@ -19,6 +19,25 @@
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarPopup, taskbar_popup, FLOW_ITEM_TYPE,
     G_ADD_PRIVATE(TaskbarPopup))
+
+GtkWidget *taskbar_popup_get_taskbar ( GtkWidget *shell, window_t *win,
+    gboolean create )
+{
+  TaskbarPopupPrivate *priv;
+  GtkWidget *holder;
+
+  g_return_val_if_fail(win, NULL);
+
+  if( !(holder = flow_grid_find_child(shell, win->appid)) )
+  {
+    if(!create)
+      return NULL;
+    holder = taskbar_popup_new(win->appid, shell);
+  }
+
+  priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(holder));
+  return priv->tgroup;
+}
 
 static gboolean taskbar_popup_enter_cb ( GtkWidget *widget,
     GdkEventCrossing *event, gpointer self )
@@ -105,6 +124,51 @@ static gchar *taskbar_popup_get_appid ( GtkWidget *self )
   return priv->appid;
 }
 
+static void taskbar_popup_decorate ( GtkWidget *self, gboolean labels,
+    gboolean icons )
+{
+  TaskbarPopupPrivate *priv;
+  GtkWidget *box;
+  gint dir;
+
+  g_return_if_fail(IS_TASKBAR_POPUP(self));
+  priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
+
+  if(!labels && !icons)
+    labels = TRUE;
+
+  if(!!priv->icon == icons && !!priv->label == labels)
+    return;
+
+  g_clear_pointer(&priv->label, gtk_widget_destroy);
+  g_clear_pointer(&priv->icon, gtk_widget_destroy);
+  gtk_widget_style_get(priv->button, "direction", &dir, NULL);
+  if(icons && !priv->icon)
+  {
+    box = gtk_bin_get_child(GTK_BIN(priv->button));
+    priv->icon = scale_image_new();
+    gtk_grid_attach_next_to(GTK_GRID(box), priv->icon, NULL, dir, 1, 1);
+    taskbar_item_set_image(priv->icon, priv->appid);
+  }
+  if(labels && !priv->label)
+  {
+    box = gtk_bin_get_child(GTK_BIN(priv->button));
+    priv->label = gtk_label_new(priv->appid);
+    gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
+    gtk_grid_attach_next_to(GTK_GRID(box), priv->label, priv->icon, dir, 1, 1);
+  }
+}
+
+static void taskbar_popup_set_title_width ( GtkWidget *self, gint title_width )
+{
+  TaskbarPopupPrivate *priv;
+
+  g_return_if_fail(IS_TASKBAR_POPUP(self));
+  priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
+
+  if(priv->label)
+    gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
+}
 static void taskbar_popup_update ( GtkWidget *self )
 {
   TaskbarPopupPrivate *priv;
@@ -187,28 +251,17 @@ static void taskbar_popup_invalidate ( GtkWidget *self )
   g_return_if_fail(IS_TASKBAR_POPUP(self));
   priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
 
-  flow_grid_invalidate(priv->taskbar);
+  flow_grid_invalidate(priv->shell);
   priv->invalid = TRUE;
-}
-
-static GtkWidget *taskbar_popup_get_taskbar ( GtkWidget *self )
-{
-  TaskbarPopupPrivate *priv;
-
-  if(!self)
-    return NULL;
-
-  g_return_val_if_fail(IS_TASKBAR_POPUP(self), NULL);
-  priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
-  return priv->tgroup;
 }
 
 static void taskbar_popup_class_init ( TaskbarPopupClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = taskbar_popup_destroy;
   BASE_WIDGET_CLASS(kclass)->action_exec = taskbar_popup_action_exec;
-  BASE_WIDGET_CLASS(kclass)->get_child = taskbar_popup_get_taskbar;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_popup_update;
+  FLOW_ITEM_CLASS(kclass)->set_title_width = taskbar_popup_set_title_width;
+  FLOW_ITEM_CLASS(kclass)->decorate = taskbar_popup_decorate;
   FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_popup_invalidate;
   FLOW_ITEM_CLASS(kclass)->comp_source = (GCompareFunc)g_strcmp0;
   FLOW_ITEM_CLASS(kclass)->compare = taskbar_popup_compare;
@@ -220,59 +273,25 @@ static void taskbar_popup_init ( TaskbarPopup *self )
 {
 }
 
-GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *taskbar )
+GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *shell )
 {
   GtkWidget *self;
   TaskbarPopupPrivate *priv;
-  gint dir;
-  gboolean icons, labels;
-  gint title_width;
   GtkWidget *box;
 
-  g_return_val_if_fail(IS_TASKBAR(taskbar),NULL);
+  g_return_val_if_fail(IS_TASKBAR_SHELL(shell), NULL);
 
   self = GTK_WIDGET(g_object_new(taskbar_popup_get_type(), NULL));
   priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
 
-  icons = GPOINTER_TO_INT(
-      g_object_get_data(G_OBJECT(taskbar), "icons"));
-  labels = GPOINTER_TO_INT(
-      g_object_get_data(G_OBJECT(taskbar), "labels"));
-  title_width = GPOINTER_TO_INT(
-      g_object_get_data(G_OBJECT(taskbar), "title_width"));
-  if(!title_width)
-    title_width = -1;
-  if(!icons)
-    labels = TRUE;
-
-  priv->taskbar = taskbar;
-  priv->tgroup = taskbar_new(FALSE);
-  g_object_set_data(G_OBJECT(priv->tgroup), "parent_taskbar", taskbar);
+  priv->shell = shell;
+  priv->tgroup = taskbar_new(self);
   priv->appid = g_strdup(appid);
   priv->button = gtk_button_new();
   gtk_container_add(GTK_CONTAINER(self), priv->button);
   gtk_widget_set_name(priv->button, "taskbar_group_normal");
-  gtk_widget_style_get(priv->button, "direction", &dir, NULL);
   box = gtk_grid_new();
   gtk_container_add(GTK_CONTAINER(priv->button), box);
-
-  if(icons)
-  {
-    priv->icon = scale_image_new();
-    gtk_grid_attach_next_to(GTK_GRID(box), priv->icon, NULL, dir, 1, 1);
-    taskbar_item_set_image(priv->icon, priv->appid);
-  }
-  else
-    priv->icon = NULL;
-  if(labels)
-  {
-    priv->label = gtk_label_new(priv->appid);
-    gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
-    gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
-    gtk_grid_attach_next_to(GTK_GRID(box), priv->label, priv->icon, dir, 1, 1);
-  }
-  else
-    priv->label = NULL;
 
   priv->popover = gtk_window_new(GTK_WINDOW_POPUP);
   window_set_unref_func(priv->popover,
@@ -281,9 +300,9 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *taskbar )
   g_object_ref(G_OBJECT(priv->popover));
   gtk_container_add(GTK_CONTAINER(priv->popover), priv->tgroup);
   css_widget_apply(priv->tgroup, g_strdup(
-        g_object_get_data(G_OBJECT(taskbar), "g_css")));
+        g_object_get_data(G_OBJECT(shell), "g_css")));
   base_widget_set_style(priv->tgroup,g_strdup(
-        g_object_get_data(G_OBJECT(taskbar), "g_style")));
+        g_object_get_data(G_OBJECT(shell), "g_style")));
   gtk_widget_show(priv->tgroup);
 
   gtk_widget_add_events(GTK_WIDGET(self),GDK_ENTER_NOTIFY_MASK |
@@ -303,26 +322,11 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *taskbar )
   g_signal_connect(priv->popover, "grab-notify",
       G_CALLBACK(taskbar_popup_grab_cb), self);
 
-  if(g_object_get_data(G_OBJECT(taskbar), "g_cols"))
-    flow_grid_set_cols(priv->tgroup,
-        GPOINTER_TO_INT(g_object_get_data(G_OBJECT(taskbar), "g_cols")));
-  if(g_object_get_data(G_OBJECT(taskbar), "g_rows"))
-    flow_grid_set_rows(priv->tgroup,
-        GPOINTER_TO_INT(g_object_get_data(G_OBJECT(taskbar), "g_rows")));
-  g_object_set_data(G_OBJECT(priv->tgroup), "labels",
-        g_object_get_data(G_OBJECT(taskbar), "g_labels"));
-  g_object_set_data(G_OBJECT(priv->tgroup), "icons",
-        g_object_get_data(G_OBJECT(taskbar), "g_icons"));
-  g_object_set_data(G_OBJECT(priv->tgroup), "title_width",
-        g_object_get_data(G_OBJECT(taskbar), "g_title_width"));
-  flow_grid_set_sort(priv->tgroup,
-      GPOINTER_TO_INT(g_object_get_data(G_OBJECT(taskbar), "g_sort")));
-
-  base_widget_copy_actions(priv->tgroup, taskbar);
+  base_widget_copy_actions(priv->tgroup, shell);
 
   g_object_ref_sink(G_OBJECT(self));
-  flow_grid_add_child(taskbar, self);
+  flow_grid_add_child(shell, self);
 
   flow_item_invalidate(self);
-  return priv->tgroup;
+  return self;
 }
