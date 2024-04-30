@@ -53,7 +53,7 @@ gboolean sfwbar_module_init ( void )
 
 void *idle_inhibit_expr_func ( void **params, void *widget, void *event )
 {
-  if(widget && g_object_get_data(G_OBJECT(widget),"inhibitor"))
+  if(widget && g_object_get_data(G_OBJECT(widget), "inhibitor"))
     return g_strdup("on");
   else
     return g_strdup("off");
@@ -68,31 +68,30 @@ static void idle_inhibitor_action ( gchar *act, gchar *dummy, void *widget,
 
   inhibitor = g_object_get_data(G_OBJECT(widget),"inhibitor");
 
-  if(!g_ascii_strcasecmp(act,"on"))
+  if(!g_ascii_strcasecmp(act, "on"))
     inhibit = TRUE;
-  else if(!g_ascii_strcasecmp(act,"on"))
+  else if(!g_ascii_strcasecmp(act, "off"))
     inhibit = FALSE;
-  else if(!g_ascii_strcasecmp(act,"toggle"))
+  else if(!g_ascii_strcasecmp(act, "toggle"))
     inhibit = (inhibitor == NULL);
   else
     return;
 
   if(inhibit && !inhibitor)
   {
-    surface = gdk_wayland_window_get_wl_surface(
-        gtk_widget_get_window(widget));
-    if(!surface)
+    if( !(surface = gdk_wayland_window_get_wl_surface(
+        gtk_widget_get_window(widget))) )
       return;
 
     inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(
         idle_inhibit_manager, surface );
-    g_object_set_data(G_OBJECT(widget),"inhibitor",inhibitor);
+    g_object_set_data(G_OBJECT(widget), "inhibitor", inhibitor);
     g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
         (gpointer)g_intern_static_string("idleinhibitor"));
   }
   else if( !inhibit && inhibitor )
   {
-    g_object_set_data(G_OBJECT(widget),"inhibitor",NULL);
+    g_object_set_data(G_OBJECT(widget), "inhibitor", NULL);
     zwp_idle_inhibitor_v1_destroy(inhibitor);
     g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
         (gpointer)g_intern_static_string("idleinhibitor"));
