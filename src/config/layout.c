@@ -203,10 +203,10 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
     {
       case G_TOKEN_STYLE:
         base_widget_set_style(widget,
-            config_get_value(scanner,"style",TRUE,NULL));
+            config_get_value(scanner, "style", TRUE, NULL));
         return TRUE;
       case G_TOKEN_CSS:
-        base_widget_set_css(widget, config_assign_string(scanner,"css"));
+        base_widget_set_css(widget, config_assign_string(scanner, "css"));
         return TRUE;
       case G_TOKEN_INTERVAL:
         base_widget_set_interval(widget,

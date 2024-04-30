@@ -79,12 +79,15 @@ void taskbar_shell_set_filter ( GtkWidget *self, gint filter )
   TaskbarShellPrivate *priv;
 
   g_return_if_fail(IS_TASKBAR_SHELL(self));
+  self = base_widget_get_mirror_parent(self);
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
 
   if(filter == G_TOKEN_FLOATING)
     priv->floating_filter = TRUE;
   else
     priv->filter = filter;
+
+  taskbar_shell_invalidate_all();
 }
 
 gint taskbar_shell_get_filter ( GtkWidget *self, gboolean *floating )
@@ -92,13 +95,27 @@ gint taskbar_shell_get_filter ( GtkWidget *self, gboolean *floating )
   TaskbarShellPrivate *priv;
 
   g_return_val_if_fail(IS_TASKBAR_SHELL(self), 0);
+  self = base_widget_get_mirror_parent(self);
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
 
   *floating = priv->floating_filter;
   return priv->filter;
 }
 
-void taskbar_shell_invalidate_item ( window_t *win )
+void taskbar_shell_update_all ( void )
+{
+  g_list_foreach(taskbars, (GFunc)flow_grid_update, NULL);
+}
+
+void taskbar_shell_populate ( void )
+{
+  GList *iter;
+
+  for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
+    taskbar_shell_item_init_for_all (iter->data);
+}
+
+void taskbar_shell_item_invalidate ( window_t *win )
 {
   TaskbarShellPrivate *priv;
   GtkWidget *taskbar;
@@ -120,10 +137,10 @@ void taskbar_shell_invalidate_all ( void )
   GList *iter;
 
   for(iter=wintree_get_list();iter;iter=g_list_next(iter))
-    taskbar_shell_invalidate_item(iter->data);
+    taskbar_shell_item_invalidate(iter->data);
 }
 
-void taskbar_shell_item_init ( GtkWidget *self, window_t *win )
+static void taskbar_shell_item_init ( GtkWidget *self, window_t *win )
 {
   TaskbarShellPrivate *priv;
   GtkWidget *taskbar;
@@ -133,12 +150,12 @@ void taskbar_shell_item_init ( GtkWidget *self, window_t *win )
     taskbar_item_new(win, taskbar);
 }
 
-void taskbar_shell_init_item ( window_t *win )
+void taskbar_shell_item_init_for_all ( window_t *win )
 {
   g_list_foreach(taskbars, (GFunc)taskbar_shell_item_init, win);
 }
 
-void taskbar_shell_item_destroy ( GtkWidget *self, window_t *win )
+static void taskbar_shell_item_destroy ( GtkWidget *self, window_t *win )
 {
   TaskbarShellPrivate *priv;
   GtkWidget *taskbar;
@@ -153,7 +170,7 @@ void taskbar_shell_item_destroy ( GtkWidget *self, window_t *win )
   }
 }
 
-void taskbar_shell_destroy_item ( window_t *win )
+void taskbar_shell_item_destroy_for_all ( window_t *win )
 {
   g_list_foreach(taskbars, (GFunc)taskbar_shell_item_destroy, win);
 }
@@ -312,17 +329,4 @@ void taskbar_shell_set_group_icons ( GtkWidget *self, gboolean icons )
   priv->icons = icons;
   taskbar_shell_propagate(self, icons, flow_grid_set_icons,
       taskbar_shell_set_group_icons);
-}
-
-void taskbar_shell_populate ( void )
-{
-  GList *iter;
-
-  for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
-    taskbar_shell_init_item (iter->data);
-}
-
-void taskbar_shell_update_all ( void )
-{
-  g_list_foreach(taskbars, (GFunc)flow_grid_update, NULL);
 }
