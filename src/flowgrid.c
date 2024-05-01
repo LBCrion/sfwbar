@@ -448,6 +448,10 @@ void flow_grid_set_labels ( GtkWidget *self, gboolean labels )
   priv->labels = labels;
   for(iter=priv->children; iter; iter=g_list_next(iter))
     flow_item_decorate(iter->data, priv->labels, priv->icons);
+
+  if(labels)
+    for(iter=priv->children; iter; iter=g_list_next(iter))
+      flow_item_set_title_width(iter->data, priv->title_width);
 }
 
 void flow_grid_set_icons ( GtkWidget *self, gboolean icons )
