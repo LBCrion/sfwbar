@@ -157,6 +157,7 @@ void config_init ( void )
   config_add_key(config_prop_keys, "Css", G_TOKEN_CSS);
   config_add_key(config_prop_keys, "Interval", G_TOKEN_INTERVAL);
   config_add_key(config_prop_keys, "Trigger", G_TOKEN_TRIGGER);
+  config_add_key(config_prop_keys, "Local", G_TOKEN_LOCAL);
   config_add_key(config_prop_keys, "Pins", G_TOKEN_PINS);
   config_add_key(config_prop_keys, "Preview", G_TOKEN_PREVIEW);
   config_add_key(config_prop_keys, "Action", G_TOKEN_ACTION);

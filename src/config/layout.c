@@ -212,6 +212,10 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         base_widget_set_interval(widget,
             1000*config_assign_number(scanner, "interval"));
         return TRUE;
+      case G_TOKEN_LOCAL:
+        base_widget_set_local_state(widget,
+            config_assign_boolean(scanner, FALSE, "local"));
+        return TRUE;
       case G_TOKEN_TRIGGER:
         trigger = config_assign_string(scanner, "trigger");
         base_widget_set_trigger(widget, trigger);
@@ -255,7 +259,7 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
     {
       case G_TOKEN_PEROUTPUT:
         if(config_assign_boolean(scanner,FALSE,"filter_output"))
-          taskbar_shell_set_filter(widget,G_TOKEN_OUTPUT);
+          taskbar_shell_set_filter(widget, G_TOKEN_OUTPUT);
         g_message("'filter_output' is deprecated, please use 'filter = output' instead");
         return TRUE;
       case G_TOKEN_FILTER:
@@ -264,8 +268,8 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
               "Invalid value in 'filter = output|workspace|floating'")));
         return TRUE;
       case G_TOKEN_TITLEWIDTH:
-        g_object_set_data(G_OBJECT(widget),"title_width",
-            GINT_TO_POINTER(config_assign_number(scanner,"title_width")));
+        flow_grid_set_title_width(widget,
+            config_assign_number(scanner, "title_width"));
         return TRUE;
       case G_TOKEN_GROUP:
         if(g_scanner_peek_next_token(scanner) == '=')

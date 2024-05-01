@@ -341,6 +341,62 @@ GtkWidget *base_widget_get_child ( GtkWidget *self )
   return gtk_bin_get_child(GTK_BIN(self));
 }
 
+void base_widget_set_local_state ( GtkWidget *self, gboolean state )
+{
+  GtkWidget *parent;
+  BaseWidgetPrivate *priv, *ppriv;
+  GList *iter;
+
+  g_return_if_fail(IS_BASE_WIDGET(self));
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  if(priv->local_state == state)
+    return;
+
+  priv->local_state = state;
+  parent = base_widget_get_mirror_parent(self);
+  if(parent == self)
+  {
+    for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
+      base_widget_set_local_state(iter->data, state);
+    return;
+  }
+
+  g_mutex_lock(&widget_mutex);
+  if(state)
+  {
+    if(!g_list_find(widgets_scan, self))
+      widgets_scan = g_list_append(widgets_scan, self);
+  }
+  else
+    widgets_scan = g_list_remove(widgets_scan, self);
+  g_mutex_unlock(&widget_mutex);
+
+  if(state)
+  {
+    ppriv = base_widget_get_instance_private(BASE_WIDGET(parent));
+    base_widget_set_value(self, g_strdup(ppriv->value->definition));
+    base_widget_set_style(self, g_strdup(ppriv->style->definition));
+  }
+  else
+  {
+    BASE_WIDGET_GET_CLASS(self)->update_value(self);
+    gtk_widget_set_name(base_widget_get_child(self),
+        priv->style->cache);
+    css_widget_cascade(self, NULL);
+  }
+}
+
+gboolean base_widget_get_local_state ( GtkWidget *self )
+{
+  BaseWidgetPrivate *priv;
+
+  g_return_val_if_fail(IS_BASE_WIDGET(self), FALSE);
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  return priv->local_state;
+}
+
 gboolean base_widget_update_value ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
@@ -353,6 +409,7 @@ gboolean base_widget_update_value ( GtkWidget *self )
     BASE_WIDGET_GET_CLASS(self)->update_value(self);
 
   for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
+    if(!base_widget_get_local_state(iter->data))
       BASE_WIDGET_GET_CLASS(self)->update_value(iter->data);
 
   return FALSE;
@@ -370,10 +427,12 @@ gboolean base_widget_style ( GtkWidget *self )
   gtk_widget_set_name(base_widget_get_child(self), priv->style->cache);
   css_widget_cascade(self, NULL);
   for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
-  {
-    gtk_widget_set_name(base_widget_get_child(iter->data), priv->style->cache);
-    css_widget_cascade(iter->data, NULL);
-  }
+    if(!base_widget_get_local_state(iter->data))
+    {
+      gtk_widget_set_name(base_widget_get_child(iter->data),
+          priv->style->cache);
+      css_widget_cascade(iter->data, NULL);
+    }
 
   return FALSE;
 }
@@ -673,8 +732,10 @@ gchar *base_widget_get_value ( GtkWidget *self )
   BaseWidgetPrivate *priv;
 
   g_return_val_if_fail(IS_BASE_WIDGET(self),NULL);
-  priv = base_widget_get_instance_private(
-      BASE_WIDGET(base_widget_get_mirror_parent(self)));
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+  if(!priv->local_state)
+    priv = base_widget_get_instance_private(
+        BASE_WIDGET(base_widget_get_mirror_parent(self)));
 
   return priv->value->cache;
 }
@@ -770,19 +831,22 @@ GtkWidget *base_widget_mirror ( GtkWidget *src )
   spriv = base_widget_get_instance_private(BASE_WIDGET(src));
   dpriv = base_widget_get_instance_private(BASE_WIDGET(dest));
 
+  dpriv->mirror_parent = src;
+  if(!g_list_find(spriv->mirror_children, dest))
+  {
+    spriv->mirror_children = g_list_prepend(spriv->mirror_children, dest);
+    base_widget_style(dest);
+    base_widget_update_value(dest);
+  }
+
+  dpriv->trigger = spriv->trigger;
   if(spriv->tooltip)
     base_widget_set_tooltip( dest, spriv->tooltip->definition );
+  base_widget_set_local_state(dest, spriv->local_state);
   base_widget_set_state(dest, spriv->user_state, TRUE);
   base_widget_set_rect(dest, spriv->rect);
   for(iter=spriv->css; iter; iter=g_list_next(iter))
     css_widget_apply(base_widget_get_child(dest), g_strdup(iter->data));
-  if(!g_list_find(spriv->mirror_children, dest))
-  {
-    spriv->mirror_children = g_list_prepend(spriv->mirror_children, dest);
-    dpriv->mirror_parent = src;
-    base_widget_style(dest);
-    base_widget_update_value(dest);
-  }
 
   return dest;
 }

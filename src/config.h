@@ -131,6 +131,7 @@ enum {
   G_TOKEN_WORKSPACE,
   G_TOKEN_OUTPUT,
   G_TOKEN_FLOATING,
+  G_TOKEN_LOCAL,
 };
 
 #endif

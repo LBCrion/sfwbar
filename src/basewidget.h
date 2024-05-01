@@ -45,6 +45,7 @@ struct _BaseWidgetPrivate
   gint64 next_poll;
   gint dir;
   gboolean always_update;
+  gboolean local_state;
   gboolean is_drag_dest;
   guint16 user_state;
   GdkRectangle rect;
@@ -64,6 +65,7 @@ GType base_widget_get_type ( void );
 void base_widget_set_tooltip ( GtkWidget *self, gchar *tooltip );
 void base_widget_set_value ( GtkWidget *self, gchar *value );
 void base_widget_set_style ( GtkWidget *self, gchar *style );
+void base_widget_set_local_state ( GtkWidget *self, gboolean state );
 void base_widget_set_trigger ( GtkWidget *self, gchar *trigger );
 void base_widget_set_id ( GtkWidget *self, gchar *id );
 void base_widget_set_interval ( GtkWidget *self, gint64 interval );
