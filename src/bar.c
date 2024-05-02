@@ -293,7 +293,7 @@ GtkWidget *bar_grid_from_name ( gchar *addr )
     return widget;
 
   widget = grid_new();
-  base_widget_set_style(widget, "\"layout\"");
+  base_widget_set_style(widget, g_strdup("\"layout\""));
 
   if(grid && !g_ascii_strcasecmp(grid,"center"))
   {
