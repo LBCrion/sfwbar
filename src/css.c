@@ -153,6 +153,7 @@ void css_init ( gchar *cssname )
     "window { -GtkWidget-direction: bottom; } " \
     ".sensor { min-width: 1px; min-height: 1px; background: none; }" \
     ".hidden { -GtkWidget-visible: false; }"\
+    "#hidden { -GtkWidget-visible: false; }"\
     ".flowgrid {-GtkWidget-row-homogeneous: true; }"\
     ".flowgrid {-GtkWidget-column-homogeneous: true; }";
   css = gtk_css_provider_new();
