@@ -6,6 +6,7 @@
 #include <gtk-layer-shell.h>
 #include "expr.h"
 #include "basewidget.h"
+#include "grid.h"
 #include "flowgrid.h"
 #include "action.h"
 #include "module.h"
@@ -581,11 +582,25 @@ void base_widget_set_state ( GtkWidget *self, guint16 mask, gboolean state )
 void base_widget_set_rect ( GtkWidget *self, GdkRectangle rect )
 {
   BaseWidgetPrivate *priv;
+  GtkWidget *parent;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
+  if(!memcmp(&priv->rect, &rect, sizeof(GdkRectangle)))
+    return;
+
   priv->rect = rect;
+
+  parent = gtk_widget_get_parent(self);
+  parent = parent?gtk_widget_get_parent(parent):NULL;
+  if(!parent || !IS_GRID(parent))
+    return;
+
+  g_object_ref(self);
+  gtk_container_remove(GTK_CONTAINER(base_widget_get_child(parent)), self);
+  grid_attach(parent, self);
+  g_object_unref(self);
 }
 
 void base_widget_attach ( GtkWidget *parent, GtkWidget *self,
