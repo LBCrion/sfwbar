@@ -16,9 +16,9 @@ gboolean config_action_conditions ( GScanner *scanner, action_t *action )
 
   do
   {
-    if( (neg = (g_scanner_get_next_token(scanner) == '!')) )
-      g_scanner_get_next_token(scanner);
+    neg = config_check_and_consume(scanner, '!');
 
+    g_scanner_get_next_token(scanner);
     if( (c = config_lookup_key(scanner, config_act_cond)) )
     {
       if(neg)
@@ -30,9 +30,7 @@ gboolean config_action_conditions ( GScanner *scanner, action_t *action )
       g_scanner_error(scanner,"invalid condition '%s' in action",
           scanner->value.v_identifier);
 
-    if(g_scanner_peek_next_token(scanner) == '|')
-      g_scanner_get_next_token(scanner);
-  } while (scanner->token == '|');
+  } while (config_check_and_consume(scanner, '|'));
 
   return !scanner->max_parse_errors;
 }
@@ -40,7 +38,8 @@ gboolean config_action_conditions ( GScanner *scanner, action_t *action )
 gboolean config_action ( GScanner *scanner, action_t **action_dst )
 {
   action_t *action;
-  gchar *ident, *ptr;
+  gchar *ident;
+  gchar *ptr;
 
   action = action_new();
 
@@ -65,6 +64,7 @@ gboolean config_action ( GScanner *scanner, action_t **action_dst )
   if(scanner->max_parse_errors)
   {
     action_free(action, NULL);
+    g_free(ident);
     *action_dst = NULL;
     return FALSE;
   }
@@ -91,6 +91,7 @@ gboolean config_action ( GScanner *scanner, action_t **action_dst )
   }
 
   *action_dst = action;
+  g_free(ident);
   return TRUE;
 }
 
@@ -118,6 +119,7 @@ GtkWidget *config_menu_item ( GScanner *scanner )
 
   g_free(label);
   g_free(id);
+
   return item;
 }
 
@@ -148,6 +150,7 @@ GtkWidget *config_submenu ( GScanner *scanner )
   }
   else
     item = NULL;
+
   g_free(itemname);
   g_free(subname);
 
@@ -168,7 +171,7 @@ void config_menu_items ( GScanner *scanner, GtkWidget *menu )
         break;
       case G_TOKEN_SEPARATOR:
         item = gtk_separator_menu_item_new();
-        config_optional_semicolon(scanner);
+        config_check_and_consume(scanner, ';');
         break;
       case G_TOKEN_SUBMENU:
         item = config_submenu(scanner);
@@ -195,13 +198,15 @@ void config_menu ( GScanner *scanner )
       SEQ_REQ, ')', NULL, NULL, "missing ')' after 'menu'",
       SEQ_REQ, '{', NULL, NULL, "missing '{' after 'menu'",
       SEQ_END);
+
   if(!scanner->max_parse_errors && name)
   {
     menu = menu_new(name);
     config_menu_items(scanner, menu);
   }
+
   g_free(name);
-  config_optional_semicolon(scanner);
+  config_check_and_consume(scanner, ';');
 }
 
 void config_menu_clear ( GScanner *scanner )
@@ -214,8 +219,10 @@ void config_menu_clear ( GScanner *scanner )
       SEQ_REQ, ')', NULL, NULL, "missing ')' after 'menu'",
       SEQ_OPT, ';', NULL, NULL, NULL,
       SEQ_END);
+
   if(!scanner->max_parse_errors && name)
     menu_remove(name);
+
   g_free(name);
 }
 
@@ -258,6 +265,7 @@ void config_set ( GScanner *scanner )
 
   if(!scanner->max_parse_errors && ident && value)
     scanner_var_new(ident, NULL, value, G_TOKEN_SET, VT_FIRST);
+
   g_free(ident);
   g_free(value);
 }
@@ -265,14 +273,17 @@ void config_set ( GScanner *scanner )
 void config_mappid_map ( GScanner *scanner )
 {
   gchar *pattern = NULL, *appid = NULL;
+
   config_parse_sequence(scanner,
       SEQ_REQ, G_TOKEN_STRING, NULL, &pattern, "missing pattern in MapAppId",
       SEQ_REQ, ',', NULL, NULL, "missing comma after pattern in MapAppId",
       SEQ_REQ, G_TOKEN_STRING, NULL, &appid, "missing app_id in MapAppId",
       SEQ_OPT, ';', NULL, NULL, NULL,
       SEQ_END);
+
   if(!scanner->max_parse_errors)
     wintree_appid_map_add(pattern, appid);
+
   g_free(pattern);
   g_free(appid);
 }
@@ -311,31 +322,22 @@ void config_module ( GScanner *scanner )
   g_free(name);
 }
 
-GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
+GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
 {
-  GtkWidget *w = NULL;
+  scanner->user_data = NULL;
 
   while(g_scanner_peek_next_token(scanner) != G_TOKEN_EOF)
   {
     g_scanner_get_next_token(scanner);
+    if(config_widget_child(scanner, NULL))
+      continue;
     switch(config_lookup_key(scanner, config_toplevel_keys))
     {
       case G_TOKEN_SCANNER:
         config_scanner(scanner);
         break;
       case G_TOKEN_LAYOUT:
-        config_layout(scanner, &w, toplevel);
-        break;
-      case G_TOKEN_GRID:
-      case G_TOKEN_LABEL:
-      case G_TOKEN_IMAGE:
-      case G_TOKEN_BUTTON:
-      case G_TOKEN_SCALE:
-      case G_TOKEN_CHART:
-      case G_TOKEN_TASKBAR:
-      case G_TOKEN_PAGER:
-      case G_TOKEN_TRAY:
-        config_widget_child(scanner, NULL);
+        config_layout(scanner, container);
         break;
       case G_TOKEN_POPUP:
         config_popup(scanner);
@@ -353,7 +355,7 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
         config_menu_clear(scanner);
         break;
       case G_TOKEN_INCLUDE:
-        config_include(scanner,TRUE);
+        config_include(scanner, NULL);
         break;
       case G_TOKEN_DEFINE:
         config_define(scanner);
@@ -377,14 +379,12 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
         if(!config_expect_token(scanner, G_TOKEN_STRING,
           "Missing <string> after FilterAppId"))
           break;
-        g_scanner_get_next_token(scanner);
         wintree_filter_appid(scanner->value.v_string);
         break;
       case G_TOKEN_FILTERTITLE:
         if(!config_expect_token(scanner, G_TOKEN_STRING,
           "Missing <string> after FilterTitle"))
           break;
-        g_scanner_get_next_token(scanner);
         wintree_filter_title(scanner->value.v_string);
         break;
       case G_TOKEN_FUNCTION:
@@ -394,7 +394,7 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
         config_module(scanner);
         break;
       case G_TOKEN_DISOWNMINIMIZED:
-        wintree_set_disown(config_assign_boolean(scanner,FALSE,
+        wintree_set_disown(config_assign_boolean(scanner, FALSE,
               "DisownMinimized"));
         break;
       default:
@@ -402,5 +402,5 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel )
         break;
     }
   }
-  return w;
+  return scanner->user_data;
 }

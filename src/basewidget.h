@@ -8,10 +8,22 @@
 #define BASE_WIDGET_MAX_ACTION  8
 
 #define BASE_WIDGET_TYPE            (base_widget_get_type())
-G_DECLARE_DERIVABLE_TYPE (BaseWidget, base_widget, BASE, WIDGET, GtkEventBox)
-#define IS_BASE_WIDGET BASE_IS_WIDGET
+#define BASE_WIDGET_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), BASE_WIDGET_TYPE, BaseWidgetClass))
+#define BASE_WIDGET(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), BASE_WIDGET_TYPE, BaseWidget))
+#define IS_BASE_WIDGET(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj), BASE_WIDGET_TYPE))
+#define IS_BASE_WIDGET_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), BASE_WIDGET_TYPE))
+#define BASE_WIDGET_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), BASE_WIDGET_TYPE, BaseWidgetClass))
+
+//G_DECLARE_DERIVABLE_TYPE (BaseWidget, base_widget, BASE, WIDGET, GtkEventBox)
+//#define IS_BASE_WIDGET BASE_IS_WIDGET
 
 typedef struct _BaseWidgetClass BaseWidgetClass;
+typedef struct _BaseWidget BaseWidget;
+
+struct _BaseWidget
+{
+  GtkEventBox widget;
+};
 
 struct _BaseWidgetClass
 {

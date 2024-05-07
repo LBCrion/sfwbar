@@ -5,7 +5,15 @@
 
 #include "../config.h"
 #include "../sfwbar.h"
-#include "../taskbar.h"
+#include "../taskbarshell.h"
+#include "../pager.h"
+#include "../tray.h"
+#include "../grid.h"
+#include "../label.h"
+#include "../image.h"
+#include "../scale.h"
+#include "../button.h"
+#include "../cchart.h"
 #include "../taskbarpager.h"
 #include "../taskbarpopup.h"
 
@@ -17,6 +25,38 @@ GHashTable *config_prop_keys, *config_placer_keys, *config_flowgrid_props;
 
 #define config_add_key(table, str, key) \
   g_hash_table_insert(table, str, GINT_TO_POINTER(key))
+
+static GScannerConfig scanner_config = {
+  .cset_skip_characters = (" \t\n\r"),
+  .cset_identifier_first = (G_CSET_a_2_z G_CSET_A_2_Z "_$"),
+  .cset_identifier_nth = (G_CSET_a_2_z G_CSET_A_2_Z "_01234566789."
+      G_CSET_LATINS G_CSET_LATINC),
+  .cpair_comment_single = ("#\n"),
+
+  .case_sensitive = 0,
+  .skip_comment_multi = 1,
+  .skip_comment_single = 1,
+  .scan_comment_multi = 1,
+
+  .scan_identifier = 1,
+  .scan_identifier_1char = 0,
+  .scan_identifier_NULL = 0,
+  .scan_symbols = 1,
+  .scan_binary = 0,
+  .scan_octal = 0,
+  .scan_float = 1,
+  .scan_hex = 1,
+  .scan_hex_dollar = 0,
+  .scan_string_sq = 1,
+  .scan_string_dq = 1,
+  .numbers_2_int = 1,
+  .int_2_float = 1,
+  .identifier_2_string = 0,
+  .char_2_token = 1,
+  .symbol_2_token = 1,
+  .scope_0_fallback = 0,
+  .store_int64 = 0,
+};
 
 void config_init ( void )
 {
@@ -139,16 +179,15 @@ void config_init ( void )
 
   config_widget_keys = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);
-  config_add_key(config_widget_keys, "Pager", G_TOKEN_PAGER);
-  config_add_key(config_widget_keys, "Grid", G_TOKEN_GRID);
-  config_add_key(config_widget_keys, "Scale", G_TOKEN_SCALE);
-  config_add_key(config_widget_keys, "Label", G_TOKEN_LABEL);
-  config_add_key(config_widget_keys, "Button", G_TOKEN_BUTTON);
-  config_add_key(config_widget_keys, "Image", G_TOKEN_IMAGE);
-  config_add_key(config_widget_keys, "Chart", G_TOKEN_CHART);
-  config_add_key(config_widget_keys, "Include", G_TOKEN_INCLUDE);
-  config_add_key(config_widget_keys, "Taskbar", G_TOKEN_TASKBAR);
-  config_add_key(config_widget_keys, "Tray", G_TOKEN_TRAY);
+  g_hash_table_insert(config_widget_keys, "Pager", pager_get_type);
+  g_hash_table_insert(config_widget_keys, "Grid", grid_get_type);
+  g_hash_table_insert(config_widget_keys, "Scale", scale_get_type);
+  g_hash_table_insert(config_widget_keys, "Label", label_get_type);
+  g_hash_table_insert(config_widget_keys, "Button", button_get_type);
+  g_hash_table_insert(config_widget_keys, "Image", image_get_type);
+  g_hash_table_insert(config_widget_keys, "Chart", cchart_get_type);
+  g_hash_table_insert(config_widget_keys, "Taskbar", taskbar_shell_get_type);
+  g_hash_table_insert(config_widget_keys, "Tray", tray_get_type);
 
   config_prop_keys = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);
@@ -163,7 +202,6 @@ void config_init ( void )
   config_add_key(config_prop_keys, "Action", G_TOKEN_ACTION);
   config_add_key(config_prop_keys, "Loc", G_TOKEN_LOC);
   config_add_key(config_prop_keys, "Filter_output", G_TOKEN_PEROUTPUT);
-  config_add_key(config_prop_keys, "Title_width", G_TOKEN_TITLEWIDTH);
   config_add_key(config_prop_keys, "AutoClose", G_TOKEN_AUTOCLOSE);
   config_add_key(config_prop_keys, "Tooltip", G_TOKEN_TOOLTIP);
   config_add_key(config_prop_keys, "Group", G_TOKEN_GROUP);
@@ -178,6 +216,7 @@ config_flowgrid_props = g_hash_table_new((GHashFunc)str_nhash,
   config_add_key(config_flowgrid_props, "Sort", G_TOKEN_SORT);
   config_add_key(config_flowgrid_props, "Numeric", G_TOKEN_NUMERIC);
   config_add_key(config_flowgrid_props, "Primary", G_TOKEN_PRIMARY);
+  config_add_key(config_flowgrid_props, "Title_width", G_TOKEN_TITLEWIDTH);
 
   config_placer_keys = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);
@@ -186,24 +225,6 @@ config_flowgrid_props = g_hash_table_new((GHashFunc)str_nhash,
   config_add_key(config_placer_keys, "XOrigin", G_TOKEN_XORIGIN);
   config_add_key(config_placer_keys, "YOrigin", G_TOKEN_YORIGIN);
   config_add_key(config_placer_keys, "Children", G_TOKEN_CHILDREN);
-}
-
-gint config_lookup_key ( GScanner *scanner, GHashTable *table )
-{
-  if(scanner->token != G_TOKEN_IDENTIFIER)
-    return 0;
-
-  return GPOINTER_TO_INT(g_hash_table_lookup(table,
-        scanner->value.v_identifier));
-}
-
-gint config_lookup_next_key ( GScanner *scanner, GHashTable *table )
-{
-  if(g_scanner_peek_next_token(scanner) != G_TOKEN_IDENTIFIER)
-    return 0;
-
-  return GPOINTER_TO_INT( g_hash_table_lookup(table,
-        scanner->next_value.v_identifier) );
 }
 
 void config_log_error ( GScanner *scanner, gchar *message, gboolean error )
@@ -218,7 +239,7 @@ void config_log_error ( GScanner *scanner, gchar *message, gboolean error )
     g_message("%s:%d: %s",scanner->input_name,scanner->line,message);
 }
 
-GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
+GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container )
 {
   GScanner *scanner;
   GtkWidget *w;
@@ -228,18 +249,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
   if(!data)
     return NULL;
 
-  scanner = g_scanner_new(NULL);
-  scanner->config->scan_octal = 0;
-  scanner->config->symbol_2_token = 1;
-  scanner->config->case_sensitive = 0;
-  scanner->config->numbers_2_int = 1;
-  scanner->config->int_2_float = 1;
-  scanner->config->scope_0_fallback = 1;
-
-  scanner->config->cset_identifier_nth = g_strconcat(".",
-      scanner->config->cset_identifier_nth,NULL);
-  scanner->config->cset_identifier_first = g_strconcat("$",
-      scanner->config->cset_identifier_first,NULL);
+  scanner = g_scanner_new(&scanner_config);
 
   scanner->msg_handler = config_log_error;
   scanner->max_parse_errors = FALSE;
@@ -257,10 +267,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, gboolean toplevel )
 
   scanner->input_name = fname;
   g_scanner_input_text( scanner, data, strlen(data) );
-
-  w = config_parse_toplevel ( scanner, toplevel );
-  g_free(scanner->config->cset_identifier_first);
-  g_free(scanner->config->cset_identifier_nth);
+  w = config_parse_toplevel ( scanner, container );
   g_scanner_destroy(scanner);
 
   return w;
@@ -275,7 +282,7 @@ void config_string ( gchar *string )
 
   conf = g_strdup(string);
   g_debug("parsing config string: %s", conf);
-  config_parse_data("config string",conf,TRUE);
+  config_parse_data("config string", conf, NULL);
   g_free(conf);
 }
 
@@ -288,15 +295,13 @@ void config_pipe_read ( gchar *command )
   if(!command)
     return;
 
-  fp = popen(command, "r");
-  if(!fp)
+  if( !(fp = popen(command, "r")) )
     return;
 
-  chan = g_io_channel_unix_new( fileno(fp) );
-  if(chan)
+  if( (chan = g_io_channel_unix_new( fileno(fp) )) )
   {
-    if(g_io_channel_read_to_end( chan , &conf,NULL,NULL)==G_IO_STATUS_NORMAL)
-      config_parse_data(command,conf,TRUE);
+    if(g_io_channel_read_to_end(chan, &conf, NULL, NULL)==G_IO_STATUS_NORMAL)
+      config_parse_data(command, conf, NULL);
     g_free(conf);
     g_io_channel_unref(chan);
   }
@@ -304,38 +309,31 @@ void config_pipe_read ( gchar *command )
   pclose(fp);
 }
 
-GtkWidget *config_parse ( gchar *file, gboolean toplevel )
+GtkWidget *config_parse ( gchar *file, GtkWidget *container )
 {
-  gchar *fname, *dir, *base ,*cssfile, *csspath, *tmp;
-  gchar *conf=NULL;
-  gsize size;
-  GtkWidget *w=NULL;
+  GtkWidget *w = NULL;
+  gchar *fname, *dir, *base, *cssfile, *csspath, *tmp;
+  gchar *conf = NULL;
 
-  fname = get_xdg_config_file(file,NULL);
-  g_debug("include: %s -> %s",file,fname);
+  if( !(fname = get_xdg_config_file(file, NULL)) )
+    g_error("Error reading config file %s", file);
 
-  if(fname)
-    if(!g_file_get_contents(fname,&conf,&size,NULL))
-      conf=NULL;
+  g_debug("include: %s -> %s", file, fname);
+ 
+  if(!g_file_get_contents(fname, &conf, NULL, NULL))
+    g_error("Error reading config file %s", file);
 
-  if(!conf)
-  {
-    g_error("Error: can't read config file %s\n",file);
-    exit(1);
-  }
-
-  w = config_parse_data (fname, conf, toplevel);
+  w = config_parse_data (fname, conf, container);
 
   g_free(conf);
 
   dir = g_path_get_dirname(fname);
   base = g_path_get_basename(fname);
   
-  tmp = strrchr(base,'.');
-  if(tmp)
+  if( (tmp = strrchr(base,'.')) )
     *tmp = '\0';
-  cssfile = g_strconcat(base,".css",NULL);
-  csspath = g_build_filename(dir,cssfile,NULL);
+  cssfile = g_strconcat(base, ".css", NULL);
+  csspath = g_build_filename(dir, cssfile, NULL);
 
   css_file_load (csspath);
 

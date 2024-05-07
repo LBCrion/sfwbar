@@ -84,9 +84,8 @@ static gboolean config_source_flags ( GScanner *scanner, gint *flags )
 {
   gint flag;
 
-  while (g_scanner_peek_next_token(scanner) == ',')
+  while (config_check_and_consume(scanner, ','))
   {
-    g_scanner_get_next_token(scanner);
     g_scanner_get_next_token(scanner);
 
     if( (flag = config_lookup_key(scanner, config_scanner_flags)) )
@@ -154,7 +153,6 @@ void config_scanner ( GScanner *scanner )
 
   if(!config_expect_token(scanner, '{', "Missing '{' after 'scanner'"))
     return;
-  g_scanner_get_next_token(scanner);
 
   while(!config_is_section_end(scanner))
   {

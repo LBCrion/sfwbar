@@ -14,21 +14,27 @@ gboolean config_expect_token ( GScanner *scanner, gint token, gchar *fmt, ...)
   va_list args;
 
   if( g_scanner_peek_next_token(scanner) == token )
+  {
+    g_scanner_get_next_token(scanner);
     return TRUE;
+  }
  
-  va_start(args,fmt);
-  errmsg = g_strdup_vprintf(fmt,args);
+  va_start(args, fmt);
+  errmsg = g_strdup_vprintf(fmt, args);
   va_end(args);
-  g_scanner_error(scanner,"%s",errmsg);
+  g_scanner_error(scanner, "%s", errmsg);
   g_free(errmsg);
 
   return FALSE;
 }
 
-void config_optional_semicolon ( GScanner *scanner )
+gboolean config_check_and_consume ( GScanner *scanner, gint token )
 {
-  if(g_scanner_peek_next_token(scanner) == ';')
-    g_scanner_get_next_token(scanner);
+  if(g_scanner_peek_next_token(scanner) != token)
+    return FALSE;
+
+  g_scanner_get_next_token(scanner);
+  return TRUE;
 }
 
 void config_parse_sequence ( GScanner *scanner, ... )
@@ -124,10 +130,9 @@ gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr)
   gboolean result = def;
 
   scanner->max_parse_errors = FALSE;
-  if(!config_expect_token(scanner, '=', "Missing '=' in %s = <boolean>",expr))
+  if(!config_expect_token(scanner, '=', "Missing '=' in %s = <boolean>", expr))
     return FALSE;
 
-  g_scanner_get_next_token(scanner);
   g_scanner_get_next_token(scanner);
 
   if(!g_ascii_strcasecmp(scanner->value.v_identifier, "true"))
@@ -137,7 +142,7 @@ gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr)
   else
     g_scanner_error(scanner, "Missing value in %s = <boolean>", expr);
 
-  config_optional_semicolon(scanner);
+  config_check_and_consume(scanner, ';');
 
   return result;
 }
@@ -147,18 +152,15 @@ gchar *config_assign_string ( GScanner *scanner, gchar *expr )
   gchar *result;
   scanner->max_parse_errors = FALSE;
 
-  if(!config_expect_token(scanner, '=', "Missing '=' in %s = <string>",expr))
+  if(!config_expect_token(scanner, '=', "Missing '=' in %s = <string>", expr))
     return NULL;
-
-  g_scanner_get_next_token(scanner);
 
   if(!config_expect_token(scanner, G_TOKEN_STRING,
-        "Missing <string> in %s = <string>",expr))
+        "Missing <string> in %s = <string>", expr))
     return NULL;
 
-  g_scanner_get_next_token(scanner);
   result = g_strdup(scanner->value.v_string);
-  config_optional_semicolon(scanner);
+  config_check_and_consume(scanner, ';');
 
   return result;
 }
@@ -168,18 +170,15 @@ gdouble config_assign_number ( GScanner *scanner, gchar *expr )
   gdouble result;
 
   scanner->max_parse_errors = FALSE;
-  if(!config_expect_token(scanner, '=', "Missing '=' in %s = <number>",expr))
+  if(!config_expect_token(scanner, '=', "Missing '=' in %s = <number>", expr))
     return 0;
-
-  g_scanner_get_next_token(scanner);
 
   if(!config_expect_token(scanner, G_TOKEN_FLOAT,
-        "Missing <number> in %s = <number>",expr))
+        "Missing <number> in %s = <number>", expr))
     return 0;
 
-  g_scanner_get_next_token(scanner);
   result = scanner->value.v_float;
-  config_optional_semicolon(scanner);
+  config_check_and_consume(scanner, ';');
 
   return result;
 }
@@ -194,12 +193,11 @@ void *config_assign_tokens ( GScanner *scanner, GHashTable *keys, gchar *err )
     return NULL;
 
   g_scanner_get_next_token(scanner);
-  g_scanner_get_next_token(scanner);
 
   if( scanner->token != G_TOKEN_IDENTIFIER ||
       !(res = g_hash_table_lookup(keys, scanner->value.v_identifier)) )
     g_scanner_error(scanner, "%s", err);
-  config_optional_semicolon(scanner);
+  config_check_and_consume(scanner, ';');
 
   return res;
 }
@@ -209,11 +207,10 @@ gboolean config_is_section_end ( GScanner *scanner )
   if(g_scanner_peek_next_token(scanner) == G_TOKEN_EOF)
     return TRUE;
 
-  if(scanner->next_token != '}')
+  if(!config_check_and_consume(scanner, '}'))
     return FALSE;
 
-  g_scanner_get_next_token(scanner);
-  config_optional_semicolon(scanner);
+  config_check_and_consume(scanner, ';');
   return TRUE;
 }
 
@@ -253,11 +250,9 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign,
 
   scanner->max_parse_errors = FALSE;
   if(assign)
-  {
     if(!config_expect_token(scanner, '=', "expecting %s = expression", prop))
       return NULL;
-    g_scanner_get_next_token(scanner);
-  }
+
   if(id && g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
   {
     g_scanner_get_next_token(scanner);
@@ -322,7 +317,7 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign,
       pcount--;
     g_scanner_peek_next_token(scanner);
   }
-  config_optional_semicolon(scanner);
+  config_check_and_consume(scanner, ';');
   return value;
 }
 
@@ -351,4 +346,22 @@ void config_define ( GScanner *scanner )
         (GEqualFunc)str_nequal, g_free, g_free);
 
   g_hash_table_insert(defines, ident, value);
+}
+
+gpointer config_lookup_ptr ( GScanner *scanner, GHashTable *table )
+{
+  if(scanner->token != G_TOKEN_IDENTIFIER)
+    return NULL;
+
+  return g_hash_table_lookup(table,
+        scanner->value.v_identifier);
+}
+
+gpointer config_lookup_next_ptr ( GScanner *scanner, GHashTable *table )
+{
+  if(g_scanner_peek_next_token(scanner) != G_TOKEN_IDENTIFIER)
+    return NULL;
+
+  return g_hash_table_lookup(table,
+        scanner->next_value.v_identifier);
 }

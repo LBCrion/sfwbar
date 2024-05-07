@@ -14,7 +14,6 @@ void config_switcher ( GScanner *scanner )
 
   if(!config_expect_token(scanner, '{',"Missing '{' after 'switcher'"))
     return;
-  g_scanner_get_next_token(scanner);
 
   widget = switcher_new();
 

@@ -22,11 +22,7 @@ void config_widget (GScanner *scanner, GtkWidget *widget);
 
 GdkRectangle config_get_loc ( GScanner *scanner )
 {
-  GdkRectangle rect;
-  rect.x = 0;
-  rect.y = 0;
-  rect.width = 1;
-  rect.height = 1;
+  GdkRectangle rect = { .x = 0, .y =0, .width = 1, .height =1 };
 
   config_parse_sequence(scanner,
       SEQ_REQ, '(', NULL, NULL, "missing '(' after loc",
@@ -48,40 +44,30 @@ void config_get_pins ( GScanner *scanner, GtkWidget *widget )
 {
   scanner->max_parse_errors = FALSE;
 
-  if(!IS_PAGER(widget))
-  {
-    g_scanner_error(scanner,"this widget has no property 'pins'");
-    return;
-  }
-
-  if(!config_expect_token(scanner, '=',"expecting pins = string [,string]"))
+  if(!config_expect_token(scanner, '=', "expecting pins = string [,string]"))
     return;
 
   do
   {
-    g_scanner_get_next_token(scanner);
     if(!config_expect_token(scanner, G_TOKEN_STRING,
           "expecting a string in pins = string [,string]"))
       break;
-    g_scanner_get_next_token(scanner);
-    pager_add_pin(widget,g_strdup(scanner->value.v_string));
-  } while ( g_scanner_peek_next_token(scanner)==',');
-  config_optional_semicolon(scanner);
+    pager_add_pin(widget, g_strdup(scanner->value.v_string));
+  } while (config_check_and_consume(scanner, ','));
+  config_check_and_consume(scanner, ';');
 }
 
 gboolean config_action_mods ( GScanner *scanner, gint *mods )
 {
   gpointer mod;
 
-  while((gint)g_scanner_peek_next_token(scanner) == G_TOKEN_VALUE &&
-    (mod = g_hash_table_lookup(config_mods, scanner->next_value.v_identifier)))
+  while( (mod = config_lookup_next_ptr(scanner, config_mods)) )
   {
     g_scanner_get_next_token(scanner);
     *mods |= GPOINTER_TO_INT(mod);
 
-    if(g_scanner_peek_next_token(scanner) != '+')
+    if(!config_check_and_consume(scanner, '+'))
       return FALSE;
-    g_scanner_get_next_token(scanner);
   }
   return TRUE;
 }
@@ -91,7 +77,8 @@ gboolean config_action_slot (GScanner *scanner, gint *slot )
   gint token;
 
   g_scanner_get_next_token(scanner);
-  if(scanner->token == G_TOKEN_FLOAT)
+  if(scanner->token == G_TOKEN_FLOAT && scanner->value.v_float >= 0 &&
+      scanner->value.v_float <= BASE_WIDGET_MAX_ACTION)
     *slot = scanner->value.v_float;
   else if( (token = config_lookup_key(scanner, config_events)) )
     *slot = token;
@@ -122,22 +109,37 @@ void config_widget_action ( GScanner *scanner, GtkWidget *widget )
     action_free(action, NULL);
 }
 
-GtkWidget *config_include ( GScanner *scanner, gboolean toplevel )
+gboolean config_include ( GScanner *scanner, GtkWidget *container )
 {
   GtkWidget *widget;
   gchar *fname;
+
+  if(scanner->token != G_TOKEN_IDENTIFIER ||
+      g_ascii_strcasecmp(scanner->value.v_identifier, "include"))
+    return FALSE;
 
   config_parse_sequence(scanner,
       SEQ_REQ, '(', NULL, NULL, "Missing '(' after include",
       SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing filename in include",
       SEQ_REQ, ')', NULL, NULL, "Missing ')',after include",
-      SEQ_OPT, ';', NULL, NULL, NULL,
       SEQ_END);
 
-  widget = scanner->max_parse_errors?NULL:config_parse(fname, toplevel);
+  if(scanner->max_parse_errors)
+  {
+    g_free(fname);
+    return TRUE;
+  }
+
+  widget = config_parse(fname, container);
+  if(container)
+  {
+    config_widget(scanner, widget);
+    grid_attach(container, widget);
+    css_widget_cascade(widget, NULL);
+  }
   g_free(fname);
 
-  return widget;
+  return TRUE;
 }
 
 gboolean config_flowgrid_property ( GScanner *scanner, GtkWidget *widget )
@@ -163,16 +165,16 @@ gboolean config_flowgrid_property ( GScanner *scanner, GtkWidget *widget )
               "Invalid value in 'primary = rows|cols'")));
       return TRUE;
     case G_TOKEN_ICONS:
-//      g_object_set_data(G_OBJECT(widget),"icons",
-//        GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "icons")));
       flow_grid_set_icons(widget,
           config_assign_boolean(scanner, FALSE, "icons"));
       return TRUE;
     case G_TOKEN_LABELS:
-//      g_object_set_data(G_OBJECT(widget),"labels",
-//        GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "labels")));
       flow_grid_set_labels(widget,
           config_assign_boolean(scanner, FALSE, "labels"));
+      return TRUE;
+    case G_TOKEN_TITLEWIDTH:
+      flow_grid_set_title_width(widget,
+          config_assign_number(scanner, "title_width"));
       return TRUE;
     case G_TOKEN_SORT:
       flow_grid_set_sort(widget,
@@ -267,10 +269,6 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
                 scanner, config_filter_keys,
               "Invalid value in 'filter = output|workspace|floating'")));
         return TRUE;
-      case G_TOKEN_TITLEWIDTH:
-        flow_grid_set_title_width(widget,
-            config_assign_number(scanner, "title_width"));
-        return TRUE;
       case G_TOKEN_GROUP:
         if(g_scanner_peek_next_token(scanner) == '=')
         {
@@ -334,72 +332,62 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
   return FALSE;
 }
 
-GtkWidget *config_widget_new ( gint type, GScanner *scanner )
+GtkWidget *config_widget_find_existing ( GScanner *scanner,
+    GtkWidget *container, GType (*get_type)(void) )
 {
-  switch(type)
-  {
-    case G_TOKEN_GRID:
-      return grid_new();
-    case G_TOKEN_LABEL:
-      return label_new();
-    case G_TOKEN_IMAGE:
-      return image_new();
-    case G_TOKEN_BUTTON:
-      return button_new();
-    case G_TOKEN_SCALE:
-      return scale_new();
-    case G_TOKEN_CHART:
-      return cchart_new();
-    case G_TOKEN_INCLUDE:
-      return config_include( scanner, FALSE );
-    case G_TOKEN_TASKBAR:
-      return taskbar_shell_new();
-    case G_TOKEN_PAGER:
-      return pager_new();
-    case G_TOKEN_TRAY:
-      return tray_new();
-  }
-  return NULL;
+  GtkWidget *widget, *parent;
+
+  if(g_scanner_peek_next_token(scanner)!=G_TOKEN_STRING)
+    return NULL;
+
+  if( !(widget = base_widget_from_id(scanner->next_value.v_string)) )
+    return NULL;
+
+  if(!G_TYPE_CHECK_INSTANCE_TYPE((widget), get_type()))
+    return NULL;
+
+  parent = gtk_widget_get_parent(widget);
+  parent = parent?gtk_widget_get_parent(parent):NULL;
+
+  if(container && parent != container)
+    return NULL;
+
+  g_scanner_get_next_token(scanner);
+  return widget;
 }
 
 gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
 {
-  GtkWidget *widget, *parent;
-  gboolean found = FALSE;
-  gint type;
+  GtkWidget *widget;
+  GType (*type_get)(void);
 
   if(container && !IS_GRID(container))
     return FALSE;
 
-  if( !(type = config_lookup_key(scanner, config_widget_keys)) )
-      return FALSE;
-  scanner->max_parse_errors = FALSE;
+  if(config_include(scanner, container))
+    return TRUE;
 
-  if(g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
-  {
-    g_scanner_get_next_token(scanner);
-    widget = base_widget_from_id(scanner->value.v_string);
-    parent = widget?gtk_widget_get_parent(widget):NULL;
-    parent = parent?gtk_widget_get_parent(parent):NULL;
-    if(!widget || (container && parent != container))
-    {
-      widget = config_widget_new(type, scanner);
-      base_widget_set_id(widget, g_strdup(scanner->value.v_string));
-    }
-    else
-      found = TRUE;
-  }
+  if( !(type_get = config_lookup_ptr(scanner, config_widget_keys)) )
+    return FALSE;
+
+  scanner->max_parse_errors = FALSE;
+  if( (widget = config_widget_find_existing(scanner, container, type_get)) )
+    container = gtk_widget_get_ancestor(widget, GRID_TYPE);
   else
-    widget = config_widget_new(type, scanner);
+  {
+    widget = GTK_WIDGET(g_object_new(type_get(), NULL));
+    if(config_check_and_consume(scanner, G_TOKEN_STRING))
+      base_widget_set_id(widget, g_strdup(scanner->value.v_string));
+    grid_attach(container, widget);
+    css_widget_cascade(widget, NULL);
+  }
 
   config_widget(scanner, widget);
-  if(container && !gtk_widget_get_parent(widget))
-    grid_attach(container, widget);
-  css_widget_cascade(widget, NULL);
-  if(!found && !container)
+
+  if(!container)
   {
-    g_object_ref_sink(widget);
-    g_object_unref(widget);
+    gtk_widget_destroy(widget);
+    return FALSE;
   }
 
   return TRUE;
@@ -407,54 +395,53 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
 
 void config_widget ( GScanner *scanner, GtkWidget *widget )
 {
-  if(g_scanner_peek_next_token(scanner) != '{')
+  if(!config_check_and_consume(scanner, '{'))
     return;
-  g_scanner_get_next_token(scanner);
 
   while(!config_is_section_end(scanner))
   {
     g_scanner_get_next_token(scanner);
-    if(!config_widget_property(scanner, widget) &&
-        !config_widget_child(scanner, widget))
-      g_scanner_error(scanner, "Invalid property in a widget declaration");
+    if(config_widget_property(scanner, widget))
+      continue;
+    if(config_widget_child(scanner, widget))
+      continue;
+
+    g_scanner_error(scanner, "Invalid property in a widget declaration");
+    break;
   }
 }
 
-void config_layout ( GScanner *scanner, GtkWidget **widget, gboolean toplevel )
+void config_layout ( GScanner *scanner, GtkWidget *container )
 {
   GtkWidget *layout;
-  scanner->max_parse_errors=FALSE;
 
-  if(!toplevel)
+  scanner->max_parse_errors = FALSE;
+  if(container)
   {
-    if(!*widget)
-      *widget = grid_new();
-    layout = *widget;
+    if(!scanner->user_data)
+      scanner->user_data = grid_new();
+    layout = scanner->user_data;
   }
+  else if(config_check_and_consume(scanner, G_TOKEN_STRING))
+    layout = bar_grid_from_name(scanner->value.v_string);
   else
-  {
-    if(g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
-    {
-      g_scanner_get_next_token(scanner);
-      layout = bar_grid_from_name(scanner->value.v_string);
-    }
-    else
-      layout = bar_grid_from_name(NULL);
-  }
+    layout = bar_grid_from_name(NULL);
 
   config_widget(scanner, layout);
 }
 
 void config_popup ( GScanner *scanner )
 {
-  GtkWidget *win, *grid;
+  gchar *id;
 
-  if(!config_expect_token(scanner, G_TOKEN_STRING,
-        "Missing argument after 'popup'"))
-    return;
+  config_parse_sequence(scanner,
+      SEQ_OPT, '(', NULL, NULL, NULL,
+      SEQ_REQ, G_TOKEN_STRING, NULL, &id, "Missing PopUp id",
+      SEQ_OPT, ')', NULL, NULL, NULL,
+      SEQ_END);
 
-  g_scanner_get_next_token(scanner);
-  win = popup_new(scanner->value.v_string);
-  grid = gtk_bin_get_child(GTK_BIN(win));
-  config_widget(scanner, grid);
+  if(!scanner->max_parse_errors && id)
+    config_widget(scanner, gtk_bin_get_child(GTK_BIN(popup_new(id))));
+
+  g_free(id);
 }

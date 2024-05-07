@@ -16,7 +16,6 @@ void config_placer ( GScanner *scanner )
   scanner->max_parse_errors = FALSE;
   if(!config_expect_token(scanner, '{', "Missing '{' after 'placer'"))
     return;
-  g_scanner_get_next_token(scanner);
 
   while(!config_is_section_end(scanner))
   {

@@ -546,6 +546,8 @@ void base_widget_set_id ( GtkWidget *self, gchar *id )
 
   if(!g_hash_table_lookup(base_widget_id_map, priv->id))
     g_hash_table_insert(base_widget_id_map, g_strdup(priv->id), self);
+  else
+    g_message("widget id collision: '%s'", priv->id);
 }
 
 GtkWidget *base_widget_from_id ( gchar *id )

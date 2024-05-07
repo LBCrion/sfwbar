@@ -4,6 +4,9 @@
 #include <gtk/gtk.h>
 #include "action.h"
 
+#define config_lookup_key(x,y) GPOINTER_TO_INT(config_lookup_ptr(x,y))
+#define config_lookup_next_key(x,y) GPOINTER_TO_INT(config_lookup_next_ptr(x,y))
+
 enum ConfigSequenceType {
   SEQ_OPT,
   SEQ_CON,
@@ -22,10 +25,11 @@ extern GHashTable *config_flowgrid_props;
 typedef gboolean (*parse_func) ( GScanner *, void * );
 
 void config_init ( void );
-gint config_lookup_key ( GScanner *scanner, GHashTable *table );
-gint config_lookup_next_key ( GScanner *scanner, GHashTable *table );
+gpointer config_lookup_ptr ( GScanner *scanner, GHashTable *table );
+gpointer config_lookup_next_ptr ( GScanner *scanner, GHashTable *table );
+gboolean config_check_and_consume ( GScanner *scanner, gint token );
 gchar *config_value_string ( gchar *dest, gchar *string );
-GtkWidget *config_parse ( gchar *, gboolean );
+GtkWidget *config_parse ( gchar *, GtkWidget * );
 void config_pipe_read ( gchar *command );
 void config_string ( gchar *string );
 gboolean config_expect_token ( GScanner *scan, gint token, gchar *fmt, ...);
@@ -43,13 +47,13 @@ gchar *config_get_value ( GScanner *, gchar *, gboolean, gchar **);
 void config_menu_items ( GScanner *scanner, GtkWidget *menu );
 gboolean config_flowgrid_property ( GScanner *scanner, GtkWidget *widget );
 void config_scanner ( GScanner *scanner );
-void config_layout ( GScanner *, GtkWidget **, gboolean );
+void config_layout ( GScanner *, GtkWidget * );
 gboolean config_widget_child ( GScanner *scanner, GtkWidget *container );
-GtkWidget *config_include ( GScanner *scanner, gboolean toplevel );
+gboolean config_include ( GScanner *scanner, GtkWidget *container );
 void config_switcher ( GScanner *scanner );
 void config_placer ( GScanner *scanner );
 void config_popup ( GScanner *scanner );
-GtkWidget *config_parse_toplevel ( GScanner *scanner, gboolean toplevel );
+GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container );
 
 enum {
   G_TOKEN_SCANNER = G_TOKEN_LAST + 50,

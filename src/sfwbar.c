@@ -140,7 +140,7 @@ static void activate (GtkApplication* app, gpointer data )
   if(bar_id)
     bar_address_all(NULL, bar_id, bar_set_id);
 
-  config_parse(confname?confname:"sfwbar.config",TRUE);
+  config_parse(confname?confname:"sfwbar.config", NULL);
 
   clist = gtk_window_list_toplevels();
 
