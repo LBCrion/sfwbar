@@ -529,13 +529,14 @@ void base_widget_set_trigger ( GtkWidget *self, gchar *trigger )
 void base_widget_set_id ( GtkWidget *self, gchar *id )
 {
   BaseWidgetPrivate *priv;
+  GtkWidget *old;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(!base_widget_id_map)
     base_widget_id_map = g_hash_table_new_full((GHashFunc)str_nhash,
-        (GEqualFunc)str_nequal, g_free,NULL);
+        (GEqualFunc)str_nequal, g_free, NULL);
 
   if(priv->id)
     g_hash_table_remove(base_widget_id_map, priv->id);
@@ -544,9 +545,10 @@ void base_widget_set_id ( GtkWidget *self, gchar *id )
   priv->id = id? id: g_strdup_printf("_w%lld",
       (long long int)base_widget_default_id++);
 
-  if(!g_hash_table_lookup(base_widget_id_map, priv->id))
+  old = g_hash_table_lookup(base_widget_id_map, priv->id);
+  if(!old)
     g_hash_table_insert(base_widget_id_map, g_strdup(priv->id), self);
-  else
+  else if (old != self)
     g_message("widget id collision: '%s'", priv->id);
 }
 
