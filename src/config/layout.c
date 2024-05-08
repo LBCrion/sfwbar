@@ -329,6 +329,23 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         return TRUE;
     }
 
+  if(GTK_IS_BOX(gtk_widget_get_parent(widget)))
+    switch(key)
+    {
+      case G_TOKEN_LAYER:
+        bar_set_layer(gtk_widget_get_ancestor(widget, BAR_TYPE),
+            config_assign_string(scanner, "layer"));
+        return TRUE;
+      case G_TOKEN_SIZE:
+        bar_set_size(gtk_widget_get_ancestor(widget, BAR_TYPE),
+            config_assign_string(scanner, "size"));
+        return TRUE;
+      case G_TOKEN_EXCLUSIVEZONE:
+        bar_set_exclusive_zone(gtk_widget_get_ancestor(widget, BAR_TYPE),
+            config_assign_string(scanner, "exclusive zone"));
+        return TRUE;
+    }
+
   return FALSE;
 }
 

@@ -206,6 +206,9 @@ void config_init ( void )
   config_add_key(config_prop_keys, "Tooltip", G_TOKEN_TOOLTIP);
   config_add_key(config_prop_keys, "Group", G_TOKEN_GROUP);
   config_add_key(config_prop_keys, "Filter", G_TOKEN_FILTER);
+  config_add_key(config_prop_keys, "Exclusive_zone", G_TOKEN_EXCLUSIVEZONE);
+  config_add_key(config_prop_keys, "Layer", G_TOKEN_LAYER);
+  config_add_key(config_prop_keys, "Size", G_TOKEN_SIZE);
 
 config_flowgrid_props = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);

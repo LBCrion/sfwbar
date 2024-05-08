@@ -140,7 +140,6 @@ static void bar_style_updated ( GtkWidget *self )
 {
   BarPrivate *priv;
   GtkAlign halign, valign;
-  GdkWindow *win;
   GdkRectangle rect;
   gint dir, size;
   gboolean top, left, right, bottom, full_size;
@@ -154,18 +153,16 @@ static void bar_style_updated ( GtkWidget *self )
   gtk_widget_style_get(self,"valign",&valign,NULL);
   gtk_widget_style_get(self,"direction",&dir,NULL);
 
-  if(!priv->size)
+  if(!priv->size || !priv->current_monitor)
     full_size = TRUE;
   else
   {
-    win = gtk_widget_get_window(self);
-    gdk_monitor_get_geometry(gdk_display_get_monitor_at_window(
-      gdk_window_get_display(win), win), &rect);
+    gdk_monitor_get_geometry(priv->current_monitor, &rect);
     size = g_ascii_strtod(priv->size, &end);
     if(*end=='%')
     {
       if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
-        size *= (gdouble)rect.width/100;
+       size *= (gdouble)rect.width/100;
       else
         size *= (gdouble)rect.height/100;
     }
@@ -174,6 +171,14 @@ static void bar_style_updated ( GtkWidget *self )
       full_size = size >= rect.width;
     else
       full_size = size >= rect.height;
+  }
+
+  if(!full_size)
+  {
+    if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
+      gtk_widget_set_size_request(self, (gint)size, -1);
+    else
+      gtk_widget_set_size_request(self, -1, (gint)size);
   }
 
   if(priv->dir == dir && priv->halign == halign && priv->valign == valign &&
@@ -203,20 +208,18 @@ static void bar_style_updated ( GtkWidget *self )
         (dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)?
         GTK_ORIENTATION_HORIZONTAL:GTK_ORIENTATION_VERTICAL);
 
-  if(!full_size)
-  {
-    if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
-      gtk_widget_set_size_request(self, (gint)size, -1);
-    else
-      gtk_widget_set_size_request(self, -1, (gint)size);
-  }
-
   priv->dir = dir;
   priv->halign = halign;
   priv->valign = valign;
   priv->full_size = full_size;
 
   g_return_if_fail(IS_BAR(self));
+}
+
+static void bar_map ( GtkWidget *self )
+{
+  GTK_WIDGET_CLASS(bar_parent_class)->map(self);
+  bar_style_updated(self);
 }
 
 static void bar_init ( Bar *self )
@@ -229,6 +232,7 @@ static void bar_class_init ( BarClass *kclass )
   GTK_WIDGET_CLASS(kclass)->enter_notify_event = bar_enter_notify_event;
   GTK_WIDGET_CLASS(kclass)->leave_notify_event = bar_leave_notify_event;
   GTK_WIDGET_CLASS(kclass)->style_updated = bar_style_updated;
+  GTK_WIDGET_CLASS(kclass)->map = bar_map;
 }
 
 GtkWidget *bar_from_name ( gchar *name )
@@ -694,7 +698,7 @@ void bar_set_size ( GtkWidget *self, gchar *size )
   BarPrivate *priv;
 
   g_return_if_fail(IS_BAR(self));
-  g_return_if_fail(size!=NULL);
+  g_return_if_fail(size);
   priv = bar_get_instance_private(BAR(self));
   g_free(priv->size);
   priv->size = g_strdup(size);
