@@ -47,13 +47,13 @@ def main():
         (tag, value) = dline.strip().split('=',1)
         if tag.strip() == 'Name' and not de_name: # Grab first name
           de_name = value.strip()
-        if tag.strip() == 'Icon':
+        if tag.strip() == 'Icon' and not de_icon:
           de_icon = value.strip()
-        if tag.strip() == 'Exec':
+        if tag.strip() == 'Exec' and not de_exec:
           de_exec = value.strip()
-        if tag.strip() == 'Categories':
+        if tag.strip() == 'Categories' and not de_cat:
           de_cat = value.strip()
-        if tag.strip() == 'NoDisplay':
+        if tag.strip() == 'NoDisplay' and not de_disp:
           de_disp = value.strip()
       except:
         pass
