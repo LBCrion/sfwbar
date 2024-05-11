@@ -29,7 +29,7 @@ static void scale_image_get_preferred_width ( GtkWidget *self, gint *m,
   gtk_style_context_get_margin(style,flags, &margin);
   gtk_style_context_get(style, flags, "min-width", &w, NULL);
 
-  *m = (w?w:16) + border.left + border.right + padding.left +
+  *m = (w?w:2) + border.left + border.right + padding.left +
       padding.right + margin.left + margin.right;
   *n = *m;
 }
@@ -51,9 +51,39 @@ static void scale_image_get_preferred_height ( GtkWidget *self, gint *m,
   gtk_style_context_get_margin(style, flags, &margin);
   gtk_style_context_get(style, flags, "min-height", &h, NULL);
 
-  *m = (h?h:16) + border.top + border.bottom + padding.top +
+  *m = (h?h:2) + border.top + border.bottom + padding.top +
       padding.bottom + margin.top + margin.bottom;
   *n = *m;
+}
+
+static void scale_image_height_for_width ( GtkWidget *self, gint w,
+    gint *n, gint *m )
+{
+  *n = w;
+  *m = w;
+}
+
+static void scale_image_width_for_height ( GtkWidget *self, gint h,
+    gint *n, gint *m )
+{
+  *n = h;
+  *m = h;
+}
+
+static GtkSizeRequestMode scale_image_get_request_mode ( GtkWidget *self )
+{
+  GtkWidget *parent;
+  gint dir;
+
+  if(! (parent = gtk_widget_get_ancestor(self, GTK_TYPE_GRID)) )
+    return GTK_SIZE_REQUEST_WIDTH_FOR_HEIGHT;
+
+  gtk_widget_style_get(parent, "direction", &dir, NULL);
+
+  if(dir == GTK_POS_LEFT || dir == GTK_POS_RIGHT)
+    return GTK_SIZE_REQUEST_WIDTH_FOR_HEIGHT;
+
+  return GTK_SIZE_REQUEST_HEIGHT_FOR_WIDTH;
 }
 
 static void scale_image_surface_update ( GtkWidget *self, gint w, gint h )
@@ -66,6 +96,7 @@ static void scale_image_surface_update ( GtkWidget *self, gint w, gint h )
 
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
   priv->fallback = FALSE;
+  gtk_widget_queue_resize(self);
 
   if(priv->ftype == SI_ICON)
     buf =  gtk_icon_theme_load_icon(gtk_icon_theme_get_default(),
@@ -173,10 +204,10 @@ static gboolean scale_image_draw ( GtkWidget *self, cairo_t *cr )
   width = gtk_widget_get_allocated_width(self);
   height = gtk_widget_get_allocated_height(self);
 
-  gtk_render_background(style,cr,margin.left, margin.top, width - margin.left -
-      margin.right, height - margin.top - margin.bottom);
-  gtk_render_frame(style,cr,margin.left, margin.top, width - margin.left -
-      margin.right, height - margin.top - margin.bottom);
+  gtk_render_background(style, cr, margin.left, margin.top, width -
+      margin.left - margin.right, height - margin.top - margin.bottom);
+  gtk_render_frame(style, cr, margin.left, margin.top, width -
+      margin.left - margin.right, height - margin.top - margin.bottom);
   scale = gtk_widget_get_scale_factor(self);
 
   width = (width - border.left - border.right - padding.left
@@ -188,7 +219,7 @@ static gboolean scale_image_draw ( GtkWidget *self, cairo_t *cr )
     return FALSE;
 
   if(!priv->cs || priv->width != width || priv->height != height )
-    scale_image_surface_update(self,width,height);
+    scale_image_surface_update(self, width, height);
 
   if(!priv->cs)
     return FALSE;
@@ -278,6 +309,9 @@ static void scale_image_class_init ( ScaleImageClass *kclass )
   widget_class->get_preferred_width = scale_image_get_preferred_width;
   widget_class->get_preferred_height = scale_image_get_preferred_height;
   widget_class->style_updated = scale_image_style_updated;
+  widget_class->get_preferred_width_for_height = scale_image_width_for_height;
+  widget_class->get_preferred_height_for_width = scale_image_height_for_width;
+  widget_class->get_request_mode = scale_image_get_request_mode;
 
   gtk_widget_class_install_style_property( widget_class,
       g_param_spec_boxed("color","image color",
