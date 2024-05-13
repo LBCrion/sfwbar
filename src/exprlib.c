@@ -4,6 +4,7 @@
  */
 
 #include <sys/statvfs.h>
+#include <locale.h>
 #include <glib.h>
 #include "sfwbar.h"
 #include "module.h"
@@ -174,6 +175,19 @@ ModuleExpressionHandlerV1 time_handler = {
   .name = "time",
   .parameters = "ss",
   .function = expr_lib_time
+};
+
+/* query current locale */
+static void *expr_lib_getlocale ( void **params, void *widget, void *event )
+{
+  return g_strdup(setlocale(LC_ALL, NULL));
+}
+
+ModuleExpressionHandlerV1 getlocale_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC,
+  .name = "getlocale",
+  .parameters = "",
+  .function = expr_lib_getlocale
 };
 
 /* generate disk space utilization for a device */
@@ -498,6 +512,7 @@ static ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &pad_handler,
   &extract_handler,
   &time_handler,
+  &getlocale_handler,
   &disk_handler,
   &active_handler,
   &min_handler,
