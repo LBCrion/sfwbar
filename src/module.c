@@ -326,7 +326,7 @@ void module_queue_append ( module_queue_t *queue, void *item )
     queue->free(ptr->data);
     ptr->data = queue->duplicate(item);
   }
-  else
+  else if(g_list_length(queue->list) < (queue->limit?queue->limit:50))
     queue->list = g_list_append(queue->list, queue->duplicate(item));
 
   trigger = !g_list_next(queue->list);

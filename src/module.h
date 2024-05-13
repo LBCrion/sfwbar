@@ -13,6 +13,7 @@ typedef struct _module_queue {
   void *(*get_num) (void *, gchar *);
   gboolean (*compare) (const void *, const void *);
   const gchar *trigger;
+  gint limit;
 } module_queue_t;
 
 typedef gpointer (*ModuleExpressionFunc)(gpointer *, gpointer, gpointer);
