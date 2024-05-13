@@ -36,5 +36,6 @@ GType grid_get_type ( void );
 
 GtkWidget *grid_new();
 void grid_attach ( GtkWidget *self, GtkWidget *child );
+void grid_detach( GtkWidget *child, GtkWidget *self );
 
 #endif

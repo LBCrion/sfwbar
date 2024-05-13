@@ -602,6 +602,7 @@ void base_widget_set_rect ( GtkWidget *self, GdkRectangle rect )
     return;
 
   g_object_ref(self);
+  grid_detach(self, parent);
   gtk_container_remove(GTK_CONTAINER(base_widget_get_child(parent)), self);
   grid_attach(parent, self);
   g_object_unref(self);
@@ -614,17 +615,15 @@ void base_widget_attach ( GtkWidget *parent, GtkWidget *self,
   gint dir;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
+  g_return_if_fail(GTK_IS_GRID(parent));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  if(parent)
-  {
-    gtk_widget_style_get(parent,"direction",&dir,NULL);
-    if( (priv->rect.x < 0) || (priv->rect.y < 0 ) )
-      gtk_grid_attach_next_to(GTK_GRID(parent),self,sibling,dir,1,1);
-    else
-      gtk_grid_attach(GTK_GRID(parent),self,
-          priv->rect.x,priv->rect.y,priv->rect.width,priv->rect.height);
-  }
+  gtk_widget_style_get(parent, "direction", &dir, NULL);
+  if( (priv->rect.x < 0) || (priv->rect.y < 0 ) )
+    gtk_grid_attach_next_to(GTK_GRID(parent), self, sibling, dir, 1, 1);
+  else
+    gtk_grid_attach(GTK_GRID(parent), self,
+        priv->rect.x, priv->rect.y, priv->rect.width, priv->rect.height);
 }
 
 void base_widget_set_max_width ( GtkWidget *self, guint x )

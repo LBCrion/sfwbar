@@ -96,11 +96,13 @@ GtkWidget *grid_new ( void )
   return GTK_WIDGET(g_object_new(grid_get_type(), NULL));
 }
 
-static void grid_detach( GtkWidget *child, GtkWidget *self )
+void grid_detach( GtkWidget *child, GtkWidget *self )
 {
   GridPrivate *priv;
 
   priv = grid_get_instance_private(GRID(self));
+  g_signal_handlers_disconnect_by_func(G_OBJECT(child), (GCallback)grid_detach,
+      self);
   priv->children = g_list_remove(priv->children, child);
   priv->last = g_list_remove(priv->last, child);
 }
@@ -116,7 +118,7 @@ void grid_attach ( GtkWidget *self, GtkWidget *child )
 
   base_widget_attach(priv->grid, child, priv->last?priv->last->data:NULL);
 
-  if(!g_list_find(priv->children,child))
+  if(!g_list_find(priv->children, child))
   {
     priv->children = g_list_append(priv->children,child);
     priv->last = g_list_prepend(priv->last, child);
