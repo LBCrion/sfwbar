@@ -18,7 +18,7 @@ layout {
   # add a sub-grid to house scales
   style = "scales"
   scale {
-    style = if(XCpuPresent,"","hidden")
+    if(XCpuPresent,"","hidden")
     css = "progressbar progress { background-color: #0000ff;}"
     value = XCpuUtilization
   }
