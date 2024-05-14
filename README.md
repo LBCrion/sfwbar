@@ -48,6 +48,10 @@ ninja -C build
 sudo ninja -C build install
 ```
 
+## Install packages
+
+* [Fedora](https://src.fedoraproject.org/rpms/sfwbar): `sudo dnf install sfwbar`
+
 ## Configuration
 Copy sfwbar.config from /usr/share/sfwbar/ to ~/.config/sfwbar/
 If you prefer to start with something more like tint2 bar, you can
