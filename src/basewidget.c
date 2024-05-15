@@ -97,9 +97,9 @@ static void base_widget_get_pref_width ( GtkWidget *self, gint *m, gint *n )
   if(child && gtk_widget_get_visible(child))
   {
     priv = base_widget_get_instance_private(BASE_WIDGET(self));
-    gtk_widget_get_preferred_width(child,m,n);
+    gtk_widget_get_preferred_width(child, m, n);
     if(priv->maxw)
-      *n = MAX(*m,MIN(*n,priv->maxw));
+      *n = MAX(*m, MIN(*n, priv->maxw));
   }
 }
 
@@ -116,9 +116,9 @@ static void base_widget_get_pref_height ( GtkWidget *self, gint *m, gint *n )
   if(child && gtk_widget_get_visible(child))
   {
     priv = base_widget_get_instance_private(BASE_WIDGET(self));
-    gtk_widget_get_preferred_height(child,m,n);
+    gtk_widget_get_preferred_height(child, m, n);
     if(priv->maxh)
-      *n = MAX(*m,MIN(*n,priv->maxh));
+      *n = MAX(*m, MIN(*n, priv->maxh));
   }
 }
 
