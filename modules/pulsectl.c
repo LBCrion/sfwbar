@@ -527,11 +527,9 @@ static gboolean pulse_connect_try ( void *data )
     return TRUE;
 
   pctx = pa_context_new(papi, "sfwbar");
+  pa_context_set_state_callback(pctx, pulse_state_cb, NULL);
   if(pa_context_connect(pctx, NULL, PA_CONTEXT_NOFLAGS, NULL) >= 0)
-  {
-    pa_context_set_state_callback(pctx, pulse_state_cb, NULL);
     return FALSE;
-  }
   pa_context_disconnect(pctx);
   pa_context_unref(pctx);
   return TRUE;
