@@ -604,8 +604,8 @@ void base_widget_set_rect ( GtkWidget *self, GdkRectangle rect )
   g_object_ref(self);
   grid_detach(self, parent);
   gtk_container_remove(GTK_CONTAINER(base_widget_get_child(parent)), self);
-  grid_attach(parent, self);
-  g_object_unref(self);
+  if(grid_attach(parent, self))
+    g_object_unref(self);
 }
 
 void base_widget_attach ( GtkWidget *parent, GtkWidget *self,

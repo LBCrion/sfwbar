@@ -107,12 +107,12 @@ void grid_detach( GtkWidget *child, GtkWidget *self )
   priv->last = g_list_remove(priv->last, child);
 }
 
-void grid_attach ( GtkWidget *self, GtkWidget *child )
+gboolean grid_attach ( GtkWidget *self, GtkWidget *child )
 {
   GridPrivate *priv;
 
-  g_return_if_fail(IS_GRID(self));
-  g_return_if_fail(IS_BASE_WIDGET(child));
+  g_return_val_if_fail(IS_GRID(self), FALSE);
+  g_return_val_if_fail(IS_BASE_WIDGET(child), FALSE);
 
   priv = grid_get_instance_private(GRID(self));
 
@@ -124,4 +124,6 @@ void grid_attach ( GtkWidget *self, GtkWidget *child )
     priv->last = g_list_prepend(priv->last, child);
     g_signal_connect(G_OBJECT(child), "destroy", (GCallback)grid_detach, self);
   }
+
+  return TRUE;
 }
