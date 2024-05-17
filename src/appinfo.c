@@ -121,6 +121,9 @@ static gchar *app_info_lookup_id ( gchar *app_id, gboolean symbolic_pref )
   if( (icon = app_info_icon_test(app_id, symbolic_pref)) )
     return icon;
 
+  if( (icon = app_info_icon_get(app_id, symbolic_pref)) )
+    return icon;
+
   desktop = g_desktop_app_info_search(app_id);
   for(j=0;desktop[j];j++)
   {
