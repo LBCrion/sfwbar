@@ -50,9 +50,9 @@ void tray_item_update ( GtkWidget *self )
   else if(priv->sni->string[icon] && *(priv->sni->string[icon]))
     scale_image_set_image(priv->icon, priv->sni->string[icon],
         priv->sni->string[SNI_PROP_THEME]);
-  else if(priv->sni->pixbuf[pix-SNI_PROP_ICONPIX])
-    scale_image_set_pixbuf(priv->icon,
-        priv->sni->pixbuf[pix-SNI_PROP_ICONPIX]);
+  else if(priv->sni->string[pix])
+    scale_image_set_image(priv->icon,
+        priv->sni->string[pix], NULL);
 
   if(priv->sni->string[SNI_PROP_LABEL] &&
       *(priv->sni->string[SNI_PROP_LABEL]))

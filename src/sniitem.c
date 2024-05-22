@@ -18,6 +18,7 @@ struct sni_prop_wrapper {
 };
 
 static GList *sni_items;
+static guint pix_counter;
 
 static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
   "IconName", "OverlayIconName", "AttentionIconName", "AttentionMovieName",
@@ -25,24 +26,24 @@ static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
   "OverlayIconPixmap", "AttentionIconPixmap", "ToolTip", "WindowId",
   "ItemIsMenu", "Menu", "XAyatanaOrderingIndex" };
 
-GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
+gchar *sni_item_get_pixbuf ( GVariant *v )
 {
-  gint32 x,y;
-  guint32 *ptr;
+  GVariant *img,*child;
   cairo_surface_t *cs;
   GdkPixbuf *res;
-  gint i;
-  GVariant *img,*child;
-  gsize len;
+  gint32 x,y;
+  guint32 *ptr;
+  gsize len, i;
+  gchar *name;
 
-  if(!v || !g_variant_check_format_string(v,"a(iiay)",FALSE) ||
+  if(!v || !g_variant_check_format_string(v, "a(iiay)", FALSE) ||
       g_variant_n_children(v) < 1)
     return NULL;
 
-  child = g_variant_get_child_value(v,0);
+  child = g_variant_get_child_value(v, 0);
 
-  g_variant_get(child,"(ii@ay)",&x,&y,&img);
-  ptr = (guint32 *)g_variant_get_fixed_array(img,&len,sizeof(guchar));
+  g_variant_get(child, "(ii@ay)", &x, &y, &img);
+  ptr = (guint32 *)g_variant_get_fixed_array(img, &len, sizeof(guchar));
 
   if(!len || !ptr || len != x*y*4)
   {
@@ -51,20 +52,22 @@ GdkPixbuf *sni_item_get_pixbuf ( GVariant *v )
     return NULL;
   }
 
-  ptr = g_memdup2(ptr,len);
+  ptr = g_memdup2(ptr, len);
   g_variant_unref(img);
   g_variant_unref(child);
-  for(i=0;i<x*y;i++)
+  for(i=0; i<x*y; i++)
     ptr[i] = g_ntohl(ptr[i]);
 
-  cs = cairo_image_surface_create_for_data((guchar *)ptr,CAIRO_FORMAT_ARGB32,x,y,
-      cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,x));
-  res = gdk_pixbuf_get_from_surface(cs,0,0,x,y);
+  cs = cairo_image_surface_create_for_data((guchar *)ptr, CAIRO_FORMAT_ARGB32,
+      x, y, cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, x));
+  res = gdk_pixbuf_get_from_surface(cs, 0, 0, x, y);
   cairo_surface_destroy(cs);
   g_free(ptr);
-  g_object_ref_sink(G_OBJECT(res));
 
-  return res;
+  name = g_strdup_printf("<pixbufcache/>sni-%u", pix_counter++);
+  scale_image_cache_insert(g_strdup(name), res);
+
+  return name;
 }
 
 void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
@@ -97,12 +100,11 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
   }
   else if((wrap->prop>=SNI_PROP_ICONPIX)&&(wrap->prop<=SNI_PROP_ATTNPIX))
   {
-    if(wrap->sni->pixbuf[wrap->prop-SNI_PROP_ICONPIX])
-      g_object_unref(wrap->sni->pixbuf[wrap->prop-SNI_PROP_ICONPIX]);
-    wrap->sni->pixbuf[wrap->prop-SNI_PROP_ICONPIX] =
-      sni_item_get_pixbuf(inner);
-      g_debug("sni %s: property %s received",wrap->sni->dest,
-          sni_properties[wrap->prop]);
+    scale_image_cache_remove(wrap->sni->string[wrap->prop]);
+    g_clear_pointer(&(wrap->sni->string[wrap->prop]), g_free);
+    wrap->sni->string[wrap->prop] = sni_item_get_pixbuf(inner);
+    g_debug("sni %s: property %s received",wrap->sni->dest,
+        sni_properties[wrap->prop]);
   }
   else if(wrap->prop == SNI_PROP_MENU &&
       g_variant_is_of_type(inner,G_VARIANT_TYPE_OBJECT_PATH))
@@ -221,10 +223,9 @@ void sni_item_free ( SniItem *sni )
   tray_item_destroy(sni);
   g_cancellable_cancel(sni->cancel);
   g_object_unref(sni->cancel);
-  for(i=0;i<3;i++)
-    if(sni->pixbuf[i]!=NULL)
-      g_object_unref(sni->pixbuf[i]);
-  for(i=0;i<SNI_MAX_STRING;i++)
+  for(i=0; i<3; i++)
+    scale_image_cache_remove(sni->string[SNI_PROP_ICONPIX+i]);
+  for(i=0; i<SNI_MAX_STRING ;i++)
     g_free(sni->string[i]);
 
   g_free(sni->menu_path);

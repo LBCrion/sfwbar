@@ -12,6 +12,22 @@
 G_DEFINE_TYPE_WITH_CODE (ScaleImage, scale_image, GTK_TYPE_IMAGE,
     G_ADD_PRIVATE (ScaleImage))
 
+static GHashTable *scaleimage_cache;
+
+gboolean scale_image_cache_insert ( gchar *name, GdkPixbuf *pb )
+{
+  if(!scaleimage_cache)
+    scaleimage_cache = g_hash_table_new_full(g_str_hash, g_str_equal,
+        g_free, g_object_unref);
+
+  return g_hash_table_insert(scaleimage_cache, name, pb);
+}
+
+gboolean scale_image_cache_remove ( gchar *name )
+{
+  return name?g_hash_table_remove(scaleimage_cache, name):FALSE;
+}
+
 static void scale_image_get_preferred_width ( GtkWidget *self, gint *m,
     gint *n )
 {
@@ -232,11 +248,11 @@ static void scale_image_clear ( GtkWidget *self )
 
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
 
-  g_clear_pointer(&priv->fname,g_free);
-  g_clear_pointer(&priv->file,g_free);
-  g_clear_pointer(&priv->extra,g_free);
-  g_clear_pointer(&priv->pixbuf,g_object_unref);
-  g_clear_pointer(&priv->cs,cairo_surface_destroy);
+  g_clear_pointer(&priv->fname, g_free);
+  g_clear_pointer(&priv->file, g_free);
+  g_clear_pointer(&priv->extra, g_free);
+  g_clear_pointer(&priv->pixbuf, g_object_unref);
+  g_clear_pointer(&priv->cs, cairo_surface_destroy);
   priv->ftype = SI_NONE;
 }
 
@@ -310,22 +326,6 @@ GtkWidget *scale_image_new()
   return GTK_WIDGET(g_object_new(scale_image_get_type(), NULL));
 }
 
-void scale_image_set_pixbuf ( GtkWidget *self, GdkPixbuf *pb )
-{
-  ScaleImagePrivate *priv;
-
-  g_return_if_fail(IS_SCALE_IMAGE(self));
-  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
-
-  if(priv->pixbuf == pb)
-    return;
-
-  scale_image_clear(self);
-  priv->pixbuf = gdk_pixbuf_copy(pb);
-  priv->ftype = SI_BUFF;
-  gtk_widget_queue_draw(self);
-}
-
 gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
     gchar *extra )
 {
@@ -341,6 +341,7 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
   if(!image)
     return FALSE;
 
+  gtk_widget_queue_draw(self);
   if( !g_strcmp0(priv->file, image) && !g_strcmp0(priv->extra, extra) )
     return (priv->ftype != SI_NONE);
 
@@ -348,11 +349,18 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
   priv->file = g_strdup(image);
   priv->extra = g_strdup(extra);
   priv->symbolic = FALSE;
-  gtk_widget_queue_draw(self);
 
   if(!g_ascii_strncasecmp(priv->file, "<?xml", 5))
   {
     priv->ftype = SI_DATA;
+    return TRUE;
+  }
+
+  if(g_str_has_prefix(priv->file, "<pixbufcache/>") && scaleimage_cache &&
+      (buf = g_hash_table_lookup(scaleimage_cache, priv->file)) )
+  {
+    priv->pixbuf = g_object_ref(buf);
+    priv->ftype = SI_BUFF;
     return TRUE;
   }
 
@@ -372,8 +380,7 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
     g_free(test);
     if(temp)
     {
-      buf = gdk_pixbuf_new_from_file_at_scale(temp, 10, 10, TRUE, NULL);
-      if(buf)
+      if( (buf = gdk_pixbuf_new_from_file_at_scale(temp, 10, 10, TRUE, NULL)) )
       {
         g_object_unref(G_OBJECT(buf));
         g_free(priv->fname);
