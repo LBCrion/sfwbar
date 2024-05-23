@@ -480,9 +480,9 @@ static void pulse_state_cb ( pa_context *ctx, gpointer data )
   {
     module_interface_deactivate(&sfwbar_interface);
     g_message("pulse terminated %d %d", sfwbar_interface.ready, sfwbar_interface.active);
-    g_timeout_add (1000,(GSourceFunc )pulse_connect_try, NULL);
-    pa_context_disconnect(pctx);
-    pa_context_unref(pctx);
+    g_timeout_add (1000, (GSourceFunc )pulse_connect_try, NULL);
+    pa_context_disconnect(ctx);
+    pa_context_unref(ctx);
     module_interface_select(sfwbar_interface.interface);
     g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
         (gpointer)g_intern_static_string("volume"));
@@ -490,7 +490,7 @@ static void pulse_state_cb ( pa_context *ctx, gpointer data )
   else if(state == PA_CONTEXT_READY)
   {
     pa_operation_unref(
-        pa_context_get_server_info(ctx,pulse_server_cb,NULL));
+        pa_context_get_server_info(ctx, pulse_server_cb, NULL));
     module_interface_activate(&sfwbar_interface);
   }
 }
@@ -498,10 +498,12 @@ static void pulse_state_cb ( pa_context *ctx, gpointer data )
 static void pulse_activate ( void )
 {
   pa_context_set_subscribe_callback(pctx, pulse_subscribe_cb, NULL);
-  pa_operation_unref( pa_context_subscribe(pctx,PA_SUBSCRIPTION_MASK_SERVER |
+  pa_operation_unref( pa_context_subscribe(pctx, PA_SUBSCRIPTION_MASK_SERVER |
         PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SINK_INPUT |
         PA_SUBSCRIPTION_MASK_SOURCE | PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT,
         NULL, NULL));
+  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
+      (gpointer)g_intern_static_string("volume"));
 }
 
 static void pulse_deactivate ( void )
