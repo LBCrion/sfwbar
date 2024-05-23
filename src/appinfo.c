@@ -96,8 +96,17 @@ gchar *app_info_icon_get ( const gchar *app_id, gboolean symbolic_pref )
 {
   GDesktopAppInfo *app;
   char *icon, *icon_name;
+  gchar *file;
 
-  if( !(app = g_desktop_app_info_new(app_id)) )
+  if(g_str_has_suffix(app_id, ".desktop"))
+    file = (gchar *)app_id;
+  else
+    file = g_strconcat(app_id, ".desktop", NULL);
+
+  app = g_desktop_app_info_new(file);
+  g_free(file);
+
+  if(!app)
     return NULL;
 
   if(g_desktop_app_info_get_nodisplay(app))
