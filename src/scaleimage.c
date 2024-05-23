@@ -341,7 +341,6 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
   if(!image)
     return FALSE;
 
-  gtk_widget_queue_draw(self);
   if( !g_strcmp0(priv->file, image) && !g_strcmp0(priv->extra, extra) )
     return (priv->ftype != SI_NONE);
 
@@ -349,6 +348,7 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
   priv->file = g_strdup(image);
   priv->extra = g_strdup(extra);
   priv->symbolic = FALSE;
+  gtk_widget_queue_draw(self);
 
   if(!g_ascii_strncasecmp(priv->file, "<?xml", 5))
   {

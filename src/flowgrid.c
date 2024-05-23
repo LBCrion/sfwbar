@@ -267,10 +267,8 @@ void flow_grid_add_child ( GtkWidget *self, GtkWidget *child )
     base_widget_action_configure(child, i);
   priv->children = g_list_append(priv->children, child);
   flow_item_set_parent(child, self);
-  if(FLOW_ITEM_GET_CLASS(child)->decorate)
-    FLOW_ITEM_GET_CLASS(child)->decorate(child, priv->labels, priv->icons);
-  if(FLOW_ITEM_GET_CLASS(child)->set_title_width)
-    FLOW_ITEM_GET_CLASS(child)->set_title_width(child, priv->title_width);
+  flow_item_decorate(child, priv->labels, priv->icons);
+  flow_item_set_title_width(child, priv->title_width);
   priv->invalid = TRUE;
 }
 
