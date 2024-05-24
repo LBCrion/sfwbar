@@ -20,7 +20,7 @@ gboolean scale_image_cache_insert ( gchar *name, GdkPixbuf *pb )
     scaleimage_cache = g_hash_table_new_full(g_str_hash, g_str_equal,
         g_free, g_object_unref);
 
-  return g_hash_table_insert(scaleimage_cache, name, pb);
+  return g_hash_table_insert(scaleimage_cache, g_strdup(name), pb);
 }
 
 gboolean scale_image_cache_remove ( gchar *name )

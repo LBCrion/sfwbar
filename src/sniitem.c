@@ -65,7 +65,7 @@ gchar *sni_item_get_pixbuf ( GVariant *v )
   g_free(ptr);
 
   name = g_strdup_printf("<pixbufcache/>sni-%u", pix_counter++);
-  scale_image_cache_insert(g_strdup(name), res);
+  scale_image_cache_insert(name, res);
 
   return name;
 }
