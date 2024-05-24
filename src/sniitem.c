@@ -94,37 +94,37 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
       g_variant_is_of_type(inner,G_VARIANT_TYPE_STRING))
   {
     g_free(wrap->sni->string[wrap->prop]);
-    g_variant_get(inner,"s",&(wrap->sni->string[wrap->prop]));
-    g_debug("sni %s: property %s = %s",wrap->sni->dest,
-        sni_properties[wrap->prop],wrap->sni->string[wrap->prop]);
+    g_variant_get(inner, "s", &(wrap->sni->string[wrap->prop]));
+    g_debug("sni %s: property %s = %s", wrap->sni->dest,
+        sni_properties[wrap->prop], wrap->sni->string[wrap->prop]);
   }
-  else if((wrap->prop>=SNI_PROP_ICONPIX)&&(wrap->prop<=SNI_PROP_ATTNPIX))
+  else if(wrap->prop>=SNI_PROP_ICONPIX && wrap->prop<=SNI_PROP_ATTNPIX)
   {
     scale_image_cache_remove(wrap->sni->string[wrap->prop]);
     g_clear_pointer(&(wrap->sni->string[wrap->prop]), g_free);
     wrap->sni->string[wrap->prop] = sni_item_get_pixbuf(inner);
-    g_debug("sni %s: property %s received",wrap->sni->dest,
+    g_debug("sni %s: property %s received", wrap->sni->dest,
         sni_properties[wrap->prop]);
   }
   else if(wrap->prop == SNI_PROP_MENU &&
       g_variant_is_of_type(inner,G_VARIANT_TYPE_OBJECT_PATH))
-    {
-      g_free(wrap->sni->menu_path);
-      g_variant_get(inner,"o",&(wrap->sni->menu_path));
-      g_debug("sni %s: property %s = %s",wrap->sni->dest,
-          sni_properties[wrap->prop],wrap->sni->menu_path);
-    }
+  {
+    g_free(wrap->sni->menu_path);
+    g_variant_get(inner, "o", &(wrap->sni->menu_path));
+    g_debug("sni %s: property %s = %s", wrap->sni->dest,
+        sni_properties[wrap->prop], wrap->sni->menu_path);
+  }
   else if(wrap->prop == SNI_PROP_ISMENU)
   {
-    g_variant_get(inner,"b",&(wrap->sni->menu));
-    g_debug("sni %s: property %s = %d",wrap->sni->dest,
-        sni_properties[wrap->prop],wrap->sni->menu);
+    g_variant_get(inner, "b", &(wrap->sni->menu));
+    g_debug("sni %s: property %s = %d", wrap->sni->dest,
+        sni_properties[wrap->prop], wrap->sni->menu);
   }
   else if(wrap->prop == SNI_PROP_ORDER)
   {
-    g_variant_get(inner,"u",&(wrap->sni->order));
-    g_debug("sni %s: property %s = %u",wrap->sni->dest,
-        sni_properties[wrap->prop],wrap->sni->order);
+    g_variant_get(inner, "u", &(wrap->sni->order));
+    g_debug("sni %s: property %s = %u", wrap->sni->dest,
+        sni_properties[wrap->prop], wrap->sni->order);
   }
 
   g_variant_unref(inner);
@@ -144,41 +144,41 @@ void sni_item_get_prop ( GDBusConnection *con, SniItem *sni,
 
   g_dbus_connection_call(con, sni->dest, sni->path,
     "org.freedesktop.DBus.Properties", "Get",
-    g_variant_new("(ss)", sni->host->item_iface, sni_properties[prop]),NULL,
-    G_DBUS_CALL_FLAGS_NONE,-1,sni->cancel,
-    (GAsyncReadyCallback)sni_item_prop_cb,wrap);
+    g_variant_new("(ss)", sni->host->item_iface, sni_properties[prop]), NULL,
+    G_DBUS_CALL_FLAGS_NONE, -1, sni->cancel,
+    (GAsyncReadyCallback)sni_item_prop_cb, wrap);
 }
 
 void sni_item_signal_cb (GDBusConnection *con, const gchar *sender,
          const gchar *path, const gchar *interface, const gchar *signal,
          GVariant *parameters, gpointer data)
 {
-  g_debug("sni: received signal %s from %s",signal,sender);
-  if(!g_strcmp0(signal,"NewTitle"))
-    sni_item_get_prop(con,data,SNI_PROP_TITLE);
-  else if(!g_strcmp0(signal,"NewStatus"))
-    sni_item_get_prop(con,data,SNI_PROP_STATUS);
-  else if(!g_strcmp0(signal,"NewToolTip"))
-    sni_item_get_prop(con,data,SNI_PROP_TOOLTIP);
-  else if(!g_strcmp0(signal,"NewIconThemePath"))
-    sni_item_get_prop(con,data,SNI_PROP_THEME);
-  else if(!g_strcmp0(signal,"NewIcon"))
+  g_debug("sni: received signal %s from %s", signal, sender);
+  if(!g_strcmp0(signal, "NewTitle"))
+    sni_item_get_prop(con, data,  SNI_PROP_TITLE);
+  else if(!g_strcmp0(signal, "NewStatus"))
+    sni_item_get_prop(con, data, SNI_PROP_STATUS);
+  else if(!g_strcmp0(signal, "NewToolTip"))
+    sni_item_get_prop(con, data, SNI_PROP_TOOLTIP);
+  else if(!g_strcmp0(signal, "NewIconThemePath"))
+    sni_item_get_prop(con, data, SNI_PROP_THEME);
+  else if(!g_strcmp0(signal, "NewIcon"))
   {
-    sni_item_get_prop(con,data,SNI_PROP_ICON);
-    sni_item_get_prop(con,data,SNI_PROP_ICONPIX);
+    sni_item_get_prop(con, data, SNI_PROP_ICON);
+    sni_item_get_prop(con, data, SNI_PROP_ICONPIX);
   }
-  else if(!g_strcmp0(signal,"NewOverlayIcon"))
+  else if(!g_strcmp0(signal, "NewOverlayIcon"))
   {
-    sni_item_get_prop(con,data,SNI_PROP_OVLAY);
-    sni_item_get_prop(con,data,SNI_PROP_OVLAYPIX);
+    sni_item_get_prop(con, data, SNI_PROP_OVLAY);
+    sni_item_get_prop(con, data, SNI_PROP_OVLAYPIX);
   }
-  else if(!g_strcmp0(signal,"NewAttentionIcon"))
+  else if(!g_strcmp0(signal, "NewAttentionIcon"))
   {
-    sni_item_get_prop(con,data,SNI_PROP_ATTN);
-    sni_item_get_prop(con,data,SNI_PROP_ATTNPIX);
+    sni_item_get_prop(con, data, SNI_PROP_ATTN);
+    sni_item_get_prop(con, data, SNI_PROP_ATTNPIX);
   }
-  else if(!g_strcmp0(signal,"XAyatanaNewLabel"))
-    sni_item_get_prop(con,data,SNI_PROP_LABEL);
+  else if(!g_strcmp0(signal, "XAyatanaNewLabel"))
+    sni_item_get_prop(con, data, SNI_PROP_LABEL);
 }
 
 SniItem *sni_item_new (GDBusConnection *con, SniHost *host,
@@ -195,7 +195,7 @@ SniItem *sni_item_new (GDBusConnection *con, SniHost *host,
   path = strchr(uid,'/');
   if(path!=NULL)
   {
-    sni->dest = g_strndup(uid,path-uid);
+    sni->dest = g_strndup(uid, path-uid);
     sni->path = g_strdup(path);
   }
   else
@@ -204,12 +204,13 @@ SniItem *sni_item_new (GDBusConnection *con, SniHost *host,
     sni->dest = g_strdup(uid);
   }
   sni->host = host;
-  sni->signal = g_dbus_connection_signal_subscribe(con,sni->dest,
-      sni->host->item_iface,NULL,sni->path,NULL,0,sni_item_signal_cb,sni,NULL);
+  sni->signal = g_dbus_connection_signal_subscribe(con, sni->dest,
+      host->item_iface, NULL, sni->path, NULL, 0, sni_item_signal_cb,
+      sni, NULL);
   sni_items = g_list_append(sni_items, sni);
   tray_item_init_for_all(sni);
-  for(i=0;i<SNI_MAX_PROP;i++)
-    sni_item_get_prop(con,sni,i);
+  for(i=0; i<SNI_MAX_PROP; i++)
+    sni_item_get_prop(con, sni, i);
 
   return sni;
 }
@@ -219,13 +220,13 @@ void sni_item_free ( SniItem *sni )
   gint i;
 
   tray_invalidate_all(sni);
-  g_dbus_connection_signal_unsubscribe(sni_get_connection(),sni->signal);
+  g_dbus_connection_signal_unsubscribe(sni_get_connection(), sni->signal);
   tray_item_destroy(sni);
   g_cancellable_cancel(sni->cancel);
   g_object_unref(sni->cancel);
   for(i=0; i<3; i++)
     scale_image_cache_remove(sni->string[SNI_PROP_ICONPIX+i]);
-  for(i=0; i<SNI_MAX_STRING ;i++)
+  for(i=0; i<SNI_MAX_STRING; i++)
     g_free(sni->string[i]);
 
   g_free(sni->menu_path);
