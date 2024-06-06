@@ -761,6 +761,7 @@ gchar *base_widget_get_value ( GtkWidget *self )
 void base_widget_set_css ( GtkWidget *self, gchar *css )
 {
   BaseWidgetPrivate *priv;
+  GList *iter;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
@@ -771,8 +772,11 @@ void base_widget_set_css ( GtkWidget *self, gchar *css )
     return;
   }
 
-  priv->css = g_list_append(priv->css, g_strdup(css));
-  css_widget_apply(base_widget_get_child(self), css);
+  css_widget_apply(base_widget_get_child(self), g_strdup(css));
+  for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
+    css_widget_apply(base_widget_get_child(iter->data), g_strdup(css));
+
+  priv->css = g_list_append(priv->css, css);
 }
 
 void base_widget_set_action ( GtkWidget *self, gint slot,
@@ -853,13 +857,13 @@ GtkWidget *base_widget_mirror ( GtkWidget *src )
   if(!g_list_find(spriv->mirror_children, dest))
   {
     spriv->mirror_children = g_list_prepend(spriv->mirror_children, dest);
-    base_widget_style(dest);
+    base_widget_style(src);
     base_widget_update_value(dest);
   }
 
   dpriv->trigger = spriv->trigger;
   if(spriv->tooltip)
-    base_widget_set_tooltip( dest, spriv->tooltip->definition );
+    base_widget_set_tooltip(dest, spriv->tooltip->definition);
   base_widget_set_local_state(dest, spriv->local_state);
   base_widget_set_state(dest, spriv->user_state, TRUE);
   base_widget_set_rect(dest, spriv->rect);

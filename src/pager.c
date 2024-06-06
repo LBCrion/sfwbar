@@ -17,18 +17,14 @@ static GList *pagers;
 static GtkWidget *pager_mirror ( GtkWidget *src )
 {
   GtkWidget *self;
-  PagerPrivate *spriv, *dpriv;
 
-  g_return_val_if_fail(IS_PAGER(src),NULL);
+  g_return_val_if_fail(IS_PAGER(src), NULL);
   self = pager_new();
-  dpriv = pager_get_instance_private(PAGER(self));
-  spriv = pager_get_instance_private(PAGER(src));
 
   g_object_set_data(G_OBJECT(self), "preview",
       g_object_get_data(G_OBJECT(src), "preview"));
   g_object_set_data(G_OBJECT(self), "sort_numeric",
       g_object_get_data(G_OBJECT(src), "sort_numeric"));
-  dpriv->pins = g_list_copy_deep(spriv->pins, (GCopyFunc)g_strdup,NULL);
 
   flow_grid_copy_properties(self, src);
 
@@ -41,8 +37,8 @@ static void pager_destroy ( GtkWidget *self )
 
   g_return_if_fail(IS_PAGER(self));
   priv = pager_get_instance_private(PAGER(self));
-  pagers = g_list_remove(pagers,self);
-  g_list_free_full(g_steal_pointer(&priv->pins),g_free);
+  pagers = g_list_remove(pagers, self);
+  g_list_free_full(g_steal_pointer(&priv->pins), g_free);
   GTK_WIDGET_CLASS(pager_parent_class)->destroy(self);
 }
 
@@ -83,6 +79,7 @@ void pager_add_pin ( GtkWidget *self, gchar *pin )
       priv->pins = g_list_prepend(priv->pins, g_strdup(pin));
     workspace_pin_add(pin);
   }
+
   g_free(pin);
 }
 
@@ -91,7 +88,7 @@ gboolean pager_check_pins ( GtkWidget *self, gchar *pin )
   PagerPrivate *priv;
 
   g_return_val_if_fail(IS_PAGER(self), FALSE);
-  priv = pager_get_instance_private(PAGER(self));
+  priv = pager_get_instance_private(PAGER(base_widget_get_mirror_parent(self)));
 
   return !!g_list_find_custom(priv->pins, pin, (GCompareFunc)g_strcmp0);
 }

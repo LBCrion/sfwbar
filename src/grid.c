@@ -127,3 +127,14 @@ gboolean grid_attach ( GtkWidget *self, GtkWidget *child )
 
   return TRUE;
 }
+
+void grid_mirror_child ( GtkWidget *self, GtkWidget *child )
+{
+  GList *iter;
+
+  g_return_if_fail(IS_GRID(self));
+  g_return_if_fail(IS_BASE_WIDGET(child));
+
+  for(iter=base_widget_get_mirror_children(self); iter; iter=g_list_next(iter))
+    grid_attach(iter->data, base_widget_mirror(child));
+}

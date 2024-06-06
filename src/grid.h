@@ -37,5 +37,6 @@ GType grid_get_type ( void );
 GtkWidget *grid_new();
 gboolean grid_attach ( GtkWidget *self, GtkWidget *child );
 void grid_detach( GtkWidget *child, GtkWidget *self );
+void grid_mirror_child ( GtkWidget *self, GtkWidget *child );
 
 #endif

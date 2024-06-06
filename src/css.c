@@ -175,7 +175,7 @@ void css_widget_apply ( GtkWidget *widget, gchar *css )
 
   cont = gtk_widget_get_style_context (widget);
   provider = gtk_css_provider_new();
-  gtk_css_provider_load_from_data(provider,css,strlen(css),NULL);
+  gtk_css_provider_load_from_data(provider, css, strlen(css), NULL);
   gtk_style_context_add_provider (cont,
     GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
   g_object_unref(provider);
@@ -187,7 +187,7 @@ void css_widget_cascade ( GtkWidget *widget, gpointer data )
   css_custom_handle(widget);
 
   if(GTK_IS_CONTAINER(widget))
-    gtk_container_forall(GTK_CONTAINER(widget),css_widget_cascade,NULL);
+    gtk_container_forall(GTK_CONTAINER(widget), css_widget_cascade, NULL);
 }
 
 void css_add_class ( GtkWidget *widget, gchar *css_class )
