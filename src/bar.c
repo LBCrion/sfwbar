@@ -18,7 +18,6 @@
 G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW, G_ADD_PRIVATE (Bar))
 
 static GHashTable *bar_list;
-static GList *mirrors;
 extern GtkApplication *application;
 
 static gboolean bar_sensor_unblock_cb ( GtkWidget *self )
@@ -46,9 +45,9 @@ static gboolean bar_sensor_hide ( GtkWidget *self )
     return TRUE;
   priv->sensor_block = TRUE;
   g_idle_add((GSourceFunc)bar_sensor_unblock_cb, self);
-  css_add_class(self,"sensor");
-  gtk_container_remove(GTK_CONTAINER(self),gtk_bin_get_child(GTK_BIN(self)));
-  gtk_container_add(GTK_CONTAINER(self),priv->sensor);
+  css_add_class(self, "sensor");
+  gtk_container_remove(GTK_CONTAINER(self), gtk_bin_get_child(GTK_BIN(self)));
+  gtk_container_add(GTK_CONTAINER(self), priv->sensor);
   priv->sensor_state = FALSE;
   priv->sensor_handle = 0;
 
@@ -86,14 +85,15 @@ static void bar_sensor_show_bar ( GtkWidget *self )
   bar_sensor_cancel_hide(self);
   priv->sensor_state = TRUE;
 
-  if(gtk_bin_get_child(GTK_BIN(self))!=priv->sensor)
+  if(gtk_bin_get_child(GTK_BIN(self)) != priv->sensor)
     return;
 
   priv->sensor_block = TRUE;
   g_idle_add((GSourceFunc)bar_sensor_unblock_cb, self);
   css_remove_class(self,"sensor");
-  gtk_container_remove(GTK_CONTAINER(self),gtk_bin_get_child(GTK_BIN(self)));
-  gtk_container_add(GTK_CONTAINER(self),priv->box);
+  gtk_container_remove(GTK_CONTAINER(self), gtk_bin_get_child(GTK_BIN(self)));
+  gtk_widget_show(priv->box);
+  gtk_container_add(GTK_CONTAINER(self), priv->box);
 }
 
 static gboolean bar_enter_notify_event ( GtkWidget *self,
@@ -122,15 +122,13 @@ static void bar_destroy ( GtkWidget *self )
     ppriv->mirror_children = g_list_remove(ppriv->mirror_children, self);
     priv->mirror_parent = NULL;
   }
-  mirrors = g_list_remove(mirrors, self);
   g_clear_pointer(&priv->name,g_free);
   g_clear_pointer(&priv->output,g_free);
   g_clear_pointer(&priv->bar_id,g_free);
   g_clear_pointer(&priv->size,g_free);
   g_clear_pointer(&priv->ezone,g_free);
   g_clear_pointer(&priv->layer,g_free);
-  g_clear_pointer(&priv->mirror_targets,g_strfreev);
-  g_clear_pointer(&priv->mirror_blocks,g_strfreev);
+  g_list_free_full(g_steal_pointer(&priv->mirror_targets), g_free);
   g_clear_pointer(&priv->sensor,gtk_widget_destroy);
   g_clear_pointer(&priv->box,gtk_widget_destroy);
   GTK_WIDGET_CLASS(bar_parent_class)->destroy(self);
@@ -301,20 +299,25 @@ GtkWidget *bar_grid_from_name ( gchar *addr )
 
   if(grid && !g_ascii_strcasecmp(grid,"center"))
   {
-    gtk_box_set_center_widget(GTK_BOX(priv->box),widget);
+    gtk_box_set_center_widget(GTK_BOX(priv->box), widget);
     priv->center = widget;
   }
   else if(grid && !g_ascii_strcasecmp(grid,"end"))
   {
-    gtk_box_pack_end(GTK_BOX(priv->box),widget,TRUE,TRUE,0);
+    gtk_box_pack_end(GTK_BOX(priv->box), widget, TRUE, TRUE, 0);
     priv->end = widget;
   }
   else
   {
-    gtk_box_pack_start(GTK_BOX(priv->box),widget,TRUE,TRUE,0);
+    gtk_box_pack_start(GTK_BOX(priv->box), widget, TRUE, TRUE, 0);
     priv->start = widget;
   }
   return widget;
+}
+
+GHashTable *bar_get_list ( void )
+{
+  return bar_list;
 }
 
 gboolean bar_address_all ( GtkWidget *self, gchar *value,
@@ -335,28 +338,55 @@ gboolean bar_address_all ( GtkWidget *self, gchar *value,
   return TRUE;
 }
 
-void bar_set_mirrors ( GtkWidget *self, gchar *mirror )
+void bar_set_mirrors ( GtkWidget *self, GList *mirrors )
 {
   BarPrivate *priv;
 
   g_return_if_fail(IS_BAR(self));
   priv = bar_get_instance_private(BAR(self));
 
-  g_strfreev(priv->mirror_targets);
-  priv->mirror_targets = g_strsplit(mirror,";",-1);
+  g_list_free_full(priv->mirror_targets, g_free);
+  priv->mirror_targets = mirrors;
   bar_update_monitor(self);
 }
 
-void bar_set_mirror_blocks ( GtkWidget *self, gchar *mirror )
+void bar_set_mirrors_old ( GtkWidget *self, gchar *mirror )
+{
+  GList *list = NULL;
+  gchar **strv;
+  gsize i;
+
+  if( (strv = g_strsplit(mirror, ";", -1)) )
+  {
+    for(i=0; strv[i]; i++)
+      list = g_list_append(list, strv[i]);
+    g_free(strv);
+    bar_set_mirrors(self, list);
+  }
+}
+
+static gboolean bar_mirror_check ( GtkWidget *self, gchar *monitor )
 {
   BarPrivate *priv;
+  GList *iter;
+  gboolean match;
 
-  g_return_if_fail(IS_BAR(self));
+  g_return_val_if_fail(IS_BAR(self), FALSE);
   priv = bar_get_instance_private(BAR(self));
 
-  g_strfreev(priv->mirror_blocks);
-  priv->mirror_blocks = g_strsplit(mirror,";",-1);
-  bar_update_monitor(self);
+  match = FALSE;
+  for(iter=priv->mirror_targets; iter; iter=g_list_next(iter))
+  {
+    if(*((gchar *)iter->data)=='!')
+    {
+      if(g_pattern_match_simple(iter->data + sizeof(gchar), monitor))
+        return FALSE;
+    }
+    else if(g_pattern_match_simple(iter->data, monitor))
+      match = TRUE;
+  }
+
+  return match;
 }
 
 void bar_set_id ( GtkWidget *self, gchar *id )
@@ -369,12 +399,12 @@ void bar_set_id ( GtkWidget *self, gchar *id )
   g_free(priv->bar_id);
   priv->bar_id = g_strdup(id);
 
-  g_list_foreach(priv->mirror_children,(GFunc)bar_set_id,id);
+  g_list_foreach(priv->mirror_children, (GFunc)bar_set_id, id);
 }
 
 void bar_visibility_toggle_all ( gpointer d )
 {
-  bar_set_visibility ( NULL, NULL, 't' );
+  bar_set_visibility (NULL, NULL, 't');
 }
 
 void bar_set_visibility ( GtkWidget *self, const gchar *id, gchar state )
@@ -389,8 +419,8 @@ void bar_set_visibility ( GtkWidget *self, const gchar *id, gchar state )
   {
     if(bar_list)
     {
-      g_hash_table_iter_init(&iter,bar_list);
-      while(g_hash_table_iter_next(&iter,&key,&bar))
+      g_hash_table_iter_init(&iter, bar_list);
+      while(g_hash_table_iter_next(&iter, &key, &bar))
         bar_set_visibility(bar, id, state);
     }
     return;
@@ -399,7 +429,7 @@ void bar_set_visibility ( GtkWidget *self, const gchar *id, gchar state )
   g_return_if_fail(IS_BAR(self));
   priv = bar_get_instance_private(BAR(self));
 
-  if(id && priv->bar_id && g_strcmp0(priv->bar_id,id))
+  if(id && priv->bar_id && g_strcmp0(priv->bar_id, id))
     return;
 
   if(state == 't')
@@ -584,8 +614,7 @@ gboolean bar_update_monitor ( GtkWidget *self )
         present = TRUE;
 
     if(!present && gmon != priv->current_monitor &&
-        pattern_match(priv->mirror_targets,output) &&
-        !pattern_match(priv->mirror_blocks,output) )
+        bar_mirror_check(self, output) )
       bar_mirror(self, gmon);
   }
 
@@ -630,12 +659,12 @@ void bar_monitor_added_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
   if(bar_list)
   {
     g_hash_table_iter_init(&iter,bar_list);
-    while(g_hash_table_iter_next(&iter,&key,&bar))
-      g_idle_add((GSourceFunc)bar_update_monitor,bar);
+    while(g_hash_table_iter_next(&iter, &key, &bar))
+      g_idle_add((GSourceFunc)bar_update_monitor, bar);
   }
 
-  g_snprintf(trigger,255,"%s_connected",
-      (gchar *)g_object_get_data(G_OBJECT(gmon),"xdg_name"));
+  g_snprintf(trigger, 255, "%s_connected",
+      (gchar *)g_object_get_data(G_OBJECT(gmon), "xdg_name"));
   g_idle_add((GSourceFunc)base_widget_emit_trigger,
       (gpointer)g_intern_string(trigger));
 }
@@ -670,27 +699,23 @@ void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
       (gpointer)g_intern_string(trigger));
 }
 
-void bar_set_margin ( GtkWidget *self, gchar *margin )
+void bar_set_margin ( GtkWidget *self, gint64 margin )
 {
   BarPrivate *priv;
+  GList *iter;
 
   g_return_if_fail(IS_BAR(self));
-  g_return_if_fail(margin != NULL);
   priv = bar_get_instance_private(BAR(self));
-  g_free(priv->margin);
-  priv->margin = g_strdup(margin);
+  priv->margin = margin;
 #if GTK_LAYER_VER_MINOR > 5 || GTK_LAYER_VER_MAJOR > 0
-  gtk_layer_set_margin(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_TOP,
-      g_ascii_strtoll(priv->margin, NULL, 10));
-  gtk_layer_set_margin(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_BOTTOM,
-      g_ascii_strtoll(priv->margin, NULL, 10));
-  gtk_layer_set_margin(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_LEFT,
-      g_ascii_strtoll(priv->margin, NULL, 10));
-  gtk_layer_set_margin(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_RIGHT,
-      g_ascii_strtoll(priv->margin, NULL, 10));
+  gtk_layer_set_margin(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_TOP, margin);
+  gtk_layer_set_margin(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_BOTTOM, margin);
+  gtk_layer_set_margin(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_LEFT, margin);
+  gtk_layer_set_margin(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_RIGHT, margin);
 #endif
 
-  g_list_foreach(priv->mirror_children,(GFunc)bar_set_margin, margin);
+  for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
+    bar_set_margin(iter->data, margin);
 }
 
 void bar_set_size ( GtkWidget *self, gchar *size )
@@ -704,7 +729,7 @@ void bar_set_size ( GtkWidget *self, gchar *size )
   priv->size = g_strdup(size);
   bar_style_updated(self);
 
-  g_list_foreach(priv->mirror_children,(GFunc)bar_set_size,size);
+  g_list_foreach(priv->mirror_children,(GFunc)bar_set_size, size);
 }
 
 void bar_sensor_cancel_hide( GtkWidget *self )
@@ -721,13 +746,14 @@ void bar_sensor_cancel_hide( GtkWidget *self )
   }
 }
 
-void bar_set_sensor ( GtkWidget *self, gchar *delay_str )
+void bar_set_sensor ( GtkWidget *self, gint64 timeout )
 {
   BarPrivate *priv;
+  GList *iter;
 
   g_return_if_fail(IS_BAR(self));
   priv = bar_get_instance_private(BAR(self));
-  priv->sensor_timeout = g_ascii_strtoll(delay_str, NULL, 10);
+  priv->sensor_timeout = timeout;
 
   if(priv->sensor_timeout)
   {
@@ -746,7 +772,8 @@ void bar_set_sensor ( GtkWidget *self, gchar *delay_str )
   else if(priv->sensor_handle)
     bar_sensor_show_bar(self);
 
-  g_list_foreach(priv->mirror_children,(GFunc)bar_set_sensor,delay_str);
+  for(iter = priv->mirror_children; iter; iter=g_list_next(iter))
+    bar_set_sensor(iter->data, timeout);
 }
 
 GtkWidget *bar_new ( gchar *name )
@@ -761,18 +788,18 @@ GtkWidget *bar_new ( gchar *name )
   priv->visible = TRUE;
   priv->current_monitor = wayland_monitor_get_default();
   priv->output = g_strdup(
-      g_object_get_data(G_OBJECT(priv->current_monitor),"xdg_name"));
+      g_object_get_data(G_OBJECT(priv->current_monitor), "xdg_name"));
   priv->dir = -1;
   priv->box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   g_object_ref_sink(priv->box);
   gtk_container_add(GTK_CONTAINER(self), priv->box);
   g_object_set_data(G_OBJECT(priv->box), "parent_window", self);
-  gtk_layer_init_for_window (GTK_WINDOW(self));
-  gtk_widget_set_name(self,name);
+  gtk_layer_init_for_window(GTK_WINDOW(self));
+  gtk_widget_set_name(self, name);
   gtk_layer_auto_exclusive_zone_enable (GTK_WINDOW(self));
-  gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self),FALSE);
-  gtk_layer_set_layer(GTK_WINDOW(self),GTK_LAYER_SHELL_LAYER_TOP);
-  gtk_layer_set_monitor(GTK_WINDOW(self),priv->current_monitor);
+  gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self), FALSE);
+  gtk_layer_set_layer(GTK_WINDOW(self), GTK_LAYER_SHELL_LAYER_TOP);
+  gtk_layer_set_monitor(GTK_WINDOW(self), priv->current_monitor);
   bar_style_updated(self);
 
   if(priv->name)
@@ -790,14 +817,13 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
 {
   GtkWidget *self;
   BarPrivate *spriv,*dpriv;
-  gchar *tmp;
 
   g_return_val_if_fail(IS_BAR(src),NULL);
   self = bar_new(NULL);
   spriv = bar_get_instance_private(BAR(src));
   dpriv = bar_get_instance_private(BAR(self));
 
-  gtk_widget_set_name(self,gtk_widget_get_name(src));
+  gtk_widget_set_name(self, gtk_widget_get_name(src));
   if(spriv->start)
   {
     dpriv->start = base_widget_mirror(spriv->start);
@@ -821,17 +847,14 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
   spriv->mirror_children = g_list_prepend(spriv->mirror_children, self);
   dpriv->mirror_parent = src;
   dpriv->current_monitor = monitor;
-  dpriv->output = g_strdup(g_object_get_data(G_OBJECT(monitor),"xdg_name"));
-  mirrors = g_list_prepend(mirrors,self);
+  dpriv->output = g_strdup(g_object_get_data(G_OBJECT(monitor), "xdg_name"));
 
-  tmp = g_strdup_printf("%lld", (long long int)spriv->sensor_timeout);
-  bar_set_sensor(self, tmp);
-  g_free(tmp);
+  bar_set_sensor(self, spriv->sensor_timeout);
 
 //  gtk_application_add_window(app,GTK_WINDOW(self));
-  gtk_layer_set_monitor(GTK_WINDOW(self),monitor);
+  gtk_layer_set_monitor(GTK_WINDOW(self), monitor);
   gtk_widget_show(self);
-  css_widget_cascade(GTK_WIDGET(self),NULL);
+  css_widget_cascade(self, NULL);
   if(spriv->size)
     bar_set_size(self, spriv->size);
   if(spriv->margin)

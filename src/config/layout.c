@@ -135,6 +135,7 @@ gboolean config_include ( GScanner *scanner, GtkWidget *container )
   {
     config_widget(scanner, widget);
     grid_attach(container, widget);
+    grid_mirror_child(container, widget);
     css_widget_cascade(widget, NULL);
   }
   g_free(fname);
@@ -344,6 +345,26 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         bar_set_exclusive_zone(gtk_widget_get_ancestor(widget, BAR_TYPE),
             config_assign_string(scanner, "exclusive zone"));
         return TRUE;
+      case G_TOKEN_SENSOR:
+        bar_set_sensor(gtk_widget_get_ancestor(widget, BAR_TYPE),
+            (gint64)config_assign_number(scanner, "sensor timeout"));
+        return TRUE;
+      case G_TOKEN_BAR_ID:
+        bar_set_id(gtk_widget_get_ancestor(widget, BAR_TYPE),
+            config_assign_string(scanner, "bar id"));
+        return TRUE;
+      case G_TOKEN_MONITOR:
+        bar_set_monitor(gtk_widget_get_ancestor(widget, BAR_TYPE),
+            config_assign_string(scanner, "monitor"));
+        return TRUE;
+      case G_TOKEN_MARGIN:
+        bar_set_margin(gtk_widget_get_ancestor(widget, BAR_TYPE),
+            config_assign_number(scanner, "bar margin"));
+        return TRUE;
+      case G_TOKEN_MIRROR:
+        bar_set_mirrors_old(gtk_widget_get_ancestor(widget, BAR_TYPE),
+            config_assign_string(scanner, "bar mirrors"));
+        return TRUE;
     }
 
   return FALSE;
@@ -396,6 +417,7 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
     if(config_check_and_consume(scanner, G_TOKEN_STRING))
       base_widget_set_id(widget, g_strdup(scanner->value.v_string));
     grid_attach(container, widget);
+    grid_mirror_child(container, widget);
     css_widget_cascade(widget, NULL);
   }
 

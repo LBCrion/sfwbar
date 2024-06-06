@@ -188,30 +188,14 @@ static void setmirror_action ( gchar *cmd, gchar *name, void *widget,
   GtkWidget *bar;
 
   if( (bar = bar_from_name(name)) )
-    bar_set_mirrors(bar, cmd);
+    bar_set_mirrors_old(bar, cmd);
   else
-    bar_address_all(NULL, cmd, bar_set_mirrors);
+    bar_address_all(NULL, cmd, bar_set_mirrors_old);
 }
 
 static ModuleActionHandlerV1 setmirror_handler = {
   .name = "SetMirror",
   .function = (ModuleActionFunc)setmirror_action
-};
-
-static void blockmirror_action ( gchar *cmd, gchar *name, void *widget,
-    void *event, window_t *win, guint16 *state )
-{
-  GtkWidget *bar;
-
-  if( (bar = bar_from_name(name)) )
-    bar_set_mirror_blocks(bar, cmd);
-  else
-    bar_address_all(NULL, cmd, bar_set_mirror_blocks);
-}
-
-static ModuleActionHandlerV1 blockmirror_handler = {
-  .name = "BlockMirror",
-  .function = (ModuleActionFunc)blockmirror_action
 };
 
 static void setbarsize_action ( gchar *cmd, gchar *name, void *widget,
@@ -234,11 +218,17 @@ static void setbarmargin_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
   GtkWidget *bar;
+  GHashTable *list;
+  GHashTableIter iter;
 
   if( (bar = bar_from_name(name)) )
-    bar_set_margin(bar, cmd);
-  else
-    bar_address_all(NULL, cmd, bar_set_margin);
+    bar_set_margin(bar, g_ascii_strtoll(cmd, NULL, 10));
+  else if( (list = bar_get_list()) )
+  {
+    g_hash_table_iter_init(&iter, list);
+    while(g_hash_table_iter_next(&iter, NULL, (gpointer *)&bar))
+      bar_set_margin(bar, g_ascii_strtoll(cmd, NULL, 10));
+  }
 }
 
 static ModuleActionHandlerV1 setbarmargin_handler = {
@@ -266,11 +256,20 @@ static void setbarsensor_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
   GtkWidget *bar;
+  GHashTable *list;
+  GHashTableIter iter;
+  gint64 timeout;
+
+  timeout = g_ascii_strtoll(cmd, NULL, 10);
 
   if( (bar = bar_from_name(name)) )
-    bar_set_sensor(bar, cmd);
-  else
-    bar_address_all(NULL, cmd, bar_set_sensor);
+    bar_set_sensor(bar, timeout);
+  else if( (list = bar_get_list()) )
+  {
+    g_hash_table_iter_init(&iter, list);
+    while(g_hash_table_iter_next(&iter, NULL, (gpointer *)&bar))
+      bar_set_sensor(bar, timeout);
+  }
 }
 
 static ModuleActionHandlerV1 setbarsensor_handler = {
@@ -576,7 +575,6 @@ static ModuleActionHandlerV1 *action_handlers[] = {
   &setmonitor_handler,
   &setlayer_handler,
   &setmirror_handler,
-  &blockmirror_handler,
   &setbarsize_handler,
   &setbarmargin_handler,
   &setbarid_handler,

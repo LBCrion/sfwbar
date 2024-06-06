@@ -31,7 +31,7 @@ typedef struct _BarPrivate BarPrivate;
 struct _BarPrivate {
   gchar *name;
   gchar *size;
-  gchar *margin;
+  gint64 margin;
   gchar *ezone;
   gchar *layer;
   gchar *bar_id;
@@ -49,8 +49,7 @@ struct _BarPrivate {
   gboolean full_size;
   gchar *output;
   GdkMonitor *current_monitor;
-  gchar **mirror_targets;
-  gchar **mirror_blocks;
+  GList *mirror_targets;
   GList *mirror_children;
   GtkWidget *mirror_parent;
 };
@@ -58,18 +57,19 @@ struct _BarPrivate {
 GtkWidget *bar_new ( gchar * );
 gboolean bar_address_all ( GtkWidget *self, gchar *value,
     void (*bar_func)( GtkWidget *, gchar * ) );
+GHashTable *bar_get_list ( void );
 void bar_set_monitor ( GtkWidget *, gchar * );
 void bar_set_layer ( GtkWidget *, gchar * );
 void bar_set_size ( GtkWidget *, gchar * );
-void bar_set_margin ( GtkWidget *, gchar * );
+void bar_set_margin ( GtkWidget *, gint64 );
 void bar_set_exclusive_zone ( GtkWidget *, gchar * );
 gchar *bar_get_output ( GtkWidget * );
 gint bar_get_toplevel_dir ( GtkWidget * );
 void bar_set_id ( GtkWidget *, gchar * );
-void bar_set_sensor ( GtkWidget *self, gchar *timeout );
-void bar_set_mirrors ( GtkWidget *self, gchar *mirror );
-void bar_set_mirror_blocks ( GtkWidget *self, gchar *mirror );
+void bar_set_sensor ( GtkWidget *self, gint64 timeout );
+void bar_set_mirrors ( GtkWidget *self, GList *mirrors );
 void bar_set_visibility ( GtkWidget *, const gchar *, gchar );
+void bar_set_mirrors_old ( GtkWidget *self, gchar *mirror );
 void bar_visibility_toggle_all ( gpointer d );
 void bar_monitor_added_cb ( GdkDisplay *, GdkMonitor * );
 void bar_monitor_removed_cb ( GdkDisplay *, GdkMonitor * );
