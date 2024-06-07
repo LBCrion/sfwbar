@@ -1,3 +1,4 @@
+'\" t
 .\" Man page generated from reStructuredText.
 .
 .
@@ -27,7 +28,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "SFWBAR"  "" ""
+.TH "SFWBAR" "" "" ""
 .SH NAME
 SFWBar \- S* Floating Window taskBar
 .sp
@@ -97,8 +98,7 @@ dimensions. The cascade placement will start at a location specified by \(dqxori
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 placer {
   xorigin = 5
   yorigin = 5
@@ -106,8 +106,7 @@ placer {
   ystep = 5
   children = false
 }
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -124,13 +123,11 @@ one of the following bindings:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 bindsym Alt\-Tab bar hidden_state toggle
 or
 bindsym Alt\-Tab exec killall \-SIGUSR1 sfwbar
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -140,11 +137,9 @@ NixOS + Hyprland (probably other non\-sway compositors) use:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 bind = ALT, Tab, exec, killall \-SIGUSR1 .sfwbar\-wrapped
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -223,8 +218,7 @@ widget dimensions in grid cells:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 layout \(dqid\(dq {
   label {
   style = \(dqmystyle\(dq
@@ -232,8 +226,7 @@ layout \(dqid\(dq {
   loc(2,1,1,1)
   }
 }
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -246,13 +239,11 @@ External widgets can be included in layout using the following syntax:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 layout {
   include(\(dqMyWidget.widget\(dq)
 }
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -264,8 +255,7 @@ definition i.e.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 grid {
   css = \(dq* { border: none }\(dq
 
@@ -273,13 +263,14 @@ grid {
     ...
   }
 }
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
 Widgets can optionally have unique id\(aqs assigned to them in order to allow
-manipulating them in the future.  Widgets can have the following properties:
+manipulating them in the future.
+.sp
+All widgets can have the following properties:
 .INDENT 0.0
 .TP
 .B value
@@ -388,6 +379,53 @@ prefix, i.e. \fBgroup cols = 1\fP\&. The properties supported for groups
 are cols, rows, style, css, title_width, labels, icons.
 .UNINDENT
 .sp
+\fBLayout\fP objects may have the following options
+.INDENT 0.0
+.TP
+.B sensor <timeout>
+Specify whether the bar should be hidden once the pointer leaves the bar
+window. Once hidden, the bar will popup again if the pointer touches the
+sensor located along the screen edge along which the bar is placed.
+A numeric value specifies the bar pop\-down delay in milliseconds. If the
+timeout is zero, the bar will always be visible.
+.TP
+.B size = <string>
+set size of the bar (width for top or bottom bar, height for left or right
+bar). The argument is a string. I.e. \(dq800\(dq for 800 pixels or \(dq50%\(dq for
+50% of screen size
+.TP
+.B monitor = <string>
+assign bar to a given monitor. The  monitor name can be prefixed by
+\(dqstatic:\(dq, i.e. \(dqstatic:eDP\-1\(dq. if this is set and the specified monitor
+doesn\(aqt exist or gets disconnected, the bar will not jump to another montior,
+but will be hidden and won\(aqt reappear until the monitor is reconnected.
+.TP
+.B mirror = <string>
+mirror the bar to monitors matching any of the specified patterns.  The
+string parameter specifies a string list of patters to match the monitors
+against, i.e. \fI\(dqeDP\-*\(dq, \(dqHDMI\-1\(dq\fP will mirror to any monitor with name
+starting with \(dqeDP\-\(dq or monitor named \(dqHDMI\-1\(dq. Patterns starting with \(aq!\(aq
+will block the bar from being mirrored to a matching monitor. The patterns
+are specified in glob style \(aq*\(aq and \(aq?\(aq are used as wildcards. The simplest
+use is \fImirror = \(dq*\(dq\fP, which will mirror the bar across all monitors.
+.TP
+.B layer = <string>
+move bar to a specified layer (supported parameters are \(dqtop\(dq, \(dqbottom\(dq,
+\(dqbackground\(dq and \(dqoverlay\(dq.
+.TP
+.B margin = <string>
+set margin around the bar to the number of pixels specified by string.
+.TP
+.B exclusive_zone <string>
+specify exclusive zone policy for the bar window. Acceptable values are
+\(dqauto\(dq, \(dq\-1\(dq, \(dq0\(dq or positive integers. These have meanings in line with
+exclusive zone setting in the layer shell protocol. Default value is \(dqauto\(dq
+.TP
+.B sway_bar_id <string>
+specify bar ID to listen on for mode and hidden_state signals. If no
+bar ID is specified, SfwBar will listen to signals on all IDs
+.UNINDENT
+.sp
 \fBPager\fP widget may contain the following options
 .INDENT 0.0
 .TP
@@ -449,8 +487,7 @@ Instead they are displayed when a PopUp action is invoked on a widget. i.e.:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 PopUp \(dqMyPopup\(dq {
   label { value = \(dqtest\(dq }
 }
@@ -461,8 +498,7 @@ Layout {
     action = PopUp \(dqMyPopup\(dq
   }
 }
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -477,8 +513,7 @@ The example syntax is as following:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 menuclear(\(dqmenu_name\(dq)
 menu (\(dqmenu_name\(dq) {
   item(\(dqitem1\(dq, Exec \(dqcommand\(dq)
@@ -487,8 +522,7 @@ menu (\(dqmenu_name\(dq) {
     item(\(dqitem2\(dq, SwayCmd \(dqfocus next\(dq)
   }
 }
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -527,9 +561,8 @@ scanner sources), others are built in, or defined in modules.
 .sp
 Built\-in triggers are:
 .TS
-center;
-|l|l|.
-_
+box center;
+l|l.
 T{
 SIGRTMIN+X
 T}	T{
@@ -559,7 +592,6 @@ T{
 T}	T{
 an output has been disconnected
 T}
-_
 .TE
 .SS Actions
 .sp
@@ -577,11 +609,9 @@ sources, using TriggerAction top\-level keyword. I.e.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 TriggerAction \(dqmytrigger\(dq, Exec \(dqMyCommand\(dq
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -647,6 +677,7 @@ monitor name can be prefixed by \(dqstatic:\(dq, i.e. \(dqstatic:eDP\-1\(dq, if 
 is set and the specified monitor doesn\(aqt exist or gets disconnected,
 the bar will not jump to another montior, but will be hidden and won\(aqt
 reappear until the monitor is reconnected.
+** This action is deperecated, please use property \fImonitor\fP instead **
 .TP
 .B SetMirror  [<bar_name>,]<string>
 mirror the bar to monitors matching any of the specified patterns. If
@@ -657,38 +688,40 @@ i.e. \(dqeDP\-\fI:HDMI\-1\(dq will mirror to any monitor with name starting with
 \(dqeDP\-\(dq or monitor named \(dqHDMI\-1\(dq. The patterns are specified in glob style
 \(aq\fP\(aq and \(aq?\(aq are used as wildcards. A simplest use is \fISetMirror \(dq*\(dq\fP will
 mirror all bars across all monitors.
-.TP
-.B BlockMirror  [<bar_name>,]<string>
-block a bar from being mirrored to specific monitors. See SetMirror action
-for syntax. If a monitor matches a pattern specified in both SetMirror and
-BlockMirror, the bar will not be mirrored.
+** This action is deperecated, please use property \fImirror\fP instead **
 .TP
 .B SetLayer [<bar_name>,]<string>
 move bar to a specified layer (supported parameters are \(dqtop\(dq, \(dqbottom\(dq,
 \(dqbackground\(dq and \(dqoverlay\(dq.
+** This action is deperecated, please use property \fIlayer\fP instead **
 .TP
 .B SetBarSize [<bar_name>,]<string>
 set size of the bar (width for top or bottom bar, height for left or right
 bar). The argument is a string. I.e. \(dq800\(dq for 800 pixels or \(dq50%\(dq for
 50% of screen size
+** This action is deperecated, please use property \fIsize\fP instead **
 .TP
 .B SetBarMargin [<bar_name>,]<string>
 set margin around the bar to the number of pixels specified by string.
+** This action is deperecated, please use property \fImargin\fP instead **
 .TP
 .B SetBarSensor [<bar_name>],<string>
 Specify whether the bar should be hidden once the pointer leaves the bar
 window. Once hidden, the bar will popup again if the pointer touches the
 sensor located along the screen edge along which the bar is placed.
 String specifies the bar pop\-down delay in milliseconds.
+** This action is deperecated, please use property \fIsensor\fP instead **
 .TP
 .B SetBarID <string>
 specify bar ID to listen on for mode and hidden_state signals. If no
 bar ID is specified, SfwBar will listen to signals on all IDs
+** This action is deperecated, please use property \fIsway_bar_id\fP instead **
 .TP
 .B SetExclusiveZone [<bar_name>,]<string>
 specify exclusive zone policy for the bar window. Acceptable values are
 \(dqauto\(dq, \(dq\-1\(dq, \(dq0\(dq or positive integers. These have meanings in line with
 exclusive zone setting in the layer shell protocol. Default value is \(dqauto\(dq
+** This action is deperecated, please use property \fIexclusive_zone\fP instead **
 .TP
 .B SetValue [<widget>,]<string>
 set the value of the widget. This action applies to the widget from which
@@ -731,15 +764,13 @@ dynamically constructed menus generated by an external script:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 function(\(dqfancy_menu\(dq) {
   MenuClear \(dqdynamic_menu\(dq
   PipeRead \(dq$HOME/bin/buildmenu.sh\(dq
   Menu \(dqdynamic_menu\(dq
 }
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -759,8 +790,7 @@ and variables linked to them as configured in the section \fBscanner\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 scanner {
   file(\(dq/proc/swaps\(dq,NoGlob) {
     SwapTotal = RegEx(\(dq[\et ]([0\-9]+)\(dq)
@@ -770,8 +800,7 @@ scanner {
     $WeatherTemp = Json(\(dq.forecast.today.degrees\(dq)
   }
 }
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -906,9 +935,8 @@ it is displayed by the widgets.
 .sp
 The numeric operations are:
 .TS
-center;
-|l|l|.
-_
+box center;
+l|l.
 T{
 Operation
 T}	T{
@@ -1000,14 +1028,12 @@ T{
 T}	T{
 Check if an identifier exists either as a variable or a function
 T}
-_
 .TE
 .sp
 The string operations are:
 .TS
-center;
-|l|l|.
-_
+box center;
+l|l.
 T{
 Operation
 T}	T{
@@ -1110,14 +1136,12 @@ T}	T{
 Perform multiple substring replacements in a string,
 \fBReplaceAll(string, old1, new1, ... )\fP
 T}
-_
 .TE
 .sp
 In addition the following query functions are supported
 .TS
-center;
-|l|l|.
-_
+box center;
+l|l.
 T{
 Function
 T}	T{
@@ -1175,7 +1199,6 @@ property as a single input parameter. Valid properties are:
 \fIappid\fP, \fItitle\fP, \fIminimized\fP, \fImaximized\fP, \fIfullscreen\fP,
 \fIfocused\fP
 T}
-_
 .TE
 .sp
 Each numeric variable contains four values
@@ -1204,11 +1227,9 @@ The following string operation are supported. For example:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 $MyString + Str((MyValue \- MyValue.pval)/MyValue.time),2)
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1217,13 +1238,11 @@ keyword. I.e.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 define MyExpr = VarA + VarB * VarC + Val($Complex)
 \&...
 value = Str(MyExpr,2)
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1231,11 +1250,9 @@ The above will expand the expression into:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 value = Str(VarA + VarB * VarC + Val($Complex),2)
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1247,13 +1264,11 @@ I.e.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 set MyExpr = VarA + VarB * VarC + Val($Complex
 \&...
 value = Str(MyExpr,2)
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1273,11 +1288,9 @@ tricky). Mapping is supported via top\-level \fBMapAppId\fP keyword. I.e.
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 MapAppId app_id, pattern
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -1311,8 +1324,7 @@ When using \fIswaymsg \-t get_tree\fP, with CLion this will show the following:
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 \(dqwindow_properties\(dq: {
   \(dqclass\(dq: \(dqjetbrains\-clion\(dq,
   \(dqinstance\(dq: \(dqjetbrains\-clion\(dq,
@@ -1320,22 +1332,20 @@ When using \fIswaymsg \-t get_tree\fP, with CLion this will show the following:
   \(dqtransient_for\(dq: null,
   \(dqwindow_type\(dq: \(dqnormal\(dq
 }
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
 So we can put an icon called jetbrains\-clion.svg (or other formats, see the
-[Arch wiki](\fI\%https://wiki.archlinux.org/title/desktop_entries#Icons\fP)) for
+[Arch wiki]( <https://wiki.archlinux.org/title/desktop_entries#Icons> )) for
 information about file formats.
 .SH CSS STYLE
 .sp
 SFWBar uses gtk+ widgets and can accept all css properties supported by
 gtk+. SFWBar widgets correspond to gtk+ widgets as following:
 .TS
-center;
-|l|l|l|.
-_
+box center;
+l|l|l.
 T{
 SFWBar widget
 T}	T{
@@ -1375,7 +1385,6 @@ GtkProgressBar
 T}	T{
 progressbar, trough, progress
 T}
-_
 .TE
 .sp
 Taskbar, Pager, Tray and Switcher use combinations of these widgets and can
@@ -1387,9 +1396,8 @@ widget).
 In addition to standard gtk+ css properties SFWBar implements several
 additional properties. These are:
 .TS
-center;
-|l|l|.
-_
+box center;
+l|l.
 T{
 property
 T}	T{
@@ -1485,14 +1493,12 @@ image will be re\-colored to the gtk theme foreground
 color, preserving the image alpha channel. This property
 is ignored if \-ScaleImage\-color is specified.
 T}
-_
 .TE
 .sp
 Taskbar and pager buttons are assigned the following styles
 .TS
-center;
-|l|l|.
-_
+box center;
+l|l.
 T{
 style name
 T}	T{
@@ -1612,7 +1618,6 @@ menu_item
 T}	T{
 menu items (each contains an image and a label)
 T}
-_
 .TE
 .sp
 For example you can style top level grid using \fBgrid#layout { }\fP\&.

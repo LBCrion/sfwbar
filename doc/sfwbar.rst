@@ -204,7 +204,9 @@ definition i.e. ::
   }
 
 Widgets can optionally have unique id's assigned to them in order to allow
-manipulating them in the future.  Widgets can have the following properties:
+manipulating them in the future.
+
+All widgets can have the following properties:
 
 value 
   an expression specifying the value to display. This can be a static value
@@ -308,7 +310,52 @@ group [popup|pager|false]
   You can specify taskbar parameters for the group taskbars using group
   prefix, i.e. ``group cols = 1``. The properties supported for groups 
   are cols, rows, style, css, title_width, labels, icons.
+
+``Layout`` objects may have the following options
+
+sensor <timeout>
+  Specify whether the bar should be hidden once the pointer leaves the bar
+  window. Once hidden, the bar will popup again if the pointer touches the
+  sensor located along the screen edge along which the bar is placed.
+  A numeric value specifies the bar pop-down delay in milliseconds. If the
+  timeout is zero, the bar will always be visible.
+
+size = <string>
+  set size of the bar (width for top or bottom bar, height for left or right
+  bar). The argument is a string. I.e. "800" for 800 pixels or "50%" for 
+  50% of screen size
+
+monitor = <string>
+  assign bar to a given monitor. The  monitor name can be prefixed by
+  "static:", i.e. "static:eDP-1". if this is set and the specified monitor
+  doesn't exist or gets disconnected, the bar will not jump to another montior,
+  but will be hidden and won't reappear until the monitor is reconnected.
+
+mirror = <string>
+  mirror the bar to monitors matching any of the specified patterns.  The
+  string parameter specifies a string list of patters to match the monitors
+  against, i.e. `"eDP-*", "HDMI-1"` will mirror to any monitor with name
+  starting with "eDP-" or monitor named "HDMI-1". Patterns starting with '!'
+  will block the bar from being mirrored to a matching monitor. The patterns
+  are specified in glob style '*' and '?' are used as wildcards. The simplest
+  use is `mirror = "*"`, which will mirror the bar across all monitors.
+
+layer = <string>
+  move bar to a specified layer (supported parameters are "top", "bottom",
+  "background" and "overlay". 
+
+margin = <string>
+  set margin around the bar to the number of pixels specified by string.
+
+exclusive_zone <string>
+  specify exclusive zone policy for the bar window. Acceptable values are
+  "auto", "-1", "0" or positive integers. These have meanings in line with
+  exclusive zone setting in the layer shell protocol. Default value is "auto"
   
+sway_bar_id <string>
+  specify bar ID to listen on for mode and hidden_state signals. If no
+  bar ID is specified, SfwBar will listen to signals on all IDs
+
 
 ``Pager`` widget may contain the following options
 
@@ -515,6 +562,7 @@ SetMonitor [<bar_name>,]<string>
   is set and the specified monitor doesn't exist or gets disconnected, 
   the bar will not jump to another montior, but will be hidden and won't
   reappear until the monitor is reconnected.
+  ** This action is deperecated, please use property `monitor` instead **
 
 SetMirror  [<bar_name>,]<string>
   mirror the bar to monitors matching any of the specified patterns. If
@@ -525,38 +573,40 @@ SetMirror  [<bar_name>,]<string>
   "eDP-" or monitor named "HDMI-1". The patterns are specified in glob style
   '*' and '?' are used as wildcards. A simplest use is `SetMirror "*"` will
   mirror all bars across all monitors.
-
-BlockMirror  [<bar_name>,]<string>
-  block a bar from being mirrored to specific monitors. See SetMirror action
-  for syntax. If a monitor matches a pattern specified in both SetMirror and
-  BlockMirror, the bar will not be mirrored.
+  ** This action is deperecated, please use property `mirror` instead **
 
 SetLayer [<bar_name>,]<string>
   move bar to a specified layer (supported parameters are "top", "bottom",
   "background" and "overlay". 
+  ** This action is deperecated, please use property `layer` instead **
 
 SetBarSize [<bar_name>,]<string>
   set size of the bar (width for top or bottom bar, height for left or right
   bar). The argument is a string. I.e. "800" for 800 pixels or "50%" for 
   50% of screen size
+  ** This action is deperecated, please use property `size` instead **
 
 SetBarMargin [<bar_name>,]<string>
   set margin around the bar to the number of pixels specified by string.
+  ** This action is deperecated, please use property `margin` instead **
 
 SetBarSensor [<bar_name>],<string>
   Specify whether the bar should be hidden once the pointer leaves the bar
   window. Once hidden, the bar will popup again if the pointer touches the
   sensor located along the screen edge along which the bar is placed.
   String specifies the bar pop-down delay in milliseconds.
+  ** This action is deperecated, please use property `sensor` instead **
 
 SetBarID <string>
   specify bar ID to listen on for mode and hidden_state signals. If no
   bar ID is specified, SfwBar will listen to signals on all IDs
+  ** This action is deperecated, please use property `sway_bar_id` instead **
 
 SetExclusiveZone [<bar_name>,]<string>
   specify exclusive zone policy for the bar window. Acceptable values are
   "auto", "-1", "0" or positive integers. These have meanings in line with
   exclusive zone setting in the layer shell protocol. Default value is "auto"
+  ** This action is deperecated, please use property `exclusive_zone` instead **
 
 SetValue [<widget>,]<string>
   set the value of the widget. This action applies to the widget from which
