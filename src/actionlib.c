@@ -155,6 +155,8 @@ static void setmonitor_action ( gchar *cmd, gchar *name, void *widget,
 {
   GtkWidget *bar;
 
+  g_message("SetMonitor is deprectated, please use monitor property instead");
+
   if( (bar = bar_from_name(name)) )
     bar_set_monitor(bar, cmd);
   else
@@ -170,6 +172,8 @@ static void setlayer_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
   GtkWidget *bar;
+
+  g_message("SetLayer is deprectated, please use layer property instead");
 
   if( (bar = bar_from_name(name)) )
     bar_set_layer(bar, cmd);
@@ -187,6 +191,8 @@ static void setmirror_action ( gchar *cmd, gchar *name, void *widget,
 {
   GtkWidget *bar;
 
+  g_message("SetMirror is deprectated, please use mirror property instead");
+
   if( (bar = bar_from_name(name)) )
     bar_set_mirrors_old(bar, cmd);
   else
@@ -202,6 +208,8 @@ static void setbarsize_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
   GtkWidget *bar;
+
+  g_message("SetBarSize is deprectated, please use size property instead");
 
   if( (bar = bar_from_name(name)) )
     bar_set_size(bar, cmd);
@@ -220,6 +228,8 @@ static void setbarmargin_action ( gchar *cmd, gchar *name, void *widget,
   GtkWidget *bar;
   GHashTable *list;
   GHashTableIter iter;
+
+  g_message("SetBarMargin is deprectated, please use margin property instead");
 
   if( (bar = bar_from_name(name)) )
     bar_set_margin(bar, g_ascii_strtoll(cmd, NULL, 10));
@@ -241,6 +251,8 @@ static void setbarid_action ( gchar *cmd, gchar *name, void *widget,
 {
   GtkWidget *bar;
 
+  g_message("SetBarID is deprectated, please use sway_bar_id property instead");
+
   if( (bar = bar_from_name(name)) )
     bar_set_id(bar, cmd);
   else
@@ -259,6 +271,8 @@ static void setbarsensor_action ( gchar *cmd, gchar *name, void *widget,
   GHashTable *list;
   GHashTableIter iter;
   gint64 timeout;
+
+  g_message("SetBarSensor is deprectated, please use sensor property instead");
 
   timeout = g_ascii_strtoll(cmd, NULL, 10);
 
@@ -281,6 +295,9 @@ static void setexclusivezone_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
   GtkWidget *bar;
+
+  g_message("SetExclusiveSone is deprectated, please use"
+     " exclusive_zone property instead");
 
   if( (bar = bar_from_name(name)) )
     bar_set_exclusive_zone(bar, cmd);
