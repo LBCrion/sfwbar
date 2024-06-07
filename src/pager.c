@@ -66,21 +66,30 @@ GtkWidget *pager_new ( void )
   return GTK_WIDGET(g_object_new(pager_get_type(), NULL));
 }
 
-void pager_add_pin ( GtkWidget *self, gchar *pin )
+void pager_add_pins ( GtkWidget *self, GList *pins )
 {
   PagerPrivate *priv;
+  GList *iter;
 
   g_return_if_fail(IS_PAGER(self));
   priv = pager_get_instance_private(PAGER(self));
 
-  if(ipc_get()==IPC_SWAY || ipc_get()==IPC_HYPR)
+  if(ipc_get()!=IPC_SWAY && ipc_get()!=IPC_HYPR)
   {
-    if(!g_list_find_custom(priv->pins, pin, (GCompareFunc)g_strcmp0))
-      priv->pins = g_list_prepend(priv->pins, g_strdup(pin));
-    workspace_pin_add(pin);
+    g_list_free_full(pins, (GDestroyNotify)g_free);
+    return;
   }
 
-  g_free(pin);
+  for(iter=pins; iter; iter=g_list_next(iter))
+    if(!g_list_find_custom(priv->pins, iter->data, (GCompareFunc)g_strcmp0))
+    {
+      priv->pins = g_list_prepend(priv->pins, iter->data);
+      workspace_pin_add(iter->data);
+    }
+    else
+      g_free(iter->data);
+  g_list_free(pins);
+
 }
 
 gboolean pager_check_pins ( GtkWidget *self, gchar *pin )

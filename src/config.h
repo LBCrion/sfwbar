@@ -40,6 +40,7 @@ gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr);
 gchar *config_assign_string ( GScanner *scanner, gchar *expr );
 gdouble config_assign_number ( GScanner *scanner, gchar *expr );
 void *config_assign_tokens ( GScanner *scanner, GHashTable *keys, gchar *err );
+GList *config_assign_string_list ( GScanner *scanner );
 gboolean config_action ( GScanner *scanner, action_t **action_dst );
 void config_action_finish ( GScanner *scanner );
 void config_define ( GScanner *scanner );

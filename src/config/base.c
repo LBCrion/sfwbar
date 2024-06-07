@@ -202,6 +202,27 @@ void *config_assign_tokens ( GScanner *scanner, GHashTable *keys, gchar *err )
   return res;
 }
 
+GList *config_assign_string_list ( GScanner *scanner )
+{
+  GList *list = NULL;
+
+  scanner->max_parse_errors = FALSE;
+  if(!config_expect_token(scanner, '=', "Missing '=' after '%s'",
+        scanner->value.v_identifier ))
+    return NULL;
+
+  do
+  {
+    if(!config_expect_token(scanner, G_TOKEN_STRING,
+          "invalid token in string list"))
+      break;
+    list = g_list_prepend(list, g_strdup(scanner->value.v_string));
+  } while (config_check_and_consume(scanner, ','));
+  config_check_and_consume(scanner, ';');
+
+  return g_list_reverse(list);
+}
+
 gboolean config_is_section_end ( GScanner *scanner )
 {
   if(g_scanner_peek_next_token(scanner) == G_TOKEN_EOF)

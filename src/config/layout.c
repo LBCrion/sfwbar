@@ -40,23 +40,6 @@ GdkRectangle config_get_loc ( GScanner *scanner )
   return rect;
 }
 
-void config_get_pins ( GScanner *scanner, GtkWidget *widget )
-{
-  scanner->max_parse_errors = FALSE;
-
-  if(!config_expect_token(scanner, '=', "expecting pins = string [,string]"))
-    return;
-
-  do
-  {
-    if(!config_expect_token(scanner, G_TOKEN_STRING,
-          "expecting a string in pins = string [,string]"))
-      break;
-    pager_add_pin(widget, g_strdup(scanner->value.v_string));
-  } while (config_check_and_consume(scanner, ','));
-  config_check_and_consume(scanner, ';');
-}
-
 gboolean config_action_mods ( GScanner *scanner, gint *mods )
 {
   gpointer mod;
@@ -72,7 +55,7 @@ gboolean config_action_mods ( GScanner *scanner, gint *mods )
   return TRUE;
 }
 
-gboolean config_action_slot (GScanner *scanner, gint *slot )
+gboolean config_action_slot ( GScanner *scanner, gint *slot )
 {
   gint token;
 
@@ -249,11 +232,11 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
     switch(key)
     {
       case G_TOKEN_PINS:
-        config_get_pins( scanner, widget );
+        pager_add_pins(widget, config_assign_string_list(scanner));
         return TRUE;
       case G_TOKEN_PREVIEW:
-        g_object_set_data(G_OBJECT(base_widget_get_child(widget)),"preview",
-            GINT_TO_POINTER(config_assign_boolean(scanner,FALSE,"preview")));
+        g_object_set_data(G_OBJECT(base_widget_get_child(widget)), "preview",
+            GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "preview")));
         return TRUE;
     }
 
@@ -362,8 +345,8 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
             config_assign_number(scanner, "bar margin"));
         return TRUE;
       case G_TOKEN_MIRROR:
-        bar_set_mirrors_old(gtk_widget_get_ancestor(widget, BAR_TYPE),
-            config_assign_string(scanner, "bar mirrors"));
+        bar_set_mirrors(gtk_widget_get_ancestor(widget, BAR_TYPE),
+            config_assign_string_list(scanner));
         return TRUE;
     }
 
