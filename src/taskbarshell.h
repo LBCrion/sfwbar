@@ -39,6 +39,7 @@ GtkWidget *taskbar_shell_new( void );
 void taskbar_shell_populate ( void );
 void taskbar_shell_update_all ( void );
 void taskbar_shell_item_invalidate ( window_t *win );
+void taskbar_shell_init_child ( GtkWidget *self, GtkWidget *child );
 void taskbar_shell_invalidate_all ( void );
 void taskbar_shell_item_init_for_all ( window_t *win );
 void taskbar_shell_item_destroy_for_all ( window_t *win );

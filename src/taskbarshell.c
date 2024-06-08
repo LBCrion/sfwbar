@@ -35,10 +35,11 @@ static GtkWidget *taskbar_shell_mirror ( GtkWidget *src )
   GtkWidget *self;
   GList *iter;
 
-  g_return_val_if_fail(IS_TASKBAR(src),NULL);
+  g_return_val_if_fail(IS_TASKBAR(src), NULL);
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(src));
 
   self = taskbar_shell_new();
+  taskbar_shell_set_api(self, priv->get_taskbar);
   taskbar_shell_set_group_title_width(self, priv->title_width);
   taskbar_shell_set_group_cols(self, priv->cols);
   taskbar_shell_set_group_rows(self, priv->rows);
@@ -48,7 +49,6 @@ static GtkWidget *taskbar_shell_mirror ( GtkWidget *src )
   for(iter=priv->css; iter; iter=g_list_next(iter))
     taskbar_shell_set_group_style(self, iter->data);
   taskbar_shell_set_group_style(self, priv->style);
-  flow_grid_copy_properties(self, src);
   taskbar_shell_populate();
 
   return self;
@@ -72,6 +72,27 @@ static void taskbar_shell_init ( TaskbarShell *self )
 GtkWidget *taskbar_shell_new ( void )
 {
   return GTK_WIDGET(g_object_new(taskbar_shell_get_type(), NULL));
+}
+
+void taskbar_shell_init_child ( GtkWidget *self, GtkWidget *child )
+{
+  TaskbarShellPrivate *priv;
+  GList *iter;
+
+  g_return_if_fail(IS_TASKBAR_SHELL(self));
+  g_return_if_fail(IS_FLOW_GRID(child));
+  priv = taskbar_shell_get_instance_private(
+      TASKBAR_SHELL(base_widget_get_mirror_parent(self)));
+
+  flow_grid_set_title_width(child, priv->title_width);
+  flow_grid_set_cols(child, priv->cols);
+  flow_grid_set_rows(child, priv->rows);
+  flow_grid_set_icons(child, priv->icons);
+  flow_grid_set_labels(child, priv->labels);
+  flow_grid_set_sort(child, priv->sort);
+  for(iter=priv->css; iter; iter=g_list_next(iter))
+    base_widget_set_css(child, g_strdup(iter->data));
+  base_widget_set_style(child, g_strdup(priv->style));
 }
 
 void taskbar_shell_set_filter ( GtkWidget *self, gint filter )
@@ -194,6 +215,9 @@ void taskbar_shell_set_api ( GtkWidget *self, GtkWidget *(*get_taskbar)
   
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
     taskbar_shell_item_init(self, iter->data);
+
+  for(iter=base_widget_get_mirror_children(self); iter; iter=g_list_next(iter))
+    taskbar_shell_set_api(iter->data, get_taskbar);
 }
 
 void taskbar_shell_set_group_style ( GtkWidget *self, gchar *style )
@@ -238,22 +262,25 @@ void taskbar_shell_set_group_css ( GtkWidget *self, gchar *css )
 }
 
 static void taskbar_shell_propagate ( GtkWidget *self, gint value,
-    void (*grid_func)(GtkWidget *, gint),
-    void (*shell_func)(GtkWidget *, gint) )
+    void (*grid_func)(GtkWidget *, gint) )
 {
   TaskbarShellPrivate *priv;
   GtkWidget *taskbar;
-  GList *iter;
+  GList *iter, *sub;
 
   g_return_if_fail(IS_TASKBAR_SHELL(self));
+  self = base_widget_get_mirror_parent(self);
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
 
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
     if( (taskbar = priv->get_taskbar(self, iter->data, FALSE)) )
       grid_func(taskbar, value);
-
-  for(iter=base_widget_get_mirror_children(self); iter; iter=g_list_next(iter))
-    shell_func(iter->data, value);
+  for(sub=base_widget_get_mirror_children(self); sub; sub=g_list_next(sub))
+  {
+    for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
+      if( (taskbar = priv->get_taskbar(sub->data, iter->data, FALSE)) )
+        grid_func(taskbar, value);
+  }
 }
 
 void taskbar_shell_set_group_cols ( GtkWidget *self, gint cols )
@@ -261,11 +288,11 @@ void taskbar_shell_set_group_cols ( GtkWidget *self, gint cols )
   TaskbarShellPrivate *priv;
 
   g_return_if_fail(IS_TASKBAR_SHELL(self));
-  priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
+  priv = taskbar_shell_get_instance_private(
+      TASKBAR_SHELL(base_widget_get_mirror_parent(self)));
 
   priv->cols = cols;
-  taskbar_shell_propagate(self, cols, flow_grid_set_cols,
-      taskbar_shell_set_group_cols);
+  taskbar_shell_propagate(self, cols, flow_grid_set_cols);
 }
 
 void taskbar_shell_set_group_rows ( GtkWidget *self, gint rows )
@@ -273,11 +300,11 @@ void taskbar_shell_set_group_rows ( GtkWidget *self, gint rows )
   TaskbarShellPrivate *priv;
 
   g_return_if_fail(IS_TASKBAR_SHELL(self));
-  priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
+  priv = taskbar_shell_get_instance_private(
+      TASKBAR_SHELL(base_widget_get_mirror_parent(self)));
 
   priv->rows = rows;
-  taskbar_shell_propagate(self, rows, flow_grid_set_rows,
-      taskbar_shell_set_group_rows);
+  taskbar_shell_propagate(self, rows, flow_grid_set_rows);
 }
 
 void taskbar_shell_set_group_sort ( GtkWidget *self, gboolean sort )
@@ -285,11 +312,11 @@ void taskbar_shell_set_group_sort ( GtkWidget *self, gboolean sort )
   TaskbarShellPrivate *priv;
 
   g_return_if_fail(IS_TASKBAR_SHELL(self));
-  priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
+  priv = taskbar_shell_get_instance_private(
+      TASKBAR_SHELL(base_widget_get_mirror_parent(self)));
 
   priv->sort = sort;
-  taskbar_shell_propagate(self, sort, flow_grid_set_sort,
-      taskbar_shell_set_group_sort);
+  taskbar_shell_propagate(self, sort, flow_grid_set_sort);
 }
 
 void taskbar_shell_set_group_title_width ( GtkWidget *self, gint width )
@@ -297,14 +324,14 @@ void taskbar_shell_set_group_title_width ( GtkWidget *self, gint width )
   TaskbarShellPrivate *priv;
 
   g_return_if_fail(IS_TASKBAR_SHELL(self));
-  priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
+  priv = taskbar_shell_get_instance_private(
+      TASKBAR_SHELL(base_widget_get_mirror_parent(self)));
 
   if(!width)
     width = -1;
 
   priv->title_width = width;
-  taskbar_shell_propagate(self, width, flow_grid_set_title_width,
-      taskbar_shell_set_group_title_width);
+  taskbar_shell_propagate(self, width, flow_grid_set_title_width);
 }
 
 void taskbar_shell_set_group_labels ( GtkWidget *self, gboolean labels )
@@ -312,11 +339,11 @@ void taskbar_shell_set_group_labels ( GtkWidget *self, gboolean labels )
   TaskbarShellPrivate *priv;
 
   g_return_if_fail(IS_TASKBAR_SHELL(self));
-  priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
+  priv = taskbar_shell_get_instance_private(
+      TASKBAR_SHELL(base_widget_get_mirror_parent(self)));
 
   priv->labels = labels;
-  taskbar_shell_propagate(self, labels, flow_grid_set_labels,
-      taskbar_shell_set_group_labels);
+  taskbar_shell_propagate(self, labels, flow_grid_set_labels);
 }
 
 void taskbar_shell_set_group_icons ( GtkWidget *self, gboolean icons )
@@ -324,9 +351,9 @@ void taskbar_shell_set_group_icons ( GtkWidget *self, gboolean icons )
   TaskbarShellPrivate *priv;
 
   g_return_if_fail(IS_TASKBAR_SHELL(self));
-  priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
+  priv = taskbar_shell_get_instance_private(
+      TASKBAR_SHELL(base_widget_get_mirror_parent(self)));
 
   priv->icons = icons;
-  taskbar_shell_propagate(self, icons, flow_grid_set_icons,
-      taskbar_shell_set_group_icons);
+  taskbar_shell_propagate(self, icons, flow_grid_set_icons);
 }

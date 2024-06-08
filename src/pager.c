@@ -26,8 +26,6 @@ static GtkWidget *pager_mirror ( GtkWidget *src )
   g_object_set_data(G_OBJECT(self), "sort_numeric",
       g_object_get_data(G_OBJECT(src), "sort_numeric"));
 
-  flow_grid_copy_properties(self, src);
-
   return self;
 }
 

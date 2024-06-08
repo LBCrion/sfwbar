@@ -15,10 +15,9 @@ static GtkWidget *tray_mirror ( GtkWidget *src )
 {
   GtkWidget *self;
 
-  g_return_val_if_fail(IS_TRAY(src),NULL);
+  g_return_val_if_fail(IS_TRAY(src), NULL);
 
   self = tray_new();
-  flow_grid_copy_properties(self,src);
 
   return self;
 }
