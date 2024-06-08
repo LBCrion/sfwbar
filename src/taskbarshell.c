@@ -67,6 +67,7 @@ static void taskbar_shell_init ( TaskbarShell *self )
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
   priv->get_taskbar = taskbar_get_taskbar;
   taskbars = g_list_append(taskbars, self);
+  priv->title_width = -1;
 }
 
 GtkWidget *taskbar_shell_new ( void )
