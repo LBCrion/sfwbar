@@ -122,15 +122,15 @@ static void bar_destroy ( GtkWidget *self )
     ppriv->mirror_children = g_list_remove(ppriv->mirror_children, self);
     priv->mirror_parent = NULL;
   }
-  g_clear_pointer(&priv->name,g_free);
-  g_clear_pointer(&priv->output,g_free);
-  g_clear_pointer(&priv->bar_id,g_free);
-  g_clear_pointer(&priv->size,g_free);
-  g_clear_pointer(&priv->ezone,g_free);
-  g_clear_pointer(&priv->layer,g_free);
+  g_clear_pointer(&priv->name, g_free);
+  g_clear_pointer(&priv->output, g_free);
+  g_clear_pointer(&priv->bar_id, g_free);
+  g_clear_pointer(&priv->size, g_free);
+  g_clear_pointer(&priv->ezone, g_free);
+  g_clear_pointer(&priv->layer, g_free);
   g_list_free_full(g_steal_pointer(&priv->mirror_targets), g_free);
-  g_clear_pointer(&priv->sensor,gtk_widget_destroy);
-  g_clear_pointer(&priv->box,gtk_widget_destroy);
+  g_clear_pointer(&priv->sensor, gtk_widget_destroy);
+  g_clear_pointer(&priv->box, gtk_widget_destroy);
   GTK_WIDGET_CLASS(bar_parent_class)->destroy(self);
 }
 
@@ -601,7 +601,7 @@ gboolean bar_update_monitor ( GtkWidget *self )
   /* remove any mirrors from new primary output */
   for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
     if(bar_get_monitor(iter->data) == priv->current_monitor)
-      bar_destroy(iter->data);
+      gtk_widget_destroy(iter->data);
 
   /* add mirrors to any outputs where they are missing */
   for(i=0; i<nmon; i++)
@@ -686,7 +686,7 @@ void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
       for(liter=priv->mirror_children; liter; liter=g_list_next(liter))
         if(bar_get_monitor(liter->data) == gmon)
         {
-          bar_destroy(liter->data);
+          gtk_widget_destroy(liter->data);
           break;
         }
       bar_update_monitor(bar);
