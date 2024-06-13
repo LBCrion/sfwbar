@@ -35,7 +35,7 @@ static gboolean bar_sensor_hide ( GtkWidget *self )
 {
   BarPrivate *priv;
 
-  g_return_val_if_fail(IS_BAR(self),FALSE);
+  g_return_val_if_fail(IS_BAR(self), FALSE);
   priv = bar_get_instance_private(BAR(self));
 
   if(gtk_bin_get_child(GTK_BIN(self))==priv->sensor)
@@ -59,7 +59,7 @@ static gboolean bar_leave_notify_event ( GtkWidget *self,
 {
   BarPrivate *priv;
 
-  g_return_val_if_fail(IS_BAR(self),FALSE);
+  g_return_val_if_fail(IS_BAR(self), FALSE);
   priv = bar_get_instance_private(BAR(self));
 
   if(event->detail==GDK_NOTIFY_INFERIOR)
@@ -569,9 +569,8 @@ gboolean bar_update_monitor ( GtkWidget *self )
   gdisp = gdk_display_get_default();
   if(priv->jump)
   {
-    match = gdk_display_get_primary_monitor(gdisp);
-    if(!match)
-      match = gdk_display_get_monitor(gdisp,0);
+    if( !(match = gdk_display_get_primary_monitor(gdisp)) )
+      match = gdk_display_get_monitor(gdisp, 0);
   }
   else
     match = NULL;
@@ -601,20 +600,19 @@ gboolean bar_update_monitor ( GtkWidget *self )
   /* remove any mirrors from new primary output */
   for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
     if(bar_get_monitor(iter->data) == priv->current_monitor)
-      gtk_widget_destroy(iter->data);
+      g_idle_add((GSourceFunc)gtk_widget_destroy, iter->data);
 
   /* add mirrors to any outputs where they are missing */
   for(i=0; i<nmon; i++)
   {
     gmon = gdk_display_get_monitor(gdisp, i);
-    output = g_object_get_data(G_OBJECT(gmon),"xdg_name");
-    present = FALSE;
+    output = g_object_get_data(G_OBJECT(gmon), "xdg_name");
+    present = (gmon == priv->current_monitor);
     for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
       if(bar_get_monitor(iter->data) == gmon)
         present = TRUE;
 
-    if(!present && gmon != priv->current_monitor &&
-        bar_mirror_check(self, output) )
+    if(!present && bar_mirror_check(self, output) )
       bar_mirror(self, gmon);
   }
 
@@ -679,8 +677,8 @@ void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 
   if(bar_list)
   {
-    g_hash_table_iter_init(&iter,bar_list);
-    while(g_hash_table_iter_next(&iter,&key,&bar))
+    g_hash_table_iter_init(&iter, bar_list);
+    while(g_hash_table_iter_next(&iter, &key, &bar))
     {
       priv = bar_get_instance_private(BAR(bar));
       for(liter=priv->mirror_children; liter; liter=g_list_next(liter))
@@ -693,8 +691,8 @@ void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
     }
   }
 
-  g_snprintf(trigger,255,"%s_disconnected",
-      (gchar *)g_object_get_data(G_OBJECT(gmon),"xdg_name"));
+  g_snprintf(trigger, 255, "%s_disconnected",
+      (gchar *)g_object_get_data(G_OBJECT(gmon), "xdg_name"));
   g_idle_add((GSourceFunc)base_widget_emit_trigger,
       (gpointer)g_intern_string(trigger));
 }
@@ -782,10 +780,13 @@ GtkWidget *bar_new ( gchar *name )
   BarPrivate *priv;
 
   self = GTK_WIDGET(g_object_new(bar_get_type(), NULL));
+  g_signal_connect(G_OBJECT(self), "delete-event",
+      G_CALLBACK(gtk_widget_hide_on_delete), NULL);
   gtk_application_add_window(application, GTK_WINDOW(self));
   priv = bar_get_instance_private(BAR(self));
   priv->name = g_strdup(name);
   priv->visible = TRUE;
+  priv->jump = TRUE;
   priv->current_monitor = wayland_monitor_get_default();
   priv->output = g_strdup(
       g_object_get_data(G_OBJECT(priv->current_monitor), "xdg_name"));
@@ -851,7 +852,6 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
 
   bar_set_sensor(self, spriv->sensor_timeout);
 
-//  gtk_application_add_window(app,GTK_WINDOW(self));
   gtk_layer_set_monitor(GTK_WINDOW(self), monitor);
   gtk_widget_show(self);
   css_widget_cascade(self, NULL);
