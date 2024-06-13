@@ -863,7 +863,7 @@ GtkWidget *base_widget_mirror ( GtkWidget *src )
 
   dpriv->trigger = spriv->trigger;
   if(spriv->tooltip)
-    base_widget_set_tooltip(dest, spriv->tooltip->definition);
+    base_widget_set_tooltip(dest, g_strdup(spriv->tooltip->definition));
   base_widget_set_local_state(dest, spriv->local_state);
   base_widget_set_state(dest, spriv->user_state, TRUE);
   base_widget_set_rect(dest, spriv->rect);

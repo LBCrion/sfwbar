@@ -24,7 +24,7 @@ static GtkWidget *tray_mirror ( GtkWidget *src )
 
 static void tray_destroy ( GtkWidget *self )
 {
-  trays = g_list_remove(trays,self);
+  trays = g_list_remove(trays, self);
   GTK_WIDGET_CLASS(tray_parent_class)->destroy(self);
 }
 
