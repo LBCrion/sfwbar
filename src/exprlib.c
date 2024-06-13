@@ -12,6 +12,7 @@
 #include "expr.h"
 #include "basewidget.h"
 #include "taskbaritem.h"
+#include "bar.h"
 
 /* extract a substring */
 static void *expr_lib_mid ( void **params, void *widget, void *event )
@@ -339,6 +340,29 @@ ModuleExpressionHandlerV1 lower_handler = {
   .function = expr_lib_lower
 };
 
+static void *expr_lib_bardirection ( void **params, void *base, void *event )
+{
+  switch(bar_get_toplevel_dir(base))
+  {
+    case GTK_POS_RIGHT:
+      return g_strdup("right");
+    case GTK_POS_LEFT:
+      return g_strdup("left");
+    case GTK_POS_TOP:
+      return g_strdup("top");
+    case GTK_POS_BOTTOM:
+      return g_strdup("bottom");
+    default:
+      return g_strdup("unknown");
+  }
+}
+
+ModuleExpressionHandlerV1 bardirection_handler = {
+  .name = "bardirection",
+  .parameters = "",
+  .function = expr_lib_bardirection
+};
+
 static void *expr_lib_gtkevent ( void **params, void *base, void *event )
 {
   GtkWidget *widget;
@@ -522,6 +546,7 @@ static ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &upper_handler,
   &lower_handler,
   &gtkevent_handler,
+  &bardirection_handler,
   &widget_id_handler,
   &window_info_handler,
   &escape_handler,

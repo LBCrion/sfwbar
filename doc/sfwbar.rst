@@ -884,6 +884,8 @@ Function       Description
                arguments are "X","Y" and "Dir". X and Y select an axis for which
                to return the event location, Dir returns the event location
                along the widget direction property.
+``BarDir``     get direction property of the taskbar holding the current widget.
+               Returns a string: "left", "right", "top", "bottom" or "unknown".
 ``WidgetID``   Obtain an ID of the current widget (i.e. a widget in respect to
                which the expression is being evaluated.
 ``WindowInfo`` Obtain information about a window. This function takes window
