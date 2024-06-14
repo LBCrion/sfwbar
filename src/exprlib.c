@@ -340,7 +340,7 @@ ModuleExpressionHandlerV1 lower_handler = {
   .function = expr_lib_lower
 };
 
-static void *expr_lib_bardirection ( void **params, void *base, void *event )
+static void *expr_lib_bardir ( void **params, void *base, void *event )
 {
   switch(bar_get_toplevel_dir(base))
   {
@@ -357,10 +357,10 @@ static void *expr_lib_bardirection ( void **params, void *base, void *event )
   }
 }
 
-ModuleExpressionHandlerV1 bardirection_handler = {
-  .name = "bardirection",
+ModuleExpressionHandlerV1 bardir_handler = {
+  .name = "bardir",
   .parameters = "",
-  .function = expr_lib_bardirection
+  .function = expr_lib_bardir
 };
 
 static void *expr_lib_gtkevent ( void **params, void *base, void *event )
@@ -546,7 +546,7 @@ static ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &upper_handler,
   &lower_handler,
   &gtkevent_handler,
-  &bardirection_handler,
+  &bardir_handler,
   &widget_id_handler,
   &window_info_handler,
   &escape_handler,
