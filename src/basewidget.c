@@ -3,7 +3,6 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include <gtk-layer-shell.h>
 #include "expr.h"
 #include "basewidget.h"
 #include "grid.h"
@@ -11,6 +10,7 @@
 #include "action.h"
 #include "module.h"
 #include "meson.h"
+#include "bar.h"
 
 G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX,
     G_ADD_PRIVATE (BaseWidget))
@@ -125,34 +125,12 @@ static void base_widget_get_pref_height ( GtkWidget *self, gint *m, gint *n )
 GdkModifierType base_widget_get_modifiers ( GtkWidget *self )
 {
   GdkModifierType state;
-  GtkWindow *win;
-  gint i;
 
-  win = GTK_WINDOW(gtk_widget_get_ancestor(self, GTK_TYPE_WINDOW));
-  if(gtk_window_get_window_type(win)==GTK_WINDOW_POPUP)
-    win = g_object_get_data(G_OBJECT(win),"parent_window");
-
-  if(win && gtk_layer_is_layer_window(win))
-  {
-#if GTK_LAYER_VER_MINOR > 5
-    gtk_layer_set_keyboard_mode(win, GTK_LAYER_SHELL_KEYBOARD_MODE_EXCLUSIVE);
-#else
-    gtk_layer_set_keyboard_interactivity(win, TRUE);
-#endif
-    for(i=0; i<3; i++)
-      gtk_main_iteration();
-    state = gdk_keymap_get_modifier_state(gdk_keymap_get_for_display(
-          gdk_display_get_default())) & gtk_accelerator_get_default_mod_mask();
-#if GTK_LAYER_VER_MINOR > 5
-    gtk_layer_set_keyboard_mode(win, GTK_LAYER_SHELL_KEYBOARD_MODE_NONE);
-#else
-    gtk_layer_set_keyboard_interactivity(win, FALSE);
-#endif
-    for(i=0; i<5; i++)
-      gtk_main_iteration();
-  }
-  else
-    state = 0;
+  bar_set_interactivity(self, TRUE);
+  bar_set_interactivity(self, TRUE);
+  state = gdk_keymap_get_modifier_state(gdk_keymap_get_for_display(
+        gdk_display_get_default())) & gtk_accelerator_get_default_mod_mask();
+  bar_set_interactivity(self, FALSE);
 
   g_debug("modifier state: %x", state);
   return state;

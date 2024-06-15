@@ -10,6 +10,7 @@
 #include "basewidget.h"
 #include "popup.h"
 #include "bar.h"
+#include <gtk-layer-shell.h>
 
 static GHashTable *popup_list;
 
@@ -126,6 +127,9 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkSeat *seat )
     if(old_popup != popup && gtk_widget_get_visible(old_popup))
       popup_popdown(old_popup);
 
+  bar_set_interactivity(parent, TRUE);
+  bar_set_interactivity(parent, TRUE);
+
   css_widget_cascade(child, NULL);
   gtk_widget_unrealize(popup);
   gtk_widget_realize(popup);
@@ -225,6 +229,14 @@ void popup_set_autoclose ( GtkWidget *win, gboolean autoclose )
     gtk_window_set_type_hint(GTK_WINDOW(win), GDK_WINDOW_TYPE_HINT_NORMAL);
 }
 
+void popup_map_event_cb ( GtkWidget *self, gpointer d)
+{
+  GtkWidget *win;
+
+  if( (win = g_object_get_data(G_OBJECT(self), "parent_window")) )
+    bar_set_interactivity(win, FALSE);
+}
+
 GtkWidget *popup_new ( gchar *name )
 {
   GtkWidget *win, *grid;
@@ -247,6 +259,7 @@ GtkWidget *popup_new ( gchar *name )
       win);
   g_signal_connect(win,"window-state-event", G_CALLBACK(popup_state_cb),NULL);
   g_signal_connect(grid, "size-allocate", G_CALLBACK(popup_size_allocate_cb), win);
+  g_signal_connect(win,"map-event", G_CALLBACK(popup_map_event_cb),NULL);
 
   g_hash_table_insert(popup_list,g_strdup(name),win);
   return win;

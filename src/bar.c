@@ -373,6 +373,8 @@ static gboolean bar_mirror_check ( GtkWidget *self, gchar *monitor )
 
   g_return_val_if_fail(IS_BAR(self), FALSE);
   priv = bar_get_instance_private(BAR(self));
+  if(!monitor)
+    return FALSE;
 
   match = FALSE;
   for(iter=priv->mirror_targets; iter; iter=g_list_next(iter))
@@ -883,4 +885,42 @@ void bar_set_icon_theme ( gchar *new_theme )
   setts = gtk_settings_get_default();
   g_object_set(G_OBJECT(setts),"gtk-icon-theme-name", new_theme, NULL);
   g_free(new_theme);
+}
+
+static void bar_clock_cb ( GdkFrameClock *clock, gboolean *canary )
+{
+  *canary = TRUE;
+}
+
+void bar_set_interactivity ( GtkWidget *widget, gboolean interactivity )
+{
+  guint handler;
+  gboolean painted = FALSE;
+  GtkWindow *win;
+  GdkFrameClock *clock;
+
+  win = GTK_WINDOW(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW));
+  if(gtk_window_get_window_type(win)==GTK_WINDOW_POPUP)
+    win = g_object_get_data(G_OBJECT(win),"parent_window");
+
+  if(!win || !gtk_layer_is_layer_window(win))
+    return;
+
+  clock = gdk_window_get_frame_clock(gtk_widget_get_window(GTK_WIDGET(win)));
+
+  handler = g_signal_connect(clock, "after-paint",
+      G_CALLBACK(bar_clock_cb), &painted);
+
+#if GTK_LAYER_VER_MINOR > 5
+    gtk_layer_set_keyboard_mode(win,
+        interactivity?GTK_LAYER_SHELL_KEYBOARD_MODE_EXCLUSIVE:
+        GTK_LAYER_SHELL_KEYBOARD_MODE_NONE);
+#else
+    gtk_layer_set_keyboard_interactivity(win, interactivity);
+#endif
+
+  while(!painted)
+    gtk_main_iteration();
+
+  g_signal_handler_disconnect(clock, handler);
 }
