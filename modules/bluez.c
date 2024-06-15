@@ -22,6 +22,7 @@ typedef struct _bz_device {
   gchar *addr;
   gchar *name;
   gchar *icon;
+  guint32 class;
   gboolean paired;
   gboolean trusted;
   gboolean connected;
@@ -231,7 +232,7 @@ static void bz_scan ( GDBusConnection *con, guint timeout )
       (gpointer)g_intern_static_string("bluez_scan"));
   builder = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
   g_variant_builder_add(builder, "{sv}", "Transport",
-      g_variant_new_string("bredr"));
+      g_variant_new_string("auto"));
   dict = g_variant_builder_end(builder);
   g_variant_builder_unref(builder);
 
@@ -414,6 +415,11 @@ static gboolean bz_device_property_string ( gchar **prop, GVariant *val )
   return TRUE;
 }
 
+static gboolean bz_device_visible ( BzDevice *device )
+{
+  return (device->name || ((device->class & 0x1F40) == 0x0540));
+}
+
 static gboolean bz_device_properties ( BzDevice *device, GVariantIter *piter )
 {
   gboolean changed = FALSE;
@@ -446,6 +452,12 @@ static gboolean bz_device_properties ( BzDevice *device, GVariantIter *piter )
       device->connected = g_variant_get_boolean(val);
       changed = TRUE;
     }
+    else if(!g_strcmp0(prop, "Class") &&
+        device->class != g_variant_get_uint32(val))
+    {
+      device->class = g_variant_get_uint32(val);
+      changed = TRUE;
+    }
     g_variant_unref(val);
   }
 
@@ -470,7 +482,8 @@ static void bz_device_handle ( gchar *path, gchar *iface, GVariantIter *piter )
   }
 
   bz_device_properties (device, piter);
-  module_queue_append(&update_q, device);
+  if(bz_device_visible(device))
+    module_queue_append(&update_q, device);
 
   g_debug("bluez: device added: %d %d %s %s on %s",device->paired,
       device->connected, device->addr, device->name, device->path);
@@ -560,7 +573,10 @@ static void bz_device_changed ( GDBusConnection *con, const gchar *sender,
   {
     g_debug("bluez: device changed: %d %d %s %s on %s",device->paired,
         device->connected, device->addr, device->name, device->path);
-    module_queue_append(&update_q, device);
+    if(bz_device_visible(device))
+      module_queue_append(&update_q, device);
+    else
+      module_queue_append(&remove_q, device->path);
   }
   g_variant_iter_free(piter);
 }
