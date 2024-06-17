@@ -46,7 +46,7 @@ Menu("XBluezItemMenu") {
 }
 
 Function("XBluezUpdate") {
-  ClearWidget BluezGet("Path") + "_grid" +
+  ClearWidget BluezGet("Path") + "_grid_" +
     If(BluezState("Paired"), "avail", "paired")
   Config ReplaceAll( $XBluezTmpl,
     "@BLUEZ_PAIRED@", If(BluezState("Paired"),"Paired","Avail"),
@@ -60,8 +60,8 @@ Function("XBluezUpdate") {
 }
 
 Function("XBluezRemove") {
-  ClearWidget BluezGet("RemovedPath") + "_gridavail"
-  ClearWidget BluezGet("RemovedPath") + "_gridpaired"
+  ClearWidget BluezGet("RemovedPath") + "_grid_avail"
+  ClearWidget BluezGet("RemovedPath") + "_grid_paired"
   BluezAckRemoved
 }
 
