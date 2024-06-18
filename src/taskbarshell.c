@@ -170,19 +170,7 @@ static void taskbar_shell_item_init ( GtkWidget *self, window_t *win )
 
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
   if( (taskbar = priv->get_taskbar(self, win, TRUE)) )
-  {
     taskbar_item_new(win, taskbar);
-
-    flow_grid_set_title_width(taskbar, priv->title_width);
-    flow_grid_set_cols(taskbar, priv->cols);
-    flow_grid_set_rows(taskbar, priv->rows);
-    flow_grid_set_icons(taskbar, priv->icons);
-    flow_grid_set_labels(taskbar, priv->labels);
-    flow_grid_set_sort(taskbar, priv->sort);
-    for(iter=priv->css; iter; iter=g_list_next(iter))
-      base_widget_set_css(taskbar, g_strdup(iter->data));
-    base_widget_set_style(self, g_strdup(priv->style));
-  }
 }
 
 void taskbar_shell_item_init_for_all ( window_t *win )
@@ -287,12 +275,13 @@ static void taskbar_shell_propagate ( GtkWidget *self, gint value,
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
 
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
-    if( (taskbar = priv->get_taskbar(self, iter->data, FALSE)) )
+    if( (taskbar=priv->get_taskbar(self, iter->data, FALSE)) && taskbar!=self )
       grid_func(taskbar, value);
   for(sub=base_widget_get_mirror_children(self); sub; sub=g_list_next(sub))
   {
     for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
-      if( (taskbar = priv->get_taskbar(sub->data, iter->data, FALSE)) )
+      if( (taskbar=priv->get_taskbar(sub->data, iter->data, FALSE)) &&
+          taskbar!=sub->data )
         grid_func(taskbar, value);
   }
 }
