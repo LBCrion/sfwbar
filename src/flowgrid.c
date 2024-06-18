@@ -20,8 +20,7 @@ static void flow_grid_get_preferred_width (GtkWidget *self, gint *minimal,
   FlowGridPrivate *priv;
 
   g_return_if_fail(IS_FLOW_GRID(self));
-  priv = flow_grid_get_instance_private(
-      FLOW_GRID(base_widget_get_mirror_parent(self)));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_width(
       self, minimal, natural);
@@ -36,8 +35,7 @@ static void flow_grid_get_preferred_height (GtkWidget *self, gint *minimal,
   FlowGridPrivate *priv;
 
   g_return_if_fail(IS_FLOW_GRID(self));
-  priv = flow_grid_get_instance_private(
-      FLOW_GRID(base_widget_get_mirror_parent(self)));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_height(
       self, minimal, natural);
@@ -188,8 +186,7 @@ gint flow_grid_get_cols ( GtkWidget *self )
   FlowGridPrivate *priv;
 
   g_return_val_if_fail(IS_FLOW_GRID(self), -1);
-  priv = flow_grid_get_instance_private(
-      FLOW_GRID(base_widget_get_mirror_parent(self)));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   return priv->cols;
 }
@@ -199,8 +196,7 @@ gint flow_grid_get_rows ( GtkWidget *self )
   FlowGridPrivate *priv;
 
   g_return_val_if_fail(IS_FLOW_GRID(self), -1);
-  priv = flow_grid_get_instance_private(
-      FLOW_GRID(base_widget_get_mirror_parent(self)));
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   return priv->rows;
 }
@@ -258,8 +254,7 @@ void flow_grid_add_child ( GtkWidget *self, GtkWidget *child )
 
   g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
-  ppriv = flow_grid_get_instance_private(
-      FLOW_GRID(base_widget_get_mirror_parent(self)));
+  ppriv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   for(i=0; i<=BASE_WIDGET_MAX_ACTION; i++)
     base_widget_action_configure(child, i);
@@ -299,8 +294,7 @@ void flow_grid_update ( GtkWidget *self )
 
   g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
-  ppriv = flow_grid_get_instance_private(
-      FLOW_GRID(base_widget_get_mirror_parent(self)));
+  ppriv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   if(!priv->invalid)
     return;

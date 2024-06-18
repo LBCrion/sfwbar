@@ -47,7 +47,7 @@ static GtkWidget *taskbar_shell_mirror ( GtkWidget *src )
   taskbar_shell_set_group_labels(self, priv->labels);
   taskbar_shell_set_group_sort(self, priv->sort);
   for(iter=priv->css; iter; iter=g_list_next(iter))
-    taskbar_shell_set_group_style(self, iter->data);
+    taskbar_shell_set_group_css(self, iter->data);
   taskbar_shell_set_group_style(self, priv->style);
   taskbar_shell_populate();
 
@@ -166,10 +166,23 @@ static void taskbar_shell_item_init ( GtkWidget *self, window_t *win )
 {
   TaskbarShellPrivate *priv;
   GtkWidget *taskbar;
+  GList *iter;
 
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
   if( (taskbar = priv->get_taskbar(self, win, TRUE)) )
+  {
     taskbar_item_new(win, taskbar);
+
+    flow_grid_set_title_width(taskbar, priv->title_width);
+    flow_grid_set_cols(taskbar, priv->cols);
+    flow_grid_set_rows(taskbar, priv->rows);
+    flow_grid_set_icons(taskbar, priv->icons);
+    flow_grid_set_labels(taskbar, priv->labels);
+    flow_grid_set_sort(taskbar, priv->sort);
+    for(iter=priv->css; iter; iter=g_list_next(iter))
+      base_widget_set_css(taskbar, g_strdup(iter->data));
+    base_widget_set_style(self, g_strdup(priv->style));
+  }
 }
 
 void taskbar_shell_item_init_for_all ( window_t *win )
