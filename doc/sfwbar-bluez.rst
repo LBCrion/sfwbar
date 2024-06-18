@@ -44,6 +44,12 @@ The supported properties are:
 "Icon"
   an icon for the device type
 
+"MajorClass"
+  a major class of the bluetooth device
+
+"MinorClass"
+  a minor class of the bluetooth device
+
 BluezState(Property)
 --------------------
 

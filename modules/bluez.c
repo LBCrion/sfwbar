@@ -36,6 +36,115 @@ typedef struct _bz_adapter {
   guint timeout_handle;
 } BzAdapter;
 
+static gchar *bz_major_class[] = {
+  "Miscellaneous",
+  "Computer",
+  "Phone",
+  "LAN / Network Access Point",
+  "Audio/Video",
+  "Peripheral",
+  "Imaging",
+  "Wearable",
+  "Toy",
+  "Health"
+};
+
+typedef struct _bz_minor_class {
+  guint32 mask, id;
+  gchar *name;
+} bz_minor_class_t;
+
+static bz_minor_class_t bz_minor_class[] = {
+  { 0b01111111111100, 0b00000100000100, "Desktop" },
+  { 0b01111111111100, 0b00000100001000, "Server" },
+  { 0b01111111111100, 0b00000100001100, "Laptop" },
+  { 0b01111111111100, 0b00000100010000, "Handheld" },
+  { 0b01111111111100, 0b00000100010100, "Palm" },
+  { 0b01111111111100, 0b00000100011000, "Wearable" },
+
+  { 0b01111111111100, 0b00001000000100, "Cellular" },
+  { 0b01111111111100, 0b00001000001000, "Cordless" },
+  { 0b01111111111100, 0b00001000001100, "Smartphone" },
+  { 0b01111111111100, 0b00001000010000, "Modem" },
+  { 0b01111111111100, 0b00001000010100, "ISDN" },
+
+  { 0b01111111100000, 0b00001100000000, "Full" },
+  { 0b01111111100000, 0b00001100100000, "1-17%" },
+  { 0b01111111100000, 0b00001101100000, "17-33%" },
+  { 0b01111111100000, 0b00001110000000, "33-50%" },
+  { 0b01111111100000, 0b00001110000000, "50-67%" },
+  { 0b01111111100000, 0b00001110100000, "67-83%" },
+  { 0b01111111100000, 0b00001111000000, "83-99%" },
+  { 0b01111111100000, 0b00001111100000, "No Service" },
+
+  { 0b01111111111100, 0b00010000000100, "Headset" },
+  { 0b01111111111100, 0b00010000001000, "Hands-free" },
+  { 0b01111111111100, 0b00010000001100, "Unknown" },
+  { 0b01111111111100, 0b00010000010000, "Microphone" },
+  { 0b01111111111100, 0b00010000010100, "Loudspeakers" },
+  { 0b01111111111100, 0b00010000011000, "Headphones" },
+  { 0b01111111111100, 0b00010000011100, "Portable Audio" },
+  { 0b01111111111100, 0b00010000100000, "Car Audio" },
+  { 0b01111111111100, 0b00010000100100, "Set-top box" },
+  { 0b01111111111100, 0b00010000101000, "HiFi" },
+  { 0b01111111111100, 0b00010000101100, "VCR" },
+  { 0b01111111111100, 0b00010000110000, "Video Camera" },
+  { 0b01111111111100, 0b00010000110100, "Camcoder" },
+  { 0b01111111111100, 0b00010000111000, "Video Monitor" },
+  { 0b01111111111100, 0b00010000111100, "Video display and loudspeaker" },
+  { 0b01111111111100, 0b00010001000000, "Video Conferencing" },
+  { 0b01111111111100, 0b00010001001000, "Gaming/Toy" },
+
+  { 0b01111111000000, 0b00010101000000, "Keyboard" },
+  { 0b01111111000000, 0b00010110000000, "Pointer" },
+  { 0b01111111000000, 0b00010111000000, "Combo" },
+
+  { 0b01111100000000, 0b00011000000000, "Imaging" },
+
+  { 0b01111111111100, 0b00011100000100, "Watch" },
+  { 0b01111111111100, 0b00011100001000, "Jacket" },
+  { 0b01111111111100, 0b00011100001100, "Helmet" },
+  { 0b01111111111100, 0b00011100010000, "Glasses" },
+
+  { 0b01111111111100, 0b00100000000100, "Robot" },
+  { 0b01111111111100, 0b00100000001000, "Vehicle" },
+  { 0b01111111111100, 0b00100000001100, "Doll" },
+  { 0b01111111111100, 0b00100000010000, "Controller" },
+  { 0b01111111111100, 0b00100000010100, "Game" },
+
+  { 0b01111111111100, 0b00100100000100, "Blood pressure monitor" },
+  { 0b01111111111100, 0b00100100001000, "Thermometer" },
+  { 0b01111111111100, 0b00100100001100, "Scale" },
+  { 0b01111111111100, 0b00100100010000, "Glucose Meter" },
+  { 0b01111111111100, 0b00100100010100, "Oxymeter" },
+  { 0b01111111111100, 0b00100100011000, "Heart rate monitor" },
+  { 0b01111111111100, 0b00100100011100, "Health data display" },
+
+  { 0, 0, NULL },
+
+};
+
+static gchar *bz_get_major_class ( guint class )
+{
+  guint i =(class>>8) & 0x1F;
+
+  if(i<10)
+    return bz_major_class[i];
+  else
+    return "Unknown";
+}
+
+static gchar *bz_get_minor_class ( guint32 class )
+{
+  gint i;
+
+  for(i=0; bz_minor_class[i].name; i++)
+    if((class & bz_minor_class[i].mask) == bz_minor_class[i].id)
+      return bz_minor_class[i].name;
+
+  return "Unknown";
+}
+
 static void bz_adapter_free ( gchar *object )
 {
   GList *iter;
@@ -83,6 +192,7 @@ static BzDevice *bz_device_dup ( BzDevice *src )
   dest->trusted = src->trusted;
   dest->connected = src->connected;
   dest->connecting = src->connecting;
+  dest->class = src->class;
 
   return dest;
 }
@@ -97,13 +207,17 @@ static gboolean bz_device_compare ( BzDevice *dev1, BzDevice *dev2 )
 static gpointer bz_device_get_str ( BzDevice *device, gchar *prop )
 {
     if(!g_ascii_strcasecmp(prop, "Name"))
-      return g_strdup(device->name?device->name:"");
+      return g_strdup(device->name);
     if(!g_ascii_strcasecmp(prop, "Address"))
-      return g_strdup(device->addr?device->addr:"");
+      return g_strdup(device->addr);
     if(!g_ascii_strcasecmp(prop, "Icon"))
-      return g_strdup(device->icon?device->icon:"");
+      return g_strdup(device->icon);
     if(!g_ascii_strcasecmp(prop, "Path"))
-      return g_strdup(device->path?device->path:"");
+      return g_strdup(device->path);
+    if(!g_ascii_strcasecmp(prop, "MajorClass"))
+      return g_strdup(bz_get_major_class(device->class));
+    if(!g_ascii_strcasecmp(prop, "MinorClass"))
+      return g_strdup(bz_get_minor_class(device->class));
     return NULL;
 }
 
@@ -198,51 +312,23 @@ static void bz_scan_cb ( GDBusConnection *con, GAsyncResult *res,
         (GSourceFunc)bz_scan_stop, adapter);
 }
 
-static void bz_scan_filter_cb ( GDBusConnection *con, GAsyncResult *res,
-    BzAdapter *adapter)
-{
-  GVariant *result;
-
-  result = g_dbus_connection_call_finish(con, res, NULL);
-  if(!result)
-  {
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("bluez_scan_complete"));
-    return;
-  }
-
-  g_debug("bluez: scan on");
-  g_dbus_connection_call(con, bz_serv, adapter->path,
-      adapter->iface, "StartDiscovery", NULL, NULL, G_DBUS_CALL_FLAGS_NONE,
-      -1, NULL, (GAsyncReadyCallback)bz_scan_cb, adapter);
-  g_variant_unref(result);
-}
-
 static void bz_scan ( GDBusConnection *con, guint timeout )
 {
   BzAdapter *adapter;
-  GVariantBuilder *builder;
-  GVariant *dict;
 
   adapter = bz_adapter_get();
   if(!adapter || adapter->timeout_handle)
     return;
 
+  adapter->scan_timeout = timeout;
   g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
       (gpointer)g_intern_static_string("bluez_scan"));
-  builder = g_variant_builder_new(G_VARIANT_TYPE_VARDICT);
-  g_variant_builder_add(builder, "{sv}", "Transport",
-      g_variant_new_string("auto"));
-  dict = g_variant_builder_end(builder);
-  g_variant_builder_unref(builder);
 
-  adapter->scan_timeout = timeout;
+  g_debug("bluez: scan on");
   g_dbus_connection_call(con, bz_serv, adapter->path,
-      adapter->iface, "SetDiscoveryFilter", g_variant_new_tuple(&dict,1),
-      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
-      (GAsyncReadyCallback)bz_scan_filter_cb, adapter);
+      adapter->iface, "StartDiscovery", NULL, NULL, G_DBUS_CALL_FLAGS_NONE,
+      -1, NULL, (GAsyncReadyCallback)bz_scan_cb, adapter);
 }
-
 
 static void bz_connect_cb ( GDBusConnection *con, GAsyncResult *res,
     BzDevice *device)

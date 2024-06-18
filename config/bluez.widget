@@ -29,9 +29,9 @@ grid 'XBluezGrid@BLUEZ_PAIRED@' {
       interval = 0
       loc(2,1,1,1)
     }
-    label '@BLUEZ_PATH@_address' {
-      value = '@BLUEZ_ADDR@'
-      style = 'XBluezAddress'
+    label '@BLUEZ_PATH@_class' {
+      value = '@BLUEZ_CLASS@'
+      style = 'XBluezClass'
       interval = 0
       loc(1,1,1,1)
     }
@@ -54,6 +54,7 @@ Function("XBluezUpdate") {
     "@BLUEZ_PATH@", BluezGet("Path"),
     "@BLUEZ_ICON@", BluezGet("Icon"),
     "@BLUEZ_ADDR@", BluezGet("Address"),
+    "@BLUEZ_CLASS@", BluezGet("MinorClass"),
     "@BLUEZ_NAME@", BluezGet("Name"),
     "@BLUEZ_ID@", BluezGet("Id"))
   BluezAck
@@ -174,7 +175,7 @@ label#XBluezName {
 }
 
 label#XBluezStatus,
-label#XBluezAddress {
+label#XBluezClass {
   font-size: 10px;
   -GtkWidget-halign: start;
   -GtkWidget-hexpand: true;
