@@ -166,7 +166,6 @@ static void taskbar_shell_item_init ( GtkWidget *self, window_t *win )
 {
   TaskbarShellPrivate *priv;
   GtkWidget *taskbar;
-  GList *iter;
 
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
   if( (taskbar = priv->get_taskbar(self, win, TRUE)) )
