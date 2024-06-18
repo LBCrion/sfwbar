@@ -210,6 +210,8 @@ image#volume_client_menu,
 image#volume_mute {
   color: @theme_fg_color;
   padding: 3px;
+  min-width: 16px;
+  min-height: 16px;
   -GtkWidget-hexpand: false;
   -GtkWidget-halign: start;
 }
