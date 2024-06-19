@@ -23,16 +23,18 @@ static gboolean taskbar_item_action_exec ( GtkWidget *self, gint slot,
 {
   TaskbarItemPrivate *priv;
   GdkModifierType mods;
+  GtkWidget *shell;
   action_t *action;
 
-  g_return_val_if_fail(IS_TASKBAR_ITEM(self),FALSE);
+  g_return_val_if_fail(IS_TASKBAR_ITEM(self), FALSE);
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
 
-  if(!base_widget_check_action_slot(priv->taskbar, slot) && slot != 1)
+  shell = gtk_widget_get_ancestor(self, TASKBAR_SHELL_TYPE);
+  if(!base_widget_check_action_slot(shell, slot) && slot != 1)
     return FALSE;
 
   mods = base_widget_get_modifiers(self);
-  action = base_widget_get_action(priv->taskbar, slot, mods);
+  action = base_widget_get_action(shell, slot, mods);
 
   action_exec(self, action, ev, priv->win, NULL);
 
