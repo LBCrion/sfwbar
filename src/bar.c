@@ -602,7 +602,9 @@ gboolean bar_update_monitor ( GtkWidget *self )
   /* remove any mirrors from new primary output */
   for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
     if(bar_get_monitor(iter->data) == priv->current_monitor)
-      g_idle_add((GSourceFunc)gtk_widget_destroy, iter->data);
+      break;
+  if(iter)
+    gtk_widget_destroy(iter->data);
 
   /* add mirrors to any outputs where they are missing */
   for(i=0; i<nmon; i++)
@@ -671,27 +673,7 @@ void bar_monitor_added_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 
 void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 {
-  BarPrivate *priv;
-  GHashTableIter iter;
-  void *key, *bar;
-  GList *liter;
   static char trigger[256];
-
-  if(bar_list)
-  {
-    g_hash_table_iter_init(&iter, bar_list);
-    while(g_hash_table_iter_next(&iter, &key, &bar))
-    {
-      priv = bar_get_instance_private(BAR(bar));
-      for(liter=priv->mirror_children; liter; liter=g_list_next(liter))
-        if(bar_get_monitor(liter->data) == gmon)
-        {
-          gtk_widget_destroy(liter->data);
-          break;
-        }
-      bar_update_monitor(bar);
-    }
-  }
 
   g_snprintf(trigger, 255, "%s_disconnected",
       (gchar *)g_object_get_data(G_OBJECT(gmon), "xdg_name"));
@@ -776,6 +758,17 @@ void bar_set_sensor ( GtkWidget *self, gint64 timeout )
     bar_set_sensor(iter->data, timeout);
 }
 
+static gboolean bar_on_delete ( GtkWidget *self )
+{
+  BarPrivate *priv;
+
+  priv = bar_get_instance_private(BAR(self));
+  if(priv->mirror_parent)
+    return FALSE;
+  bar_update_monitor(self);
+  return TRUE;
+}
+
 GtkWidget *bar_new ( gchar *name )
 {
   GtkWidget *self;
@@ -783,7 +776,7 @@ GtkWidget *bar_new ( gchar *name )
 
   self = GTK_WIDGET(g_object_new(bar_get_type(), NULL));
   g_signal_connect(G_OBJECT(self), "delete-event",
-      G_CALLBACK(gtk_widget_hide_on_delete), NULL);
+      G_CALLBACK(bar_on_delete), NULL);
   gtk_application_add_window(application, GTK_WINDOW(self));
   priv = bar_get_instance_private(BAR(self));
   priv->name = g_strdup(name);
