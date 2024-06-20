@@ -32,6 +32,4 @@ struct _ButtonPrivate
 
 GType button_get_type ( void );
 
-GtkWidget *button_new();
-
 #endif

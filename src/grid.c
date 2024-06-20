@@ -6,6 +6,7 @@
 #include "sfwbar.h"
 #include "basewidget.h"
 #include "grid.h"
+#include "taskbarshell.h"
 
 G_DEFINE_TYPE_WITH_CODE (Grid, grid, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Grid))
 
@@ -19,19 +20,16 @@ static void grid_destroy ( GtkWidget *self )
   GTK_WIDGET_CLASS(grid_parent_class)->destroy(self);
 }
 
-static GtkWidget *grid_mirror ( GtkWidget *src )
+static void grid_mirror ( GtkWidget *self, GtkWidget *src )
 {
   GridPrivate *priv;
-  GtkWidget *self;
   GList *iter;
 
+  BASE_WIDGET_CLASS(grid_parent_class)->mirror(self, src);
   priv = grid_get_instance_private(GRID(src));
-  self = grid_new();
 
   for(iter=priv->children; iter; iter=g_list_next(iter))
     grid_attach(self, base_widget_mirror(iter->data));
-
-  return self;
 }
 
 static void grid_child_park ( GtkWidget *widget, GtkWidget *grid )

@@ -32,6 +32,4 @@ struct _ScalePrivate
 
 GType scale_get_type ( void );
 
-GtkWidget *scale_new();
-
 #endif

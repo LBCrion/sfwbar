@@ -34,7 +34,6 @@ struct _PagerPrivate
 GType pager_get_type ( void );
 
 
-GtkWidget *pager_new();
 void pager_invalidate_all ( workspace_t *ws );
 void pager_add_pins ( GtkWidget *self, GList *pins );
 gboolean pager_check_pins ( GtkWidget *self, gchar *pin );

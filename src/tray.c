@@ -11,17 +11,6 @@ G_DEFINE_TYPE_WITH_CODE (Tray, tray, FLOW_GRID_TYPE, G_ADD_PRIVATE (Tray))
 
 static GList *trays;
 
-static GtkWidget *tray_mirror ( GtkWidget *src )
-{
-  GtkWidget *self;
-
-  g_return_val_if_fail(IS_TRAY(src), NULL);
-
-  self = tray_new();
-
-  return self;
-}
-
 static void tray_destroy ( GtkWidget *self )
 {
   trays = g_list_remove(trays, self);
@@ -30,7 +19,6 @@ static void tray_destroy ( GtkWidget *self )
 
 static void tray_class_init ( TrayClass *kclass )
 {
-  BASE_WIDGET_CLASS(kclass)->mirror = tray_mirror;
   GTK_WIDGET_CLASS(kclass)->destroy = tray_destroy;
   BASE_WIDGET_CLASS(kclass)->action_exec = NULL;
 }

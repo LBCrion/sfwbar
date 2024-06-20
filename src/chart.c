@@ -99,7 +99,7 @@ static void chart_init ( Chart *self )
   priv->data = g_queue_new();
 }
 
-GtkWidget *chart_new( void )
+GtkWidget *chart_new ( void )
 {
   return GTK_WIDGET(g_object_new(chart_get_type(), NULL));
 }

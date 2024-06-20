@@ -260,12 +260,39 @@ static void base_widget_action_configure_impl ( GtkWidget *self, gint slot )
   }
 }
 
+static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
+{
+  BaseWidgetPrivate *spriv, *dpriv;
+  GList *iter;
+
+  spriv = base_widget_get_instance_private(BASE_WIDGET(src));
+  dpriv = base_widget_get_instance_private(BASE_WIDGET(dest));
+
+  dpriv->mirror_parent = src;
+  if(!g_list_find(spriv->mirror_children, dest))
+  {
+    spriv->mirror_children = g_list_prepend(spriv->mirror_children, dest);
+    base_widget_style(src);
+    base_widget_update_value(dest);
+  }
+
+  dpriv->trigger = spriv->trigger;
+  if(spriv->tooltip)
+    base_widget_set_tooltip(dest, g_strdup(spriv->tooltip->definition));
+  base_widget_set_local_state(dest, spriv->local_state);
+  base_widget_set_state(dest, spriv->user_state, TRUE);
+  base_widget_set_rect(dest, spriv->rect);
+  for(iter=spriv->css; iter; iter=g_list_next(iter))
+    css_widget_apply(base_widget_get_child(dest), g_strdup(iter->data));
+}
+
 static void base_widget_class_init ( BaseWidgetClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = base_widget_destroy;
   kclass->old_size_allocate = GTK_WIDGET_CLASS(kclass)->size_allocate;
   kclass->action_exec = base_widget_action_exec_impl;
   kclass->action_configure = base_widget_action_configure_impl;
+  kclass->mirror = base_widget_mirror_impl;
   GTK_WIDGET_CLASS(kclass)->size_allocate = base_widget_size_allocate;
   GTK_WIDGET_CLASS(kclass)->get_preferred_width = base_widget_get_pref_width;
   GTK_WIDGET_CLASS(kclass)->get_preferred_height = base_widget_get_pref_height;
@@ -817,36 +844,11 @@ void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src )
 
 GtkWidget *base_widget_mirror ( GtkWidget *src )
 {
-  BaseWidgetPrivate *spriv, *dpriv;
-  GList *iter;
-
   GtkWidget *dest;
 
-  g_return_val_if_fail(IS_BASE_WIDGET(src),NULL);
-  if(!BASE_WIDGET_GET_CLASS(src)->mirror)
-    return NULL;
-
-  dest = BASE_WIDGET_GET_CLASS(src)->mirror(src);
-
-  spriv = base_widget_get_instance_private(BASE_WIDGET(src));
-  dpriv = base_widget_get_instance_private(BASE_WIDGET(dest));
-
-  dpriv->mirror_parent = src;
-  if(!g_list_find(spriv->mirror_children, dest))
-  {
-    spriv->mirror_children = g_list_prepend(spriv->mirror_children, dest);
-    base_widget_style(src);
-    base_widget_update_value(dest);
-  }
-
-  dpriv->trigger = spriv->trigger;
-  if(spriv->tooltip)
-    base_widget_set_tooltip(dest, g_strdup(spriv->tooltip->definition));
-  base_widget_set_local_state(dest, spriv->local_state);
-  base_widget_set_state(dest, spriv->user_state, TRUE);
-  base_widget_set_rect(dest, spriv->rect);
-  for(iter=spriv->css; iter; iter=g_list_next(iter))
-    css_widget_apply(base_widget_get_child(dest), g_strdup(iter->data));
+  g_return_val_if_fail(IS_BASE_WIDGET(src), NULL);
+  dest = GTK_WIDGET(g_object_new(G_TYPE_FROM_INSTANCE(src), NULL));
+  BASE_WIDGET_GET_CLASS(src)->mirror(dest, src);
 
   return dest;
 }

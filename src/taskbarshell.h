@@ -35,7 +35,6 @@ struct _TaskbarShellPrivate
 
 GType taskbar_shell_get_type ( void );
 
-GtkWidget *taskbar_shell_new( void );
 void taskbar_shell_populate ( void );
 void taskbar_shell_update_all ( void );
 void taskbar_shell_item_invalidate ( window_t *win );

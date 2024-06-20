@@ -31,7 +31,7 @@ struct _BaseWidgetClass
 
   void (*update_value)(GtkWidget *self);
   void (*old_size_allocate)(GtkWidget *, GtkAllocation * );
-  GtkWidget *(*mirror)(GtkWidget *self);
+  void (*mirror)(GtkWidget *self, GtkWidget *src);
   gboolean (*action_exec)( GtkWidget *self, gint slot, GdkEvent *ev );
   void (*action_configure)( GtkWidget *self, gint slot );
 };
@@ -86,6 +86,7 @@ void base_widget_set_action ( GtkWidget *, gint, GdkModifierType, action_t *);
 void base_widget_set_max_width ( GtkWidget *self, guint x );
 void base_widget_set_max_height ( GtkWidget *self, guint x );
 gboolean base_widget_update_value ( GtkWidget *self );
+gboolean base_widget_style ( GtkWidget *self );
 void base_widget_set_rect ( GtkWidget *self, GdkRectangle rect );
 void base_widget_attach ( GtkWidget *, GtkWidget *, GtkWidget *);
 GList *base_widget_get_mirror_children ( GtkWidget *self );

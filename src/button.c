@@ -20,16 +20,9 @@ static void button_update_value ( GtkWidget *self )
   scale_image_set_image(GTK_WIDGET(priv->image),base_widget_get_value(self),NULL);
 }
 
-static GtkWidget *button_mirror ( GtkWidget *src )
-{
-  g_return_val_if_fail(IS_BUTTON(src),NULL);
-  return button_new();
-}
-
 static void button_class_init ( ButtonClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->update_value = button_update_value;
-  BASE_WIDGET_CLASS(kclass)->mirror = button_mirror;
 }
 
 static void button_init ( Button *self )
@@ -42,9 +35,4 @@ static void button_init ( Button *self )
   priv->image = scale_image_new();
   gtk_container_add(GTK_CONTAINER(priv->button),priv->image);
   gtk_container_add(GTK_CONTAINER(self),priv->button);
-}
-
-GtkWidget *button_new ( void )
-{
-  return GTK_WIDGET(g_object_new(button_get_type(), NULL));
 }

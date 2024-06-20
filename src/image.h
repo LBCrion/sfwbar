@@ -31,6 +31,4 @@ struct _ImagePrivate
 
 GType image_get_type ( void );
 
-GtkWidget *image_new();
-
 #endif

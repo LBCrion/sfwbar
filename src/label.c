@@ -24,16 +24,9 @@ static void label_update_value ( GtkWidget *self )
     gtk_label_set_text(GTK_LABEL(priv->label), value);
 }
 
-static GtkWidget *label_mirror ( GtkWidget *src )
-{
-  g_return_val_if_fail(IS_LABEL(src), NULL);
-  return label_new();
-}
-
 static void label_class_init ( LabelClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->update_value = label_update_value;
-  BASE_WIDGET_CLASS(kclass)->mirror = label_mirror;
 }
 
 static void label_init ( Label *self )
@@ -45,9 +38,4 @@ static void label_init ( Label *self )
   priv->label = gtk_label_new("");
   gtk_label_set_ellipsize(GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
   gtk_container_add(GTK_CONTAINER(self), priv->label);
-}
-
-GtkWidget *label_new ( void )
-{
-  return GTK_WIDGET(g_object_new(label_get_type(), NULL));
 }

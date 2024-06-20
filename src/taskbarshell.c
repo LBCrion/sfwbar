@@ -13,7 +13,7 @@
 #include "wintree.h"
 #include "config.h"
 
-G_DEFINE_TYPE_WITH_CODE (TaskbarShell, taskbar_shell, taskbar_get_type(),
+G_DEFINE_TYPE_WITH_CODE (TaskbarShell, taskbar_shell, TASKBAR_TYPE,
     G_ADD_PRIVATE (TaskbarShell))
 
 static GList *taskbars;
@@ -29,16 +29,16 @@ static void taskbar_shell_destroy ( GtkWidget *self )
   GTK_WIDGET_CLASS(taskbar_shell_parent_class)->destroy(self);
 }
 
-static GtkWidget *taskbar_shell_mirror ( GtkWidget *src )
+static void taskbar_shell_mirror ( GtkWidget *self, GtkWidget *src )
 {
   TaskbarShellPrivate *priv;
-  GtkWidget *self;
   GList *iter;
 
-  g_return_val_if_fail(IS_TASKBAR(src), NULL);
+  g_return_if_fail(IS_TASKBAR_SHELL(self));
+  g_return_if_fail(IS_TASKBAR_SHELL(src));
+  BASE_WIDGET_CLASS(taskbar_shell_parent_class)->mirror(self, src);
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(src));
 
-  self = taskbar_shell_new();
   taskbar_shell_set_api(self, priv->get_taskbar);
   taskbar_shell_set_group_title_width(self, priv->title_width);
   taskbar_shell_set_group_cols(self, priv->cols);
@@ -50,8 +50,6 @@ static GtkWidget *taskbar_shell_mirror ( GtkWidget *src )
     taskbar_shell_set_group_css(self, iter->data);
   taskbar_shell_set_group_style(self, priv->style);
   taskbar_shell_populate();
-
-  return self;
 }
 
 static void taskbar_shell_class_init ( TaskbarShellClass *kclass )
@@ -68,11 +66,6 @@ static void taskbar_shell_init ( TaskbarShell *self )
   priv->get_taskbar = taskbar_get_taskbar;
   taskbars = g_list_append(taskbars, self);
   priv->title_width = -1;
-}
-
-GtkWidget *taskbar_shell_new ( void )
-{
-  return GTK_WIDGET(g_object_new(taskbar_shell_get_type(), NULL));
 }
 
 void taskbar_shell_init_child ( GtkWidget *self, GtkWidget *child )
@@ -234,7 +227,7 @@ void taskbar_shell_set_group_style ( GtkWidget *self, gchar *style )
   priv->style = g_strdup(style);
 
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
-    if( (taskbar = priv->get_taskbar(self, iter->data, FALSE)) )
+    if( (taskbar=priv->get_taskbar(self, iter->data, FALSE)) && taskbar!=self )
       base_widget_set_style(taskbar, g_strdup(style));
 
   g_list_foreach(base_widget_get_mirror_children(self),
@@ -255,7 +248,7 @@ void taskbar_shell_set_group_css ( GtkWidget *self, gchar *css )
 
   priv->css = g_list_append(priv->css, g_strdup(css));
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
-    if( (taskbar = priv->get_taskbar(self, iter->data, FALSE)) )
+    if( (taskbar=priv->get_taskbar(self, iter->data, FALSE)) && taskbar!=self )
       base_widget_set_css(taskbar, g_strdup(css));
 
   g_list_foreach(base_widget_get_mirror_children(self),

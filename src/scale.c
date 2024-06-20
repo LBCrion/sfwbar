@@ -24,12 +24,6 @@ static void scale_update_value ( GtkWidget *self )
           g_ascii_strtod(value,NULL));
 }
 
-static GtkWidget *scale_mirror ( GtkWidget *src )
-{
-  g_return_val_if_fail(IS_SCALE(src),NULL);
-  return scale_new();
-}
-
 static void scale_style_updated ( GtkWidget *widget, GtkWidget *self )
 {
   ScalePrivate *priv;
@@ -50,7 +44,6 @@ static void scale_style_updated ( GtkWidget *widget, GtkWidget *self )
 static void scale_class_init ( ScaleClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->update_value = scale_update_value;
-  BASE_WIDGET_CLASS(kclass)->mirror = scale_mirror;
 }
 
 static void scale_init ( Scale *self )
@@ -63,9 +56,4 @@ static void scale_init ( Scale *self )
   gtk_container_add(GTK_CONTAINER(self), priv->scale);
   g_signal_connect(G_OBJECT(priv->scale), "style_updated",
       (GCallback)scale_style_updated, self);
-}
-
-GtkWidget *scale_new ( void )
-{
-  return GTK_WIDGET(g_object_new(scale_get_type(), NULL));
 }

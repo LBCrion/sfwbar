@@ -127,7 +127,7 @@ static gboolean taskbar_pager_action_exec ( GtkWidget *self, gint slot,
   TaskbarPagerPrivate *priv;
   GdkModifierType mods;
 
-  g_return_val_if_fail(IS_TASKBAR_PAGER(self),FALSE);
+  g_return_val_if_fail(IS_TASKBAR_PAGER(self), FALSE);
   priv = taskbar_pager_get_instance_private(TASKBAR_PAGER(self));
   
   if(slot != 1)

@@ -428,22 +428,24 @@ void flow_grid_children_order ( GtkWidget *self, GtkWidget *ref,
 
 void flow_grid_set_labels ( GtkWidget *self, gboolean labels )
 {
-  FlowGridPrivate *priv;
+  FlowGridPrivate *priv, *ppriv;
   GList *iter;
 
   g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
+  ppriv = flow_grid_get_instance_private(
+      FLOW_GRID(base_widget_get_mirror_parent(self)));
 
-  if(priv->labels == labels)
+  if(ppriv->labels == labels)
     return;
 
-  priv->labels = labels;
+  ppriv->labels = labels;
   for(iter=priv->children; iter; iter=g_list_next(iter))
-    flow_item_decorate(iter->data, priv->labels, priv->icons);
+    flow_item_decorate(iter->data, ppriv->labels, ppriv->icons);
 
   if(labels)
     for(iter=priv->children; iter; iter=g_list_next(iter))
-      flow_item_set_title_width(iter->data, priv->title_width);
+      flow_item_set_title_width(iter->data, ppriv->title_width);
 
   for(iter=base_widget_get_mirror_children(self); iter; iter=g_list_next(iter))
     flow_grid_set_labels(iter->data, labels);
@@ -451,21 +453,23 @@ void flow_grid_set_labels ( GtkWidget *self, gboolean labels )
 
 void flow_grid_set_icons ( GtkWidget *self, gboolean icons )
 {
-  FlowGridPrivate *priv;
+  FlowGridPrivate *priv, *ppriv;
   GList *iter;
 
   g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
+  ppriv = flow_grid_get_instance_private(
+      FLOW_GRID(base_widget_get_mirror_parent(self)));
 
-  if(priv->icons == icons)
+  if(ppriv->icons == icons)
     return;
 
-  if(!icons && !priv->labels)
-    priv->labels = TRUE;
+  if(!icons && !ppriv->labels)
+    ppriv->labels = TRUE;
 
-  priv->icons = icons;
+  ppriv->icons = icons;
   for(iter=priv->children; iter; iter=g_list_next(iter))
-    flow_item_decorate(iter->data, priv->labels, priv->icons);
+    flow_item_decorate(iter->data, ppriv->labels, ppriv->icons);
 
   for(iter=base_widget_get_mirror_children(self); iter; iter=g_list_next(iter))
     flow_grid_set_icons(iter->data, icons);

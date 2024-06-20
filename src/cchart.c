@@ -23,16 +23,9 @@ static void cchart_update_value ( GtkWidget *self )
       chart_update(priv->chart,g_ascii_strtod(value,NULL));
 }
 
-static GtkWidget *cchart_mirror ( GtkWidget *src )
-{
-  g_return_val_if_fail(IS_CCHART(src), NULL);
-  return cchart_new();
-}
-
 static void cchart_class_init ( CChartClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->update_value = cchart_update_value;
-  BASE_WIDGET_CLASS(kclass)->mirror = cchart_mirror;
 }
 
 static void cchart_init ( CChart *self )
@@ -44,9 +37,4 @@ static void cchart_init ( CChart *self )
   base_widget_set_always_update(GTK_WIDGET(self), TRUE);
   priv->chart = chart_new();
   gtk_container_add(GTK_CONTAINER(self),priv->chart);
-}
-
-GtkWidget *cchart_new ( void )
-{
-  return GTK_WIDGET(g_object_new(cchart_get_type(), NULL));
 }

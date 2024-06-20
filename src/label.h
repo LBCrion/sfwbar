@@ -31,6 +31,4 @@ struct _LabelPrivate
 
 GType label_get_type ( void );
 
-GtkWidget *label_new();
-
 #endif

@@ -31,6 +31,4 @@ struct _CChartPrivate
 
 GType cchart_get_type ( void );
 
-GtkWidget *cchart_new();
-
 #endif

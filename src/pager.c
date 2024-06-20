@@ -14,19 +14,16 @@ G_DEFINE_TYPE_WITH_CODE (Pager, pager, FLOW_GRID_TYPE, G_ADD_PRIVATE (Pager))
 
 static GList *pagers;
 
-static GtkWidget *pager_mirror ( GtkWidget *src )
+static void pager_mirror ( GtkWidget *self, GtkWidget *src )
 {
-  GtkWidget *self;
+  g_return_if_fail(IS_PAGER(self));
+  g_return_if_fail(IS_PAGER(src));
 
-  g_return_val_if_fail(IS_PAGER(src), NULL);
-  self = pager_new();
-
+  BASE_WIDGET_CLASS(pager_parent_class)->mirror(self, src);
   g_object_set_data(G_OBJECT(self), "preview",
       g_object_get_data(G_OBJECT(src), "preview"));
   g_object_set_data(G_OBJECT(self), "sort_numeric",
       g_object_get_data(G_OBJECT(src), "sort_numeric"));
-
-  return self;
 }
 
 static void pager_destroy ( GtkWidget *self )
@@ -57,11 +54,6 @@ static void pager_init ( Pager *self )
   for(iter = workspace_get_list(); iter; iter=g_list_next(iter))
     pager_item_new(GTK_WIDGET(self), iter->data);
   flow_grid_invalidate(GTK_WIDGET(self));
-}
-
-GtkWidget *pager_new ( void )
-{
-  return GTK_WIDGET(g_object_new(pager_get_type(), NULL));
 }
 
 void pager_add_pins ( GtkWidget *self, GList *pins )
