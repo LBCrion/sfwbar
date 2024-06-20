@@ -127,8 +127,12 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkSeat *seat )
     if(old_popup != popup && gtk_widget_get_visible(old_popup))
       popup_popdown(old_popup);
 
-  bar_set_interactivity(parent, TRUE);
-  bar_set_interactivity(parent, TRUE);
+  if(gtk_window_get_type_hint(GTK_WINDOW(popup)) ==
+      GDK_WINDOW_TYPE_HINT_POPUP_MENU)
+  {
+    bar_set_interactivity(parent, TRUE);
+    bar_set_interactivity(parent, TRUE);
+  }
 
   css_widget_cascade(child, NULL);
   gtk_widget_unrealize(popup);
