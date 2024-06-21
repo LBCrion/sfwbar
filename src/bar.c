@@ -202,11 +202,14 @@ static void bar_style_updated ( GtkWidget *self )
   gtk_layer_set_anchor(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_BOTTOM, bottom);
 
   if(priv->dir != dir)
+  {
     gtk_orientable_set_orientation(GTK_ORIENTABLE(priv->box),
         (dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)?
         GTK_ORIENTATION_HORIZONTAL:GTK_ORIENTATION_VERTICAL);
-
-  priv->dir = dir;
+    priv->dir = dir;
+    g_idle_add((GSourceFunc)base_widget_emit_trigger,
+        (gpointer)g_intern_static_string("bar-direction"));
+  }
   priv->halign = halign;
   priv->valign = valign;
   priv->full_size = full_size;
