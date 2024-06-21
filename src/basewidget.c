@@ -506,7 +506,7 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
   g_free(priv->style->definition);
   priv->style->definition = style;
   priv->style->eval = TRUE;
-  priv->value->widget = self;
+  priv->style->widget = self;
 
   if(expr_cache_eval(priv->style))
     base_widget_style(self);
