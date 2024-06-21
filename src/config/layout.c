@@ -429,7 +429,6 @@ void config_widget ( GScanner *scanner, GtkWidget *widget )
       continue;
 
     g_scanner_error(scanner, "Invalid property in a widget declaration");
-    break;
   }
 }
 
