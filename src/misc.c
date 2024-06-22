@@ -35,22 +35,22 @@ gint socket_connect ( const gchar *sockaddr, gint to )
   return -1;
 }
 
-json_object *recv_json ( gint sock, gint32 len )
+json_object *recv_json ( gint sock, gssize len )
 {
   static gchar *buf;
-  const gint bufsize = 1024;
+  const gsize bufsize = 1024;
   json_tokener *tok;
   json_object *json = NULL;
-  gint rlen;
+  gssize rlen;
 
   if(!buf)
     buf = g_malloc(bufsize);
 
   tok = json_tokener_new();
 
-  while(len!=0 && (rlen = recv(sock,buf,len<0?bufsize:MIN(len,bufsize),0))>0 )
+  while(len && (rlen = recv(sock, buf, MIN(len<0?bufsize:len, bufsize), 0))>0 )
   {
-    json = json_tokener_parse_ex(tok,buf,rlen);
+    json = json_tokener_parse_ex(tok, buf, rlen);
     if(len>0)
       len-=rlen;
   }

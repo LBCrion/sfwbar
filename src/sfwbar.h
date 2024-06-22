@@ -32,7 +32,7 @@ void widget_parse_css ( GtkWidget *widget, gchar *css );
 
 GdkMonitor *widget_get_monitor ( GtkWidget *self );
 gint socket_connect ( const gchar *sockaddr, gint to );
-json_object *recv_json ( gint sock, gint32 len );
+json_object *recv_json ( gint sock, gssize len );
 void list_remove_link ( GList **list, void *child );
 gchar *get_xdg_config_file ( gchar *fname, gchar *extra );
 const gchar *json_string_by_name ( struct json_object *obj, gchar *name );
