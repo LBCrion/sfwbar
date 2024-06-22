@@ -1,3 +1,11 @@
+1.0beta15
+  - Implement Network Manager WiFI module
+  - Implement shared interfaces for modules
+  - Add support for pulse audio client sink switching
+  - Support for older versions of gtk-layer-shell
+  - Load configs and modules from trusted locations only
+  - Application icons lookup improvements
+
 1.0beta14
   - Implement wifi-iwd module
   - Implement multi-desktop taskbars
