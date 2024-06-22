@@ -52,7 +52,7 @@ json_object *recv_json ( gint sock, gssize len )
   {
     json = json_tokener_parse_ex(tok, buf, rlen);
     if(len>0)
-      len-=rlen;
+      len-=MIN(rlen, MIN(len, bufsize));
   }
   json_tokener_free(tok);
 
