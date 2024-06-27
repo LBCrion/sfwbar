@@ -399,8 +399,11 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
     widget = GTK_WIDGET(g_object_new(type_get(), NULL));
     if(config_check_and_consume(scanner, G_TOKEN_STRING))
       base_widget_set_id(widget, g_strdup(scanner->value.v_string));
-    grid_attach(container, widget);
-    grid_mirror_child(container, widget);
+    if(container)
+    {
+      grid_attach(container, widget);
+      grid_mirror_child(container, widget);
+    }
     css_widget_cascade(widget, NULL);
   }
 
@@ -408,8 +411,10 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
 
   if(!container)
   {
+    g_scanner_error(scanner, "orphan widget without a valid address: %s",
+        base_widget_get_id(widget));
     gtk_widget_destroy(widget);
-    return FALSE;
+    return TRUE; /* we parsed successfully, but address was wrong */
   }
 
   return TRUE;
