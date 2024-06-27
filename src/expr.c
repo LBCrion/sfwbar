@@ -136,8 +136,14 @@ static void *expr_parse_identifier ( GScanner *scanner )
   expr_dep_add(scanner->value.v_identifier,E_STATE(scanner)->expr);
 
   if(g_scanner_peek_next_token(scanner)!='(')
+  {
+    if(*(scanner->value.v_identifier)=='$')
+      E_STATE(scanner)->type =  EXPR_STRING;
+    else
+      E_STATE(scanner)->type =  EXPR_NUMERIC;
     return g_strdup_printf("Undeclared variable: %s",
         scanner->value.v_identifier);
+  }
   else
   {
     err = g_strdup_printf("Unknown Function: %s",scanner->value.v_identifier);
@@ -529,7 +535,7 @@ static gdouble expr_parse_num_value ( GScanner *scanner, gdouble *prev )
       g_free(ptr);
       return val;
     default:
-      g_scanner_unexp_token(scanner,G_TOKEN_FLOAT,NULL,NULL,"","",TRUE);
+      g_scanner_unexp_token(scanner, G_TOKEN_FLOAT, NULL, NULL, "", "", TRUE);
       return 0;
   }
 }
