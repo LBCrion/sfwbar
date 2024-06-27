@@ -264,6 +264,14 @@ static void pulse_remove_device ( pulse_interface_t *iface, guint32 idx )
   }
 }
 
+static void pulse_operation ( pa_operation *o, gchar *cmd )
+{
+  if(o)
+    pa_operation_unref(o);
+  else
+    g_message("%s() failed: %s", cmd, pa_strerror(pa_context_errno(pctx)));
+}
+
 static void pulse_device_advertise ( gint iface_idx,
     const pa_channel_map *cmap, gint idx )
 {
@@ -376,8 +384,8 @@ static void pulse_sink_input_cb ( pa_context *ctx,
   if(new)
     pulse_device_advertise(2, &pinfo->channel_map, pinfo->index);
 
-  pa_operation_unref(pa_context_get_client_info(ctx, pinfo->client,
-        pulse_client_cb, (void *)info ));
+  pulse_operation(pa_context_get_client_info(ctx, pinfo->client,
+        pulse_client_cb, NULL), "pa_context_get_client_info");
 }
 
 static void pulse_source_cb ( pa_context *ctx, const pa_source_info *pinfo,
@@ -415,12 +423,12 @@ static void pulse_server_cb ( pa_context *ctx, const pa_server_info *info,
 {
   pulse_set_name(&pulse_interfaces[0], info->default_sink_name, FALSE);
   pulse_set_name(&pulse_interfaces[1], info->default_source_name, FALSE);
-  pa_operation_unref(
-      pa_context_get_sink_info_list(ctx, pulse_sink_cb, NULL));
-  pa_operation_unref(
-      pa_context_get_source_info_list(ctx, pulse_source_cb, NULL));
-  pa_operation_unref(
-      pa_context_get_sink_input_info_list(ctx, pulse_sink_input_cb, NULL));
+  pulse_operation(pa_context_get_sink_info_list(ctx, pulse_sink_cb, NULL),
+      "pa_context_get_sink_info_list");
+  pulse_operation(pa_context_get_source_info_list(ctx, pulse_source_cb, NULL),
+      "pa_context_get_source_info_list");
+  pulse_operation(pa_context_get_sink_input_info_list(ctx, pulse_sink_input_cb,
+        NULL), "pa_context_get_sink_input_info_list");
 }
 
 static void pulse_subscribe_cb ( pa_context *ctx,
@@ -447,26 +455,26 @@ static void pulse_subscribe_cb ( pa_context *ctx,
   switch(type & PA_SUBSCRIPTION_EVENT_FACILITY_MASK)
   {
     case PA_SUBSCRIPTION_EVENT_SERVER:
-      pa_operation_unref(
-          pa_context_get_server_info(ctx,pulse_server_cb,NULL));
+      pulse_operation(pa_context_get_server_info(ctx, pulse_server_cb, NULL),
+          "pa_context_get_server_info");
       break;
     case PA_SUBSCRIPTION_EVENT_SINK:
-      pa_operation_unref(
-        pa_context_get_sink_info_by_index(ctx, idx, pulse_sink_cb, NULL));
+      pulse_operation(pa_context_get_sink_info_by_index(ctx, idx,
+            pulse_sink_cb, NULL), "pa_context_get_sink_info_by_index");
       break;
     case PA_SUBSCRIPTION_EVENT_SINK_INPUT:
-      pa_operation_unref(
-        pa_context_get_sink_input_info(ctx, idx, pulse_sink_input_cb, NULL));
+      pulse_operation(pa_context_get_sink_input_info(ctx, idx,
+            pulse_sink_input_cb, NULL),"pa_context_get_sink_input_info");
       break;
     case PA_SUBSCRIPTION_EVENT_SOURCE:
-      pa_operation_unref(
-        pa_context_get_source_info_by_index(ctx, idx, pulse_source_cb, NULL));
+      pulse_operation(pa_context_get_source_info_by_index(ctx, idx,
+            pulse_source_cb, NULL), "pa_context_get_source_info_by_index");
       break;
     case PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT:
       break;
     case PA_SUBSCRIPTION_EVENT_CLIENT:
-      pa_operation_unref(
-        pa_context_get_client_info(ctx, idx, pulse_client_cb, NULL));
+      pulse_operation(pa_context_get_client_info(ctx, idx, pulse_client_cb,
+            NULL), "pa_context_get_client_info");
       break;
   }
 }
@@ -489,8 +497,8 @@ static void pulse_state_cb ( pa_context *ctx, gpointer data )
   }
   else if(state == PA_CONTEXT_READY)
   {
-    pa_operation_unref(
-        pa_context_get_server_info(ctx, pulse_server_cb, NULL));
+    pulse_operation(pa_context_get_server_info(ctx, pulse_server_cb, NULL),
+        "pa_context_get_server_info");
     module_interface_activate(&sfwbar_interface);
   }
 }
@@ -498,10 +506,10 @@ static void pulse_state_cb ( pa_context *ctx, gpointer data )
 static void pulse_activate ( void )
 {
   pa_context_set_subscribe_callback(pctx, pulse_subscribe_cb, NULL);
-  pa_operation_unref( pa_context_subscribe(pctx, PA_SUBSCRIPTION_MASK_SERVER |
+  pulse_operation(pa_context_subscribe(pctx, PA_SUBSCRIPTION_MASK_SERVER |
         PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SINK_INPUT |
         PA_SUBSCRIPTION_MASK_SOURCE | PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT,
-        NULL, NULL));
+        NULL, NULL), "pa_context_subscribe");
   g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
       (gpointer)g_intern_static_string("volume"));
 }
@@ -586,8 +594,8 @@ static void pulse_volume_adjust ( pulse_interface_t *iface, pulse_info *info,
     info->cvol.values[cidx-1] = CLAMP((gint)(info->cvol.values[cidx-1]) +
         vdelta, 0, PA_VOLUME_UI_MAX);
 
-  pa_operation_unref(
-      iface->set_volume(pctx, info->idx, &info->cvol, NULL, NULL));
+  pulse_operation(iface->set_volume(pctx, info->idx, &info->cvol, NULL, NULL),
+      "volume adjust");
 }
 
 static void pulse_mute_adjust ( pulse_interface_t *iface, pulse_info *info,
@@ -606,7 +614,7 @@ static void pulse_mute_adjust ( pulse_interface_t *iface, pulse_info *info,
   else
     new = info->mute;
 
-  pa_operation_unref( iface->set_mute(pctx, info->idx, new, NULL, NULL));
+  pulse_operation( iface->set_mute(pctx, info->idx, new, NULL, NULL), "mute");
 }
 
 static void pulse_client_set_sink ( pulse_info *info, gchar *dest )
@@ -622,8 +630,8 @@ static void pulse_client_set_sink ( pulse_info *info, gchar *dest )
   if( !(dinfo = pulse_addr_parse(dest, &pulse_interfaces[0], NULL)) )
     return;
 
-  pa_operation_unref(pa_context_move_sink_input_by_index(pctx, info->idx,
-        dinfo->idx, NULL, NULL));
+  pulse_operation(pa_context_move_sink_input_by_index(pctx, info->idx,
+        dinfo->idx, NULL, NULL), "pa_context_move_sink_input_by_index");
 }
 
 static void *pulse_expr_func ( void **params, void *widget, void *event )
