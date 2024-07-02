@@ -1124,7 +1124,7 @@ T{
 \fBMap\fP
 T}	T{
 Match a string within a list of tuplets, the usage is:
-\fBMap(Value, Match1,String\(ga,...,DefaultString)\fP\&. THe function will
+\fBMap(Value, Match1,String\(ga,...,DefaultString)\fP\&. The function will
 match Value against all Match strings and will return a
 corresponding String, if none of the Match strings match, the
 function will return DefaultString.
@@ -1157,10 +1157,17 @@ Return a string
 T}
 _
 T{
+\fBElapsedStr\fP
+T}	T{
+format a time interval specified in second into an elapsed time
+string, i.e. \fIJust now\fP or \fI5 minutes ago\fP\&.
+T}
+_
+T{
 \fBDisk\fP
 T}	T{
-get disk utilization data. You need to specify a mount point as a
-first argument and data field as a second. The supported data
+get disk utilization data. You need to specify a mount point as
+a first argument and data field as a second. The supported data
 fields are \(dqtotal\(dq, \(dqavail\(dq, \(dqfree\(dq, \(dq%avail\(dq, \(dq%free\(dq or
 \(dq%used\(dq.  Returns a number.
 T}
@@ -1178,17 +1185,18 @@ Get the location of an event that triggered the action. This
 function is only applicable in action command expressions where
 an action is called as a result of button click. The function
 returns location of the click within the widget. The value is
-returned as percentage of the widget width or height. Acceptable
-arguments are \(dqX\(dq,\(dqY\(dq and \(dqDir\(dq. X and Y select an axis for which
-to return the event location, Dir returns the event location
-along the widget direction property.
+returned as percentage of the widget width or height.
+Acceptable arguments are \(dqX\(dq,\(dqY\(dq and \(dqDir\(dq. X and Y select an
+axis for which to return the event location, Dir returns the
+event location along the widget direction property.
 T}
 _
 T{
 \fBBarDir\fP
 T}	T{
-get direction property of the taskbar holding the current widget.
-Returns a string: \(dqleft\(dq, \(dqright\(dq, \(dqtop\(dq, \(dqbottom\(dq or \(dqunknown\(dq.
+get direction property of the taskbar holding the current
+widget. Returns a string: \(dqleft\(dq, \(dqright\(dq, \(dqtop\(dq, \(dqbottom\(dq or
+\(dqunknown\(dq.
 T}
 _
 T{

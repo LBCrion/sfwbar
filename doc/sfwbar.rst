@@ -855,7 +855,7 @@ Operation      Description
                Value is lower than all thresholds, DefaultString is returned. 
                Thresholds in the function call must be in decreasing order.
 ``Map``        Match a string within a list of tuplets, the usage is:
-               ``Map(Value, Match1,String`,...,DefaultString)``. THe function will
+               ``Map(Value, Match1,String`,...,DefaultString)``. The function will
                match Value against all Match strings and will return a
                corresponding String, if none of the Match strings match, the
                function will return DefaultString.
@@ -865,34 +865,37 @@ Operation      Description
 
 In addition the following query functions are supported
 
-============== =================================================================
-Function       Description
-============== =================================================================
-``Time``       get current time as a string, the first optional argument
-               specifies the format, the second argument specifies a timezone.
-               Return a string
-``Disk``       get disk utilization data. You need to specify a mount point as a
-               first argument and data field as a second. The supported data
-               fields are "total", "avail", "free", "%avail", "%free" or
-               "%used".  Returns a number.
-``ActiveWin``  get the title of currently focused window. Returns a string.
-``GtkEvent``   Get the location of an event that triggered the action. This
-               function is only applicable in action command expressions where
-               an action is called as a result of button click. The function
-               returns location of the click within the widget. The value is
-               returned as percentage of the widget width or height. Acceptable
-               arguments are "X","Y" and "Dir". X and Y select an axis for which
-               to return the event location, Dir returns the event location
-               along the widget direction property.
-``BarDir``     get direction property of the taskbar holding the current widget.
-               Returns a string: "left", "right", "top", "bottom" or "unknown".
-``WidgetID``   Obtain an ID of the current widget (i.e. a widget in respect to
-               which the expression is being evaluated.
-``WindowInfo`` Obtain information about a window. This function takes window
-               property as a single input parameter. Valid properties are:
-               `appid`, `title`, `minimized`, `maximized`, `fullscreen`,
-               `focused`
-============== =================================================================
+=============== ===============================================================
+Function        Description
+=============== ===============================================================
+``Time``        get current time as a string, the first optional argument
+                specifies the format, the second argument specifies a timezone.
+                Return a string
+``ElapsedStr``  format a time interval specified in second into an elapsed time
+                string, i.e. `Just now` or `5 minutes ago`.
+``Disk``        get disk utilization data. You need to specify a mount point as
+                a first argument and data field as a second. The supported data
+                fields are "total", "avail", "free", "%avail", "%free" or
+                "%used".  Returns a number.
+``ActiveWin``   get the title of currently focused window. Returns a string.
+``GtkEvent``    Get the location of an event that triggered the action. This
+                function is only applicable in action command expressions where
+                an action is called as a result of button click. The function
+                returns location of the click within the widget. The value is
+                returned as percentage of the widget width or height.
+                Acceptable arguments are "X","Y" and "Dir". X and Y select an
+                axis for which to return the event location, Dir returns the
+                event location along the widget direction property.
+``BarDir``      get direction property of the taskbar holding the current
+                widget. Returns a string: "left", "right", "top", "bottom" or
+                "unknown".
+``WidgetID``    Obtain an ID of the current widget (i.e. a widget in respect to
+                which the expression is being evaluated.
+``WindowInfo``  Obtain information about a window. This function takes window
+                property as a single input parameter. Valid properties are:
+                `appid`, `title`, `minimized`, `maximized`, `fullscreen`,
+                `focused`
+=============== ===============================================================
 
 Each numeric variable contains four values
 

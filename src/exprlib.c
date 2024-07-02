@@ -178,6 +178,31 @@ ModuleExpressionHandlerV1 time_handler = {
   .function = expr_lib_time
 };
 
+static void *expr_lib_elapsed_str ( void **params, void *widget, void *event )
+{
+  gint s;
+
+  if(!params || !params[0])
+    return g_strdup("");
+
+  s = *((gdouble *)params[0]);
+
+  if(s>3600*24)
+    return g_strdup_printf("%d days ago", (gint)(s/(3600*24)));
+  if(s>3600)
+    return g_strdup_printf("%d hours ago", (gint)(s/3600));
+  if(s>60)
+    return g_strdup_printf("%d minutes ago", (gint)(s/60));
+  return g_strdup("Just now");
+}
+
+ModuleExpressionHandlerV1 elapsed_str_handler = {
+  .flags = 0,
+  .name = "elapsedstr",
+  .parameters = "N",
+  .function = expr_lib_elapsed_str
+};
+
 /* query current locale */
 static void *expr_lib_getlocale ( void **params, void *widget, void *event )
 {
@@ -536,6 +561,7 @@ static ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &pad_handler,
   &extract_handler,
   &time_handler,
+  &elapsed_str_handler,
   &getlocale_handler,
   &disk_handler,
   &active_handler,
