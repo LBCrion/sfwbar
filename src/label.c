@@ -37,5 +37,7 @@ static void label_init ( Label *self )
 
   priv->label = gtk_label_new("");
   gtk_label_set_ellipsize(GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
+  gtk_label_set_line_wrap(GTK_LABEL(priv->label), TRUE);
+  gtk_label_set_line_wrap_mode(GTK_LABEL(priv->label), PANGO_WRAP_WORD_CHAR);
   gtk_container_add(GTK_CONTAINER(self), priv->label);
 }

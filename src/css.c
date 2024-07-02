@@ -57,14 +57,6 @@ static void css_custom_handle ( GtkWidget *widget )
     gtk_widget_style_get(widget, "valign", &align, NULL);
     gtk_widget_set_valign(widget, align);
   }
-  if(IS_BASE_WIDGET(widget))
-  {
-    gtk_widget_style_get(base_widget_get_child(widget), "max-width", &x, NULL);
-    base_widget_set_max_width(widget, x);
-    gtk_widget_style_get(base_widget_get_child(widget), "max-height", &x,NULL);
-    base_widget_set_max_height(widget, x);
-  }
-
   if(GTK_IS_LABEL(widget))
   {
     gtk_widget_style_get(widget, "align", &xalign, NULL);
@@ -72,6 +64,20 @@ static void css_custom_handle ( GtkWidget *widget )
     gtk_widget_style_get(widget, "ellipsize", &state, NULL);
     gtk_label_set_ellipsize(GTK_LABEL(widget),
         state?PANGO_ELLIPSIZE_END:PANGO_ELLIPSIZE_NONE);
+
+    /* don't set wrap property until size is allocated */
+    if(gtk_widget_get_allocated_width(widget)>1)
+    {
+      gtk_widget_style_get(widget, "wrap", &state, NULL);
+      gtk_label_set_line_wrap(GTK_LABEL(widget), state);
+    }
+  }
+  if(IS_BASE_WIDGET(widget))
+  {
+    gtk_widget_style_get(base_widget_get_child(widget), "max-width", &x, NULL);
+    base_widget_set_max_width(widget, x);
+    gtk_widget_style_get(base_widget_get_child(widget), "max-height", &x,NULL);
+    base_widget_set_max_height(widget, x);
   }
 }
 
@@ -100,6 +106,9 @@ void css_init ( gchar *cssname )
   gtk_widget_class_install_style_property(widget_class,
     g_param_spec_boolean("vexpand","vertical expansion","vertical expansion",
       FALSE, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property(widget_class,
+    g_param_spec_boolean("wrap","wap label text","wrap label text",
+       FALSE, G_PARAM_READABLE));
   gtk_widget_class_install_style_property(widget_class,
     g_param_spec_boolean("visible","show/hide a widget","show/hide a widget",
       TRUE, G_PARAM_READABLE));

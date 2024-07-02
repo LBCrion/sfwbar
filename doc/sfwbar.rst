@@ -1026,6 +1026,8 @@ property              description
                       (0 = left aligned, 1 = right aligned, 0.5 = centered)
 -GtkWidget-ellipsize  specify whether a text in a label should be ellipsized if
                       it's too long to fit in allocated space
+-GtkWidget-wrap       wrap a string if it's too long for it's container (you
+                      would usually want to pair it with -GtkWidget-max-width)
 -GtkWidget-direction  specify a direction for a widget.
                       For scale, it's a direction towards which scale grows.
                       For a grid, it's a direction in which a new widget is 
