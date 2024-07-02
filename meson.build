@@ -147,6 +147,13 @@ if get_option('nm').enabled() or get_option('nm').auto()
   endif
 endif
 
+if get_option('ncenter').enabled() or get_option('ncenter').auto()
+  library('ncenter', sources: 'modules/ncenter.c',
+      dependencies: deps, name_prefix: '', install: true,
+      install_dir: get_option('libdir') / 'sfwbar' )
+endif
+
+
 if puls.found() and pulg.found()
   library('pulsectl', sources: 'modules/pulsectl.c',
       dependencies: [deps, puls, pulg],name_prefix: '',

@@ -1,0 +1,324 @@
+module("ncenter")
+
+TriggerAction "notification-updated", Function
+  If(NotificationGet("action_id")="",
+      "XNotificationUpdate",
+      "XNotificationActionUpdate")
+TriggerAction "notification-removed", Function "XNotificationRemove"
+
+set XNotificationTmpl = "
+grid 'notification_frame' {
+  grid '@NOTIF_ID@_grid' {
+    style = If(NotificationGroup('@NOTIF_ID@')='','hidden',
+        If(NotificationGroup('@NOTIF_ID@')='header','notification_grid_header',
+          'notification_grid'))
+    trigger = 'notification-group'
+    action = NotificationExpand '@NOTIF_ID@'
+    grid '@NOTIF_ID@_header' {
+      style = 'notification_header_line'
+      loc(1,1)
+      label {
+        value = '@NOTIF_APP@'
+        style = 'notification_app'
+        interval = 0
+        loc(1,1)
+      }
+      label '@NOTIF_ID@_time' {
+        value = ElapsedTimeStr(Val(Time('%s'))-Val('@NOTIF_TIME@'))
+        style = 'notification_time'
+        interval = 10000
+        loc(2,1)
+      }
+      grid '@NOTIF_ID@_count_grid' {
+        style = If(NotificationGroup('@NOTIF_ID@')='header',
+            'notification_count_grid','hidden')
+        trigger = 'notification-group'
+        loc(3,1)
+        label '@NOTIF_ID@_count' {
+          value = Str(NotificationCount('@NOTIF_ID@'))
+          style = 'notification_count'
+          trigger = 'notification-group'
+          loc(1,1)
+        }
+        image {
+          value = 'go-down'
+          style = 'notification_count_expand'
+          interval = 0
+          loc(2,1)
+        }
+      }
+      image '@NOTIF_ID@_close' {
+        value = 'window-close'
+        style = 'notification_close'
+        action = NotificationClose Extract(WidgetId(), '(.*)_close')
+        loc(4,1)
+      }
+    }
+    grid '@NOTIF_ID@_text' {
+      style = 'notification_text'
+      loc(1,2)
+      image '@NOTIF_ID@_icon' {
+        value = '@NOTIF_ICON@'
+        style = If('@NOTIF_ICON@'='','hidden','notification_icon')
+        interval = 0
+        loc(1,1,1,2)
+      }
+      label '@NOTIF_ID@_title' {
+        value = '@NOTIF_SUMMARY@'
+        style = 'notification_summary'
+        interval = 0
+        loc(2,1)
+      }
+      label '@NOTIF_ID@_body' {
+        value = '@NOTIF_BODY@'
+        style = 'notification_body'
+        interval = 0
+        loc(2,2,2,1)
+      }
+    }
+  }
+}"
+
+set XNotificationActionTmpl = "
+grid '@NOTIF_ID@_grid' {
+  grid '@NOTIF_ID@_actions' {
+    style = 'notification_action_grid'
+    loc(0,3,3,1)
+    label '@NOTIF_ID@_@ACTION_ID@_action' {
+      value = '@ACTION_TITLE@'
+      style = 'notification_action'
+      action = NotificationAction '@NOTIF_ID@', '@ACTION_ID@'
+    }
+  }
+}"
+
+Function("XNotificationUpdate") {
+  ClearWidget NotificationGet("id") + "_grid"
+  Config ReplaceAll( $XNotificationTmpl,
+    "@NOTIF_ID@", NotificationGet("id"),
+    "@NOTIF_SUMMARY@", Escape(NotificationGet("summary")),
+    "@NOTIF_BODY@", Escape(NotificationGet("body")),
+    "@NOTIF_ICON@", NotificationGet("icon"),
+    "@NOTIF_APP@", NotificationGet("app"),
+    "@NOTIF_TIME@", NotificationGet("time"))
+  NotificationAck "updated"
+}
+
+Function("XNotificationActionUpdate") {
+  Config ReplaceAll( $XNotificationActionTmpl,
+    "@NOTIF_ID@", NotificationGet("id"),
+    "@ACTION_ID@", NotificationGet("action_id"),
+    "@ACTION_TITLE@", NotificationGet("action_title"))
+  NotificationAck "updated"
+}
+
+Function("XNotificationRemove") {
+  ClearWidget NotificationGet("removed-id") + "_grid"
+  NotificationAck "removed"
+}
+
+PopUp "XNotificationWindow" {
+  style = "notification_popup"
+  label {
+    value = "Notification Center"
+    style = "notification_header"
+    loc(1,1,2,1)
+  }
+  label {
+    value = NotificationActiveGroup()
+    style = If(NotificationActiveGroup()='','hidden','notification_group')
+    trigger = 'notification-group'
+    loc(1,2)
+  }
+  image {
+    value = 'window-close'
+    style = If(NotificationActiveGroup()='','hidden','notification_close')
+    action = NotificationCollapse
+    trigger = 'notification-group'
+    loc(2,2)
+  }
+  grid "notification_frame" {
+    style = "notification_frame"
+    loc(1,3,2,1)
+  }
+  label {
+    style = "notification_frespace"
+    loc(1,4,2,1)
+  }
+}
+
+layout {
+  style = "module"
+  trigger = "notification"
+  button "notification_widget" {
+    style = "module"
+    value = "icons/misc/bell"
+    action = PopUp "XNotificationWindow"
+  }
+}
+
+#CSS
+
+window#XNotificationWindow {
+  background: rgba(0,0,0,0);
+  -GtkWidget-direction: right;
+  padding: 5px;
+}
+
+grid#notification_popup {
+  min-width: 200px;
+  min-height: 300px;
+  margin: 5px;
+  border-radius: 10px;
+  border: 1px solid @borders;
+  padding: 10px;
+  background-color: @theme_bg_color;
+  -GtkWidget-hexpand: true;
+}
+
+grid#notification_frame {
+  -GtkWidget-direction: bottom;
+  -GtkWidget-vexpand: true;
+  -GtkWidget-hexpand: true;
+}
+
+label#notification_header {
+  font-size: 20px;
+  padding-bottom: 5px;
+  border-bottom: dashed 1px @border;
+  margin-bottom: 5px;
+  -GtkWidget-hexpand: true;
+  -GtkWidget-vexpand: false;
+  -GtkWidget-halign: start;
+}
+
+label#notification_freespace {
+  -GtkWidget-vexpand: true;
+}
+
+grid#notification_grid_header,
+grid#notification_grid {
+  border: none;
+  border-radius: 10px;
+  background-color: alpha(@theme_fg_color,0.3);
+  margin-bottom: 3px;
+  -GtkWidget-hexpand: true;
+  -GtkWidget-vexpand: false;
+}
+
+grid#notification_grid_header {
+  box-shadow:
+    0px 12px 0px -6px alpha(@theme_fg_color,0.1),
+    0px 6px 0px -3px alpha(@theme_fg_color,0.1);
+  margin-bottom: 10px;
+}
+
+grid#notification_text {
+  -GtkWidget-hexpand: true;
+  -GtkWidget-vexpand: true;
+  -GtkWidget-valign: center;
+}
+
+grid#notification_action_grid {
+  padding-top: 3px;
+  -GtkWidget-direction: right;
+  -GtkWidget-hexpand: true;
+}
+
+image#notification_icon {
+  -GtkWidget-hexpand: false;
+  min-height: 32px;
+  min-width: 32px;
+  padding: 7px;
+}
+
+image#notification_close {
+  border-radius: 50%;
+  background-color: alpha(@theme_fg_color, 0.2);
+  min-height: 16px;
+  min-width: 16px;
+  margin: 3px;
+  -GtkWidget-vexpand: false;
+  -GtkWidget-hexpand: false;
+  -GtkWidget-valign: start;
+}
+
+label#notification_group {
+  -GtkWidget-halign: start;
+  -GtkWidget-hexpand: true;
+  -GtkWidget-vexpand: false;
+  font-size: 14px;
+  font-weight: bold;
+  padding-left: 3px;
+  padding-bottom: 5px;
+}
+
+label#notification_app {
+  font-size: 12px;
+  font-weight: bold;
+  padding-left: 3px;
+  color: alpha(@theme_text_color, 0.5)
+}
+
+label#notification_time {
+  font-size: 10px;
+  padding-left: 7px;
+  -GtkWidget-halign: start;
+  -GtkWidget-hexpand: true;
+  color: alpha(@theme_text_color, 0.5)
+}
+
+grid#notification_count_grid {
+  border-radius: 8px;
+  min-height: 16px;
+  background-color: alpha(@theme_fg_color, 0.2);
+  margin: 3px;
+}
+
+label#notification_count {
+  font-size: 10px;
+  padding: 1px 2px 1px 5px;
+}
+
+image#notification_count_expand {
+  min-height: 12px;
+  min-width: 12px;
+  padding: 1px 5px 1px 2px;
+}
+
+label#notification_summary {
+  font-size: 14px;
+  font-weight: bold;
+  padding-left: 3px;
+  padding-right: 3px;
+  -GtkWidget-halign: start;
+  -GtkWidget-valign: start;
+  -GtkWidget-hexpand: true;
+  -GtkWidget-vexpand: false;
+}
+
+label#notification_body {
+  font-size: 12px;
+  padding-right: 3px;
+  padding-left: 3px;
+  -GtkWidget-halign: start;
+  -GtkWidget-valign: start;
+  -GtkWidget-hexpand: true;
+  -GtkWidget-vexpand: true;
+  -GtkWidget-wrap: true;
+  -GtkWidget-ellipsize: false;
+  -GtkWidget-max-width: 150px;
+  margin-bottom: 3px;
+}
+
+label#notification_action {
+  font-size: 12px;
+  border-top: solid 1px black;
+  padding: 3px;
+  -GtkWidget-hexpand: true;
+  -GtkWidget-halign: fill;
+}
+
+grid#notification_grid :not(:last-child) label#notification_action {
+  border-right: solid 1px black;
+}
