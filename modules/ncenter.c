@@ -129,7 +129,6 @@ static void dn_notification_free ( dn_notification *notif )
 
 static gint dn_notification_comp ( dn_notification *n1, dn_notification *n2 )
 {
-  return -1;
   if(n1->id != n2->id)
     return n1->id - n2->id;
   return g_strcmp0(n1->action_id, n2->action_id);
@@ -203,11 +202,13 @@ static void dn_notification_close ( guint32 id, guchar reason )
   notif_list = g_list_remove(notif_list, notif);
 
   if(!g_strcmp0(notif->app_name, expanded_group))
+  {
     for(iter=notif_list; iter; iter=g_list_next(iter))
       if(!g_strcmp0(DN_NOTIFICATION(iter->data)->app_name, notif->app_name))
         break;
-  if(!iter)
-    g_free(g_steal_pointer(&expanded_group));
+    if(!iter)
+      g_free(g_steal_pointer(&expanded_group));
+  }
 
   dn_notification_free(notif);
 
