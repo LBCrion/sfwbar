@@ -295,9 +295,9 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *shell )
   gtk_container_add(GTK_CONTAINER(priv->button), box);
 
   priv->popover = gtk_window_new(GTK_WINDOW_POPUP);
+  gtk_widget_set_name(priv->popover, "taskbar_group");
   window_set_unref_func(priv->popover,
       (void(*)(gpointer))taskbar_popup_timeout_set);
-  gtk_widget_set_name(priv->button, "taskbar_group");
   g_object_ref(G_OBJECT(priv->popover));
   gtk_container_add(GTK_CONTAINER(priv->popover), priv->tgroup);
   css_widget_apply(priv->tgroup, g_strdup(
