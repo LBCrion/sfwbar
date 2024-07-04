@@ -48,6 +48,9 @@ static void pager_init ( Pager *self )
 
   pagers = g_list_prepend(pagers, self);
 
+  if(ipc_get()!=IPC_SWAY && ipc_get()!=IPC_HYPR)
+    css_add_class(GTK_WIDGET(self), "hidden");
+
   for(iter = workspace_get_list(); iter; iter=g_list_next(iter))
     pager_item_new(GTK_WIDGET(self), iter->data);
   flow_grid_invalidate(GTK_WIDGET(self));
