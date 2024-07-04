@@ -283,11 +283,6 @@ sort [true|false]
   sorted, user can sort them manually via drag-and-drop mechanism.
   Items are sorted by default, set this to false to enable drag-and-drop.
 
-numeric [true|false]
-  if true, the workspaces will be sorted as numbers, otherwise they will be
-  sorted as strings (defaults to true). (this is only applicable to taskbars
-  set to ``group = pager``).
-
 rows
   a number of rows in a taskbar.
 
@@ -367,10 +362,6 @@ sort [true|false]
   setting of whether pager items should be sorted. If the items are not
   sorted, user can sort them manually via drag-and-drop mechanism.
   Items are sorted by default, set this to false to enable drag-and-drop.
-
-numeric [true|false]
-  if true, the workspaces will be sorted as numbers, otherwise they will be
-  sorted as strings (defaults to true).
 
 pins
   a list of "pinned" workspaces. These will show up in the pager even if the

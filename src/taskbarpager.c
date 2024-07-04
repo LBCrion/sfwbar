@@ -108,6 +108,8 @@ static gint taskbar_pager_compare ( GtkWidget *a, GtkWidget *b,
     GtkWidget *parent )
 {
   TaskbarPagerPrivate *p1,*p2;
+  gchar *e1, *e2;
+  gint n1, n2;
 
   g_return_val_if_fail(IS_TASKBAR_PAGER(a), 0);
   g_return_val_if_fail(IS_TASKBAR_PAGER(b), 0);
@@ -115,10 +117,12 @@ static gint taskbar_pager_compare ( GtkWidget *a, GtkWidget *b,
   p1 = taskbar_pager_get_instance_private(TASKBAR_PAGER(a));
   p2 = taskbar_pager_get_instance_private(TASKBAR_PAGER(b));
 
-  if(g_object_get_data(G_OBJECT(parent), "sort_numeric"))
-    return strtoll(p1->ws->name, NULL, 10) - strtoll(p2->ws->name, NULL, 10);
-  else
+  n1 = g_ascii_strtoll(p1->ws->name, &e1, 10);
+  n2 = g_ascii_strtoll(p2->ws->name, &e2, 10);
+  if((e1 && *e1) || (e2 && *e2))
     return g_strcmp0(p1->ws->name, p2->ws->name);
+  else
+    return n1-n2;
 }
 
 static gboolean taskbar_pager_action_exec ( GtkWidget *self, gint slot,

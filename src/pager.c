@@ -22,8 +22,6 @@ static void pager_mirror ( GtkWidget *self, GtkWidget *src )
   BASE_WIDGET_CLASS(pager_parent_class)->mirror(self, src);
   g_object_set_data(G_OBJECT(self), "preview",
       g_object_get_data(G_OBJECT(src), "preview"));
-  g_object_set_data(G_OBJECT(self), "sort_numeric",
-      g_object_get_data(G_OBJECT(src), "sort_numeric"));
 }
 
 static void pager_destroy ( GtkWidget *self )
@@ -49,7 +47,6 @@ static void pager_init ( Pager *self )
   GList *iter;
 
   pagers = g_list_prepend(pagers, self);
-  g_object_set_data(G_OBJECT(self), "sort_numeric", GINT_TO_POINTER(TRUE));
 
   for(iter = workspace_get_list(); iter; iter=g_list_next(iter))
     pager_item_new(GTK_WIDGET(self), iter->data);

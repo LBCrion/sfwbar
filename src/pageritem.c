@@ -96,6 +96,8 @@ static void pager_item_invalidate ( GtkWidget *self )
 static gint pager_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent)
 {
   PagerItemPrivate *p1,*p2;
+  gchar *e1, *e2;
+  gint n1, n2;
 
   g_return_val_if_fail(IS_PAGER_ITEM(a),0);
   g_return_val_if_fail(IS_PAGER_ITEM(b),0);
@@ -103,10 +105,12 @@ static gint pager_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent)
   p1 = pager_item_get_instance_private(PAGER_ITEM(a));
   p2 = pager_item_get_instance_private(PAGER_ITEM(b));
 
-  if(g_object_get_data(G_OBJECT(parent),"sort_numeric"))
-    return strtoll(p1->ws->name, NULL, 10)-strtoll(p2->ws->name, NULL, 10);
-  else
+  n1 = g_ascii_strtoll(p1->ws->name, &e1, 10);
+  n2 = g_ascii_strtoll(p2->ws->name, &e2, 10);
+  if((e1 && *e1) || (e2 && *e2))
     return g_strcmp0(p1->ws->name, p2->ws->name);
+  else
+    return n1-n2;
 }
 
 static void pager_item_class_init ( PagerItemClass *kclass )
