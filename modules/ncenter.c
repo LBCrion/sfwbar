@@ -119,6 +119,7 @@ static void dn_notification_free ( dn_notification *notif )
   g_free(notif->body);
   g_free(notif->category);
   g_free(notif->desktop);
+  scale_image_cache_remove(notif->image);
   g_free(notif->image);
   g_free(notif->sound_file);
   g_free(notif->sound_name);
@@ -139,7 +140,7 @@ static gchar *dn_notification_get_str ( dn_notification *notif, gchar *prop )
   if(!g_ascii_strcasecmp(prop, "id"))
     return g_strdup_printf("%d", notif->id);
   if(!g_ascii_strcasecmp(prop, "icon"))
-    return g_strdup(notif->app_icon);
+    return g_strdup(notif->image?notif->image:notif->app_icon);
   if(!g_ascii_strcasecmp(prop, "app"))
     return g_strdup(notif->app_name);
   if(!g_ascii_strcasecmp(prop, "summary"))
