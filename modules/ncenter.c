@@ -265,10 +265,15 @@ static gchar *dn_parse_image_data ( GVariant *dict )
   if(len != h*row_stride)
     return NULL;
   copy = g_memdup2(data, len);
-  pixbuf = gdk_pixbuf_new_from_data(copy, GDK_COLORSPACE_RGB, alpha, bps, w,
-      h, row_stride, (GdkPixbufDestroyNotify)g_free, NULL);
-  name = g_strdup_printf("ncenter-%d", dn_pixbuf_counter++);
 
+  if( !(pixbuf = gdk_pixbuf_new_from_data(copy, GDK_COLORSPACE_RGB, alpha,
+          bps, w, h, row_stride, (GdkPixbufDestroyNotify)g_free, NULL)) )
+  {
+    g_free(copy);
+    return NULL;
+  }
+
+  name = g_strdup_printf("<pixbufcache/>ncenter-%d", dn_pixbuf_counter++);
   scale_image_cache_insert(name, pixbuf);
   return name;
 }
