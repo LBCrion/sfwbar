@@ -254,7 +254,8 @@ static gchar *dn_parse_image_data ( GVariant *dict )
   gboolean alpha;
   gsize len;
   gchar *name;
-  const void *data, *copy;
+  const void *data;
+  void *copy;
 
   if(!g_variant_lookup(dict, "image-data", "(iiibii@ay)", &w, &h, &row_stride,
         &alpha, &bps, &channels, &vdata))
