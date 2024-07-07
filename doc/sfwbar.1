@@ -806,11 +806,13 @@ Read data from a file
 Read data from an output of a shell command
 .TP
 .B ExecClient
-Read data from an executable, this source will read a burst of data
-using it to populate the variables and emit a trigger event once done.
-This source accepts two parameters, command to execute and an id. The
-id is used to address the socket via ClientSend and to identify a
-trigger emitted upon variable updates.
+Read data from an executable, this source will wait for any output from
+the standard output of the executable. Once available (i.e. the program
+flushes its output) the source will populate the variables and emit a
+trigger event.  This source accepts two parameters, command to execute
+and an id. The id can be used to write to the standard input of the
+executable via ClientSend and to identify a trigger emitted upon variable
+updates.
 USE RESPONSIBLY: If a trigger causes the client to receive new data
 (i.e. by triggering a ClientSend command that in turn triggers response
 from the source, you can end up with an infinite loop.
