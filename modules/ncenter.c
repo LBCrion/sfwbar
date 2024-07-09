@@ -37,6 +37,9 @@ static GList *notif_list;
 static gchar *expanded_group;
 static gint32 default_timeout = 0;
 
+static GAppLaunchContext *dn_launch_context;
+static GAppInfo *dn_app_info;
+
 static const gchar *dn_bus = "org.freedesktop.Notifications";
 static const gchar *dn_path = "/org/freedesktop/Notifications";
 
@@ -50,6 +53,10 @@ static const gchar dn_iface_xml[] =
   "   <signal name='ActionInvoked'>"
   "     <arg name='id' type='u' direction='out'/>"
   "     <arg name='action_key' type='s' direction='out'/>"
+  "   </signal>"
+  "   <signal name='ActivationToken'>"
+  "     <arg name='id' type='u' direction='out'/>"
+  "     <arg name='activation_token' type='s' direction='out'/>"
   "   </signal>"
   "   <method name='Notify'>"
   "     <arg type='u' direction='out'/>"
@@ -281,9 +288,16 @@ static gchar *dn_parse_image_data ( GVariant *dict )
 
 static void dn_notification_action ( guint32 id, gchar *action )
 {
-  g_debug("ncenter: invoke action: %d, '%s'", id, action);
+  gchar *token;
+
+  token = g_app_launch_context_get_startup_notify_id(dn_launch_context,
+      dn_app_info, NULL);
+  g_debug("ncenter: invoke action: %d, '%s' (token: %d)", id, action, !!token);
+  g_dbus_connection_emit_signal(dn_con, NULL, dn_path, dn_bus,
+      "ActivationToken", g_variant_new("(us)", id, token), NULL);
   g_dbus_connection_emit_signal(dn_con, NULL, dn_path, dn_bus,
       "ActionInvoked", g_variant_new("(us)", id, action), NULL);
+  g_free(token);
 }
 
 gboolean dn_timeout ( dn_notification *notif )
@@ -402,8 +416,9 @@ static void dn_iface_method(GDBusConnection *con,
     caps[1] = g_variant_new_string("icon-static");
     caps[2] = g_variant_new_string("actions");
     caps[3] = g_variant_new_string("action-icons");
+    caps[4] = g_variant_new_string("persistence");
     g_dbus_method_invocation_return_value(invocation, g_variant_new("(@as)",
-        g_variant_new_array(G_VARIANT_TYPE_STRING, caps, 4)));
+        g_variant_new_array(G_VARIANT_TYPE_STRING, caps, 5)));
     return;
   }
   if(!g_strcmp0(method, "Notify"))
@@ -456,6 +471,11 @@ gboolean sfwbar_module_init ( void )
   dn_con = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
   g_bus_own_name(G_BUS_TYPE_SESSION, dn_bus, G_BUS_NAME_OWNER_FLAGS_NONE,
       dn_bus_acquired_cb, dn_name_acquired_cb, dn_name_lost_cb, NULL, NULL);
+
+  dn_launch_context = (GAppLaunchContext *)
+    gdk_display_get_app_launch_context(gdk_display_get_default());
+  dn_app_info = g_app_info_create_from_commandline("/bin/sh", NULL,
+      G_APP_INFO_CREATE_NONE, NULL);
 
   return TRUE;
 }
