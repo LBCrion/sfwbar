@@ -79,8 +79,10 @@ void taskbar_shell_init_child ( GtkWidget *self, GtkWidget *child )
       TASKBAR_SHELL(base_widget_get_mirror_parent(self)));
 
   flow_grid_set_title_width(child, priv->title_width);
-  flow_grid_set_cols(child, priv->cols);
-  flow_grid_set_rows(child, priv->rows);
+  if(priv->cols>0)
+    flow_grid_set_cols(child, priv->cols);
+  if(priv->rows>0)
+    flow_grid_set_rows(child, priv->rows);
   flow_grid_set_icons(child, priv->icons);
   flow_grid_set_labels(child, priv->labels);
   flow_grid_set_sort(child, priv->sort);
