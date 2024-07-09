@@ -57,6 +57,9 @@ from a file with a .css extension with the same base name as the config file
 located in the same directory as the config file. The name of the css file 
 can be also specified using ``-c`` option.
 
+Sfwbar can be restarted and configuration reloaded by sending a SIGHUP signal
+to the sfwbar process (i.e. `killall -SIGHUP sfwbar`).
+
 The config file consists of the following top level sections:
 
 Placer
@@ -661,12 +664,16 @@ periodically and populate with the data parsed from the source. The sources
 and variables linked to them as configured in the section ``scanner`` ::
 
   scanner {
-    file("/proc/swaps",NoGlob) {
+    File("/proc/swaps",NoGlob) {
       SwapTotal = RegEx("[\t ]([0-9]+)")
       SwapUsed = RegEx("[\t ][0-9]+[\t ]([0-9]+)")
     }
-    exec("getweather.sh") {
-      $WeatherTemp = Json(".forecast.today.degrees")
+    Exec("getweather.sh") {
+      WeatherTemp = Json(".forecast.today.degrees")
+    }
+    ExecClient("stdbuf -oL foo.sh BAR BAZ", "foo") {
+      Foo_foo = Json(".foo")
+      Foo_bar = Json(".bar")
     }
   }
 
@@ -685,11 +692,12 @@ ExecClient
         flushes its output) the source will populate the variables and emit a
         trigger event.  This source accepts two parameters, command to execute
         and an id. The id can be used to write to the standard input of the 
-        executable via ClientSend and to identify a trigger emitted upon variable
-        updates.
+        executable via ClientSend (provided that the executable takes standard
+        input) and to identify a trigger emitted upon variable updates.
         USE RESPONSIBLY: If a trigger causes the client to receive new data
         (i.e. by triggering a ClientSend command that in turn triggers response
         from the source, you can end up with an infinite loop.
+        (see alsa.widget and rfkill-wifi.widget as examples).
 
 SocketClient
         Read data from a socket, this source will read a bust of data
@@ -703,14 +711,16 @@ SocketClient
 
 MpdClient
         Read data from Music Player Daemon IPC (data is polled whenever MPD
-        responds to an 'idle player' event).
-        MpdClient emits trigger "mpd"
+        responds to an 'idle player' event).  MpdClient emits trigger "mpd".
+        (see mpd-int.widget as an example)
 
 SwayClient
         Receive updates on Sway state, updates are the json objects sent by
         sway, wrapped into an object with a name of the event i.e.
-        ``window: { sway window change object }``
-        SwayClient emits trigger "sway"
+        ``window: { sway window change object }``.
+        SwayClient emits trigger "sway".
+        (see sway-lang.widget as an example).
+
 
 The file source also accepts further optional arguments specifying how
 scanner should handle the source, these can be:

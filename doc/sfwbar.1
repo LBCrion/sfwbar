@@ -84,6 +84,9 @@ from a file with a .css extension with the same base name as the config file
 located in the same directory as the config file. The name of the css file
 can be also specified using \fB\-c\fP option.
 .sp
+Sfwbar can be restarted and configuration reloaded by sending a SIGHUP signal
+to the sfwbar process (i.e. \fIkillall \-SIGHUP sfwbar\fP).
+.sp
 The config file consists of the following top level sections:
 .SS Placer
 .sp
@@ -783,12 +786,16 @@ and variables linked to them as configured in the section \fBscanner\fP
 .sp
 .EX
 scanner {
-  file(\(dq/proc/swaps\(dq,NoGlob) {
+  File(\(dq/proc/swaps\(dq,NoGlob) {
     SwapTotal = RegEx(\(dq[\et ]([0\-9]+)\(dq)
     SwapUsed = RegEx(\(dq[\et ][0\-9]+[\et ]([0\-9]+)\(dq)
   }
-  exec(\(dqgetweather.sh\(dq) {
-    $WeatherTemp = Json(\(dq.forecast.today.degrees\(dq)
+  Exec(\(dqgetweather.sh\(dq) {
+    WeatherTemp = Json(\(dq.forecast.today.degrees\(dq)
+  }
+  ExecClient(\(dqstdbuf \-oL foo.sh BAR BAZ\(dq, \(dqfoo\(dq) {
+    Foo_foo = Json(\(dq.foo\(dq)
+    Foo_bar = Json(\(dq.bar\(dq)
   }
 }
 .EE
@@ -811,11 +818,12 @@ the standard output of the executable. Once available (i.e. the program
 flushes its output) the source will populate the variables and emit a
 trigger event.  This source accepts two parameters, command to execute
 and an id. The id can be used to write to the standard input of the
-executable via ClientSend and to identify a trigger emitted upon variable
-updates.
+executable via ClientSend (provided that the executable takes standard
+input) and to identify a trigger emitted upon variable updates.
 USE RESPONSIBLY: If a trigger causes the client to receive new data
 (i.e. by triggering a ClientSend command that in turn triggers response
 from the source, you can end up with an infinite loop.
+(see alsa.widget and rfkill\-wifi.widget as examples).
 .TP
 .B SocketClient
 Read data from a socket, this source will read a bust of data
@@ -829,14 +837,15 @@ from the source, you can end up with an infinite loop.
 .TP
 .B MpdClient
 Read data from Music Player Daemon IPC (data is polled whenever MPD
-responds to an \(aqidle player\(aq event).
-MpdClient emits trigger \(dqmpd\(dq
+responds to an \(aqidle player\(aq event).  MpdClient emits trigger \(dqmpd\(dq.
+(see mpd\-int.widget as an example)
 .TP
 .B SwayClient
 Receive updates on Sway state, updates are the json objects sent by
 sway, wrapped into an object with a name of the event i.e.
-\fBwindow: { sway window change object }\fP
-SwayClient emits trigger \(dqsway\(dq
+\fBwindow: { sway window change object }\fP\&.
+SwayClient emits trigger \(dqsway\(dq.
+(see sway\-lang.widget as an example).
 .UNINDENT
 .sp
 The file source also accepts further optional arguments specifying how
