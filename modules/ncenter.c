@@ -401,7 +401,7 @@ static void dn_iface_method(GDBusConnection *con,
     const gchar *method, GVariant *parameters,
     GDBusMethodInvocation *invocation, gpointer data)
 {
-  GVariant *caps[4];
+  GVariant *caps[5];
   guint32 id;
 
   if(!g_strcmp0(method, "GetServerInformation"))
