@@ -120,7 +120,8 @@ cols
       a number of columns in the task list
 
 css
-      css code applicable to the switcher grid. 
+      css code applicable to the switcher grid. This property can only be set
+      to a static string, not an expression.
       You can specify more detailed css code in the main CSS file. Using style
       name #switcher for the task switcher window and the main grid and names
       #switcher_normal and #switcher_active for inactive and active window 
@@ -243,7 +244,10 @@ trigger
 
 css
   additional css properties for the widget. These properties will only apply to
-  the widget in question.
+  the widget in question. You can have multiple instances of the css property
+  in a single widget definition and they all will be applied in the order of
+  their occurence. css property value can only be a static string, not an
+  expression.
 
 action
   an action to execute upon interaction with a widget. Actions can be attached
