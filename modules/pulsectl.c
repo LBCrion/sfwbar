@@ -487,7 +487,6 @@ static void pulse_state_cb ( pa_context *ctx, gpointer data )
   if(state == PA_CONTEXT_FAILED || state == PA_CONTEXT_TERMINATED)
   {
     module_interface_deactivate(&sfwbar_interface);
-    g_message("pulse terminated %d %d", sfwbar_interface.ready, sfwbar_interface.active);
     g_timeout_add (1000, (GSourceFunc )pulse_connect_try, NULL);
     pa_context_disconnect(ctx);
     pa_context_unref(ctx);
@@ -518,7 +517,7 @@ static void pulse_deactivate ( void )
 {
   gint i;
 
-  g_message("deactivating pulse");
+  g_debug("pulse: deactivating");
   pa_context_subscribe(pctx,PA_SUBSCRIPTION_MASK_NULL,
         NULL, NULL);
   pa_context_set_subscribe_callback(pctx, NULL ,NULL);
@@ -538,11 +537,9 @@ static gboolean pulse_connect_try ( void *data )
 
   pctx = pa_context_new(papi, "sfwbar");
   pa_context_set_state_callback(pctx, pulse_state_cb, NULL);
-  if(pa_context_connect(pctx, NULL, PA_CONTEXT_NOFLAGS, NULL) >= 0)
-    return FALSE;
-  pa_context_disconnect(pctx);
-  pa_context_unref(pctx);
-  return TRUE;
+  pa_context_connect(pctx, NULL, PA_CONTEXT_NOFLAGS, NULL);
+
+  return FALSE;
 }
 
 gboolean sfwbar_module_init ( void )
