@@ -304,6 +304,7 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
         !g_strcmp0(route->name,if_indextoname(
             ((struct ifinfomsg *)NLMSG_DATA(hdr))->ifi_index,ifname)))
     {
+      g_debug("netinfo: delete default gw iface: %s", route?route->name:"?");
       net_set_interface(0,gate,gate6);
     }
     else if(hdr->nlmsg_type == RTM_NEWLINK)
@@ -339,10 +340,17 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
         }
       if(hdr->nlmsg_type==RTM_NEWROUTE && !dest.s_addr && gate.s_addr &&
           iidx && !(((struct rtmsg *)NLMSG_DATA(hdr))->rtm_dst_len))
+      {
         net_set_interface(iidx, gate,gate6);
+        g_debug("netinfo: new default gw route on: %s", route?route->name:"?");
+      }
       else if(hdr->nlmsg_type==RTM_DELROUTE && !dest.s_addr && iidx &&
           !(((struct rtmsg *)NLMSG_DATA(hdr))->rtm_dst_len))
+      {
+        g_debug("netinfo: delete default gw route on: %s",
+            route?route->name:"?");
         net_set_interface(0, gate,gate6);
+      }
     }
   }
   return TRUE;
@@ -522,7 +530,8 @@ static void net_update_essid ( gchar *interface )
   (void)net_get_signal(interface);
 }
 
-#endif /* FreeBSD || OpenBSD */
+#endif /* OpenBSD */
+/* back to FreeBSD || OpenBSD */
 
 static gint net_rt_connect ( void )
 {
@@ -704,14 +713,14 @@ void *network_func_netinfo ( void **params, void *widget, void *event )
   iface_info *iface;
 
   if(!params || !params[0])
-    return g_strdup("");
+    return NULL;
 
   if(params[1] && *((gchar *)params[1]))
     iface = net_iface_from_name(params[1],FALSE);
   else
     iface = route;
   if(!iface)
-    return g_strdup("");
+    return NULL;
 
   g_mutex_lock(&iface->mutex);
   if(!g_ascii_strcasecmp(params[0],"ip"))
