@@ -304,8 +304,9 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
         !g_strcmp0(route->name,if_indextoname(
             ((struct ifinfomsg *)NLMSG_DATA(hdr))->ifi_index,ifname)))
     {
-      g_debug("netinfo: delete default gw iface: %s (%x %x)",
-            route?route->name:"?", gate.s_addr, dest.s_addr);
+      g_debug("netinfo: delete default gw iface: %s (%x %x %d)",
+            route?route->name:"?", gate.s_addr, dest.s_addr,
+          (((struct rtmsg *)NLMSG_DATA(hdr))->rtm_table));
       net_set_interface(0,gate,gate6);
     }
     else if(hdr->nlmsg_type == RTM_NEWLINK)
@@ -343,14 +344,16 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
           iidx && !(((struct rtmsg *)NLMSG_DATA(hdr))->rtm_dst_len))
       {
         net_set_interface(iidx, gate,gate6);
-        g_debug("netinfo: new default gw route on: %s (%x %x)",
-            route?route->name:"?", gate.s_addr, dest.s_addr);
+        g_debug("netinfo: new default gw route on: %s (%x %x %d)",
+            route?route->name:"?", gate.s_addr, dest.s_addr,
+          (((struct rtmsg *)NLMSG_DATA(hdr))->rtm_table));
       }
       else if(hdr->nlmsg_type==RTM_DELROUTE && !dest.s_addr && iidx &&
           !(((struct rtmsg *)NLMSG_DATA(hdr))->rtm_dst_len))
       {
-        g_debug("netinfo: delete default gw route on: %s (%x %x)",
-            route?route->name:"?", gate.s_addr, dest.s_addr);
+        g_debug("netinfo: delete default gw route on: %s (%x %x %d)",
+            route?route->name:"?", gate.s_addr, dest.s_addr,
+          (((struct rtmsg *)NLMSG_DATA(hdr))->rtm_table));
         net_set_interface(0, gate,gate6);
       }
     }
