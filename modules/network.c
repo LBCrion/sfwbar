@@ -636,7 +636,7 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
       net_set_interface(hdr->rtm_index,gate,gate6);
     else if(hdr->rtm_type==RTM_DELETE && !dest.s_addr && !mask.s_addr &&
         hdr->rtm_index)
-      net_unref_iface(hdr->rtm_index, FALSE);
+      net_iface_unref(hdr->rtm_index, FALSE);
   }
   return TRUE;
 }
