@@ -577,7 +577,6 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
   struct sockaddr *sa;
   struct in_addr gate, dest, mask;
   struct in6_addr gate6;
-  gchar ifname[IF_NAMESIZE];
 
   sock = g_io_channel_unix_get_fd(chan);
   if( (len = recv(sock, &buff, sizeof(buff), 0)) <0 )
@@ -597,7 +596,7 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
     dest.s_addr = 1;
     memset(&gate6, 0, sizeof(gate6));
     sa = (struct sockaddr *)(hdr +1);
-    for(i=0;i<RTAX_MAX;i++)
+    for(i=0; i<RTAX_MAX; i++)
       if(hdr->rtm_addrs & 1<<i)
       {
         if(i == RTAX_DST)
@@ -650,7 +649,7 @@ gboolean sfwbar_module_init ( void )
   int sock;
   GIOChannel *chan;
 
-  if( (sock = net_rt_connect()) <=0 )
+  if( (sock = net_rt_connect()) <0 )
     return FALSE;
 
   g_debug("netstat: socket: %d", sock);
