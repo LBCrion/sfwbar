@@ -201,7 +201,7 @@ static struct wintree_api ft_wintree_api = {
   .focus = foreign_toplevel_focus
 };
 
-static void foreign_toplevel_register (struct wl_registry *registry,
+void foreign_toplevel_register (struct wl_registry *registry,
     uint32_t global, uint32_t version)
 {
   if(ipc_get())
@@ -215,38 +215,4 @@ static void foreign_toplevel_register (struct wl_registry *registry,
     &toplevel_manager_impl, NULL);
 
   wintree_api_register(&ft_wintree_api);
-}
-
-static void handle_global(void *data, struct wl_registry *registry,
-                uint32_t global, const gchar *interface, uint32_t version)
-{
-  if (!g_strcmp0(interface,zwlr_foreign_toplevel_manager_v1_interface.name))
-    foreign_toplevel_register(registry, global, version);
-}
-
-static void handle_global_remove(void *data, struct wl_registry *registry,
-                uint32_t name)
-{
-}
-
-static const struct wl_registry_listener registry_listener = {
-  .global = handle_global,
-  .global_remove = handle_global_remove
-};
-
-void wayland_ipc_init ( void )
-{
-  struct wl_display *wdisp;
-  struct wl_registry *registry;
-
-  wdisp = gdk_wayland_display_get_wl_display(gdk_display_get_default());
-  if(!wdisp)
-    g_error("Can't get wayland display\n");
-
-  registry = wl_display_get_registry(wdisp);
-  wl_registry_add_listener(registry, &registry_listener, NULL);
-  wl_display_roundtrip(wdisp);
-
-  wl_display_roundtrip(wdisp);
-  wl_display_roundtrip(wdisp);
 }
