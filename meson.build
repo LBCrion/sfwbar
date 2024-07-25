@@ -32,7 +32,8 @@ wayland_scanner = find_program('wayland-scanner')
 wayland_protodir = wayp.get_pkgconfig_variable('pkgdatadir')
 wayland_protos = ['wlr-foreign-toplevel-management-unstable-v1',
                   'xdg-output-unstable-v1',
-                  'wlr-layer-shell-unstable-v1'
+                  'wlr-layer-shell-unstable-v1',
+                  'cosmic-workspace-unstable-v1',
 ]
 wayland_targets=[]
 
@@ -100,6 +101,7 @@ libsrc = [
     'src/config/scanner.c',
     'src/config/switcher.c',
     'src/config/toplevel.c',
+    'src/wayland/cosmic-workspaces.c',
     'src/wayland/foreign-toplevel.c',
     'src/wayland/ipc.c',
     'src/wayland/probe.c',

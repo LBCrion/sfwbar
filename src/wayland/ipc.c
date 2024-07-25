@@ -4,9 +4,13 @@
  */
 
 #include <gdk/gdkwayland.h>
+#include "cosmic-workspace-unstable-v1.h"
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
 void foreign_toplevel_register(struct wl_registry *registry,
+    uint32_t global, uint32_t version);
+
+void cosmic_workspaces_register(struct wl_registry *registry,
     uint32_t global, uint32_t version);
 
 static void handle_global(void *data, struct wl_registry *registry,
@@ -14,6 +18,8 @@ static void handle_global(void *data, struct wl_registry *registry,
 {
   if (!g_strcmp0(interface,zwlr_foreign_toplevel_manager_v1_interface.name))
     foreign_toplevel_register(registry, global, version);
+  else if (!g_strcmp0(interface, zcosmic_workspace_manager_v1_interface.name))
+    cosmic_workspaces_register(registry, global, version);
 }
 
 static void handle_global_remove(void *data, struct wl_registry *registry,
