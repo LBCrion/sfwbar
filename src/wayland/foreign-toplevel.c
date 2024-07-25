@@ -9,6 +9,8 @@
 #include "../wintree.h"
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
+#define FOREIGN_TOPLEVEL_VERSION 3
+
 typedef struct zwlr_foreign_toplevel_handle_v1 wlr_fth;
 static struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager;
 
@@ -200,13 +202,14 @@ static struct wintree_api ft_wintree_api = {
 };
 
 static void foreign_toplevel_register (struct wl_registry *registry,
-    uint32_t name)
+    uint32_t global, uint32_t version)
 {
   if(ipc_get())
     return;
 
-  toplevel_manager = wl_registry_bind(registry, name,
-    &zwlr_foreign_toplevel_manager_v1_interface,3);
+  toplevel_manager = wl_registry_bind(registry, global,
+    &zwlr_foreign_toplevel_manager_v1_interface,
+    MIN(version, FOREIGN_TOPLEVEL_VERSION));
 
   zwlr_foreign_toplevel_manager_v1_add_listener(toplevel_manager,
     &toplevel_manager_impl, NULL);
@@ -215,10 +218,10 @@ static void foreign_toplevel_register (struct wl_registry *registry,
 }
 
 static void handle_global(void *data, struct wl_registry *registry,
-                uint32_t name, const gchar *interface, uint32_t version)
+                uint32_t global, const gchar *interface, uint32_t version)
 {
   if (!g_strcmp0(interface,zwlr_foreign_toplevel_manager_v1_interface.name))
-    foreign_toplevel_register(registry,name);
+    foreign_toplevel_register(registry, global, version);
 }
 
 static void handle_global_remove(void *data, struct wl_registry *registry,
