@@ -56,6 +56,8 @@ void workspace_unref ( gpointer id )
   {
     workspaces = g_list_remove(workspaces, ws);
     pager_item_delete(ws);
+    if(ws->custom_data && api.free_data)
+      api.free_data(ws->custom_data);
     g_free(ws->name);
     g_free(ws);
   }
@@ -232,6 +234,9 @@ void workspace_new ( workspace_t *new )
     ws->visible = new->visible;
     pager_invalidate_all(ws);
   }
+  if(ws->custom_data && api.free_data)
+    api.free_data(ws->custom_data);
+  ws->custom_data = new->custom_data;
 
   workspace_ref(ws->id);
   pager_item_add(ws);

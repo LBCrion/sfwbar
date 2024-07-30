@@ -7,13 +7,16 @@ typedef struct workspace_s {
   gpointer id;
   gchar *name;
   gboolean visible;
+  gboolean urgent;
   gboolean focused;
+  gpointer custom_data;
   gint refcount;
 } workspace_t;
 
 struct workspace_api {
   void (*set_workspace) ( workspace_t *);
   guint (*get_geom) ( workspace_t *, GdkRectangle **, GdkRectangle *, gint *);
+  void (*free_data) ( void *);
 };
 
 #define PAGER_PIN_ID (GINT_TO_POINTER(-1))
