@@ -106,6 +106,13 @@ guint workspace_get_geometry ( workspace_t *ws, GdkRectangle **wins,
   return 0;
 }
 
+gboolean workspace_get_can_create ( void )
+{
+  if(api.get_can_create)
+    return api.get_can_create();
+  return TRUE;
+}
+
 void workspace_pin_add ( gchar *pin )
 {
   workspace_t *ws;

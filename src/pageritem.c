@@ -64,7 +64,8 @@ void pager_item_update ( GtkWidget *self )
       GTK_STATE_FLAG_PRELIGHT);
 
   flow_item_set_active(self, priv->ws->id != PAGER_PIN_ID ||
-      pager_check_pins(priv->pager, priv->ws->name));
+      (pager_check_pins(priv->pager, priv->ws->name) &&
+       workspace_get_can_create()));
 
   priv->invalid = FALSE;
 }

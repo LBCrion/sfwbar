@@ -53,9 +53,15 @@ static void api_set_workspace(workspace_t *ws)
     g_warning("Workspace activation not supported by compositor");
 }
 
+static gboolean cosmic_workspace_get_can_create ( void )
+{
+  return !!workspace_groups;
+}
+
 static struct workspace_api api_impl = {
   .set_workspace = api_set_workspace,
   .get_geom = NULL,
+  .get_can_create = cosmic_workspace_get_can_create,
 };
 
 /* Workspace */
