@@ -45,19 +45,19 @@ void workspace_unref ( gpointer id )
   if(ws->refcount)
     return;
 
-  if(g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0) ||
-      ws->refcount)
+  if(ws->custom_data && api.free_data)
+    api.free_data(ws->custom_data);
+
+  if(g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0))
   {
     ws->id = PAGER_PIN_ID;
-    ws->visible = FALSE;
+    ws->state = 0;
     pager_item_delete(ws);
   }
   else
   {
     workspaces = g_list_remove(workspaces, ws);
     pager_item_delete(ws);
-    if(ws->custom_data && api.free_data)
-      api.free_data(ws->custom_data);
     g_free(ws->name);
     g_free(ws);
   }
@@ -118,9 +118,7 @@ void workspace_pin_add ( gchar *pin )
   {
     ws = g_malloc0(sizeof(workspace_t));
     ws->id = PAGER_PIN_ID;
-    ws->refcount = 0;
     ws->name = g_strdup(pin);
-    ws->visible = FALSE;
     workspaces = g_list_prepend(workspaces, ws);
     pager_item_add(ws);
   }
@@ -157,15 +155,15 @@ void workspace_set_active ( workspace_t *ws, const gchar *output )
 
   if(!actives)
     actives = g_hash_table_new_full((GHashFunc)str_nhash,
-        (GEqualFunc)str_nequal,g_free,NULL);
+        (GEqualFunc)str_nequal, g_free, NULL);
 
   gdisp = gdk_display_get_default();
-  for(i=gdk_display_get_n_monitors(gdisp)-1;i>=0;i--)
+  for(i=gdk_display_get_n_monitors(gdisp)-1; i>=0; i--)
   {
-    gmon = gdk_display_get_monitor(gdisp,i);
-    name = g_object_get_data(G_OBJECT(gmon),"xdg_name");
-    if(name && !g_strcmp0(name,output))
-      g_hash_table_insert(actives,g_strdup(name),ws->id);
+    gmon = gdk_display_get_monitor(gdisp, i);
+    name = g_object_get_data(G_OBJECT(gmon), "xdg_name");
+    if(name && !g_strcmp0(name, output))
+      g_hash_table_insert(actives, g_strdup(name), ws->id);
   }
 }
 
@@ -198,9 +196,41 @@ void workspace_set_focus ( gpointer id )
 
 void workspace_set_name ( workspace_t *ws, const gchar *name )
 {
-  g_free(ws->name);
-  ws->name = g_strdup(name);
-  pager_invalidate_all(ws);
+  workspace_t *pin;
+  gchar *old;
+
+  if(!g_strcmp0(ws->name, name))
+    return;
+
+  if( (pin = workspace_from_name(name)) && pin->id != PAGER_PIN_ID)
+  {
+    g_message("duplicate workspace names with differing ids ('%s'/%p/%p)",
+        name, pin->id, ws->id);
+    return;
+  }
+
+  if(g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0))
+  {
+    old = ws->name;
+    ws->name = (gchar *)name;
+    workspace_new(ws);
+    ws->name = old;
+    workspace_unref(ws);
+    return;
+  }
+
+  if(!pin)
+  {
+    g_free(ws->name);
+    ws->name = g_strdup(name);
+    pager_invalidate_all(ws);
+    return;
+  }
+
+  pager_item_delete(ws);
+  ws->name = (gchar *)name;
+  workspace_new(ws);
+  g_free(ws);
 }
 
 void workspace_new ( workspace_t *new )
@@ -219,7 +249,7 @@ void workspace_new ( workspace_t *new )
   {
     ws = g_malloc0(sizeof(workspace_t));
     ws->refcount = 0;
-    workspaces = g_list_prepend(workspaces,ws);
+    workspaces = g_list_prepend(workspaces, ws);
   }
 
   if(g_strcmp0(ws->name, new->name))
@@ -228,10 +258,10 @@ void workspace_new ( workspace_t *new )
     ws->name = g_strdup(new->name);
     pager_invalidate_all(ws);
   }
-  if(ws->id != new->id || ws->visible != new->visible)
+  if(ws->id != new->id || ws->state != new->state)
   {
     ws->id = new->id;
-    ws->visible = new->visible;
+    ws->state = new->state;
     pager_invalidate_all(ws);
   }
   if(ws->custom_data && api.free_data)
@@ -240,6 +270,6 @@ void workspace_new ( workspace_t *new )
 
   workspace_ref(ws->id);
   pager_item_add(ws);
-  if(new->focused)
+  if(new->state & WORKSPACE_FOCUSED)
     workspace_set_focus(ws->id);
 }

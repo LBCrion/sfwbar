@@ -340,7 +340,7 @@ static void hypr_ipc_pager_populate( void )
           ws = workspace_from_id(GINT_TO_POINTER(wid));
           if(ws)
           {
-            ws->visible = TRUE;
+            ws->state |= WORKSPACE_VISIBLE;
             workspace_set_active(ws,json_string_by_name(iter,"name"));
           }
         }

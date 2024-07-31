@@ -55,7 +55,7 @@ void pager_item_update ( GtkWidget *self )
       GPOINTER_TO_INT(g_object_get_data(G_OBJECT(priv->pager),"preview")));
   if ( workspace_is_focused(priv->ws) )
     gtk_widget_set_name(priv->button, "pager_focused");
-  else if (priv->ws->visible)
+  else if (priv->ws->state & WORKSPACE_VISIBLE)
     gtk_widget_set_name(priv->button, "pager_visible");
   else
     gtk_widget_set_name(priv->button, "pager_normal");

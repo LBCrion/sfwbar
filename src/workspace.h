@@ -3,12 +3,21 @@
 
 #include <gtk/gtk.h>
 
+enum {
+  WORKSPACE_FOCUSED = 0x0001,
+  WORKSPACE_VISIBLE = 0x0002,
+  WORKSPACE_URGENT =  0x0004,
+
+  WORKSPACE_CAN_ACTIVATE = 0x0100,
+};
+
+#define WORKSPACE_STATE 0x00FF
+#define WORKSPACE_CAPS 0xFF00
+
 typedef struct workspace_s {
   gpointer id;
   gchar *name;
-  gboolean visible;
-  gboolean urgent;
-  gboolean focused;
+  guint32 state;
   gpointer custom_data;
   gint refcount;
 } workspace_t;
