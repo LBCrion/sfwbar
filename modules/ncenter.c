@@ -451,6 +451,7 @@ static void dn_bus_acquired_cb (GDBusConnection *con, const gchar *name,
   node = g_dbus_node_info_new_for_xml(dn_iface_xml, NULL);
   g_dbus_connection_register_object (con, dn_path, node->interfaces[0],
       &dn_iface_vtable, NULL, NULL, NULL);
+  g_dbus_node_info_unref(node);
 }
 
 static void dn_name_acquired_cb (GDBusConnection *con, const gchar *name,
