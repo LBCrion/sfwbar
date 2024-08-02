@@ -9,31 +9,20 @@
 #define COSMIC_WORKSPACE_VERSION 1
 
 static struct zcosmic_workspace_manager_v1 *workspace_manager;
-static struct wl_list cosmic_workspaces;
 static GList *workspace_groups, *workspaces_to_focus;
-
-struct cosmic_workspace {
-  char *name;
-  guint32 state;
-  struct zcosmic_workspace_handle_v1 *wl_ws;
-  workspace_t *ws;
-  struct wl_list link;
-};
 
 /* API */
 static void api_set_workspace(workspace_t *ws)
 {
-  struct cosmic_workspace *cw = ws->custom_data;
-
   if(!workspace_manager)
     return;
 
-  if(!cw)
+  if(!ws->id || ws->id == PAGER_PIN_ID)
   {
     if(!ws->name)
-      g_warning("Workspace is orphaned");
+      g_warning("Workspace: cosmic: unnamed pin datected");
     else if(!workspace_groups)
-      g_warning("Workspace creation is not supported by compositor");
+      g_warning("Workspace: cosmic: create is not supported by compositor");
     else
     {
       workspaces_to_focus = g_list_prepend(workspaces_to_focus,
@@ -43,14 +32,14 @@ static void api_set_workspace(workspace_t *ws)
       zcosmic_workspace_manager_v1_commit(workspace_manager);
     }
   }
-  else if(cw->state & WORKSPACE_CAN_ACTIVATE)
+  else if(ws->state & WS_CAP_ACTIVATE)
   {
-    g_debug("Activating workspace %s", cw->name);
-    zcosmic_workspace_handle_v1_activate(cw->wl_ws);
+    g_debug("Workspace: cosmic: activating workspace %s", ws->name);
+    zcosmic_workspace_handle_v1_activate(ws->id);
     zcosmic_workspace_manager_v1_commit(workspace_manager);
   }
   else
-    g_warning("Workspace activation not supported by compositor");
+    g_warning("Workspace: cosmic: activation not supported by compositor");
 }
 
 static gboolean cosmic_workspace_get_can_create ( void )
@@ -68,10 +57,18 @@ static struct workspace_api api_impl = {
 static void workspace_handle_name(void *data,
     struct zcosmic_workspace_handle_v1 *workspace, const char *name)
 {
-  struct cosmic_workspace *cw = data;
+  workspace_t *ws = data;
+  GList *item;
 
-  g_free(cw->name);
-  cw->name = g_strdup(name);
+  workspace_set_name(ws, name);
+
+  if( !(item=g_list_find_custom(workspaces_to_focus, name,
+          (GCompareFunc)g_strcmp0)) )
+    return;
+
+  g_free(item->data);
+  workspaces_to_focus = g_list_remove(workspaces_to_focus, item);
+  workspace_activate(ws);
 }
 
 static void workspace_handle_coordinates(void *data,
@@ -83,67 +80,55 @@ static void workspace_handle_coordinates(void *data,
 static void workspace_handle_state(void *data,
     struct zcosmic_workspace_handle_v1 *workspace, struct wl_array *state)
 {
-  struct cosmic_workspace *cw = data;
-  uint32_t *entry;
-
-  cw->state &= (~WORKSPACE_STATE | WORKSPACE_VISIBLE);
+  uint32_t *entry, wsstate = WS_STATE_VISIBLE;
 
   wl_array_for_each(entry, state)
   {
     switch (*entry)
     {
       case ZCOSMIC_WORKSPACE_HANDLE_V1_STATE_ACTIVE:
-        cw->state |= WORKSPACE_FOCUSED;
+        wsstate |= WS_STATE_FOCUSED;
         break;
       case ZCOSMIC_WORKSPACE_HANDLE_V1_STATE_URGENT:
-        cw->state |= WORKSPACE_URGENT;
+        wsstate |= WS_STATE_URGENT;
         break;
       case ZCOSMIC_WORKSPACE_HANDLE_V1_STATE_HIDDEN:
-        cw->state &= ~WORKSPACE_VISIBLE;
+        wsstate &= ~WS_STATE_VISIBLE;
         break;
       default:
-        g_info("Unsupported cosmic-workspace state: %u", *entry);
+        g_info("Workspace: Unsupported cosmic-workspace state: %u", *entry);
     }
   }
-
-  g_debug("Workspace %s is now focused: %s (%s)", cw->name,
-      cw->state & WORKSPACE_FOCUSED ? "yes" : "no",
-      cw->state & WORKSPACE_VISIBLE ? "visible" : "hidden");
+  workspace_set_state(data, wsstate);
 }
 
 static void workspace_handle_capabilities(void *data,
     struct zcosmic_workspace_handle_v1 *workspace,
     struct wl_array *capabilities)
 {
-  struct cosmic_workspace *ws = data;
-  uint32_t *entry;
-
-  ws->state &= ~WORKSPACE_CAPS;
+  uint32_t *entry, wscaps = 0;
 
   wl_array_for_each(entry, capabilities)
   {
     if(*entry ==
         ZCOSMIC_WORKSPACE_HANDLE_V1_ZCOSMIC_WORKSPACE_CAPABILITIES_V1_ACTIVATE)
-      ws->state |= WORKSPACE_CAN_ACTIVATE;
+      wscaps |= WS_CAP_ACTIVATE;
   }
+  workspace_set_caps(data, wscaps);
 }
 
 static void workspace_handle_remove(void *data,
 		struct zcosmic_workspace_handle_v1 *workspace)
 {
-  struct cosmic_workspace *cw = data;
+  workspace_t *ws = data;
 
   zcosmic_workspace_handle_v1_destroy(workspace);
 
-  if(cw->ws)
-  {
-    g_debug("Workspace %s destroyed", cw->name);
-    cw->ws->custom_data = NULL;
-    workspace_unref(cw->ws->id);
-  }
-  wl_list_remove(&cw->link);
-  g_free(cw->name);
-  g_free(cw);
+  if(!ws)
+    return;
+
+  g_debug("Workspace: cosmic: workspace '%s' destroyed", ws->name);
+  workspace_unref(ws->id);
 }
 
 static const struct zcosmic_workspace_handle_v1_listener
@@ -189,15 +174,12 @@ static void workspace_group_handle_workspace(void *data,
     struct zcosmic_workspace_group_handle_v1 *workspace_group,
     struct zcosmic_workspace_handle_v1 *workspace)
 {
-  struct cosmic_workspace *cw = g_malloc0(sizeof(*cw));
+  workspace_t *ws;
 
-  cw->name = NULL;
-  cw->state = WORKSPACE_VISIBLE;
-  cw->ws = NULL;
-  cw->wl_ws = workspace;
-  wl_list_insert(cosmic_workspaces.prev, &cw->link);
+  ws = workspace_new(workspace);
+  workspace_set_state(ws, WS_STATE_VISIBLE);
 
-  zcosmic_workspace_handle_v1_add_listener(workspace, &workspace_impl, cw);
+  zcosmic_workspace_handle_v1_add_listener(workspace, &workspace_impl, ws);
 }
 
 static void workspace_group_handle_remove(void *data,
@@ -217,21 +199,6 @@ static const struct zcosmic_workspace_group_handle_v1_listener
   .remove = workspace_group_handle_remove,
 };
 
-/* Helpers */
-static workspace_t *create_sfwbar_ws(struct cosmic_workspace *workspace)
-{
-  uint32_t obj_id = wl_proxy_get_id((struct wl_proxy *)workspace->wl_ws);
-  workspace_t ws;
-
-  ws.id = GINT_TO_POINTER(obj_id);
-  ws.custom_data = workspace;
-  ws.name = workspace->name;
-  ws.state = workspace->state;
-
-  workspace_new(&ws);
-  return workspace_from_id(ws.id);
-}
-
 /* Manager */
 static void workspace_manager_handle_workspace_group(void *data,
     struct zcosmic_workspace_manager_v1 *workspace_manager,
@@ -244,34 +211,7 @@ static void workspace_manager_handle_workspace_group(void *data,
 static void workspace_manager_handle_done(void *data,
     struct zcosmic_workspace_manager_v1 *workspace_manager)
 {
-  struct cosmic_workspace *cw;
-  GList *item;
-
-  wl_list_for_each(cw, &cosmic_workspaces, link)
-  {
-    if(!cw->ws)
-    {
-      cw->ws = create_sfwbar_ws(cw);
-      g_debug("Workspace created: %s", cw->name);
-    }
-    if(cw->state & WORKSPACE_FOCUSED)
-      workspace_set_focus(cw->ws->id);
-    if ((cw->ws->state & WORKSPACE_STATE) != (cw->state & WORKSPACE_STATE))
-      g_info("Should notify about visibility change for %s, now %s",
-          cw->name, cw->state & WORKSPACE_VISIBLE ? "visible" : "hidden");
-    if (g_strcmp0(cw->ws->name, cw->name))
-    {
-      g_debug("Workspace name change to %s", cw->name);
-      workspace_set_name(cw->ws, cw->name);
-    }
-    if( (item=g_list_find_custom(workspaces_to_focus, cw->name,
-            (GCompareFunc)g_strcmp0)) )
-    {
-      g_free(item->data);
-      workspaces_to_focus = g_list_remove(workspaces_to_focus, item->data);
-      workspace_activate(cw->ws);
-    }
-  }
+  g_list_foreach(workspace_get_list(), (GFunc)workspace_commit, NULL);
 }
 
 static void workspace_manager_handle_finished(void *data,
@@ -295,11 +235,10 @@ void cosmic_workspaces_register(struct wl_registry *registry,
 {
   if (workspaces_supported())
   {
-    g_info("Not using cosmic-workspaces: custom IPC priority");
+    g_info("Workspace: Not using cosmic-workspaces: custom IPC priority");
     return;
   }
 
-  wl_list_init(&cosmic_workspaces);
   workspace_api_register(&api_impl);
 
   workspace_manager = wl_registry_bind(registry, global,

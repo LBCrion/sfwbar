@@ -4,37 +4,38 @@
 #include <gtk/gtk.h>
 
 enum {
-  WORKSPACE_FOCUSED = 0x0001,
-  WORKSPACE_VISIBLE = 0x0002,
-  WORKSPACE_URGENT =  0x0004,
+  WS_STATE_FOCUSED = 0x0001,
+  WS_STATE_VISIBLE = 0x0002,
+  WS_STATE_URGENT =  0x0004,
+  WS_STATE_ALL = 0x00ff,
 
-  WORKSPACE_CAN_ACTIVATE = 0x0100,
+  WS_CAP_ACTIVATE = 0x0100,
+  WS_CAP_ALL = 0xff00,
 };
-
-#define WORKSPACE_STATE 0x00FF
-#define WORKSPACE_CAPS 0xFF00
 
 typedef struct workspace_s {
   gpointer id;
   gchar *name;
   guint32 state;
-  gpointer custom_data;
   gint refcount;
 } workspace_t;
 
 struct workspace_api {
   void (*set_workspace) ( workspace_t *);
   guint (*get_geom) ( workspace_t *, GdkRectangle **, GdkRectangle *, gint *);
-  void (*free_data) ( void *);
   gboolean (*get_can_create) (void);
 };
 
 #define PAGER_PIN_ID (GINT_TO_POINTER(-1))
+#define WORKSPACE(x) ((workspace_t *)(x))
 
 gboolean workspaces_supported( void );
 
-void workspace_new ( workspace_t *new );
+workspace_t *workspace_new ( gpointer id );
+void workspace_commit ( workspace_t *ws );
 void workspace_set_focus ( gpointer id );
+void workspace_set_state ( workspace_t *ws, guint32 state );
+void workspace_set_caps ( workspace_t *ws, guint32 caps );
 void workspace_set_name ( workspace_t *ws, const gchar *name );
 void workspace_set_active ( workspace_t *ws, const gchar *output );
 gpointer workspace_get_active ( GtkWidget *widget );

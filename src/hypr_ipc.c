@@ -315,12 +315,8 @@ static void hypr_ipc_pager_populate( void )
       wid = json_int_by_name(ptr,"id",-1);
       if(wid!=-99 && !workspace_from_id(GINT_TO_POINTER(wid)))
       {
-        ws = g_malloc0(sizeof(workspace_t));
-        ws->id = GINT_TO_POINTER(wid);
-        ws->name = g_strdup(json_string_by_name(ptr,"name"));
-        workspace_new(ws);
-        g_free(ws->name);
-        g_free(ws);
+        ws = workspace_new(GINT_TO_POINTER(wid));
+        workspace_set_name(ws, json_string_by_name(ptr, "name"));
       }
     }
   json_object_put(json);
@@ -337,11 +333,10 @@ static void hypr_ipc_pager_populate( void )
         {
           if(json_bool_by_name(iter,"focused",FALSE))
             workspace_set_focus(GINT_TO_POINTER(wid));
-          ws = workspace_from_id(GINT_TO_POINTER(wid));
-          if(ws)
+          if( (ws = workspace_from_id(GINT_TO_POINTER(wid))) )
           {
-            ws->state |= WORKSPACE_VISIBLE;
-            workspace_set_active(ws,json_string_by_name(iter,"name"));
+            ws->state |= WS_STATE_VISIBLE;
+            workspace_set_active(ws, json_string_by_name(iter, "name"));
           }
         }
       }

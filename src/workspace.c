@@ -45,11 +45,11 @@ void workspace_unref ( gpointer id )
   if(ws->refcount)
     return;
 
-  if(ws->custom_data && api.free_data)
-    api.free_data(ws->custom_data);
+  g_debug("Workspace: destroying workspace: '%s'", ws->name);
 
   if(g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0))
   {
+    g_debug("Workspace: workspace returned to a pin: '%s'", ws->name);
     ws->id = PAGER_PIN_ID;
     ws->state = 0;
     pager_item_delete(ws);
@@ -68,7 +68,7 @@ workspace_t *workspace_from_id ( gpointer id )
   GList *iter;
 
   for(iter=workspaces; iter; iter=g_list_next(iter))
-    if(((workspace_t *)iter->data)->id == id)
+    if(WORKSPACE(iter->data)->id == id)
       return iter->data;
 
   return NULL;
@@ -79,7 +79,7 @@ workspace_t *workspace_from_name ( const gchar *name )
   GList *iter;
 
   for(iter=workspaces; iter; iter=g_list_next(iter))
-    if(!g_strcmp0(((workspace_t *)iter->data)->name, name))
+    if(!g_strcmp0(WORKSPACE(iter->data)->name, name))
       return iter->data;
   return NULL;
 }
@@ -113,22 +113,44 @@ gboolean workspace_get_can_create ( void )
   return TRUE;
 }
 
-void workspace_pin_add ( gchar *pin )
+static void workspace_pin_remove ( const gchar *pin )
 {
   workspace_t *ws;
 
+  if( !(ws=workspace_from_name(pin)) || ws->id != PAGER_PIN_ID)
+    return;
+
+  g_free(ws->name);
+  ws->name = "";
+  pager_item_delete(ws);
+  workspaces = g_list_remove(workspaces, ws);
+  g_free(ws);
+}
+
+static void workspace_pin_restore ( const gchar *pin )
+{
+  workspace_t *ws;
+
+  if(!g_list_find_custom(global_pins, pin, (GCompareFunc)g_strcmp0))
+    return;
+
+  if(workspace_from_name(pin))
+    return;
+
+  ws = g_malloc0(sizeof(workspace_t));
+  ws->id = PAGER_PIN_ID;
+  ws->name = g_strdup(pin);
+  workspaces = g_list_prepend(workspaces, ws);
+  pager_item_add(ws);
+}
+
+void workspace_pin_add ( gchar *pin )
+{
   if(g_list_find_custom(global_pins, pin, (GCompareFunc)g_strcmp0))
     return;
 
   global_pins = g_list_prepend(global_pins, g_strdup(pin));
-  if(!workspace_from_name(pin))
-  {
-    ws = g_malloc0(sizeof(workspace_t));
-    ws->id = PAGER_PIN_ID;
-    ws->name = g_strdup(pin);
-    workspaces = g_list_prepend(workspaces, ws);
-    pager_item_add(ws);
-  }
+  workspace_pin_restore(pin);
 }
 
 GList *workspace_get_list ( void )
@@ -187,96 +209,96 @@ gpointer workspace_get_focused ( void )
     return focus->id;
 }
 
+void workspace_commit ( workspace_t *ws )
+{
+  if(!ws)
+    return;
+
+  if(ws->state & WS_STATE_FOCUSED && ws != focus)
+  {
+    pager_invalidate_all(focus);
+    focus = ws;
+    pager_invalidate_all(focus);
+    taskbar_shell_invalidate_all();
+  }
+  else
+    pager_invalidate_all(ws);
+}
+
 void workspace_set_focus ( gpointer id )
 {
   workspace_t *ws;
 
-  ws = workspace_from_id(id);
-  if(!ws || ws==focus)
+  if( !(ws = workspace_from_id(id)) )
     return;
 
-  pager_invalidate_all(focus);
-  focus = ws;
-  pager_invalidate_all(focus);
-  taskbar_shell_invalidate_all();
+  ws->state |= WS_STATE_FOCUSED;
+  workspace_commit(ws);
 }
 
 void workspace_set_name ( workspace_t *ws, const gchar *name )
 {
   workspace_t *pin;
-  gchar *old;
+  GList *oldp;
 
   if(!g_strcmp0(ws->name, name))
     return;
 
   if( (pin = workspace_from_name(name)) && pin->id != PAGER_PIN_ID)
   {
-    g_message("duplicate workspace names with differing ids ('%s'/%p/%p)",
+    g_message("Workspace: duplicate names with differing ids ('%s'/%p/%p)",
         name, pin->id, ws->id);
     return;
   }
 
-  if(g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0))
-  {
-    old = ws->name;
-    ws->name = (gchar *)name;
-    workspace_new(ws);
-    ws->name = old;
-    workspace_unref(ws);
-    return;
-  }
+  if(pin)
+    workspace_pin_remove(name);
 
-  if(!pin)
-  {
-    g_free(ws->name);
-    ws->name = g_strdup(name);
-    pager_invalidate_all(ws);
-    return;
-  }
+  oldp = g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0);
 
-  pager_item_delete(ws);
-  ws->name = (gchar *)name;
-  workspace_new(ws);
-  g_free(ws);
+  g_debug("Workspace: '%s' (pin: %s)  name change to: '%s' (pin: %s)",
+      ws->name, oldp?"yes":"no", name, pin?"yes":"no");
+  g_free(ws->name);
+  ws->name = g_strdup(name);
+
+  if(oldp && !workspace_from_name(oldp->data))
+    workspace_pin_restore(oldp->data);
 }
 
-void workspace_new ( workspace_t *new )
+void workspace_set_state ( workspace_t *ws, guint32 state )
+{
+  if(!ws)
+    return;
+
+  ws->state = (ws->state & WS_CAP_ALL) | state;
+
+  g_debug("Workspace: '%s' state change: focused: %s, visible: %s, urgent: %s",
+      ws->name, ws->state & WS_STATE_FOCUSED ? "yes" : "no",
+      ws->state & WS_STATE_VISIBLE ? "yes" : "no",
+      ws->state & WS_STATE_URGENT ? "yes" : "no");
+}
+
+void workspace_set_caps ( workspace_t *ws, guint32 caps )
+{
+  if(!ws)
+    return;
+
+  ws->state = (ws->state & WS_STATE_ALL) | caps;
+}
+
+workspace_t *workspace_new ( gpointer id )
 {
   workspace_t *ws;
 
-  ws = workspace_from_id(new->id);
-  if(!ws)
-  {
-    ws = workspace_from_name(new->name);
-    if(ws && ws->id != PAGER_PIN_ID)
-      g_message("duplicate workspace names with differing ids ('%s'/%p/%p)",
-          new->name, ws->id, new->id);
-  }
-  if(!ws)
+  if( !(ws = workspace_from_id(id)) )
   {
     ws = g_malloc0(sizeof(workspace_t));
+    ws->id = id;
     ws->refcount = 0;
     workspaces = g_list_prepend(workspaces, ws);
+    workspace_ref(id);
+    pager_item_add(ws);
   }
 
-  if(g_strcmp0(ws->name, new->name))
-  {
-    g_free(ws->name);
-    ws->name = g_strdup(new->name);
-    pager_invalidate_all(ws);
-  }
-  if(ws->id != new->id || ws->state != new->state)
-  {
-    ws->id = new->id;
-    ws->state = new->state;
-    pager_invalidate_all(ws);
-  }
-  if(ws->custom_data && api.free_data)
-    api.free_data(ws->custom_data);
-  ws->custom_data = new->custom_data;
-
-  workspace_ref(ws->id);
-  pager_item_add(ws);
-  if(new->state & WORKSPACE_FOCUSED)
-    workspace_set_focus(ws->id);
+  return ws;
 }
