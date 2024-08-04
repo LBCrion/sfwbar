@@ -712,7 +712,8 @@ static void bz_name_disappeared_cb (GDBusConnection *con, const gchar *name,
 {
   while(adapters)
     bz_adapter_free(adapters->data);
-  g_hash_table_remove_all(devices);
+  if(devices)
+    g_hash_table_remove_all(devices);
   g_dbus_connection_signal_unsubscribe(bz_con, sub_add);
   g_dbus_connection_signal_unsubscribe(bz_con, sub_del);
   g_dbus_connection_signal_unsubscribe(bz_con, sub_chg);
