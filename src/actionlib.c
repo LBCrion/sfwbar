@@ -96,7 +96,8 @@ static ModuleActionHandlerV1 menu_handler = {
 static void swaycmd_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
-  sway_ipc_command("%s",cmd);
+  if(ipc_get()==IPC_SWAY)
+    sway_ipc_command("%s",cmd);
 }
 
 static ModuleActionHandlerV1 swaycmd_handler = {
@@ -107,7 +108,7 @@ static ModuleActionHandlerV1 swaycmd_handler = {
 static void swaywincmd_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
-  if(win)
+  if(win && ipc_get()==IPC_SWAY)
     sway_ipc_command("[con_id=%ld] %s",GPOINTER_TO_INT(win->uid), cmd);
 }
 
