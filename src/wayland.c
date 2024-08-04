@@ -11,7 +11,7 @@
 #include <gdk/gdkwayland.h>
 
 void foreign_toplevel_register (struct wl_registry *registry, uint32_t name);
-void xdg_output_register (struct wl_registry *registry, uint32_t name);
+void xdg_output_register (struct wl_registry *, uint32_t , uint32_t );
 void layer_shell_register (struct wl_registry *, uint32_t , uint32_t );
 void shm_register (struct wl_registry *registry, uint32_t name );
 void wayland_monitor_probe ( void );
@@ -20,7 +20,7 @@ static void handle_global(void *data, struct wl_registry *registry,
                 uint32_t name, const gchar *interface, uint32_t version)
 {
   if (!g_strcmp0(interface,zxdg_output_manager_v1_interface.name))
-    xdg_output_register(registry,name);
+    xdg_output_register(registry, name, version);
   else if (!g_strcmp0(interface, wl_shm_interface.name))
     shm_register(registry, name);
   else if (!g_strcmp0(interface, zwlr_layer_shell_v1_interface.name))

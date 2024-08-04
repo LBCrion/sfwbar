@@ -15,7 +15,13 @@ static GHashTable *actives;
 
 void workspace_api_register ( struct workspace_api *new )
 {
-  api = *new;
+  if (!api.set_workspace)
+    api = *new;
+}
+
+gboolean workspaces_supported ( void )
+{
+  return api.set_workspace != NULL;
 }
 
 void workspace_ref ( gpointer id )
@@ -186,6 +192,13 @@ void workspace_set_focus ( gpointer id )
   focus = ws;
   pager_invalidate_all(focus);
   taskbar_shell_invalidate_all();
+}
+
+void workspace_set_name ( workspace_t *ws, const gchar *name )
+{
+  g_free(ws->name);
+  ws->name = g_strdup(name);
+  pager_invalidate_all(ws);
 }
 
 void workspace_new ( workspace_t *new )

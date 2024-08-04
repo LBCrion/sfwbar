@@ -18,8 +18,11 @@ struct workspace_api {
 
 #define PAGER_PIN_ID (GINT_TO_POINTER(-1))
 
+gboolean workspaces_supported( void );
+
 void workspace_new ( workspace_t *new );
 void workspace_set_focus ( gpointer id );
+void workspace_set_name ( workspace_t *ws, const gchar *name );
 void workspace_set_active ( workspace_t *ws, const gchar *output );
 gpointer workspace_get_active ( GtkWidget *widget );
 gboolean workspace_is_focused ( workspace_t *ws );
