@@ -185,7 +185,7 @@ void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,
 void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
     SniWatcher *watcher)
 {
-  GList *iter;
+ // GList *iter;
 
   if(watcher->regid)
     g_dbus_connection_unregister_object(con, watcher->regid);
