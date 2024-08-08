@@ -198,8 +198,8 @@ void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
       G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL,
       (GBusNameLostCallback)sni_watcher_unregister_cb, watcher, NULL);
 
-  for(iter=watcher->host->items; iter; iter=g_list_next(iter))
-    sni_watcher_item_add(watcher, ((SniItem *)iter->data)->uid);
+//  for(iter=watcher->host->items; iter; iter=g_list_next(iter))
+//    sni_watcher_item_add(watcher, ((SniItem *)iter->data)->uid);
 
   g_debug("sni watcher %s registered",watcher->iface);
 }
