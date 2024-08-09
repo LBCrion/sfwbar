@@ -55,7 +55,7 @@ void pager_item_update ( GtkWidget *self )
       GPOINTER_TO_INT(g_object_get_data(G_OBJECT(priv->pager),"preview")));
   if ( workspace_is_focused(priv->ws) )
     gtk_widget_set_name(priv->button, "pager_focused");
-  else if (priv->ws->visible)
+  else if (priv->ws->state & WS_STATE_VISIBLE)
     gtk_widget_set_name(priv->button, "pager_visible");
   else
     gtk_widget_set_name(priv->button, "pager_normal");
@@ -64,7 +64,8 @@ void pager_item_update ( GtkWidget *self )
       GTK_STATE_FLAG_PRELIGHT);
 
   flow_item_set_active(self, priv->ws->id != PAGER_PIN_ID ||
-      pager_check_pins(priv->pager, priv->ws->name));
+      (pager_check_pins(priv->pager, priv->ws->name) &&
+       workspace_get_can_create()));
 
   priv->invalid = FALSE;
 }
@@ -96,7 +97,7 @@ static void pager_item_invalidate ( GtkWidget *self )
 static gint pager_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent)
 {
   PagerItemPrivate *p1,*p2;
-  gchar *e1, *e2;
+  gchar *e1 = 0, *e2 = 0;
   gint n1, n2;
 
   g_return_val_if_fail(IS_PAGER_ITEM(a),0);
@@ -105,8 +106,8 @@ static gint pager_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent)
   p1 = pager_item_get_instance_private(PAGER_ITEM(a));
   p2 = pager_item_get_instance_private(PAGER_ITEM(b));
 
-  n1 = g_ascii_strtoll(p1->ws->name, &e1, 10);
-  n2 = g_ascii_strtoll(p2->ws->name, &e2, 10);
+  n1 = p1->ws->name?g_ascii_strtoll(p1->ws->name, &e1, 10):0;
+  n2 = p2->ws->name?g_ascii_strtoll(p2->ws->name, &e2, 10):0;
   if((e1 && *e1) || (e2 && *e2))
     return g_strcmp0(p1->ws->name, p2->ws->name);
   else
