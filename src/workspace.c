@@ -211,11 +211,15 @@ gpointer workspace_get_focused ( void )
 
 void workspace_commit ( workspace_t *ws )
 {
-  if(!ws)
+  if(!ws || !(ws->state & WS_STATE_INVALID))
     return;
+
+  ws->state &= ~WS_STATE_INVALID;
 
   if(ws->state & WS_STATE_FOCUSED && ws != focus)
   {
+    if(focus)
+      focus->state &= ~WS_STATE_FOCUSED;
     pager_invalidate_all(focus);
     focus = ws;
     pager_invalidate_all(focus);
@@ -232,7 +236,7 @@ void workspace_set_focus ( gpointer id )
   if( !(ws = workspace_from_id(id)) )
     return;
 
-  ws->state |= WS_STATE_FOCUSED;
+  ws->state |= WS_STATE_FOCUSED | WS_STATE_INVALID;
   workspace_commit(ws);
 }
 
@@ -260,6 +264,7 @@ void workspace_set_name ( workspace_t *ws, const gchar *name )
       ws->name, oldp?"yes":"no", name, pin?"yes":"no");
   g_free(ws->name);
   ws->name = g_strdup(name);
+  ws->state |= WS_STATE_INVALID;
 
   if(oldp && !workspace_from_name(oldp->data))
     workspace_pin_restore(oldp->data);
@@ -270,7 +275,7 @@ void workspace_set_state ( workspace_t *ws, guint32 state )
   if(!ws)
     return;
 
-  ws->state = (ws->state & WS_CAP_ALL) | state;
+  ws->state = (ws->state & WS_CAP_ALL) | state | WS_STATE_INVALID;
 
   g_debug("Workspace: '%s' state change: focused: %s, visible: %s, urgent: %s",
       ws->name, ws->state & WS_STATE_FOCUSED ? "yes" : "no",
@@ -283,7 +288,7 @@ void workspace_set_caps ( workspace_t *ws, guint32 caps )
   if(!ws)
     return;
 
-  ws->state = (ws->state & WS_STATE_ALL) | caps;
+  ws->state = (ws->state & WS_STATE_ALL) | caps | WS_STATE_INVALID;
 }
 
 workspace_t *workspace_new ( gpointer id )
