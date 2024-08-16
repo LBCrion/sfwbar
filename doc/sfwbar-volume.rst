@@ -121,21 +121,21 @@ Manipulate the state of the volume control. if the address isn't specified,
 the command will be applied to the default device for the interface.
 
 "sink-volume +/-X"
-  Adjust the volume of a sink by X%. If the value is prefixed by netiher
+  Adjust the volume of a sink by X%. If the value is prefixed by neither
   a '+' or a '-', the volume will be set to value X.
 "sink-mute State"
   Change the state of a sink, State can be On, Off or Toggle.
 "sink-set-default"
   Set a sink as a default sink.
 "source-volume +/-X"
-  Adjust the volume of a source by X%. If the value is prefixed by netiher
+  Adjust the volume of a source by X%. If the value is prefixed by neither
   a '+' or a '-', the volume will be set to value X.
 "source-mute State"
   Change the state of a source, State can be On, Off or Toggle.
 "source-set-default"
   Set a source as a default source.
 "client-volume +/-X"
-  Adjust the volume of a client by X%. If the value is prefixed by netiher
+  Adjust the volume of a client by X%. If the value is prefixed by neither
   a '+' or a '-', the volume will be set to value X.
 "client-mute State"
   Change the state of a client, State can be On, Off or Toggle.
