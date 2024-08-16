@@ -115,7 +115,7 @@ The module defines the following triggers:
 "wifi_removed"
   this trigger is emitted when a network is no longer available and should be
   removed from the layout. The path of the removed network is available via
-  `WifiGet("RemovedPath")`. Once the config finished removing the netowrk, it
+  `WifiGet("RemovedPath")`. Once the config finished removing the network, it
   should call action `WifiAckRemoved`. Upon receipt of this action, the module
   may emit another `wifi_removed` trigger if further networks have been
   removed.
