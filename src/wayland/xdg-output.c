@@ -6,6 +6,7 @@
 #include <glib.h>
 #include <gdk/gdkwayland.h>
 #include "xdg-output-unstable-v1.h"
+#include "../wayland.h"
 
 static struct zxdg_output_manager_v1 *xdg_output_manager;
 
@@ -86,22 +87,28 @@ gboolean xdg_output_check ( void )
   return TRUE;
 }
 
-void xdg_output_register (struct wl_registry *registry,
-    uint32_t global, uint32_t version)
+void xdg_output_init ( void )
 {
+  wayland_iface_t *iface;
   GdkDisplay *display;
   gint i,n;
 
-  if (version < ZXDG_OUTPUT_V1_NAME_SINCE_VERSION) {
+  if( !(iface = wayland_iface_lookup(zxdg_output_manager_v1_interface.name,
+    ZXDG_OUTPUT_V1_NAME_SINCE_VERSION)) )
+  {
     g_warning("Compositor does not support xdg-output protocol version %u",
       ZXDG_OUTPUT_V1_NAME_SINCE_VERSION);
     return;
   }
 
-  xdg_output_manager = wl_registry_bind(registry, global,
+  xdg_output_manager = wl_registry_bind(wayland_registry_get(), iface->global,
       &zxdg_output_manager_v1_interface, ZXDG_OUTPUT_V1_NAME_SINCE_VERSION);
   if(!xdg_output_manager)
+  {
+    g_warning("Unable to registry xdg-output protocol version %u",
+      ZXDG_OUTPUT_V1_NAME_SINCE_VERSION);
     return;
+  }
 
   display = gdk_display_get_default();
   n = gdk_display_get_n_monitors(display);

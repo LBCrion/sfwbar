@@ -7,6 +7,7 @@
 #include <gdk/gdkwayland.h>
 #include <sys/mman.h>
 #include <fcntl.h>
+#include "../wayland.h"
 #include "wlr-layer-shell-unstable-v1.h"
 
 static GdkMonitor *default_monitor;
@@ -21,9 +22,10 @@ void shm_register (struct wl_registry *registry, uint32_t name )
 void layer_shell_register (struct wl_registry *registry, uint32_t name,
     uint32_t version)
 {
-  if(version >= 3)
-    layer_shell = wl_registry_bind(registry, name,
-        &zwlr_layer_shell_v1_interface, MIN(version, zwlr_layer_shell_v1_interface.version));
+}
+
+void wayland_probe_register ( void )
+{
 }
 
 GdkMonitor *wayland_monitor_get_default ( void )
@@ -85,10 +87,21 @@ void wayland_monitor_probe ( void )
   struct wl_surface *surface;
   struct wl_buffer *buffer;
   struct wl_shm_pool *pool;
+  wayland_iface_t *iface;
   void *shm_data = NULL;
   gchar *name;
   gint fd;
   gint retries = 100, size = 4;
+
+  if( !(iface = wayland_iface_lookup(wl_shm_interface.name, 1)) )
+    return;
+  shm = wl_registry_bind(wayland_registry_get(), iface->global,
+      &wl_shm_interface, 1);
+
+  if( !(iface = wayland_iface_lookup(zwlr_layer_shell_v1_interface.name, 3)) )
+    return;
+  layer_shell = wl_registry_bind(wayland_registry_get(), iface->global,
+        &zwlr_layer_shell_v1_interface, 3);
 
   display = gdk_wayland_display_get_wl_display(gdk_display_get_default());
   compositor = gdk_wayland_display_get_wl_compositor(gdk_display_get_default());

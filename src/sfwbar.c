@@ -131,7 +131,8 @@ static void activate (GtkApplication* app, gpointer data )
   wayland_init();
   sway_ipc_init();
   hypr_ipc_init();
-  wayland_ipc_init();
+  foreign_toplevel_init();
+  cw_init();
   app_info_init();
 
   if( monitor && !g_ascii_strcasecmp(monitor,"list") )

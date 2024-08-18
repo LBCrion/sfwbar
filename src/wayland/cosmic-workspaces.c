@@ -4,6 +4,7 @@
  */
 
 #include "../workspace.h"
+#include "../wayland.h"
 #include "cosmic-workspace-unstable-v1.h"
 
 #define COSMIC_WORKSPACE_VERSION 1
@@ -12,7 +13,7 @@ static struct zcosmic_workspace_manager_v1 *workspace_manager;
 static GList *workspace_groups, *workspaces_to_focus;
 
 /* API */
-static void api_set_workspace(workspace_t *ws)
+static void cw_set_workspace(workspace_t *ws)
 {
   if(!workspace_manager)
     return;
@@ -42,19 +43,19 @@ static void api_set_workspace(workspace_t *ws)
     g_warning("Workspace: cosmic: activation not supported by compositor");
 }
 
-static gboolean cosmic_workspace_get_can_create ( void )
+static gboolean cw_get_can_create ( void )
 {
   return !!workspace_groups;
 }
 
-static struct workspace_api api_impl = {
-  .set_workspace = api_set_workspace,
+static struct workspace_api cw_api_impl = {
+  .set_workspace = cw_set_workspace,
   .get_geom = NULL,
-  .get_can_create = cosmic_workspace_get_can_create,
+  .get_can_create = cw_get_can_create,
 };
 
 /* Workspace */
-static void workspace_handle_name(void *data,
+static void cw_workspace_handle_name(void *data,
     struct zcosmic_workspace_handle_v1 *workspace, const char *name)
 {
   workspace_t *ws = data;
@@ -71,13 +72,13 @@ static void workspace_handle_name(void *data,
   workspace_activate(ws);
 }
 
-static void workspace_handle_coordinates(void *data,
+static void cw_workspace_handle_coordinates(void *data,
     struct zcosmic_workspace_handle_v1 *workspace,
     struct wl_array *coordinates)
 {
 }
 
-static void workspace_handle_state(void *data,
+static void cw_workspace_handle_state(void *data,
     struct zcosmic_workspace_handle_v1 *workspace, struct wl_array *state)
 {
   uint32_t *entry, wsstate = WS_STATE_VISIBLE;
@@ -102,7 +103,7 @@ static void workspace_handle_state(void *data,
   workspace_set_state(data, wsstate);
 }
 
-static void workspace_handle_capabilities(void *data,
+static void cw_workspace_handle_capabilities(void *data,
     struct zcosmic_workspace_handle_v1 *workspace,
     struct wl_array *capabilities)
 {
@@ -117,7 +118,7 @@ static void workspace_handle_capabilities(void *data,
   workspace_set_caps(data, wscaps);
 }
 
-static void workspace_handle_remove(void *data,
+static void cw_workspace_handle_remove(void *data,
 		struct zcosmic_workspace_handle_v1 *workspace)
 {
   workspace_t *ws = data;
@@ -132,17 +133,17 @@ static void workspace_handle_remove(void *data,
 }
 
 static const struct zcosmic_workspace_handle_v1_listener
-    workspace_impl =
+    cw_workspace_impl =
 {
-  .name = workspace_handle_name,
-  .coordinates = workspace_handle_coordinates,
-  .state = workspace_handle_state,
-  .capabilities = workspace_handle_capabilities,
-  .remove = workspace_handle_remove,
+  .name = cw_workspace_handle_name,
+  .coordinates = cw_workspace_handle_coordinates,
+  .state = cw_workspace_handle_state,
+  .capabilities = cw_workspace_handle_capabilities,
+  .remove = cw_workspace_handle_remove,
 };
 
 /* Group */
-static void workspace_group_handle_capabilities(void *data,
+static void cw_workspace_group_handle_capabilities(void *data,
     struct zcosmic_workspace_group_handle_v1 *workspace_group,
     struct wl_array *capabilities)
 {
@@ -156,21 +157,21 @@ static void workspace_group_handle_capabilities(void *data,
   }
 }
 
-static void workspace_group_handle_output_enter(void *data,
+static void cw_workspace_group_handle_output_enter(void *data,
     struct zcosmic_workspace_group_handle_v1 *workspace_group,
     struct wl_output *output)
 {
   /* TODO: maybe implement */
 }
 
-static void workspace_group_handle_output_leave(void *data,
+static void cw_workspace_group_handle_output_leave(void *data,
     struct zcosmic_workspace_group_handle_v1 *workspace_group,
     struct wl_output *output)
 {
   /* TODO: maybe implement */
 }
 
-static void workspace_group_handle_workspace(void *data,
+static void cw_workspace_group_handle_workspace(void *data,
     struct zcosmic_workspace_group_handle_v1 *workspace_group,
     struct zcosmic_workspace_handle_v1 *workspace)
 {
@@ -179,10 +180,10 @@ static void workspace_group_handle_workspace(void *data,
   ws = workspace_new(workspace);
   workspace_set_state(ws, WS_STATE_VISIBLE);
 
-  zcosmic_workspace_handle_v1_add_listener(workspace, &workspace_impl, ws);
+  zcosmic_workspace_handle_v1_add_listener(workspace, &cw_workspace_impl, ws);
 }
 
-static void workspace_group_handle_remove(void *data,
+static void cw_workspace_group_handle_remove(void *data,
     struct zcosmic_workspace_group_handle_v1 *workspace_group)
 {
   workspace_groups = g_list_remove(workspace_groups, workspace_group);
@@ -190,31 +191,31 @@ static void workspace_group_handle_remove(void *data,
 }
 
 static const struct zcosmic_workspace_group_handle_v1_listener
-	workspace_group_impl =
+	cw_workspace_group_impl =
 {
-  .capabilities = workspace_group_handle_capabilities,
-  .output_enter = workspace_group_handle_output_enter,
-  .output_leave = workspace_group_handle_output_leave,
-  .workspace = workspace_group_handle_workspace,
-  .remove = workspace_group_handle_remove,
+  .capabilities = cw_workspace_group_handle_capabilities,
+  .output_enter = cw_workspace_group_handle_output_enter,
+  .output_leave = cw_workspace_group_handle_output_leave,
+  .workspace = cw_workspace_group_handle_workspace,
+  .remove = cw_workspace_group_handle_remove,
 };
 
 /* Manager */
-static void workspace_manager_handle_workspace_group(void *data,
+static void cw_workspace_manager_handle_workspace_group(void *data,
     struct zcosmic_workspace_manager_v1 *workspace_manager,
     struct zcosmic_workspace_group_handle_v1 *workspace_group)
 {
   zcosmic_workspace_group_handle_v1_add_listener(
-    workspace_group, &workspace_group_impl, NULL);
+    workspace_group, &cw_workspace_group_impl, NULL);
 }
 
-static void workspace_manager_handle_done(void *data,
+static void cw_workspace_manager_handle_done(void *data,
     struct zcosmic_workspace_manager_v1 *workspace_manager)
 {
   g_list_foreach(workspace_get_list(), (GFunc)workspace_commit, NULL);
 }
 
-static void workspace_manager_handle_finished(void *data,
+static void cw_workspace_manager_handle_finished(void *data,
     struct zcosmic_workspace_manager_v1 *manager)
 {
   zcosmic_workspace_manager_v1_destroy(manager);
@@ -224,26 +225,32 @@ static void workspace_manager_handle_finished(void *data,
 static const struct zcosmic_workspace_manager_v1_listener
   workspace_manager_impl =
 {
-  .workspace_group = workspace_manager_handle_workspace_group,
-  .done = workspace_manager_handle_done,
-  .finished = workspace_manager_handle_finished,
+  .workspace_group = cw_workspace_manager_handle_workspace_group,
+  .done = cw_workspace_manager_handle_done,
+  .finished = cw_workspace_manager_handle_finished,
 };
 
 /* Public API */
-void cosmic_workspaces_register(struct wl_registry *registry,
-    uint32_t global, uint32_t version)
+void cw_init( void )
 {
+  wayland_iface_t *iface;
+
   if (workspaces_supported())
   {
     g_info("Workspace: Not using cosmic-workspaces: custom IPC priority");
     return;
   }
 
-  workspace_api_register(&api_impl);
+  if( !(iface = wayland_iface_lookup(
+          zcosmic_workspace_manager_v1_interface.name,
+          COSMIC_WORKSPACE_VERSION)) )
+    return;
 
-  workspace_manager = wl_registry_bind(registry, global,
+  workspace_api_register(&cw_api_impl);
+
+  workspace_manager = wl_registry_bind(wayland_registry_get(), iface->global,
       &zcosmic_workspace_manager_v1_interface,
-      MIN(version, COSMIC_WORKSPACE_VERSION));
+      MIN(iface->version, COSMIC_WORKSPACE_VERSION));
 
   zcosmic_workspace_manager_v1_add_listener(workspace_manager,
       &workspace_manager_impl, NULL);
