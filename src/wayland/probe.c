@@ -14,20 +14,6 @@ static GdkMonitor *default_monitor;
 static struct wl_shm *shm;
 static struct zwlr_layer_shell_v1 *layer_shell;
 
-void shm_register (struct wl_registry *registry, uint32_t name )
-{
-  shm = wl_registry_bind(registry, name, &wl_shm_interface, 1);
-}
-
-void layer_shell_register (struct wl_registry *registry, uint32_t name,
-    uint32_t version)
-{
-}
-
-void wayland_probe_register ( void )
-{
-}
-
 GdkMonitor *wayland_monitor_get_default ( void )
 {
   GdkDisplay *gdisp = gdk_display_get_default();
@@ -53,9 +39,9 @@ static void surface_enter ( void *data,
   gint n,i;
 
   n = gdk_display_get_n_monitors(gdisp);
-  for(i=0;i<n;i++)
+  for(i=0; i<n; i++)
   {
-    gmon = gdk_display_get_monitor(gdisp,i);
+    gmon = gdk_display_get_monitor(gdisp, i);
     if(gdk_wayland_monitor_get_wl_output(gmon)==output)
       default_monitor = gmon;
   }
