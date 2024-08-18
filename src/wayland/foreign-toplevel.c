@@ -204,18 +204,14 @@ static struct wintree_api ft_wintree_api = {
 
 void foreign_toplevel_init ( void )
 {
-  wayland_iface_t *iface;
-
   if(ipc_get())
     return;
 
-  if( !(iface = wayland_iface_lookup(
-          zwlr_foreign_toplevel_manager_v1_interface.name, 1)) )
+  if( !(toplevel_manager = wayland_iface_register(
+          zwlr_foreign_toplevel_manager_v1_interface.name, 1,
+          FOREIGN_TOPLEVEL_VERSION,
+          &zwlr_foreign_toplevel_manager_v1_interface)) )
     return;
-
-  toplevel_manager = wl_registry_bind(wayland_registry_get(), iface->global,
-    &zwlr_foreign_toplevel_manager_v1_interface,
-    MIN(iface->version, FOREIGN_TOPLEVEL_VERSION));
 
   zwlr_foreign_toplevel_manager_v1_add_listener(toplevel_manager,
     &toplevel_manager_impl, NULL);

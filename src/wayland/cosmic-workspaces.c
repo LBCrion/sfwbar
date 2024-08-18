@@ -233,24 +233,20 @@ static const struct zcosmic_workspace_manager_v1_listener
 /* Public API */
 void cw_init( void )
 {
-  wayland_iface_t *iface;
-
   if (workspaces_supported())
   {
     g_info("Workspace: Not using cosmic-workspaces: custom IPC priority");
     return;
   }
 
-  if( !(iface = wayland_iface_lookup(
+  if( !(workspace_manager = wayland_iface_register(
           zcosmic_workspace_manager_v1_interface.name,
-          COSMIC_WORKSPACE_VERSION)) )
+          COSMIC_WORKSPACE_VERSION,
+          COSMIC_WORKSPACE_VERSION,
+          &zcosmic_workspace_manager_v1_interface)) )
     return;
 
   workspace_api_register(&cw_api_impl);
-
-  workspace_manager = wl_registry_bind(wayland_registry_get(), iface->global,
-      &zcosmic_workspace_manager_v1_interface,
-      MIN(iface->version, COSMIC_WORKSPACE_VERSION));
 
   zcosmic_workspace_manager_v1_add_listener(workspace_manager,
       &workspace_manager_impl, NULL);

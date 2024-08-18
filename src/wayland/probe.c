@@ -87,21 +87,18 @@ void wayland_monitor_probe ( void )
   struct wl_surface *surface;
   struct wl_buffer *buffer;
   struct wl_shm_pool *pool;
-  wayland_iface_t *iface;
   void *shm_data = NULL;
   gchar *name;
-  gint fd;
-  gint retries = 100, size = 4;
+  gint fd, retries = 100, size = 4;
 
-  if( !(iface = wayland_iface_lookup(wl_shm_interface.name, 1)) )
+  if( !(shm = wayland_iface_register(wl_shm_interface.name, 1, 1,
+      &wl_shm_interface)) )
     return;
-  shm = wl_registry_bind(wayland_registry_get(), iface->global,
-      &wl_shm_interface, 1);
 
-  if( !(iface = wayland_iface_lookup(zwlr_layer_shell_v1_interface.name, 3)) )
+  if( !(layer_shell = wayland_iface_register(
+          zwlr_layer_shell_v1_interface.name, 3, 3,
+          &zwlr_layer_shell_v1_interface)) )
     return;
-  layer_shell = wl_registry_bind(wayland_registry_get(), iface->global,
-        &zwlr_layer_shell_v1_interface, 3);
 
   display = gdk_wayland_display_get_wl_display(gdk_display_get_default());
   compositor = gdk_wayland_display_get_wl_compositor(gdk_display_get_default());

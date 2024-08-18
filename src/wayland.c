@@ -10,12 +10,6 @@
 #include "wlr-layer-shell-unstable-v1.h"
 #include <gdk/gdkwayland.h>
 
-void foreign_toplevel_register (struct wl_registry *registry, uint32_t name);
-void xdg_output_init ( void );
-void layer_shell_register (struct wl_registry *, uint32_t , uint32_t );
-void shm_register (struct wl_registry *registry, uint32_t name );
-void wayland_monitor_probe ( void );
-
 static GList *wayland_ifaces;
 static struct wl_registry *wayland_registry;
 static gboolean wayland_init_complete;
@@ -35,7 +29,8 @@ static void handle_global(void *data, struct wl_registry *registry,
   wayland_ifaces = g_list_append(wayland_ifaces, iface);
 }
 
-wayland_iface_t *wayland_iface_lookup ( const gchar *interface, guint32 ver )
+gpointer wayland_iface_register ( const gchar *interface,
+    guint32 min_ver, guint32 max_ver, const void *impl )
 {
   GList *iter;
   wayland_iface_t *iface;
@@ -43,8 +38,9 @@ wayland_iface_t *wayland_iface_lookup ( const gchar *interface, guint32 ver )
   for(iter=wayland_ifaces; iter; iter=g_list_next(iter))
   {
     iface = iter->data;
-    if(iface->version >= ver && !g_strcmp0(iface->iface, interface))
-      return iface;
+    if(iface->version >= min_ver && !g_strcmp0(iface->iface, interface))
+      return wl_registry_bind(wayland_registry, iface->global, impl,
+          MIN(iface->version, max_ver));
   }
   return NULL;
 }
@@ -53,15 +49,6 @@ struct wl_registry *wayland_registry_get ( void )
 {
   return wayland_registry;
 }
-
-/*
-  if (!g_strcmp0(interface,zxdg_output_manager_v1_interface.name))
-    xdg_output_register(wayland_registry, name, version);
-  else if (!g_strcmp0(interface, wl_shm_interface.name))
-    shm_register(wayland_registry, name);
-  else if (!g_strcmp0(interface, zwlr_layer_shell_v1_interface.name))
-    layer_shell_register(wayland_registry, name, version);
-}*/
 
 static void handle_global_remove(void *data, struct wl_registry *registry,
                 uint32_t name)
@@ -88,7 +75,7 @@ void wayland_init ( void )
   xdg_output_init();
   wayland_monitor_probe();
   g_debug("default output: %s", (gchar *)g_object_get_data(
-        G_OBJECT(wayland_monitor_get_default()),"xdg_name"));
+        G_OBJECT(wayland_monitor_get_default()), "xdg_name"));
 
   wl_display_roundtrip(wdisp);
   wl_display_roundtrip(wdisp);

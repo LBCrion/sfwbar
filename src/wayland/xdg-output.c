@@ -89,21 +89,14 @@ gboolean xdg_output_check ( void )
 
 void xdg_output_init ( void )
 {
-  wayland_iface_t *iface;
   GdkDisplay *display;
   gint i,n;
 
-  if( !(iface = wayland_iface_lookup(zxdg_output_manager_v1_interface.name,
-    ZXDG_OUTPUT_V1_NAME_SINCE_VERSION)) )
-  {
-    g_warning("Compositor does not support xdg-output protocol version %u",
-      ZXDG_OUTPUT_V1_NAME_SINCE_VERSION);
-    return;
-  }
-
-  xdg_output_manager = wl_registry_bind(wayland_registry_get(), iface->global,
-      &zxdg_output_manager_v1_interface, ZXDG_OUTPUT_V1_NAME_SINCE_VERSION);
-  if(!xdg_output_manager)
+  if( !(xdg_output_manager = wayland_iface_register(
+      zxdg_output_manager_v1_interface.name,
+      ZXDG_OUTPUT_V1_NAME_SINCE_VERSION,
+      ZXDG_OUTPUT_V1_NAME_SINCE_VERSION,
+      &zxdg_output_manager_v1_interface)) )
   {
     g_warning("Unable to registry xdg-output protocol version %u",
       ZXDG_OUTPUT_V1_NAME_SINCE_VERSION);
