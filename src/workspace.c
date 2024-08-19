@@ -19,9 +19,9 @@ void workspace_api_register ( struct workspace_api *new )
     api = *new;
 }
 
-gboolean workspace_api_registered ( void )
+gboolean workspaces_supported ( void )
 {
-  return !!api.set_workspace;
+  return api.set_workspace != NULL;
 }
 
 void workspace_ref ( gpointer id )

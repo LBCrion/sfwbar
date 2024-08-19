@@ -15,6 +15,7 @@
 
 gchar *confname;
 gchar *sockname;
+static enum ipc_type ipc;
 
 gint socket_connect ( const gchar *sockaddr, gint to )
 {
@@ -318,3 +319,14 @@ GdkMonitor *widget_get_monitor ( GtkWidget *self )
       return NULL;
   return gdk_display_get_monitor_at_window(disp, win);
 }
+
+void ipc_set ( enum ipc_type new )
+{
+  ipc = new;
+}
+
+enum ipc_type ipc_get ( void )
+{
+  return ipc;
+}
+

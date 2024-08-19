@@ -600,12 +600,10 @@ void sway_ipc_init ( void )
   gint sock;
   gint32 etype;
 
-  if(wintree_api_registered())
-    return;
-
   sock=sway_ipc_open(3000);
   if(sock==-1)
     return;
+  ipc_set(IPC_SWAY);
   workspace_api_register(&sway_workspace_api);
   wintree_api_register(&sway_wintree_api);
 

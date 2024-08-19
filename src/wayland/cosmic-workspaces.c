@@ -233,7 +233,7 @@ static const struct zcosmic_workspace_manager_v1_listener
 /* Public API */
 void cw_init( void )
 {
-  if (workspace_api_registered())
+  if (workspaces_supported())
   {
     g_info("Workspace: Not using cosmic-workspaces: custom IPC priority");
     return;

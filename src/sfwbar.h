@@ -10,6 +10,12 @@
 #define g_memdup2(x,y) g_memdup(x,y)
 #endif
 
+enum ipc_type {
+  IPC_SWAY    = 1,
+  IPC_HYPR    = 2,
+  IPC_WAYLAND = 3
+};
+
 void css_init ( gchar * );
 void css_file_load ( gchar * );
 void css_widget_apply ( GtkWidget *widget, gchar *css );

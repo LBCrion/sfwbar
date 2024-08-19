@@ -30,6 +30,7 @@ struct workspace_api {
 #define PAGER_PIN_ID (GINT_TO_POINTER(-1))
 #define WORKSPACE(x) ((workspace_t *)(x))
 
+gboolean workspaces_supported( void );
 
 workspace_t *workspace_new ( gpointer id );
 void workspace_commit ( workspace_t *ws );
@@ -44,7 +45,6 @@ gpointer workspace_id_from_name ( const gchar *name );
 workspace_t *workspace_from_id ( gpointer id );
 gpointer workspace_get_focused ( void );
 void workspace_api_register ( struct workspace_api *new );
-gboolean workspace_api_registered( void );
 void workspace_activate ( workspace_t *ws );
 guint workspace_get_geometry ( workspace_t *, GdkRectangle **, GdkRectangle *,
     gint * );
