@@ -48,7 +48,7 @@ static void pager_init ( Pager *self )
 
   pagers = g_list_prepend(pagers, self);
 
-  if(!workspaces_supported())
+  if(!workspace_api_registered())
     css_add_class(GTK_WIDGET(self), "hidden");
   for(iter = workspace_get_list(); iter; iter=g_list_next(iter))
     pager_item_new(GTK_WIDGET(self), iter->data);
@@ -63,7 +63,7 @@ void pager_add_pins ( GtkWidget *self, GList *pins )
   g_return_if_fail(IS_PAGER(self));
   priv = pager_get_instance_private(PAGER(self));
 
-  if(!workspaces_supported())
+  if(!workspace_api_registered())
   {
     g_list_free_full(pins, (GDestroyNotify)g_free);
     return;

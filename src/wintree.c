@@ -40,6 +40,11 @@ void wintree_api_register ( struct wintree_api *new )
   api = *new;
 }
 
+gboolean wintree_api_registered ( void )
+{
+  return !!api.focus;
+}
+
 void wintree_set_disown ( gboolean new )
 {
   disown = new;

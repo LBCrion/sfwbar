@@ -204,7 +204,7 @@ static struct wintree_api ft_wintree_api = {
 
 void foreign_toplevel_init ( void )
 {
-  if(ipc_get())
+  if(wintree_api_registered())
     return;
 
   if( !(toplevel_manager = wayland_iface_register(

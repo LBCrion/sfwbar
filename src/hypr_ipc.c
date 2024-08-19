@@ -566,7 +566,7 @@ void hypr_ipc_init ( void )
   gchar *sockaddr;
   gint sock;
 
-  if(ipc_get())
+  if(wintree_api_registered())
     return;
 
   ipc_sockaddr = g_build_filename("/tmp/hypr",
@@ -577,7 +577,6 @@ void hypr_ipc_init ( void )
     return;
   }
 
-  ipc_set(IPC_HYPR);
   workspace_api_register(&hypr_workspace_api);
   wintree_api_register(&hypr_wintree_api);
   hypr_ipc_track_focus();
