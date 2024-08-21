@@ -302,17 +302,17 @@ static void hypr_ipc_window_place ( gpointer wid )
 
 static void hypr_ipc_pager_populate( void )
 {
-  json_object *json,*ptr, *iter;
+  json_object *json, *ptr, *iter;
   gint i, wid;
   workspace_t *ws;
 
-  if(!hypr_ipc_request(ipc_sockaddr,"j/workspaces",&json) || !json)
+  if(!hypr_ipc_request(ipc_sockaddr, "j/workspaces", &json) || !json)
     return;
   if(json_object_is_type(json, json_type_array))
-    for(i=0;i<json_object_array_length(json);i++)
+    for(i=0; i<json_object_array_length(json); i++)
     {
-      ptr = json_object_array_get_idx(json,i);
-      wid = json_int_by_name(ptr,"id",-1);
+      ptr = json_object_array_get_idx(json, i);
+      wid = json_int_by_name(ptr, "id", -1);
       if(wid!=-99 && !workspace_from_id(GINT_TO_POINTER(wid)))
       {
         ws = workspace_new(GINT_TO_POINTER(wid));
@@ -320,24 +320,21 @@ static void hypr_ipc_pager_populate( void )
       }
     }
   json_object_put(json);
-  if(!hypr_ipc_request(ipc_sockaddr,"j/monitors",&json) || !json)
+  if(!hypr_ipc_request(ipc_sockaddr, "j/monitors", &json) || !json)
     return;
   if(json_object_is_type(json, json_type_array))
-    for(i=0;i<json_object_array_length(json);i++)
+    for(i=0; i<json_object_array_length(json); i++)
     {
-      iter = json_object_array_get_idx(json,i);
-      if(json_object_object_get_ex(iter,"activeWorkspace",&ptr) && ptr)
+      iter = json_object_array_get_idx(json, i);
+      if(json_object_object_get_ex(iter, "activeWorkspace", &ptr) && ptr)
       {
-        wid = json_int_by_name(ptr,"id",-99);
-        if(wid!=-99)
+        wid = json_int_by_name(ptr, "id", -99);
+        if(wid!=-99 && (ws = workspace_from_id(GINT_TO_POINTER(wid))) )
         {
-          if(json_bool_by_name(iter,"focused",FALSE))
+          if(json_bool_by_name(iter,"focused", FALSE))
             ws->state |= WS_STATE_FOCUSED | WS_STATE_INVALID;
-          if( (ws = workspace_from_id(GINT_TO_POINTER(wid))) )
-          {
-            ws->state |= WS_STATE_VISIBLE | WS_STATE_INVALID;
-            workspace_set_active(ws, json_string_by_name(iter, "name"));
-          }
+          ws->state |= WS_STATE_VISIBLE | WS_STATE_INVALID;
+          workspace_set_active(ws, json_string_by_name(iter, "name"));
         }
       }
     }
