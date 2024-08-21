@@ -17,23 +17,27 @@ static GHashTable *popup_list;
 void popup_get_gravity ( GtkWidget *widget, GdkGravity *wanchor,
     GdkGravity *manchor )
 {
+  
+  gtk_widget_style_get(widget, "widget-anchor", wanchor, NULL);
+  gtk_widget_style_get(widget, "window-anchor", manchor, NULL);
+
   switch(bar_get_toplevel_dir(widget))
   {
     case GTK_POS_TOP:
-      *wanchor = GDK_GRAVITY_SOUTH_WEST;
-      *manchor = GDK_GRAVITY_NORTH_WEST;
+      *wanchor = *wanchor?*wanchor:GDK_GRAVITY_SOUTH_WEST;
+      *manchor = *manchor?*manchor:GDK_GRAVITY_NORTH_WEST;
       break;
     case GTK_POS_LEFT:
-      *wanchor = GDK_GRAVITY_NORTH_EAST;
-      *manchor = GDK_GRAVITY_NORTH_WEST;
+      *wanchor = *wanchor?*wanchor:GDK_GRAVITY_NORTH_EAST;
+      *manchor = *manchor?*manchor:GDK_GRAVITY_NORTH_WEST;
       break;
     case GTK_POS_RIGHT:
-      *wanchor = GDK_GRAVITY_NORTH_WEST;
-      *manchor = GDK_GRAVITY_NORTH_EAST;
+      *wanchor = *wanchor?*wanchor:GDK_GRAVITY_NORTH_WEST;
+      *manchor = *manchor?*manchor:GDK_GRAVITY_NORTH_EAST;
       break;
     default:
-      *wanchor = GDK_GRAVITY_NORTH_WEST;
-      *manchor = GDK_GRAVITY_SOUTH_WEST;
+      *wanchor = *wanchor?*wanchor:GDK_GRAVITY_NORTH_WEST;
+      *manchor = *manchor?*manchor:GDK_GRAVITY_SOUTH_WEST;
       break;
   }
 }

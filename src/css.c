@@ -154,6 +154,27 @@ void css_init ( gchar *cssname )
     g_param_spec_enum("valign","vertical alignment","vertical alignment",
       g_enum_register_static ("valign",align_types),
       GTK_ALIGN_FILL, G_PARAM_READABLE));
+  static GEnumValue anchor_types [] = {
+    {GDK_GRAVITY_NORTH_WEST,"Northwest","Northwest"},
+    {GDK_GRAVITY_NORTH,"North","North"},
+    {GDK_GRAVITY_NORTH_EAST,"Northeast","Northeast"},
+    {GDK_GRAVITY_WEST,"West","West"},
+    {GDK_GRAVITY_CENTER,"Center","Center"},
+    {GDK_GRAVITY_EAST,"East","East"},
+    {GDK_GRAVITY_SOUTH_WEST,"Southwest","Southwest"},
+    {GDK_GRAVITY_SOUTH,"South","South"},
+    {GDK_GRAVITY_SOUTH_EAST,"Southeast","Southeast"},
+    {GDK_GRAVITY_STATIC,"Static","Static"},
+    {0, "Default", "Default"},
+    {0, NULL, NULL}};
+  gtk_widget_class_install_style_property( widget_class,
+    g_param_spec_enum("widget-anchor","widget anchor","widget anchor for popup windows",
+      g_enum_register_static ("widget-anchor",anchor_types),
+      0, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property( widget_class,
+    g_param_spec_enum("window-anchor","window anchor","window anchor for popup windows",
+      g_enum_register_static ("window-anchor",anchor_types),
+      0, G_PARAM_READABLE));
 
   css_style_updated_original = widget_class->style_updated;
   widget_class->style_updated = css_style_updated;

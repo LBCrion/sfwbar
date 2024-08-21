@@ -14,6 +14,7 @@ static GList *wayland_ifaces;
 static struct wl_registry *wayland_registry;
 static gboolean wayland_init_complete;
 
+
 static void handle_global(void *data, struct wl_registry *registry,
                 uint32_t name, const gchar *interface, uint32_t version)
 {

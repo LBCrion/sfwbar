@@ -103,6 +103,7 @@ libsrc = [
     'src/config/toplevel.c',
     'src/wayland/cosmic-workspaces.c',
     'src/wayland/foreign-toplevel.c',
+    'src/wayland/ipc.c',
     'src/wayland/probe.c',
     'src/wayland/xdg-output.c',
     wayland_targets ]

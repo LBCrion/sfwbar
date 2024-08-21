@@ -1,11 +1,13 @@
 #include <gio/gio.h>
 #include <glib.h>
 #include <gtk/gtk.h>
-#include <gio/gdesktopappinfo.h>
+#include "appinfo.h"
 
 static GHashTable *app_info_wm_class_map;
 static GHashTable *icon_map;
 static GtkIconTheme *app_info_theme;
+static GList *app_info_add, *app_info_delete;
+static GList *app_info_entries;
 
 void app_icon_map_add ( gchar *appid, gchar *icon )
 {
@@ -15,12 +17,25 @@ void app_icon_map_add ( gchar *appid, gchar *icon )
   g_hash_table_insert(icon_map, g_strdup(appid), g_strdup(icon));
 }
 
+void app_info_add_handlers ( AppInfoHandler add, AppInfoHandler del )
+{
+  GList *iter;
+
+  app_info_add = g_list_append(app_info_add, add);
+  app_info_delete = g_list_append(app_info_delete, del);
+
+  if(add)
+    for(iter=app_info_entries; iter; iter=g_list_next(iter))
+      add(iter->data);
+}
+
 static void app_info_monitor_cb ( GAppInfoMonitor *mon, gpointer d )
 {
   GDesktopAppInfo *app;
-  GList *list, *iter;
+  GList *list, *iter, *handler, *removed, *item;
   const gchar *class, *id;
 
+  removed = g_list_copy(app_info_entries);
   list = g_app_info_get_all();
   g_hash_table_remove_all(app_info_wm_class_map);
   for(iter=list; iter; iter=g_list_next(iter))
@@ -32,8 +47,26 @@ static void app_info_monitor_cb ( GAppInfoMonitor *mon, gpointer d )
         g_hash_table_insert(app_info_wm_class_map, g_strdup(class),
             g_strdup(id));
       g_object_unref(G_OBJECT(app));
+
+      if( (item = g_list_find_custom(removed, id, (GCompareFunc)g_strcmp0)) )
+        removed = g_list_remove(removed, item->data);
+      if(!g_list_find_custom(app_info_entries, id, (GCompareFunc)g_strcmp0))
+      {
+        app_info_entries = g_list_append(app_info_entries, g_strdup(id));
+        for(handler=app_info_add; handler; handler=g_list_next(handler))
+          ((AppInfoHandler)(handler->data))(id);
+      }
     }
   }
+  for(iter=removed; iter; iter=g_list_next(iter))
+  {
+    for(handler=app_info_delete; handler; handler=g_list_next(handler))
+          ((AppInfoHandler)(handler->data))(iter->data);
+    if( (item = g_list_find_custom(app_info_entries, iter->data,
+            (GCompareFunc)g_strcmp0)) )
+      app_info_entries = g_list_remove(app_info_entries, item->data);
+  }
+  g_list_free(removed);
   g_list_free_full(list, g_object_unref);
 }
 

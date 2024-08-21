@@ -52,6 +52,8 @@ GDBusConnection *sni_get_connection ( void )
 
 static void sni_watcher_item_free ( struct watcher_item *item )
 {
+  if(item->id)
+    g_bus_unwatch_name(item->id);
   g_free(item->uid);
   g_free(item);
 }
@@ -63,7 +65,6 @@ static void sni_watcher_item_lost_cb ( GDBusConnection *con, const gchar *name,
   g_dbus_connection_emit_signal(con, NULL, "/StatusNotifierWatcher",
       item->watcher->iface, "StatusNotifierItemUnregistered",
       g_variant_new("(s)", item->uid), NULL);
-  g_bus_unwatch_name(item->id);
   item->watcher->items = g_list_delete_link(item->watcher->items,
       g_list_find(item->watcher->items, item));
   sni_watcher_item_free(item);
@@ -184,7 +185,7 @@ void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,
 void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
     SniWatcher *watcher)
 {
-  GList *iter;
+ // GList *iter;
 
   if(watcher->regid)
     g_dbus_connection_unregister_object(con, watcher->regid);
@@ -197,8 +198,8 @@ void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
       G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL,
       (GBusNameLostCallback)sni_watcher_unregister_cb, watcher, NULL);
 
-  for(iter=watcher->host->items; iter; iter=g_list_next(iter))
-    sni_watcher_item_add(watcher, ((SniItem *)iter->data)->uid);
+//  for(iter=watcher->host->items; iter; iter=g_list_next(iter))
+//    sni_watcher_item_add(watcher, ((SniItem *)iter->data)->uid);
 
   g_debug("sni watcher %s registered",watcher->iface);
 }
