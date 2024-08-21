@@ -9,6 +9,8 @@
 #include "../wintree.h"
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
+#define FOREIGN_TOPLEVEL_VERSION 3
+
 typedef struct zwlr_foreign_toplevel_handle_v1 wlr_fth;
 static struct zwlr_foreign_toplevel_manager_v1 *toplevel_manager;
 
@@ -199,51 +201,18 @@ static struct wintree_api ft_wintree_api = {
   .focus = foreign_toplevel_focus
 };
 
-static void foreign_toplevel_register (struct wl_registry *registry,
-    uint32_t name)
+void foreign_toplevel_register (struct wl_registry *registry,
+    uint32_t global, uint32_t version)
 {
   if(ipc_get())
     return;
 
-  toplevel_manager = wl_registry_bind(registry, name,
-    &zwlr_foreign_toplevel_manager_v1_interface,3);
+  toplevel_manager = wl_registry_bind(registry, global,
+    &zwlr_foreign_toplevel_manager_v1_interface,
+    MIN(version, FOREIGN_TOPLEVEL_VERSION));
 
   zwlr_foreign_toplevel_manager_v1_add_listener(toplevel_manager,
     &toplevel_manager_impl, NULL);
 
   wintree_api_register(&ft_wintree_api);
-}
-
-static void handle_global(void *data, struct wl_registry *registry,
-                uint32_t name, const gchar *interface, uint32_t version)
-{
-  if (!g_strcmp0(interface,zwlr_foreign_toplevel_manager_v1_interface.name))
-    foreign_toplevel_register(registry,name);
-}
-
-static void handle_global_remove(void *data, struct wl_registry *registry,
-                uint32_t name)
-{
-}
-
-static const struct wl_registry_listener registry_listener = {
-  .global = handle_global,
-  .global_remove = handle_global_remove
-};
-
-void wayland_ipc_init ( void )
-{
-  struct wl_display *wdisp;
-  struct wl_registry *registry;
-
-  wdisp = gdk_wayland_display_get_wl_display(gdk_display_get_default());
-  if(!wdisp)
-    g_error("Can't get wayland display\n");
-
-  registry = wl_display_get_registry(wdisp);
-  wl_registry_add_listener(registry, &registry_listener, NULL);
-  wl_display_roundtrip(wdisp);
-
-  wl_display_roundtrip(wdisp);
-  wl_display_roundtrip(wdisp);
 }
