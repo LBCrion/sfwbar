@@ -8,46 +8,18 @@
 #include <gdk/gdkwayland.h>
 #include "../src/module.h"
 #include "../src/basewidget.h"
+#include "../src/wayland.h"
 #include "idle-inhibit-unstable-v1.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
 static struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
 
-static void handle_global(void *data, struct wl_registry *registry,
-                uint32_t name, const gchar *interface, uint32_t version)
-{
-  if (!g_strcmp0(interface,zwp_idle_inhibit_manager_v1_interface.name))
-    idle_inhibit_manager = wl_registry_bind(registry, name,
-        &zwp_idle_inhibit_manager_v1_interface,1);
-}
-
-static void handle_global_remove(void *data, struct wl_registry *registry,
-                uint32_t name)
-{
-}
-
-static const struct wl_registry_listener registry_listener = {
-  .global = handle_global,
-  .global_remove = handle_global_remove
-};
-
 gboolean sfwbar_module_init ( void )
 {
-  struct wl_display *wdisp;
-  struct wl_registry *registry;
-
-  if( !(wdisp = gdk_wayland_display_get_wl_display(gdk_display_get_default())) )
-  {
-    g_message("Idle inhibit module: can't get wayland display\n");
-    return FALSE;
-  }
-
-  if( !(registry = wl_display_get_registry(wdisp)) )
-    return FALSE;
-  wl_registry_add_listener(registry, &registry_listener, NULL);
-  wl_display_roundtrip(wdisp);
-
+  idle_inhibit_manager = wayland_iface_register(
+          zwp_idle_inhibit_manager_v1_interface.name, 1, 1,
+          &zwp_idle_inhibit_manager_v1_interface);
   return TRUE;
 }
 
@@ -66,14 +38,14 @@ static void idle_inhibitor_action ( gchar *act, gchar *dummy, void *widget,
   struct zwp_idle_inhibitor_v1 *inhibitor;
   gboolean inhibit;
 
-  inhibitor = g_object_get_data(G_OBJECT(widget),"inhibitor");
+  inhibitor = g_object_get_data(G_OBJECT(widget), "inhibitor");
 
   if(!g_ascii_strcasecmp(act, "on"))
     inhibit = TRUE;
   else if(!g_ascii_strcasecmp(act, "off"))
     inhibit = FALSE;
   else if(!g_ascii_strcasecmp(act, "toggle"))
-    inhibit = (inhibitor == NULL);
+    inhibit = !inhibitor;
   else
     return;
 

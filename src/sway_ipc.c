@@ -294,15 +294,25 @@ void sway_ipc_client_init ( ScanFile *file )
   sway_file = file;
 }
 
-static workspace_t *sway_ipc_parse_workspace ( json_object *obj )
+static workspace_t *sway_ipc_workspace_new ( struct json_object *obj )
 {
   workspace_t *ws;
+  gpointer id;
+  guint32 state = 0;
 
-  ws = g_malloc0(sizeof(workspace_t));
-  ws->name = g_strdup(json_string_by_name(obj,"name"));
-  ws->id = GINT_TO_POINTER(json_int_by_name(obj,"id",0));
-  ws->visible = json_bool_by_name(obj,"visible",FALSE);
-  ws->focused = json_bool_by_name(obj,"focused",FALSE);
+  if( !(id = GINT_TO_POINTER(json_int_by_name(obj, "id", 0))) )
+    return NULL;
+
+  ws = workspace_new(id);
+  workspace_set_name(ws, json_string_by_name(obj, "name"));
+
+  if(json_bool_by_name(obj, "focused", FALSE))
+    state |= WS_STATE_FOCUSED;
+  if(json_bool_by_name(obj, "urgent", FALSE))
+    state |= WS_STATE_URGENT;
+  if(json_bool_by_name(obj, "visible", FALSE))
+    state |= WS_STATE_VISIBLE;
+  workspace_set_state(ws, state);
 
   return ws;
 }
@@ -310,50 +320,48 @@ static workspace_t *sway_ipc_parse_workspace ( json_object *obj )
 static void sway_ipc_workspace_event ( struct json_object *obj )
 {
   const gchar *change;
+  gpointer id;
   struct json_object *current;
-  workspace_t *ws;
 
-  json_object_object_get_ex(obj,"current",&current);
+  json_object_object_get_ex(obj, "current", &current);
   if(!current)
     return;
 
-  ws = sway_ipc_parse_workspace(current);
-  change = json_string_by_name(obj,"change");
+  id = GINT_TO_POINTER(json_int_by_name(current, "id", 0));
+  change = json_string_by_name(obj, "change");
 
   if(!g_strcmp0(change, "empty"))
-    workspace_unref(ws->id);
+    workspace_unref(id);
   else if(!g_strcmp0(change, "init"))
-    workspace_new(ws);
+    sway_ipc_workspace_new(current);
 
-  if(!g_strcmp0(change,"focus") || !g_strcmp0(change,"move"))
-    workspace_set_active(ws,json_string_by_name(current,"output"));
-  if(!g_strcmp0(change,"focus"))
-    workspace_set_focus(ws->id);
-
-  g_free(ws->name);
-  g_free(ws);
+  if(!g_strcmp0(change, "focus") || !g_strcmp0(change, "move"))
+    workspace_set_active(workspace_from_id(id),
+        json_string_by_name(current, "output"));
+  /* we don't need a workspace commit after workspace_set_active as it will
+     be called by workspace_set_focus */
+  if(!g_strcmp0(change, "focus"))
+    workspace_set_focus(id);
 }
 
 static void sway_ipc_workspace_populate ( void )
 {
-  gint32 etype;
   struct json_object *robj;
-  gint i;
   workspace_t *ws;
+  gint32 etype;
+  gint i;
 
-  robj = sway_ipc_request("",1,&etype);
+  robj = sway_ipc_request("", 1, &etype);
 
   if(!robj || !json_object_is_type(robj,json_type_array))
     return;
-  for(i=0;i<json_object_array_length(robj);i++)
+  for(i=0; i<json_object_array_length(robj); i++)
   {
-    ws = sway_ipc_parse_workspace(json_object_array_get_idx(robj,i));
-    workspace_new(ws);
-    if(ws->visible)
+    ws = sway_ipc_workspace_new(json_object_array_get_idx(robj, i));
+    if(ws->state & WS_STATE_FOCUSED)
       workspace_set_active(ws,
           json_string_by_name(json_object_array_get_idx(robj,i),"output"));
-    g_free(ws->name);
-    g_free(ws);
+    workspace_commit(ws);
   }
   json_object_put(robj);
 }

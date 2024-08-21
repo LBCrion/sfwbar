@@ -7,6 +7,7 @@
 #include "../sfwbar.h"
 #include "../sway_ipc.h"
 #include "../wintree.h"
+#include "../wayland.h"
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
 #define FOREIGN_TOPLEVEL_VERSION 3
@@ -201,15 +202,16 @@ static struct wintree_api ft_wintree_api = {
   .focus = foreign_toplevel_focus
 };
 
-void foreign_toplevel_register (struct wl_registry *registry,
-    uint32_t global, uint32_t version)
+void foreign_toplevel_init ( void )
 {
   if(ipc_get())
     return;
 
-  toplevel_manager = wl_registry_bind(registry, global,
-    &zwlr_foreign_toplevel_manager_v1_interface,
-    MIN(version, FOREIGN_TOPLEVEL_VERSION));
+  if( !(toplevel_manager = wayland_iface_register(
+          zwlr_foreign_toplevel_manager_v1_interface.name, 1,
+          FOREIGN_TOPLEVEL_VERSION,
+          &zwlr_foreign_toplevel_manager_v1_interface)) )
+    return;
 
   zwlr_foreign_toplevel_manager_v1_add_listener(toplevel_manager,
     &toplevel_manager_impl, NULL);
