@@ -1,6 +1,7 @@
 #include <gio/gio.h>
 #include <glib.h>
 #include <gtk/gtk.h>
+#include <sys/stat.h>
 #include "appinfo.h"
 
 static GHashTable *app_info_wm_class_map;
@@ -8,6 +9,7 @@ static GHashTable *icon_map;
 static GtkIconTheme *app_info_theme;
 static GList *app_info_add, *app_info_delete;
 static GList *app_info_entries;
+static time_t app_info_mtime;
 
 void app_icon_map_add ( gchar *appid, gchar *icon )
 {
@@ -29,6 +31,17 @@ void app_info_add_handlers ( AppInfoHandler add, AppInfoHandler del )
       add(iter->data);
 }
 
+static time_t app_info_mtime_get ( GDesktopAppInfo *app )
+{
+  struct stat stattr;
+  const gchar *fname;
+
+  if( (fname = g_desktop_app_info_get_filename(app)) && !stat(fname, &stattr))
+    return stattr.st_mtime;
+
+  return 0;
+}
+
 static void app_info_monitor_cb ( GAppInfoMonitor *mon, gpointer d )
 {
   GDesktopAppInfo *app;
@@ -46,7 +59,6 @@ static void app_info_monitor_cb ( GAppInfoMonitor *mon, gpointer d )
       if( (class = g_desktop_app_info_get_startup_wm_class(app)) )
         g_hash_table_insert(app_info_wm_class_map, g_strdup(class),
             g_strdup(id));
-      g_object_unref(G_OBJECT(app));
 
       if( (item = g_list_find_custom(removed, id, (GCompareFunc)g_strcmp0)) )
         removed = g_list_remove(removed, item->data);
@@ -56,18 +68,27 @@ static void app_info_monitor_cb ( GAppInfoMonitor *mon, gpointer d )
         for(handler=app_info_add; handler; handler=g_list_next(handler))
           ((AppInfoHandler)(handler->data))(id);
       }
+      else if(app_info_mtime_get(app) > app_info_mtime)
+      {
+        for(handler=app_info_delete; handler; handler=g_list_next(handler))
+          ((AppInfoHandler)(handler->data))(id);
+        for(handler=app_info_add; handler; handler=g_list_next(handler))
+          ((AppInfoHandler)(handler->data))(id);
+      }
+      g_object_unref(G_OBJECT(app));
     }
   }
   for(iter=removed; iter; iter=g_list_next(iter))
   {
     for(handler=app_info_delete; handler; handler=g_list_next(handler))
-          ((AppInfoHandler)(handler->data))(iter->data);
+      ((AppInfoHandler)(handler->data))(iter->data);
     if( (item = g_list_find_custom(app_info_entries, iter->data,
             (GCompareFunc)g_strcmp0)) )
       app_info_entries = g_list_remove(app_info_entries, item->data);
   }
   g_list_free(removed);
   g_list_free_full(list, g_object_unref);
+  app_info_mtime = g_get_real_time() / 1000000;
 }
 
 void app_info_init ( void )

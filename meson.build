@@ -187,6 +187,12 @@ if xkbr.found()
   doc_list += 'sfwbar-xkbmap'
 endif
 
+if get_option('appmenu').enabled()
+  library('appmenu', sources: 'modules/appmenu.c', dependencies: deps,
+      name_prefix: '', install: true,
+      install_dir: get_option('libdir') / 'sfwbar' )
+endif
+
 if get_option('bsdctl').enabled()
   library('bsdctl', sources: 'modules/bsdctl.c', dependencies: deps,
       name_prefix: '', install: true,

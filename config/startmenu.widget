@@ -1,17 +1,10 @@
-include("startmenu.source")
-
-Function("StartMenuShow")
-{
-  MenuClear "Menugen_Applications"
-  Function "StartMenuBuild"
-  Menu "MenuGen_Applications"
-}
+module("appmenu")
 
 layout {
   button {
     value = "open-menu"
     style = "startmenu"
-    action = Function "StartMenuShow"
+    action = Menu "app_menu_system"
     tooltip = "Application menu"
   }
 }
