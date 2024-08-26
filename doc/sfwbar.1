@@ -527,7 +527,7 @@ menu (\(dqmenu_name\(dq) {
 Command MenuClear deletes any existing items from a menu.
 Each menu has a name used to link the menu to the widget action and a
 list of menu items. If a menu with the same name is defined more than
-once, the items from subsequence declarations will be appended to the
+once, the items from subsequent declarations will be appended to the
 original menu. If you want to re\-define the menu, use MenuClear action
 to clear the original menu.
 .sp
@@ -675,7 +675,7 @@ monitor name can be prefixed by \(dqstatic:\(dq, i.e. \(dqstatic:eDP\-1\(dq, if 
 is set and the specified monitor doesn\(aqt exist or gets disconnected,
 the bar will not jump to another montior, but will be hidden and won\(aqt
 reappear until the monitor is reconnected.
-** This action is deperecated, please use property \fImonitor\fP instead **
+** This action is deprecated, please use property \fImonitor\fP instead **
 .TP
 .B SetMirror  [<bar_name>,]<string>
 mirror the bar to monitors matching any of the specified patterns. If
@@ -686,40 +686,40 @@ i.e. \(dqeDP\-\fI:HDMI\-1\(dq will mirror to any monitor with name starting with
 \(dqeDP\-\(dq or monitor named \(dqHDMI\-1\(dq. The patterns are specified in glob style
 \(aq\fP\(aq and \(aq?\(aq are used as wildcards. A simplest use is \fISetMirror \(dq*\(dq\fP will
 mirror all bars across all monitors.
-** This action is deperecated, please use property \fImirror\fP instead **
+** This action is deprecated, please use property \fImirror\fP instead **
 .TP
 .B SetLayer [<bar_name>,]<string>
 move bar to a specified layer (supported parameters are \(dqtop\(dq, \(dqbottom\(dq,
 \(dqbackground\(dq and \(dqoverlay\(dq.
-** This action is deperecated, please use property \fIlayer\fP instead **
+** This action is deprecated, please use property \fIlayer\fP instead **
 .TP
 .B SetBarSize [<bar_name>,]<string>
 set size of the bar (width for top or bottom bar, height for left or right
 bar). The argument is a string. I.e. \(dq800\(dq for 800 pixels or \(dq50%\(dq for
 50% of screen size
-** This action is deperecated, please use property \fIsize\fP instead **
+** This action is deprecated, please use property \fIsize\fP instead **
 .TP
 .B SetBarMargin [<bar_name>,]<string>
 set margin around the bar to the number of pixels specified by string.
-** This action is deperecated, please use property \fImargin\fP instead **
+** This action is deprecated, please use property \fImargin\fP instead **
 .TP
 .B SetBarSensor [<bar_name>],<string>
 Specify whether the bar should be hidden once the pointer leaves the bar
 window. Once hidden, the bar will popup again if the pointer touches the
 sensor located along the screen edge along which the bar is placed.
 String specifies the bar pop\-down delay in milliseconds.
-** This action is deperecated, please use property \fIsensor\fP instead **
+** This action is deprecated, please use property \fIsensor\fP instead **
 .TP
 .B SetBarID <string>
 specify bar ID to listen on for mode and hidden_state signals. If no
 bar ID is specified, SfwBar will listen to signals on all IDs
-** This action is deperecated, please use property \fIsway_bar_id\fP instead **
+** This action is deprecated, please use property \fIsway_bar_id\fP instead **
 .TP
 .B SetExclusiveZone [<bar_name>,]<string>
 specify exclusive zone policy for the bar window. Acceptable values are
 \(dqauto\(dq, \(dq\-1\(dq, \(dq0\(dq or positive integers. These have meanings in line with
 exclusive zone setting in the layer shell protocol. Default value is \(dqauto\(dq
-** This action is deperecated, please use property \fIexclusive_zone\fP instead **
+** This action is deprecated, please use property \fIexclusive_zone\fP instead **
 .TP
 .B SetValue [<widget>,]<string>
 set the value of the widget. This action applies to the widget from which
@@ -775,7 +775,7 @@ function(\(dqfancy_menu\(dq) {
 The above example clears a menu, executes a script that builds a menu again
 and opens the resulting menu.
 .sp
-Function \(dqSfwBarInit\(dq executed on startup. You can use this functions to set
+Function \(dqSfwBarInit\(dq executed on startup. You can use this function to set
 initial parameters for the bar, such as default monitor and layer.
 .SS Scanner
 .sp
@@ -896,11 +896,11 @@ Variable should be set to the first occurrence of the pattern in the source
 Variable should be set to the last occurrence of the pattern in the source
 .TP
 .B Sum
-Variable should be set to the sum of all  occurrences of the pattern in the
+Variable should be set to the sum of all occurrences of the pattern in the
 source
 .TP
 .B Product
-Variable should be set to the product of all  occurrences of the pattern in
+Variable should be set to the product of all occurrences of the pattern in
 the source
 .UNINDENT
 .sp

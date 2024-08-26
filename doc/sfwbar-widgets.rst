@@ -57,7 +57,7 @@ EXTRACT DATAPOINTS
 
 The data we obtain from various sources isn't always presented in a directly
 useable format. We may need to parse these data dumps to extract the data
-points we need. Sfwbar allows extracting iinfromation the data dump using
+points we need. Sfwbar allows extracting information the data dump using
 regular expression or json parsers. I.e. if the /proc file contains several
 strings of text, sfwbar can identify a string matching a pattern, extract a
 segment of this string, using a regular expression capture buffer and save this
@@ -67,7 +67,7 @@ same data dump and populate multiple variables.
 MANIPULATE INFORMATION
 ----------------------
 
-Once infromation is parsed, we can manipulate it into a format we need for
+Once information is parsed, we can manipulate it into a format we need for
 display. It can be something simple, such as rounding a number for decimal
 precision or a complex requiring flow control, mathematical calculations and
 text manipulation (i.e. calculating color gradients and generating an svg
