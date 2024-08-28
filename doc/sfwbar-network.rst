@@ -15,7 +15,7 @@ Requires: none
 SYNOPSIS
 ========
 
-The network module tracks te state of the current network connection.
+The network module tracks the state of the current network connection.
 
 Expression Functions
 ====================
@@ -24,7 +24,7 @@ NetInfo(Query[,Interface])
 --------------------------
 
 Function NetInfo queries the parameter of the connection on the network
-interface specified. If Interface is not specifies, NetInfo will query the
+interface specified. If Interface is not specified, NetInfo will query the
 interface of the default gateway (if one exists). The queries supported are:
 
 "ip"

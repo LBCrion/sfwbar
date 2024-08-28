@@ -39,7 +39,7 @@ the following queries are supported:
 "volume"
   Current playback volume.
 "repeat"
-  Repet flag of the current playlist: "1"/"0".
+  Repeat flag of the current playlist: "1"/"0".
 "random"
   Random flag of the current playlist: "1"/"0".
 "queue_len"
