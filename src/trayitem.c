@@ -15,7 +15,7 @@ G_DEFINE_TYPE_WITH_CODE (TrayItem, tray_item, FLOW_ITEM_TYPE,
 void tray_item_update ( GtkWidget *self )
 {
   TrayItemPrivate *priv;
-  gint icon=-1, pix=-1;
+  gint icon = SNI_PROP_ICON, pix = SNI_PROP_ICONPIX;
 
   g_return_if_fail(IS_TRAY_ITEM(self));
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
@@ -34,22 +34,14 @@ void tray_item_update ( GtkWidget *self )
 
   if(priv->sni->string[SNI_PROP_STATUS])
   {
-    switch(priv->sni->string[SNI_PROP_STATUS][0])
+    css_set_class(priv->button, "attention",
+        priv->sni->string[SNI_PROP_STATUS][0]=='N');
+    css_set_class(priv->button, "passive",
+        priv->sni->string[SNI_PROP_STATUS][0]=='P');
+    if(priv->sni->string[SNI_PROP_STATUS][0]=='N')
     {
-      case 'A':
-        gtk_widget_set_name(priv->button,"tray_active");
-        icon = SNI_PROP_ICON;
-        pix = SNI_PROP_ICONPIX;
-        break;
-      case 'N':
-        gtk_widget_set_name(priv->button,"tray_attention");
-        icon = SNI_PROP_ATTN;
-        pix = SNI_PROP_ATTNPIX;
-        break;
-      case 'P':
-        gtk_widget_set_name(priv->button,"tray_passive");
-        icon = SNI_PROP_ICON;
-        pix = SNI_PROP_ICONPIX;
+      icon = SNI_PROP_ATTN;
+      pix = SNI_PROP_ATTNPIX;
     }
   }
 
@@ -232,7 +224,7 @@ GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
 
   priv->button = gtk_button_new();
   gtk_container_add(GTK_CONTAINER(self), priv->button);
-  gtk_widget_set_name(priv->button, "tray_active");
+  gtk_widget_set_name(priv->button, "tray_item");
   gtk_widget_style_get(priv->button, "direction", &dir, NULL);
   box = gtk_grid_new();
   gtk_container_add(GTK_CONTAINER(priv->button), box);

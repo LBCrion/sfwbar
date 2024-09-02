@@ -53,12 +53,8 @@ void pager_item_update ( GtkWidget *self )
     gtk_button_set_label(GTK_BUTTON(priv->button),priv->ws->name);
   gtk_widget_set_has_tooltip(priv->button,
       GPOINTER_TO_INT(g_object_get_data(G_OBJECT(priv->pager),"preview")));
-  if ( workspace_is_focused(priv->ws) )
-    gtk_widget_set_name(priv->button, "pager_focused");
-  else if (priv->ws->state & WS_STATE_VISIBLE)
-    gtk_widget_set_name(priv->button, "pager_visible");
-  else
-    gtk_widget_set_name(priv->button, "pager_normal");
+  css_set_class(priv->button, "focused", workspace_is_focused(priv->ws));
+  css_set_class(priv->button, "visible", priv->ws->state & WS_STATE_VISIBLE);
 
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
@@ -198,7 +194,7 @@ GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
 
   priv->button = gtk_button_new_with_label(ws->name);
   gtk_container_add(GTK_CONTAINER(self),priv->button);
-  gtk_widget_set_name(priv->button, "pager_normal");
+  gtk_widget_set_name(priv->button, "pager_item");
   g_signal_connect(priv->button,"query-tooltip",
       G_CALLBACK(pager_item_draw_tooltip),ws);
   g_object_ref_sink(G_OBJECT(self));

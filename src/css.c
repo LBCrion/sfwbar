@@ -13,20 +13,24 @@ static void (*css_style_updated_original)(GtkWidget *);
 void css_file_load ( gchar *name )
 {
   GtkCssProvider *css;
-  gchar *fname;
+  gchar *fname, *css_string;
 
   if(!name)
     return;
 
-  fname = get_xdg_config_file(name,NULL);
+  fname = get_xdg_config_file(name, NULL);
   if(!fname)
     return;
-
-  css = gtk_css_provider_new();
-  gtk_css_provider_load_from_path(css,fname,NULL);
-  gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
-    GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
-  g_object_unref(css);
+  if(g_file_get_contents(fname, &css_string, NULL, NULL))
+  {
+    css_string = css_legacy_preprocess(css_string);
+    css = gtk_css_provider_new();
+    gtk_css_provider_load_from_data(css, css_string, strlen(css_string), NULL);
+    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
+      GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
+    g_object_unref(css);
+    g_free(css_string);
+  }
   g_free(fname);
 }
 
@@ -205,6 +209,7 @@ void css_widget_apply ( GtkWidget *widget, gchar *css )
 
   cont = gtk_widget_get_style_context (widget);
   provider = gtk_css_provider_new();
+  css = css_legacy_preprocess(css);
   gtk_css_provider_load_from_data(provider, css, strlen(css), NULL);
   gtk_style_context_add_provider (cont,
     GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
@@ -232,4 +237,42 @@ void css_remove_class ( GtkWidget *widget, gchar *css_class )
   GtkStyleContext *context;
   context = gtk_widget_get_style_context(widget);
   gtk_style_context_remove_class(context,css_class);
+}
+
+void css_set_class ( GtkWidget *widget, gchar *css_class, gboolean state )
+{
+  GtkStyleContext *context;
+
+  context = gtk_widget_get_style_context(widget);
+  if(state)
+    gtk_style_context_add_class(context,css_class);
+  else
+    gtk_style_context_remove_class(context,css_class);
+}
+
+gchar *css_legacy_preprocess ( gchar *css_string )
+{
+  gchar *old[] = { "#taskbar_normal", "#taskbar_active",
+    "#taskbar_popup_normal", "#taskbar_popup_active", "#taskbar_group_normal",
+    "#taskbar_group_active", "#taskbar_pager_normal", "#taskbar_pager_active",
+    "#pager_normal", "#pager_visible", "#pager_focused", "#switcher_normal",
+    "#switcher_active", "#tray_active", "#tray_attention", "#tray_passive",
+    NULL };
+  gchar *new[] = { "#taskbar_item", "#taskbar_item.active", "#taskbar_popup",
+    "#taskbar_popup.active", "#taskbar_popup", "#taskbar_popup.active",
+    "#taskbar_pager", "#taskbar_pager.active", "#pager_item",
+    "#pager_item.visible", "#pager_item.focused", "#switcher_item",
+    "#switcher_item.active", "#tray_item", "#tray_item.attention",
+    "#tray_item.passive", NULL };
+  gchar *tmp, *res;
+  gsize i;
+
+  res = css_string;
+  for(i=0; old[i]; i++)
+  {
+    tmp = str_replace(res, old[i], new[i]);
+    g_free(res);
+    res = tmp;
+  }
+  return res;
 }

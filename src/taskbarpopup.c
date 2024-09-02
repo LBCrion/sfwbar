@@ -178,9 +178,8 @@ static void taskbar_popup_update ( GtkWidget *self )
   if(!priv->invalid)
     return;
 
-  gtk_widget_set_name(priv->button,
-      flow_grid_find_child(priv->tgroup, wintree_from_id(wintree_get_focus()))?
-        "taskbar_group_active":"taskbar_group_normal");
+  css_set_class(priv->button, "active", !!flow_grid_find_child(
+        priv->tgroup, wintree_from_id(wintree_get_focus())));
 
   if(priv->icon)
     taskbar_item_set_image(priv->icon, priv->appid);
@@ -290,12 +289,12 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *shell )
   priv->appid = g_strdup(appid);
   priv->button = gtk_button_new();
   gtk_container_add(GTK_CONTAINER(self), priv->button);
-  gtk_widget_set_name(priv->button, "taskbar_group_normal");
+  gtk_widget_set_name(priv->button, "taskbar_popup");
   box = gtk_grid_new();
   gtk_container_add(GTK_CONTAINER(priv->button), box);
 
   priv->popover = gtk_window_new(GTK_WINDOW_POPUP);
-  gtk_widget_set_name(priv->popover, "taskbar_group");
+  gtk_widget_set_name(priv->popover, "taskbar_popup");
   window_set_unref_func(priv->popover,
       (void(*)(gpointer))taskbar_popup_timeout_set);
   g_object_ref(G_OBJECT(priv->popover));

@@ -23,6 +23,41 @@ static gboolean switcher_item_check ( GtkWidget *self )
   return switcher_check(priv->switcher, priv->win);
 }
 
+static void switcher_item_decorate ( GtkWidget *self, gboolean labels,
+    gboolean icons )
+{
+  SwitcherItemPrivate *priv;
+  gint dir;
+
+  g_return_if_fail(IS_SWITCHER_ITEM(self));
+  priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
+
+  if(!labels && !icons)
+    labels = TRUE;
+
+  if(!!priv->icon == icons && !!priv->label == labels)
+    return;
+
+  g_clear_pointer(&priv->label, gtk_widget_destroy);
+  g_clear_pointer(&priv->icon, gtk_widget_destroy);
+  gtk_widget_style_get(gtk_bin_get_child(GTK_BIN(self)), "direction", &dir,
+      NULL);
+
+  if(icons)
+  {
+    priv->icon = scale_image_new();
+    gtk_grid_attach_next_to(GTK_GRID(priv->grid), priv->icon, NULL, dir, 1,1 );
+    if(priv->win)
+      scale_image_set_image(priv->icon, priv->win->appid, NULL);
+  }
+  if(labels)
+  {
+    priv->label = gtk_label_new(priv->win?priv->win->title:"");
+    gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
+    gtk_grid_attach_next_to(GTK_GRID(priv->grid), priv->label, priv->icon, dir, 1,1 );
+  }
+}
+
 void switcher_item_update ( GtkWidget *self )
 {
   SwitcherItemPrivate *priv;
@@ -40,11 +75,8 @@ void switcher_item_update ( GtkWidget *self )
   if(priv->icon)
     scale_image_set_image(priv->icon,priv->win->appid,NULL);
 
-  if ( switcher_is_focused(((window_t *)flow_item_get_source(self))->uid) )
-    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "switcher_active");
-  else
-    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "switcher_normal");
-
+  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "active",
+      switcher_is_focused(((window_t *)flow_item_get_source(self))->uid));
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
 
@@ -96,6 +128,7 @@ static void switcher_item_class_init ( SwitcherItemClass *kclass )
   FLOW_ITEM_CLASS(kclass)->update = switcher_item_update;
   FLOW_ITEM_CLASS(kclass)->compare = switcher_item_compare;
   FLOW_ITEM_CLASS(kclass)->invalidate = switcher_item_invalidate;
+  FLOW_ITEM_CLASS(kclass)->decorate = switcher_item_decorate;
   FLOW_ITEM_CLASS(kclass)->get_source =
     (void * (*)(GtkWidget *))switcher_item_get_window;
 }
@@ -106,11 +139,8 @@ static void switcher_item_init ( SwitcherItem *cgrid )
 
 GtkWidget *switcher_item_new( window_t *win, GtkWidget *switcher )
 {
-  GtkWidget *self,*grid;
+  GtkWidget *self;
   SwitcherItemPrivate *priv;
-  gboolean icons,labels;
-  gint dir;
-  gint title_width;
 
   if(!switcher)
     return NULL;
@@ -121,40 +151,10 @@ GtkWidget *switcher_item_new( window_t *win, GtkWidget *switcher )
   priv->win = win;
   priv->switcher = switcher;
 
-  icons = GPOINTER_TO_INT(
-      g_object_get_data(G_OBJECT(switcher),"icons"));
-  labels = GPOINTER_TO_INT(
-      g_object_get_data(G_OBJECT(switcher),"labels"));
-  title_width = GPOINTER_TO_INT(
-      g_object_get_data(G_OBJECT(switcher),"title_width"));
-  if(!title_width)
-    title_width = -1;
-  if(!icons)
-    labels = TRUE;
-
-  grid = gtk_grid_new();
-  gtk_container_add(GTK_CONTAINER(self), grid);
-  gtk_widget_set_name(grid, "switcher_normal");
-  gtk_widget_style_get(grid, "direction", &dir, NULL);
+  priv->grid = gtk_grid_new();
+  gtk_container_add(GTK_CONTAINER(self), priv->grid);
+  gtk_widget_set_name(priv->grid, "switcher_item");
   g_object_ref_sink(G_OBJECT(self));
-  if(icons)
-  {
-    priv->icon = scale_image_new();
-    scale_image_set_image(priv->icon, win->appid, NULL);
-    gtk_grid_attach_next_to(GTK_GRID(grid), priv->icon, NULL, dir, 1, 1);
-  }
-  else
-    priv->icon = NULL;
-  if(labels)
-  {
-    priv->label = gtk_label_new(win->title);
-    gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
-    gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
-    gtk_grid_attach_next_to(GTK_GRID(grid), priv->label,
-        priv->icon, dir, 1, 1);
-  }
-  else
-    priv->label = NULL;
   flow_item_invalidate(self);
 
   return self;

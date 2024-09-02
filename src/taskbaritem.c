@@ -161,10 +161,8 @@ static void taskbar_item_update ( GtkWidget *self )
   if(!priv->invalid)
     return;
 
-  if(wintree_is_focused(priv->win->uid))
-    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "taskbar_active");
-  else
-    gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "taskbar_normal");
+  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "active",
+      wintree_is_focused(priv->win->uid));
 
   if(priv->label)
     if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)),priv->win->title))
@@ -258,7 +256,7 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
 
   button = gtk_button_new();
   gtk_container_add(GTK_CONTAINER(self), button);
-  gtk_widget_set_name(button, "taskbar_normal");
+  gtk_widget_set_name(button, "taskbar_item");
   gtk_widget_style_get(button,"direction", &dir, NULL);
   priv->box = gtk_grid_new();
   gtk_container_add(GTK_CONTAINER(button), priv->box);

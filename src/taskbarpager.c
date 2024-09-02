@@ -90,10 +90,8 @@ static void taskbar_pager_update ( GtkWidget *self )
       g_strcmp0(gtk_button_get_label(GTK_BUTTON(priv->button)), title))
     gtk_button_set_label(GTK_BUTTON(priv->button), title);
 
-  if (flow_grid_find_child(priv->taskbar, wintree_from_id(wintree_get_focus())))
-    gtk_widget_set_name(base_widget_get_child(self), "taskbar_pager_active");
-  else
-    gtk_widget_set_name(base_widget_get_child(self), "taskbar_pager_normal");
+  css_set_class(base_widget_get_child(self), "active", !!flow_grid_find_child(
+        priv->taskbar, wintree_from_id(wintree_get_focus())));
 
   gtk_widget_unset_state_flags(base_widget_get_child(self),
       GTK_STATE_FLAG_PRELIGHT);
