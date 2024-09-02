@@ -24,10 +24,10 @@ void tray_item_update ( GtkWidget *self )
     return;
   priv->invalid = FALSE;
 
-  if(priv->sni->string[SNI_PROP_TOOLTIP])
+  if(priv->sni->tooltip)
   {
     gtk_widget_set_has_tooltip(priv->button, TRUE);
-    gtk_widget_set_tooltip_markup(priv->button, priv->sni->string[SNI_PROP_TOOLTIP]);
+    gtk_widget_set_tooltip_text(priv->button, priv->sni->tooltip);
   }
   else
     gtk_widget_set_has_tooltip(priv->button, FALSE);

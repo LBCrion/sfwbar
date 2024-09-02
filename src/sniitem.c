@@ -23,7 +23,7 @@ static guint pix_counter;
 static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
   "IconName", "OverlayIconName", "AttentionIconName", "AttentionMovieName",
   "XAyatanaLabel", "XAyatanaLabelGuide", "IconThemePath", "IconPixmap",
-  "OverlayIconPixmap", "AttentionIconPixmap", "ToolTip", "WindowId",
+  "OverlayIconPixmap", "AttentionIconPixmap", "WindowId", "ToolTip",
   "ItemIsMenu", "Menu", "XAyatanaOrderingIndex" };
 
 gchar *sni_item_get_pixbuf ( GVariant *v )
@@ -70,6 +70,21 @@ gchar *sni_item_get_pixbuf ( GVariant *v )
   return name;
 }
 
+gchar *sni_item_get_tooltip ( GVariant *v )
+{
+  gchar *header, *body;
+
+  g_variant_get(v, "(&s@a(iiay)&s&s)", NULL, NULL, &header, &body);
+  if(header && *header && (!body || !*body))
+    return g_strdup(header);
+  else if ((!header || !*header) && body && *body)
+    return g_strdup(body);
+  else if(header && *header && body && *body)
+    return g_strconcat(header, "\n", body, NULL);
+  else
+    return NULL;
+}
+
 void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
     struct sni_prop_wrapper *wrap)
 {
@@ -77,10 +92,9 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
 
   wrap->sni->ref--;
 
-  result = g_dbus_connection_call_finish(con, res, NULL);
-  if(result)
+  if( (result = g_dbus_connection_call_finish(con, res, NULL)) )
   {
-    g_variant_get(result, "(v)",&inner);
+    g_variant_get(result, "(v)", &inner);
     g_variant_unref(result);
   }
 
@@ -125,6 +139,13 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
     g_variant_get(inner, "u", &(wrap->sni->order));
     g_debug("sni %s: property %s = %u", wrap->sni->dest,
         sni_properties[wrap->prop], wrap->sni->order);
+  }
+  else if(wrap->prop == SNI_PROP_TOOLTIP)
+  {
+    g_free(wrap->sni->tooltip);
+    wrap->sni->tooltip = sni_item_get_tooltip(inner);
+    g_debug("sni %s: property %s = %s", wrap->sni->dest,
+        sni_properties[wrap->prop], wrap->sni->tooltip);
   }
 
   g_variant_unref(inner);
@@ -230,6 +251,7 @@ void sni_item_free ( SniItem *sni )
     g_free(sni->string[i]);
 
   g_free(sni->menu_path);
+  g_free(sni->tooltip);
   g_free(sni->uid);
   g_free(sni->path);
   g_free(sni->dest);

@@ -1,7 +1,7 @@
 #ifndef __SNI_H__
 #define __SNI_H__
 
-#define SNI_MAX_STRING 16
+#define SNI_MAX_STRING 14
 #define SNI_MAX_PROP 19
 
 enum {
@@ -49,6 +49,7 @@ typedef struct sni_item {
   gchar *path;
   gchar *string[SNI_MAX_STRING];
   gchar *menu_path;
+  gchar *tooltip;
   gboolean menu;
   gint ref;
   guint signal;
