@@ -46,7 +46,7 @@ static void switcher_item_decorate ( GtkWidget *self, gboolean labels,
   if(icons)
   {
     priv->icon = scale_image_new();
-    gtk_grid_attach_next_to(GTK_GRID(priv->grid), priv->icon, NULL, dir, 1,1 );
+    gtk_grid_attach_next_to(GTK_GRID(priv->grid), priv->icon, NULL, dir, 1,1);
     if(priv->win)
       scale_image_set_image(priv->icon, priv->win->appid, NULL);
   }
@@ -54,8 +54,20 @@ static void switcher_item_decorate ( GtkWidget *self, gboolean labels,
   {
     priv->label = gtk_label_new(priv->win?priv->win->title:"");
     gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
-    gtk_grid_attach_next_to(GTK_GRID(priv->grid), priv->label, priv->icon, dir, 1,1 );
+    gtk_grid_attach_next_to(GTK_GRID(priv->grid), priv->label, priv->icon, dir,
+        1,1);
   }
+}
+
+static void switcher_item_set_title_width ( GtkWidget *self, gint title_width )
+{
+  SwitcherItemPrivate *priv;
+
+  g_return_if_fail(IS_SWITCHER_ITEM(self));
+  priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
+
+  if(priv->label)
+    gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
 }
 
 void switcher_item_update ( GtkWidget *self )
@@ -129,6 +141,7 @@ static void switcher_item_class_init ( SwitcherItemClass *kclass )
   FLOW_ITEM_CLASS(kclass)->compare = switcher_item_compare;
   FLOW_ITEM_CLASS(kclass)->invalidate = switcher_item_invalidate;
   FLOW_ITEM_CLASS(kclass)->decorate = switcher_item_decorate;
+  FLOW_ITEM_CLASS(kclass)->set_title_width = switcher_item_set_title_width;
   FLOW_ITEM_CLASS(kclass)->get_source =
     (void * (*)(GtkWidget *))switcher_item_get_window;
 }
