@@ -1,7 +1,7 @@
 #ifndef __SNI_H__
 #define __SNI_H__
 
-#define SNI_MAX_STRING 14
+#define SNI_MAX_STRING 16
 #define SNI_MAX_PROP 19
 
 enum {
