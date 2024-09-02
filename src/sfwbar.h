@@ -10,6 +10,8 @@
 #define g_memdup2(x,y) g_memdup(x,y)
 #endif
 
+#define set_bit(var, mask, state) { var = state?var|(mask):var&(~mask); }
+
 enum ipc_type {
   IPC_SWAY    = 1,
   IPC_HYPR    = 2,
@@ -22,6 +24,8 @@ void css_widget_apply ( GtkWidget *widget, gchar *css );
 void css_widget_cascade ( GtkWidget *widget, gpointer data );
 void css_add_class ( GtkWidget *widget, gchar *css_class );
 void css_remove_class ( GtkWidget *widget, gchar *css_class );
+void css_set_class ( GtkWidget *widget, gchar *css_class, gboolean state );
+gchar *css_legacy_preprocess ( gchar *css_string );
 
 void signal_subscribe ( void );
 
