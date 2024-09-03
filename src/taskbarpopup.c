@@ -178,7 +178,7 @@ static void taskbar_popup_update ( GtkWidget *self )
   if(!priv->invalid)
     return;
 
-  css_set_class(priv->button, "active", !!flow_grid_find_child(
+  css_set_class(priv->button, "focused", !!flow_grid_find_child(
         priv->tgroup, wintree_from_id(wintree_get_focus())));
 
   if(priv->icon)
@@ -191,7 +191,7 @@ static void taskbar_popup_update ( GtkWidget *self )
   gtk_widget_unset_state_flags(priv->button, GTK_STATE_FLAG_PRELIGHT);
 
   flow_grid_update(priv->tgroup);
-  flow_item_set_active(self, flow_grid_n_children(priv->tgroup)>0 );
+  flow_item_set_active(self, flow_grid_n_children(priv->tgroup)>0);
   priv->single = (flow_grid_n_children(priv->tgroup)==1);
   window_collapse_popups(priv->popover);
   gtk_widget_hide(priv->popover);

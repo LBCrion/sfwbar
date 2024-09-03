@@ -161,7 +161,7 @@ static void taskbar_item_update ( GtkWidget *self )
   if(!priv->invalid)
     return;
 
-  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "active",
+  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "focused",
       wintree_is_focused(priv->win->uid));
 
   if(priv->label)

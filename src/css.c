@@ -258,11 +258,11 @@ gchar *css_legacy_preprocess ( gchar *css_string )
     "#pager_normal", "#pager_visible", "#pager_focused", "#switcher_normal",
     "#switcher_active", "#tray_active", "#tray_attention", "#tray_passive",
     NULL };
-  gchar *new[] = { "#taskbar_item", "#taskbar_item.active", "#taskbar_popup",
-    "#taskbar_popup.active", "#taskbar_popup", "#taskbar_popup.active",
-    "#taskbar_pager", "#taskbar_pager.active", "#pager_item",
+  gchar *new[] = { "#taskbar_item", "#taskbar_item.focused", "#taskbar_popup",
+    "#taskbar_popup.focused", "#taskbar_popup", "#taskbar_popup.focused",
+    "#taskbar_pager", "#taskbar_pager.focused", "#pager_item",
     "#pager_item.visible", "#pager_item.focused", "#switcher_item",
-    "#switcher_item.active", "#tray_item", "#tray_item.attention",
+    "#switcher_item.focused", "#tray_item", "#tray_item.urgent",
     "#tray_item.passive", NULL };
   gchar *tmp, *res;
   gsize i;

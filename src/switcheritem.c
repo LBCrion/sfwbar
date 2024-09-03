@@ -87,7 +87,7 @@ void switcher_item_update ( GtkWidget *self )
   if(priv->icon)
     scale_image_set_image(priv->icon,priv->win->appid,NULL);
 
-  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "active",
+  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "focused",
       switcher_is_focused(((window_t *)flow_item_get_source(self))->uid));
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);

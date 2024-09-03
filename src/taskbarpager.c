@@ -90,7 +90,7 @@ static void taskbar_pager_update ( GtkWidget *self )
       g_strcmp0(gtk_button_get_label(GTK_BUTTON(priv->button)), title))
     gtk_button_set_label(GTK_BUTTON(priv->button), title);
 
-  css_set_class(base_widget_get_child(self), "active", !!flow_grid_find_child(
+  css_set_class(base_widget_get_child(self), "focused", !!flow_grid_find_child(
         priv->taskbar, wintree_from_id(wintree_get_focus())));
 
   gtk_widget_unset_state_flags(base_widget_get_child(self),
