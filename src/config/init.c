@@ -268,10 +268,12 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container )
   {
     *tmp=0;
     css = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(css,tmp+5,strlen(tmp+5),NULL);
+    tmp = css_legacy_preprocess(g_strdup(tmp+5));
+    gtk_css_provider_load_from_data(css,tmp,strlen(tmp),NULL);
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
       GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
     g_object_unref(css);
+    g_free(tmp);
   }
 
   scanner->input_name = fname;

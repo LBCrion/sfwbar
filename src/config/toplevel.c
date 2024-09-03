@@ -183,7 +183,7 @@ void config_menu_items ( GScanner *scanner, GtkWidget *menu )
         break;
     }
     if(item)
-      gtk_container_add(GTK_CONTAINER(menu),item);
+      gtk_container_add(GTK_CONTAINER(menu), item);
   }
 }
 
