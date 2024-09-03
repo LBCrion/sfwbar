@@ -15,7 +15,7 @@ G_DEFINE_TYPE_WITH_CODE (TrayItem, tray_item, FLOW_ITEM_TYPE,
 void tray_item_update ( GtkWidget *self )
 {
   TrayItemPrivate *priv;
-  gint icon = SNI_PROP_ICON, pix = SNI_PROP_ICONPIX;
+  gchar *tooltip;
 
   g_return_if_fail(IS_TRAY_ITEM(self));
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
@@ -24,10 +24,10 @@ void tray_item_update ( GtkWidget *self )
     return;
   priv->invalid = FALSE;
 
-  if(priv->sni->tooltip)
+  if( (tooltip = sni_item_tooltip(priv->sni)) )
   {
+    gtk_widget_set_tooltip_text(priv->button, tooltip);
     gtk_widget_set_has_tooltip(priv->button, TRUE);
-    gtk_widget_set_tooltip_text(priv->button, priv->sni->tooltip);
   }
   else
     gtk_widget_set_has_tooltip(priv->button, FALSE);
@@ -38,18 +38,9 @@ void tray_item_update ( GtkWidget *self )
         priv->sni->string[SNI_PROP_STATUS][0]=='N');
     css_set_class(priv->button, "passive",
         priv->sni->string[SNI_PROP_STATUS][0]=='P');
-    if(priv->sni->string[SNI_PROP_STATUS][0]=='N')
-    {
-      icon = SNI_PROP_ATTN;
-      pix = SNI_PROP_ATTNPIX;
-    }
   }
 
-  if(priv->sni->string[icon] && *(priv->sni->string[icon]))
-    scale_image_set_image(priv->icon, priv->sni->string[icon],
-        priv->sni->string[SNI_PROP_THEME]);
-  else if(priv->sni->string[pix])
-    scale_image_set_image(priv->icon, priv->sni->string[pix], NULL);
+  scale_image_set_image(priv->icon, sni_item_icon(priv->sni), NULL);
 
   if(priv->sni->string[SNI_PROP_LABEL] && *(priv->sni->string[SNI_PROP_LABEL]))
   {

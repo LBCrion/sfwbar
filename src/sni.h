@@ -1,8 +1,7 @@
 #ifndef __SNI_H__
 #define __SNI_H__
 
-#define SNI_MAX_STRING 14
-#define SNI_MAX_PROP 19
+#define SNI_MAX_STRING (SNI_PROP_ATTNPIX+1)
 
 enum {
   SNI_PROP_CATEGORY = 0,
@@ -13,17 +12,20 @@ enum {
   SNI_PROP_OVLAY = 5,
   SNI_PROP_ATTN = 6,
   SNI_PROP_ATTNMOV = 7,
-  SNI_PROP_LABEL = 8,
-  SNI_PROP_LGUIDE = 9,
-  SNI_PROP_THEME = 10,
-  SNI_PROP_ICONPIX = 11,
-  SNI_PROP_OVLAYPIX = 12,
-  SNI_PROP_ATTNPIX = 13,
-  SNI_PROP_WINDOWID = 14,
-  SNI_PROP_TOOLTIP = 15,
-  SNI_PROP_ISMENU = 16,
-  SNI_PROP_MENU = 17,
-  SNI_PROP_ORDER = 18
+  SNI_PROP_ICONACC = 8,
+  SNI_PROP_ATTNACC = 9,
+  SNI_PROP_LABEL = 10,
+  SNI_PROP_LGUIDE = 11,
+  SNI_PROP_THEME = 12,
+  SNI_PROP_ICONPIX = 13,
+  SNI_PROP_OVLAYPIX = 14,
+  SNI_PROP_ATTNPIX = 15,
+  SNI_PROP_WINDOWID = 16,
+  SNI_PROP_TOOLTIP = 17,
+  SNI_PROP_ISMENU = 18,
+  SNI_PROP_MENU = 19,
+  SNI_PROP_ORDER = 20,
+  SNI_PROP_MAX = 21
 };
 
 typedef struct sni_host {
@@ -65,5 +67,7 @@ void sni_get_menu ( GtkWidget *widget, GdkEvent *event );
 SniItem *sni_item_new (GDBusConnection *, SniHost *, const gchar *);
 void sni_item_free ( SniItem *sni );
 GList *sni_item_get_list ( void );
+gchar *sni_item_tooltip ( SniItem *item );
+gchar *sni_item_icon ( SniItem *item );
 
 #endif

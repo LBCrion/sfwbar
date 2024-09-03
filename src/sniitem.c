@@ -22,9 +22,40 @@ static guint pix_counter;
 
 static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
   "IconName", "OverlayIconName", "AttentionIconName", "AttentionMovieName",
-  "XAyatanaLabel", "XAyatanaLabelGuide", "IconThemePath", "IconPixmap",
-  "OverlayIconPixmap", "AttentionIconPixmap", "WindowId", "ToolTip",
-  "ItemIsMenu", "Menu", "XAyatanaOrderingIndex" };
+  "IconAccessibleDesc", "AttnAccessibleDesc", "XAyatanaLabel",
+  "XAyatanaLabelGuide", "IconThemePath", "IconPixmap", "OverlayIconPixmap",
+  "AttentionIconPixmap", "WindowId", "ToolTip", "ItemIsMenu", "Menu",
+  "XAyatanaOrderingIndex" };
+
+gchar *sni_item_icon ( SniItem *item )
+{
+  if(!item->string[SNI_PROP_STATUS])
+    return NULL;
+  if(item->string[SNI_PROP_STATUS][0]=='N')
+  {
+    if(item->string[SNI_PROP_ATTN] && item->string[SNI_PROP_ATTN][0])
+      return item->string[SNI_PROP_ATTN];
+    return item->string[SNI_PROP_ATTNPIX];
+  }
+  if(item->string[SNI_PROP_ICON] && item->string[SNI_PROP_ICON][0])
+    return item->string[SNI_PROP_ICON];
+  return item->string[SNI_PROP_ICONPIX];
+}
+
+gchar *sni_item_tooltip ( SniItem *item )
+{
+  if(item->tooltip && item->tooltip[0])
+    return item->tooltip;
+  if(!item->string[SNI_PROP_STATUS])
+    return NULL;
+  if(item->string[SNI_PROP_STATUS][0]!='N' && item->string[SNI_PROP_ICONACC] &&
+      item->string[SNI_PROP_ICONACC][0])
+    return item->string[SNI_PROP_ICONACC];
+  if(item->string[SNI_PROP_STATUS][0]=='N' && item->string[SNI_PROP_ATTNACC] &&
+      item->string[SNI_PROP_ATTNACC][0])
+    return item->string[SNI_PROP_ATTNACC];
+  return NULL;
+}
 
 gchar *sni_item_get_pixbuf ( GVariant *v )
 {
@@ -186,6 +217,7 @@ void sni_item_signal_cb (GDBusConnection *con, const gchar *sender,
   else if(!g_strcmp0(signal, "NewIcon"))
   {
     sni_item_get_prop(con, data, SNI_PROP_ICON);
+    sni_item_get_prop(con, data, SNI_PROP_ICONACC);
     sni_item_get_prop(con, data, SNI_PROP_ICONPIX);
   }
   else if(!g_strcmp0(signal, "NewOverlayIcon"))
@@ -196,6 +228,7 @@ void sni_item_signal_cb (GDBusConnection *con, const gchar *sender,
   else if(!g_strcmp0(signal, "NewAttentionIcon"))
   {
     sni_item_get_prop(con, data, SNI_PROP_ATTN);
+    sni_item_get_prop(con, data, SNI_PROP_ATTNACC);
     sni_item_get_prop(con, data, SNI_PROP_ATTNPIX);
   }
   else if(!g_strcmp0(signal, "XAyatanaNewLabel"))
@@ -230,7 +263,7 @@ SniItem *sni_item_new (GDBusConnection *con, SniHost *host,
       sni, NULL);
   sni_items = g_list_append(sni_items, sni);
   tray_item_init_for_all(sni);
-  for(i=0; i<SNI_MAX_PROP; i++)
+  for(i=0; i<SNI_PROP_MAX; i++)
     sni_item_get_prop(con, sni, i);
 
   return sni;
