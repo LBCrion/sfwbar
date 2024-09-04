@@ -40,7 +40,8 @@ void tray_item_update ( GtkWidget *self )
         priv->sni->string[SNI_PROP_STATUS][0]=='P');
   }
 
-  scale_image_set_image(priv->icon, sni_item_icon(priv->sni), NULL);
+  scale_image_set_image(priv->icon, sni_item_icon(priv->sni),
+      priv->sni->string[SNI_PROP_THEME]);
 
   if(priv->sni->string[SNI_PROP_LABEL] && *(priv->sni->string[SNI_PROP_LABEL]))
   {
