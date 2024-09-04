@@ -161,11 +161,19 @@ static void taskbar_item_update ( GtkWidget *self )
   if(!priv->invalid)
     return;
 
+  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "minimized",
+      priv->win->state & WS_MINIMIZED);
+  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "maximized",
+      priv->win->state & WS_MAXIMIZED);
+  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "fullscreen",
+      priv->win->state & WS_FULLSCREEN);
+  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "urgent",
+      priv->win->state & WS_URGENT);
   css_set_class(gtk_bin_get_child(GTK_BIN(self)), "focused",
       wintree_is_focused(priv->win->uid));
 
   if(priv->label)
-    if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)),priv->win->title))
+    if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)), priv->win->title))
       gtk_label_set_text(GTK_LABEL(priv->label), priv->win->title);
 
   if(priv->icon)

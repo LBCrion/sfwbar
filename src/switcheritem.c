@@ -81,14 +81,22 @@ void switcher_item_update ( GtkWidget *self )
     return;
 
   if(priv->label)
-    if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)),priv->win->title))
+    if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)), priv->win->title))
       gtk_label_set_text(GTK_LABEL(priv->label), priv->win->title);
 
   if(priv->icon)
-    scale_image_set_image(priv->icon,priv->win->appid,NULL);
+    scale_image_set_image(priv->icon, priv->win->appid, NULL);
 
+  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "minimized",
+      priv->win->state & WS_MINIMIZED);
+  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "maximized",
+      priv->win->state & WS_MAXIMIZED);
+  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "fullscreen",
+      priv->win->state & WS_FULLSCREEN);
+  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "urgent",
+      priv->win->state & WS_URGENT);
   css_set_class(gtk_bin_get_child(GTK_BIN(self)), "focused",
-      switcher_is_focused(((window_t *)flow_item_get_source(self))->uid));
+      switcher_is_focused(priv->win->uid));
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
 
@@ -101,7 +109,7 @@ window_t *switcher_item_get_window ( GtkWidget *self )
 {
   SwitcherItemPrivate *priv;
 
-  g_return_val_if_fail(IS_SWITCHER_ITEM(self),NULL);
+  g_return_val_if_fail(IS_SWITCHER_ITEM(self), NULL);
   priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
 
   return priv->win;
