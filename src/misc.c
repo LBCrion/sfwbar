@@ -36,7 +36,7 @@ gint socket_connect ( const gchar *sockaddr, gint to )
 
 gssize recv_retry ( gint sock, gpointer buff, gsize len )
 {
-  gsize rlen, tlen=0;
+  gssize rlen, tlen=0;
 
   while(tlen<len && (rlen = recv(sock, buff+tlen, len-tlen, 0))>0 )
     tlen += rlen;
