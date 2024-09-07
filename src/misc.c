@@ -23,16 +23,25 @@ gint socket_connect ( const gchar *sockaddr, gint to )
   struct sockaddr_un addr;
   struct timeval timeout = {.tv_sec = to/1000, .tv_usec = to%1000};
 
-  sock = socket(AF_UNIX,SOCK_STREAM,0);
-  if (sock == -1)
+  if( (sock = socket(AF_UNIX,SOCK_STREAM,0))==-1)
     return -1;
   addr.sun_family = AF_UNIX;
   strncpy(addr.sun_path, sockaddr, sizeof(addr.sun_path) - 1);
-  if(connect(sock,(struct sockaddr *)&addr,sizeof(struct sockaddr_un)) != -1 )
-    if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) != -1)
-      return sock;
+  if(connect(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un))!=-1 &&
+      setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout))!=-1)
+    return sock;
   close(sock);
   return -1;
+}
+
+gssize recv_retry ( gint sock, gpointer buff, gsize len )
+{
+  gsize rlen, tlen=0;
+
+  while(tlen<len && (rlen = recv(sock, buff+tlen, len-tlen, 0))>0 )
+    tlen += rlen;
+
+  return tlen;
 }
 
 json_object *recv_json ( gint sock, gssize len )
@@ -161,14 +170,24 @@ gboolean json_bool_by_name ( struct json_object *obj, gchar *name, gboolean defv
 }
 
 /* get double value from an object within current object */
-gdouble json_double_by_name ( struct json_object *obj, gchar *name, gdouble defval)
+gdouble json_double_by_name ( struct json_object *obj, gchar *key, gdouble defval)
 {
   struct json_object *ptr;
 
-  if(json_object_object_get_ex(obj,name,&ptr))
+  if(json_object_object_get_ex(obj, key, &ptr))
     return json_object_get_double(ptr);
 
   return defval;
+}
+
+struct json_object *json_array_by_name ( struct json_object *obj, gchar *key )
+{
+  struct json_object *ptr;
+
+  if(json_object_object_get_ex(obj, key, &ptr) &&
+      json_object_is_type(ptr, json_type_array))
+    return ptr;
+  return NULL;
 }
 
 gboolean pattern_match ( gchar **dict, gchar *string )
