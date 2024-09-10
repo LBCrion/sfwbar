@@ -223,14 +223,15 @@ void flow_grid_set_sort ( GtkWidget *self, gboolean sort )
   flow_grid_invalidate(self);
 }
 
-void flow_grid_remove_widget ( GtkWidget *widget, GtkWidget *self )
+static void flow_grid_remove_widget_maybe (GtkWidget *widget, GtkWidget *self)
 {
   FlowGridPrivate *priv;
 
   g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
-  gtk_container_remove (GTK_CONTAINER(priv->grid), widget);
+  if(!g_list_find(priv->children, widget))
+    gtk_container_remove (GTK_CONTAINER(priv->grid), widget);
 }
 
 void flow_grid_invalidate ( GtkWidget *self )
@@ -287,6 +288,19 @@ void flow_grid_delete_child ( GtkWidget *self, void *source )
   priv->invalid = TRUE;
 }
 
+void flow_grid_child_position ( GtkGrid *grid, GtkWidget *child, gint x, gint y )
+{
+  if(!gtk_widget_get_parent(child))
+    gtk_grid_attach(GTK_GRID(grid), child, x, y, 1, 1);
+  else
+    gtk_container_child_set(GTK_CONTAINER(grid), child,
+        "left-attach", x,
+        "top-attach", y,
+        "width", 1,
+        "height", 1,
+        NULL);
+}
+
 void flow_grid_update ( GtkWidget *self )
 {
   FlowGridPrivate *priv, *ppriv;
@@ -311,7 +325,7 @@ void flow_grid_update ( GtkWidget *self )
   }
 
   gtk_container_foreach(GTK_CONTAINER(priv->grid),
-      (GtkCallback)flow_grid_remove_widget, self);
+      (GtkCallback)flow_grid_remove_widget_maybe, self);
 
   if(ppriv->sort)
     priv->children = g_list_sort_with_data(priv->children,
@@ -347,11 +361,16 @@ void flow_grid_update ( GtkWidget *self )
     if(flow_item_get_active(iter->data))
     {
       if(rows>0)
-        gtk_grid_attach(priv->grid, iter->data, i/rows, i%rows, 1, 1);
+        flow_grid_child_position(priv->grid, iter->data, i/rows, i%rows);
       else if(cols>0)
-        gtk_grid_attach(priv->grid, iter->data, i%cols, i/cols, 1, 1);
+        flow_grid_child_position(priv->grid, iter->data, i%cols, i/cols);
+      else
+        g_warning("invalid row/column configuration in a FlowGrid");
       i++;
     }
+    else if(gtk_widget_get_parent(iter->data))
+      gtk_container_remove(GTK_CONTAINER(priv->grid), iter->data);
+
   if(rows>0)
     for(;i<rows; i++)
       gtk_grid_attach(priv->grid, gtk_label_new(""), 0, i, 1, 1);
