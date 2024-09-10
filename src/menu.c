@@ -101,6 +101,11 @@ GtkWidget *menu_new ( gchar *name )
   return menu;
 }
 
+static void menu_popdown_cb ( GtkWidget *widget, GtkWidget *menu )
+{
+  gtk_menu_popdown(GTK_MENU(menu));
+}
+
 void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
     gpointer wid, guint16 *state )
 {
@@ -127,6 +132,10 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
   popup_get_gravity(widget, &wanchor, &manchor);
   gtk_widget_show_all(menu);
   window_ref(window, menu);
+  g_signal_handlers_disconnect_by_func(G_OBJECT(widget),
+        G_CALLBACK(menu_popdown_cb), menu);
+  g_signal_connect(G_OBJECT(widget), "unrealize",
+        G_CALLBACK(menu_popdown_cb), menu);
   gtk_menu_popup_at_widget(GTK_MENU(menu), widget, wanchor, manchor, event);
 }
 
