@@ -8,6 +8,7 @@
 #include "trayitem.h"
 #include "flowgrid.h"
 #include "scaleimage.h"
+#include "menu.h"
 
 G_DEFINE_TYPE_WITH_CODE (TrayItem, tray_item, FLOW_ITEM_TYPE,
     G_ADD_PRIVATE (TrayItem))
@@ -109,7 +110,7 @@ static gboolean tray_item_action_exec ( GtkWidget *self, gint slot,
     if((ev->button.button == 1 && priv->sni->menu) || ev->button.button == 3)
     {
       if(priv->sni->menu_path)
-        sni_get_menu(self, ev);
+        menu_popup(self, priv->sni->menu_obj, ev, NULL, NULL);
       else
         method = "ContextMenu";
     }

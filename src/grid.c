@@ -82,11 +82,11 @@ static void grid_init ( Grid *self )
   priv = grid_get_instance_private(GRID(self));
 
   priv->grid = gtk_grid_new();
-  gtk_container_add(GTK_CONTAINER(self),priv->grid);
-  g_signal_connect(G_OBJECT(priv->grid),"style_updated",
-      (GCallback)grid_style_updated,self);
-  g_signal_connect(G_OBJECT(priv->grid),"remove",
-      (GCallback)grid_remove,self);
+  gtk_container_add(GTK_CONTAINER(self), priv->grid);
+  g_signal_connect(G_OBJECT(priv->grid), "style_updated",
+      (GCallback)grid_style_updated, self);
+  g_signal_connect(G_OBJECT(priv->grid), "remove",
+      (GCallback)grid_remove, self);
 }
 
 GtkWidget *grid_new ( void )

@@ -156,6 +156,7 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
   {
     g_free(wrap->sni->menu_path);
     g_variant_get(inner, "o", &(wrap->sni->menu_path));
+    sni_menu_init(wrap->sni);
     g_debug("sni %s: property %s = %s", wrap->sni->dest,
         sni_properties[wrap->prop], wrap->sni->menu_path);
   }
@@ -283,6 +284,7 @@ void sni_item_free ( SniItem *sni )
   for(i=0; i<SNI_MAX_STRING; i++)
     g_free(sni->string[i]);
 
+  gtk_widget_destroy(sni->menu_obj);
   g_free(sni->menu_path);
   g_free(sni->tooltip);
   g_free(sni->uid);

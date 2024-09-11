@@ -58,6 +58,7 @@ typedef struct sni_item {
   guint32 order;
   GCancellable *cancel;
   SniHost *host;
+  GtkWidget *menu_obj;
 } SniItem;
 
 void sni_init ( void );
@@ -69,5 +70,6 @@ void sni_item_free ( SniItem *sni );
 GList *sni_item_get_list ( void );
 gchar *sni_item_tooltip ( SniItem *item );
 gchar *sni_item_icon ( SniItem *item );
+void sni_menu_init ( SniItem *sni );
 
 #endif
