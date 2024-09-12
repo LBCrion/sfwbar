@@ -331,6 +331,8 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
     g_scanner_get_next_token(scanner);
     if(config_widget_child(scanner, NULL))
       continue;
+    if(config_scanner_source(scanner))
+      continue;
     switch(config_lookup_key(scanner, config_toplevel_keys))
     {
       case G_TOKEN_SCANNER:

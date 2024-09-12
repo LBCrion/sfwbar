@@ -147,6 +147,32 @@ static ScanFile *config_source ( GScanner *scanner, gint source )
   return file;
 }
 
+gboolean config_scanner_source ( GScanner *scanner )
+{
+  switch(config_lookup_key(scanner, config_scanner_keys))
+  {
+    case G_TOKEN_FILE:
+      config_source(scanner, SO_FILE);
+      return TRUE;
+    case G_TOKEN_EXEC:
+      config_source(scanner, SO_EXEC);
+      return TRUE;
+    case G_TOKEN_MPDCLIENT:
+      client_mpd(config_source(scanner, SO_CLIENT));
+      return TRUE;
+    case G_TOKEN_SWAYCLIENT:
+      sway_ipc_client_init(config_source(scanner, SO_CLIENT));
+      return TRUE;
+    case G_TOKEN_EXECCLIENT:
+      client_exec(config_source(scanner, SO_CLIENT));
+      return TRUE;
+    case G_TOKEN_SOCKETCLIENT:
+      client_socket(config_source(scanner, SO_CLIENT));
+      return TRUE;
+  }
+  return FALSE;
+}
+
 void config_scanner ( GScanner *scanner )
 {
   scanner->max_parse_errors = FALSE;
@@ -157,29 +183,7 @@ void config_scanner ( GScanner *scanner )
   while(!config_is_section_end(scanner))
   {
     g_scanner_get_next_token(scanner);
-    switch(config_lookup_key(scanner, config_scanner_keys))
-    {
-      case G_TOKEN_FILE:
-        config_source(scanner, SO_FILE);
-        break;
-      case G_TOKEN_EXEC:
-        config_source(scanner, SO_EXEC);
-        break;
-      case G_TOKEN_MPDCLIENT:
-        client_mpd(config_source(scanner, SO_CLIENT));
-        break;
-      case G_TOKEN_SWAYCLIENT:
-        sway_ipc_client_init(config_source(scanner, SO_CLIENT));
-        break;
-      case G_TOKEN_EXECCLIENT:
-        client_exec(config_source(scanner, SO_CLIENT));
-        break;
-      case G_TOKEN_SOCKETCLIENT:
-        client_socket(config_source(scanner, SO_CLIENT));
-        break;
-      default:
-        g_scanner_error(scanner, "Invalid source in scanner");
-        break;
-    }
+    if(!config_scanner_source(scanner))
+      g_message("Invalid source in scanner");
   }
 }
