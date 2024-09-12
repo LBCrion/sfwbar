@@ -48,6 +48,7 @@ gchar *config_get_value ( GScanner *, gchar *, gboolean, gchar **);
 void config_menu_items ( GScanner *scanner, GtkWidget *menu );
 gboolean config_flowgrid_property ( GScanner *scanner, GtkWidget *widget );
 void config_scanner ( GScanner *scanner );
+gboolean config_scanner_source ( GScanner *scanner );
 void config_layout ( GScanner *, GtkWidget * );
 gboolean config_widget_child ( GScanner *scanner, GtkWidget *container );
 gboolean config_include ( GScanner *scanner, GtkWidget *container );

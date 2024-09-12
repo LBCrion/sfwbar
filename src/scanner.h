@@ -56,6 +56,7 @@ GIOStatus scanner_file_update ( GIOChannel *, ScanFile *, gsize * );
 int scanner_glob_file ( ScanFile * );
 void *scanner_get_value ( gchar *ident, gboolean update, ExprCache *expr );
 void scanner_var_new ( gchar *, ScanFile *, gchar *, guint, gint );
+void scanner_file_merge ( ScanFile *keep, ScanFile *temp );
 gchar *scanner_parse_identifier ( gchar *id, gchar **fname );
 ScanFile *scanner_file_get ( gchar *trigger );
 ScanFile *scanner_file_new ( gint , gchar *, gchar *, gint );

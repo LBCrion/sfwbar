@@ -247,7 +247,13 @@ static void sway_traverse_tree ( struct json_object *obj, const gchar *parent,
 
 void sway_ipc_client_init ( ScanFile *file )
 {
-  sway_file = file;
+  if(sway_file)
+  {
+    scanner_file_attach(sway_file->trigger, sway_file);
+    scanner_file_merge(sway_file, file);
+  }
+  else
+    sway_file = file;
 }
 
 static workspace_t *sway_ipc_workspace_new ( struct json_object *obj )

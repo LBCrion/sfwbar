@@ -32,6 +32,20 @@ ScanFile *scanner_file_get ( gchar *trigger )
   return g_hash_table_lookup(trigger_list, (void *)g_intern_string(trigger));
 }
 
+void scanner_file_merge ( ScanFile *keep, ScanFile *temp )
+{
+  GList *iter;
+
+  file_list = g_list_remove(file_list, temp);
+
+  for(iter=temp->vars; iter; iter=g_list_next(iter))
+    ((ScanVar *)(iter->data))->file = keep;
+  keep->vars = g_list_concat(keep->vars, temp->vars);
+
+  g_free(temp->fname);
+  g_free(temp);
+}
+
 ScanFile *scanner_file_new ( gint source, gchar *fname,
     gchar *trigger, gint flags )
 {

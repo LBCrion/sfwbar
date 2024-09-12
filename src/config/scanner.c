@@ -140,7 +140,7 @@ static ScanFile *config_source ( GScanner *scanner, gint source )
     return NULL;
   }
 
-  file = scanner_file_new ( source, fname, trigger, flags );
+  file = scanner_file_new(source, fname, trigger, flags);
   while(!config_is_section_end(scanner))
     config_var(scanner, file);
 

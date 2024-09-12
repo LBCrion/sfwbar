@@ -16,6 +16,8 @@ typedef struct _MpdState {
   GQueue *commands;
 } MpdState;
 
+ScanFile *mpd_file;
+
 #define MPD_STATE(x) ((MpdState *)(x))
 
 gboolean client_mpd_connect ( Client *client )
@@ -75,13 +77,19 @@ GIOStatus client_mpd_respond ( Client *client )
   return s;
 }
 
-
 void client_mpd ( ScanFile *file )
 {
   Client *client;
 
   if( !file || !file->fname )
     return;
+
+  if(mpd_file)
+  {
+    scanner_file_attach(mpd_file->trigger, mpd_file);
+    scanner_file_merge(mpd_file, file);
+    return;
+  }
 
   client = g_malloc0(sizeof(Client));
   client->file = file;
@@ -94,23 +102,22 @@ void client_mpd ( ScanFile *file )
   file->trigger = g_intern_static_string("mpd");
   file->source = SO_CLIENT;
   file->client = client;
+  mpd_file = file;
 
   client_attach(client);
 }
 
 void client_mpd_command ( gchar *command )
 {
-  ScanFile *file;
   Client *client;
 
   if(!command)
     return;
 
-  file = scanner_file_get("mpd");
-  if(!file)
+  if(!mpd_file)
     return;
 
-  client = file->client;
+  client = mpd_file->client;
   if(!client || !client->out || !client->data)
     return;
 

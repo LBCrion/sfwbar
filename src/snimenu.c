@@ -325,7 +325,7 @@ static void sni_menu_layout_updated_cb (GDBusConnection *con,
   gint32 id;
 
   g_variant_get(parameters, "(ui)", &rev, &id);
-  g_message("sni menu: update: %s, id: %d, rev: %u", sni->dest, id, rev);
+  g_debug("sni menu: update: %s, id: %d, rev: %u", sni->dest, id, rev);
   g_dbus_connection_call(sni_get_connection(), sni->dest, sni->menu_path,
       sni_menu_iface, "GetLayout", g_variant_new("(iias)", 0, -1, NULL),
       G_VARIANT_TYPE("(u(ia{sv}av))"), G_DBUS_CALL_FLAGS_NONE, -1, NULL,
