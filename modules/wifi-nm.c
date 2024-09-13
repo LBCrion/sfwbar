@@ -2,6 +2,7 @@
 #include <gio/gio.h>
 #include "../src/module.h"
 #include "../src/basewidget.h"
+#include "../src/popup.h"
 
 typedef struct _nm_apoint nm_apoint_t;
 typedef struct _nm_ap_node nm_ap_node_t;
@@ -430,6 +431,7 @@ static gboolean nm_passphrase_prompt ( GVariant *vconn, gpointer inv )
   g_object_ref_sink(G_OBJECT(dialog->win));
   dialog->path = g_strdup(path);
   g_hash_table_insert(dialog_list, dialog->path, dialog);
+  popup_popdown_autoclose();
   gtk_widget_show_all(dialog->win);
 
   return TRUE;

@@ -3,6 +3,7 @@
 #include <gio/gio.h>
 #include "../src/module.h"
 #include "../src/basewidget.h"
+#include "../src/popup.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
@@ -498,6 +499,7 @@ static void iw_passphrase_prompt ( gchar *title, gboolean user, gpointer inv )
       G_CALLBACK(iw_button_clicked), dialog);
 
   g_object_ref_sink(G_OBJECT(dialog->win));
+  popup_popdown_autoclose();
   gtk_widget_show_all(dialog->win);
 }
 
