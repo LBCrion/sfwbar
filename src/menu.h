@@ -10,5 +10,6 @@ void menu_remove ( gchar *name );
 void menu_item_remove ( gchar *id );
 void menu_popup ( GtkWidget *, GtkWidget *, GdkEvent *, gpointer, guint16 * );
 GtkWidget *menu_item_new ( gchar *label, action_t *action, gchar *id );
+void menu_item_update ( GtkWidget *item, const gchar *label, const gchar *icon );
 
 #endif

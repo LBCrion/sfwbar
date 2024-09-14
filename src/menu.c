@@ -166,9 +166,43 @@ gboolean menu_action_cb ( GtkWidget *w ,action_t *action )
   return TRUE;
 }
 
+void menu_item_update ( GtkWidget *item, const gchar *label, const gchar *icon )
+{
+  GtkWidget *box, *wicon, *wlabel;
+
+  g_return_if_fail(GTK_IS_MENU_ITEM(item));
+
+  if( !(box = gtk_bin_get_child(GTK_BIN(item))) )
+  {
+    box = gtk_grid_new();
+    gtk_container_add(GTK_CONTAINER(item), box);
+  }
+  wicon = gtk_grid_get_child_at(GTK_GRID(box), 1, 1);
+  if(wicon && !icon)
+    gtk_widget_destroy(wicon);
+  else if(!wicon && icon)
+  {
+    wicon = scale_image_new();
+    gtk_grid_attach(GTK_GRID(box), wicon, 1, 1, 1, 1);
+  }
+  if(wicon)
+    scale_image_set_image(wicon, icon, NULL);
+
+  wlabel = gtk_grid_get_child_at(GTK_GRID(box), 2, 1);
+  if(wlabel && !label)
+    gtk_widget_destroy(wlabel);
+  else if(!wlabel && label)
+  {
+    wlabel = gtk_label_new_with_mnemonic(label);
+    gtk_grid_attach(GTK_GRID(box), wlabel, 2, 1, 1, 1);
+  }
+  else if(wlabel && label)
+    gtk_label_set_text_with_mnemonic(GTK_LABEL(wlabel), label);
+}
+
 GtkWidget *menu_item_new ( gchar *label, action_t *action, gchar *id )
 {
-  GtkWidget *item, *box, *wlabel, *img;
+  GtkWidget *item;
   gchar *text, *icon;
 
   icon = strchr(label,'%');
@@ -179,21 +213,8 @@ GtkWidget *menu_item_new ( gchar *label, action_t *action, gchar *id )
 
   item = gtk_menu_item_new();
   gtk_widget_set_name(item, "menu_item");
-  box = gtk_grid_new();
-  if(icon)
-  {
-    img = scale_image_new();
-    scale_image_set_image(img, icon+1, NULL);
-    if(img)
-      gtk_grid_attach(GTK_GRID(box), img, 1, 1, 1, 1);
-  }
-  if(text)
-  {
-    wlabel = gtk_label_new_with_mnemonic(text);
-    gtk_grid_attach(GTK_GRID(box), wlabel, 2, 1, 1, 1);
-    g_free(text);
-  }
-  gtk_container_add(GTK_CONTAINER(item), box);
+  menu_item_update(item, text, icon?icon+1:NULL);
+  g_free(text);
 
   if(action)
   {

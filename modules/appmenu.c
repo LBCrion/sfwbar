@@ -230,25 +230,14 @@ static void app_menu_item_free ( app_menu_item_t *item )
 
 static GtkWidget *app_menu_item_build ( gchar *title, gchar *icon )
 {
-  GtkWidget *menu_item, *grid, *label, *image;
+  GtkWidget *item;
 
-  menu_item = gtk_menu_item_new();
-  gtk_widget_set_name(menu_item, "menu_item");
-  grid = gtk_grid_new();
+  item = gtk_menu_item_new();
+  gtk_widget_set_name(item, "menu_item");
+  menu_item_update(item, title, icon);
+  g_object_set_data(G_OBJECT(item), "title", title);
 
-  image = scale_image_new();
-  scale_image_set_image(image, icon, NULL);
-  gtk_grid_attach(GTK_GRID(grid), image, 1, 1, 1, 1);
-
-  if(title)
-  {
-    label = gtk_label_new_with_mnemonic(title);
-    gtk_grid_attach(GTK_GRID(grid), label, 2, 1, 1, 1);
-  }
-  gtk_container_add(GTK_CONTAINER(menu_item), grid);
-  g_object_set_data(G_OBJECT(menu_item), "title", title);
-
-  return menu_item;
+  return item;
 }
 
 static void app_menu_item_insert ( GtkWidget *menu, GtkWidget *item )

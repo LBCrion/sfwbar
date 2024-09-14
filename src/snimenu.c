@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include "sfwbar.h"
 #include "sni.h"
+#include "menu.h"
+#include "scaleimage.h"
 #include "flowitem.h"
 
 const gchar *sni_menu_iface = "com.canonical.dbusmenu";
@@ -16,13 +18,14 @@ static void sni_menu_parse ( GtkWidget *widget, GVariantIter *viter );
 static void sni_menu_about_to_show_cb ( GDBusConnection *, GAsyncResult *,
     gpointer);
 
-GtkWidget *sni_variant_get_pixbuf ( GVariant *dict, gchar *key )
+gchar *sni_menu_get_pixbuf ( GVariant *dict, gchar *key )
 {
   GVariant *ptr;
   GdkPixbufLoader *loader;
   GdkPixbuf *pixbuf;
-  GtkWidget *img = NULL;
+  static gint pb_counter;
   guchar *buff;
+  gchar *id;
   gsize len;
 
   ptr = g_variant_lookup_value(dict,key,G_VARIANT_TYPE_ARRAY);
@@ -35,15 +38,19 @@ GtkWidget *sni_variant_get_pixbuf ( GVariant *dict, gchar *key )
     loader = gdk_pixbuf_loader_new();
     gdk_pixbuf_loader_write(loader, buff, len, NULL);
     gdk_pixbuf_loader_close(loader,NULL);
-    pixbuf = gdk_pixbuf_loader_get_pixbuf(loader);
-    if(pixbuf)
-      img = gtk_image_new_from_pixbuf(pixbuf);
+    if( (pixbuf = gdk_pixbuf_loader_get_pixbuf(loader)) )
+    {
+      id = g_strdup_printf("<pixbufcache/>snimenu-%d", pb_counter++);
+      scale_image_cache_insert(id, gdk_pixbuf_copy(pixbuf));
+    }
+    else
+      id = NULL;
     g_object_unref(G_OBJECT(loader));
   }
 
   g_variant_unref(ptr);
 
-  return img;
+  return id;
 }
 
 static GtkWidget *sni_menu_item_find ( GtkWidget *widget, gint32 id )
@@ -90,10 +97,16 @@ static void sni_menu_map_cb( GtkWidget *menu, SniItem *sni )
         (GAsyncReadyCallback)sni_menu_about_to_show_cb, menu);
 }
 
+static void sni_menu_pixbuf_free ( gchar *id )
+{
+  scale_image_cache_remove(id);
+  g_free(id);
+}
+
 static void sni_menu_item_update ( GtkWidget *item, GVariant *dict,
     GVariantIter *viter )
 {
-  GtkWidget *box, *wlabel, *wicon, *submenu;
+  GtkWidget *submenu;
   const gchar *label, *icon, *sub;
   gboolean has_submenu, state;
 
@@ -101,29 +114,17 @@ static void sni_menu_item_update ( GtkWidget *item, GVariant *dict,
 
   if(!GTK_IS_SEPARATOR_MENU_ITEM(item))
   {
-    if( !(box = gtk_bin_get_child(GTK_BIN(item))) )
+    if( !(g_variant_lookup(dict, "icon-name", "&s", &icon)) )
     {
-      box = gtk_grid_new();
-      gtk_container_add(GTK_CONTAINER(item), box);
+      icon = sni_menu_get_pixbuf(dict, "icon-data");
+      g_object_set_data_full(G_OBJECT(item), "pixbuf", (gpointer)icon,
+          (GDestroyNotify)sni_menu_pixbuf_free);
     }
-    if( (wicon=gtk_grid_get_child_at(GTK_GRID(box), 1, 1)) )
-      gtk_widget_destroy(wicon);
-    if( (g_variant_lookup(dict, "icon-name", "&s", &icon)) )
-      wicon = gtk_image_new_from_icon_name(icon, GTK_ICON_SIZE_MENU);
-    else
-      wicon = sni_variant_get_pixbuf(dict, "icon-data");
-    if(wicon)
-      gtk_grid_attach(GTK_GRID(box), wicon, 1, 1, 1, 1);
 
     if( !(g_variant_lookup(dict, "label", "&s", &label)) )
       label = "";
-    if( (wlabel=gtk_grid_get_child_at(GTK_GRID(box), 2, 1)) )
-      gtk_widget_destroy(wlabel);
-    if(label)
-    {
-      wlabel = gtk_label_new_with_mnemonic(label);
-      gtk_grid_attach(GTK_GRID(box), wlabel, 2, 1, 1, 1);
-    }
+
+    menu_item_update(item, label, icon);
 
     has_submenu = g_variant_lookup(dict, "children-display", "&s", &sub) &&
       !g_strcmp0(sub, "submenu");
