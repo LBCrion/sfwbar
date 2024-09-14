@@ -25,26 +25,24 @@ gchar *sni_menu_get_pixbuf ( GVariant *dict, gchar *key )
   GdkPixbuf *pixbuf;
   static gint pb_counter;
   guchar *buff;
-  gchar *id;
+  gchar *id = NULL;
   gsize len;
 
-  ptr = g_variant_lookup_value(dict,key,G_VARIANT_TYPE_ARRAY);
+  ptr = g_variant_lookup_value(dict, key, G_VARIANT_TYPE_ARRAY);
   if(!ptr)
     return NULL;
 
-  buff = (guchar *)g_variant_get_fixed_array(ptr,&len,sizeof(guchar));
+  buff = (guchar *)g_variant_get_fixed_array(ptr, &len, sizeof(guchar));
   if(buff && len>0)
   {
     loader = gdk_pixbuf_loader_new();
     gdk_pixbuf_loader_write(loader, buff, len, NULL);
-    gdk_pixbuf_loader_close(loader,NULL);
+    gdk_pixbuf_loader_close(loader, NULL);
     if( (pixbuf = gdk_pixbuf_loader_get_pixbuf(loader)) )
     {
       id = g_strdup_printf("<pixbufcache/>snimenu-%d", pb_counter++);
       scale_image_cache_insert(id, gdk_pixbuf_copy(pixbuf));
     }
-    else
-      id = NULL;
     g_object_unref(G_OBJECT(loader));
   }
 
