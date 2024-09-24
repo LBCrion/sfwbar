@@ -22,9 +22,10 @@ typedef struct workspace_s {
 } workspace_t;
 
 struct workspace_api {
-  void (*set_workspace) ( workspace_t *);
-  guint (*get_geom) ( workspace_t *, GdkRectangle **, GdkRectangle *, gint *);
-  gboolean (*get_can_create) (void);
+  void (*set_workspace) ( workspace_t * );
+  guint (*get_geom) ( workspace_t *, GdkRectangle **, GdkRectangle *, gint * );
+  gboolean (*get_can_create) ( void );
+  gchar *(*get_monitor) ( gpointer );
 };
 
 #define PAGER_PIN_ID (GINT_TO_POINTER(-1))
@@ -48,6 +49,7 @@ void workspace_api_register ( struct workspace_api *new );
 void workspace_activate ( workspace_t *ws );
 guint workspace_get_geometry ( workspace_t *, GdkRectangle **, GdkRectangle *,
     gint * );
+gchar *workspace_get_monitor ( gpointer wsid );
 gboolean workspace_get_can_create ( void );
 void workspace_pin_add ( gchar *pin );
 GList *workspace_get_list ( void );

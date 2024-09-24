@@ -4,6 +4,7 @@
  */
 
 #include "sfwbar.h"
+#include "bar.h"
 #include "pager.h"
 #include "pageritem.h"
 
@@ -42,6 +43,8 @@ static gboolean pager_item_action_exec ( GtkWidget *self, gint slot,
 void pager_item_update ( GtkWidget *self )
 {
   PagerItemPrivate *priv;
+  gboolean monitor_match, show_pin;
+  gchar *monitor;
 
   g_return_if_fail(IS_PAGER_ITEM(self));
   priv = pager_item_get_instance_private(PAGER_ITEM(self));
@@ -49,8 +52,8 @@ void pager_item_update ( GtkWidget *self )
   if(!priv->invalid)
     return;
 
-  if(g_strcmp0(gtk_button_get_label(GTK_BUTTON(priv->button)),priv->ws->name))
-    gtk_button_set_label(GTK_BUTTON(priv->button),priv->ws->name);
+  if(g_strcmp0(gtk_label_get_label(GTK_LABEL(priv->label)), priv->ws->name))
+    gtk_label_set_markup(GTK_LABEL(priv->label), priv->ws->name);
   gtk_widget_set_has_tooltip(priv->button,
       GPOINTER_TO_INT(g_object_get_data(G_OBJECT(priv->pager),"preview")));
   css_set_class(priv->button, "focused", workspace_is_focused(priv->ws));
@@ -59,9 +62,11 @@ void pager_item_update ( GtkWidget *self )
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
 
-  flow_item_set_active(self, priv->ws->id != PAGER_PIN_ID ||
-      (pager_check_pins(priv->pager, priv->ws->name) &&
-       workspace_get_can_create()));
+  monitor = workspace_get_monitor(priv->ws->id);
+  monitor_match = !monitor || !g_strcmp0(monitor, bar_get_output(priv->pager));
+  show_pin = priv->ws->id != PAGER_PIN_ID || (workspace_get_can_create() &&
+        pager_check_pins(priv->pager, priv->ws->name));
+  flow_item_set_active(self, monitor_match && show_pin);
 
   priv->invalid = FALSE;
 }
@@ -92,7 +97,7 @@ static void pager_item_invalidate ( GtkWidget *self )
 
 static gint pager_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent)
 {
-  PagerItemPrivate *p1,*p2;
+  PagerItemPrivate *p1, *p2;
   gchar *e1 = 0, *e2 = 0;
   gint n1, n2;
 
@@ -192,8 +197,11 @@ GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
   priv->ws = ws;
   priv->pager = pager;
 
-  priv->button = gtk_button_new_with_label(ws->name);
-  gtk_container_add(GTK_CONTAINER(self),priv->button);
+  priv->button = gtk_button_new();
+  priv->label = gtk_label_new("");
+  gtk_label_set_markup(GTK_LABEL(priv->label), ws->name);
+  gtk_container_add(GTK_CONTAINER(priv->button), priv->label);
+  gtk_container_add(GTK_CONTAINER(self), priv->button);
   gtk_widget_set_name(priv->button, "pager_item");
   g_signal_connect(priv->button,"query-tooltip",
       G_CALLBACK(pager_item_draw_tooltip),ws);

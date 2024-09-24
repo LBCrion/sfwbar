@@ -106,6 +106,13 @@ guint workspace_get_geometry ( workspace_t *ws, GdkRectangle **wins,
   return 0;
 }
 
+gchar *workspace_get_monitor ( gpointer wsid )
+{
+  if(api.get_monitor && wsid)
+    return api.get_monitor(wsid);
+  return NULL;
+}
+
 gboolean workspace_get_can_create ( void )
 {
   if(api.get_can_create)
