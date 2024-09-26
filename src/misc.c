@@ -190,6 +190,15 @@ struct json_object *json_array_by_name ( struct json_object *obj, gchar *key )
   return NULL;
 }
 
+struct json_object *json_node_by_name ( struct json_object *json, gchar *key )
+{
+  struct json_object *ptr;
+
+  if(json_object_object_get_ex(json, key, &ptr))
+    return ptr;
+  return NULL;
+}
+
 gboolean pattern_match ( gchar **dict, gchar *string )
 {
   gint i;

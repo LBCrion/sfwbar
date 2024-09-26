@@ -96,7 +96,7 @@ gboolean flow_item_get_active ( GtkWidget *self )
 {
   FlowItemPrivate *priv;
 
-  g_return_val_if_fail(IS_FLOW_ITEM(self),FALSE);
+  g_return_val_if_fail(IS_FLOW_ITEM(self), FALSE);
 
   priv = flow_item_get_instance_private(FLOW_ITEM(self));
   return priv->active;

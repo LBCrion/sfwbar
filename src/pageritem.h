@@ -29,6 +29,7 @@ typedef struct _PagerItemPrivate PagerItemPrivate;
 struct _PagerItemPrivate
 {
   GtkWidget *button;
+  GtkWidget *label;
   GtkWidget *pager;
   workspace_t *ws;
   gboolean invalid;

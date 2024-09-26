@@ -90,6 +90,7 @@ libsrc = [
     'src/taskbarshell.c',
     'src/tray.c',
     'src/trayitem.c',
+    'src/wayfire_ipc.c',
     'src/wayland.c',
     'src/window.c',
     'src/wintree.c',

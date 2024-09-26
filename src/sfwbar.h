@@ -15,7 +15,8 @@
 enum ipc_type {
   IPC_SWAY    = 1,
   IPC_HYPR    = 2,
-  IPC_WAYLAND = 3
+  IPC_WAYFIRE = 3,
+  IPC_WAYLAND = 4
 };
 
 void css_init ( gchar * );
@@ -45,6 +46,7 @@ gint64 json_int_by_name ( struct json_object *obj, gchar *name, gint64 defval);
 gboolean json_bool_by_name ( struct json_object *obj, gchar *name, gboolean defval);
 gdouble json_double_by_name ( struct json_object *obj, gchar *name, gdouble defval);
 struct json_object *json_array_by_name ( struct json_object *obj, gchar *key );
+struct json_object *json_node_by_name ( struct json_object *json, gchar *key );
 gboolean pattern_match ( gchar **dict, gchar *string );
 gboolean regex_match_list ( GList *dict, gchar *string );
 int md5_file( gchar *path, guchar output[16] );
@@ -54,6 +56,7 @@ gboolean str_nequal ( gchar *str1, gchar *str2 );
 void *ptr_pass ( void *ptr );
 gchar *str_replace ( gchar *str, gchar *old, gchar *new );
 void hypr_ipc_init ( void );
+void wayfire_ipc_init ( void );
 enum ipc_type ipc_get ( void );
 void ipc_set ( enum ipc_type new );
 
