@@ -177,15 +177,16 @@ void menu_item_update ( GtkWidget *item, const gchar *label, const gchar *icon )
     box = gtk_grid_new();
     gtk_container_add(GTK_CONTAINER(item), box);
   }
+
   wicon = gtk_grid_get_child_at(GTK_GRID(box), 1, 1);
   if(wicon && !icon)
-    gtk_widget_destroy(wicon);
+    g_clear_pointer(&wicon,gtk_widget_destroy);
   else if(!wicon && icon)
   {
     wicon = scale_image_new();
     gtk_grid_attach(GTK_GRID(box), wicon, 1, 1, 1, 1);
   }
-  if(wicon)
+  if(wicon && icon)
     scale_image_set_image(wicon, icon, NULL);
 
   wlabel = gtk_grid_get_child_at(GTK_GRID(box), 2, 1);
@@ -196,7 +197,7 @@ void menu_item_update ( GtkWidget *item, const gchar *label, const gchar *icon )
     wlabel = gtk_label_new_with_mnemonic(label);
     gtk_grid_attach(GTK_GRID(box), wlabel, 2, 1, 1, 1);
   }
-  else if(wlabel && label)
+  else if(wlabel && g_strcmp0(gtk_label_get_text(GTK_LABEL(wlabel)), label))
     gtk_label_set_text_with_mnemonic(GTK_LABEL(wlabel), label);
 }
 
