@@ -199,6 +199,18 @@ struct json_object *json_node_by_name ( struct json_object *json, gchar *key )
   return NULL;
 }
 
+GdkRectangle json_rect_get ( struct json_object *json )
+{
+  GdkRectangle ret;
+
+  ret.x = json_int_by_name(json, "x", -1);
+  ret.y = json_int_by_name(json, "y", -1);
+  ret.width = json_int_by_name(json, "width", -1);
+  ret.height = json_int_by_name(json, "height", -1);
+
+  return ret;
+}
+
 gboolean pattern_match ( gchar **dict, gchar *string )
 {
   gint i;

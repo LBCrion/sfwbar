@@ -91,15 +91,12 @@ static json_object *sway_ipc_request ( gchar *command, gint32 type )
 static GdkRectangle sway_ipc_parse_rect ( struct json_object *obj )
 {
   struct json_object *rect;
-  GdkRectangle ret;
+  GdkRectangle eret = {-1, -1, -1, -1};
 
-  json_object_object_get_ex(obj, "rect", &rect);
-  ret.x = json_int_by_name(rect, "x", 0);
-  ret.y = json_int_by_name(rect, "y", 0);
-  ret.width = json_int_by_name(rect, "width", 0);
-  ret.height = json_int_by_name(rect, "height", 0);
-
-  return ret;
+  if(json_object_object_get_ex(obj, "rect", &rect))
+    return json_rect_get(rect);
+  
+  return eret;
 }
 
 static struct json_object *placement_find_wid ( struct json_object *obj,

@@ -47,6 +47,7 @@ gboolean json_bool_by_name ( struct json_object *obj, gchar *name, gboolean defv
 gdouble json_double_by_name ( struct json_object *obj, gchar *name, gdouble defval);
 struct json_object *json_array_by_name ( struct json_object *obj, gchar *key );
 struct json_object *json_node_by_name ( struct json_object *json, gchar *key );
+GdkRectangle json_rect_get ( struct json_object *json );
 gboolean pattern_match ( gchar **dict, gchar *string );
 gboolean regex_match_list ( GList *dict, gchar *string );
 int md5_file( gchar *path, guchar output[16] );
