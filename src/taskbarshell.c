@@ -175,7 +175,7 @@ void taskbar_shell_item_init_for_all ( window_t *win )
 static void taskbar_shell_item_destroy ( GtkWidget *self, window_t *win )
 {
   TaskbarShellPrivate *priv;
-  GtkWidget *taskbar;
+  GtkWidget *taskbar, *parent;
 
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
   if( (taskbar = priv->get_taskbar(self, win, FALSE)) )
@@ -184,6 +184,8 @@ static void taskbar_shell_item_destroy ( GtkWidget *self, window_t *win )
     if(!flow_grid_n_children(taskbar) && taskbar != self)
       flow_grid_delete_child(self,
           flow_item_get_source(taskbar_get_parent(taskbar)));
+    else if( (parent = taskbar_get_parent(taskbar)) )
+      flow_item_invalidate(parent);
   }
 }
 
