@@ -201,6 +201,24 @@ if get_option('bsdctl').enabled()
   doc_list += 'sfwbar-bsdctl'
 endif
 
+if get_option('idle').enabled() or get_option('idle').auto()
+  idle_targets = [
+    custom_target('ext-idle-notify-v1.h',
+      output:'ext-idle-notify-v1.h',
+      input: wayland_protodir /
+        'staging/ext-idle-notify/ext-idle-notify-v1.xml',
+      command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@' ] ),
+    custom_target('ext-idle-notify-v1.c',
+      output:'ext-idle-notify-v1.c',
+      input: wayland_protodir /
+        'staging/ext-idle-notify/ext-idle-notify-v1.xml',
+      command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@' ] ) ]
+  library('idle', sources: ['modules/idle.c',idle_targets], dependencies: deps,
+      name_prefix: '', install: true,
+      install_dir: get_option('libdir') / 'sfwbar' )
+endif
+
+
 if get_option('idleinhibit').enabled() or get_option('idleinhibit').auto()
   inhibit_targets = [
     custom_target('idle-inhibit-unstable-v1.h',
