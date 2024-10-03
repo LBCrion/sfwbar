@@ -4,6 +4,7 @@
  */
 
 #include <glib.h>
+#include <locale.h>
 #include "../src/module.h"
 #include "../src/sfwbar.h"
 #include "../src/appinfo.h"
@@ -17,6 +18,9 @@ extern ModuleInterfaceV1 sfwbar_interface;
 static GHashTable *app_menu_items;
 static GtkWidget *app_menu_main;
 static gchar *app_menu_name = "app_menu_system";
+static const gchar *locale_iface = "org.freedesktop.locale1";
+static const gchar *locale_path = "/org/freedesktop/locale1";
+static gchar *app_menu_locale = NULL;
 
 typedef struct _app_menu_map_entry {
   gchar *from;
@@ -272,8 +276,10 @@ static void app_menu_handle_add ( const gchar *id )
 {
   GDesktopAppInfo *app;
   GtkWidget *submenu;
+  GKeyFile *keyfile;
   app_menu_dir_t *cat;
   app_menu_item_t *item;
+  const gchar *name, *filename;
 
   if(g_hash_table_lookup(app_menu_items, id))
     return;
@@ -286,7 +292,23 @@ static void app_menu_handle_add ( const gchar *id )
     item = g_malloc0(sizeof(app_menu_item_t));
     if( !(item->icon = g_strdup(g_desktop_app_info_get_string(app, "Icon"))) )
       item->icon = g_strdup(cat->icon);
-    item->name = g_strdup(g_app_info_get_display_name((GAppInfo *)app));
+    if( (filename = g_desktop_app_info_get_filename(app)) )
+    {
+      keyfile = g_key_file_new();
+      g_key_file_load_from_file(keyfile, filename,
+          G_KEY_FILE_KEEP_TRANSLATIONS, NULL);
+      name = g_key_file_get_locale_string(keyfile, G_KEY_FILE_DESKTOP_GROUP,
+          "X-GNOME-FullName", app_menu_locale, NULL);
+      if(!name)
+      name = g_key_file_get_locale_string(keyfile, G_KEY_FILE_DESKTOP_GROUP,
+          G_KEY_FILE_DESKTOP_KEY_NAME, app_menu_locale, NULL);
+      if(!name)
+        name = "Unnamed";
+      item->name = g_strdup(name);
+      g_key_file_unref(keyfile);
+    }
+    else
+      item->name = g_strdup(g_app_info_get_display_name((GAppInfo *)app));
     item->cat = cat;
     item->id = g_strdup(id);
     item->widget = app_menu_item_build(item->name, item->icon);
@@ -338,8 +360,93 @@ static void app_menu_handle_delete ( const gchar *id )
   g_debug("appmenu item removed: '%s'", id);
 }
 
+static void app_info_locale_handle ( GVariantIter *iter )
+{
+  gchar *lstr, **lstrv, *locale = NULL;
+
+  while(g_variant_iter_next(iter, "&s", &lstr))
+  {
+    lstrv = g_strsplit(lstr, "=", 2);
+    if(!g_strcmp0(lstrv[0], "LC_MESSAGE"))
+    {
+      g_free(locale);
+      locale = g_strdup(lstrv[1]);
+    }
+    else if(!g_strcmp0(lstrv[0], "LANG") && !locale)
+      locale = g_strdup(lstrv[1]);
+    g_strfreev(lstrv);
+  }
+  if(!locale || !g_strcmp0(locale, app_menu_locale))
+  {
+    g_free(locale);
+    return;
+  }
+  g_clear_pointer(&app_menu_locale, g_free);
+  app_menu_locale = locale;
+  app_info_remove_handlers(app_menu_handle_add, app_menu_handle_delete);
+  app_info_add_handlers(app_menu_handle_add, app_menu_handle_delete);
+}
+
+static void app_info_locale_cb ( GDBusConnection *con, GAsyncResult *res,
+    void *data)
+{
+  GVariant *result, *inner;
+  GVariantIter *iter;
+
+  if( !(result = g_dbus_connection_call_finish(con, res, NULL)) )
+    return;
+  g_variant_get(result, "(v)", &inner);
+  if(inner && g_variant_is_of_type(inner, G_VARIANT_TYPE("as")))
+  {
+    g_variant_get(inner, "as", &iter);
+    app_info_locale_handle(iter);
+  }
+  g_variant_iter_free(iter);
+  g_variant_unref(result);
+}
+
+static void app_info_locale_changed_cb ( GDBusConnection *con,
+    const gchar *sender, const gchar *path, const gchar *iface,
+    const gchar *signal, GVariant *params, gpointer data )
+{
+  GVariant *dict;
+  GVariantIter *iter;
+
+  g_variant_get(params, "(&s@a{sv}@as)", NULL, &dict, NULL);
+  if(!dict)
+    return;
+
+  if(g_variant_lookup(dict, "Locale", "as", &iter))
+  {
+    g_dbus_connection_call(con, locale_iface, locale_path,
+        "org.freedesktop.DBus.Properties", "Get",
+        g_variant_new("(ss)", locale_iface, "Locale"), NULL,
+        G_DBUS_CALL_FLAGS_NONE, -1, NULL, (GAsyncReadyCallback)app_info_locale_cb,
+        NULL);
+    g_variant_iter_free(iter);
+  }
+  g_variant_unref(dict);
+}
+
 gboolean sfwbar_module_init ( void )
 {
+  GDBusConnection *con;
+
+  app_menu_locale = g_strdup(setlocale(LC_MESSAGES, NULL));
+  if( (con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
+  {
+    g_dbus_connection_signal_subscribe(con, locale_iface,
+        "org.freedesktop.DBus.Properties", "PropertiesChanged", NULL,
+        NULL,  G_DBUS_SIGNAL_FLAGS_NONE, app_info_locale_changed_cb,
+        NULL, NULL);
+
+    g_dbus_connection_call(con, locale_iface, locale_path,
+        "org.freedesktop.DBus.Properties", "Get",
+        g_variant_new("(ss)", locale_iface, "Locale"), NULL,
+        G_DBUS_CALL_FLAGS_NONE, -1, NULL, (GAsyncReadyCallback)app_info_locale_cb,
+        NULL);
+  }
+
   app_menu_items = g_hash_table_new(g_str_hash, g_str_equal);
   app_menu_main = menu_new(app_menu_name);
   app_info_add_handlers(app_menu_handle_add, app_menu_handle_delete);

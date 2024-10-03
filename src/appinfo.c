@@ -31,6 +31,18 @@ void app_info_add_handlers ( AppInfoHandler add, AppInfoHandler del )
       add(iter->data);
 }
 
+void app_info_remove_handlers ( AppInfoHandler add, AppInfoHandler del )
+{
+  GList *iter;
+
+  if(del)
+    for(iter=app_info_entries; iter; iter=g_list_next(iter))
+      del(iter->data);
+
+  app_info_add = g_list_remove(app_info_add, add);
+  app_info_delete = g_list_remove(app_info_delete, del);
+}
+
 static time_t app_info_mtime_get ( GDesktopAppInfo *app )
 {
   struct stat stattr;
