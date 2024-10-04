@@ -32,6 +32,8 @@ typedef struct _app_menu_dir {
   gchar *category;
   gchar *title;
   gchar *icon;
+  gchar *local_title;
+  gchar *icon_override;
   GtkWidget *widget;
 } app_menu_dir_t;
 
@@ -45,7 +47,7 @@ typedef struct _app_menu_item_t {
 
 app_menu_dir_t app_menu_map[] = {
   {"Settings", "System Settings", "preferences-system"},
-  {"AudioVideo", "Sound & Video", "applications-multimedia"},
+  {"Multimedia", "Sound & Video", "applications-multimedia"},
   {"Accessibility", "Universal Access", "preferences-desktop-accessibility"},
   {"Development", "Programming", "applications-development"},
   {"Education", "Education", "applications-science"},
@@ -54,12 +56,13 @@ app_menu_dir_t app_menu_map[] = {
   {"Network", "Internet", "applications-internet"},
   {"Office", "Office", "applications-office"},
   {"System", "System Tools", "applications-system"},
-  {"Utility", "Accessories", "applications-accessories"},
+  {"Utilites", "Accessories", "applications-accessories"},
   {"Core", "Accessories", "applications-accessories"},
   {NULL, NULL}
 };
 
 app_menu_map_entry_t app_menu_additional[] = {
+  {"AudioVideo", "Multimedia", TRUE},
   {"Building", "Development", TRUE},
   {"Debugger", "Development", TRUE},
   {"IDE", "Development", TRUE},
@@ -89,7 +92,7 @@ app_menu_map_entry_t app_menu_additional[] = {
   {"Photography", "Graphics", FALSE},
   {"Publishing", "Graphics", FALSE},
   {"Viewer", "Graphics", FALSE},
-  {"TextTools", "Utility", TRUE},
+  {"TextTools", "Utilities", TRUE},
   {"DesktopSettings", "Settings", TRUE},
   {"HardwareSettings", "Settings", TRUE},
   {"Printing", "Settings", TRUE},
@@ -104,19 +107,19 @@ app_menu_map_entry_t app_menu_additional[] = {
   {"P2P", "Network", TRUE},
   {"RemoteAccess", "Network", TRUE},
   {"Telephony", "Network", TRUE},
-  {"TelephonyTools", "Utility", TRUE},
+  {"TelephonyTools", "Utilities", TRUE},
   {"VideoConference", "Network", TRUE},
   {"WebBrowser", "Network", TRUE},
   {"WebDevelopment", "Development", FALSE},
-  {"Midi", "AudioVideo", TRUE},
-  {"Mixer", "AudioVideo", TRUE},
-  {"Sequencer", "AudioVideo", TRUE},
-  {"Tuner", "AudioVideo", TRUE},
-  {"TV", "AudioVideo", TRUE},
-  {"AudioVideoEditing", "AudioVideo", TRUE},
-  {"Player", "AudioVideo", TRUE},
-  {"Recorder", "AudioVideo", TRUE},
-  {"DiscBurning", "AudioVideo", TRUE},
+  {"Midi", "Multimedia", TRUE},
+  {"Mixer", "Multimedia", TRUE},
+  {"Sequencer", "Multimedia", TRUE},
+  {"Tuner", "Multimedia", TRUE},
+  {"TV", "Multimedia", TRUE},
+  {"AudioVideoEditing", "Multimedia", TRUE},
+  {"Player", "Multimedia", TRUE},
+  {"Recorder", "Multimedia", TRUE},
+  {"DiscBurning", "Multimedia", TRUE},
   {"ActionGame", "Game", TRUE},
   {"AdventureGame", "Game", TRUE},
   {"ArcadeGame", "Game", TRUE},
@@ -131,7 +134,7 @@ app_menu_map_entry_t app_menu_additional[] = {
   {"StrategyGame", "Game", TRUE},
   {"Art", "Education", TRUE},
   {"Construction", "Education", TRUE},
-  {"Music", "AudioVideo", FALSE},
+  {"Music", "Multimedia", FALSE},
   {"Languages", "Education", TRUE},
   {"Science", "Education", TRUE},
   {"ArtificialIntelligence", "Education", TRUE},
@@ -156,20 +159,20 @@ app_menu_map_entry_t app_menu_additional[] = {
   {"Sports", "Education", TRUE},
   {"ParallelComputing", "Education", TRUE},
   {"Amusement", "Game", TRUE},
-  {"Archiving", "Utility", TRUE},
-  {"Compression", "Utility", TRUE},
+  {"Archiving", "Utilities", TRUE},
+  {"Compression", "Utilities", TRUE},
   {"Electronics", "Education", TRUE},
   {"Emulator", "System", TRUE},
   {"Engineering", "Education", TRUE},
-  {"FileTools", "Utility", FALSE},
+  {"FileTools", "Utilities", FALSE},
   {"FileManager", "System", FALSE},
   {"TerminalEmulator", "System", TRUE},
   {"Filesystem", "System", TRUE},
   {"Monitor", "System", TRUE},
   {"Security", "System", TRUE},
-  {"Calculator", "Utility", TRUE},
-  {"Clock", "Utility"},
-  {"TextEditor", "Utility"},
+  {"Calculator", "Utilities", TRUE},
+  {"Clock", "Utilities"},
+  {"TextEditor", "Utilities"},
   {NULL, NULL, FALSE}
 };
 
@@ -279,7 +282,7 @@ static void app_menu_handle_add ( const gchar *id )
   GKeyFile *keyfile;
   app_menu_dir_t *cat;
   app_menu_item_t *item;
-  const gchar *name, *filename;
+  const gchar *filename;
 
   if(g_hash_table_lookup(app_menu_items, id))
     return;
@@ -292,23 +295,22 @@ static void app_menu_handle_add ( const gchar *id )
     item = g_malloc0(sizeof(app_menu_item_t));
     if( !(item->icon = g_strdup(g_desktop_app_info_get_string(app, "Icon"))) )
       item->icon = g_strdup(cat->icon);
-    if( (filename = g_desktop_app_info_get_filename(app)) )
+    keyfile = g_key_file_new();
+    if( (filename = g_desktop_app_info_get_filename(app)) &&
+        g_key_file_load_from_file(keyfile, filename,
+          G_KEY_FILE_KEEP_TRANSLATIONS, NULL))
     {
-      keyfile = g_key_file_new();
-      g_key_file_load_from_file(keyfile, filename,
-          G_KEY_FILE_KEEP_TRANSLATIONS, NULL);
-      name = g_key_file_get_locale_string(keyfile, G_KEY_FILE_DESKTOP_GROUP,
-          "X-GNOME-FullName", app_menu_locale, NULL);
-      if(!name)
-      name = g_key_file_get_locale_string(keyfile, G_KEY_FILE_DESKTOP_GROUP,
-          G_KEY_FILE_DESKTOP_KEY_NAME, app_menu_locale, NULL);
-      if(!name)
-        name = "Unnamed";
-      item->name = g_strdup(name);
-      g_key_file_unref(keyfile);
+      item->name = g_key_file_get_locale_string(keyfile,
+          G_KEY_FILE_DESKTOP_GROUP, "X-GNOME-FullName",
+          app_menu_locale, NULL);
+      if(!item->name)
+        item->name = g_key_file_get_locale_string(keyfile,
+            G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_NAME,
+            app_menu_locale, NULL);
     }
-    else
+    if(!item->name)
       item->name = g_strdup(g_app_info_get_display_name((GAppInfo *)app));
+    g_key_file_unref(keyfile);
     item->cat = cat;
     item->id = g_strdup(id);
     item->widget = app_menu_item_build(item->name, item->icon);
@@ -321,7 +323,8 @@ static void app_menu_handle_add ( const gchar *id )
 
     if(!cat->widget)
     {
-      cat->widget = app_menu_item_build(cat->title, cat->icon);
+      cat->widget = app_menu_item_build(
+          cat->local_title?cat->local_title:cat->title, cat->icon);
       submenu = gtk_menu_new();
       gtk_menu_set_reserve_toggle_size(GTK_MENU(submenu), FALSE);
       gtk_menu_item_set_submenu(GTK_MENU_ITEM(cat->widget), submenu);
@@ -360,6 +363,59 @@ static void app_menu_handle_delete ( const gchar *id )
   g_debug("appmenu item removed: '%s'", id);
 }
 
+static void app_info_categories_update1 ( const gchar *dir )
+{
+  GDir *gdir;
+  GKeyFile *keyfile;
+  gchar *path, *filename, *name, *lname;
+  const gchar *file;
+  gsize i;
+
+  path = g_build_filename(dir, "desktop-directories", NULL);
+
+  if( (gdir = g_dir_open(path, 0, NULL)) )
+  {
+    while( (file = g_dir_read_name(gdir)) )
+    {
+      filename = g_build_filename(path, file, NULL);
+      keyfile = g_key_file_new();
+      if(g_key_file_load_from_file(keyfile, filename,
+            G_KEY_FILE_KEEP_TRANSLATIONS, NULL))
+      {
+        name = g_key_file_get_locale_string(keyfile, G_KEY_FILE_DESKTOP_GROUP,
+            "Name", "C", NULL);
+        lname = g_key_file_get_locale_string(keyfile, G_KEY_FILE_DESKTOP_GROUP,
+            "Name", app_menu_locale, NULL);
+        for(i=0; app_menu_map[i].category; i++)
+          if(!app_menu_map[i].local_title &&
+              !g_strcmp0(name, app_menu_map[i].category) &&
+              g_strcmp0(name, lname))
+            app_menu_map[i].local_title = g_strdup(lname);
+        g_free(name);
+        g_free(lname);
+      }
+      g_key_file_unref(keyfile);
+      g_free(filename);
+    }
+    g_dir_close(gdir);
+  }
+
+  g_free(path);
+}
+
+static void app_info_categories_update ( void )
+{
+  const char * const *sysdirs;
+  gsize i;
+
+  for(i=0; app_menu_map[i].category; i++)
+    g_clear_pointer(&app_menu_map[i].local_title, g_free);
+  app_info_categories_update1(g_get_user_data_dir());
+  sysdirs = g_get_system_data_dirs();
+  for(i=0; sysdirs[i]; i++)
+    app_info_categories_update1(sysdirs[i]);
+}
+
 static void app_info_locale_handle ( GVariantIter *iter )
 {
   gchar *lstr, **lstrv, *locale = NULL;
@@ -383,6 +439,7 @@ static void app_info_locale_handle ( GVariantIter *iter )
   }
   g_clear_pointer(&app_menu_locale, g_free);
   app_menu_locale = locale;
+  app_info_categories_update();
   app_info_remove_handlers(app_menu_handle_add, app_menu_handle_delete);
   app_info_add_handlers(app_menu_handle_add, app_menu_handle_delete);
 }
@@ -400,8 +457,8 @@ static void app_info_locale_cb ( GDBusConnection *con, GAsyncResult *res,
   {
     g_variant_get(inner, "as", &iter);
     app_info_locale_handle(iter);
+    g_variant_iter_free(iter);
   }
-  g_variant_iter_free(iter);
   g_variant_unref(result);
 }
 
@@ -433,6 +490,7 @@ gboolean sfwbar_module_init ( void )
   GDBusConnection *con;
 
   app_menu_locale = g_strdup(setlocale(LC_MESSAGES, NULL));
+  app_info_categories_update();
   if( (con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
   {
     g_dbus_connection_signal_subscribe(con, locale_iface,
