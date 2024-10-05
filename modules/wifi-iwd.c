@@ -1,9 +1,9 @@
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <gio/gio.h>
-#include "../src/module.h"
-#include "../src/basewidget.h"
-#include "../src/popup.h"
+#include "module.h"
+#include "basewidget.h"
+#include "popup.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;

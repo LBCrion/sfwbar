@@ -6,9 +6,9 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkwayland.h>
-#include "../src/module.h"
-#include "../src/basewidget.h"
-#include "../src/wayland.h"
+#include "module.h"
+#include "basewidget.h"
+#include "wayland.h"
 #include "ext-idle-notify-v1.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;

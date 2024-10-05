@@ -3,20 +3,20 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "../config.h"
-#include "../sfwbar.h"
-#include "../bar.h"
-#include "../button.h"
-#include "../scale.h"
-#include "../image.h"
-#include "../label.h"
-#include "../cchart.h"
-#include "../grid.h"
-#include "../taskbarshell.h"
-#include "../taskbar.h"
-#include "../pager.h"
-#include "../popup.h"
-#include "../tray.h"
+#include "config.h"
+#include "sfwbar.h"
+#include "bar.h"
+#include "button.h"
+#include "scale.h"
+#include "image.h"
+#include "label.h"
+#include "cchart.h"
+#include "grid.h"
+#include "taskbarshell.h"
+#include "taskbar.h"
+#include "pager.h"
+#include "popup.h"
+#include "tray.h"
 
 void config_widget (GScanner *scanner, GtkWidget *widget);
 

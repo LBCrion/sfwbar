@@ -4,10 +4,10 @@
  */
 
 #include <glib.h>
-#include "../src/module.h"
-#include "../src/basewidget.h"
 #include <pulse/pulseaudio.h>
 #include <pulse/glib-mainloop.h>
+#include "module.h"
+#include "basewidget.h"
 
 static gboolean pulse_connect_try ( void *data );
 gboolean invalid;

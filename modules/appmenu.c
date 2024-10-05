@@ -5,11 +5,11 @@
 
 #include <glib.h>
 #include <locale.h>
-#include "../src/module.h"
-#include "../src/sfwbar.h"
-#include "../src/appinfo.h"
-#include "../src/menu.h"
-#include "../src/scaleimage.h"
+#include "module.h"
+#include "sfwbar.h"
+#include "appinfo.h"
+#include "menu.h"
+#include "scaleimage.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
@@ -288,12 +288,11 @@ static void app_menu_handle_add ( const gchar *id )
     return;
   if( !(app = g_desktop_app_info_new(id)) )
     return;
-  if(!(cat = app_menu_cat_lookup(g_desktop_app_info_get_categories(app))))
-    return;
-  if(!g_desktop_app_info_get_nodisplay(app))
+  if(!g_desktop_app_info_get_nodisplay(app) &&
+      (cat = app_menu_cat_lookup(g_desktop_app_info_get_categories(app))))
   {
     item = g_malloc0(sizeof(app_menu_item_t));
-    if( !(item->icon = g_strdup(g_desktop_app_info_get_string(app, "Icon"))) )
+    if( !(item->icon = g_desktop_app_info_get_string(app, "Icon")) )
       item->icon = g_strdup(cat->icon);
     keyfile = g_key_file_new();
     if( (filename = g_desktop_app_info_get_filename(app)) &&
@@ -337,6 +336,7 @@ static void app_menu_handle_add ( const gchar *id )
     g_debug("appmenu item: '%s', title: '%s', icon: '%s', cat: %s'", item->id,
         item->name, item->icon, item->cat?item->cat->title:"null");
   }
+  g_object_unref(app);
 }
 
 static void app_menu_handle_delete ( const gchar *id )

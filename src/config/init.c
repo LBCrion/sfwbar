@@ -3,19 +3,19 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "../config.h"
-#include "../sfwbar.h"
-#include "../taskbarshell.h"
-#include "../pager.h"
-#include "../tray.h"
-#include "../grid.h"
-#include "../label.h"
-#include "../image.h"
-#include "../scale.h"
-#include "../button.h"
-#include "../cchart.h"
-#include "../taskbarpager.h"
-#include "../taskbarpopup.h"
+#include "config.h"
+#include "sfwbar.h"
+#include "taskbarshell.h"
+#include "pager.h"
+#include "tray.h"
+#include "grid.h"
+#include "label.h"
+#include "image.h"
+#include "scale.h"
+#include "button.h"
+#include "cchart.h"
+#include "taskbarpager.h"
+#include "taskbarpopup.h"
 
 GHashTable *config_mods, *config_events, *config_var_types, *config_act_cond;
 GHashTable *config_toplevel_keys, *config_menu_keys, *config_scanner_keys;

@@ -3,8 +3,8 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "../config.h"
-#include "../switcher.h"
+#include "config.h"
+#include "switcher.h"
 
 void config_switcher ( GScanner *scanner )
 {

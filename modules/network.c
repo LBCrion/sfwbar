@@ -3,8 +3,8 @@
  * Copyright 2022 Sfwbar maintainers
  */
 
-#include "../src/module.h"
-#include "../src/basewidget.h"
+#include "module.h"
+#include "basewidget.h"
 #include <unistd.h>
 #include <ifaddrs.h>
 #include <sys/ioctl.h>

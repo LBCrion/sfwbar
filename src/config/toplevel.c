@@ -3,11 +3,11 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "../config.h"
-#include "../menu.h"
-#include "../sfwbar.h"
-#include "../module.h"
-#include "../bar.h"
+#include "config.h"
+#include "menu.h"
+#include "sfwbar.h"
+#include "module.h"
+#include "bar.h"
 
 gboolean config_action_conditions ( GScanner *scanner, action_t *action )
 {

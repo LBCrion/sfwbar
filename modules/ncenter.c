@@ -1,9 +1,9 @@
 #include <glib.h>
 #include <gio/gio.h>
-#include "../src/module.h"
-#include "../src/basewidget.h"
-#include "../src/scaleimage.h"
-#include "../src/sfwbar.h"
+#include "module.h"
+#include "basewidget.h"
+#include "scaleimage.h"
+#include "sfwbar.h"
 
 typedef struct _dn_action {
   gchar *id;

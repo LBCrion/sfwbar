@@ -46,50 +46,52 @@ foreach proto : wayland_protos
       command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@' ])
 endforeach
 
+headers = [ 'src', 'src/gui' ]
+
 libsrc = [
     'src/action.c',
     'src/actionlib.c',
     'src/appinfo.c',
-    'src/bar.c',
-    'src/basewidget.c',
-    'src/button.c',
-    'src/cchart.c',
-    'src/chart.c',
+    'src/gui/bar.c',
+    'src/gui/basewidget.c',
+    'src/gui/button.c',
+    'src/gui/cchart.c',
+    'src/gui/chart.c',
     'src/client.c',
     'src/css.c',
     'src/expr.c',
     'src/exprlib.c',
-    'src/flowgrid.c',
-    'src/flowitem.c',
-    'src/grid.c',
+    'src/gui/flowgrid.c',
+    'src/gui/flowitem.c',
+    'src/gui/grid.c',
     'src/hypr_ipc.c',
-    'src/image.c',
+    'src/gui/image.c',
     'src/jpath.c',
-    'src/label.c',
-    'src/menu.c',
+    'src/gui/label.c',
+    'src/gui/menu.c',
     'src/misc.c',
     'src/module.c',
     'src/mpd.c',
-    'src/pager.c',
-    'src/pageritem.c',
-    'src/popup.c',
-    'src/scale.c',
-    'src/scaleimage.c',
+    'src/gui/pager.c',
+    'src/gui/pageritem.c',
+    'src/gui/popup.c',
+    'src/gui/scale.c',
+    'src/gui/scaleimage.c',
     'src/scanner.c',
     'src/signal.c',
     'src/sni.c',
     'src/sniitem.c',
     'src/snimenu.c',
     'src/sway_ipc.c',
-    'src/switcher.c',
-    'src/switcheritem.c',
-    'src/taskbar.c',
-    'src/taskbaritem.c',
-    'src/taskbarpager.c',
-    'src/taskbarpopup.c',
-    'src/taskbarshell.c',
-    'src/tray.c',
-    'src/trayitem.c',
+    'src/gui/switcher.c',
+    'src/gui/switcheritem.c',
+    'src/gui/taskbar.c',
+    'src/gui/taskbaritem.c',
+    'src/gui/taskbarpager.c',
+    'src/gui/taskbarpopup.c',
+    'src/gui/taskbarshell.c',
+    'src/gui/tray.c',
+    'src/gui/trayitem.c',
     'src/wayfire_ipc.c',
     'src/wayland.c',
     'src/window.c',
@@ -117,12 +119,14 @@ cargs = ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
 
 sfwbar = library ('sfwbar', sources: libsrc,
     c_args: cargs, install_dir: get_option('libdir') / 'sfwbar',
+    include_directories: headers,
     dependencies: deps, install: true)
 
 deps = [deps, declare_dependency(link_with: sfwbar)]
 
 if get_option('network').enabled() or get_option('network').auto()
   library('network', sources: 'modules/network.c', dependencies: deps,
+      include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   doc_list += 'sfwbar-network'
@@ -130,6 +134,7 @@ endif
 
 if get_option('bluez').enabled() or get_option('bluez').auto()
   library('bluez', sources: 'modules/bluez.c',
+      include_directories: headers,
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   doc_list += 'sfwbar-bluez'
@@ -137,6 +142,7 @@ endif
 
 if get_option('iwd').enabled() or get_option('iwd').auto()
   library('wifi-iwd', sources: 'modules/wifi-iwd.c',
+      include_directories: headers,
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   doc_list += 'sfwbar-wifi'
@@ -144,6 +150,7 @@ endif
 
 if get_option('nm').enabled() or get_option('nm').auto()
   library('wifi-nm', sources: 'modules/wifi-nm.c',
+      include_directories: headers,
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   if 'sfwbar-wifi' not in doc_list
@@ -153,6 +160,7 @@ endif
 
 if get_option('ncenter').enabled() or get_option('ncenter').auto()
   library('ncenter', sources: 'modules/ncenter.c',
+      include_directories: headers,
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
 endif
@@ -160,6 +168,7 @@ endif
 
 if puls.found() and pulg.found()
   library('pulsectl', sources: 'modules/pulsectl.c',
+      include_directories: headers,
       dependencies: [deps, puls, pulg],name_prefix: '',
       install: true, install_dir: get_option('libdir') / 'sfwbar' )
   doc_list += 'sfwbar-volume'
@@ -167,6 +176,7 @@ endif
 
 if mpdc.found()
   library('mpd', sources: 'modules/mpd.c', dependencies: [deps, mpdc],
+      include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   doc_list += 'sfwbar-mpd'
@@ -174,6 +184,7 @@ endif
 
 if alsa.found()
   library('alsactl', sources: 'modules/alsactl.c', dependencies: [deps, alsa],
+      include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   if 'sfwbar-volume' not in doc_list
@@ -183,6 +194,7 @@ endif
 
 if xkbr.found()
   library('xkbmap', sources: 'modules/xkbmap.c', dependencies: [deps, xkbr],
+      include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   doc_list += 'sfwbar-xkbmap'
@@ -190,12 +202,14 @@ endif
 
 if get_option('appmenu').enabled()
   library('appmenu', sources: 'modules/appmenu.c', dependencies: deps,
+      include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
 endif
 
 if get_option('bsdctl').enabled()
   library('bsdctl', sources: 'modules/bsdctl.c', dependencies: deps,
+      include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   doc_list += 'sfwbar-bsdctl'
@@ -214,6 +228,7 @@ if get_option('idle').enabled() or get_option('idle').auto()
         'staging/ext-idle-notify/ext-idle-notify-v1.xml',
       command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@' ] ) ]
   library('idle', sources: ['modules/idle.c',idle_targets], dependencies: deps,
+      include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
 endif
@@ -233,12 +248,14 @@ if get_option('idleinhibit').enabled() or get_option('idleinhibit').auto()
       command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@' ] ) ]
 
   library('idleinhibit', sources: ['modules/idleinhibit.c',inhibit_targets], dependencies: deps,
+      include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   doc_list += 'sfwbar-idleinhibit'
 endif
 
 executable ('sfwbar', sources: 'src/sfwbar.c',
+    include_directories: headers,
     c_args: ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
     '-DGDK_DISABLE_DEPRECATED',
     '-DGTK_DISABLE_DEPRECATED'],
