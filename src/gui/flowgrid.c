@@ -40,7 +40,7 @@ static void flow_grid_get_preferred_height (GtkWidget *self, gint *minimal,
   GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_height(
       self, minimal, natural);
 
-  if(priv->rows>0 && priv->limit)
+  if(priv->cols>0 && priv->limit)
     *minimal = MIN(*natural, 1);
 }
 
