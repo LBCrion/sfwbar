@@ -87,12 +87,19 @@ static SniItem *sni_menu_item_get_sni_item ( GtkWidget *item )
 
 static void sni_menu_map_cb( GtkWidget *menu, SniItem *sni )
 {
-  if(sni)
+  if(sni && !g_object_get_data(G_OBJECT(sni->menu_obj), "suppress_ats"))
     g_dbus_connection_call(sni_get_connection(), sni->dest, sni->menu_path,
         sni_menu_iface, "AboutToShow", g_variant_new("(i)",
           GPOINTER_TO_INT(g_object_get_data(G_OBJECT(menu), "id"))),
         G_VARIANT_TYPE("(b)"), G_DBUS_CALL_FLAGS_NONE, -1, NULL,
         (GAsyncReadyCallback)sni_menu_about_to_show_cb, menu);
+}
+
+static gboolean sni_menu_cancel_ats_suppression ( SniItem *sni )
+{
+  g_object_set_data(G_OBJECT(sni->menu_obj), "suppress_ats",
+      GINT_TO_POINTER(FALSE));
+  return FALSE;
 }
 
 static void sni_menu_pixbuf_free ( gchar *id )
@@ -264,7 +271,8 @@ static void sni_menu_get_layout_cb ( GObject *src, GAsyncResult *res,
 
   g_variant_get(result, "(u(i@a{sv}av))", &rev, &id, &dict, &iter);
 
-  if(rev > GPOINTER_TO_INT(g_object_get_data(G_OBJECT(sni->menu_obj), "rev")))
+  if(!rev || (rev > GPOINTER_TO_INT(g_object_get_data(
+            G_OBJECT(sni->menu_obj), "rev"))))
   {
     menu = sni_menu_item_find(sni->menu_obj, id);
     if( (parent = gtk_menu_get_attach_widget(GTK_MENU(menu))) )
@@ -277,6 +285,7 @@ static void sni_menu_get_layout_cb ( GObject *src, GAsyncResult *res,
   g_variant_iter_free(iter);
   g_variant_unref(dict);
   g_variant_unref(result);
+  g_timeout_add(1000, G_SOURCE_FUNC(sni_menu_cancel_ats_suppression), sni);
 }
 
 static void sni_menu_about_to_show_cb ( GDBusConnection *con, GAsyncResult *res,
@@ -325,6 +334,7 @@ static void sni_menu_layout_updated_cb (GDBusConnection *con,
 
   g_variant_get(parameters, "(ui)", &rev, &id);
   g_debug("sni menu: update: %s, id: %d, rev: %u", sni->dest, id, rev);
+  g_object_set_data(G_OBJECT(sni->menu_obj), "suppress_ats", GINT_TO_POINTER(TRUE));
   g_dbus_connection_call(sni_get_connection(), sni->dest, sni->menu_path,
       sni_menu_iface, "GetLayout", g_variant_new("(iias)", 0, -1, NULL),
       G_VARIANT_TYPE("(u(ia{sv}av))"), G_DBUS_CALL_FLAGS_NONE, -1, NULL,

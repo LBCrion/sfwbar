@@ -40,14 +40,13 @@ static void scale_image_get_preferred_width ( GtkWidget *self, gint *m,
 
   style = gtk_widget_get_style_context(self);
   flags = gtk_style_context_get_state(style);
-  gtk_style_context_get_border(style,flags, &border);
-  gtk_style_context_get_padding(style,flags, &padding);
-  gtk_style_context_get_margin(style,flags, &margin);
+  gtk_style_context_get_border(style, flags, &border);
+  gtk_style_context_get_padding(style, flags, &padding);
+  gtk_style_context_get_margin(style, flags, &margin);
   gtk_style_context_get(style, flags, "min-width", &w, NULL);
 
-  *m = (w?w:16) + border.left + border.right + padding.left +
+  *n = *m = (w?w:16) + border.left + border.right + padding.left +
     padding.right + margin.left + margin.right;
-  *n = *m;
 }
 
 static void scale_image_get_preferred_height ( GtkWidget *self, gint *m,
@@ -67,9 +66,86 @@ static void scale_image_get_preferred_height ( GtkWidget *self, gint *m,
   gtk_style_context_get_margin(style, flags, &margin);
   gtk_style_context_get(style, flags, "min-height", &h, NULL);
 
-  *m = (h?h:16) + border.top + border.bottom + padding.top +
+  *n = *m = (h?h:16) + border.top + border.bottom + padding.top +
       padding.bottom + margin.top + margin.bottom;
-  *n = *m;
+}
+
+static void scale_image_blur_horizontal ( guchar *src, guchar *dest,
+    gint dd, gint du, gint stride, gint height )
+{
+  gssize x, y;
+  guint16 alpha;
+
+  for(y=0; y<height; y++)
+  {
+    alpha = src[stride*y + du-1];
+    for(x=0; x<stride; x++)
+    {
+      dest[stride*y+x] = alpha/(dd+du);
+      alpha += src[stride*y+MIN(x+du, stride-1)] - src[stride*y+MAX(0, x-dd)];
+    }
+  }
+}
+
+static void scale_image_blur_vertical ( guchar *src, guchar *dest,
+    gint dd, gint du, gint stride, gint height )
+{
+  gssize x, y;
+  guint16 alpha;
+
+  for(x=0; x<stride; x++)
+  {
+    alpha = src[stride*(du-1)+x];
+    for(y=0; y<height; y++)
+    {
+      dest[stride*y+x] = alpha/(dd+du);
+      alpha += src[stride*MIN(y+du, height-1)+x] - src[stride*MAX(0, y-dd)+x];
+    }
+  }
+}
+
+static void scale_image_blur_render ( GtkWidget *self )
+{
+  ScaleImagePrivate *priv;
+  cairo_t *cr;
+  gdouble sx, sy;
+  guchar *data, *tmp;
+  gint height, width, stride, radius, scale, minor, major, final;
+
+  g_return_if_fail(IS_SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
+
+  scale = gtk_widget_get_scale_factor(self);
+  radius = priv->radius * scale;
+  width = cairo_image_surface_get_width(priv->cs) + radius*2;
+  height = cairo_image_surface_get_height(priv->cs) + radius*2;
+
+  if(priv->shadow)
+    cairo_surface_destroy(priv->shadow);
+  priv->shadow = cairo_image_surface_create(CAIRO_FORMAT_A8, width, height);
+  cr = cairo_create(priv->shadow);
+  cairo_surface_get_device_scale(priv->cs, &sx, &sy);
+  cairo_surface_set_device_scale(priv->shadow, sx, sy);
+  cairo_set_source_rgba(cr, 0, 0, 0, 1);
+  cairo_mask_surface(cr, priv->cs, priv->radius, priv->radius);
+  cairo_surface_flush(priv->shadow);
+  cairo_destroy(cr);
+  if( (data = cairo_image_surface_get_data(priv->shadow)) )
+  {
+    stride = cairo_image_surface_get_stride(priv->shadow);
+    minor = radius/3;
+    major = minor + (radius%3?1:0);
+    final = radius - minor - major;
+    tmp = g_malloc(stride * height);
+    scale_image_blur_horizontal(data, tmp, major, minor+1, stride, height);
+    scale_image_blur_horizontal(tmp, data, minor, major+1, stride, height);
+    scale_image_blur_horizontal(data, tmp, final, final+1, stride, height);
+    scale_image_blur_vertical(tmp, data, major, minor+1, stride, height);
+    scale_image_blur_vertical(data, tmp, minor, major+1, stride, height);
+    scale_image_blur_vertical(tmp, data, final, final+1, stride, height);
+    g_free(tmp);
+    cairo_surface_mark_dirty(priv->shadow);
+  }
 }
 
 static void scale_image_surface_update ( GtkWidget *self, gint w, gint h )
@@ -77,7 +153,8 @@ static void scale_image_surface_update ( GtkWidget *self, gint w, gint h )
   ScaleImagePrivate *priv;
   GdkPixbuf *buf, *tmp;
   GdkPixbufLoader *loader;
-  gchar *fallback;
+  GdkRGBA col;
+  gchar *fallback, *svg, *rgba;
   gboolean aspect;
 
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
@@ -97,11 +174,8 @@ static void scale_image_surface_update ( GtkWidget *self, gint w, gint h )
   {
     loader = gdk_pixbuf_loader_new();
     gdk_pixbuf_loader_set_size(loader, w, h);
-    GdkRGBA col;
     gtk_style_context_get_color(gtk_widget_get_style_context(self),
         GTK_STATE_FLAG_NORMAL, &col);
-    gchar *svg;
-    gchar *rgba;
     if(strstr(priv->file,"@theme_fg_color"))
     {
       rgba = g_strdup_printf("Rgba(%d,%d,%d,%f)", (gint)(col.red*256),
@@ -153,17 +227,16 @@ static void scale_image_surface_update ( GtkWidget *self, gint w, gint h )
     g_object_unref(G_OBJECT(tmp));
   }
 
-  cairo_surface_destroy(priv->cs); 
+  g_clear_pointer(&priv->cs, cairo_surface_destroy); 
+  g_clear_pointer(&priv->shadow, cairo_surface_destroy); 
   if(!buf)
-  {
-    priv->cs = NULL;
     return;
-  }
 
   priv->width = w;
   priv->height = h;
   priv->cs = gdk_cairo_surface_create_from_pixbuf(buf, 0,
       gtk_widget_get_window(self));
+  scale_image_blur_render(self);
   g_object_unref(G_OBJECT(buf));
 }
 
@@ -177,14 +250,14 @@ static gboolean scale_image_draw ( GtkWidget *self, cairo_t *cr )
   gint width, height, scale;
   gdouble x_origin, y_origin;
 
-  g_return_val_if_fail(IS_SCALE_IMAGE(self),-1);
+  g_return_val_if_fail(IS_SCALE_IMAGE(self), -1);
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
 
   style = gtk_widget_get_style_context(self);
   flags = gtk_style_context_get_state(style);
-  gtk_style_context_get_border(style,flags,&border);
-  gtk_style_context_get_padding(style,flags,&padding);
-  gtk_style_context_get_margin(style,flags,&margin);
+  gtk_style_context_get_border(style, flags, &border);
+  gtk_style_context_get_padding(style, flags, &padding);
+  gtk_style_context_get_margin(style, flags, &margin);
 
   width = gtk_widget_get_allocated_width(self);
   height = gtk_widget_get_allocated_height(self);
@@ -204,7 +277,7 @@ static gboolean scale_image_draw ( GtkWidget *self, cairo_t *cr )
     return FALSE;
 
   if(!priv->cs || priv->width != width || priv->height != height )
-    scale_image_surface_update(self,width,height);
+    scale_image_surface_update(self, width, height);
 
   if(!priv->cs)
     return FALSE;
@@ -218,24 +291,48 @@ static gboolean scale_image_draw ( GtkWidget *self, cairo_t *cr )
   y_origin = margin.top + padding.top + border.top +
     (height - cairo_image_surface_get_height(priv->cs))/(2*scale);
 
-  gtk_widget_style_get(self, "color", &color, NULL);
-  if(!color && (priv->symbolic || priv->fallback))
+  if(priv->color)
+    color = priv->color;
+  else if(priv->symbolic || priv->fallback)
   {
     gtk_style_context_get_color(gtk_widget_get_style_context(self),
         GTK_STATE_FLAG_NORMAL, &col);
     col.alpha = 1.0;
-    color = gdk_rgba_copy(&col);
+    color = &col;
+  }
+
+  if(priv->radius || priv->shadow_dx || priv->shadow_dy)
+  {
+    if(priv->shadow_clip)
+    {
+      cairo_save(cr);
+      cairo_rectangle(cr, x_origin - padding.left, y_origin - padding.top,
+        cairo_image_surface_get_width(priv->cs)/scale + padding.left + padding.right,
+        cairo_image_surface_get_height(priv->cs)/scale + padding.top + padding.bottom);
+      cairo_clip(cr);
+    }
+
+    if(priv->shadow_color)
+      cairo_set_source_rgba(cr, priv->shadow_color->red,
+          priv->shadow_color->green, priv->shadow_color->green,
+          priv->shadow_color->alpha);
+    cairo_mask_surface(cr, priv->shadow,
+        x_origin - priv->radius + priv->shadow_dx,
+        y_origin - priv->radius + priv->shadow_dy);
+
+    if(priv->shadow_clip)
+      cairo_restore(cr);
   }
 
   if(color)
   {
-    cairo_set_source_rgba(cr,color->red,color->green,color->blue,color->alpha);
+    cairo_set_source_rgba(cr, color->red, color->green, color->blue,
+        color->alpha);
     cairo_mask_surface(cr, priv->cs, x_origin, y_origin);
-    gdk_rgba_free(color);
   }
-  else if(priv->cs)
+  else
   {
-    cairo_set_source_surface(cr,priv->cs, x_origin, y_origin);
+    cairo_set_source_surface(cr, priv->cs, x_origin, y_origin);
     cairo_paint(cr);
   }
 
@@ -253,6 +350,8 @@ static void scale_image_clear ( GtkWidget *self )
   g_clear_pointer(&priv->extra, g_free);
   g_clear_pointer(&priv->pixbuf, g_object_unref);
   g_clear_pointer(&priv->cs, cairo_surface_destroy);
+  g_clear_pointer(&priv->shadow, cairo_surface_destroy);
+  g_clear_pointer(&priv->shadow_color, gdk_rgba_free);
   priv->ftype = SI_NONE;
 }
 
@@ -273,6 +372,17 @@ static void scale_image_style_updated ( GtkWidget *self )
   g_return_if_fail(IS_SCALE_IMAGE(self));
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
 
+  gtk_widget_style_get(self, "shadow-radius", &priv->radius, NULL);
+  gtk_widget_style_get(self, "shadow-x-offset", &priv->shadow_dx, NULL);
+  gtk_widget_style_get(self, "shadow-y-offset", &priv->shadow_dy, NULL);
+  gtk_widget_style_get(self, "shadow-clip", &priv->shadow_clip, NULL);
+
+  g_clear_pointer(&priv->shadow_color, gdk_rgba_free);
+  gtk_widget_style_get(self, "shadow-color", &priv->shadow_color, NULL);
+
+  g_clear_pointer(&priv->color, gdk_rgba_free);
+  gtk_widget_style_get(self, "color", &priv->color, NULL);
+
   gtk_widget_style_get(self, "symbolic", &prefer_symbolic, NULL);
   if(priv->symbolic_pref != prefer_symbolic && priv->ftype == SI_ICON)
   {
@@ -283,6 +393,7 @@ static void scale_image_style_updated ( GtkWidget *self )
     g_free(image);
     g_free(extra);
   }
+  gtk_widget_queue_resize(self);
   GTK_WIDGET_CLASS(scale_image_parent_class)->style_updated(self);
 }
 
@@ -296,13 +407,29 @@ static void scale_image_class_init ( ScaleImageClass *kclass )
   widget_class->style_updated = scale_image_style_updated;
 
   gtk_widget_class_install_style_property( widget_class,
-      g_param_spec_boxed("color","image color",
+      g_param_spec_boxed("color", "image color",
         "draw image in this color using it's alpha channel as a mask",
         GDK_TYPE_RGBA,G_PARAM_READABLE));
   gtk_widget_class_install_style_property( widget_class,
-      g_param_spec_boolean("symbolic","symbolic icon",
+      g_param_spec_boolean("symbolic", "symbolic icon",
         "treat image as a symbolic icon and apply theme specific color",
         FALSE,G_PARAM_READABLE));
+  gtk_widget_class_install_style_property(widget_class,
+    g_param_spec_int("shadow-radius", "drop shadow radius",
+      "drop shadow radius", 0, G_MAXINT, 0, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property(widget_class,
+    g_param_spec_int("shadow-x-offset", "drop shadow x offset",
+      "drop shadow x offset", G_MININT, G_MAXINT, 0, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property(widget_class,
+    g_param_spec_int("shadow-y-offset", "drop shadow y offset",
+      "drop shadow y offset", G_MININT, G_MAXINT, 0, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property( widget_class,
+      g_param_spec_boxed("shadow-color", "drop shadow color",
+        "draw a shadow in specified color when shadow-radius is specified",
+        GDK_TYPE_RGBA,G_PARAM_READABLE));
+  gtk_widget_class_install_style_property(widget_class,
+    g_param_spec_boolean("shadow-clip","clip drop shadow to padding box",
+      "clip drop shadow to padding box", TRUE, G_PARAM_READABLE));
 }
 
 static void scale_image_init ( ScaleImage *self )

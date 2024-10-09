@@ -28,6 +28,10 @@ struct _ScaleImagePrivate
 {
   gint ftype;
   gint width, height;
+  gint radius, shadow_dx, shadow_dy;
+  GdkRGBA *color;
+  GdkRGBA *shadow_color;
+  gboolean shadow_clip;
   gboolean fallback;
   gboolean symbolic;
   gboolean symbolic_pref;
@@ -35,7 +39,7 @@ struct _ScaleImagePrivate
   gchar *extra;
   gchar *fname;
   GdkPixbuf *pixbuf;
-  cairo_surface_t *cs;
+  cairo_surface_t *cs, *shadow;
 };
 
 enum {
