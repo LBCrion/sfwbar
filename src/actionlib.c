@@ -9,7 +9,7 @@
 #include "config.h"
 #include "action.h"
 #include "menu.h"
-#include "sway_ipc.h"
+#include "ipc/sway.h"
 #include "switcher.h"
 #include "module.h"
 #include "popup.h"

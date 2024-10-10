@@ -13,7 +13,7 @@
 #include "pager.h"
 #include "switcher.h"
 #include "config.h"
-#include "sway_ipc.h"
+#include "ipc/sway.h"
 #include "expr.h"
 #include "appinfo.h"
 

@@ -3,8 +3,8 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "../config.h"
-#include "../sfwbar.h"
+#include "config.h"
+#include "sfwbar.h"
 
 static GHashTable *defines;
 

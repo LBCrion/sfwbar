@@ -6,7 +6,7 @@
 #include <glib.h>
 #include <gdk/gdkwayland.h>
 #include "xdg-output-unstable-v1.h"
-#include "../wayland.h"
+#include "wayland.h"
 
 static struct zxdg_output_manager_v1 *xdg_output_manager;
 
@@ -17,7 +17,8 @@ static void xdg_output_noop ()
 static void xdg_output_handle_name ( void *monitor,
     struct zxdg_output_v1 *xdg_output, const gchar *name )
 {
-  g_object_set_data_full(G_OBJECT(monitor),"xdg_name",g_strdup(name),g_free);
+  g_object_set_data_full(G_OBJECT(monitor), "xdg_name", g_strdup(name),
+      g_free);
 }
 
 static void xdg_output_handle_done ( void *monitor,
@@ -51,8 +52,8 @@ void xdg_output_new ( GdkMonitor *monitor )
 
   if(xdg)
   {
-    zxdg_output_v1_add_listener(xdg,&xdg_output_listener,monitor);
-    g_object_set_data(G_OBJECT(monitor),"xdg_output",xdg);
+    zxdg_output_v1_add_listener(xdg, &xdg_output_listener, monitor);
+    g_object_set_data(G_OBJECT(monitor), "xdg_output", xdg);
   }
 }
 
@@ -63,7 +64,7 @@ void xdg_output_destroy ( GdkMonitor *gmon )
   if(!gmon || !xdg_output_manager)
     return;
 
-  xdg = g_object_get_data(G_OBJECT(gmon),"xdg_output");
+  xdg = g_object_get_data(G_OBJECT(gmon), "xdg_output");
 
   if(xdg)
     zxdg_output_v1_destroy(xdg);
@@ -79,8 +80,8 @@ gboolean xdg_output_check ( void )
 
   gdisp = gdk_display_get_default();
 
-  for(i=0;i<gdk_display_get_n_monitors(gdisp);i++)
-    if(!g_object_get_data(G_OBJECT(gdk_display_get_monitor(gdisp,i)),
+  for(i=0; i<gdk_display_get_n_monitors(gdisp); i++)
+    if(!g_object_get_data(G_OBJECT(gdk_display_get_monitor(gdisp, i)),
           "xdg_name"))
       return FALSE;
 
@@ -105,7 +106,7 @@ void xdg_output_init ( void )
 
   display = gdk_display_get_default();
   n = gdk_display_get_n_monitors(display);
-  for(i=0;i<n;i++)
-    xdg_output_new(gdk_display_get_monitor(display,i));
+  for(i=0; i<n; i++)
+    xdg_output_new(gdk_display_get_monitor(display, i));
   wl_display_roundtrip(gdk_wayland_display_get_wl_display(display));
 }

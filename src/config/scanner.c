@@ -4,11 +4,11 @@
  */
 
 #include <glib.h>
-#include "../config.h"
-#include "../scanner.h"
-#include "../sway_ipc.h"
-#include "../sfwbar.h"
-#include "../client.h"
+#include "config.h"
+#include "scanner.h"
+#include "ipc/sway.h"
+#include "sfwbar.h"
+#include "client.h"
 
 static gboolean config_var_flag ( GScanner *scanner, gint *flag )
 {

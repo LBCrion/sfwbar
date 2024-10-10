@@ -3,7 +3,7 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "../config.h"
+#include "config.h"
 
 void config_placer ( GScanner *scanner )
 {

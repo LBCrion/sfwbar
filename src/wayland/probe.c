@@ -7,7 +7,7 @@
 #include <gdk/gdkwayland.h>
 #include <sys/mman.h>
 #include <fcntl.h>
-#include "../wayland.h"
+#include "wayland.h"
 #include "wlr-layer-shell-unstable-v1.h"
 
 static GdkMonitor *default_monitor;
@@ -91,19 +91,19 @@ void wayland_monitor_probe ( void )
   gchar *name;
   gint fd, retries = 100, size = 4;
 
-  if( !(shm = wayland_iface_register(wl_shm_interface.name, 1, 1,
-      &wl_shm_interface)) )
+  display = gdk_wayland_display_get_wl_display(gdk_display_get_default());
+  compositor = gdk_wayland_display_get_wl_compositor(gdk_display_get_default());
+  shm = wayland_iface_register(wl_shm_interface.name, 1, 1, &wl_shm_interface);
+  if(!display || !compositor || !shm)
     return;
 
   if( !(layer_shell = wayland_iface_register(
           zwlr_layer_shell_v1_interface.name, 3, 3,
           &zwlr_layer_shell_v1_interface)) )
+  {
+    wl_shm_destroy(shm);
     return;
-
-  display = gdk_wayland_display_get_wl_display(gdk_display_get_default());
-  compositor = gdk_wayland_display_get_wl_compositor(gdk_display_get_default());
-  if(!display || !compositor || !shm || !layer_shell)
-    return;
+  }
 
   do
   {
@@ -115,19 +115,14 @@ void wayland_monitor_probe ( void )
     g_free(name);
   } while (--retries > 0 && errno == EEXIST && fd < 0 );
 
-  if (fd < 0)
-    return;
-
-  if (ftruncate(fd, size) < 0)
+  if(!fd || (ftruncate(fd, size) < 0) ||
+    (shm_data = mmap(NULL, 4, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) ==
+    MAP_FAILED)
   {
-    close(fd);
-    return;
-  }
-
-  shm_data = mmap(NULL, 4, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-  if (shm_data == MAP_FAILED)
-  {
-    close(fd);
+    if(fd)
+      close(fd);
+    wl_shm_destroy(shm);
+    zwlr_layer_shell_v1_destroy(layer_shell);
     return;
   }
 
@@ -138,14 +133,14 @@ void wayland_monitor_probe ( void )
   memset(shm_data, 0, size);
 
   surface = wl_compositor_create_surface(compositor);
-  wl_surface_add_listener(surface,&surface_listener,NULL);
+  wl_surface_add_listener(surface, &surface_listener, NULL);
   layer_surface = zwlr_layer_shell_v1_get_layer_surface(layer_shell,
       surface, NULL, ZWLR_LAYER_SHELL_V1_LAYER_TOP, "sfwbar-test");
   zwlr_layer_surface_v1_set_anchor(layer_surface,
       ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
-  zwlr_layer_surface_v1_set_size(layer_surface,1,1);
-  zwlr_layer_surface_v1_add_listener(layer_surface,
-      &layer_surface_listener,NULL);
+  zwlr_layer_surface_v1_set_size(layer_surface, 1, 1);
+  zwlr_layer_surface_v1_add_listener(layer_surface, &layer_surface_listener,
+      NULL);
 
   wl_surface_commit(surface);
   wl_display_roundtrip(display);

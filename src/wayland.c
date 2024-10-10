@@ -14,7 +14,6 @@ static GList *wayland_ifaces;
 static struct wl_registry *wayland_registry;
 static gboolean wayland_init_complete;
 
-
 static void handle_global(void *data, struct wl_registry *registry,
                 uint32_t name, const gchar *interface, uint32_t version)
 {
@@ -46,11 +45,6 @@ gpointer wayland_iface_register ( const gchar *interface,
   return NULL;
 }
 
-struct wl_registry *wayland_registry_get ( void )
-{
-  return wayland_registry;
-}
-
 static void handle_global_remove(void *data, struct wl_registry *registry,
                 uint32_t name)
 {
@@ -65,8 +59,7 @@ void wayland_init ( void )
 {
   struct wl_display *wdisp;
 
-  wdisp = gdk_wayland_display_get_wl_display(gdk_display_get_default());
-  if(!wdisp)
+  if(!(wdisp = gdk_wayland_display_get_wl_display(gdk_display_get_default())) )
     g_error("Can't get wayland display\n");
 
   wayland_registry = wl_display_get_registry(wdisp);
