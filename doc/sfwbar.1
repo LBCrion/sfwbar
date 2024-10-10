@@ -1428,32 +1428,35 @@ _
 T{
 \-GtkWidget\-align
 T}	T{
-specify text alignment for a label, defined as a fraction.
-(0 = left aligned, 1 = right aligned, 0.5 = centered)
+specify text alignment for a label, defined as a
+fraction.  (i.e. 0 = left aligned, 1 = right
+aligned, 0.5 = centered)
 T}
 _
 T{
 \-GtkWidget\-ellipsize
 T}	T{
-specify whether a text in a label should be ellipsized if
-it\(aqs too long to fit in allocated space
+specify whether a text in a label should be
+ellipsized if it\(aqs too long to fit in allocated
+space.
 T}
 _
 T{
 \-GtkWidget\-wrap
 T}	T{
-wrap a string if it\(aqs too long for it\(aqs container (you
-would usually want to pair it with \-GtkWidget\-max\-width)
+wrap a string if it\(aqs too long for it\(aqs container
+(you would usually want to pair it with
+\-GtkWidget\-max\-width)
 T}
 _
 T{
 \-GtkWidget\-direction
 T}	T{
-specify a direction for a widget.
-For scale, it\(aqs a direction towards which scale grows.
-For a grid, it\(aqs a direction in which a new widget is
-position relative to the last placed widget. For a
-window it\(aqs an edge along which the bar is positioned.
+specify a direction for a widget.  For scale, it\(aqs
+a direction towards which scale grows.  For a grid,
+it\(aqs a direction in which a new widget is position
+relative to the last placed widget. For a window
+it\(aqs an edge along which the bar is positioned.
 Possible values [top|bottom|left|right]
 T}
 _
@@ -1472,8 +1475,8 @@ _
 T{
 \-GtkWidget\-hexpand
 T}	T{
-specify if a widget should expand horizontally to occupy
-available space. [true|false]
+specify if a widget should expand horizontally to
+occupy available space. [true|false]
 T}
 _
 T{
@@ -1485,10 +1488,10 @@ _
 T{
 \-GtkWidget\-halign
 T}	T{
-Horizontally align widget within any free space allocated
-to it, values supported are: fill, start, end, center and
-baseline. The last vertically aligns widgets to align
-text within.
+Horizontally align widget within any free space
+allocated to it, values supported are: fill, start,
+end, center and baseline. The last vertically
+aligns widgets to align text within.
 T}
 _
 T{
@@ -1500,26 +1503,64 @@ _
 T{
 \-GtkWidget\-visible
 T}	T{
-Control visibility of a widget. If set to false, widget
-will be hidden.
+Control visibility of a widget. If set to false,
+widget will be hidden.
 T}
 _
 T{
 \-ScaleImage\-color
 T}	T{
-Specify a color to repaint an image with. The image will
-be painted with this color using image\(aqs alpha channel as
-a mask. The color\(aqs own alpha value can be used to tint
-an image.
+Specify a color to repaint an image with. The image
+will be painted with this color using image\(aqs alpha
+channel as a mask. The color\(aqs own alpha value can
+be used to tint an image.
 T}
 _
 T{
 \-ScaleImage\-symbolic
 T}	T{
-Render an image as a symbolic icon. If set to true, the
-image will be re\-colored to the gtk theme foreground
-color, preserving the image alpha channel. This property
-is ignored if \-ScaleImage\-color is specified.
+Render an image as a symbolic icon. If set to true,
+the image will be re\-colored to the gtk theme
+foreground color, preserving the image alpha
+channel. This property is ignored if
+\-ScaleImage\-color is specified.
+T}
+_
+T{
+\-ScaleImage\-shadow\-radius
+T}	T{
+specify a radius for a drop shadow of an image
+widget. A drop shadow is rendered if a radius or
+one of the offsets is specified for an image.
+(an integer specifying a number of pixels).
+T}
+_
+T{
+\-ScaleImage\-shadow\-x\-offset
+T}	T{
+a horizontal offset of a drop shadow relative to an
+image. (an integer specifying a number of pixels).
+T}
+_
+T{
+\-ScaleImage\-shadow\-y\-offset
+T}	T{
+a vertical offset of a drop shadow relative to an
+image. (an integer specifying a number of pixels).
+T}
+_
+T{
+\-ScaleImage\-shadow\-clip
+T}	T{
+a boolean specifying whether a shadow is clipped to
+a padding box. If false, the shadow may spill over
+a border and a margin of a widget. (default = true)
+T}
+_
+T{
+\-ScaleImage\-shadow\-color
+T}	T{
+a color of a drop shadow.
 T}
 .TE
 .sp

@@ -1026,42 +1026,58 @@ widget).
 In addition to standard gtk+ css properties SFWBar implements several
 additional properties. These are:
 
-===================== =============
-property              description
-===================== =============
--GtkWidget-align      specify text alignment for a label, defined as a fraction.
-                      (0 = left aligned, 1 = right aligned, 0.5 = centered)
--GtkWidget-ellipsize  specify whether a text in a label should be ellipsized if
-                      it's too long to fit in allocated space
--GtkWidget-wrap       wrap a string if it's too long for it's container (you
-                      would usually want to pair it with -GtkWidget-max-width)
--GtkWidget-direction  specify a direction for a widget.
-                      For scale, it's a direction towards which scale grows.
-                      For a grid, it's a direction in which a new widget is 
-                      position relative to the last placed widget. For a
-                      window it's an edge along which the bar is positioned.
-                      Possible values [top|bottom|left|right]
--GtkWidget-max-width  Limit maximum width of a widget (in pixels)
--GtkWidget-max-height Limit maximum height of a widget (in pixels)
--GtkWidget-hexpand    specify if a widget should expand horizontally to occupy
-                      available space. [true|false]
--GtkWidget-vexpand    as above, for vertical expansion.
--GtkWidget-halign     Horizontally align widget within any free space allocated
-                      to it, values supported are: fill, start, end, center and
-                      baseline. The last vertically aligns widgets to align
-                      text within.
--GtkWidget-valign     Vertically align widget.
--GtkWidget-visible    Control visibility of a widget. If set to false, widget
-                      will be hidden.
--ScaleImage-color     Specify a color to repaint an image with. The image will
-                      be painted with this color using image's alpha channel as
-                      a mask. The color's own alpha value can be used to tint
-                      an image.
--ScaleImage-symbolic  Render an image as a symbolic icon. If set to true, the
-                      image will be re-colored to the gtk theme foreground
-                      color, preserving the image alpha channel. This property
-                      is ignored if -ScaleImage-color is specified.
-===================== =============
+=========================== =============
+property                    description
+=========================== =============
+-GtkWidget-align            specify text alignment for a label, defined as a
+                            fraction.  (i.e. 0 = left aligned, 1 = right
+                            aligned, 0.5 = centered)
+-GtkWidget-ellipsize        specify whether a text in a label should be
+                            ellipsized if it's too long to fit in allocated
+                            space.
+-GtkWidget-wrap             wrap a string if it's too long for it's container
+                            (you would usually want to pair it with
+                            -GtkWidget-max-width)
+-GtkWidget-direction        specify a direction for a widget.  For scale, it's
+                            a direction towards which scale grows.  For a grid,
+                            it's a direction in which a new widget is position
+                            relative to the last placed widget. For a window
+                            it's an edge along which the bar is positioned.
+                            Possible values [top|bottom|left|right]
+-GtkWidget-max-width        Limit maximum width of a widget (in pixels)
+-GtkWidget-max-height       Limit maximum height of a widget (in pixels)
+-GtkWidget-hexpand          specify if a widget should expand horizontally to
+                            occupy available space. [true|false]
+-GtkWidget-vexpand          as above, for vertical expansion.
+-GtkWidget-halign           Horizontally align widget within any free space
+                            allocated to it, values supported are: fill, start,
+                            end, center and baseline. The last vertically
+                            aligns widgets to align text within.
+-GtkWidget-valign           Vertically align widget.
+-GtkWidget-visible          Control visibility of a widget. If set to false,
+                            widget will be hidden.
+-ScaleImage-color           Specify a color to repaint an image with. The image
+                            will be painted with this color using image's alpha
+                            channel as a mask. The color's own alpha value can
+                            be used to tint an image.
+-ScaleImage-symbolic        Render an image as a symbolic icon. If set to true,
+                            the image will be re-colored to the gtk theme
+                            foreground color, preserving the image alpha
+                            channel. This property is ignored if
+                            -ScaleImage-color is specified.
+-ScaleImage-shadow-radius   specify a radius for a drop shadow of an image
+                            widget. A drop shadow is rendered if a radius or
+                            one of the offsets is specified for an image.
+                            (an integer specifying a number of pixels).
+-ScaleImage-shadow-x-offset a horizontal offset of a drop shadow relative to an
+                            image. (an integer specifying a number of pixels).
+-ScaleImage-shadow-y-offset a vertical offset of a drop shadow relative to an
+                            image. (an integer specifying a number of pixels).
+-ScaleImage-shadow-clip     a boolean specifying whether a shadow is clipped to
+                            a padding box. If false, the shadow may spill over
+                            a border and a margin of a widget. (default = true)
+-ScaleImage-shadow-color    a color of a drop shadow.
+=========================== =============
 
 Taskbar and pager buttons are assigned the following styles
 
