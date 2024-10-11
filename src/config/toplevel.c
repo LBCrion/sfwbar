@@ -5,7 +5,7 @@
 
 #include "config.h"
 #include "menu.h"
-#include "sfwbar.h"
+#include "scanner.h"
 #include "module.h"
 #include "bar.h"
 

@@ -3,10 +3,12 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "sfwbar.h"
+#include "css.h"
 #include "basewidget.h"
 #include "bar.h"
 #include "window.h"
+#include "util/file.h"
+#include "util/string.h"
 
 static void (*css_style_updated_original)(GtkWidget *);
 

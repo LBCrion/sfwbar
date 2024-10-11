@@ -3,10 +3,8 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include <glib.h>
 #include <gio/gio.h>
 #include <gio/gunixsocketaddress.h>
-#include "sfwbar.h"
 #include "basewidget.h"
 #include "client.h"
 

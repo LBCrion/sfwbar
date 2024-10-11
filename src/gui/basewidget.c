@@ -3,6 +3,7 @@
  * Copyright 2022- sfwbar maintainers
  */
 
+#include "css.h"
 #include "expr.h"
 #include "basewidget.h"
 #include "grid.h"
@@ -11,6 +12,8 @@
 #include "module.h"
 #include "meson.h"
 #include "bar.h"
+#include "scanner.h"
+#include "util/string.h"
 
 G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX,
     G_ADD_PRIVATE (BaseWidget))

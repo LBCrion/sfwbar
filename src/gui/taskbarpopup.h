@@ -1,7 +1,6 @@
 #ifndef __TASKBARPOPUP_H__
 #define __TASKBARPOPUP_H__
 
-#include "sfwbar.h" 
 #include "flowitem.h"
 #include "action.h"
 #include "taskbar.h"

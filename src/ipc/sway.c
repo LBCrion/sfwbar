@@ -9,10 +9,13 @@
 #include <glib.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include "scanner.h"
 #include "sfwbar.h"
+#include "module.h"
 #include "bar.h"
 #include "switcher.h"
 #include "wintree.h"
+#include "util/json.h"
 
 static gint main_ipc;
 static ScanFile *sway_file;
@@ -562,6 +565,33 @@ static struct workspace_api sway_workspace_api = {
   .get_geom = sway_ipc_get_geom
 };
 
+static void sway_ipc_cmd_action ( gchar *cmd, gchar *name, void *widget,
+    void *event, window_t *win, guint16 *state )
+{
+  sway_ipc_command("%s",cmd);
+}
+
+static ModuleActionHandlerV1 sway_ipc_cmd_handler = {
+  .name = "SwayCmd",
+  .function = (ModuleActionFunc)sway_ipc_cmd_action
+};
+
+static void sway_ipc_wincmd_action ( gchar *cmd, gchar *name, void *widget,
+    void *event, window_t *win, guint16 *state )
+{
+  sway_ipc_command("[con_id=%ld] %s", GPOINTER_TO_INT(win->uid), cmd);
+}
+
+static ModuleActionHandlerV1 sway_ipc_wincmd_handler = {
+  .name = "SwayWinCmd",
+  .function = (ModuleActionFunc)sway_ipc_wincmd_action
+};
+
+static ModuleActionHandlerV1 *sway_ipc_action_handlers[] = {
+  &sway_ipc_cmd_handler,
+  &sway_ipc_wincmd_handler,
+};
+
 void sway_ipc_init ( void )
 {
   struct json_object *obj;
@@ -587,6 +617,7 @@ void sway_ipc_init ( void )
 
   if((main_ipc = sway_ipc_open(10))<0)
     return;
+  module_actions_add(sway_ipc_action_handlers,"sway ipc library");
   sway_ipc_send(main_ipc, 2, "['workspace','mode','window','barconfig_update',\
       'binding','shutdown','tick','bar_state_update','input']");
   g_io_add_watch(g_io_channel_unix_new(main_ipc), G_IO_IN, sway_ipc_event,

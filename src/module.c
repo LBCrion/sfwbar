@@ -9,6 +9,7 @@
 #include "module.h"
 #include "config.h"
 #include "basewidget.h"
+#include "util/string.h"
 #include "../meson.h"
 
 static GList *module_list;

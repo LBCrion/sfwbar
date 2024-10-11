@@ -5,8 +5,8 @@
 
 #include "sfwbar.h"
 #include "wintree.h"
+#include "util/json.h"
 #include <sys/socket.h>
-#include <json.h>
 
 typedef struct _wayfire_ipc_wset {
   gint id;

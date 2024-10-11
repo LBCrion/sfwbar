@@ -3,11 +3,12 @@
  * Copyright 2020- sfwbar maintainers
  */
 
-#include "sfwbar.h"
-#include "scaleimage.h"
-#include "appinfo.h"
 #include <gtk/gtk.h>
 #include <gio/gdesktopappinfo.h>
+#include "scaleimage.h"
+#include "appinfo.h"
+#include "util/file.h"
+#include "util/string.h"
 
 G_DEFINE_TYPE_WITH_CODE (ScaleImage, scale_image, GTK_TYPE_IMAGE,
     G_ADD_PRIVATE (ScaleImage))

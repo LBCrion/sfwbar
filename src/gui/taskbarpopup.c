@@ -3,7 +3,7 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "sfwbar.h"
+#include "css.h"
 #include "flowgrid.h"
 #include "taskbarpopup.h"
 #include "taskbarshell.h"

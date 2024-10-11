@@ -1,7 +1,6 @@
 #ifndef __SWITCHERITEM_H__
 #define __SWITCHERITEM_H__
 
-#include "sfwbar.h" 
 #include "flowitem.h"
 #include "wintree.h"
 

@@ -1,7 +1,6 @@
 #ifndef __BASE_WIDGET_H__
 #define __BASE_WIDGET_H__
 
-#include "sfwbar.h" 
 #include "action.h"
 #include "expr.h"
 

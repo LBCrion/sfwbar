@@ -3,7 +3,6 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "sfwbar.h"
 #include "flowitem.h"
 #include "basewidget.h"
 #include "flowgrid.h"

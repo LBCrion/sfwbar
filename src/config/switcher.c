@@ -3,6 +3,7 @@
  * Copyright 2022- sfwbar maintainers
  */
 
+#include "css.h"
 #include "config.h"
 #include "switcher.h"
 

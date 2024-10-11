@@ -7,6 +7,7 @@
 #include <alsa/asoundlib.h>
 #include "module.h"
 #include "basewidget.h"
+#include "util/string.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;

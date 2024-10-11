@@ -11,22 +11,6 @@
 #include "wlr-layer-shell-unstable-v1.h"
 
 static GdkMonitor *default_monitor;
-static struct wl_shm *shm;
-static struct zwlr_layer_shell_v1 *layer_shell;
-
-void shm_register (struct wl_registry *registry, uint32_t name )
-{
-  shm = wl_registry_bind(registry, name, &wl_shm_interface, 1);
-}
-
-void layer_shell_register (struct wl_registry *registry, uint32_t name,
-    uint32_t version)
-{
-}
-
-void wayland_probe_register ( void )
-{
-}
 
 GdkMonitor *wayland_monitor_get_default ( void )
 {
@@ -36,7 +20,7 @@ GdkMonitor *wayland_monitor_get_default ( void )
   n = gdk_display_get_n_monitors(gdisp);
   for(i=0; i<n; i++)
     if(gdk_display_get_monitor(gdisp, i) == default_monitor)
-    return default_monitor;
+      return default_monitor;
 
   return gdk_display_get_monitor(gdisp, 0);
 }
@@ -50,12 +34,12 @@ static void surface_enter ( void *data,
 {
   GdkDisplay *gdisp = gdk_display_get_default();
   GdkMonitor *gmon = NULL;
-  gint n,i;
+  gint n, i;
 
   n = gdk_display_get_n_monitors(gdisp);
-  for(i=0;i<n;i++)
+  for(i=0; i<n; i++)
   {
-    gmon = gdk_display_get_monitor(gdisp,i);
+    gmon = gdk_display_get_monitor(gdisp, i);
     if(gdk_wayland_monitor_get_wl_output(gmon)==output)
       default_monitor = gmon;
   }
@@ -81,6 +65,8 @@ struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 
 void wayland_monitor_probe ( void )
 {
+  struct wl_shm *shm;
+  struct zwlr_layer_shell_v1 *layer_shell;
   struct zwlr_layer_surface_v1 *layer_surface;
   struct wl_compositor *compositor;
   struct wl_display *display;
@@ -109,17 +95,16 @@ void wayland_monitor_probe ( void )
   {
     name = g_strdup_printf("/sfwbar-probe-%lld",
       (long long int)g_get_monotonic_time());
-    fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0600);
-    if (fd >= 0)
+    if( (fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0600))>=0 )
       shm_unlink(name);
     g_free(name);
   } while (--retries > 0 && errno == EEXIST && fd < 0 );
 
-  if(!fd || (ftruncate(fd, size) < 0) ||
+  if((fd <= 0) || (ftruncate(fd, size) < 0) ||
     (shm_data = mmap(NULL, 4, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) ==
     MAP_FAILED)
   {
-    if(fd)
+    if(fd>0)
       close(fd);
     wl_shm_destroy(shm);
     zwlr_layer_shell_v1_destroy(layer_shell);
@@ -152,7 +137,7 @@ void wayland_monitor_probe ( void )
   zwlr_layer_surface_v1_destroy(layer_surface);
   wl_surface_destroy(surface);
   wl_buffer_destroy(buffer);
-  munmap(shm_data,size);
+  munmap(shm_data, size);
   close(fd);
   zwlr_layer_shell_v1_destroy(layer_shell);
   wl_shm_destroy(shm);

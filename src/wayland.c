@@ -3,12 +3,11 @@
  * Copyright 2023- sfwbar maintainers
  */
 
-#include "sfwbar.h"
+#include <gdk/gdkwayland.h>
 #include "wayland.h"
 #include "xdg-output-unstable-v1.h"
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 #include "wlr-layer-shell-unstable-v1.h"
-#include <gdk/gdkwayland.h>
 
 static GList *wayland_ifaces;
 static struct wl_registry *wayland_registry;

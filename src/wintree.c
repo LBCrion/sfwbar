@@ -7,6 +7,7 @@
 #include "taskbar.h"
 #include "taskbarshell.h"
 #include "switcher.h"
+#include "util/string.h"
 
 static struct wintree_api api;
 static GList *wt_list;

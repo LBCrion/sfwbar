@@ -3,7 +3,6 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "sfwbar.h"
 #include "chart.h"
 #include "basewidget.h"
 

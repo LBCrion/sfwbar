@@ -1,7 +1,6 @@
 #ifndef __TRAY_H__
 #define __TRAY_H__
 
-#include "basewidget.h"
 #include "flowgrid.h"
 #include "sni.h"
 

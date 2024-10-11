@@ -3,7 +3,6 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "sfwbar.h"
 #include "basewidget.h"
 #include "button.h"
 #include "scaleimage.h"

@@ -1,7 +1,6 @@
 #ifndef __TASKBARDESK_H__
 #define __TASKBARDESK_H__
 
-#include "sfwbar.h" 
 #include "flowitem.h"
 #include "workspace.h"
 #include "action.h"

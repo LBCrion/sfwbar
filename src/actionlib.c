@@ -3,13 +3,13 @@
  * Copyright 2023- sfwbar maintainers
  */
 
+#include "sfwbar.h"
 #include "bar.h"
 #include "basewidget.h"
 #include "pageritem.h"
 #include "config.h"
 #include "action.h"
 #include "menu.h"
-#include "ipc/sway.h"
 #include "switcher.h"
 #include "module.h"
 #include "popup.h"
@@ -91,30 +91,6 @@ static ModuleActionHandlerV1 menu_handler = {
   .name = "Menu",
   .flags = MODULE_ACT_WIDGET_ADDRESS,
   .function = (ModuleActionFunc)menu_action
-};
-
-static void swaycmd_action ( gchar *cmd, gchar *name, void *widget,
-    void *event, window_t *win, guint16 *state )
-{
-  if(ipc_get()==IPC_SWAY)
-    sway_ipc_command("%s",cmd);
-}
-
-static ModuleActionHandlerV1 swaycmd_handler = {
-  .name = "SwayCmd",
-  .function = (ModuleActionFunc)swaycmd_action
-};
-
-static void swaywincmd_action ( gchar *cmd, gchar *name, void *widget,
-    void *event, window_t *win, guint16 *state )
-{
-  if(win && ipc_get()==IPC_SWAY)
-    sway_ipc_command("[con_id=%ld] %s",GPOINTER_TO_INT(win->uid), cmd);
-}
-
-static ModuleActionHandlerV1 swaywincmd_handler = {
-  .name = "SwayWinCmd",
-  .function = (ModuleActionFunc)swaywincmd_action
 };
 
 static void mpdcmd_action ( gchar *cmd, gchar *name, void *widget,
@@ -585,8 +561,6 @@ static ModuleActionHandlerV1 *action_handlers[] = {
   &menuclear_handler,
   &menuitemclear_handler,
   &menu_handler,
-  &swaycmd_handler,
-  &swaywincmd_handler,
   &mpdcmd_handler,
   &config_handler,
   &map_icon_handler,

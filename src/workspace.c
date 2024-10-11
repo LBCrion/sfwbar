@@ -5,7 +5,9 @@
 
 #include "workspace.h"
 #include "pager.h"
+#include "gui/output.h"
 #include "taskbarshell.h"
+#include "util/string.h"
 
 static struct workspace_api api;
 static GList *global_pins;

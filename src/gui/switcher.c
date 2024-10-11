@@ -4,9 +4,8 @@
  */
 
 #include <glib.h>
-#include <gtk/gtk.h>
 #include <gtk-layer-shell.h>
-#include "sfwbar.h"
+#include "css.h"
 #include "switcheritem.h"
 #include "switcher.h"
 #include "wintree.h"

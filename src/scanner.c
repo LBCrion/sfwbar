@@ -7,10 +7,11 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <glob.h>
-#include "sfwbar.h"
 #include "expr.h"
+#include "sfwbar.h"
 #include "config.h"
 #include "client.h"
+#include "util/string.h"
 
 static GList *file_list;
 static GHashTable *scan_list;

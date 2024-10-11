@@ -3,13 +3,12 @@
  * Copyright 2021- sfwbar maintainers
  */
 
-#include "sfwbar.h"
 #include "menu.h"
 #include "window.h"
 #include "taskbarpopup.h"
 #include "scaleimage.h"
 #include "popup.h"
-
+#include "util/string.h"
 
 static GHashTable *menus, *menu_items;
 

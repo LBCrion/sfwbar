@@ -3,8 +3,10 @@
  * Copyright 2022- sfwbar maintainers
  */
 
+#include "util/file.h"
+#include "scanner.h"
 #include "config.h"
-#include "sfwbar.h"
+#include "css.h"
 #include "taskbarshell.h"
 #include "pager.h"
 #include "tray.h"
@@ -16,6 +18,7 @@
 #include "cchart.h"
 #include "taskbarpager.h"
 #include "taskbarpopup.h"
+#include "util/string.h"
 
 GHashTable *config_mods, *config_events, *config_var_types, *config_act_cond;
 GHashTable *config_toplevel_keys, *config_menu_keys, *config_scanner_keys;

@@ -5,7 +5,7 @@
 
 #include "sfwbar.h"
 #include "wintree.h"
-#include "pager.h"
+#include "util/json.h"
 #include <sys/socket.h>
 
 #define hypr_ipc_parse_id(x) GSIZE_TO_POINTER(g_ascii_strtoull(x,NULL,16))

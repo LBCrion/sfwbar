@@ -1,7 +1,6 @@
 #ifndef __PAGER_H__
 #define __PAGER_H__
 
-#include "basewidget.h"
 #include "flowgrid.h"
 #include "workspace.h"
 
@@ -13,6 +12,7 @@
 
 typedef struct _Pager Pager;
 typedef struct _PagerClass PagerClass;
+typedef struct _PagerPrivate PagerPrivate;
 
 struct _Pager
 {
@@ -24,15 +24,12 @@ struct _PagerClass
   BaseWidgetClass parent_class;
 };
 
-typedef struct _PagerPrivate PagerPrivate;
-
 struct _PagerPrivate
 {
   GList *pins;
 };
 
 GType pager_get_type ( void );
-
 
 void pager_invalidate_all ( workspace_t *ws );
 void pager_add_pins ( GtkWidget *self, GList *pins );

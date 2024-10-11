@@ -3,7 +3,7 @@
 #include "module.h"
 #include "basewidget.h"
 #include "scaleimage.h"
-#include "sfwbar.h"
+#include "util/string.h"
 
 typedef struct _dn_action {
   gchar *id;

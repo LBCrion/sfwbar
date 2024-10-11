@@ -3,10 +3,7 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include <gtk/gtk.h>
-#include <glib.h>
-#include <gtk-layer-shell.h>
-#include "sfwbar.h"
+#include "css.h"
 #include "bar.h"
 #include "wayland.h"
 #include "grid.h"
@@ -14,6 +11,8 @@
 #include "taskbarshell.h"
 #include "window.h"
 #include "meson.h"
+#include "util/string.h"
+#include <gtk-layer-shell.h>
 
 G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW, G_ADD_PRIVATE (Bar))
 

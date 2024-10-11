@@ -4,7 +4,7 @@
  */
 
 #include "config.h"
-#include "sfwbar.h"
+#include "util/string.h"
 
 static GHashTable *defines;
 

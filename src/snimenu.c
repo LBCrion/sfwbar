@@ -3,14 +3,12 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include <glib.h>
 #include <gio/gio.h>
+#include <gtk/gtk.h>
 #include <unistd.h>
-#include "sfwbar.h"
 #include "sni.h"
 #include "menu.h"
 #include "scaleimage.h"
-#include "flowitem.h"
 
 const gchar *sni_menu_iface = "com.canonical.dbusmenu";
 

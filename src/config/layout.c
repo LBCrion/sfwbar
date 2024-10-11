@@ -4,7 +4,7 @@
  */
 
 #include "config.h"
-#include "sfwbar.h"
+#include "css.h"
 #include "bar.h"
 #include "button.h"
 #include "scale.h"

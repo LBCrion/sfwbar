@@ -1,7 +1,6 @@
 #ifndef __TASKBARITEM_H__
 #define __TASKBARITEM_H__
 
-#include "sfwbar.h" 
 #include "flowitem.h"
 #include "action.h"
 

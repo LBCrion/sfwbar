@@ -3,14 +3,10 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include <glib.h>
-#include <stdio.h>
 #include <gio/gio.h>
-#include <unistd.h>
-#include "sfwbar.h"
+#include "scaleimage.h"
 #include "trayitem.h"
 #include "tray.h"
-#include "scaleimage.h"
 
 struct sni_prop_wrapper {
   guint prop;

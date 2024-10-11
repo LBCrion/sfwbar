@@ -1,7 +1,7 @@
 #ifndef __CHART_H__
 #define __CHART_H__
 
-#include "basewidget.h"
+#include <gtk/gtk.h>
 
 #define CHART_TYPE            (chart_get_type())
 #define CHART(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), CHART_TYPE, Chart))

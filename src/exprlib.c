@@ -5,9 +5,9 @@
 
 #include <sys/statvfs.h>
 #include <locale.h>
-#include <glib.h>
-#include "sfwbar.h"
+#include "util/string.h"
 #include "module.h"
+#include "util/file.h"
 #include "wintree.h"
 #include "expr.h"
 #include "basewidget.h"

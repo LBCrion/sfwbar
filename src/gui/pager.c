@@ -3,8 +3,7 @@
  * Copyright 2020- sfwbar maintainers
  */
 
-#include <gtk/gtk.h>
-#include "sfwbar.h"
+#include "css.h"
 #include "workspace.h"
 #include "pager.h"
 #include "pageritem.h"

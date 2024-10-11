@@ -4,7 +4,7 @@
  */
 
 #include <glib.h>
-#include "sfwbar.h"
+#include <json.h>
 
 gboolean jpath_filter_test ( GScanner *scanner, gint idx, gchar *key,
     gboolean eq, struct json_object *obj, GTokenType type, GTokenValue val )

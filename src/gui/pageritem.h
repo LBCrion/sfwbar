@@ -1,7 +1,6 @@
 #ifndef __PAGERITEM_H__
 #define __PAGERITEM_H__
 
-#include "sfwbar.h" 
 #include "flowitem.h"
 #include "pager.h"
 

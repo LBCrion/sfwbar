@@ -8,6 +8,7 @@
 #include "taskbaritem.h"
 #include "action.h"
 #include "module.h"
+#include "util/string.h"
 
 static GHashTable *functions;
 static GHashTable *trigger_actions;

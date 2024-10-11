@@ -80,6 +80,7 @@ libsrc = [
     'src/gui/image.c',
     'src/gui/label.c',
     'src/gui/menu.c',
+    'src/gui/output.c',
     'src/gui/pager.c',
     'src/gui/pageritem.c',
     'src/gui/popup.c',
@@ -106,6 +107,9 @@ libsrc = [
     'src/ipc/hyprland.c',
     'src/ipc/sway.c',
     'src/ipc/wayfire.c',
+    'src/util/file.c',
+    'src/util/json.c',
+    'src/util/string.c',
     'src/wayland/probe.c',
     'src/wayland/xdg-output.c',
     wayland_targets ]

@@ -3,13 +3,9 @@
  * Copyright 2021- sfwbar maintainers
  */
 
-#include <glib.h>
-#include <stdio.h>
 #include <gio/gio.h>
-#include <unistd.h>
-#include "sfwbar.h"
-#include "trayitem.h"
-#include "tray.h"
+#include <gtk/gtk.h>
+#include "sni.h"
 
 struct watcher_item {
   SniWatcher *watcher;

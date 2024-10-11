@@ -3,9 +3,9 @@
  * Copyright 2020- sfwbar maintainers
  */
 
-#include <gtk/gtk.h>
 #include <glib-unix.h>
 #include "sfwbar.h"
+#include "css.h"
 #include "wayland.h"
 #include "bar.h"
 #include "tray.h"

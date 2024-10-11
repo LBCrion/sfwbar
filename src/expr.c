@@ -9,7 +9,8 @@
 #include <sys/statvfs.h>
 #include <glib.h>
 #include "expr.h"
-#include "sfwbar.h"
+#include "scanner.h"
+#include "util/string.h"
 #include "wintree.h"
 #include "module.h"
 

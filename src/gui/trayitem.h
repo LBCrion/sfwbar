@@ -1,7 +1,6 @@
 #ifndef __SNIITEM_H__
 #define __SNIITEM_H__
 
-#include "sfwbar.h" 
 #include "flowitem.h"
 #include "sni.h"
 
