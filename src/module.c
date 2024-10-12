@@ -3,14 +3,13 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "expr.h"
-#include <glib.h>
 #include <gmodule.h>
+#include "expr.h"
 #include "module.h"
 #include "config.h"
-#include "basewidget.h"
+#include "gui/basewidget.h"
 #include "util/string.h"
-#include "../meson.h"
+#include "meson.h"
 
 static GList *module_list;
 static GHashTable *expr_handlers, *interfaces;

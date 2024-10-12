@@ -73,12 +73,12 @@ static gboolean tray_item_action_exec ( GtkWidget *self, gint slot,
     GdkEvent *ev )
 {
   TrayItemPrivate *priv;
-  GtkAllocation alloc,walloc;
+  GtkAllocation alloc, walloc;
   GdkRectangle geo;
   gchar *method = NULL, *dir;
-  gint32 x,y, delta;
+  gint32 x, y, delta;
 
-  g_return_val_if_fail(IS_TRAY_ITEM(self),FALSE);
+  g_return_val_if_fail(IS_TRAY_ITEM(self), FALSE);
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
 
   if(!ev || !priv->sni)
@@ -122,9 +122,9 @@ static gboolean tray_item_action_exec ( GtkWidget *self, gint slot,
     else
       return FALSE;
 
-    gdk_monitor_get_geometry(widget_get_monitor(self),&geo);
-    gtk_widget_get_allocation(self,&alloc);
-    gtk_widget_get_allocation(gtk_widget_get_toplevel(self),&walloc);
+    gdk_monitor_get_geometry(monitor_from_widget(self), &geo);
+    gtk_widget_get_allocation(self, &alloc);
+    gtk_widget_get_allocation(gtk_widget_get_toplevel(self), &walloc);
 
     switch(bar_get_toplevel_dir(self))
     {

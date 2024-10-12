@@ -4,7 +4,7 @@
  */
 
 #include <glib.h>
-#include "basewidget.h"
+#include "gui/basewidget.h"
 
 static gint signal_counter[255];
 static gint signal_flag;

@@ -7,8 +7,8 @@
 #include <gtk/gtk.h>
 #include <unistd.h>
 #include "sni.h"
-#include "menu.h"
-#include "scaleimage.h"
+#include "gui/menu.h"
+#include "gui/scaleimage.h"
 
 const gchar *sni_menu_iface = "com.canonical.dbusmenu";
 

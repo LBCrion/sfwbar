@@ -5,7 +5,7 @@
 
 #include <gio/gio.h>
 #include <gio/gunixsocketaddress.h>
-#include "basewidget.h"
+#include "gui/basewidget.h"
 #include "client.h"
 
 void client_reconnect ( Client *client )

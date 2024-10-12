@@ -5,14 +5,14 @@
 
 #include <sys/statvfs.h>
 #include <locale.h>
-#include "util/string.h"
 #include "module.h"
-#include "util/file.h"
 #include "wintree.h"
 #include "expr.h"
-#include "basewidget.h"
-#include "taskbaritem.h"
-#include "bar.h"
+#include "gui/basewidget.h"
+#include "gui/taskbaritem.h"
+#include "gui/bar.h"
+#include "util/file.h"
+#include "util/string.h"
 
 /* extract a substring */
 static void *expr_lib_mid ( void **params, void *widget, void *event )

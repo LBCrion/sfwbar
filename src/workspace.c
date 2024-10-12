@@ -4,9 +4,9 @@
  */
 
 #include "workspace.h"
-#include "pager.h"
+#include "gui/pager.h"
 #include "gui/monitor.h"
-#include "taskbarshell.h"
+#include "gui/taskbarshell.h"
 #include "util/string.h"
 
 static struct workspace_api *api;
@@ -175,7 +175,7 @@ gpointer workspace_get_active ( GtkWidget *widget )
 {
   GdkMonitor *mon;
 
-  if(!actives || !(mon = widget_get_monitor(widget)) )
+  if(!actives || !(mon = monitor_from_widget(widget)) )
     return NULL;
   return g_hash_table_lookup(actives, monitor_get_name(mon));
 }

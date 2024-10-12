@@ -4,19 +4,19 @@
  */
 
 #include "config.h"
-#include "css.h"
-#include "bar.h"
-#include "button.h"
-#include "scale.h"
-#include "image.h"
-#include "label.h"
-#include "cchart.h"
-#include "grid.h"
-#include "taskbarshell.h"
-#include "taskbar.h"
-#include "pager.h"
-#include "popup.h"
-#include "tray.h"
+#include "gui/css.h"
+#include "gui/bar.h"
+#include "gui/button.h"
+#include "gui/scale.h"
+#include "gui/image.h"
+#include "gui/label.h"
+#include "gui/cchart.h"
+#include "gui/grid.h"
+#include "gui/taskbarshell.h"
+#include "gui/taskbar.h"
+#include "gui/pager.h"
+#include "gui/popup.h"
+#include "gui/tray.h"
 
 void config_widget (GScanner *scanner, GtkWidget *widget);
 

@@ -223,7 +223,7 @@ gboolean xdg_output_check ( void )
   return TRUE;
 }
 
-GdkMonitor *widget_get_monitor ( GtkWidget *self )
+GdkMonitor *monitor_from_widget ( GtkWidget *self )
 {
   GtkWidget *parent, *w;
   GdkWindow *win;

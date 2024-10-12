@@ -46,7 +46,7 @@ foreach proto : wayland_protos
       command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@' ])
 endforeach
 
-headers = [ 'src', 'src/gui' ]
+headers = [ 'src' ]
 
 libsrc = [
     'src/action.c',

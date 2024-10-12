@@ -4,10 +4,10 @@
  */
 
 #include "expr.h"
-#include "basewidget.h"
-#include "taskbaritem.h"
 #include "action.h"
 #include "module.h"
+#include "gui/basewidget.h"
+#include "gui/taskbaritem.h"
 #include "util/string.h"
 
 static GHashTable *functions;

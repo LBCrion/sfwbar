@@ -4,9 +4,9 @@
  */
 
 #include "wintree.h"
-#include "taskbar.h"
-#include "taskbarshell.h"
-#include "switcher.h"
+#include "gui/taskbar.h"
+#include "gui/taskbarshell.h"
+#include "gui/switcher.h"
 #include "util/string.h"
 
 static struct wintree_api *api;

@@ -4,10 +4,10 @@
  */
 
 #include "config.h"
-#include "menu.h"
 #include "scanner.h"
 #include "module.h"
-#include "bar.h"
+#include "gui/bar.h"
+#include "gui/menu.h"
 
 gboolean config_action_conditions ( GScanner *scanner, action_t *action )
 {

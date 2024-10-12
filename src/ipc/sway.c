@@ -5,8 +5,8 @@
 
 #include "scanner.h"
 #include "module.h"
-#include "bar.h"
-#include "switcher.h"
+#include "gui/bar.h"
+#include "gui/switcher.h"
 #include "wintree.h"
 #include "util/json.h"
 

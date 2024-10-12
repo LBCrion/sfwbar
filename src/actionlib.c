@@ -4,17 +4,17 @@
  */
 
 #include "sfwbar.h"
-#include "bar.h"
-#include "basewidget.h"
-#include "pageritem.h"
 #include "config.h"
 #include "action.h"
-#include "menu.h"
-#include "switcher.h"
 #include "module.h"
-#include "popup.h"
 #include "client.h"
 #include "appinfo.h"
+#include "gui/bar.h"
+#include "gui/basewidget.h"
+#include "gui/menu.h"
+#include "gui/pageritem.h"
+#include "gui/popup.h"
+#include "gui/switcher.h"
 
 static void exec_action ( gchar *cmd, gchar *name, void *widget,
     void *event, void *win, void *state )

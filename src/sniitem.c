@@ -4,9 +4,9 @@
  */
 
 #include <gio/gio.h>
-#include "scaleimage.h"
-#include "trayitem.h"
-#include "tray.h"
+#include "gui/scaleimage.h"
+#include "gui/trayitem.h"
+#include "gui/tray.h"
 
 struct sni_prop_wrapper {
   guint prop;
