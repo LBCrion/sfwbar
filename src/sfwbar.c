@@ -8,6 +8,7 @@
 #include "css.h"
 #include "wayland.h"
 #include "bar.h"
+#include "monitor.h"
 #include "tray.h"
 #include "taskbarshell.h"
 #include "pager.h"
@@ -56,17 +57,15 @@ void list_monitors ( void )
 {
   GdkDisplay *gdisp;
   GdkMonitor *gmon;
-  gint nmon,i;
-  gchar *name;
+  gint nmon, i;
 
   gdisp = gdk_display_get_default();
   nmon = gdk_display_get_n_monitors(gdisp);
-  for(i=0;i<nmon;i++)
+  for(i=0; i<nmon; i++)
   {
     gmon = gdk_display_get_monitor(gdisp,i);
-    name = g_object_get_data(G_OBJECT(gmon),"xdg_name");
-    printf("%s: %s %s\n",name,gdk_monitor_get_manufacturer(gmon),
-        gdk_monitor_get_model(gmon));
+    printf("%s: %s %s\n",monitor_get_name(gmon),
+        gdk_monitor_get_manufacturer(gmon), gdk_monitor_get_model(gmon));
   }
   exit(0);
 }
@@ -120,7 +119,6 @@ static gboolean sfwbar_restart ( gpointer d )
 
 static void activate (GtkApplication* app, gpointer data )
 {
-  GdkDisplay *gdisp;
   GList *clist, *iter;
 
   application = app;
@@ -129,6 +127,7 @@ static void activate (GtkApplication* app, gpointer data )
   action_lib_init();
   css_init(cssname);
   wayland_init();
+  monitor_init();
   sway_ipc_init();
   hypr_ipc_init();
   wayfire_ipc_init();
@@ -159,12 +158,6 @@ static void activate (GtkApplication* app, gpointer data )
     }
   g_list_free(clist);
 
-  gdisp = gdk_display_get_default();
-  g_signal_connect(gdisp, "monitor-added",
-      G_CALLBACK(bar_monitor_added_cb),NULL);
-  g_signal_connect(gdisp, "monitor-removed",
-      G_CALLBACK(bar_monitor_removed_cb),NULL);
-
   g_thread_unref(g_thread_new("scanner",
         (GThreadFunc)base_widget_scanner_thread,
         g_main_context_get_thread_default()));
@@ -189,12 +182,12 @@ int main (int argc, gchar **argv)
     sargv[i] = argv[i];
 
   signal_subscribe();
-  g_log_set_handler(NULL,G_LOG_LEVEL_MASK,log_print,NULL);
+  g_log_set_handler(NULL, G_LOG_LEVEL_MASK, log_print, NULL);
 
-  parse_command_line(argc,argv);
+  parse_command_line(argc, argv);
 
   if(dfilter)
-    rfilter = g_regex_new(dfilter,0,0,NULL);
+    rfilter = g_regex_new(dfilter, 0, 0, NULL);
 
   app = gtk_application_new ("org.hosers.sfwbar", G_APPLICATION_NON_UNIQUE);
   g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);

@@ -3,7 +3,7 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "output.h"
+#include "monitor.h"
 #include "css.h"
 #include "bar.h"
 #include "trayitem.h"

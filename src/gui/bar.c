@@ -5,7 +5,7 @@
 
 #include "css.h"
 #include "bar.h"
-#include "wayland.h"
+#include "gui/monitor.h"
 #include "grid.h"
 #include "config.h"
 #include "taskbarshell.h"
@@ -550,7 +550,7 @@ gchar *bar_get_output ( GtkWidget *self )
   if(!priv->current_monitor)
     return NULL;
   else
-    return g_object_get_data( G_OBJECT(priv->current_monitor), "xdg_name");
+    return monitor_get_name(priv->current_monitor);
 }
 
 gboolean bar_update_monitor ( GtkWidget *self )
@@ -583,8 +583,7 @@ gboolean bar_update_monitor ( GtkWidget *self )
     for(i=0; i<nmon; i++)
     {
       gmon = gdk_display_get_monitor(gdisp, i);
-      output = g_object_get_data(G_OBJECT(gmon), "xdg_name");
-      if(output && !g_strcmp0(output, priv->output))
+      if((output = monitor_get_name(gmon)) && !g_strcmp0(output, priv->output))
         match = gmon;
     }
 
@@ -611,7 +610,7 @@ gboolean bar_update_monitor ( GtkWidget *self )
   for(i=0; i<nmon; i++)
   {
     gmon = gdk_display_get_monitor(gdisp, i);
-    output = g_object_get_data(G_OBJECT(gmon), "xdg_name");
+    output = monitor_get_name(gmon);
     present = (gmon == priv->current_monitor);
     for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
       if(bar_get_monitor(iter->data) == gmon)
@@ -650,36 +649,6 @@ void bar_set_monitor ( GtkWidget *self, gchar *monitor )
     priv->output =  g_strdup(mon_name);
     bar_update_monitor(self);
   }
-}
-
-void bar_monitor_added_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
-{
-  GHashTableIter iter;
-  void *key, *bar;
-  char trigger[256];
-
-  xdg_output_new(gmon);
-  if(bar_list)
-  {
-    g_hash_table_iter_init(&iter,bar_list);
-    while(g_hash_table_iter_next(&iter, &key, &bar))
-      g_idle_add((GSourceFunc)bar_update_monitor, bar);
-  }
-
-  g_snprintf(trigger, 255, "%s_connected",
-      (gchar *)g_object_get_data(G_OBJECT(gmon), "xdg_name"));
-  g_idle_add((GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_string(trigger));
-}
-
-void bar_monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
-{
-  static char trigger[256];
-
-  g_snprintf(trigger, 255, "%s_disconnected",
-      (gchar *)g_object_get_data(G_OBJECT(gmon), "xdg_name"));
-  g_idle_add((GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_string(trigger));
 }
 
 void bar_set_margin ( GtkWidget *self, gint64 margin )
@@ -783,9 +752,8 @@ GtkWidget *bar_new ( gchar *name )
   priv->name = g_strdup(name);
   priv->visible = TRUE;
   priv->jump = TRUE;
-  priv->current_monitor = wayland_monitor_get_default();
-  priv->output = g_strdup(
-      g_object_get_data(G_OBJECT(priv->current_monitor), "xdg_name"));
+  priv->current_monitor = monitor_default_get();
+  priv->output = g_strdup(monitor_get_name(priv->current_monitor));
   priv->dir = -1;
   priv->box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   g_object_ref_sink(priv->box);
@@ -844,7 +812,7 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
   spriv->mirror_children = g_list_prepend(spriv->mirror_children, self);
   dpriv->mirror_parent = src;
   dpriv->current_monitor = monitor;
-  dpriv->output = g_strdup(g_object_get_data(G_OBJECT(monitor), "xdg_name"));
+  dpriv->output = g_strdup(monitor_get_name(monitor));
 
   bar_set_sensor(self, spriv->sensor_timeout);
 

@@ -6,6 +6,7 @@
 #include <gdk/gdkwayland.h>
 #include "wintree.h"
 #include "wayland.h"
+#include "gui/monitor.h"
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
 #define FOREIGN_TOPLEVEL_VERSION 3
@@ -97,11 +98,10 @@ static gchar *toplevel_output_name_get ( struct wl_output *output )
 
   disp = gdk_display_get_default();
 
-  for(i=0;i<gdk_display_get_n_monitors(disp);i++)
+  for(i=0; i<gdk_display_get_n_monitors(disp); i++)
     if(output == gdk_wayland_monitor_get_wl_output(
-          gdk_display_get_monitor(disp,i)))
-      return g_object_get_data(G_OBJECT(
-            gdk_display_get_monitor(disp,i)),"xdg_name");
+          gdk_display_get_monitor(disp, i)))
+      return monitor_get_name(gdk_display_get_monitor(disp,i));
   return NULL;
 }
 

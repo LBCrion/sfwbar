@@ -5,7 +5,7 @@
 
 #include "workspace.h"
 #include "pager.h"
-#include "gui/output.h"
+#include "gui/monitor.h"
 #include "taskbarshell.h"
 #include "util/string.h"
 
@@ -175,14 +175,9 @@ gpointer workspace_get_active ( GtkWidget *widget )
 {
   GdkMonitor *mon;
 
-  if(!actives)
+  if(!actives || !(mon = widget_get_monitor(widget)) )
     return NULL;
-
-  mon = widget_get_monitor(widget);
-  if(!mon)
-    return NULL;
-  return g_hash_table_lookup(actives,
-      g_object_get_data(G_OBJECT(mon),"xdg_name"));
+  return g_hash_table_lookup(actives, monitor_get_name(mon));
 }
 
 void workspace_set_active ( workspace_t *ws, const gchar *output )
@@ -203,7 +198,7 @@ void workspace_set_active ( workspace_t *ws, const gchar *output )
   for(i=gdk_display_get_n_monitors(gdisp)-1; i>=0; i--)
   {
     gmon = gdk_display_get_monitor(gdisp, i);
-    name = g_object_get_data(G_OBJECT(gmon), "xdg_name");
+    name = monitor_get_name(gmon);
     if(name && !g_strcmp0(name, output))
       g_hash_table_insert(actives, g_strdup(name), ws->id);
   }

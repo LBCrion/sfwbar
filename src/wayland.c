@@ -5,6 +5,7 @@
 
 #include <gdk/gdkwayland.h>
 #include "wayland.h"
+#include "gui/monitor.h"
 #include "xdg-output-unstable-v1.h"
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 #include "wlr-layer-shell-unstable-v1.h"
@@ -65,10 +66,6 @@ void wayland_init ( void )
   wl_registry_add_listener(wayland_registry, &registry_listener, NULL);
   wl_display_roundtrip(wdisp);
   wayland_init_complete = TRUE;
-  xdg_output_init();
-  wayland_monitor_probe();
-  g_debug("default output: %s", (gchar *)g_object_get_data(
-        G_OBJECT(wayland_monitor_get_default()), "xdg_name"));
 
   wl_display_roundtrip(wdisp);
   wl_display_roundtrip(wdisp);

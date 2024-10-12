@@ -78,7 +78,7 @@ libsrc = [
     'src/gui/image.c',
     'src/gui/label.c',
     'src/gui/menu.c',
-    'src/gui/output.c',
+    'src/gui/monitor.c',
     'src/gui/pager.c',
     'src/gui/pageritem.c',
     'src/gui/popup.c',
@@ -108,8 +108,6 @@ libsrc = [
     'src/util/file.c',
     'src/util/json.c',
     'src/util/string.c',
-    'src/wayland/probe.c',
-    'src/wayland/xdg-output.c',
     wayland_targets ]
 deps = [gtk3, glib, gio_unix, gmod, glsh, wayl, json, lbrt ]
 doc_list = [ 'sfwbar' ]

@@ -5,6 +5,7 @@
 
 #include "wintree.h"
 #include "util/json.h"
+#include "gui/monitor.h"
 #include <sys/socket.h>
 
 typedef struct _wayfire_ipc_wset {
@@ -589,7 +590,7 @@ static void wayfire_ipc_monitor_removed ( GdkDisplay *disp, GdkMonitor *mon )
   const gchar *output_name;
   GList *iter, *link;
  
-  if( !(output_name = g_object_get_data(G_OBJECT(mon), "xdg_name")) )
+  if( !(output_name = monitor_get_name(mon)) )
     return;
 
   for(iter=output_list; iter; iter=g_list_next(iter))
