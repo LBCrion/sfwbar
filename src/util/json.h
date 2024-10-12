@@ -17,4 +17,6 @@ struct json_object *json_array_by_name ( struct json_object *obj, gchar *key );
 struct json_object *json_node_by_name ( struct json_object *json, gchar *key );
 GdkRectangle json_rect_get ( struct json_object *json );
 
+struct json_object *jpath_parse ( gchar *path, struct json_object *obj );
+
 #endif

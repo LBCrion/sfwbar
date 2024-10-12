@@ -3,14 +3,7 @@
  * Copyright 2020- sfwbar maintainers
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <glib.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 #include "scanner.h"
-#include "sfwbar.h"
 #include "module.h"
 #include "bar.h"
 #include "switcher.h"
@@ -61,7 +54,7 @@ static int sway_ipc_send ( gint sock, gint32 type, gchar *command )
   return 0;
 }
 
-void sway_ipc_command ( gchar *cmd, ... )
+static void sway_ipc_command ( gchar *cmd, ... )
 {
   va_list args;
   gchar *buf;
@@ -590,6 +583,7 @@ static ModuleActionHandlerV1 sway_ipc_wincmd_handler = {
 static ModuleActionHandlerV1 *sway_ipc_action_handlers[] = {
   &sway_ipc_cmd_handler,
   &sway_ipc_wincmd_handler,
+  NULL
 };
 
 void sway_ipc_init ( void )
@@ -597,9 +591,8 @@ void sway_ipc_init ( void )
   struct json_object *obj;
   gint sock;
 
-  if( (sock=sway_ipc_open(10))==-1)
+  if(wintree_api_check() || ((sock=sway_ipc_open(10))==-1) )
     return;
-  ipc_set(IPC_SWAY);
   workspace_api_register(&sway_workspace_api);
   wintree_api_register(&sway_wintree_api);
 
@@ -617,7 +610,7 @@ void sway_ipc_init ( void )
 
   if((main_ipc = sway_ipc_open(10))<0)
     return;
-  module_actions_add(sway_ipc_action_handlers,"sway ipc library");
+  module_actions_add(sway_ipc_action_handlers, "sway ipc library");
   sway_ipc_send(main_ipc, 2, "['workspace','mode','window','barconfig_update',\
       'binding','shutdown','tick','bar_state_update','input']");
   g_io_add_watch(g_io_channel_unix_new(main_ipc), G_IO_IN, sway_ipc_event,

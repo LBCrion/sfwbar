@@ -280,8 +280,7 @@ GtkWidget *bar_grid_from_name ( gchar *addr )
     name = g_strdup("sfwbar");
   }
 
-  bar = bar_from_name(name);
-  if(!bar)
+  if( !(bar=bar_from_name(name)) )
     bar = bar_new(name);
   g_free(name);
   priv = bar_get_instance_private(BAR(bar));

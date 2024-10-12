@@ -8,9 +8,9 @@
 #include <sys/stat.h>
 #include <glob.h>
 #include "expr.h"
-#include "sfwbar.h"
 #include "config.h"
 #include "client.h"
+#include "util/json.h"
 #include "util/string.h"
 
 static GList *file_list;

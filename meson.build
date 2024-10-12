@@ -55,8 +55,6 @@ libsrc = [
     'src/client.c',
     'src/expr.c',
     'src/exprlib.c',
-    'src/jpath.c',
-    'src/misc.c',
     'src/module.c',
     'src/mpd.c',
     'src/scanner.c',

@@ -3,7 +3,6 @@
  * Copyright 2024- sfwbar maintainers
  */
 
-#include "sfwbar.h"
 #include "wintree.h"
 #include "util/json.h"
 #include <sys/socket.h>
@@ -620,10 +619,7 @@ void wayfire_ipc_init ( void )
   const gchar *sock_file;
   gint i;
 
-  if(ipc_get())
-    return;
-
-  if( !(sock_file = g_getenv("WAYFIRE_SOCKET")) )
+  if(wintree_api_check() || !(sock_file = g_getenv("WAYFIRE_SOCKET")) )
     return;
 
   g_debug("wayfire-ipc: socket: %s", sock_file);
@@ -632,7 +628,6 @@ void wayfire_ipc_init ( void )
     return;
   wintree_api_register(&wayfire_wintree_api);
   workspace_api_register(&wayfire_workspace_api);
-  ipc_set(IPC_WAYFIRE);
 
   disp = gdk_display_get_default();
   g_signal_connect(G_OBJECT(disp), "monitor-removed",

@@ -4,10 +4,8 @@
  */
 
 #include <gdk/gdkwayland.h>
-#include "../sfwbar.h"
-// #include "../sway_ipc.h"
-#include "../wintree.h"
-#include "../wayland.h"
+#include "wintree.h"
+#include "wayland.h"
 #include "wlr-foreign-toplevel-management-unstable-v1.h"
 
 #define FOREIGN_TOPLEVEL_VERSION 3
@@ -204,7 +202,7 @@ static struct wintree_api ft_wintree_api = {
 
 void foreign_toplevel_init ( void )
 {
-  if(ipc_get())
+  if(wintree_api_check())
     return;
 
   if( !(toplevel_manager = wayland_iface_register(

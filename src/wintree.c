@@ -9,7 +9,7 @@
 #include "switcher.h"
 #include "util/string.h"
 
-static struct wintree_api api;
+static struct wintree_api *api;
 static GList *wt_list;
 static GList *appid_map;
 static GList *appid_filter_list;
@@ -22,7 +22,7 @@ struct appid_mapper {
   gchar *app_id;
 };
 
-#define api_call(x) if(api.x) api.x(id);
+#define api_call(x) if(api->x) api->x(id);
 void wintree_minimize ( gpointer id ) { api_call(minimize) }
 void wintree_unminimize ( gpointer id ) { api_call(unminimize) }
 void wintree_maximize ( gpointer id ) { api_call(maximize) }
@@ -30,15 +30,20 @@ void wintree_unmaximize ( gpointer id ) { api_call(unmaximize) }
 void wintree_focus ( gpointer id ) { api_call(focus) }
 void wintree_close ( gpointer id ) { api_call(close) }
 
-void wintree_move_to ( gpointer id, gpointer wsid )
-{
-  if(api.move_to)
-    api.move_to(id, wsid);
-}
-
 void wintree_api_register ( struct wintree_api *new )
 {
-  api = *new;
+  api = new;
+}
+
+gboolean wintree_api_check ( void )
+{
+  return !!api;
+}
+
+void wintree_move_to ( gpointer id, gpointer wsid )
+{
+  if(api->move_to)
+    api->move_to(id, wsid);
 }
 
 void wintree_set_disown ( gboolean new )

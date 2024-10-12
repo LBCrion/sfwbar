@@ -3,10 +3,8 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "sfwbar.h"
 #include "wintree.h"
 #include "util/json.h"
-#include <sys/socket.h>
 
 #define hypr_ipc_parse_id(x) GSIZE_TO_POINTER(g_ascii_strtoull(x,NULL,16))
 
@@ -563,7 +561,7 @@ void hypr_ipc_init ( void )
   gchar *sockaddr;
   gint sock;
 
-  if(ipc_get())
+  if(wintree_api_check())
     return;
 
   ipc_sockaddr = g_build_filename("/tmp/hypr",
@@ -574,7 +572,6 @@ void hypr_ipc_init ( void )
     return;
   }
 
-  ipc_set(IPC_HYPR);
   workspace_api_register(&hypr_workspace_api);
   wintree_api_register(&hypr_wintree_api);
   hypr_ipc_track_focus();

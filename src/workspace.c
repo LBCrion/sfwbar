@@ -9,7 +9,7 @@
 #include "taskbarshell.h"
 #include "util/string.h"
 
-static struct workspace_api api;
+static struct workspace_api *api;
 static GList *global_pins;
 static workspace_t *focus;
 static GList *workspaces;
@@ -17,13 +17,17 @@ static GHashTable *actives;
 
 void workspace_api_register ( struct workspace_api *new )
 {
-  if (!api.set_workspace)
-    api = *new;
+  api = new;
+}
+
+gboolean workspace_api_check ( void )
+{
+  return !!api;
 }
 
 gboolean workspaces_supported ( void )
 {
-  return api.set_workspace != NULL;
+  return !!api->set_workspace;
 }
 
 void workspace_ref ( gpointer id )
@@ -96,29 +100,29 @@ gpointer workspace_id_from_name ( const gchar *name )
 
 void workspace_activate ( workspace_t *ws )
 {
-  if(api.set_workspace && ws)
-    api.set_workspace(ws);
+  if(api->set_workspace && ws)
+    api->set_workspace(ws);
 }
 
 guint workspace_get_geometry ( workspace_t *ws, GdkRectangle **wins,
     GdkRectangle *spc, gint *focus)
 {
-  if(api.get_geom && ws)
-    return api.get_geom(ws, wins, spc, focus);
+  if(api->get_geom && ws)
+    return api->get_geom(ws, wins, spc, focus);
   return 0;
 }
 
 gchar *workspace_get_monitor ( gpointer wsid )
 {
-  if(api.get_monitor && wsid)
-    return api.get_monitor(wsid);
+  if(api->get_monitor && wsid)
+    return api->get_monitor(wsid);
   return NULL;
 }
 
 gboolean workspace_get_can_create ( void )
 {
-  if(api.get_can_create)
-    return api.get_can_create();
+  if(api->get_can_create)
+    return api->get_can_create();
   return TRUE;
 }
 

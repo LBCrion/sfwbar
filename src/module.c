@@ -47,7 +47,7 @@ void module_actions_add ( ModuleActionHandlerV1 **ahandler, gchar *name )
   for(i=0;ahandler[i];i++)
     if(ahandler[i]->function && ahandler[i]->name)
     {
-      lname = g_ascii_strdown(ahandler[i]->name,-1);
+      lname = g_ascii_strdown(ahandler[i]->name, -1);
       ahandler[i]->quark = g_quark_from_string(lname);
       g_debug("module: register action '%s'",ahandler[i]->name);
       if(g_datalist_id_get_data(&act_handlers, ahandler[i]->quark))

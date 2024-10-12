@@ -3,8 +3,8 @@
  * Copyright 2024- sfwbar maintainers
  */
 
-#include "../workspace.h"
-#include "../wayland.h"
+#include "workspace.h"
+#include "wayland.h"
 #include "cosmic-workspace-unstable-v1.h"
 
 #define COSMIC_WORKSPACE_VERSION 1
@@ -233,7 +233,7 @@ static const struct zcosmic_workspace_manager_v1_listener
 /* Public API */
 void cw_init( void )
 {
-  if (workspaces_supported())
+  if(workspace_api_check())
   {
     g_info("Workspace: Not using cosmic-workspaces: custom IPC priority");
     return;
