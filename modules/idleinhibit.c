@@ -7,7 +7,7 @@
 #include <gtk/gtk.h>
 #include <gdk/gdkwayland.h>
 #include "module.h"
-#include "basewidget.h"
+#include "gui/basewidget.h"
 #include "wayland.h"
 #include "idle-inhibit-unstable-v1.h"
 

@@ -1,8 +1,8 @@
 #include <glib.h>
 #include <gio/gio.h>
 #include "module.h"
-#include "basewidget.h"
-#include "scaleimage.h"
+#include "gui/basewidget.h"
+#include "gui/scaleimage.h"
 #include "util/string.h"
 
 typedef struct _dn_action {

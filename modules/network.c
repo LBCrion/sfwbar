@@ -4,7 +4,7 @@
  */
 
 #include "module.h"
-#include "basewidget.h"
+#include "gui/basewidget.h"
 #include <unistd.h>
 #include <ifaddrs.h>
 #include <sys/ioctl.h>

@@ -8,8 +8,8 @@
 #include "module.h"
 #include "sfwbar.h"
 #include "appinfo.h"
-#include "menu.h"
-#include "scaleimage.h"
+#include "gui/menu.h"
+#include "gui/scaleimage.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;

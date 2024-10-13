@@ -7,7 +7,7 @@
 #include <pulse/pulseaudio.h>
 #include <pulse/glib-mainloop.h>
 #include "module.h"
-#include "basewidget.h"
+#include "gui/basewidget.h"
 #include "util/string.h"
 
 static gboolean pulse_connect_try ( void *data );

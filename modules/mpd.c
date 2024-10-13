@@ -6,7 +6,7 @@
 #include <glib.h>
 #include <mpd/client.h>
 #include "module.h"
-#include "basewidget.h"
+#include "gui/basewidget.h"
 #include "stdio.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;

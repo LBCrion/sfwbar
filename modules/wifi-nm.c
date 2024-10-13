@@ -1,8 +1,8 @@
 #include <gtk/gtk.h>
 #include <gio/gio.h>
 #include "module.h"
-#include "basewidget.h"
-#include "popup.h"
+#include "gui/basewidget.h"
+#include "gui/popup.h"
 
 typedef struct _nm_apoint nm_apoint_t;
 typedef struct _nm_ap_node nm_ap_node_t;
