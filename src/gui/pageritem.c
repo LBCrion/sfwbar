@@ -183,14 +183,14 @@ static gboolean pager_item_draw_tooltip ( GtkWidget *widget, gint x, gint y,
   return TRUE;
 }
 
-GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
+void pager_item_new( workspace_t *ws, GtkWidget *pager )
 {
   GtkWidget *self;
   PagerItemPrivate *priv;
 
-  g_return_val_if_fail(IS_PAGER(pager), NULL);
+  g_return_if_fail(IS_PAGER(pager));
   if(flow_grid_find_child(pager, ws))
-    return NULL;
+    return;
 
   self = GTK_WIDGET(g_object_new(pager_item_get_type(), NULL));
   priv = pager_item_get_instance_private(PAGER_ITEM(self));
@@ -208,6 +208,4 @@ GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws )
   g_object_ref_sink(G_OBJECT(self));
   flow_grid_add_child(pager, self);
   pager_item_invalidate(self);
-
-  return self;
 }

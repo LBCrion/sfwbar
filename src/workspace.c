@@ -4,16 +4,30 @@
  */
 
 #include "workspace.h"
-#include "gui/pager.h"
 #include "gui/monitor.h"
-#include "gui/taskbarshell.h"
 #include "util/string.h"
 
 static struct workspace_api *api;
-static GList *global_pins;
 static workspace_t *focus;
+static GList *global_pins;
 static GList *workspaces;
+static GList *workspace_listeners;
 static GHashTable *actives;
+
+#define LISTENER_CALL(method, ws) { \
+  for(GList *li=workspace_listeners; li; li=li->next) \
+    if(WORKSPACE_LISTENER(li->data)->method) \
+      WORKSPACE_LISTENER(li->data)->method(ws, \
+          WORKSPACE_LISTENER(li->data)->data); \
+}
+
+void handlers_call( GList *list, void *item )
+{
+  GList *iter;
+
+  for(iter=list; iter; iter=g_list_next(iter))
+    ((void (*)(void *))(iter->data))(item);
+}
 
 void workspace_api_register ( struct workspace_api *new )
 {
@@ -28,6 +42,25 @@ gboolean workspace_api_check ( void )
 gboolean workspaces_supported ( void )
 {
   return !!api->set_workspace;
+}
+
+void workspace_listener_register ( workspace_listener_t *listener, void *data )
+{
+  workspace_listener_t *copy;
+  GList *iter;
+
+  if(!listener)
+    return;
+
+  copy = g_memdup(listener, sizeof(workspace_listener_t));
+  copy->data = data;
+  workspace_listeners = g_list_append(workspace_listeners, copy);
+
+  if(copy->workspace_new)
+  {
+    for(iter=workspaces; iter; iter=g_list_next(iter))
+      copy->workspace_new(iter->data, copy->data);
+  }
 }
 
 void workspace_ref ( gpointer id )
@@ -58,12 +91,12 @@ void workspace_unref ( gpointer id )
     g_debug("Workspace: workspace returned to a pin: '%s'", ws->name);
     ws->id = PAGER_PIN_ID;
     ws->state = 0;
-    pager_item_delete(ws);
+    LISTENER_CALL(workspace_destroy, ws);
   }
   else
   {
     workspaces = g_list_remove(workspaces, ws);
-    pager_item_delete(ws);
+    LISTENER_CALL(workspace_destroy, ws);
     g_free(ws->name);
     g_free(ws);
   }
@@ -135,7 +168,7 @@ static void workspace_pin_remove ( const gchar *pin )
 
   g_free(ws->name);
   ws->name = "";
-  pager_item_delete(ws);
+  LISTENER_CALL(workspace_destroy, ws);
   workspaces = g_list_remove(workspaces, ws);
   g_free(ws);
 }
@@ -154,7 +187,7 @@ static void workspace_pin_restore ( const gchar *pin )
   ws->id = PAGER_PIN_ID;
   ws->name = g_strdup(pin);
   workspaces = g_list_prepend(workspaces, ws);
-  pager_item_add(ws);
+  LISTENER_CALL(workspace_new, ws);
 }
 
 void workspace_pin_add ( gchar *pin )
@@ -228,13 +261,12 @@ void workspace_commit ( workspace_t *ws )
   {
     if(focus)
       focus->state &= ~WS_STATE_FOCUSED;
-    pager_invalidate_all(focus);
+    LISTENER_CALL(workspace_invalidate, focus);
     focus = ws;
-    pager_invalidate_all(focus);
-    taskbar_shell_invalidate_all();
+    LISTENER_CALL(workspace_invalidate, focus);
   }
   else
-    pager_invalidate_all(ws);
+    LISTENER_CALL(workspace_invalidate, ws);
 }
 
 void workspace_set_focus ( gpointer id )
@@ -310,7 +342,7 @@ workspace_t *workspace_new ( gpointer id )
     ws->refcount = 0;
     workspaces = g_list_prepend(workspaces, ws);
     workspace_ref(id);
-    pager_item_add(ws);
+    LISTENER_CALL(workspace_new, ws);
   }
 
   return ws;

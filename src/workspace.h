@@ -28,6 +28,14 @@ struct workspace_api {
   gchar *(*get_monitor) ( gpointer );
 };
 
+typedef struct _workspace_listener {
+  void (*workspace_new) ( workspace_t *, void *);
+  void (*workspace_invalidate) ( workspace_t *, void *);
+  void (*workspace_destroy) ( workspace_t *, void *);
+  void *data;
+} workspace_listener_t;
+
+#define WORKSPACE_LISTENER(x) ((workspace_listener_t *)(x))
 #define PAGER_PIN_ID (GINT_TO_POINTER(-1))
 #define WORKSPACE(x) ((workspace_t *)(x))
 
@@ -35,6 +43,7 @@ gboolean workspaces_supported( void );
 
 void workspace_api_register ( struct workspace_api *new );
 gboolean workspace_api_check ( void );
+void workspace_listener_register ( workspace_listener_t *, gpointer );
 workspace_t *workspace_new ( gpointer id );
 void workspace_commit ( workspace_t *ws );
 void workspace_set_focus ( gpointer id );

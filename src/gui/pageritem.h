@@ -36,6 +36,6 @@ struct _PagerItemPrivate
 
 GType pager_item_get_type ( void );
 
-GtkWidget *pager_item_new( GtkWidget *pager, workspace_t *ws );
+void pager_item_new( workspace_t *ws, GtkWidget *pager );
 
 #endif

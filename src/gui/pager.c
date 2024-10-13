@@ -34,6 +34,23 @@ static void pager_destroy ( GtkWidget *self )
   GTK_WIDGET_CLASS(pager_parent_class)->destroy(self);
 }
 
+void pager_invalidate_item ( workspace_t *ws, GtkWidget *pager )
+{
+  flow_item_invalidate(flow_grid_find_child(pager, ws));
+}
+
+void pager_destroy_item ( workspace_t *ws, void *pager )
+{
+  if(!pager_check_pins(pager, ws->name))
+    flow_grid_delete_child(pager, ws);
+}
+
+static workspace_listener_t pager_listener = {
+  .workspace_new = (void (*)(workspace_t *, void *))pager_item_new,
+  .workspace_invalidate = (void (*)(workspace_t *, void *))pager_invalidate_item,
+  .workspace_destroy = pager_destroy_item,
+};
+
 static void pager_class_init ( PagerClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->mirror = pager_mirror;
@@ -43,15 +60,12 @@ static void pager_class_init ( PagerClass *kclass )
 
 static void pager_init ( Pager *self )
 {
-  GList *iter;
-
   pagers = g_list_prepend(pagers, self);
 
   if(!workspaces_supported())
     css_add_class(GTK_WIDGET(self), "hidden");
-  for(iter = workspace_get_list(); iter; iter=g_list_next(iter))
-    pager_item_new(GTK_WIDGET(self), iter->data);
   flow_grid_invalidate(GTK_WIDGET(self));
+  workspace_listener_register(&pager_listener, self);
 }
 
 void pager_add_pins ( GtkWidget *self, GList *pins )
@@ -77,7 +91,6 @@ void pager_add_pins ( GtkWidget *self, GList *pins )
     else
       g_free(iter->data);
   g_list_free(pins);
-
 }
 
 gboolean pager_check_pins ( GtkWidget *self, gchar *pin )
@@ -88,28 +101,6 @@ gboolean pager_check_pins ( GtkWidget *self, gchar *pin )
   priv = pager_get_instance_private(PAGER(base_widget_get_mirror_parent(self)));
 
   return !!g_list_find_custom(priv->pins, pin, (GCompareFunc)g_strcmp0);
-}
-
-void pager_invalidate_all ( workspace_t *ws )
-{
-  GList *iter;
-
-  for(iter=pagers; iter; iter=g_list_next(iter))
-    flow_item_invalidate(flow_grid_find_child(iter->data, ws));
-}
-
-void pager_item_delete ( workspace_t *ws )
-{
-  GList *iter;
-
-  for(iter=pagers; iter; iter=g_list_next(iter))
-    if(!pager_check_pins(iter->data, ws->name))
-        flow_grid_delete_child(iter->data, ws);
-}
-
-void pager_item_add ( workspace_t *ws )
-{
-  g_list_foreach(pagers, (GFunc)pager_item_new, ws);
 }
 
 void pager_update_all ( void )
