@@ -33,7 +33,7 @@ typedef struct sni_host {
   gchar *watcher;
   gchar *item_iface;
   GList *items;
-} SniHost;
+} sni_host_t;
 
 typedef struct sni_watcher {
   guint regid;
@@ -41,11 +41,12 @@ typedef struct sni_watcher {
   gchar *iface;
   GList *items;
   GDBusNodeInfo *idata;
-  SniHost *host;
-} SniWatcher;
+  sni_host_t *host;
+} sni_watcher_t;
 
 typedef struct sni_item {
   gchar *uid;
+  gchar *iface;
   gchar *udest;
   gchar *dest;
   gchar *path;
@@ -57,19 +58,18 @@ typedef struct sni_item {
   guint signal;
   guint32 order;
   GCancellable *cancel;
-  SniHost *host;
   GtkWidget *menu_obj;
-} SniItem;
+} sni_item_t;
 
 void sni_init ( void );
 void sni_update ( void );
 GDBusConnection *sni_get_connection ( void );
 void sni_get_menu ( GtkWidget *widget, GdkEvent *event );
-SniItem *sni_item_new (GDBusConnection *, SniHost *, const gchar *);
-void sni_item_free ( SniItem *sni );
+sni_item_t *sni_item_new (GDBusConnection *, gchar *, const gchar *);
+void sni_item_free ( sni_item_t *sni );
 GList *sni_item_get_list ( void );
-gchar *sni_item_tooltip ( SniItem *item );
-gchar *sni_item_icon ( SniItem *item );
-void sni_menu_init ( SniItem *sni );
+gchar *sni_item_tooltip ( sni_item_t *item );
+gchar *sni_item_icon ( sni_item_t *item );
+void sni_menu_init ( sni_item_t *sni );
 
 #endif

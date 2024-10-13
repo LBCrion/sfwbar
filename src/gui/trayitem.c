@@ -59,7 +59,7 @@ void tray_item_update ( GtkWidget *self )
     css_set_class(priv->label, "hidden", TRUE);
 }
 
-SniItem *tray_item_get_sni ( GtkWidget *self )
+sni_item_t *tray_item_get_sni ( GtkWidget *self )
 {
   TrayItemPrivate *priv;
 
@@ -99,7 +99,7 @@ static gboolean tray_item_action_exec ( GtkWidget *self, gint slot,
 
     g_debug("sni %s: dimension: %s, delta: %d", priv->sni->dest, dir, delta);
     g_dbus_connection_call(sni_get_connection(), priv->sni->dest,
-        priv->sni->path, priv->sni->host->item_iface, "Scroll",
+        priv->sni->path, priv->sni->iface, "Scroll",
         g_variant_new("(is)", delta, dir), NULL, G_DBUS_CALL_FLAGS_NONE, -1,
         NULL, NULL, NULL);
     return TRUE;
@@ -107,7 +107,7 @@ static gboolean tray_item_action_exec ( GtkWidget *self, gint slot,
 
   if(ev->type == GDK_BUTTON_RELEASE)
   {
-    g_debug("sni %s: button: %d",priv->sni->dest, ev->button.button);
+    g_debug("sni %s: button: %d", priv->sni->dest, ev->button.button);
     if((ev->button.button == 1 && priv->sni->menu) || ev->button.button == 3)
     {
       if(priv->sni->menu_path)
@@ -151,7 +151,7 @@ static gboolean tray_item_action_exec ( GtkWidget *self, gint slot,
       g_debug("sni: calling %s on %s at ( %d, %d )", method, priv->sni->dest,
           x,y);
       g_dbus_connection_call(sni_get_connection(), priv->sni->dest,
-          priv->sni->path, priv->sni->host->item_iface, method,
+          priv->sni->path, priv->sni->iface, method,
           g_variant_new("(ii)", 0, 0), NULL, G_DBUS_CALL_FLAGS_NONE, -1,
           NULL, NULL, NULL);
     }
@@ -201,7 +201,7 @@ static void tray_item_init ( TrayItem *self )
 {
 }
 
-GtkWidget *tray_item_new( SniItem *sni, GtkWidget *tray )
+GtkWidget *tray_item_new( sni_item_t *sni, GtkWidget *tray )
 {
   GtkWidget *self;
   GtkWidget *box;

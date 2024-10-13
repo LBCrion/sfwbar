@@ -8,7 +8,7 @@
 #include "sni.h"
 
 struct watcher_item {
-  SniWatcher *watcher;
+  sni_watcher_t *watcher;
   gchar *uid;
   guint id;
 };
@@ -66,7 +66,7 @@ static void sni_watcher_item_lost_cb ( GDBusConnection *con, const gchar *name,
   sni_watcher_item_free(item);
 }
 
-static gint sni_watcher_item_add ( SniWatcher *watcher, gchar *uid )
+static gint sni_watcher_item_add ( sni_watcher_t *watcher, gchar *uid )
 {
   gchar *name;
   struct watcher_item *item;
@@ -97,7 +97,8 @@ static gint sni_watcher_item_add ( SniWatcher *watcher, gchar *uid )
 
 static void sni_watcher_method(GDBusConnection *con, const gchar *sender,
     const gchar *path, const gchar *iface, const gchar *method,
-    GVariant *parameters, GDBusMethodInvocation *invocation, SniWatcher *watcher)
+    GVariant *parameters, GDBusMethodInvocation *invocation,
+    sni_watcher_t *watcher)
 {
   const gchar *parameter;
   gchar *name;
@@ -130,7 +131,7 @@ static void sni_watcher_method(GDBusConnection *con, const gchar *sender,
 
 static GVariant *sni_watcher_get_prop (GDBusConnection *con,
     const gchar *sender, const gchar *path, const gchar *iface,
-    const gchar *prop,GError **error, SniWatcher *watcher )
+    const gchar *prop,GError **error, sni_watcher_t *watcher )
 {
   GVariant *ret = NULL;
   GVariantBuilder *builder;
@@ -169,7 +170,7 @@ static const GDBusInterfaceVTable watcher_vtable =
 };
 
 void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,
-    SniWatcher *watcher)
+    sni_watcher_t *watcher)
 {
   if(watcher->regid)
     g_dbus_connection_unregister_object(con, watcher->regid);
@@ -179,7 +180,7 @@ void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,
 }
 
 void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
-    SniWatcher *watcher)
+    sni_watcher_t *watcher)
 {
  // GList *iter;
 
@@ -195,22 +196,22 @@ void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
       (GBusNameLostCallback)sni_watcher_unregister_cb, watcher, NULL);
 
 //  for(iter=watcher->host->items; iter; iter=g_list_next(iter))
-//    sni_watcher_item_add(watcher, ((SniItem *)iter->data)->uid);
+//    sni_watcher_item_add(watcher, ((sni_item_t *)iter->data)->uid);
 
   g_debug("sni watcher %s registered",watcher->iface);
 }
 
-static void sni_host_item_new ( GDBusConnection *con, SniHost *host,
+static void sni_host_item_new ( GDBusConnection *con, sni_host_t *host,
     const gchar *uid)
 {
-  SniItem *sni;
+  sni_item_t *sni;
   GList *iter;
 
   for(iter=host->items; iter; iter=g_list_next(iter))
-    if(!g_strcmp0(((SniItem *)iter->data)->uid, uid))
+    if(!g_strcmp0(((sni_item_t *)iter->data)->uid, uid))
       return;
 
-  sni = sni_item_new(con, host, uid);
+  sni = sni_item_new(con, host->item_iface, uid);
   host->items = g_list_prepend(host->items, sni);
 
   g_debug("sni host %s: item registered: %s %s", host->iface, sni->dest,
@@ -228,7 +229,7 @@ void sni_host_item_registered_cb ( GDBusConnection* con, const gchar* sender,
 }
 
 static void sni_host_list_cb ( GDBusConnection *con, GAsyncResult *res,
-    SniHost *host)
+    sni_host_t *host)
 {
   GVariant *result,*inner;
   GVariantIter *iter;
@@ -251,7 +252,7 @@ static void sni_host_list_cb ( GDBusConnection *con, GAsyncResult *res,
 
 static void sni_host_item_unregistered_cb ( GDBusConnection* con,
     const gchar* sender, const gchar* path, const gchar* interface,
-    const gchar* signal, GVariant* parameters, SniHost *host )
+    const gchar* signal, GVariant* parameters, sni_host_t *host )
 {
   const gchar *parameter;
   GList *item;
@@ -260,7 +261,7 @@ static void sni_host_item_unregistered_cb ( GDBusConnection* con,
   g_debug("sni host %s: unregister item %s", host->iface, parameter);
 
   for(item=host->items; item; item=g_list_next(item))
-    if(!g_strcmp0(((SniItem *)item->data)->uid, parameter))
+    if(!g_strcmp0(((sni_item_t *)item->data)->uid, parameter))
       break;
   if(!item)
     return;
@@ -271,9 +272,9 @@ static void sni_host_item_unregistered_cb ( GDBusConnection* con,
 }
 
 static void sni_host_register_cb ( GDBusConnection *con, const gchar *name,
-    const gchar *owner_name, SniWatcher *watcher )
+    const gchar *owner_name, sni_watcher_t *watcher )
 {
-  SniHost *host = watcher->host;
+  sni_host_t *host = watcher->host;
   g_dbus_connection_call(con, host->watcher, "/StatusNotifierWatcher",
     host->watcher, "RegisterStatusNotifierHost",
     g_variant_new("(s)", host->iface),
@@ -297,12 +298,12 @@ static void sni_host_register_cb ( GDBusConnection *con, const gchar *name,
 
 static void sni_register ( gchar *name )
 {
-  SniWatcher*watcher;
-  SniHost*host;
+  sni_watcher_t *watcher;
+  sni_host_t *host;
   gchar *xml;
 
-  watcher = g_malloc0(sizeof(SniWatcher));
-  host = g_malloc0(sizeof(SniHost));
+  watcher = g_malloc0(sizeof(sni_watcher_t));
+  host = g_malloc0(sizeof(sni_host_t));
 
   xml = g_strdup_printf(sni_watcher_xml, name);
   watcher->idata = g_dbus_node_info_new_for_xml (xml, NULL);

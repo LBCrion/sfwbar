@@ -5,12 +5,11 @@
 
 #include <gio/gio.h>
 #include "gui/scaleimage.h"
-#include "gui/trayitem.h"
 #include "gui/tray.h"
 
 struct sni_prop_wrapper {
   guint prop;
-  SniItem *sni;
+  sni_item_t *sni;
 };
 
 static GList *sni_items;
@@ -23,7 +22,7 @@ static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
   "AttentionIconPixmap", "WindowId", "ToolTip", "ItemIsMenu", "Menu",
   "XAyatanaOrderingIndex" };
 
-gchar *sni_item_icon ( SniItem *item )
+gchar *sni_item_icon ( sni_item_t *item )
 {
   if(!item->string[SNI_PROP_STATUS])
     return NULL;
@@ -38,7 +37,7 @@ gchar *sni_item_icon ( SniItem *item )
   return item->string[SNI_PROP_ICONPIX];
 }
 
-gchar *sni_item_tooltip ( SniItem *item )
+gchar *sni_item_tooltip ( sni_item_t *item )
 {
   if(item->tooltip && item->tooltip[0])
     return item->tooltip;
@@ -53,7 +52,7 @@ gchar *sni_item_tooltip ( SniItem *item )
   return NULL;
 }
 
-gchar *sni_item_get_pixbuf ( GVariant *v )
+static gchar *sni_item_get_pixbuf ( GVariant *v )
 {
   GVariant *img,*child;
   cairo_surface_t *cs;
@@ -181,7 +180,7 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
   g_free(wrap);
 }
 
-void sni_item_get_prop ( GDBusConnection *con, SniItem *sni,
+void sni_item_get_prop ( GDBusConnection *con, sni_item_t *sni,
     guint prop )
 {
   struct sni_prop_wrapper *wrap;
@@ -193,7 +192,7 @@ void sni_item_get_prop ( GDBusConnection *con, SniItem *sni,
 
   g_dbus_connection_call(con, sni->dest, sni->path,
     "org.freedesktop.DBus.Properties", "Get",
-    g_variant_new("(ss)", sni->host->item_iface, sni_properties[prop]), NULL,
+    g_variant_new("(ss)", sni->iface, sni_properties[prop]), NULL,
     G_DBUS_CALL_FLAGS_NONE, -1, sni->cancel,
     (GAsyncReadyCallback)sni_item_prop_cb, wrap);
 }
@@ -232,14 +231,14 @@ void sni_item_signal_cb (GDBusConnection *con, const gchar *sender,
     sni_item_get_prop(con, data, SNI_PROP_LABEL);
 }
 
-SniItem *sni_item_new (GDBusConnection *con, SniHost *host,
+sni_item_t *sni_item_new (GDBusConnection *con, gchar *iface,
     const gchar *uid)
 {
-  SniItem *sni;
+  sni_item_t *sni;
   gchar *path;
   guint i;
 
-  sni = g_malloc0(sizeof(SniItem));
+  sni = g_malloc0(sizeof(sni_item_t));
   sni->uid = g_strdup(uid);
   sni->cancel = g_cancellable_new();
   sni->menu = TRUE;
@@ -254,10 +253,9 @@ SniItem *sni_item_new (GDBusConnection *con, SniHost *host,
     sni->path = g_strdup("/StatusNotifierItem");
     sni->dest = g_strdup(uid);
   }
-  sni->host = host;
+  sni->iface = g_strdup(iface);
   sni->signal = g_dbus_connection_signal_subscribe(con, sni->dest,
-      host->item_iface, NULL, sni->path, NULL, 0, sni_item_signal_cb,
-      sni, NULL);
+      sni->iface, NULL, sni->path, NULL, 0, sni_item_signal_cb, sni, NULL);
   sni_items = g_list_append(sni_items, sni);
   tray_item_init_for_all(sni);
   for(i=0; i<SNI_PROP_MAX; i++)
@@ -266,7 +264,7 @@ SniItem *sni_item_new (GDBusConnection *con, SniHost *host,
   return sni;
 }
 
-void sni_item_free ( SniItem *sni )
+void sni_item_free ( sni_item_t *sni )
 {
   gint i;
 
@@ -286,6 +284,7 @@ void sni_item_free ( SniItem *sni )
   g_free(sni->uid);
   g_free(sni->path);
   g_free(sni->dest);
+  g_free(sni->iface);
   g_free(sni);
 }
 

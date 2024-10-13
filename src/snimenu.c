@@ -72,7 +72,7 @@ static GtkWidget *sni_menu_item_find ( GtkWidget *widget, gint32 id )
   return iter?node:NULL;
 }
 
-static SniItem *sni_menu_item_get_sni_item ( GtkWidget *item )
+static sni_item_t *sni_menu_item_get_sni_item ( GtkWidget *item )
 {
   GtkWidget *parent;
 
@@ -83,7 +83,7 @@ static SniItem *sni_menu_item_get_sni_item ( GtkWidget *item )
   return g_object_get_data(G_OBJECT(parent), "sni_item");
 }
 
-static void sni_menu_map_cb( GtkWidget *menu, SniItem *sni )
+static void sni_menu_map_cb( GtkWidget *menu, sni_item_t *sni )
 {
   if(sni && !g_object_get_data(G_OBJECT(sni->menu_obj), "suppress_ats"))
     g_dbus_connection_call(sni_get_connection(), sni->dest, sni->menu_path,
@@ -93,7 +93,7 @@ static void sni_menu_map_cb( GtkWidget *menu, SniItem *sni )
         (GAsyncReadyCallback)sni_menu_about_to_show_cb, menu);
 }
 
-static gboolean sni_menu_cancel_ats_suppression ( SniItem *sni )
+static gboolean sni_menu_cancel_ats_suppression ( sni_item_t *sni )
 {
   g_object_set_data(G_OBJECT(sni->menu_obj), "suppress_ats",
       GINT_TO_POINTER(FALSE));
@@ -157,7 +157,7 @@ static void sni_menu_item_update ( GtkWidget *item, GVariant *dict,
 
 static void sni_menu_item_activate_cb ( GtkWidget *item, gpointer data )
 {
-  SniItem *sni;
+  sni_item_t *sni;
   gint32 id;
 
   if( !(id = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(item), "id"))) )
@@ -252,7 +252,7 @@ static void sni_menu_parse ( GtkWidget *widget, GVariantIter *viter )
 static void sni_menu_get_layout_cb ( GObject *src, GAsyncResult *res,
     gpointer data )
 {
-  SniItem *sni = data;
+  sni_item_t *sni = data;
   GtkWidget *menu, *parent;
   GVariant *result, *dict;
   GVariantIter *iter;
@@ -290,7 +290,7 @@ static void sni_menu_about_to_show_cb ( GDBusConnection *con, GAsyncResult *res,
     gpointer data )
 {
   GtkWidget *parent, *item = data;
-  SniItem *sni;
+  sni_item_t *sni;
   GVariant *result;
   gboolean refresh;
   gint32 id;
@@ -326,7 +326,7 @@ static void sni_menu_layout_updated_cb (GDBusConnection *con,
     const gchar *sender, const gchar *path, const gchar *interface,
     const gchar *signal, GVariant *parameters, gpointer data)
 {
-  SniItem *sni = data;
+  sni_item_t *sni = data;
   guint32 rev;
   gint32 id;
 
@@ -339,7 +339,7 @@ static void sni_menu_layout_updated_cb (GDBusConnection *con,
       sni_menu_get_layout_cb, sni);
 }
 
-void sni_menu_init ( SniItem *sni )
+void sni_menu_init ( sni_item_t *sni )
 {
   if(sni->menu_obj)
     gtk_widget_destroy(sni->menu_obj);
