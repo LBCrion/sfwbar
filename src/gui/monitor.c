@@ -5,11 +5,11 @@
 
 #include <gtk/gtk.h>
 #include <gdk/gdkwayland.h>
+#include <sys/mman.h>
+#include <fcntl.h>
 #include "wayland.h"
 #include "bar.h"
 #include "basewidget.h"
-#include <sys/mman.h>
-#include <fcntl.h>
 #include "wlr-layer-shell-unstable-v1.h"
 #include "xdg-output-unstable-v1.h"
 
@@ -182,23 +182,7 @@ static void xdg_output_new ( GdkMonitor *monitor )
   xdg = zxdg_output_manager_v1_get_xdg_output(xdg_output_manager, output);
 
   if(xdg)
-  {
     zxdg_output_v1_add_listener(xdg, &xdg_output_listener, monitor);
-    g_object_set_data(G_OBJECT(monitor), "xdg_output", xdg);
-  }
-}
-
-static void xdg_output_destroy ( GdkMonitor *gmon )
-{
-  struct zxdg_output_v1 *xdg;
-
-  if(!gmon || !xdg_output_manager)
-    return;
-
-  xdg = g_object_get_data(G_OBJECT(gmon), "xdg_output");
-
-  if(xdg)
-    zxdg_output_v1_destroy(xdg);
 }
 
 gchar *monitor_get_name ( GdkMonitor *monitor )
@@ -272,7 +256,6 @@ static void monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 {
   static char trigger[256];
 
-  xdg_output_destroy(gmon);
   g_snprintf(trigger, 255, "%s_disconnected", monitor_get_name(gmon));
   g_idle_add((GSourceFunc)base_widget_emit_trigger,
       (gpointer)g_intern_string(trigger));
