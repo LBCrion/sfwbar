@@ -15,16 +15,15 @@
 G_DEFINE_TYPE_WITH_CODE (TaskbarShell, taskbar_shell, TASKBAR_TYPE,
     G_ADD_PRIVATE (TaskbarShell))
 
-static GList *taskbars;
-
 static void taskbar_shell_destroy ( GtkWidget *self )
 {
   TaskbarShellPrivate *priv;
 
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
 
-  taskbars = g_list_remove(taskbars, self);
-  g_list_free_full(g_steal_pointer(&priv->css), g_free);
+  wintree_listener_remove(self);
+  workspace_listener_remove(self);
+  g_source_remove(priv->timer_h);
   GTK_WIDGET_CLASS(taskbar_shell_parent_class)->destroy(self);
 }
 
@@ -48,8 +47,62 @@ static void taskbar_shell_mirror ( GtkWidget *self, GtkWidget *src )
   for(iter=priv->css; iter; iter=g_list_next(iter))
     taskbar_shell_set_group_css(self, iter->data);
   taskbar_shell_set_group_style(self, priv->style);
-  taskbar_shell_populate();
 }
+
+static void taskbar_shell_item_init ( window_t *win, GtkWidget *self )
+{
+  TaskbarShellPrivate *priv;
+  GtkWidget *taskbar;
+
+  priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
+  if( (taskbar = priv->get_taskbar(self, win, TRUE)) )
+    taskbar_item_new(win, taskbar);
+}
+
+void taskbar_shell_item_invalidate ( window_t *win, GtkWidget *self )
+{
+  TaskbarShellPrivate *priv;
+  GtkWidget *taskbar;
+
+  priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
+  if( (taskbar = priv->get_taskbar(self, win, FALSE)) )
+  {
+    flow_item_invalidate(flow_grid_find_child(taskbar, win));
+    flow_item_invalidate(taskbar_get_parent(taskbar));
+  }
+}
+
+static void taskbar_shell_item_destroy ( window_t *win, GtkWidget *self )
+{
+  TaskbarShellPrivate *priv;
+  GtkWidget *taskbar, *parent;
+
+  priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
+  if( (taskbar = priv->get_taskbar(self, win, FALSE)) )
+  {
+    flow_grid_delete_child(taskbar, win);
+    if(!flow_grid_n_children(taskbar) && taskbar != self)
+      flow_grid_delete_child(self,
+          flow_item_get_source(taskbar_get_parent(taskbar)));
+    else if( (parent = taskbar_get_parent(taskbar)) )
+      flow_item_invalidate(parent);
+  }
+}
+
+static window_listener_t taskbar_shell_window_listener = {
+  .window_new = (void (*)(window_t *, void *))taskbar_shell_item_init,
+  .window_invalidate = (void (*)(window_t *, void *))taskbar_shell_item_invalidate,
+  .window_destroy = (void (*)(window_t *, void *))taskbar_shell_item_destroy,
+};
+
+void taskbar_shell_ws_invalidate ( workspace_t *ws, GtkWidget *self )
+{
+  taskbar_shell_invalidate(self);
+}
+
+static workspace_listener_t taskbar_shell_workspace_listener = {
+  .workspace_invalidate = (void (*)(workspace_t *, void *))taskbar_shell_ws_invalidate,
+};
 
 static void taskbar_shell_class_init ( TaskbarShellClass *kclass )
 {
@@ -63,8 +116,10 @@ static void taskbar_shell_init ( TaskbarShell *self )
 
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
   priv->get_taskbar = taskbar_get_taskbar;
-  taskbars = g_list_append(taskbars, self);
+  priv->timer_h = g_timeout_add(100, (GSourceFunc)flow_grid_update, self);
   priv->title_width = -1;
+  wintree_listener_register(&taskbar_shell_window_listener, self);
+  workspace_listener_register(&taskbar_shell_workspace_listener, self);
 }
 
 void taskbar_shell_init_child ( GtkWidget *self, GtkWidget *child )
@@ -90,6 +145,14 @@ void taskbar_shell_init_child ( GtkWidget *self, GtkWidget *child )
   base_widget_set_style(child, g_strdup(priv->style));
 }
 
+void taskbar_shell_invalidate ( GtkWidget *self )
+{
+  GList *iter;
+
+  for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
+    taskbar_shell_item_invalidate(iter->data, self);
+}
+
 void taskbar_shell_set_filter ( GtkWidget *self, gint filter )
 {
   TaskbarShellPrivate *priv;
@@ -103,7 +166,7 @@ void taskbar_shell_set_filter ( GtkWidget *self, gint filter )
   else
     priv->filter = filter;
 
-  taskbar_shell_invalidate_all();
+  taskbar_shell_invalidate(self);
 }
 
 gint taskbar_shell_get_filter ( GtkWidget *self, gboolean *floating )
@@ -116,81 +179,6 @@ gint taskbar_shell_get_filter ( GtkWidget *self, gboolean *floating )
 
   *floating = priv->floating_filter;
   return priv->filter;
-}
-
-void taskbar_shell_update_all ( void )
-{
-  g_list_foreach(taskbars, (GFunc)flow_grid_update, NULL);
-}
-
-void taskbar_shell_populate ( void )
-{
-  GList *iter;
-
-  for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
-    taskbar_shell_item_init_for_all (iter->data);
-}
-
-void taskbar_shell_item_invalidate ( window_t *win )
-{
-  TaskbarShellPrivate *priv;
-  GtkWidget *taskbar;
-  GList *iter;
-
-  for(iter=taskbars; iter; iter=g_list_next(iter))
-  {
-    priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(iter->data));
-    if( (taskbar = priv->get_taskbar(iter->data, win, FALSE)) )
-    {
-      flow_item_invalidate(flow_grid_find_child(taskbar, win));
-      flow_item_invalidate(taskbar_get_parent(taskbar));
-    }
-  }
-}
-
-void taskbar_shell_invalidate_all ( void )
-{
-  GList *iter;
-
-  for(iter=wintree_get_list();iter;iter=g_list_next(iter))
-    taskbar_shell_item_invalidate(iter->data);
-}
-
-static void taskbar_shell_item_init ( GtkWidget *self, window_t *win )
-{
-  TaskbarShellPrivate *priv;
-  GtkWidget *taskbar;
-
-  priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
-  if( (taskbar = priv->get_taskbar(self, win, TRUE)) )
-    taskbar_item_new(win, taskbar);
-}
-
-void taskbar_shell_item_init_for_all ( window_t *win )
-{
-  g_list_foreach(taskbars, (GFunc)taskbar_shell_item_init, win);
-}
-
-static void taskbar_shell_item_destroy ( GtkWidget *self, window_t *win )
-{
-  TaskbarShellPrivate *priv;
-  GtkWidget *taskbar, *parent;
-
-  priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
-  if( (taskbar = priv->get_taskbar(self, win, FALSE)) )
-  {
-    flow_grid_delete_child(taskbar, win);
-    if(!flow_grid_n_children(taskbar) && taskbar != self)
-      flow_grid_delete_child(self,
-          flow_item_get_source(taskbar_get_parent(taskbar)));
-    else if( (parent = taskbar_get_parent(taskbar)) )
-      flow_item_invalidate(parent);
-  }
-}
-
-void taskbar_shell_item_destroy_for_all ( window_t *win )
-{
-  g_list_foreach(taskbars, (GFunc)taskbar_shell_item_destroy, win);
 }
 
 void taskbar_shell_set_api ( GtkWidget *self, GtkWidget *(*get_taskbar)
@@ -206,12 +194,12 @@ void taskbar_shell_set_api ( GtkWidget *self, GtkWidget *(*get_taskbar)
     return;
 
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
-    taskbar_shell_item_destroy(self, iter->data);
+    taskbar_shell_item_destroy(iter->data, self);
 
   priv->get_taskbar = get_taskbar;
   
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
-    taskbar_shell_item_init(self, iter->data);
+    taskbar_shell_item_init(iter->data, self);
 
   for(iter=base_widget_get_mirror_children(self); iter; iter=g_list_next(iter))
     taskbar_shell_set_api(iter->data, get_taskbar);

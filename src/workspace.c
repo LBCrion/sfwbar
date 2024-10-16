@@ -21,14 +21,6 @@ static GHashTable *actives;
           WORKSPACE_LISTENER(li->data)->data); \
 }
 
-void handlers_call( GList *list, void *item )
-{
-  GList *iter;
-
-  for(iter=list; iter; iter=g_list_next(iter))
-    ((void (*)(void *))(iter->data))(item);
-}
-
 void workspace_api_register ( struct workspace_api *new )
 {
   api = new;
@@ -37,11 +29,6 @@ void workspace_api_register ( struct workspace_api *new )
 gboolean workspace_api_check ( void )
 {
   return !!api;
-}
-
-gboolean workspaces_supported ( void )
-{
-  return !!api->set_workspace;
 }
 
 void workspace_listener_register ( workspace_listener_t *listener, void *data )
@@ -61,6 +48,17 @@ void workspace_listener_register ( workspace_listener_t *listener, void *data )
     for(iter=workspaces; iter; iter=g_list_next(iter))
       copy->workspace_new(iter->data, copy->data);
   }
+}
+
+void workspace_listener_remove ( void *data )
+{
+  GList *iter;
+
+  for(iter=workspace_listeners; iter; iter=g_list_next(iter))
+    if(WORKSPACE_LISTENER(iter->data)->data == data)
+      break;
+  if(iter)
+    workspace_listeners = g_list_remove(workspace_listeners, iter->data);
 }
 
 void workspace_ref ( gpointer id )

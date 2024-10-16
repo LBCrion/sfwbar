@@ -5,7 +5,7 @@
 
 #include <gio/gio.h>
 #include "gui/scaleimage.h"
-#include "gui/tray.h"
+#include "sni.h"
 
 struct sni_prop_wrapper {
   guint prop;
@@ -14,6 +14,7 @@ struct sni_prop_wrapper {
 
 static GList *sni_items;
 static guint pix_counter;
+static GList *sni_listeners;
 
 static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
   "IconName", "OverlayIconName", "AttentionIconName", "AttentionMovieName",
@@ -21,6 +22,43 @@ static gchar *sni_properties[] = { "Category", "Id", "Title", "Status",
   "XAyatanaLabelGuide", "IconThemePath", "IconPixmap", "OverlayIconPixmap",
   "AttentionIconPixmap", "WindowId", "ToolTip", "ItemIsMenu", "Menu",
   "XAyatanaOrderingIndex" };
+
+#define LISTENER_CALL(method, sni) { \
+  for(GList *li=sni_listeners; li; li=li->next) \
+    if(SNI_LISTENER(li->data)->method) \
+      SNI_LISTENER(li->data)->method(sni, \
+          SNI_LISTENER(li->data)->data); \
+}
+
+void sni_listener_register ( sni_listener_t *listener, void *data )
+{
+  sni_listener_t *copy;
+  GList *iter;
+
+  if(!listener)
+    return;
+
+  copy = g_memdup(listener, sizeof(sni_listener_t));
+  copy->data = data;
+  sni_listeners = g_list_append(sni_listeners, copy);
+
+  if(copy->sni_new)
+  {
+    for(iter=sni_item_get_list(); iter; iter=g_list_next(iter))
+      copy->sni_new(iter->data, copy->data);
+  }
+}
+
+void sni_listener_remove ( void *data )
+{
+  GList *iter;
+
+  for(iter=sni_listeners; iter; iter=g_list_next(iter))
+    if(SNI_LISTENER(iter->data)->data == data)
+      break;
+  if(iter)
+    sni_listeners = g_list_remove(sni_listeners, iter->data);
+}
 
 gchar *sni_item_icon ( sni_item_t *item )
 {
@@ -176,7 +214,7 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
   }
 
   g_variant_unref(inner);
-  tray_invalidate_all(wrap->sni);
+  LISTENER_CALL(sni_invalidate, wrap->sni);
   g_free(wrap);
 }
 
@@ -257,7 +295,7 @@ sni_item_t *sni_item_new (GDBusConnection *con, gchar *iface,
   sni->signal = g_dbus_connection_signal_subscribe(con, sni->dest,
       sni->iface, NULL, sni->path, NULL, 0, sni_item_signal_cb, sni, NULL);
   sni_items = g_list_append(sni_items, sni);
-  tray_item_init_for_all(sni);
+  LISTENER_CALL(sni_new, sni);
   for(i=0; i<SNI_PROP_MAX; i++)
     sni_item_get_prop(con, sni, i);
 
@@ -268,9 +306,8 @@ void sni_item_free ( sni_item_t *sni )
 {
   gint i;
 
-  tray_invalidate_all(sni);
   g_dbus_connection_signal_unsubscribe(sni_get_connection(), sni->signal);
-  tray_item_destroy(sni);
+  LISTENER_CALL(sni_destroy, sni);
   g_cancellable_cancel(sni->cancel);
   g_object_unref(sni->cancel);
   for(i=0; i<3; i++)

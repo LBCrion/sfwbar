@@ -9,7 +9,6 @@
 #define g_memdup2(x,y) g_memdup(x,y)
 #endif
 
-
 void signal_subscribe ( void );
 void hypr_ipc_init ( void );
 void wayfire_ipc_init ( void );

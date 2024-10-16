@@ -61,7 +61,18 @@ typedef struct sni_item {
   GtkWidget *menu_obj;
 } sni_item_t;
 
+typedef struct _sni_listener_t {
+  void (*sni_new)(sni_item_t *, void *);
+  void (*sni_invalidate)(sni_item_t *, void *);
+  void (*sni_destroy)(sni_item_t *, void *);
+  void *data;
+} sni_listener_t;
+
+#define SNI_LISTENER(x) ((sni_listener_t *)(x))
+
 void sni_init ( void );
+void sni_listener_register ( sni_listener_t *listener, void *data );
+void sni_listener_remove ( void * );
 void sni_update ( void );
 GDBusConnection *sni_get_connection ( void );
 void sni_get_menu ( GtkWidget *widget, GdkEvent *event );

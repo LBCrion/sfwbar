@@ -39,11 +39,10 @@ typedef struct _workspace_listener {
 #define PAGER_PIN_ID (GINT_TO_POINTER(-1))
 #define WORKSPACE(x) ((workspace_t *)(x))
 
-gboolean workspaces_supported( void );
-
 void workspace_api_register ( struct workspace_api *new );
 gboolean workspace_api_check ( void );
 void workspace_listener_register ( workspace_listener_t *, gpointer );
+void workspace_listener_remove ( void *data );
 workspace_t *workspace_new ( gpointer id );
 void workspace_commit ( workspace_t *ws );
 void workspace_set_focus ( gpointer id );

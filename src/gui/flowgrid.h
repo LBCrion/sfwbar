@@ -56,7 +56,7 @@ gint flow_grid_get_cols ( GtkWidget *self );
 void flow_grid_set_primary ( GtkWidget *self, gint primary );
 void flow_grid_set_limit ( GtkWidget *self, gboolean limit );
 void flow_grid_add_child ( GtkWidget *self, GtkWidget *child );
-void flow_grid_update ( GtkWidget *self );
+gboolean flow_grid_update ( GtkWidget *self );
 void flow_grid_invalidate ( GtkWidget *self );
 void flow_grid_delete_child ( GtkWidget *, void *parent );
 GList *flow_grid_get_children ( GtkWidget *self );

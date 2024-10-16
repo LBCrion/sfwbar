@@ -3,16 +3,17 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "css.h"
-#include "bar.h"
-#include "gui/monitor.h"
-#include "grid.h"
+#include <glib-unix.h>
+#include <gtk-layer-shell.h>
 #include "config.h"
-#include "taskbarshell.h"
 #include "window.h"
 #include "meson.h"
+#include "gui/css.h"
+#include "gui/bar.h"
+#include "gui/monitor.h"
+#include "gui/grid.h"
+#include "gui/taskbarshell.h"
 #include "util/string.h"
-#include <gtk-layer-shell.h>
 
 G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW, G_ADD_PRIVATE (Bar))
 
@@ -233,6 +234,7 @@ static void bar_class_init ( BarClass *kclass )
   GTK_WIDGET_CLASS(kclass)->leave_notify_event = bar_leave_notify_event;
   GTK_WIDGET_CLASS(kclass)->style_updated = bar_style_updated;
   GTK_WIDGET_CLASS(kclass)->map = bar_map;
+  g_unix_signal_add(SIGUSR2,(GSourceFunc)bar_visibility_toggle_all,NULL);
 }
 
 GtkWidget *bar_from_name ( gchar *name )
@@ -595,7 +597,7 @@ gboolean bar_update_monitor ( GtkWidget *self )
     if(priv->visible)
     {
       gtk_widget_show_now(self);
-      taskbar_shell_invalidate_all();
+//      taskbar_shell_invalidate_all();
     }
   }
 

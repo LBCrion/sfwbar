@@ -11,8 +11,6 @@
 
 G_DEFINE_TYPE_WITH_CODE (Pager, pager, FLOW_GRID_TYPE, G_ADD_PRIVATE (Pager))
 
-static GList *pagers;
-
 static void pager_mirror ( GtkWidget *self, GtkWidget *src )
 {
   g_return_if_fail(IS_PAGER(self));
@@ -28,8 +26,9 @@ static void pager_destroy ( GtkWidget *self )
   PagerPrivate *priv;
 
   g_return_if_fail(IS_PAGER(self));
+  workspace_listener_remove(self);
   priv = pager_get_instance_private(PAGER(self));
-  pagers = g_list_remove(pagers, self);
+  g_source_remove(priv->timer_h);
   g_list_free_full(g_steal_pointer(&priv->pins), g_free);
   GTK_WIDGET_CLASS(pager_parent_class)->destroy(self);
 }
@@ -60,9 +59,12 @@ static void pager_class_init ( PagerClass *kclass )
 
 static void pager_init ( Pager *self )
 {
-  pagers = g_list_prepend(pagers, self);
+  PagerPrivate *priv;
 
-  if(!workspaces_supported())
+  priv = pager_get_instance_private(PAGER(self));
+  priv->timer_h = g_timeout_add(100, (GSourceFunc)flow_grid_update, self);
+
+  if(!workspace_api_check())
     css_add_class(GTK_WIDGET(self), "hidden");
   flow_grid_invalidate(GTK_WIDGET(self));
   workspace_listener_register(&pager_listener, self);
@@ -76,7 +78,7 @@ void pager_add_pins ( GtkWidget *self, GList *pins )
   g_return_if_fail(IS_PAGER(self));
   priv = pager_get_instance_private(PAGER(self));
 
-  if(!workspaces_supported())
+  if(!workspace_api_check())
   {
     g_list_free_full(pins, (GDestroyNotify)g_free);
     return;
@@ -101,9 +103,4 @@ gboolean pager_check_pins ( GtkWidget *self, gchar *pin )
   priv = pager_get_instance_private(PAGER(base_widget_get_mirror_parent(self)));
 
   return !!g_list_find_custom(priv->pins, pin, (GCompareFunc)g_strcmp0);
-}
-
-void pager_update_all ( void )
-{
-  g_list_foreach(pagers, (GFunc)flow_grid_update, NULL);
 }

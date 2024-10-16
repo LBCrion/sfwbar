@@ -27,6 +27,7 @@ struct _PagerClass
 struct _PagerPrivate
 {
   GList *pins;
+  guint timer_h;
 };
 
 GType pager_get_type ( void );

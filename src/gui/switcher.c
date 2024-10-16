@@ -3,7 +3,7 @@
  * Copyright 2020- sfwbar maintainers
  */
 
-#include <glib.h>
+#include <glib-unix.h>
 #include <gtk-layer-shell.h>
 #include "css.h"
 #include "switcheritem.h"
@@ -17,64 +17,92 @@ G_DEFINE_TYPE_WITH_CODE (Switcher, switcher, FLOW_GRID_TYPE,
     G_ADD_PRIVATE (Switcher))
 
 static GtkWidget *switcher_win;
-static GtkWidget *grid;
+static GtkWidget *switcher_grid;
+static guint timer_handle;
 static gint interval;
 static gchar hstate;
 static gint counter;
-static gint title_width = -1;
 static window_t *focus;
 
 GtkApplication *application;
 
+static gboolean switcher_update ( GtkWidget *self )
+{
+  GList *iter;
+
+  if(!switcher_grid)
+    return TRUE;
+
+  if(counter <= 0)
+    return TRUE;
+  counter--;
+
+  if(counter > 0)
+  {
+    for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
+      flow_item_invalidate(flow_grid_find_child(switcher_grid, iter->data));
+    flow_grid_update(switcher_grid);
+    css_widget_cascade(switcher_win, NULL);
+  }
+  else
+  {
+    gtk_widget_hide(switcher_win);
+    wintree_focus(focus->uid);
+  }
+  return TRUE;
+}
+
 static void switcher_class_init ( SwitcherClass *kclass )
 {
+  g_unix_signal_add(SIGUSR1, (GSourceFunc)switcher_event, NULL);
 }
+
+void switcher_init_item (window_t *win, GtkWidget *self )
+{
+  flow_grid_add_child(self, switcher_item_new(win, self));
+}
+
+static void switcher_invalidate_item ( window_t *win, GtkWidget *self )
+{
+  flow_item_invalidate(flow_grid_find_child(self, win));
+}
+
+static void switcher_destroy_item( window_t *win, GtkWidget *self )
+{
+  flow_grid_delete_child(self, win);
+}
+
+static window_listener_t switcher_window_listener = {
+  .window_new = (void (*)(window_t *, void *))switcher_init_item,
+  .window_invalidate = (void (*)(window_t *, void *))switcher_invalidate_item,
+  .window_destroy = (void (*)(window_t *, void *))switcher_destroy_item,
+};
 
 static void switcher_init ( Switcher *self )
 {
-}
-
-gboolean switcher_state ( void )
-{
-  return !!grid;
-}
-
-GtkWidget *switcher_new ( void )
-{
-  if(grid)
-    return grid;
-
-  grid = GTK_WIDGET(g_object_new(switcher_get_type(), NULL));
-  flow_grid_set_limit(grid, FALSE);
-  gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(grid)), "switcher");
+  flow_grid_set_limit(GTK_WIDGET(self), FALSE);
+  gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "switcher");
+  wintree_listener_register(&switcher_window_listener, GTK_WIDGET(self));
 
   switcher_win = gtk_application_window_new(application);
   gtk_layer_init_for_window (GTK_WINDOW(switcher_win));
   gtk_layer_set_layer(GTK_WINDOW(switcher_win), GTK_LAYER_SHELL_LAYER_OVERLAY);
   gtk_widget_set_name(switcher_win, "switcher");
-  gtk_container_add(GTK_CONTAINER(switcher_win), grid);
+  gtk_container_add(GTK_CONTAINER(switcher_win), GTK_WIDGET(self));
+  timer_handle = g_timeout_add(100, (GSourceFunc)switcher_update, self);
 
   hstate = 's';
-
-  return grid;
 }
 
-void switcher_populate ( void )
+gboolean switcher_state ( void )
 {
-  GList *iter;
+  return !!switcher_grid;
+}
 
-  if(!grid)
-    return;
-
-  interval = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(grid),"interval"));
-  title_width = GPOINTER_TO_INT(
-      g_object_get_data(G_OBJECT(grid),"title_width"));
-
-  if(!title_width)
-    title_width = -1;
-
-  for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
-    switcher_window_init(iter->data);
+GtkWidget *switcher_new ( void )
+{
+  return switcher_grid?switcher_grid:
+    (switcher_grid = GTK_WIDGET(g_object_new(switcher_get_type(), NULL)));
 }
 
 gboolean switcher_is_focused ( gpointer uid )
@@ -101,7 +129,7 @@ gboolean switcher_event ( gpointer dir )
 {
   GList *iter, *list = NULL, *flink = NULL;
 
-  if(!grid)
+  if(!switcher_grid)
     return TRUE;
 
   if(counter<1 || !focus)
@@ -109,7 +137,7 @@ gboolean switcher_event ( gpointer dir )
   counter = interval + 1;
 
   for (iter = wintree_get_list(); iter; iter = g_list_next(iter) )
-    if(switcher_check(grid, iter->data))
+    if(switcher_check(switcher_grid, iter->data))
       list = g_list_prepend(list, iter->data);
   list = g_list_reverse(list);
 
@@ -125,44 +153,6 @@ gboolean switcher_event ( gpointer dir )
   g_list_free(list);
 
   return TRUE;
-}
-
-void switcher_window_delete (window_t *win )
-{
-  if(grid)
-    flow_grid_delete_child(grid, win);
-}
-
-void switcher_window_init (window_t *win )
-{
-  if(grid)
-    flow_grid_add_child(grid, switcher_item_new(win, grid));
-}
-
-
-void switcher_update ( void )
-{
-  GList *iter;
-
-  if(!grid)
-    return;
-
-  if(counter <= 0)
-    return;
-  counter--;
-
-  if(counter > 0)
-  {
-    for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
-      flow_item_invalidate(flow_grid_find_child(grid, iter->data));
-    flow_grid_update(grid);
-    css_widget_cascade(switcher_win, NULL);
-  }
-  else
-  {
-    gtk_widget_hide(switcher_win);
-    wintree_focus(focus->uid);
-  }
 }
 
 void switcher_set_filter ( GtkWidget *self, gint filter )
@@ -185,8 +175,7 @@ gint switcher_get_filter ( GtkWidget *self )
   return priv->filter;
 }
 
-void switcher_invalidate ( window_t *win )
+void switcher_set_interval ( gint new_interval )
 {
-  if(grid)
-    flow_item_invalidate(flow_grid_find_child(grid, win));
+  interval = new_interval;
 }

@@ -27,7 +27,7 @@ typedef struct _TrayPrivate TrayPrivate;
 
 struct _TrayPrivate
 {
-  gboolean holder;
+  guint timer_h;
 };
 
 GType tray_get_type ( void );

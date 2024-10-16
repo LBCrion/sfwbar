@@ -4,9 +4,7 @@
  */
 
 #include "wintree.h"
-#include "gui/taskbar.h"
-#include "gui/taskbarshell.h"
-#include "gui/switcher.h"
+#include "gui/basewidget.h"
 #include "util/string.h"
 
 static struct wintree_api *api;
@@ -14,6 +12,7 @@ static GList *wt_list;
 static GList *appid_map;
 static GList *appid_filter_list;
 static GList *title_filter_list;
+static GList *wintree_listeners;
 static gpointer wt_focus;
 static gboolean disown;
 
@@ -21,6 +20,13 @@ struct appid_mapper {
   GRegex *regex;
   gchar *app_id;
 };
+
+#define LISTENER_CALL(method, win) { \
+  for(GList *li=wintree_listeners; li; li=li->next) \
+    if(WINTREE_LISTENER(li->data)->method) \
+      WINTREE_LISTENER(li->data)->method(win, \
+          WINTREE_LISTENER(li->data)->data); \
+}
 
 #define api_call(x) if(api->x) api->x(id);
 void wintree_minimize ( gpointer id ) { api_call(minimize) }
@@ -38,6 +44,36 @@ void wintree_api_register ( struct wintree_api *new )
 gboolean wintree_api_check ( void )
 {
   return !!api;
+}
+
+void wintree_listener_register ( window_listener_t *listener, void *data )
+{
+  window_listener_t *copy;
+  GList *iter;
+
+  if(!listener)
+    return;
+
+  copy = g_memdup(listener, sizeof(window_listener_t));
+  copy->data = data;
+  wintree_listeners = g_list_append(wintree_listeners, copy);
+
+  if(copy->window_new)
+  {
+    for(iter=wt_list; iter; iter=g_list_next(iter))
+      copy->window_new(iter->data, copy->data);
+  }
+}
+
+void wintree_listener_remove ( void *data )
+{
+  GList *iter;
+
+  for(iter=wintree_listeners; iter; iter=g_list_next(iter))
+    if(WINTREE_LISTENER(iter->data)->data == data)
+      break;
+  if(iter)
+    wintree_listeners = g_list_remove(wintree_listeners, iter->data);
 }
 
 void wintree_move_to ( gpointer id, gpointer wsid )
@@ -153,8 +189,7 @@ void wintree_commit ( window_t *win )
   if(!win)
     return;
 
-  taskbar_shell_item_invalidate(win);
-  switcher_invalidate(win);
+  LISTENER_CALL(window_invalidate, win);
 }
 
 void wintree_set_title ( gpointer wid, const gchar *title )
@@ -179,18 +214,14 @@ void wintree_set_app_id ( gpointer wid, const gchar *app_id)
 {
   window_t *win;
 
-  if(!app_id)
+  if(!app_id || !( win=wintree_from_id(wid)) || !g_strcmp0(win->appid, app_id))
     return;
-
-  win = wintree_from_id(wid);
-  if(!win || !g_strcmp0(win->appid, app_id))
-    return;
-  taskbar_shell_item_destroy_for_all (win);
+  LISTENER_CALL(window_destroy, win);
   g_free(win->appid);
   win->appid = g_strdup(app_id);
   if(!win->title)
     win->title = g_strdup(app_id);
-  taskbar_shell_item_init_for_all (win);
+  LISTENER_CALL(window_new, win);
 
   wintree_commit(win);
 }
@@ -203,14 +234,14 @@ void wintree_set_workspace ( gpointer wid, gpointer wsid )
   if(!win || win->workspace == wsid)
     return;
 
-  taskbar_shell_item_destroy_for_all (win);
+  LISTENER_CALL(window_destroy, win);
   workspace_unref(win->workspace);
   if(!wsid)
     win->workspace = NULL;
   else
     win->workspace = wsid;
   workspace_ref(wsid);
-  taskbar_shell_item_init_for_all (win);
+  LISTENER_CALL(window_new, win);
 }
 
 void wintree_set_float ( gpointer wid, gboolean floating )
@@ -228,18 +259,13 @@ void wintree_window_append ( window_t *win )
   if(!win)
     return;
 
-  if( !win->title )
+/*  if( !win->title )
     win->title = g_strdup("");
   if(! win->appid)
-    win->appid = g_strdup("");
-  if( !win->valid )
-  {
-    taskbar_shell_item_init_for_all  (win);
-    win->valid = TRUE;
-  }
+    win->appid = g_strdup("");*/
   if(win->title || win->appid)
-    switcher_window_init(win);
-  if(g_list_find(wt_list, win)==NULL)
+    LISTENER_CALL(window_new, win);
+  if(!g_list_find(wt_list, win))
     wt_list = g_list_append (wt_list, win);
   wintree_commit(win);
 }
@@ -257,8 +283,7 @@ void wintree_window_delete ( gpointer id )
   win = iter->data;
 
   wt_list = g_list_delete_link(wt_list, iter);
-  taskbar_shell_item_destroy_for_all (win);
-  switcher_window_delete(win);
+  LISTENER_CALL(window_destroy, win);
   workspace_unref(win->workspace);
   g_free(win->appid);
   g_free(win->title);

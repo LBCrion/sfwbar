@@ -301,19 +301,19 @@ void flow_grid_child_position ( GtkGrid *grid, GtkWidget *child, gint x, gint y 
         NULL);
 }
 
-void flow_grid_update ( GtkWidget *self )
+gboolean flow_grid_update ( GtkWidget *self )
 {
   FlowGridPrivate *priv, *ppriv;
   GList *iter;
   gint count, i, cols, rows;
 
-  g_return_if_fail(IS_FLOW_GRID(self));
+  g_return_val_if_fail(IS_FLOW_GRID(self), FALSE);
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
   ppriv = flow_grid_get_instance_private(
       FLOW_GRID(base_widget_get_mirror_parent(self)));
 
   if(!priv->invalid)
-    return;
+    return TRUE;
   priv->invalid = FALSE;
 
   if(!ppriv->primary_axis)
@@ -378,6 +378,7 @@ void flow_grid_update ( GtkWidget *self )
     for(;i<cols;i++)
       gtk_grid_attach(priv->grid, gtk_label_new(""), i, 0, 1, 1);
   css_widget_cascade(self, NULL);
+  return TRUE;
 }
 
 GList *flow_grid_get_children ( GtkWidget *self )

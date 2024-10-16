@@ -28,8 +28,19 @@ struct wintree_api {
   void (*move_to) (  void *, void * );
 };
 
+typedef struct _window_listener {
+  void (*window_new) ( window_t *, void *);
+  void (*window_invalidate) ( window_t *, void *);
+  void (*window_destroy) ( window_t *, void *);
+  void *data;
+} window_listener_t;
+
+#define WINTREE_LISTENER(x) ((window_listener_t *)(x))
+
 void wintree_api_register ( struct wintree_api *new );
 gboolean wintree_api_check ( void );
+void wintree_listener_register ( window_listener_t *, void *);
+void wintree_listener_remove ( void *data );
 window_t *wintree_window_init ( void );
 window_t *wintree_from_id ( gpointer id );
 window_t *wintree_from_pid ( gint64 pid );

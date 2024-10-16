@@ -26,8 +26,7 @@ void config_switcher ( GScanner *scanner )
       if(!g_ascii_strcasecmp(scanner->value.v_identifier, "css"))
         css_widget_apply(widget, config_assign_string(scanner, "css"));
       else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "interval"))
-        g_object_set_data(G_OBJECT(widget),"interval",
-          GINT_TO_POINTER(config_assign_number(scanner,"interval")/100));
+        switcher_set_interval(config_assign_number(scanner, "interval")/100);
       else
         g_scanner_error(scanner, "Unexpected token in 'switcher'");
     }

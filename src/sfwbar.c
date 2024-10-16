@@ -5,18 +5,15 @@
 
 #include <glib-unix.h>
 #include "sfwbar.h"
-#include "gui/css.h"
-#include "wayland.h"
-#include "gui/bar.h"
-#include "gui/monitor.h"
-#include "gui/tray.h"
-#include "gui/taskbarshell.h"
-#include "gui/pager.h"
-#include "gui/switcher.h"
-#include "config.h"
-#include "ipc/sway.h"
 #include "expr.h"
 #include "appinfo.h"
+#include "wayland.h"
+#include "config.h"
+#include "ipc/sway.h"
+#include "gui/basewidget.h"
+#include "gui/monitor.h"
+#include "gui/bar.h"
+#include "gui/css.h"
 
 extern gchar *confname;
 extern gchar *sockname;
@@ -93,16 +90,6 @@ void log_print ( const gchar *log_domain, GLogLevelFlags log_level,
   g_date_time_unref(now);
 }
 
-gboolean shell_timer ( gpointer data )
-{
-  taskbar_shell_update_all();
-  switcher_update();
-  pager_update_all();
-  tray_update();
-
-  return TRUE;
-}
-
 static gboolean sfwbar_restart ( gpointer d )
 {
   gint i, fdlimit;
@@ -125,8 +112,8 @@ static void activate (GtkApplication* app, gpointer data )
   config_init();
   expr_lib_init();
   action_lib_init();
-  css_init(cssname);
   wayland_init();
+  css_init(cssname);
   monitor_init();
   sway_ipc_init();
   hypr_ipc_init();
@@ -135,7 +122,7 @@ static void activate (GtkApplication* app, gpointer data )
   cw_init();
   app_info_init();
 
-  if( monitor && !g_ascii_strcasecmp(monitor,"list") )
+  if( monitor && !g_ascii_strcasecmp(monitor, "list") )
     list_monitors();
 
   if(bar_id)
@@ -144,15 +131,11 @@ static void activate (GtkApplication* app, gpointer data )
   config_parse(confname?confname:"sfwbar.config", NULL);
 
   clist = gtk_window_list_toplevels();
-
-  if(!clist && !switcher_state() && !wintree_placer_state())
-    g_error("Configuration file doesn't specify any features");
-
   for(iter = clist; iter; iter = g_list_next(iter) )
     if(GTK_IS_BOX(gtk_bin_get_child(GTK_BIN(iter->data))))
     {
-      css_widget_cascade(GTK_WIDGET(iter->data),NULL);
-      base_widget_autoexec(iter->data,NULL);
+      css_widget_cascade(GTK_WIDGET(iter->data), NULL);
+      base_widget_autoexec(iter->data, NULL);
       if(monitor)
         bar_set_monitor(iter->data, monitor);
     }
@@ -162,14 +145,9 @@ static void activate (GtkApplication* app, gpointer data )
         (GThreadFunc)base_widget_scanner_thread,
         g_main_context_get_thread_default()));
 
-  action_function_exec("SfwBarInit",NULL,NULL,NULL,NULL);
-  taskbar_shell_populate();
-  switcher_populate();
+  action_function_exec("SfwBarInit", NULL, NULL, NULL, NULL);
 
-  g_timeout_add (100,(GSourceFunc )shell_timer,NULL);
-  g_unix_signal_add(SIGUSR1,(GSourceFunc)switcher_event,NULL);
-  g_unix_signal_add(SIGUSR2,(GSourceFunc)bar_visibility_toggle_all,NULL);
-  g_unix_signal_add(SIGHUP,(GSourceFunc)sfwbar_restart,NULL);
+  g_unix_signal_add(SIGHUP, (GSourceFunc)sfwbar_restart, NULL);
 }
 
 int main (int argc, gchar **argv)
