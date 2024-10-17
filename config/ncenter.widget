@@ -149,7 +149,7 @@ PopUp "XNotificationWindow" {
     loc(1,2)
   }
   image {
-    value = 'window-close'
+    value = 'go-up'
     style = If(NotificationActiveGroup()='','hidden','notification_close')
     action = NotificationCollapse
     trigger = 'notification-group'
