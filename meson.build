@@ -283,3 +283,5 @@ install_subdir('icons/misc',
     install_dir: get_option('datadir') / 'sfwbar/icons' )
 install_data('icons/sfwbar.svg',
     install_dir: get_option('datadir') / 'icons/hicolor/scalable/apps' )
+install_subdir('data/desktop-directories',
+    install_dir: get_option('datadir') / 'sfwbar' )

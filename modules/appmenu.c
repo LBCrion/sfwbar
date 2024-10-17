@@ -6,6 +6,7 @@
 #include <glib.h>
 #include <locale.h>
 #include "module.h"
+#include "meson.h"
 #include "sfwbar.h"
 #include "appinfo.h"
 #include "gui/menu.h"
@@ -46,7 +47,7 @@ typedef struct _app_menu_item_t {
 } app_menu_item_t;
 
 app_menu_dir_t app_menu_map[] = {
-  {"Settings", "System Settings", "preferences-system"},
+  {"Settings", "Settings", "preferences-system"},
   {"Multimedia", "Sound & Video", "applications-multimedia"},
   {"Accessibility", "Universal Access", "preferences-desktop-accessibility"},
   {"Development", "Programming", "applications-development"},
@@ -388,7 +389,7 @@ static void app_info_categories_update1 ( const gchar *dir )
             "Name", app_menu_locale, NULL);
         for(i=0; app_menu_map[i].category; i++)
           if(!app_menu_map[i].local_title &&
-              !g_strcmp0(name, app_menu_map[i].category) &&
+              !g_strcmp0(name, app_menu_map[i].title) &&
               g_strcmp0(name, lname))
             app_menu_map[i].local_title = g_strdup(lname);
         g_free(name);
@@ -405,7 +406,7 @@ static void app_info_categories_update1 ( const gchar *dir )
 
 static void app_info_categories_update ( void )
 {
-  const char * const *sysdirs;
+  const gchar * const *sysdirs;
   gsize i;
 
   for(i=0; app_menu_map[i].category; i++)
@@ -414,6 +415,7 @@ static void app_info_categories_update ( void )
   sysdirs = g_get_system_data_dirs();
   for(i=0; sysdirs[i]; i++)
     app_info_categories_update1(sysdirs[i]);
+  app_info_categories_update1(SYSTEM_CONF_DIR);
 }
 
 static void app_info_locale_handle ( GVariantIter *iter )
