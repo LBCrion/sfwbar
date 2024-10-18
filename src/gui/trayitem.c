@@ -28,7 +28,7 @@ void tray_item_update ( GtkWidget *self )
 
   if( (tooltip = sni_item_tooltip(priv->sni)) )
   {
-    gtk_widget_set_tooltip_text(priv->button, tooltip);
+    gtk_widget_set_tooltip_markup(priv->button, tooltip);
     gtk_widget_set_has_tooltip(priv->button, TRUE);
   }
   else
