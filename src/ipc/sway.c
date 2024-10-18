@@ -5,6 +5,7 @@
 
 #include "scanner.h"
 #include "module.h"
+#include "trigger.h"
 #include "gui/bar.h"
 #include "gui/switcher.h"
 #include "wintree.h"
@@ -391,7 +392,7 @@ static void sway_ipc_scan_input ( struct json_object *obj, gint32 etype )
   scanner_update_json(scan, sway_file);
   json_object_get(obj);
   json_object_put(scan);
-  base_widget_emit_trigger(g_intern_static_string("sway"));
+  trigger_emit("sway");
 }
 
 static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,

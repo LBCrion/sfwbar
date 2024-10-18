@@ -2,7 +2,7 @@
 #include <glib.h>
 #include <gio/gio.h>
 #include "module.h"
-#include "gui/basewidget.h"
+#include "trigger.h"
 #include "gui/popup.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
@@ -376,8 +376,7 @@ static void iw_signal_level_agent_method(GDBusConnection *con,
         device->strength = level;
     
     g_debug("iwd: level %d on %s", level, device?device->name:object);
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("wifi_level"));
+    trigger_emit("wifi_level");
     g_dbus_method_invocation_return_value(invocation, NULL);
   }
 }
@@ -547,8 +546,7 @@ static void iw_scan_start ( gchar *path )
   if(device && device->scanning)
     return;
   g_debug("iwd: initiating scan");
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("wifi_scan"));
+  trigger_emit("wifi_scan");
   g_dbus_connection_call(iw_con, iw_serv, path, iw_iface_station, "Scan",
       NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
 }
@@ -656,8 +654,7 @@ static void iw_station_handle ( gchar *path, gchar *iface, GVariant *dict )
   change |= scan;
   if(scan && !device->scanning)
   {
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("wifi_scan_complete"));
+    trigger_emit("wifi_scan_complete");
     g_dbus_connection_call(iw_con, iw_serv, path, iw_iface_station,
         "GetOrderedNetworks", NULL, G_VARIANT_TYPE("(a(on))"),
         G_DBUS_CALL_FLAGS_NONE, -1, NULL,

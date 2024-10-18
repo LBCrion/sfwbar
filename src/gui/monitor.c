@@ -8,8 +8,8 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include "wayland.h"
-#include "bar.h"
-#include "basewidget.h"
+#include "gui/bar.h"
+#include "trigger.h"
 #include "wlr-layer-shell-unstable-v1.h"
 #include "xdg-output-unstable-v1.h"
 
@@ -248,8 +248,7 @@ static void monitor_added_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
   }
 
   g_snprintf(trigger, 255, "%s_connected", monitor_get_name(gmon));
-  g_idle_add((GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_string(trigger));
+  trigger_emit(trigger);
 }
 
 static void monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
@@ -257,8 +256,7 @@ static void monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
   static char trigger[256];
 
   g_snprintf(trigger, 255, "%s_disconnected", monitor_get_name(gmon));
-  g_idle_add((GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_string(trigger));
+  trigger_emit(trigger);
 }
 
 void monitor_init ( void )

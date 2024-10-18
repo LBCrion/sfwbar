@@ -4,7 +4,7 @@
  */
 
 #include "module.h"
-#include "gui/basewidget.h"
+#include "trigger.h"
 #include <unistd.h>
 #include <ifaddrs.h>
 #include <sys/ioctl.h>
@@ -106,8 +106,7 @@ static void net_iface_unref ( gint32 iidx )
   iface_free(iface);
   if(route == iface)
     route = iface_list?iface_list->data:NULL;
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("network"));
+  trigger_emit("network");
 }
 
 static void net_iface_update ( gint32 iidx, struct in_addr gate,
@@ -127,8 +126,7 @@ static void net_iface_update ( gint32 iidx, struct in_addr gate,
   net_update_essid(ifname);
   net_update_ifaddrs();
   route = iface;
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("network"));
+  trigger_emit("network");
 }
 
 #if defined(__linux__)
@@ -352,8 +350,7 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
   if(newroute && !routeset)
   {
     route = NULL;
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("network"));
+    trigger_emit("network");
   }
   return TRUE;
 }
@@ -562,8 +559,7 @@ static void net_rt_request ( gint sock )
   if(send(sock, &rtmsg, rtmsg.hdr.rtm_msglen, 0) >= 0)
   {
     route = NULL;
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("network"));
+    trigger_emit("network");
   }
 }
 

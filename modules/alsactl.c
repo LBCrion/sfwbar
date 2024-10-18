@@ -6,7 +6,7 @@
 #include <glib.h>
 #include <alsa/asoundlib.h>
 #include "module.h"
-#include "gui/basewidget.h"
+#include "trigger.h"
 #include "util/string.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
@@ -244,8 +244,7 @@ gboolean alsa_source_dispatch( GSource *gsrc, GSourceFunc cb, gpointer data)
   alsa_source_t *src = (alsa_source_t *)gsrc;
 
   snd_mixer_handle_events(src->mixer);
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("volume"));
+  trigger_emit("volume");
 
   return TRUE;
 }
@@ -335,8 +334,7 @@ void alsa_source_subscribe_all ( void )
     alsa_source_subscribe(id);
     g_free(id);
   }
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("volume"));
+  trigger_emit("volume");
 }
 
 void alsa_source_remove ( GSource *src )
@@ -583,8 +581,7 @@ static void alsa_default_set ( mixer_api_t *api, gchar *name )
   {
     g_free(api->default_name);
     api->default_name = new;
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("volume"));
+    trigger_emit("volume");
   }
 }
 
@@ -616,8 +613,7 @@ static void alsa_action ( gchar *cmd, gchar *name, void *d1,
   else
     return;
 
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("volume"));
+  trigger_emit("volume");
 }
 
 static void alsa_channel_ack_action ( gchar *cmd, gchar *name, void *d1,

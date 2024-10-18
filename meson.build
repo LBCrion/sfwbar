@@ -62,6 +62,7 @@ libsrc = [
     'src/sni.c',
     'src/sniitem.c',
     'src/snimenu.c',
+    'src/trigger.c',
     'src/wayland.c',
     'src/window.c',
     'src/wintree.c',

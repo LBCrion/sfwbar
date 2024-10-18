@@ -6,7 +6,7 @@
 #include <glib.h>
 #include <gio/gio.h>
 #include "module.h"
-#include "gui/basewidget.h"
+#include "trigger.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
@@ -161,8 +161,7 @@ static void bz_adapter_free ( gchar *object )
   adapters = g_list_remove(adapters, adapter);
   trigger = !adapters;
   if(trigger)
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("bluez_running"));
+    trigger_emit("bluez_running");
   if(adapter->timeout_handle)
     g_source_remove(adapter->timeout_handle);
   g_free(adapter->path);
@@ -276,8 +275,7 @@ static void bz_scan_stop_cb ( GDBusConnection *con, GAsyncResult *res,
 {
   GVariant *result;
 
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("bluez_scan_complete"));
+  trigger_emit("bluez_scan_complete");
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(result)
     g_variant_unref(result);
@@ -301,8 +299,7 @@ static void bz_scan_cb ( GDBusConnection *con, GAsyncResult *res,
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(!result)
   {
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("bluez_scan_complete"));
+    trigger_emit("bluez_scan_complete");
     return;
   }
   g_variant_unref(result);
@@ -321,8 +318,7 @@ static void bz_scan ( GDBusConnection *con, guint timeout )
     return;
 
   adapter->scan_timeout = timeout;
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("bluez_scan"));
+  trigger_emit("bluez_scan");
 
   g_debug("bluez: scan on");
   g_dbus_connection_call(con, bz_serv, adapter->path,
@@ -591,8 +587,7 @@ static void bz_adapter_handle ( gchar *object, gchar *iface )
 
   adapters = g_list_append(adapters, adapter);
   if(adapters && !g_list_next(adapters))
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("bluez_running"));
+    trigger_emit("bluez_running");
 }
 
 static void bz_object_handle ( gchar *object, GVariantIter *iiter )

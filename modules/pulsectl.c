@@ -7,7 +7,7 @@
 #include <pulse/pulseaudio.h>
 #include <pulse/glib-mainloop.h>
 #include "module.h"
-#include "gui/basewidget.h"
+#include "trigger.h"
 #include "util/string.h"
 
 static gboolean pulse_connect_try ( void *data );
@@ -232,8 +232,7 @@ static void pulse_set_name ( pulse_interface_t *iface, const gchar *name,
   iface->fixed = fixed;
   g_free(iface->name);
   iface->name = g_strdup(name);
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("volume"));
+  trigger_emit("volume");
 }
 
 static void pulse_remove_device ( pulse_interface_t *iface, guint32 idx )
@@ -325,8 +324,7 @@ static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
   if(new)
     pulse_device_advertise(0, &pinfo->channel_map, pinfo->index);
 
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("volume"));
+  trigger_emit("volume");
 }
 
 static void pulse_client_cb ( pa_context *ctx, const pa_client_info *cinfo,
@@ -351,8 +349,7 @@ static void pulse_client_cb ( pa_context *ctx, const pa_client_info *cinfo,
   }
 
   if(change)
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("volume"));
+    trigger_emit("volume");
 }
 
 static void pulse_sink_input_cb ( pa_context *ctx,
@@ -379,8 +376,7 @@ static void pulse_sink_input_cb ( pa_context *ctx,
   info->mute = pinfo->mute;
   info->cmap = pinfo->channel_map;
   info->client = pinfo->client;
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("volume"));
+  trigger_emit("volume");
 
   if(new)
     pulse_device_advertise(2, &pinfo->channel_map, pinfo->index);
@@ -415,8 +411,7 @@ static void pulse_source_cb ( pa_context *ctx, const pa_source_info *pinfo,
   info->idx = pinfo->index;
   info->cvol = pinfo->volume;
   info->mute = pinfo->mute;
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("volume"));
+  trigger_emit("volume");
 }
 
 static void pulse_server_cb ( pa_context *ctx, const pa_server_info *info,
@@ -492,8 +487,7 @@ static void pulse_state_cb ( pa_context *ctx, gpointer data )
     pa_context_disconnect(ctx);
     pa_context_unref(ctx);
     module_interface_select(sfwbar_interface.interface);
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("volume"));
+    trigger_emit("volume");
   }
   else if(state == PA_CONTEXT_READY)
   {
@@ -510,8 +504,7 @@ static void pulse_activate ( void )
         PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SINK_INPUT |
         PA_SUBSCRIPTION_MASK_SOURCE | PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT,
         NULL, NULL), "pa_context_subscribe");
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("volume"));
+  trigger_emit("volume");
 }
 
 static void pulse_deactivate ( void )

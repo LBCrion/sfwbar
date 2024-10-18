@@ -1,7 +1,7 @@
 #include <gtk/gtk.h>
 #include <gio/gio.h>
 #include "module.h"
-#include "gui/basewidget.h"
+#include "trigger.h"
 #include "gui/popup.h"
 
 typedef struct _nm_apoint nm_apoint_t;
@@ -275,8 +275,7 @@ static gboolean nm_apoint_xref ( nm_apoint_t *ap )
     if(active)
       active->ap = ap;
     change = TRUE;
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("wifi"));
+    trigger_emit("wifi");
   }
 
   return change;
@@ -632,8 +631,7 @@ static void nm_ap_node_handle ( const gchar *path, gchar *ifa, GVariant *dict )
     {
       node->ap->strength = ap_strength;
       change = TRUE;
-      g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-          (gpointer)g_intern_static_string("wifi"));
+      trigger_emit("wifi");
     }
   }
 
@@ -865,8 +863,7 @@ static void nm_object_changed ( GDBusConnection *con, const gchar *sender,
   else if(!g_strcmp0(iface, nm_iface_wireless))
   {
     if(g_variant_lookup(dict, "LastScan", "x", NULL))
-      g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-          (gpointer)g_intern_static_string("wifi_scan_complete"));
+      trigger_emit("wifi_scan_complete");
   }
   else if(!g_strcmp0(iface, nm_iface_active))
   {
@@ -1062,8 +1059,7 @@ static void nm_action_scan ( gchar *cmd, gchar *name, void *d1,
 {
   if(!default_dev)
     return;
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("wifi_scan"));
+  trigger_emit("wifi_scan");
   g_dbus_connection_call(nm_con, nm_iface, default_dev->path,
       nm_iface_wireless, "RequestScan", g_variant_new("(a{sv})", NULL),
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);

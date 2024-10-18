@@ -9,7 +9,7 @@
 #include "module.h"
 #include "wayland.h"
 #include "ext-idle-notify-v1.h"
-#include "gui/basewidget.h"
+#include "trigger.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
@@ -19,14 +19,12 @@ static gint64 timeout = 20000;
 
 static void idle_idled ( void *data, struct ext_idle_notification_v1 *not )
 {
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("idled"));
+  trigger_emit("idled");
 }
 
 static void idle_resumed ( void *data, struct ext_idle_notification_v1 *not )
 {
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("resumed"));
+  trigger_emit("resumed");
 }
 
 static const struct ext_idle_notification_v1_listener idle_listener = {

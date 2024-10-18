@@ -5,7 +5,7 @@
 
 #include <gio/gio.h>
 #include <gio/gunixsocketaddress.h>
-#include "gui/basewidget.h"
+#include "trigger.h"
 #include "client.h"
 
 void client_reconnect ( Client *client )
@@ -66,7 +66,7 @@ gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
       return FALSE;
     }
   }
-  base_widget_emit_trigger(client->file->trigger);
+  trigger_emit((gchar *)client->file->trigger);
   return TRUE;
 }
 

@@ -1,7 +1,7 @@
 #include <glib.h>
 #include <gio/gio.h>
 #include "module.h"
-#include "gui/basewidget.h"
+#include "trigger.h"
 #include "gui/scaleimage.h"
 #include "util/string.h"
 
@@ -221,8 +221,7 @@ static void dn_notification_close ( guint32 id, guchar reason )
   dn_notification_free(notif);
 
   module_queue_append(&remove_q, g_strdup_printf("%d", id));
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("notification-group"));
+  trigger_emit("notification-group");
   g_dbus_connection_emit_signal(dn_con, NULL, dn_path, dn_bus,
       "NotificationClosed", g_variant_new("(uu)", id, reason), NULL);
 }
@@ -239,8 +238,7 @@ static void dn_notification_expand ( guint32 id )
   g_free(expanded_group);
   expanded_group = g_strdup(notif->app_name);
 
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("notification-group"));
+  trigger_emit("notification-group");
 }
 
 static void dn_notification_collapse ( void )
@@ -249,8 +247,7 @@ static void dn_notification_collapse ( void )
 
   g_free(g_steal_pointer(&expanded_group));
 
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("notification-group"));
+  trigger_emit("notification-group");
 }
 
 static gchar *dn_parse_image_data ( GVariant *dict )
@@ -373,8 +370,7 @@ guint32 dn_notification_parse ( GVariant *params )
       g_timeout_add(notif->timeout, (GSourceFunc)dn_timeout, notif);
 
   module_queue_append(&update_q, notif);
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("notification-group"));
+  trigger_emit("notification-group");
 
   while(g_variant_iter_next(aiter, "&s", &action_id) &&
     g_variant_iter_next(aiter, "&s", &action_title))
@@ -616,8 +612,7 @@ static void dn_ack_action ( gchar *cmd, gchar *name, void *d1,
     module_queue_remove(&update_q);
   if(!g_ascii_strcasecmp(cmd, "removed"))
     module_queue_remove(&remove_q);
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("notification-group"));
+  trigger_emit("notification-group");
 }
 
 ModuleExpressionHandlerV1 get_handler = {

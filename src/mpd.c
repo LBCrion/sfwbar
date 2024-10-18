@@ -5,7 +5,7 @@
 
 #include <gio/gio.h>
 #include <gio/gunixsocketaddress.h>
-#include "gui/basewidget.h"
+#include "trigger.h"
 #include "client.h"
 
 typedef struct _MpdState {

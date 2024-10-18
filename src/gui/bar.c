@@ -8,6 +8,7 @@
 #include "config.h"
 #include "window.h"
 #include "meson.h"
+#include "trigger.h"
 #include "gui/css.h"
 #include "gui/bar.h"
 #include "gui/monitor.h"
@@ -207,8 +208,7 @@ static void bar_style_updated ( GtkWidget *self )
         (dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)?
         GTK_ORIENTATION_HORIZONTAL:GTK_ORIENTATION_VERTICAL);
     priv->dir = dir;
-    g_idle_add((GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("bar-direction"));
+    trigger_emit("bar-direction");
   }
   priv->halign = halign;
   priv->valign = valign;

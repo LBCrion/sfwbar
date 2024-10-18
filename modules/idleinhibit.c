@@ -7,7 +7,7 @@
 #include <gtk/gtk.h>
 #include <gdk/gdkwayland.h>
 #include "module.h"
-#include "gui/basewidget.h"
+#include "trigger.h"
 #include "wayland.h"
 #include "idle-inhibit-unstable-v1.h"
 
@@ -58,15 +58,13 @@ static void idle_inhibitor_action ( gchar *act, gchar *dummy, void *widget,
     inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(
         idle_inhibit_manager, surface );
     g_object_set_data(G_OBJECT(widget), "inhibitor", inhibitor);
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("idleinhibitor"));
+    trigger_emit("idleinhibitor");
   }
   else if( !inhibit && inhibitor )
   {
     g_object_set_data(G_OBJECT(widget), "inhibitor", NULL);
     zwp_idle_inhibitor_v1_destroy(inhibitor);
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("idleinhibitor"));
+    trigger_emit("idleinhibitor");
   }
 }
 

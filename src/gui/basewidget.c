@@ -3,16 +3,17 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "css.h"
 #include "expr.h"
-#include "basewidget.h"
-#include "grid.h"
-#include "flowgrid.h"
+#include "trigger.h"
 #include "action.h"
 #include "module.h"
 #include "meson.h"
-#include "bar.h"
 #include "scanner.h"
+#include "gui/basewidget.h"
+#include "gui/css.h"
+#include "gui/grid.h"
+#include "gui/flowgrid.h"
+#include "gui/bar.h"
 #include "util/string.h"
 
 G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX,
@@ -520,18 +521,35 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
   g_mutex_unlock(&widget_mutex);
 }
 
-void base_widget_set_trigger ( GtkWidget *self, gchar *trigger )
+static void base_widget_trigger_cb ( GtkWidget *self )
 {
-  gchar *lower;
   BaseWidgetPrivate *priv;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  base_widget_set_interval(self, 0);
-  lower = g_ascii_strdown(trigger, -1);
-  priv->trigger = g_intern_string(lower);
-  g_free(lower);
+  if(expr_cache_eval(priv->value) || priv->always_update)
+    base_widget_update_value(self);
+  if(expr_cache_eval(priv->style))
+    base_widget_style(self);
+}
+
+void base_widget_set_trigger ( GtkWidget *self, gchar *trigger )
+{
+  BaseWidgetPrivate *priv;
+
+  g_return_if_fail(IS_BASE_WIDGET(self));
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  trigger_remove((gchar *)(priv->trigger),
+      (GSourceFunc)base_widget_trigger_cb, self);
+
+  if(trigger)
+  {
+    base_widget_set_interval(self, 0);
+    priv->trigger = trigger_add(trigger,
+        (GSourceFunc)base_widget_trigger_cb, self);
+  }
 }
 
 void base_widget_set_id ( GtkWidget *self, gchar *id )
@@ -918,7 +936,7 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
     module_invalidate_all();
     timer = G_MAXINT64;
     ctime = g_get_monotonic_time();
-
+   
     g_mutex_lock(&widget_mutex);
     for(iter=widgets_scan; iter!=NULL; iter=g_list_next(iter))
     {

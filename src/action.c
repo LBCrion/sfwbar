@@ -6,6 +6,7 @@
 #include "expr.h"
 #include "action.h"
 #include "module.h"
+#include "trigger.h"
 #include "gui/basewidget.h"
 #include "gui/taskbaritem.h"
 #include "util/string.h"
@@ -182,24 +183,14 @@ void action_free ( action_t *action, GObject *old )
   g_free(action);
 }
 
+void action_trigger_cb ( action_t *action )
+{
+  action_exec(NULL, action, NULL, NULL, NULL);
+}
+
 void action_trigger_add ( action_t *action, gchar *trigger )
 {
-  gchar *lower;
-
-  if(!trigger_actions)
-    trigger_actions = g_hash_table_new(g_direct_hash, g_direct_equal);
-
-  lower = g_ascii_strdown(trigger, -1);
-  g_free(trigger);
-  if(g_hash_table_lookup(trigger_actions, g_intern_string(lower)))
-  {
-    g_message("Action for trigger '%s' is already defined", lower);
-    action_free(action, NULL);
-  }
-  else
-    g_hash_table_insert(trigger_actions,
-        (void *)g_intern_string(lower), action);
-  g_free(lower);
+  trigger_add(trigger, (GSourceFunc)action_trigger_cb, action);
 }
 
 action_t *action_trigger_lookup ( const gchar *trigger )

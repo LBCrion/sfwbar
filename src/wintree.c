@@ -4,7 +4,7 @@
  */
 
 #include "wintree.h"
-#include "gui/basewidget.h"
+#include "trigger.h"
 #include "util/string.h"
 
 static struct wintree_api *api;
@@ -148,8 +148,7 @@ void wintree_set_focus ( gpointer id )
     wt_list = g_list_concat(iter, wt_list);
   }
   wintree_commit(wt_list->data);
-  g_idle_add((GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("window_focus"));
+  trigger_emit("window_focus");
 }
 
 gpointer wintree_get_focus ( void )
@@ -259,10 +258,6 @@ void wintree_window_append ( window_t *win )
   if(!win)
     return;
 
-/*  if( !win->title )
-    win->title = g_strdup("");
-  if(! win->appid)
-    win->appid = g_strdup("");*/
   if(win->title || win->appid)
     LISTENER_CALL(window_new, win);
   if(!g_list_find(wt_list, win))

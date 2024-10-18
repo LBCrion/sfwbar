@@ -6,7 +6,7 @@
 #include <glib.h>
 #include <mpd/client.h>
 #include "module.h"
-#include "gui/basewidget.h"
+#include "trigger.h"
 #include "stdio.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
@@ -32,8 +32,7 @@ static gboolean mpd_timer ( gpointer data )
 
   current = g_get_monotonic_time();
   if((current-last)/mpd_status_get_total_time(status)/10 > 1)
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("mpd-progress"));
+    trigger_emit("mpd-progress");
 
   return TRUE;
 }
@@ -62,8 +61,7 @@ static gboolean mpd_update ( void )
     timer = 1;
   }
 
-  g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-      (gpointer)g_intern_static_string("mpd"));
+  trigger_emit("mpd");
   return TRUE;
 }
 
@@ -78,8 +76,7 @@ static gboolean mpd_event ( GIOChannel *chan, GIOCondition cond, void *d)
     mpd_connection_free(conn);
     conn = NULL;
     g_timeout_add (1000,(GSourceFunc )mpd_connect,NULL);
-    g_main_context_invoke(NULL, (GSourceFunc)base_widget_emit_trigger,
-        (gpointer)g_intern_static_string("mpd"));
+    trigger_emit("mpd");
     return FALSE;
   }
 
