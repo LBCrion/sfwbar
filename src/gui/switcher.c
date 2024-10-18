@@ -47,7 +47,8 @@ static gboolean switcher_update ( GtkWidget *self )
   else
   {
     gtk_widget_hide(switcher_win);
-    wintree_focus(focus->uid);
+    if(focus)
+      wintree_focus(focus->uid);
   }
   return TRUE;
 }
