@@ -40,6 +40,9 @@ static void base_widget_destroy ( GtkWidget *self )
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
+  trigger_remove((gchar *)(priv->trigger),
+      (GSourceFunc)base_widget_trigger_cb, self);
+  priv->trigger = NULL;
   g_mutex_lock(&widget_mutex);
   widgets_scan = g_list_remove(widgets_scan, self);
   g_mutex_unlock(&widget_mutex);
