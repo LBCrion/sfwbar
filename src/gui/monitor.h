@@ -7,7 +7,6 @@ GdkMonitor *monitor_from_widget ( GtkWidget *self );
 gboolean xdg_output_check ( void );
 GdkMonitor *monitor_default_get ( void );
 gchar *monitor_get_name ( GdkMonitor *monitor );
-void monitor_list_print ( void );
-void monitor_init ( void );
+void monitor_init ( gchar * );
 
 #endif

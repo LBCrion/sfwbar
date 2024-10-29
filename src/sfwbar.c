@@ -99,16 +99,13 @@ static void activate (GtkApplication* app, gpointer data )
   action_lib_init();
   wayland_init();
   css_init(cssname);
-  monitor_init();
+  monitor_init( monitor );
   sway_ipc_init();
   hypr_ipc_init();
   wayfire_ipc_init();
   foreign_toplevel_init();
   cw_init();
   app_info_init();
-
-  if( !g_ascii_strcasecmp(monitor, "list") )
-    monitor_list_print();
 
   if(bar_id)
     bar_address_all(NULL, bar_id, bar_set_id);

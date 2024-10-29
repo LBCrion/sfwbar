@@ -259,7 +259,7 @@ static void monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
   trigger_emit(trigger);
 }
 
-void monitor_list_print ( void )
+static void monitor_list_print ( void )
 {
   GdkDisplay *gdisp;
   GdkMonitor *gmon;
@@ -276,10 +276,13 @@ void monitor_list_print ( void )
   exit(0);
 }
 
-void monitor_init ( void )
+void monitor_init ( gchar *monitor )
 {
   GdkDisplay *display;
   gint i, n;
+
+  if( monitor && !g_ascii_strcasecmp(monitor, "list") )
+    monitor_list_print();
 
   display = gdk_display_get_default();
   g_signal_connect(display, "monitor-added",
