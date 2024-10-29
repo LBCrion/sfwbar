@@ -28,14 +28,16 @@ static gboolean debug = FALSE;
 static gchar **sargv;
 
 static GOptionEntry entries[] = {
-  {"config",'f',0,G_OPTION_ARG_FILENAME,&confname,"Specify config file"},
-  {"css",'c',0,G_OPTION_ARG_FILENAME,&cssname,"Specify css file"},
-  {"socket",'s',0,G_OPTION_ARG_FILENAME,&sockname,"Specify sway socket file"},
-  {"debug",'d',0,G_OPTION_ARG_NONE,&debug,"Display debug info"},
-  {"debug-filter",'g',0,G_OPTION_ARG_STRING,&dfilter,"Filter debug output for a pattern"},
-  {"monitor",'m',0,G_OPTION_ARG_STRING,&monitor,
+  {"config", 'f', 0, G_OPTION_ARG_FILENAME, &confname, "Specify config file"},
+  {"css",'c', 0, G_OPTION_ARG_FILENAME, &cssname, "Specify css file"},
+  {"socket", 's', 0, G_OPTION_ARG_FILENAME, &sockname,
+    "Specify compositor IPC socket file"},
+  {"debug", 'd',0, G_OPTION_ARG_NONE, &debug, "Display debug info"},
+  {"debug-filter", 'g', 0, G_OPTION_ARG_STRING, &dfilter,
+    "Filter debug output for a pattern"},
+  {"monitor",'m',0, G_OPTION_ARG_STRING, &monitor,
     "Monitor to display the panel on (use \"-m list\" to list monitors`"},
-  {"bar_id",'b',0,G_OPTION_ARG_STRING,&bar_id,
+  {"bar_id",'b',0, G_OPTION_ARG_STRING, &bar_id,
     "default sway bar_id to listen on for sway events"},
   {NULL}};
 
@@ -48,23 +50,6 @@ void parse_command_line ( gint argc, gchar **argv)
   g_option_context_add_group(optc, gtk_get_option_group(TRUE));
   g_option_context_parse(optc,&argc,&argv,NULL);
   g_option_context_free(optc);
-}
-
-void list_monitors ( void )
-{
-  GdkDisplay *gdisp;
-  GdkMonitor *gmon;
-  gint nmon, i;
-
-  gdisp = gdk_display_get_default();
-  nmon = gdk_display_get_n_monitors(gdisp);
-  for(i=0; i<nmon; i++)
-  {
-    gmon = gdk_display_get_monitor(gdisp,i);
-    printf("%s: %s %s\n",monitor_get_name(gmon),
-        gdk_monitor_get_manufacturer(gmon), gdk_monitor_get_model(gmon));
-  }
-  exit(0);
 }
 
 void log_print ( const gchar *log_domain, GLogLevelFlags log_level, 
@@ -122,8 +107,8 @@ static void activate (GtkApplication* app, gpointer data )
   cw_init();
   app_info_init();
 
-  if( monitor && !g_ascii_strcasecmp(monitor, "list") )
-    list_monitors();
+  if( !g_ascii_strcasecmp(monitor, "list") )
+    monitor_list_print();
 
   if(bar_id)
     bar_address_all(NULL, bar_id, bar_set_id);

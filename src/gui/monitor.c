@@ -259,6 +259,23 @@ static void monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
   trigger_emit(trigger);
 }
 
+void monitor_list_print ( void )
+{
+  GdkDisplay *gdisp;
+  GdkMonitor *gmon;
+  gint nmon, i;
+
+  gdisp = gdk_display_get_default();
+  nmon = gdk_display_get_n_monitors(gdisp);
+  for(i=0; i<nmon; i++)
+  {
+    gmon = gdk_display_get_monitor(gdisp,i);
+    g_message("%s: %s %s",monitor_get_name(gmon),
+        gdk_monitor_get_manufacturer(gmon), gdk_monitor_get_model(gmon));
+  }
+  exit(0);
+}
+
 void monitor_init ( void )
 {
   GdkDisplay *display;

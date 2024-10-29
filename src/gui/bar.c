@@ -631,7 +631,7 @@ void bar_set_monitor ( GtkWidget *self, gchar *monitor )
   gchar *mon_name;
 
   g_return_if_fail(IS_BAR(self));
-  g_return_if_fail(monitor!=NULL);
+  g_return_if_fail(monitor);
   priv = bar_get_instance_private(BAR(self));
 
   if(!g_ascii_strncasecmp(monitor,"static:",7))
