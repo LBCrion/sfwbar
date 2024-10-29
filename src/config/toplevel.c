@@ -302,7 +302,7 @@ void config_trigger_action ( GScanner *scanner )
       SEQ_END);
 
 if(!scanner->max_parse_errors)
-  action_trigger_add(action,trigger);
+  action_trigger_add(action, trigger);
 }
 
 void config_module ( GScanner *scanner )

@@ -7,13 +7,13 @@
 #include "action.h"
 #include "module.h"
 #include "client.h"
+#include "trigger.h"
 #include "appinfo.h"
 #include "gui/bar.h"
 #include "gui/basewidget.h"
 #include "gui/menu.h"
 #include "gui/pageritem.h"
 #include "gui/popup.h"
-#include "gui/switcher.h"
 
 static void exec_action ( gchar *cmd, gchar *name, void *widget,
     void *event, void *win, void *state )
@@ -496,9 +496,9 @@ static void switcher_action ( gchar *cmd, gchar *name, void *widget,
     void *event, window_t *win, guint16 *state )
 {
   if(!cmd || !g_strcasecmp(cmd,"forward"))
-    switcher_event(NULL);
+    trigger_emit("switcher_forward");
   if(cmd && !g_strcasecmp(cmd,"back"))
-    switcher_event((void *)1);
+    trigger_emit("switcher_back");
 }
 
 static ModuleActionHandlerV1 switcher_handler = {

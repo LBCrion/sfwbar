@@ -900,33 +900,6 @@ GtkWidget *base_widget_get_mirror_parent ( GtkWidget *self )
     return self;
 }
 
-gboolean base_widget_emit_trigger ( const gchar *trigger )
-{
-  BaseWidgetPrivate *priv;
-  GList *iter;
-
-  if(!trigger)
-    return FALSE;
-  g_debug("trigger: %s", trigger);
-
-  scanner_invalidate();
-  g_mutex_lock(&widget_mutex);
-  for(iter=widgets_scan; iter!=NULL; iter=g_list_next(iter))
-  {
-    priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
-    if(!priv->trigger || trigger!=priv->trigger)
-      continue;
-    if(expr_cache_eval(priv->value) || priv->always_update)
-      base_widget_update_value(iter->data);
-    if(expr_cache_eval(priv->style))
-      base_widget_style(iter->data);
-  }
-  g_mutex_unlock(&widget_mutex);
-  action_exec(NULL, action_trigger_lookup(trigger), NULL, NULL, NULL);
-
-  return FALSE;
-}
-
 gpointer base_widget_scanner_thread ( GMainContext *gmc )
 {
   BaseWidgetPrivate *priv;

@@ -7,12 +7,10 @@
 #include "action.h"
 #include "module.h"
 #include "trigger.h"
-#include "gui/basewidget.h"
 #include "gui/taskbaritem.h"
 #include "util/string.h"
 
 static GHashTable *functions;
-static GHashTable *trigger_actions;
 
 void action_function_add ( gchar *name, action_t *action )
 {
@@ -114,7 +112,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
   }
 
   g_debug("action: %s '%s', '%s', widget=%p, win=%d from '%s', '%s'",
-      ahandler->name, action->addr->cache,action->command->cache,
+      ahandler->name, action->addr->cache, action->command->cache,
       (void *)widget, win?GPOINTER_TO_INT(win->uid):0,
       action->addr->definition, action->command->definition);
 
@@ -126,7 +124,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
     caction->ncond = 0;
     children = gtk_container_get_children(
         GTK_CONTAINER(base_widget_get_child(widget)));
-    for(iter=children;iter;iter=g_list_next(iter))
+    for(iter=children; iter; iter=g_list_next(iter))
       action_exec(iter->data, caction, event,
           IS_TASKBAR_ITEM(iter->data)?flow_item_get_source(iter->data):win,
           NULL);
@@ -191,12 +189,4 @@ void action_trigger_cb ( action_t *action )
 void action_trigger_add ( action_t *action, gchar *trigger )
 {
   trigger_add(trigger, (GSourceFunc)action_trigger_cb, action);
-}
-
-action_t *action_trigger_lookup ( const gchar *trigger )
-{
-  if(!trigger_actions)
-    return NULL;
-
-  return g_hash_table_lookup(trigger_actions, trigger);
 }

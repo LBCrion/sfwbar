@@ -6,6 +6,7 @@
 #include <glib-unix.h>
 #include <gtk-layer-shell.h>
 #include "css.h"
+#include "trigger.h"
 #include "switcheritem.h"
 #include "switcher.h"
 #include "wintree.h"
@@ -56,6 +57,8 @@ static gboolean switcher_update ( GtkWidget *self )
 static void switcher_class_init ( SwitcherClass *kclass )
 {
   g_unix_signal_add(SIGUSR1, (GSourceFunc)switcher_event, NULL);
+  trigger_add("switcher_forward", (GSourceFunc)switcher_event, NULL);
+  trigger_add("switcher_back", (GSourceFunc)switcher_event, (void *)1);
 }
 
 void switcher_init_item (window_t *win, GtkWidget *self )

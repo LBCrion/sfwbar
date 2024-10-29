@@ -6,9 +6,8 @@
 #include "scanner.h"
 #include "module.h"
 #include "trigger.h"
-#include "gui/bar.h"
-#include "gui/switcher.h"
 #include "wintree.h"
+#include "gui/bar.h"
 #include "util/json.h"
 
 static gint main_ipc;
@@ -416,7 +415,7 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
       {
         sway_ipc_command("bar %s hidden_state hide",
             json_string_by_name(obj, "id"));
-        switcher_event(NULL);
+        trigger_emit("switcher_forward");
       }
     }
     else if(etype==0x00000004)
