@@ -33,12 +33,8 @@ gchar *str_replace ( gchar *str, gchar *old, gchar *new )
   nlen = strlen(new);
 
   n=0;
-  ptr = strstr(str, old);
-  while(ptr)
-  {
+  for(ptr = strstr(str, old); ptr; ptr = strstr(ptr+olen, old))
     n++;
-    ptr = strstr(ptr+olen, old);
-  }
 
   if(!n)
     return g_strdup(str);
@@ -50,7 +46,7 @@ gchar *str_replace ( gchar *str, gchar *old, gchar *new )
   dptr = dest;
   while(ptr)
   {
-    strncpy(dptr, pptr,ptr-pptr);
+    strncpy(dptr, pptr, ptr-pptr);
     dptr += ptr - pptr;
     strcpy(dptr, new);
     dptr += nlen;

@@ -155,7 +155,7 @@ static void scale_image_surface_update ( GtkWidget *self, gint w, gint h )
   GdkPixbuf *buf, *tmp;
   GdkPixbufLoader *loader;
   GdkRGBA col;
-  gchar *fallback, *svg, *rgba;
+  gchar *fallback, *svg, *rgba, alpha[8];
   gboolean aspect;
 
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
@@ -177,10 +177,11 @@ static void scale_image_surface_update ( GtkWidget *self, gint w, gint h )
     gdk_pixbuf_loader_set_size(loader, w, h);
     gtk_style_context_get_color(gtk_widget_get_style_context(self),
         GTK_STATE_FLAG_NORMAL, &col);
-    if(strstr(priv->file,"@theme_fg_color"))
+    if(strstr(priv->file, "@theme_fg_color"))
     {
-      rgba = g_strdup_printf("Rgba(%d,%d,%d,%f)", (gint)(col.red*256),
-          (gint)(col.green*256), (gint)(col.blue*256), col.alpha);
+      g_ascii_dtostr(alpha, 8, col.alpha);
+      rgba = g_strdup_printf("Rgba(%d,%d,%d,%s)", (gint)(col.red*256),
+          (gint)(col.green*256), (gint)(col.blue*256), alpha);
       svg = str_replace(priv->file, "@theme_fg_color", rgba);
       g_free(rgba);
     }
