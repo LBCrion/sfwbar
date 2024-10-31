@@ -36,5 +36,6 @@ removed by invoking this action again with a Timeout value of zero.
 Triggers
 ========
 
-There are no default triggers. User defined triggers are defined using the
-`IdleTimeout` action.
+The idle module defines trigger `resumed` by default. This trigger is emitted
+on the first user interaction after a timeout. Timeout triggers are defined
+using the `IdleTimeout` action.
