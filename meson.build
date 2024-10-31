@@ -205,6 +205,7 @@ if get_option('appmenu').enabled()
       include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
+  doc_list += 'sfwbar-appmenu'
 endif
 
 if get_option('bsdctl').enabled()
