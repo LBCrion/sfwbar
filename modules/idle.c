@@ -16,6 +16,7 @@ gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
 static struct ext_idle_notifier_v1 *idle_notifier;
 static GHashTable *idle_timers;
+static gboolean idled;
 
 typedef struct _idle_notification {
   struct ext_idle_notification_v1 *notif;
@@ -25,12 +26,16 @@ typedef struct _idle_notification {
 
 static void idle_idled ( void *data, struct ext_idle_notification_v1 *not )
 {
+  idled = TRUE;
   trigger_emit(data);
 }
 
 static void idle_resumed ( void *data, struct ext_idle_notification_v1 *not )
 {
+  if(!idled)
+    return;
   trigger_emit("resumed");
+  idled = FALSE;
 }
 
 static const struct ext_idle_notification_v1_listener idle_listener = {
