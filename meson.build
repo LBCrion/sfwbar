@@ -29,7 +29,7 @@ configure_file(input: 'meson.h.meson', output: 'meson.h',
     configuration: conf_data )
 
 wayland_scanner = find_program('wayland-scanner')
-wayland_protodir = wayp.get_pkgconfig_variable('pkgdatadir')
+wayland_protodir = wayp.get_variable(pkgconfig: 'pkgdatadir')
 wayland_protos = ['wlr-foreign-toplevel-management-unstable-v1',
                   'xdg-output-unstable-v1',
                   'wlr-layer-shell-unstable-v1',
@@ -231,8 +231,8 @@ if get_option('idle').enabled() or get_option('idle').auto()
       include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
+  doc_list += 'sfwbar-idle'
 endif
-
 
 if get_option('idleinhibit').enabled() or get_option('idleinhibit').auto()
   inhibit_targets = [
