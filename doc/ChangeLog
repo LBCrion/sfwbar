@@ -1,3 +1,11 @@
+1.0beta16
+  - Implement notification center
+  - Add support for cosmic-workspaces protocol
+  - Migrate start menu to a dynamically updated widget
+  - Implement support for idle notifications
+  - Support dynamic SNI menus
+  - Add wayfire custom IPC support
+
 1.0beta15
   - Implement Network Manager WiFI module
   - Implement shared interfaces for modules
