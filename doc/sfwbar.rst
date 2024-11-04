@@ -1086,22 +1086,13 @@ style name            description
 ===================== =============
 sfwbar                toplevel bar window
 layout                top level layout grid
-taskbar_normal        taskbar button for a window
-taskbar_active        taskbar button for currently focused window
-takbar_popup_normal   taskbar popup button
-takbar_popup_active   taskbar popup button for group containing active window
-taskbar_pager_normal  taskbar pager grid
-taskbar_pager_active  taskbar pager grid for currently active workspace
-pager_normal          pager button for a workspace
-pager_visible         pager button for a visible workspace
-pager_focused         pager button for a currently focused workspace
-switcher              switcher window and top level grid
-switcher_active       switcher active window representation
-switcher_normal       switcher inactive window representation
+taskbar_item          taskbar button for a window (supports class .active)
+takbar_popup          taskbar popup button (supports class .active)
+taskbar_pager         taskbar pager grid (supports class .active)
+pager_item            pager button for a workspace (supports classes .focused and .visible)
+switcher_item         switcher window and top level grid (supports class .active)
 tray                  tray menus and menu items
-tray_active           active tray icon
-tray_attention        tray icon requiring user attention
-tray_passive          passive tray icon
+tray_item             tray item icon (supports classes .passive and .attention)
 menu_item             menu items (each contains an image and a label)
 ===================== =============
 
