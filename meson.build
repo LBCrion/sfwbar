@@ -163,8 +163,8 @@ if get_option('ncenter').enabled() or get_option('ncenter').auto()
       include_directories: headers,
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
+  doc_list += 'sfwbar-ncenter'
 endif
-
 
 if puls.found() and pulg.found()
   library('pulsectl', sources: 'modules/pulsectl.c',
