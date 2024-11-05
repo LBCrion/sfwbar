@@ -260,8 +260,8 @@ static guint wayfire_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,
         WAYFIRE_VIEW(iter->data)->rect.y < wy + output->geo.height)
       n++;
 
-  space->width = output->geo.width;
-  space->height = output->geo.height;
+  space->width = output->work.width;
+  space->height = output->work.height;
 
   *wins = g_malloc0(n * sizeof(GdkRectangle));
   c = 0;
@@ -303,7 +303,7 @@ static void wayfire_ipc_window_workspace_track ( struct json_object *json )
     return;
   if( !(wsetidx = json_int_by_name(json, "wset-index", 0)) )
     return;
-  if(!json_object_object_get_ex(json, "bbox", &geo))
+  if(!json_object_object_get_ex(json, "geometry", &geo))
     return;
 
   for(iter=wset_list; iter; iter=g_list_next(iter))
@@ -337,6 +337,58 @@ static void wayfire_ipc_window_workspace_track ( struct json_object *json )
         view->wx + wset->x, view->wy + wset->y));
 }
 
+static void wayfire_ipc_window_place ( gpointer id )
+{
+  window_t *win;
+  workspace_t *ws;
+  wayfire_ipc_wset_t *wset;
+  wayfire_ipc_view_t *view;
+  GdkRectangle *wins, space, wloc;
+  struct json_object *json, *geo;
+  gsize nobs;
+  gint focus, wx, wy;
+
+  if( !(win = wintree_from_id(id)) )
+    return;
+  if( !(ws = workspace_from_id(win->workspace)) )
+    return;
+  if( !(wset = wayfire_ipc_wset_get(GPOINTER_TO_INT(win->workspace)>>16)) )
+    return;
+  if( !(view = wayfire_ipc_view_get(GPOINTER_TO_INT(id))) )
+    return;
+
+  if( (nobs = wayfire_ipc_get_geom(ws, &wins, &space, &focus)) )
+  {
+    space.x = 0;
+    space.y = 0;
+    wloc = view->rect;
+    wintree_placer_calc(nobs, wins, space, &wloc);
+    wx = GPOINTER_TO_INT(win->workspace) & 0x0f;
+    wy = (GPOINTER_TO_INT(win->workspace)<<8) & 0x0f;
+
+    json = json_object_new_object();
+    json_object_object_add(json, "id",
+        json_object_new_int(GPOINTER_TO_INT(id)));
+    json_object_object_add(json, "output_id",
+        json_object_new_int(GPOINTER_TO_INT(wset->output)));
+    json_object_object_add(json, "sticky",
+        json_object_new_boolean(FALSE));
+    geo = json_object_new_object();
+    json_object_object_add(geo, "width",
+        json_object_new_int(view->rect.width));
+    json_object_object_add(geo, "height",
+        json_object_new_int(view->rect.height));
+    json_object_object_add(geo, "x", json_object_new_int(wloc.x +
+          space.width *(wx - wset->x)));
+    json_object_object_add(geo, "y", json_object_new_int(wloc.y +
+          space.height *(wy - wset->y)));
+    json_object_object_add(json, "geometry", geo);
+    wayfire_ipc_send_req(main_ipc, "window-rules/configure-view", json);
+
+    g_free(wins);
+  }
+}
+
 static void wayfire_ipc_window_new ( struct json_object *view )
 {
   window_t *win;
@@ -359,6 +411,7 @@ static void wayfire_ipc_window_new ( struct json_object *view )
       json_bool_by_name(view, "fullscreen", FALSE));
   wintree_log(win->uid);
   wayfire_ipc_window_workspace_track(view);
+//  wayfire_ipc_window_place(win->uid);
 }
 
 static void wayfire_ipc_window_delete ( gpointer wid )
@@ -547,7 +600,10 @@ static gboolean wayfire_ipc_event ( GIOChannel *chan, GIOCondition cond,
       wid = GINT_TO_POINTER(json_int_by_name(view, "id", G_MININT64));
 
       if(!g_strcmp0(event, "view-mapped"))
+      {
         wayfire_ipc_window_new(view);
+        wayfire_ipc_window_place(wid);
+      }
       else if(!g_strcmp0(event, "view-unmapped"))
         wayfire_ipc_window_delete(wid);
       else if(!g_strcmp0(event, "view-focused"))

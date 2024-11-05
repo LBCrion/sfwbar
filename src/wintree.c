@@ -235,10 +235,7 @@ void wintree_set_workspace ( gpointer wid, gpointer wsid )
 
   LISTENER_CALL(window_destroy, win);
   workspace_unref(win->workspace);
-  if(!wsid)
-    win->workspace = NULL;
-  else
-    win->workspace = wsid;
+  win->workspace = wsid;
   workspace_ref(wsid);
   LISTENER_CALL(window_new, win);
 }
@@ -408,57 +405,47 @@ static int comp_int ( const void *x1, const void *x2)
 void wintree_placer_calc ( gint nobs, GdkRectangle *obs, GdkRectangle output,
     GdkRectangle *win )
 {
-  gint xoff,yoff;
-  gint *x,*y;
-  gint i,j,c;
-  gboolean success;
-
-  xoff = (win->x*2+win->width)/2 - (output.x*2+output.width)/2;
-  yoff = (win->y*2+win->height)/2 - (output.y*2+output.height)/2;
-  if((xoff<-1)||(xoff>1)||(yoff<-1)||(yoff>1))
-    return;
+  gint *x, *y;
+  gint i, j, c;
 
   x = g_malloc((nobs+1)*sizeof(int));
   y = g_malloc((nobs+1)*sizeof(int));
-  for(c=0;c<nobs;c++)
+  for(c=0; c<nobs; c++)
   {
     x[c] = obs[c].x + obs[c].width;
     y[c] = obs[c].y + obs[c].height;
   }
   x[c]=output.x;
   y[c]=output.y;
-  qsort(x,nobs+1,sizeof(int),comp_int);
-  qsort(y,nobs+1,sizeof(int),comp_int);
+  qsort(x, nobs+1, sizeof(int), comp_int);
+  qsort(y, nobs+1, sizeof(int), comp_int);
 
-  win->x = output.x+x_origin*output.width/100;
-  win->y = output.y+y_origin*output.height/100;
+  win->x = output.x + x_origin*output.width/100;
+  win->y = output.y + y_origin*output.height/100;
   do
   {
-    success=TRUE;
-    for(c=0;c<nobs;c++)
+    for(c=0; c<nobs; c++)
       if((win->x==obs[c].x) && (win->y==obs[c].y))
-        success=FALSE;
-    if (success)
+        break;
+    if(c==nobs)
       break;
     win->x += output.width*x_step/100;
     win->y += output.height*y_step/100;;
-  } while((win->x+win->width)<(output.x+output.width) &&
-      (win->y+win->height)<(output.y+output.height));
+  } while((win->x+win->width) < (output.x+output.width) &&
+      (win->y+win->height) < (output.y+output.height));
 
-  for(j=nobs;j>=0;j--)
-    for(i=nobs;i>=0;i--)
+  for(j=nobs; j>=0; j--)
+    for(i=nobs; i>=0; i--)
     {
-      success=TRUE;
-      for(c=0;c<nobs;c++)
-        if(!(((x[i]+win->width-1)<obs[c].x) ||
-              (x[i]>(obs[c].x+obs[c].width-1)) ||
-              ((y[j]+win->height-1)<obs[c].y) ||
-              (y[j]>(obs[c].y+obs[c].height-1))))
-          success=FALSE;
-      if((x[i]<output.x)||(x[i]+win->width>output.x+output.width)||
-          (y[j]<output.y)||(y[j]+win->height>output.y+output.height))
-        success=FALSE;
-      if(success)
+      for(c=0; c<nobs; c++)
+        if(!(((x[i]+win->width-1) < obs[c].x) ||
+              (x[i] > (obs[c].x+obs[c].width-1)) ||
+              ((y[j]+win->height-1) < obs[c].y) ||
+              (y[j] > (obs[c].y+obs[c].height-1))))
+          break;
+
+      if(c==nobs && !(x[i]<output.x || x[i]+win->width>output.x+output.width ||
+          y[j]<output.y || y[j]+win->height>output.y+output.height))
       {
         win->x = x[i];
         win->y = y[j];
