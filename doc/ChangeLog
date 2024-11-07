@@ -5,6 +5,7 @@
   - Implement support for idle notifications
   - Support dynamic SNI menus
   - Add wayfire custom IPC support
+  - Implement icon shadows
 
 1.0beta15
   - Implement Network Manager WiFI module
