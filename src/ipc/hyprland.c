@@ -543,7 +543,7 @@ void hypr_ipc_init ( void )
   if(wintree_api_check())
     return;
 
-  ipc_sockaddr = g_build_filename("/tmp/hypr",
+  ipc_sockaddr = g_build_filename(g_get_user_runtime_dir(), "hypr",
       g_getenv("HYPRLAND_INSTANCE_SIGNATURE"),".socket.sock",NULL);
   if(!hypr_ipc_get_clients(NULL))
   {
@@ -555,7 +555,7 @@ void hypr_ipc_init ( void )
   wintree_api_register(&hypr_wintree_api);
   hypr_ipc_track_focus();
 
-  sockaddr = g_build_filename("/tmp","hypr",
+  sockaddr = g_build_filename(g_get_user_runtime_dir(), "hypr",
       g_getenv("HYPRLAND_INSTANCE_SIGNATURE"),".socket2.sock",NULL);
   sock = socket_connect(sockaddr,10);
   if(sock!=-1)
