@@ -144,9 +144,9 @@ static gboolean pager_item_draw_preview ( GtkWidget *widget, cairo_t *cr,
   gtk_style_context_get_color (style,GTK_STATE_FLAG_NORMAL, &fg);
   cairo_set_line_width(cr,1);
 
-  n = workspace_get_geometry(ws, &wins, &spc, &focus);
-  if(!n)
+  if( !(n = workspace_get_geometry(NULL, NULL, ws->id, &wins, &spc, &focus)) )
     return TRUE;
+
   for(i=0;i<n;i++)
   {
     if(i==focus)

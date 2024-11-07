@@ -23,7 +23,8 @@ typedef struct workspace_s {
 
 struct workspace_api {
   void (*set_workspace) ( workspace_t * );
-  guint (*get_geom) ( workspace_t *, GdkRectangle **, GdkRectangle *, gint * );
+  guint (*get_geom) ( gpointer, GdkRectangle *, gpointer, GdkRectangle **,
+      GdkRectangle *, gint * );
   gboolean (*get_can_create) ( void );
   gchar *(*get_monitor) ( gpointer );
 };
@@ -56,8 +57,8 @@ gpointer workspace_id_from_name ( const gchar *name );
 workspace_t *workspace_from_id ( gpointer id );
 gpointer workspace_get_focused ( void );
 void workspace_activate ( workspace_t *ws );
-guint workspace_get_geometry ( workspace_t *, GdkRectangle **, GdkRectangle *,
-    gint * );
+guint workspace_get_geometry ( gpointer wid, GdkRectangle *wloc, gpointer wsid,
+    GdkRectangle **wins, GdkRectangle *spc, gint *focus);
 gchar *workspace_get_monitor ( gpointer wsid );
 gboolean workspace_get_can_create ( void );
 void workspace_pin_add ( gchar *pin );

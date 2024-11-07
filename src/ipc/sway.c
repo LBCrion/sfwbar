@@ -95,62 +95,13 @@ static GdkRectangle sway_ipc_parse_rect ( struct json_object *obj )
   return eret;
 }
 
-static struct json_object *placement_find_wid ( struct json_object *obj,
-    gint64 wid )
-{
-  json_object *arr, *ret;
-  gint i;
-
-  if( (arr = json_array_by_name(obj, "floating_nodes")) )
-    for(i=0; i<json_object_array_length(arr); i++)
-      if(json_int_by_name(json_object_array_get_idx(arr, i), "id", wid+1)==wid)
-        return obj;
-  if( (arr = json_array_by_name(obj, "nodes")) )
-    for(i=0; i<json_object_array_length(arr); i++)
-      if( (ret = placement_find_wid(json_object_array_get_idx(arr, i), wid)) )
-        return ret;
-  return NULL;
-}
-
 static void sway_ipc_window_place ( gint wid, gint64 pid )
 {
-  struct json_object *json, *obj, *item, *arr;
-  GdkRectangle output, win, *obs;
-  gint c, i, nobs;
+  GdkRectangle place;
 
-  if(!wintree_placer_check(pid))
-    return;
-
-  if( !(json = sway_ipc_request("", 4)) )
-    return;
-
-  if( !(obj = placement_find_wid (json, wid)) ||
-      !(arr = json_array_by_name(obj, "floating_nodes")))
-  {
-    json_object_put(json);
-    return;
-  }
-  output = sway_ipc_parse_rect(obj);
-  win = output;
-  nobs = json_object_array_length(arr)-1;
-  obs = g_malloc(nobs*sizeof(GdkRectangle));
-  c=0;
-  for(i=0; i<=nobs; i++)
-  {
-    item = json_object_array_get_idx(arr, i);
-    if(json_int_by_name(item, "id", wid+1) == wid)
-      win = sway_ipc_parse_rect(item);
-    else if(c<nobs)
-      obs[c++] = sway_ipc_parse_rect(item);
-  }
-  if(c==nobs)
-  {
-    wintree_placer_calc(nobs, obs, output, &win);
+  if(wintree_placer_calc(GINT_TO_POINTER(wid), &place))
     sway_ipc_command("[con_id=%d] move absolute position %d %d",
-        wid, win.x, win.y);
-  }
-  g_free(obs);
-  json_object_put(json);
+        wid, place.x, place.y);
 }
 
 static void sway_window_handle ( struct json_object *container,
@@ -181,7 +132,11 @@ static void sway_window_handle ( struct json_object *container,
     wintree_set_float(wid,
         !g_strcmp0(json_string_by_name(container, "type"), "floating_con"));
     wintree_log(wid);
-    sway_ipc_window_place(GPOINTER_TO_INT(wid), win->pid);
+    if(g_strcmp0(parent, "__i3_scratch"))
+    {
+      wintree_set_workspace(win->uid, workspace_id_from_name(parent));
+      sway_ipc_window_place(GPOINTER_TO_INT(wid), win->pid);
+    }
   }
 
   if(json_bool_by_name(container, "focused", FALSE))
@@ -513,17 +468,12 @@ static struct wintree_api sway_wintree_api = {
 
 /* workspace API */
 
-static void sway_ipc_set_workspace ( workspace_t *ws )
-{
-  sway_ipc_command("workspace '%s'", ws->name);
-}
-
-static guint sway_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,
-    GdkRectangle *space, gint *focus )
+static guint sway_ipc_get_geom ( gpointer wid, GdkRectangle *place,
+    gpointer wsid, GdkRectangle **wins, GdkRectangle *space, gint *focus )
 {
   struct json_object *obj = NULL;
   struct json_object *iter, *fiter, *arr;
-  gint i, j, n = 0;
+  gint i, j, c, n = 0;
 
   obj = sway_ipc_request("", 1);
 
@@ -533,24 +483,36 @@ static guint sway_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,
     for(i=0; i<json_object_array_length(obj); i++)
     {
       iter = json_object_array_get_idx(obj, i);
-      if(!g_strcmp0(ws->name, json_string_by_name(iter, "name")) &&
+      if(GPOINTER_TO_INT(wsid) == json_int_by_name(iter, "id", 0) &&
           (arr = json_array_by_name(iter, "floating_nodes")) )
       {
         *space = sway_ipc_parse_rect(iter);
         n = json_object_array_length(arr);
+        c = 0;
         *wins = g_malloc0(n * sizeof(GdkRectangle));
         for(j=0; j<n; j++)
         {
           fiter = json_object_array_get_idx(arr, j);
-          (*wins)[j] = sway_ipc_parse_rect(fiter);
+          if(!wid || json_int_by_name(fiter, "id", 0)!=GPOINTER_TO_INT(wid))
+            (*wins)[c++] = sway_ipc_parse_rect(fiter);
+          else if(place)
+            *place = sway_ipc_parse_rect(fiter);
           if(json_bool_by_name(fiter, "focused", FALSE))
             *focus = j;
         }
+        json_object_put(obj);
+        return c;
       }
     }
 
   json_object_put(obj);
-  return n;
+  return 0;
+}
+
+
+static void sway_ipc_set_workspace ( workspace_t *ws )
+{
+  sway_ipc_command("workspace '%s'", ws->name);
 }
 
 static struct workspace_api sway_workspace_api = {

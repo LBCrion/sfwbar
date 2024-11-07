@@ -135,11 +135,11 @@ void workspace_activate ( workspace_t *ws )
     api->set_workspace(ws);
 }
 
-guint workspace_get_geometry ( workspace_t *ws, GdkRectangle **wins,
-    GdkRectangle *spc, gint *focus)
+guint workspace_get_geometry ( gpointer wid, GdkRectangle *wloc, gpointer wsid,
+    GdkRectangle **wins, GdkRectangle *spc, gint *focus)
 {
-  if(api->get_geom && ws)
-    return api->get_geom(ws, wins, spc, focus);
+  if(api->get_geom && wsid)
+    return api->get_geom(wid, wloc, wsid, wins, spc, focus);
   return 0;
 }
 

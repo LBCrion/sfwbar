@@ -74,8 +74,7 @@ gboolean wintree_is_filtered ( window_t *win );
 void wintree_placer_conf( gint xs, gint ys, gint xo, gint yo, gboolean pid );
 gboolean wintree_placer_state ( void );
 gboolean wintree_placer_check ( gint pid );
-void wintree_placer_calc ( gint nobs, GdkRectangle *obs, GdkRectangle output,
-    GdkRectangle *win );
+gboolean wintree_placer_calc ( gpointer wid, GdkRectangle *place );
 gboolean wintree_get_disown ( void );
 void wintree_set_disown ( gboolean new );
 

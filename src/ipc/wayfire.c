@@ -236,30 +236,33 @@ static gchar *wayfire_ipc_workspace_get_monitor ( gpointer wsid )
   return output->name;
 }
 
-static guint wayfire_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,
-    GdkRectangle *space, gint *focus )
+static guint wayfire_ipc_get_geom ( gpointer wid, GdkRectangle *place,
+    gpointer wsid, GdkRectangle **wins, GdkRectangle *space, gint *focus )
 {
   wayfire_ipc_wset_t *wset;
   wayfire_ipc_output_t *output;
   GList *iter;
   gint n, c, wx, wy;
 
-  if( !(wset = wayfire_ipc_wset_get(GPOINTER_TO_INT(ws->id)>>16)) )
+  if( !(wset = wayfire_ipc_wset_get(GPOINTER_TO_INT(wsid)>>16)) )
     return 0;
   if( !(output = wayfire_ipc_output_get(wset->output)) )
     return 0;
 
   n=0;
-  wx = (GPOINTER_TO_INT(ws->id) & 0xff) * output->geo.width;
-  wy = (GPOINTER_TO_INT(ws->id) & 0xff00)>>8 * output->geo.height;
+  wx = ((GPOINTER_TO_INT(wsid) & 0xff) - wset->x) * output->geo.width;
+  wy = (((GPOINTER_TO_INT(wsid) & 0xff00)>>8) - wset->y) * output->geo.height;
   for(iter=view_list; iter; iter=g_list_next(iter))
     if(WAYFIRE_VIEW(iter->data)->wsetid == wset->id &&
         WAYFIRE_VIEW(iter->data)->rect.x >= wx &&
         WAYFIRE_VIEW(iter->data)->rect.y >= wy &&
         WAYFIRE_VIEW(iter->data)->rect.x < wx + output->geo.width &&
-        WAYFIRE_VIEW(iter->data)->rect.y < wy + output->geo.height)
+        WAYFIRE_VIEW(iter->data)->rect.y < wy + output->geo.height &&
+        (!wid || WAYFIRE_VIEW(iter->data)->id != GPOINTER_TO_INT(wid)))
       n++;
 
+  space->x = 0;
+  space->y = 0;
   space->width = output->work.width;
   space->height = output->work.height;
 
@@ -273,11 +276,21 @@ static guint wayfire_ipc_get_geom ( workspace_t *ws, GdkRectangle **wins,
         WAYFIRE_VIEW(iter->data)->rect.y < wy + output->geo.height &&
         c < n)
     {
-      (*wins)[c].x = WAYFIRE_VIEW(iter->data)->rect.x - wx;
-      (*wins)[c].y = WAYFIRE_VIEW(iter->data)->rect.y - wy;
-      (*wins)[c].width = WAYFIRE_VIEW(iter->data)->rect.width;
-      (*wins)[c].height = WAYFIRE_VIEW(iter->data)->rect.height;
-      c++;
+      if(!wid || WAYFIRE_VIEW(iter->data)->id != GPOINTER_TO_INT(wid))
+      {
+        (*wins)[c].x = WAYFIRE_VIEW(iter->data)->rect.x - wx;
+        (*wins)[c].y = WAYFIRE_VIEW(iter->data)->rect.y - wy;
+        (*wins)[c].width = WAYFIRE_VIEW(iter->data)->rect.width;
+        (*wins)[c].height = WAYFIRE_VIEW(iter->data)->rect.height;
+        c++;
+      }
+      else if(place)
+      {
+        place->x = WAYFIRE_VIEW(iter->data)->rect.x - wx;
+        place->y = WAYFIRE_VIEW(iter->data)->rect.y - wy;
+        place->width = WAYFIRE_VIEW(iter->data)->rect.width;
+        place->height = WAYFIRE_VIEW(iter->data)->rect.height;
+      }
     }
 
   return c;
@@ -337,56 +350,21 @@ static void wayfire_ipc_window_workspace_track ( struct json_object *json )
         view->wx + wset->x, view->wy + wset->y));
 }
 
-static void wayfire_ipc_window_place ( gpointer id )
+static void wayfire_ipc_window_place ( gpointer wid )
 {
-  window_t *win;
-  workspace_t *ws;
-  wayfire_ipc_wset_t *wset;
   wayfire_ipc_view_t *view;
-  GdkRectangle *wins, space, wloc;
-  struct json_object *json, *geo;
-  gsize nobs;
-  gint focus, wx, wy;
+  GdkRectangle wloc;
+  window_t *win;
 
-  if( !(win = wintree_from_id(id)) )
+  if( !(win = wintree_from_id(wid)) )
     return;
-  if( !(ws = workspace_from_id(win->workspace)) )
+  if( !(view = wayfire_ipc_view_get(GPOINTER_TO_INT(wid))) )
     return;
-  if( !(wset = wayfire_ipc_wset_get(GPOINTER_TO_INT(win->workspace)>>16)) )
+  if(!wintree_placer_calc(wid, &wloc))
     return;
-  if( !(view = wayfire_ipc_view_get(GPOINTER_TO_INT(id))) )
-    return;
-
-  if( (nobs = wayfire_ipc_get_geom(ws, &wins, &space, &focus)) )
-  {
-    space.x = 0;
-    space.y = 0;
-    wloc = view->rect;
-    wintree_placer_calc(nobs, wins, space, &wloc);
-    wx = GPOINTER_TO_INT(win->workspace) & 0x0f;
-    wy = (GPOINTER_TO_INT(win->workspace)<<8) & 0x0f;
-
-    json = json_object_new_object();
-    json_object_object_add(json, "id",
-        json_object_new_int(GPOINTER_TO_INT(id)));
-    json_object_object_add(json, "output_id",
-        json_object_new_int(GPOINTER_TO_INT(wset->output)));
-    json_object_object_add(json, "sticky",
-        json_object_new_boolean(FALSE));
-    geo = json_object_new_object();
-    json_object_object_add(geo, "width",
-        json_object_new_int(view->rect.width));
-    json_object_object_add(geo, "height",
-        json_object_new_int(view->rect.height));
-    json_object_object_add(geo, "x", json_object_new_int(wloc.x +
-          space.width *(wx - wset->x)));
-    json_object_object_add(geo, "y", json_object_new_int(wloc.y +
-          space.height *(wy - wset->y)));
-    json_object_object_add(json, "geometry", geo);
-    wayfire_ipc_send_req(main_ipc, "window-rules/configure-view", json);
-
-    g_free(wins);
-  }
+  view->deltax = wloc.x;
+  view->deltay = wloc.y;
+  wayfire_ipc_move_to(wid, win->workspace);
 }
 
 static void wayfire_ipc_window_new ( struct json_object *view )
@@ -396,7 +374,6 @@ static void wayfire_ipc_window_new ( struct json_object *view )
   if(g_strcmp0(json_string_by_name(view, "type"), "toplevel"))
     return;
 
-  // g_message("%s", json_object_to_json_string_ext(view,0));
   win = wintree_window_init();
   win->uid = GINT_TO_POINTER(json_int_by_name(view, "id", G_MININT64));
   win->pid = json_int_by_name(view, "pid", G_MININT64);
@@ -411,7 +388,6 @@ static void wayfire_ipc_window_new ( struct json_object *view )
       json_bool_by_name(view, "fullscreen", FALSE));
   wintree_log(win->uid);
   wayfire_ipc_window_workspace_track(view);
-//  wayfire_ipc_window_place(win->uid);
 }
 
 static void wayfire_ipc_window_delete ( gpointer wid )
