@@ -149,17 +149,14 @@ static gboolean pager_item_draw_preview ( GtkWidget *widget, cairo_t *cr,
 
   for(i=0;i<n;i++)
   {
-    if(i==focus)
-      cairo_set_source_rgba(cr,fg.red,fg.blue,fg.green,1);
-    else
-      cairo_set_source_rgba(cr,fg.red,fg.blue,fg.green,0.5);
+    cairo_set_source_rgba(cr, fg.red, fg.blue, fg.green, (i==focus)?1:0.5);
     cairo_rectangle(cr,
         (int)(wins[i].x*w/spc.width),
         (int)(wins[i].y*h/spc.height),
         (int)(wins[i].width*w/spc.width),
         (int)(wins[i].height*h/spc.height));
     cairo_fill(cr);
-    gtk_render_frame(style,cr,
+    gtk_render_frame(style, cr,
         (int)(wins[i].x*w/spc.width),
         (int)(wins[i].y*h/spc.height),
         (int)(wins[i].width*w/spc.width),

@@ -60,6 +60,7 @@ void trigger_remove ( gchar *name, GSourceFunc func, void *data )
 {
   GList *list, *iter;
   const gchar *iname;
+  gpointer ptr;
 
   if(!name || !func)
     return;
@@ -73,7 +74,9 @@ void trigger_remove ( gchar *name, GSourceFunc func, void *data )
   for(iter=list; iter; iter=g_list_next(iter))
     if(TRIGGER(iter->data)->func==func && TRIGGER(iter->data)->data==data)
     {
-      list = g_list_remove(list, iter->data);
+      ptr = iter->data;
+      list = g_list_remove(list, ptr);
+      g_free(ptr);
       g_hash_table_replace(trigger_list, name, list);
       return;
     }

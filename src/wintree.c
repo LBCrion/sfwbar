@@ -469,5 +469,6 @@ gboolean wintree_placer_calc ( gpointer wid, GdkRectangle *place )
     }
   g_free(x);
   g_free(y);
+  g_free(obs);
   return TRUE;
 }
