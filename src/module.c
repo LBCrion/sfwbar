@@ -333,7 +333,7 @@ void module_queue_append ( module_queue_t *queue, void *item )
   g_mutex_unlock(&(queue->mutex));
 
   if(trigger && queue->trigger)
-    trigger_emit((gchar *)queue->trigger);
+    g_idle_add((GSourceFunc)trigger_emit, queue->trigger);
 }
 
 void module_queue_remove ( module_queue_t *queue )
