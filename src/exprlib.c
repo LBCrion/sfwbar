@@ -157,7 +157,8 @@ static void *expr_lib_time ( void **params, void *widget, void *event )
   else
   {
 #if GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 68
-    tz = g_time_zone_new_identifier(params[1]);
+    if( !(tz = g_time_zone_new_identifier(params[1])) )
+      tz = g_time_zone_new_utc();
 #else
     tz = g_time_zone_new(params[1]);
 #endif
