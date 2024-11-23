@@ -193,9 +193,6 @@ static gchar *app_info_lookup_id ( gchar *app_id, gboolean symbolic_pref )
   gchar ***desktop, *wmmap, *icon = NULL;
   gint i,j;
 
-  if( (icon = app_info_icon_test(app_id, symbolic_pref)) )
-    return icon;
-
   if( (icon = app_info_icon_get(app_id, symbolic_pref)) )
     return icon;
 
@@ -213,12 +210,16 @@ static gchar *app_info_lookup_id ( gchar *app_id, gboolean symbolic_pref )
   if(!icon && (wmmap = g_hash_table_lookup(app_info_wm_class_map, app_id)) )
     icon = app_info_icon_get(wmmap, symbolic_pref);
 
+  if( (icon = app_info_icon_test(app_id, symbolic_pref)) )
+    return icon;
+
   return icon;
 }
 
 gchar *app_info_icon_lookup ( gchar *app_id_in, gboolean symbolic_pref )
 {
-  gchar *app_id,*clean_app_id, *lower_app_id, *icon;
+  gchar *app_id, *clean_app_id, *icon;
+  gsize i;
 
   if(!icon_map || !(app_id = g_hash_table_lookup(icon_map, app_id_in)) )
     app_id = app_id_in;
@@ -236,9 +237,9 @@ gchar *app_info_icon_lookup ( gchar *app_id_in, gboolean symbolic_pref )
     g_free(clean_app_id);
     return icon;
   }
-  lower_app_id = g_ascii_strdown(clean_app_id, -1);
-  icon = app_info_lookup_id(lower_app_id, symbolic_pref);
-  g_free(lower_app_id);
+  for(i=0; clean_app_id[i]; i++)
+    clean_app_id[i] = g_ascii_tolower(clean_app_id[i]);
+  icon = app_info_lookup_id(clean_app_id, symbolic_pref);
   g_free(clean_app_id);
 
   return icon;
