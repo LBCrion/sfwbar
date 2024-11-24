@@ -7,11 +7,11 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <glob.h>
-#include "expr.h"
 #include "config.h"
 #include "client.h"
 #include "util/json.h"
 #include "util/string.h"
+#include "vm/expr.h"
 
 static GList *file_list;
 static GHashTable *scan_list;
@@ -129,7 +129,7 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
     case G_TOKEN_SET:
       expr_cache_free(var->expr);
       var->expr = expr_cache_new();
-      var->expr->definition = g_strdup(pattern);
+      expr_cache_set(var->expr, g_strdup(pattern));
       var->expr->eval = TRUE;
       var->vstate = 1;
       expr_dep_trigger(name);
@@ -423,7 +423,7 @@ gchar *scanner_parse_identifier ( gchar *id, gchar **fname )
     return g_strdup(id);
 }
 
-ScanVar *scanner_var_update ( gchar *name, gboolean update, ExprCache *expr )
+ScanVar *scanner_var_update ( gchar *name, gboolean update, expr_cache_t *expr )
 {
   ScanVar *var;
 
@@ -467,54 +467,60 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, ExprCache *expr )
 }
 
 /* get value of a variable by name */
-void *scanner_get_value ( gchar *ident, gboolean update, ExprCache *expr )
+value_t scanner_get_value ( gchar *ident, gboolean update, expr_cache_t *expr )
 {
+  value_t result;
   ScanVar *var;
-  double *retval;
-  gchar *fname,*id;
+  gchar *fname, *id;
 
   id = scanner_parse_identifier(ident,&fname);
   var = scanner_var_update(id, update, expr);
   g_free(id);
 
+  result.type = EXPR_TYPE_NA;
+
   if(!var)
   {
     g_free(fname);
     expr_dep_add(ident, expr);
-    if(*ident == '$')
-      return g_strdup("");
-    else
-      return g_malloc0(sizeof(gdouble));
+    return result;
   }
   if(var->type == G_TOKEN_SET)
     expr_dep_add(ident, expr);
 
   if(*ident == '$')
   {
-    g_debug("scanner: %s = \"%s\" (vstate: %d)",ident,var->str,expr->vstate);
-    g_free(fname);
     if(var->str)
-      return g_strdup(var->str);
+    {
+      result.type = EXPR_TYPE_STRING;
+      result.value.string  = g_strdup(var->str);
+    }
+  }
+  else
+  {
+    result.type = EXPR_TYPE_NUMERIC;
+    if(!g_strcmp0(fname,".val"))
+      result.value.numeric = var->val;
+    else if(!g_strcmp0(fname,".pval"))
+      result.value.numeric = var->pval;
+    else if(!g_strcmp0(fname,".count"))
+      result.value.numeric = var->count;
+    else if(!g_strcmp0(fname,".time"))
+      result.value.numeric = var->time;
+    else if(!g_strcmp0(fname,".age"))
+      result.value.numeric = (g_get_monotonic_time() - var->ptime);
     else
-      return g_strdup("");
+      result.type = EXPR_TYPE_NA;
   }
 
-  retval = g_malloc0(sizeof(gdouble));
-
-  if(!g_strcmp0(fname,".val"))
-    *retval = var->val;
-  else if(!g_strcmp0(fname,".pval"))
-    *retval = var->pval;
-  else if(!g_strcmp0(fname,".count"))
-    *retval = var->count;
-  else if(!g_strcmp0(fname,".time"))
-    *retval = var->time;
-  else if(!g_strcmp0(fname,".age"))
-    *retval = (g_get_monotonic_time() - var->ptime);
-
   g_free(fname);
-  g_debug("scanner: %s = %f (vstate: %d)",ident,*retval,expr->vstate);
-  return retval;
+  if(result.type == EXPR_TYPE_NUMERIC)
+    g_debug("scanner: %s = %f (vstate: %d)", ident, result.value.numeric,
+        expr->vstate);
+  else if(result.type == EXPR_TYPE_STRING)
+    g_debug("scanner: %s = %s (vstate: %d)", ident, result.value.string,
+        expr->vstate);
+  return result;
 }
 
 gboolean scanner_is_variable ( gchar *identifier )

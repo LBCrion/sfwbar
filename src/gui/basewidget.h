@@ -2,7 +2,7 @@
 #define __BASE_WIDGET_H__
 
 #include "action.h"
-#include "expr.h"
+#include "vm/expr.h"
 
 #define BASE_WIDGET_MAX_ACTION  8
 
@@ -41,9 +41,9 @@ struct _BaseWidgetPrivate
 {
   gchar *id;
   GList *css;
-  ExprCache *style;
-  ExprCache *value;
-  ExprCache *tooltip;
+  expr_cache_t *style;
+  expr_cache_t *value;
+  expr_cache_t *tooltip;
   gulong tooltip_h;
   GList *actions;
   gulong button_h;

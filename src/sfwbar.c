@@ -5,7 +5,6 @@
 
 #include <glib-unix.h>
 #include "sfwbar.h"
-#include "expr.h"
 #include "appinfo.h"
 #include "wayland.h"
 #include "config.h"

@@ -4,12 +4,12 @@
  */
 
 #include <gmodule.h>
-#include "expr.h"
-#include "module.h"
 #include "config.h"
+#include "meson.h"
+#include "module.h"
 #include "trigger.h"
 #include "util/string.h"
-#include "meson.h"
+#include "vm/expr.h"
 
 static GList *module_list;
 static GHashTable *expr_handlers, *interfaces;
@@ -273,7 +273,12 @@ gboolean module_check_flag ( gchar *identifier, gint flag )
   return !!(handler->flags & flag);
 }
 
-void *module_get_value ( GScanner *scanner )
+ModuleExpressionHandlerV1 *module_expr_func_get ( gchar *name )
+{
+  return g_hash_table_lookup(expr_handlers, name);
+}
+
+/*void *module_get_value ( GScanner *scanner )
 {
   ModuleExpressionHandlerV1 *handler;
   void **params;
@@ -311,7 +316,7 @@ void *module_get_value ( GScanner *scanner )
     E_STATE(scanner)->expr->vstate = TRUE;
 
   return result;
-}
+}*/
 
 void module_queue_append ( module_queue_t *queue, void *item )
 {

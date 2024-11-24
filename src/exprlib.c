@@ -7,12 +7,14 @@
 #include <locale.h>
 #include "module.h"
 #include "wintree.h"
-#include "expr.h"
+#include "scanner.h"
 #include "gui/basewidget.h"
 #include "gui/taskbaritem.h"
 #include "gui/bar.h"
 #include "util/file.h"
 #include "util/string.h"
+#include "vm/expr.h"
+#include "vm/vm.h"
 
 /* extract a substring */
 static void *expr_lib_mid ( void **params, void *widget, void *event )
@@ -65,6 +67,94 @@ ModuleExpressionHandlerV1 replace_handler = {
   .name = "replace",
   .parameters = "SSS",
   .function = expr_lib_replace
+};
+
+static void *expr_lib_replace_all( void **params, void *widget, void *event )
+{
+  value_t *stack;
+  gint i, np;
+  gchar *tmp, *result;
+
+  np = expr_vm_get_func_params((vm_t *)params, &stack);
+
+  if(np<1 || !(np%2) || stack[0].type!= EXPR_TYPE_STRING ||
+      !stack[0].value.string)
+    return g_strdup("");
+
+  result = g_strdup(stack[0].value.string);
+  for(i=1; i<np; i+=2)
+    if(stack[i].type==EXPR_TYPE_STRING && stack[i+1].type==EXPR_TYPE_STRING)
+    {
+      tmp = result;
+      result = str_replace(tmp, stack[i].value.string, stack[i+1].value.string);
+      g_free(tmp);
+    }
+
+  return result;
+}
+
+ModuleExpressionHandlerV1 replace_all_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC | MODULE_EXPR_RAW,
+  .name = "replaceall",
+  .parameters = "SVSS",
+  .function = expr_lib_replace_all
+};
+
+static void *expr_lib_map( void **params, void *widget, void *event )
+{
+  value_t *stack;
+  gint i, np;
+
+  np = expr_vm_get_func_params((vm_t *)params, &stack);
+
+  if(np<2 || np%2 || !stack[0].value.string)
+    return g_strdup("");
+
+  for(i=0; i<np; i++)
+    if(stack[i].type!=EXPR_TYPE_STRING)
+      return g_strdup("");
+
+  for(i=1; i<(np-1); i+=2)
+    if(stack[i].value.string &&
+        !g_strcmp0(stack[0].value.string, stack[i].value.string))
+      return g_strdup(stack[i+1].value.string);
+  return g_strdup(stack[np-1].value.string);
+}
+
+ModuleExpressionHandlerV1 map_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC | MODULE_EXPR_RAW,
+  .name = "map",
+  .parameters = "SSVSS",
+  .function = expr_lib_map
+};
+
+static void *expr_lib_lookup( void **params, void *widget, void *event )
+{
+  value_t *stack;
+  gchar *result = NULL;
+  gint i, np;
+
+  np = expr_vm_get_func_params((vm_t *)params, &stack);
+
+  if(np<2 || np%2 || stack[0].type!=EXPR_TYPE_NUMERIC)
+    return g_strdup("");
+
+  for(i=(np-3); i>0; i-=2)
+    if(stack[i].type==EXPR_TYPE_NUMERIC && stack[i+1].type==EXPR_TYPE_STRING &&
+        stack[i].value.numeric < stack[0].value.numeric)
+      result = stack[i+1].value.string;
+
+  if(!result && stack[np-1].type==EXPR_TYPE_STRING)
+    result = stack[np-1].value.string;
+
+  return g_strdup(result?result:"");
+}
+
+ModuleExpressionHandlerV1 lookup_handler = {
+  .flags = MODULE_EXPR_DETERMINISTIC | MODULE_EXPR_RAW,
+  .name = "lookup",
+  .parameters = "",
+  .function = expr_lib_lookup
 };
 
 /* Extract substring using regex */
@@ -267,7 +357,7 @@ static void *expr_lib_str ( void **params, void *widget, void *event )
   if(!params || !params[0])
     return g_strdup("");
   else
-    return expr_dtostr(*(gdouble *)params[0],
+    return numeric_to_string(*(gdouble *)params[0],
         params[1]?(gint)*(gdouble *)params[1]:0);
 }
 
@@ -556,9 +646,39 @@ ModuleExpressionHandlerV1 iface_provider_handler = {
   .function = expr_iface_provider
 };
 
+static void *expr_ident ( void **params, void *widget, void *event )
+{
+  gdouble *result;
+  value_t *stack;
+  gint np;
+
+  result = g_malloc(sizeof(gdouble));
+  np = expr_vm_get_func_params((vm_t *)params, &stack);
+  if(np!=1 || stack[0].type != EXPR_TYPE_STRING)
+    return result;
+
+  *result = scanner_is_variable(stack[0].value.string) ||
+    module_is_function(stack[0].value.string);
+  if(!*result)
+    expr_dep_add(stack[0].value.string, ((vm_t *)params)->cache);
+
+  return result;
+}
+
+ModuleExpressionHandlerV1 ident_handler = {
+  .name = "ident",
+  .flags = MODULE_EXPR_DETERMINISTIC | MODULE_EXPR_NUMERIC | MODULE_EXPR_RAW,
+  .parameters = "S",
+  .function = expr_ident
+};
+
+
 static ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &mid_handler,
   &replace_handler,
+  &replace_all_handler,
+  &map_handler,
+  &lookup_handler,
   &pad_handler,
   &extract_handler,
   &time_handler,
@@ -579,6 +699,7 @@ static ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &escape_handler,
   &read_handler,
   &iface_provider_handler,
+  &ident_handler,
   NULL
 };
 

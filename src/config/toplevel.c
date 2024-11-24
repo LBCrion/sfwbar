@@ -38,8 +38,7 @@ gboolean config_action_conditions ( GScanner *scanner, action_t *action )
 gboolean config_action ( GScanner *scanner, action_t **action_dst )
 {
   action_t *action;
-  gchar *ident;
-  gchar *ptr;
+  gchar *ident, *ptr, *addr = NULL, *cmd = NULL;
 
   action = action_new();
 
@@ -54,9 +53,9 @@ gboolean config_action ( GScanner *scanner, action_t **action_dst )
       !config_lookup_next_key(scanner, config_prop_keys) &&
       !config_lookup_next_key(scanner, config_flowgrid_props))
     config_parse_sequence(scanner,
-        SEQ_OPT, G_TOKEN_VALUE, NULL, &action->addr->definition, NULL,
+        SEQ_OPT, G_TOKEN_VALUE, NULL, &addr, NULL,
         SEQ_OPT, ',', NULL, NULL, NULL,
-        SEQ_CON, G_TOKEN_VALUE, NULL, &action->command->definition,
+        SEQ_CON, G_TOKEN_VALUE, NULL, &cmd,
           "Missing argument after ',' in action",
         SEQ_OPT, ';', NULL, NULL, NULL,
         SEQ_END);
@@ -83,12 +82,13 @@ gboolean config_action ( GScanner *scanner, action_t **action_dst )
 
   action->addr->eval = TRUE;
   action->command->eval = TRUE;
-  if(!action->command->definition && action->addr->definition)
+  if(addr && cmd)
   {
-    action->command->definition = action->addr->definition;
-    action->addr->definition = NULL;
-    action->addr->eval = FALSE;
+    expr_cache_set(action->command, cmd);
+    expr_cache_set(action->addr, addr);
   }
+  else if(addr)
+    expr_cache_set(action->command, addr);
 
   *action_dst = action;
   g_free(ident);

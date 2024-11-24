@@ -56,7 +56,8 @@ typedef struct {
 
 enum ModuleFlags {
   MODULE_EXPR_NUMERIC       = 1,
-  MODULE_EXPR_DETERMINISTIC = 2
+  MODULE_EXPR_DETERMINISTIC = 2,
+  MODULE_EXPR_RAW           = 4
 };
 
 enum ModuleActionFlags {
@@ -79,7 +80,8 @@ ModuleActionHandlerV1 *module_action_get ( GQuark quark );
 void module_action_exec ( GQuark quark, gchar *param, gchar *addr, void *,
     void *, void *, void * );
 void module_actions_add ( ModuleActionHandlerV1 **ahandler, gchar *name );
-void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler,gchar *name);
+void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler, gchar *name);
+ModuleExpressionHandlerV1 *module_expr_func_get ( gchar *name );
 void module_interface_select ( gchar *interface );
 void module_interface_activate ( ModuleInterfaceV1 *iface );
 void module_interface_deactivate ( ModuleInterfaceV1 *iface );

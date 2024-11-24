@@ -2,7 +2,8 @@
 #define __SCANNER_H__
 
 #include <json.h>
-#include "expr.h"
+#include "vm/expr.h"
+#include "vm/vm.h"
 
 enum {
   SO_FILE = 0,
@@ -33,7 +34,7 @@ typedef struct scan_file {
 } ScanFile;
 
 typedef struct scan_var {
-  ExprCache *expr;
+  expr_cache_t *expr;
   void *definition;
   gchar *str;
   guint vstate;
@@ -54,7 +55,7 @@ void scanner_var_reset ( ScanVar *var, gpointer dummy );
 void scanner_update_json ( struct json_object *, ScanFile * );
 GIOStatus scanner_file_update ( GIOChannel *, ScanFile *, gsize * );
 int scanner_glob_file ( ScanFile * );
-void *scanner_get_value ( gchar *ident, gboolean update, ExprCache *expr );
+value_t scanner_get_value ( gchar *ident, gboolean update, expr_cache_t *expr );
 void scanner_var_new ( gchar *, ScanFile *, gchar *, guint, gint );
 void scanner_file_merge ( ScanFile *keep, ScanFile *temp );
 gchar *scanner_parse_identifier ( gchar *id, gchar **fname );

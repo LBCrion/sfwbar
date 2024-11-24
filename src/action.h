@@ -2,13 +2,13 @@
 #define __ACTION_H__
 
 #include "wintree.h"
-#include "expr.h"
+#include "vm/expr.h"
 
 typedef struct user_action {
   guchar cond;
   guchar ncond;
-  ExprCache *command;
-  ExprCache *addr;
+  expr_cache_t *command;
+  expr_cache_t *addr;
   GQuark quark;
 } action_t;
 

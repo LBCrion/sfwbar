@@ -63,6 +63,19 @@ void *ptr_pass ( void *ptr )
   return ptr;
 }
 
+gchar *numeric_to_string ( double num, gint dec )
+{
+  static const gchar *format = "%%0.%df";
+  static gchar fbuf[16];
+  static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+
+  if(dec<0)
+    return g_strdup(g_ascii_dtostr(buf, G_ASCII_DTOSTR_BUF_SIZE, num));
+
+  g_snprintf(fbuf , 16, format, MIN(dec, 99));
+  return g_strdup(g_ascii_formatd(buf, G_ASCII_DTOSTR_BUF_SIZE, fbuf, num));
+}
+
 gboolean pattern_match ( gchar **dict, gchar *string )
 {
   gint i;

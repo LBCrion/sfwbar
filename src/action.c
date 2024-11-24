@@ -3,12 +3,12 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "expr.h"
 #include "action.h"
 #include "module.h"
 #include "trigger.h"
 #include "gui/taskbaritem.h"
 #include "util/string.h"
+#include "vm/expr.h"
 
 static GHashTable *functions;
 
@@ -61,7 +61,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
     GdkEvent *event, window_t *win, guint16 *istate )
 {
   ModuleActionHandlerV1 *ahandler;
-  ExprCache *addr;
+  expr_cache_t *addr;
   GList *children, *iter;
   guint16 state;
   action_t *caction;

@@ -10,12 +10,14 @@
 #include <glib.h>
 #include "expr.h"
 #include "scanner.h"
-#include "util/string.h"
 #include "wintree.h"
 #include "module.h"
+#include "vm/vm.h"
+#include "util/string.h"
 
 static GHashTable *expr_deps;
 
+/*
 static gdouble expr_parse_num ( GScanner *scanner, gdouble * );
 static gchar *expr_parse_str ( GScanner *scanner, gchar * );
 static gchar *expr_parse_root ( GScanner *scanner );
@@ -37,21 +39,8 @@ void expr_print_msg ( GScanner *scanner, gchar *msg, gboolean error )
   g_message("%s:%d:%d: %s: %s",scanner->input_name,scanner->line,
       scanner->position,error?"error":"warning",msg);
 }
-
-/* convert a number to a string with specified number of decimals */
-gchar *expr_dtostr ( double num, gint dec )
-{
-  static const gchar *format = "%%0.%df";
-  static gchar fbuf[16];
-  static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
-
-  if(dec<0)
-    return g_strdup(g_ascii_dtostr(buf,G_ASCII_DTOSTR_BUF_SIZE,num));
-
-  g_snprintf(fbuf , 16, format, MIN(dec, 99));
-  return g_strdup(g_ascii_formatd(buf,G_ASCII_DTOSTR_BUF_SIZE,fbuf,num));
-}
-
+*/
+/*
 static gboolean expr_is_numeric ( GScanner *scanner )
 {
   g_scanner_peek_next_token(scanner);
@@ -353,7 +342,6 @@ gdouble expr_parse_ident ( GScanner *scanner )
   return result;
 }
 
-/* compare operator for strigs and variants */
 static gdouble expr_parse_compare ( GScanner *scanner, gchar *prev )
 {
   gchar *str1, *str2;
@@ -502,12 +490,11 @@ static gdouble expr_parse_num_value ( GScanner *scanner, gdouble *prev )
     str = expr_parse_variant_token(scanner);
     if(E_STATE(scanner)->type == EXPR_NUMERIC)
       return expr_str_to_num(str);
-    /* if type is string, assume it's there for comparison */
     else if(E_STATE(scanner)->type == EXPR_STRING ||
         g_scanner_peek_next_token(scanner) == '=' ||
         g_scanner_peek_next_token(scanner) == '!' )
       return expr_parse_compare(scanner,str);
-    else /* if the variant type is unresolved, cast to numeric zero */
+    else
     {
       E_STATE(scanner)->type = EXPR_NUMERIC;
       g_free(str);
@@ -546,7 +533,7 @@ static gdouble expr_parse_num_factor ( GScanner *scanner, gdouble *prev )
   gdouble val;
 
   val = expr_parse_num_value ( scanner, prev );
-  while(strchr("*/%",g_scanner_peek_next_token ( scanner )))
+  while(strchr("*\/%",g_scanner_peek_next_token ( scanner )))
   {
     g_scanner_get_next_token ( scanner );
     if(scanner->token == '*')
@@ -679,7 +666,7 @@ static gchar *expr_parse_root ( GScanner *scanner )
   }
 
   if(E_STATE(scanner)->type != EXPR_STRING &&
-      strchr("|&<>=*/%!+-",g_scanner_peek_next_token(scanner)))
+      strchr("|&<>=*\/%!+-",g_scanner_peek_next_token(scanner)))
   {
     res = expr_str_to_num(str);
     return expr_dtostr(expr_parse_num(scanner,&res),-1);
@@ -795,21 +782,31 @@ gchar *expr_parse( ExprCache *expr )
 
   return result;
 }
+*/
 
-gboolean expr_cache_eval ( ExprCache *expr )
+gboolean expr_cache_eval ( expr_cache_t *expr )
 {
+//  GByteArray *code;
+  value_t v1;
   gchar *eval;
 
   if(!expr || !expr->definition || !expr->eval)
     return FALSE;
 
   expr->vstate = FALSE;
-  eval = expr_parse(expr);
+/*  eval = expr_parse(expr);*/
+  v1 = vm_run(expr);
+  if(v1.type==EXPR_TYPE_STRING)
+    eval = v1.value.string;
+  else if(v1.type==EXPR_TYPE_NUMERIC)
+    eval = numeric_to_string(v1.value.numeric, -1);
+  else
+    eval = g_strdup("");
 
   if(!expr->vstate)
     expr->eval = FALSE;
 
-  if(g_strcmp0(eval,expr->cache))
+  if(g_strcmp0(eval, expr->cache))
   {
     g_free(expr->cache);
     expr->cache = eval;
@@ -822,25 +819,41 @@ gboolean expr_cache_eval ( ExprCache *expr )
   }
 }
 
-ExprCache *expr_cache_new ( void )
+expr_cache_t *expr_cache_new ( void )
 {
-  return g_malloc0(sizeof(ExprCache));
+  return g_malloc0(sizeof(expr_cache_t));
 }
 
-void expr_cache_free ( ExprCache *expr )
+void expr_cache_set ( expr_cache_t *expr, gchar *def )
+{
+  if(!g_strcmp0(expr->definition, def))
+  {
+    g_free(def);
+    return;
+  }
+  g_free(expr->definition);
+  expr->definition = def;
+  if(expr->code)
+    g_byte_array_unref(expr->code);
+  expr->code = parser_expr_compile(expr->definition);
+}
+
+void expr_cache_free ( expr_cache_t *expr )
 {
   if(!expr)
     return;
   expr_dep_remove(expr);
   g_free(expr->definition);
   g_free(expr->cache);
+  if(expr->code)
+    g_byte_array_unref(expr->code);
   g_free(expr);
 }
 
-void expr_dep_add ( gchar *ident, ExprCache *expr )
+void expr_dep_add ( gchar *ident, expr_cache_t *expr )
 {
   GList *list;
-  ExprCache *iter;
+  expr_cache_t *iter;
   gchar *vname;
 
   if(!expr_deps)
@@ -855,7 +868,7 @@ void expr_dep_add ( gchar *ident, ExprCache *expr )
   g_hash_table_replace(expr_deps, vname, list);
 }
 
-void expr_dep_remove ( ExprCache *expr )
+void expr_dep_remove ( expr_cache_t *expr )
 {
   GHashTableIter hiter;
   void *list, *key;
@@ -878,7 +891,7 @@ void expr_dep_trigger ( gchar *ident )
   list = g_hash_table_lookup(expr_deps, ident);
 
   for(iter=list; iter; iter=g_list_next(iter))
-    ((ExprCache *)(iter->data))->eval = TRUE;
+    ((expr_cache_t *)(iter->data))->eval = TRUE;
 }
 
 void expr_dep_dump_each ( void *key, void *value, void *d )
@@ -886,7 +899,7 @@ void expr_dep_dump_each ( void *key, void *value, void *d )
   GList *iter;
 
   for(iter=value;iter;iter=g_list_next(iter))
-    g_message("%s: %s", (gchar *)key, ((ExprCache *)iter->data)->definition);
+    g_message("%s: %s", (gchar *)key, ((expr_cache_t *)iter->data)->definition);
 }
 
 void expr_dep_dump ( void )

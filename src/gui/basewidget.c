@@ -3,7 +3,6 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "expr.h"
 #include "trigger.h"
 #include "action.h"
 #include "module.h"
@@ -473,8 +472,7 @@ void base_widget_set_tooltip ( GtkWidget *self, gchar *tooltip )
   if(!priv->tooltip)
     return;
 
-  g_free(priv->tooltip->definition);
-  priv->tooltip->definition = tooltip;
+  expr_cache_set(priv->tooltip, tooltip);
   priv->tooltip->eval = TRUE;
   priv->value->widget = self;
 
@@ -501,8 +499,7 @@ void base_widget_set_value ( GtkWidget *self, gchar *value )
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  g_free(priv->value->definition);
-  priv->value->definition = value;
+  expr_cache_set(priv->value, value);
   priv->value->eval = TRUE;
   priv->value->widget = self;
 
@@ -523,8 +520,7 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
   self = base_widget_get_mirror_parent(self);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  g_free(priv->style->definition);
-  priv->style->definition = style;
+  expr_cache_set(priv->style, style);
   priv->style->eval = TRUE;
   priv->style->widget = self;
 
