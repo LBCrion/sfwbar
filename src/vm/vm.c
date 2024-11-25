@@ -214,8 +214,8 @@ value_t vm_run ( expr_cache_t *expr )
     return value_na;
 
   vm = g_malloc0(sizeof(vm_t));
-  vm->stack = g_array_sized_new(FALSE, FALSE, MAX(1, expr->stack_depth),
-        sizeof(value_t));
+  vm->stack = g_array_sized_new(FALSE, FALSE, sizeof(value_t),
+      MAX(1, expr->stack_depth));
   vm->cache = expr;
 
   for(vm->ip = code->data; (vm->ip-code->data)<code->len; vm->ip++)

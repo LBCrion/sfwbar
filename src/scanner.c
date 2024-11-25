@@ -531,7 +531,7 @@ gboolean scanner_is_variable ( gchar *identifier )
   if(!scan_list)
     return FALSE;
 
-  name = scanner_parse_identifier(identifier,NULL);
+  name = scanner_parse_identifier(identifier, NULL);
   result = (g_hash_table_lookup(scan_list, name)!=NULL);
   g_free(name);
 

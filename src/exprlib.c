@@ -652,7 +652,7 @@ static void *expr_ident ( void **params, void *widget, void *event )
   value_t *stack;
   gint np;
 
-  result = g_malloc(sizeof(gdouble));
+  result = g_malloc0(sizeof(gdouble));
   np = expr_vm_get_func_params((vm_t *)params, &stack);
   if(np!=1 || stack[0].type != EXPR_TYPE_STRING || !stack[0].value.string)
     return result;
