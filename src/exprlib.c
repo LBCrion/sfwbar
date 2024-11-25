@@ -654,7 +654,7 @@ static void *expr_ident ( void **params, void *widget, void *event )
 
   result = g_malloc(sizeof(gdouble));
   np = expr_vm_get_func_params((vm_t *)params, &stack);
-  if(np!=1 || stack[0].type != EXPR_TYPE_STRING)
+  if(np!=1 || stack[0].type != EXPR_TYPE_STRING || !stack[0].value.string)
     return result;
 
   *result = scanner_is_variable(stack[0].value.string) ||
