@@ -448,10 +448,7 @@ void bar_set_visibility ( GtkWidget *self, const gchar *id, gchar state )
   if(!visible && gtk_widget_is_visible(self))
     gtk_widget_hide(self);
   else if(!gtk_widget_is_visible(self))
-  {
     bar_update_monitor(self);
-    gtk_widget_show_now(self);
-  }
 
   for(liter=priv->mirror_children; liter; liter=g_list_next(liter))
     bar_set_visibility(liter->data, id, state);
@@ -501,11 +498,6 @@ void bar_set_layer ( GtkWidget *self, gchar *layer_str )
 #endif
 
   gtk_layer_set_layer(GTK_WINDOW(self), layer);
-  if(gtk_widget_is_visible(self))
-  {
-    gtk_widget_hide(self);
-    gtk_widget_show_now(self);
-  }
 
   g_list_foreach(priv->mirror_children,(GFunc)bar_set_layer,layer_str);
 }
@@ -595,10 +587,7 @@ gboolean bar_update_monitor ( GtkWidget *self )
   {
     gtk_layer_set_monitor(GTK_WINDOW(self), match);
     if(priv->visible)
-    {
-      gtk_widget_show_now(self);
-//      taskbar_shell_invalidate_all();
-    }
+      gtk_widget_show(self);
   }
 
   /* remove any mirrors from new primary output */
@@ -634,7 +623,7 @@ void bar_set_monitor ( GtkWidget *self, gchar *monitor )
   g_return_if_fail(monitor);
   priv = bar_get_instance_private(BAR(self));
 
-  if(!g_ascii_strncasecmp(monitor,"static:",7))
+  if(!g_ascii_strncasecmp(monitor, "static:", 7))
   {
     priv->jump = FALSE;
     mon_name = monitor+7;
@@ -650,6 +639,7 @@ void bar_set_monitor ( GtkWidget *self, gchar *monitor )
     g_free(priv->output);
     priv->output =  g_strdup(mon_name);
     bar_update_monitor(self);
+    bar_mirror(self, priv->current_monitor);
   }
 }
 
