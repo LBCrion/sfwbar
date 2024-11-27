@@ -257,6 +257,9 @@ GByteArray *parser_expr_compile ( gchar *expr )
   GScanner *scanner;
   GByteArray *code;
 
+  if(!expr)
+    return NULL;
+
   scanner = g_scanner_new(NULL);
   scanner->config->scan_octal = 0;
   scanner->config->scan_identifier_1char = 1;
