@@ -54,79 +54,74 @@ ModuleExpressionHandlerV1 mid_handler = {
 };
 
 /* replace a substring within a string */
-static void *expr_lib_replace( void **params, void *widget, void *event )
+static value_t expr_lib_replace( vm_t *vm, value_t stack[], gint np )
 {
-  if(!params || !params[0] || !params[1] || !params[2])
-    return g_strdup("");
+  value_t result;
 
-  return str_replace(params[0], params[1], params[2]);
+  if(np!=3 || stack[0].type!=EXPR_TYPE_STRING ||
+      stack[1].type!=EXPR_TYPE_STRING || stack[2].type!=EXPR_TYPE_STRING)
+    return value_na;
+
+  result.type = EXPR_TYPE_STRING;
+  result.value.string = str_replace(stack[0].value.string,
+      stack[1].value.string, stack[2].value.string);
+  return result;
 }
 
-ModuleExpressionHandlerV1 replace_handler = {
+/*ModuleExpressionHandlerV1 replace_handler = {
   .flags = MODULE_EXPR_DETERMINISTIC,
   .name = "replace",
   .parameters = "SSS",
   .function = expr_lib_replace
-};
+};*/
 
-static void *expr_lib_replace_all( void **params, void *widget, void *event )
+static value_t expr_lib_replace_all( vm_t *vm, value_t stack[], gint np )
 {
-  value_t *stack;
-  gint i, np;
-  gchar *tmp, *result;
-
-  np = expr_vm_get_func_params((vm_t *)params, &stack);
+  value_t result;
+  gchar *tmp;
+  gint i;
 
   if(np<1 || !(np%2) || stack[0].type!= EXPR_TYPE_STRING ||
       !stack[0].value.string)
-    return g_strdup("");
+    return value_na;
 
-  result = g_strdup(stack[0].value.string);
+  result.type = EXPR_TYPE_STRING;
+  result.value.string = g_strdup(stack[0].value.string);
   for(i=1; i<np; i+=2)
     if(stack[i].type==EXPR_TYPE_STRING && stack[i+1].type==EXPR_TYPE_STRING)
     {
-      tmp = result;
-      result = str_replace(tmp, stack[i].value.string, stack[i+1].value.string);
+      tmp = result.value.string;
+      result.value.string = str_replace(tmp, stack[i].value.string,
+          stack[i+1].value.string);
       g_free(tmp);
     }
 
   return result;
 }
 
-ModuleExpressionHandlerV1 replace_all_handler = {
-  .flags = MODULE_EXPR_DETERMINISTIC | MODULE_EXPR_RAW,
-  .name = "replaceall",
-  .parameters = "SVSS",
-  .function = expr_lib_replace_all
-};
-
-static void *expr_lib_map( void **params, void *widget, void *event )
+static value_t expr_lib_map( vm_t *vm, value_t stack[], gint np )
 {
-  value_t *stack;
-  gint i, np;
-
-  np = expr_vm_get_func_params((vm_t *)params, &stack);
+  value_t result;
+  gint i;
 
   if(np<2 || np%2 || !stack[0].value.string)
-    return g_strdup("");
+    return value_na;
 
   for(i=0; i<np; i++)
     if(stack[i].type!=EXPR_TYPE_STRING)
-      return g_strdup("");
+      return value_na;
 
+  result.type = EXPR_TYPE_STRING;
   for(i=1; i<(np-1); i+=2)
     if(stack[i].value.string &&
         !g_strcmp0(stack[0].value.string, stack[i].value.string))
-      return g_strdup(stack[i+1].value.string);
-  return g_strdup(stack[np-1].value.string);
+    {
+      result.value.string = g_strdup(stack[i+1].value.string);
+      return result;
+    }
+  result.value.string = g_strdup(stack[np-1].value.string);
+  return result;
 }
-
-ModuleExpressionHandlerV1 map_handler = {
-  .flags = MODULE_EXPR_DETERMINISTIC | MODULE_EXPR_RAW,
-  .name = "map",
-  .parameters = "SSVSS",
-  .function = expr_lib_map
-};
 
 static void *expr_lib_lookup( void **params, void *widget, void *event )
 {
@@ -646,38 +641,24 @@ ModuleExpressionHandlerV1 iface_provider_handler = {
   .function = expr_iface_provider
 };
 
-static void *expr_ident ( void **params, void *widget, void *event )
+static value_t expr_ident ( vm_t *vm, value_t stack[], int np )
 {
-  gdouble *result;
-  value_t *stack;
-  gint np;
+  value_t result;
 
-  result = g_malloc0(sizeof(gdouble));
-  np = expr_vm_get_func_params((vm_t *)params, &stack);
   if(np!=1 || stack[0].type != EXPR_TYPE_STRING || !stack[0].value.string)
-    return result;
+    return value_na;
 
-  *result = scanner_is_variable(stack[0].value.string) ||
+  result.type = EXPR_TYPE_NUMERIC;
+  result.value.numeric = scanner_is_variable(stack[0].value.string) ||
     module_is_function(stack[0].value.string);
-  if(!*result)
-    expr_dep_add(stack[0].value.string, ((vm_t *)params)->cache);
+  if(!result.value.numeric)
+    expr_dep_add(stack[0].value.string, vm->cache);
 
   return result;
 }
 
-ModuleExpressionHandlerV1 ident_handler = {
-  .name = "ident",
-  .flags = MODULE_EXPR_DETERMINISTIC | MODULE_EXPR_NUMERIC | MODULE_EXPR_RAW,
-  .parameters = "S",
-  .function = expr_ident
-};
-
-
 static ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &mid_handler,
-  &replace_handler,
-  &replace_all_handler,
-  &map_handler,
   &lookup_handler,
   &pad_handler,
   &extract_handler,
@@ -699,11 +680,15 @@ static ModuleExpressionHandlerV1 *expr_lib_handlers[] = {
   &escape_handler,
   &read_handler,
   &iface_provider_handler,
-  &ident_handler,
   NULL
 };
 
 void expr_lib_init ( void )
 {
+  vm_func_init();
+  vm_func_add("ident", expr_ident, TRUE);
+  vm_func_add("replace", expr_lib_replace, TRUE);
+  vm_func_add("replaceall", expr_lib_replace_all, TRUE);
+  vm_func_add("map", expr_lib_map, TRUE);
   module_expr_funcs_add(expr_lib_handlers,"expression library");
 }

@@ -149,6 +149,7 @@ static gpointer *vm_function_params_read ( vm_t *vm, gint np,
 static gboolean vm_function ( vm_t *vm )
 {
   ModuleExpressionHandlerV1 *handler;
+  vm_function_t *func;
   value_t v1, result;
   gchar *name = (gchar *)(vm->ip+2);
   guint8 np = *(vm->ip+1);
@@ -158,7 +159,14 @@ static gboolean vm_function ( vm_t *vm )
   if(np>vm->stack->len)
     return FALSE;
   result.type = EXPR_TYPE_NA;
-  if( (handler = module_expr_func_get(name)) )
+  if( (func = vm_func_lookup(name)) )
+  {
+    value_t *stack;
+    stack = (value_t *)vm->stack->data + vm->stack->len - np;
+    result = func->function(vm, stack, np);
+    vm->cache->vstate |= func->deterministic;
+  }
+  else if( (handler = module_expr_func_get(name)) )
   {
     if(handler->flags & MODULE_EXPR_RAW)
       ptr = handler->function((void *)vm, vm->cache->widget, vm->cache->event);

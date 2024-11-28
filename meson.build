@@ -67,6 +67,7 @@ libsrc = [
     'src/wintree.c',
     'src/workspace.c',
     'src/vm/expr.c',
+    'src/vm/func.c',
     'src/vm/parser.c',
     'src/vm/vm.c',
     'src/gui/bar.c',

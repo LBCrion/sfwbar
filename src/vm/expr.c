@@ -786,7 +786,6 @@ gchar *expr_parse( ExprCache *expr )
 
 gboolean expr_cache_eval ( expr_cache_t *expr )
 {
-//  GByteArray *code;
   value_t v1;
   gchar *eval;
 
@@ -794,7 +793,6 @@ gboolean expr_cache_eval ( expr_cache_t *expr )
     return FALSE;
 
   expr->vstate = FALSE;
-/*  eval = expr_parse(expr);*/
   v1 = vm_run(expr);
   if(v1.type==EXPR_TYPE_STRING)
     eval = v1.value.string;
@@ -836,6 +834,7 @@ void expr_cache_set ( expr_cache_t *expr, gchar *def )
   if(expr->code)
     g_byte_array_unref(expr->code);
   expr->code = parser_expr_compile(expr->definition);
+  expr->eval = TRUE;
 }
 
 void expr_cache_free ( expr_cache_t *expr )

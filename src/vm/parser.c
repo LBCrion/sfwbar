@@ -95,23 +95,6 @@ static gboolean parser_if ( GScanner *scanner, GByteArray *code )
   return TRUE;
 }
 
-static gboolean parser_ident ( GScanner *scanner, GByteArray *code )
-{
-  gchar name[] = "  ident";
-
-  if(g_scanner_get_next_token(scanner)!='(')
-    return FALSE;
-  if(g_scanner_get_next_token(scanner)!=G_TOKEN_IDENTIFIER)
-    return FALSE;
-  parser_emit_string(code, scanner->value.v_identifier);
-  name[0] = EXPR_OP_FUNCTION;
-  name[1] = 1;
-  g_byte_array_append(code, (guint8 *)name, 8);
-  if(g_scanner_get_next_token(scanner)!=')')
-    return FALSE;
-  return TRUE;
-}
-
 static gboolean parser_identifier ( GScanner *scanner, GByteArray *code )
 {
   gchar *data;
@@ -121,8 +104,18 @@ static gboolean parser_identifier ( GScanner *scanner, GByteArray *code )
     return parser_if(scanner, code);
   else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "cached"))
     return parser_cached(scanner, code);
+  else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "true"))
+  {
+    parser_emit_numeric(code, TRUE);
+    return TRUE;
+  }
+  else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "false"))
+  {
+    parser_emit_numeric(code, FALSE);
+    return TRUE;
+  }
   else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "ident"))
-    return parser_ident(scanner, code);
+    scanner->config->identifier_2_string = TRUE;
   if(g_scanner_peek_next_token(scanner)=='(')
   {
     data = g_strconcat("  ",scanner->value.v_identifier, NULL);
@@ -153,6 +146,7 @@ static gboolean parser_identifier ( GScanner *scanner, GByteArray *code )
     data[1]=np;
     g_byte_array_append(code, (guint8 *)data, strlen(data+2)+3);
     g_free(data);
+    scanner->config->identifier_2_string = FALSE;
     return TRUE;
   }
   else
@@ -161,6 +155,7 @@ static gboolean parser_identifier ( GScanner *scanner, GByteArray *code )
     data[0] = EXPR_OP_VARIABLE;
     g_byte_array_append(code, (guint8 *)data, strlen(data+1)+2);
     g_free(data);
+    scanner->config->identifier_2_string = FALSE;
     return TRUE;
   }
   return FALSE;
@@ -179,10 +174,6 @@ static gboolean parser_value ( GScanner *scanner, GByteArray *code )
     parser_emit_numeric(code, scanner->value.v_float);
   else if(token == G_TOKEN_STRING)
     parser_emit_string(code, scanner->value.v_string);
-  else if(token == G_TOKEN_XTRUE)
-    parser_emit_numeric(code, TRUE);
-  else if(token == G_TOKEN_XFALSE)
-    parser_emit_numeric(code, FALSE);
   else if(token == G_TOKEN_IDENTIFIER)
     return parser_identifier(scanner, code);
   else if(token == '+')
@@ -272,9 +263,6 @@ GByteArray *parser_expr_compile ( gchar *expr )
       scanner->config->cset_identifier_nth, NULL);
   scanner->config->cset_identifier_first = g_strconcat("$",
       scanner->config->cset_identifier_first, NULL);
-
-  g_scanner_scope_add_symbol(scanner, 0, "True", (gpointer)G_TOKEN_XTRUE );
-  g_scanner_scope_add_symbol(scanner, 0, "False", (gpointer)G_TOKEN_XFALSE );
   g_scanner_set_scope(scanner, 0);
 
   g_scanner_input_text(scanner, expr, strlen(expr));

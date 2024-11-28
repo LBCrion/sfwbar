@@ -80,8 +80,6 @@ gboolean config_action ( GScanner *scanner, action_t **action_dst )
     action->quark = g_quark_from_string(ident);
   }
 
-  action->addr->eval = TRUE;
-  action->command->eval = TRUE;
   if(addr && cmd)
   {
     expr_cache_set(action->command, cmd);

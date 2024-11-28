@@ -473,7 +473,6 @@ void base_widget_set_tooltip ( GtkWidget *self, gchar *tooltip )
     return;
 
   expr_cache_set(priv->tooltip, tooltip);
-  priv->tooltip->eval = TRUE;
   priv->value->widget = self;
 
   if(!tooltip)
@@ -500,7 +499,6 @@ void base_widget_set_value ( GtkWidget *self, gchar *value )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   expr_cache_set(priv->value, value);
-  priv->value->eval = TRUE;
   priv->value->widget = self;
 
   if(expr_cache_eval(priv->value) || priv->always_update)
@@ -521,7 +519,6 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   expr_cache_set(priv->style, style);
-  priv->style->eval = TRUE;
   priv->style->widget = self;
 
   if(expr_cache_eval(priv->style))

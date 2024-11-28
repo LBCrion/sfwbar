@@ -130,7 +130,6 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
       expr_cache_free(var->expr);
       var->expr = expr_cache_new();
       expr_cache_set(var->expr, g_strdup(pattern));
-      var->expr->eval = TRUE;
       var->vstate = 1;
       expr_dep_trigger(name);
       break;
