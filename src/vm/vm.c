@@ -151,7 +151,7 @@ static gboolean vm_function ( vm_t *vm )
   ModuleExpressionHandlerV1 *handler;
   vm_function_t *func;
   value_t v1, result;
-  gchar *name = (gchar *)(vm->ip+2);
+  gchar *name = *((gchar **)(vm->ip+2));
   guint8 np = *(vm->ip+1);
   gpointer *params, *ptr;
   gint i;
@@ -187,7 +187,7 @@ static gboolean vm_function ( vm_t *vm )
       vm->cache->vstate = TRUE;
   }
   expr_dep_add(name, vm->cache);
-  vm->ip += strlen(name)+2;
+  vm->ip += sizeof(gpointer)+1;
 
   for(i=0; i<np; i++)
   {
@@ -203,13 +203,13 @@ static gboolean vm_function ( vm_t *vm )
 static void vm_variable ( vm_t *vm )
 {
   value_t value;
-  gchar *name = (gchar *)(vm->ip+1);
+  gchar *name = *((gchar **)(vm->ip+1));
 
   value = scanner_get_value(name, !vm->use_cached, vm->cache);
   expr_dep_add(name, vm->cache);
 
   vm_push(vm, value);
-  vm->ip+=strlen(name)+1;
+  vm->ip += sizeof(gpointer);
 }
 
 value_t vm_run ( expr_cache_t *expr )

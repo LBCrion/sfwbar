@@ -9,12 +9,8 @@ static gint parser_emit_jump ( GByteArray *code, guint8 op )
 
   data[0] = op;
   g_byte_array_append(code, data, sizeof(gint)+1);
-  return code->len - sizeof(gint);
-}
 
-static void parser_jump_backpatch ( GByteArray *code, gint olen, gint clen )
-{
-  *((gint *)(code->data + olen)) = (clen - olen);
+  return code->len - sizeof(gint);
 }
 
 static void parser_emit_string ( GByteArray *code, gchar *str )
@@ -37,6 +33,23 @@ static void parser_emit_numeric ( GByteArray *code, gdouble numeric )
   value->type = EXPR_TYPE_NUMERIC;
   value->value.numeric = numeric;
   g_byte_array_append(code, data, sizeof(value_t)+1);
+}
+
+static void parser_jump_backpatch ( GByteArray *code, gint olen, gint clen )
+{
+  *((gint *)(code->data + olen)) = (clen - olen);
+}
+
+static const gchar *parser_identifier_lookup ( gchar *identifier )
+{
+  gchar *lower;
+  const gchar *result;
+
+  lower = g_ascii_strdown(identifier, -1);
+  result = g_intern_string(lower);
+  g_free(lower);
+
+  return result;
 }
 
 static gboolean parser_cached ( GScanner *scanner, GByteArray *code )
@@ -97,8 +110,7 @@ static gboolean parser_if ( GScanner *scanner, GByteArray *code )
 
 static gboolean parser_identifier ( GScanner *scanner, GByteArray *code )
 {
-  gchar *data;
-  guint8 np;
+  guint8 np, data[sizeof(gpointer)+2];
 
   if(!g_ascii_strcasecmp(scanner->value.v_identifier, "if"))
     return parser_if(scanner, code);
@@ -118,7 +130,8 @@ static gboolean parser_identifier ( GScanner *scanner, GByteArray *code )
     scanner->config->identifier_2_string = TRUE;
   if(g_scanner_peek_next_token(scanner)=='(')
   {
-    data = g_strconcat("  ",scanner->value.v_identifier, NULL);
+    *((gconstpointer *)(data+2)) = parser_identifier_lookup(
+        scanner->value.v_identifier);
     g_scanner_get_next_token(scanner);
 
     np = 0;
@@ -126,35 +139,27 @@ static gboolean parser_identifier ( GScanner *scanner, GByteArray *code )
       do
       {
         if(!parser_expr_parse(scanner, code))
-        {
-          g_free(data);
           return FALSE;
-        }
         np++;
-      }
-      while(g_scanner_get_next_token(scanner)==',' && np<255);
+      } while(g_scanner_get_next_token(scanner)==',' && np<255);
     else
       g_scanner_get_next_token(scanner);
 
     if(scanner->token != ')')
-    {
-      g_free(data);
       return FALSE;
-    }
 
     data[0]=EXPR_OP_FUNCTION;
     data[1]=np;
-    g_byte_array_append(code, (guint8 *)data, strlen(data+2)+3);
-    g_free(data);
+    g_byte_array_append(code, data, sizeof(gpointer)+2);
     scanner->config->identifier_2_string = FALSE;
     return TRUE;
   }
   else
   {
-    data = g_strconcat(" ", scanner->value.v_identifier, NULL);
+    *((gconstpointer *)(data+1)) = parser_identifier_lookup(
+        scanner->value.v_identifier);
     data[0] = EXPR_OP_VARIABLE;
-    g_byte_array_append(code, (guint8 *)data, strlen(data+1)+2);
-    g_free(data);
+    g_byte_array_append(code, data, sizeof(gpointer)+1);
     scanner->config->identifier_2_string = FALSE;
     return TRUE;
   }
