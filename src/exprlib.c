@@ -17,63 +17,56 @@
 #include "vm/vm.h"
 
 /* extract a substring */
-static value_t expr_lib_mid ( vm_t *vm, value_t stack[], gint np )
+static value_t expr_lib_mid ( vm_t *vm, value_t p[], gint np )
 {
 
   gint len, c1, c2;
 
-  if(np!=3 || !value_is_string(stack[0]) || !value_is_numeric(stack[1]) ||
-        !value_is_numeric(stack[2]))
-    return value_new_string(g_strdup(""));
+  if(np!=3 || !value_is_string(p[0]) || !value_is_numeric(p[1]) ||
+        !value_is_numeric(p[2]))
+    return value_na;
 
-  c1 = stack[1].value.numeric;
-  c2 = stack[2].value.numeric;
+  c1 = p[1].value.numeric;
+  c2 = p[2].value.numeric;
+  len = strlen(p[0].value.string);
 
-  len = strlen(stack[0].value.string);
-  if(c1<0)	/* negative offsets are relative to the end of the string */
-    c1+=len;
-  if(c2<0)
-    c2+=len;
-  c1 = CLAMP(c1, 0, len-1);
-  c2 = CLAMP(c2, 0, len-1);
-  if(c1>c2)
-  {
-    c2^=c1;	/* swap the ofsets */
-    c1^=c2;
-    c2^=c1;
-  }
+  /* negative offsets are relative to the end of the string */
+  c1 = CLAMP(c1<0? c1+len : c1, 0, len-1);
+  c2 = CLAMP(c2<0? c2+len : c2, 0, len-1);
 
-  return value_new_string(g_strndup(stack[0].value.string + c1,
-        (c2-c1+1)*sizeof(gchar)));
+  return value_new_string(g_strndup(p[0].value.string + MIN(c1, c2)-1,
+        (ABS(c2-c1)+1)*sizeof(gchar)));
 }
 
 /* replace a substring within a string */
-static value_t expr_lib_replace( vm_t *vm, value_t stack[], gint np )
+static value_t expr_lib_replace( vm_t *vm, value_t p[], gint np )
 {
-  if(np!=3 || value_is_string(stack[0]) || value_is_string(stack[1]) ||
-      value_is_string(stack[2]))
+  if(np!=3 || !value_is_string(p[0]) || !value_is_string(p[1]))
     return value_na;
 
-  return value_new_string(str_replace(stack[0].value.string,
-      stack[1].value.string, stack[2].value.string));
+  if(!value_is_string(p[2]))
+    return value_new_string(g_strdup(p[0].value.string));
+
+  return value_new_string(str_replace(p[0].value.string, p[1].value.string,
+        p[2].value.string));
 }
 
-static value_t expr_lib_replace_all( vm_t *vm, value_t stack[], gint np )
+static value_t expr_lib_replace_all( vm_t *vm, value_t p[], gint np )
 {
   value_t result;
   gchar *tmp;
   gint i;
 
-  if(np<1 || !(np%2) || !value_is_string(stack[0]) || !stack[0].value.string)
+  if(np<1 || !(np%2) || !value_is_string(p[0]) || !p[0].value.string)
     return value_na;
 
-  result = value_new_string(g_strdup(stack[0].value.string));
+  result = value_new_string(g_strdup(p[0].value.string));
   for(i=1; i<np; i+=2)
-    if(stack[i].type==EXPR_TYPE_STRING && stack[i+1].type==EXPR_TYPE_STRING)
+    if(value_is_string(p[i]) && value_is_string(p[i+1]))
     {
       tmp = result.value.string;
-      result.value.string = str_replace(tmp, stack[i].value.string,
-          stack[i+1].value.string);
+      result.value.string = str_replace(tmp, p[i].value.string,
+          p[i+1].value.string);
       g_free(tmp);
     }
 
