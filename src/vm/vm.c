@@ -37,15 +37,24 @@ static gboolean vm_op_binary ( vm_t *vm )
 
   result = value_na;
 
-  if(value_is_na(v1) && !value_is_na(v2))
+  if(value_is_na(v1) && value_is_na(v2))
   {
-    vm_push(vm, v2);
+    vm_push(vm, value_na);
     return TRUE;
   }
-  if(!value_is_na(v1) && value_is_na(v2))
+  else if(value_is_na(v1) && !value_is_na(v2))
   {
-    vm_push(vm, v1);
-    return TRUE;
+    if(value_is_string(v2))
+      v1 = value_new_string(g_strdup(""));
+    else
+      v1 = value_new_numeric(0);
+  }
+  else if(!value_is_na(v1) && value_is_na(v2))
+  {
+    if(value_is_string(v1))
+      v2 = value_new_string(g_strdup(""));
+    else
+      v2 = value_new_numeric(0);
   }
 
   if(value_is_string(v1) && value_is_string(v2))

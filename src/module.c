@@ -10,6 +10,7 @@
 #include "trigger.h"
 #include "util/string.h"
 #include "vm/expr.h"
+#include "vm/vm.h"
 
 static GList *module_list;
 static GHashTable *expr_handlers, *interfaces;
@@ -256,6 +257,8 @@ gboolean module_is_function ( gchar *identifier )
 {
   if(expr_handlers &&
       g_hash_table_lookup(expr_handlers,identifier))
+    return TRUE;
+  if(vm_func_lookup(identifier))
     return TRUE;
   return FALSE;
 }
