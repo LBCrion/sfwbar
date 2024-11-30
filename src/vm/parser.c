@@ -15,12 +15,11 @@ static gint parser_emit_jump ( GByteArray *code, guint8 op )
 
 static void parser_emit_string ( GByteArray *code, gchar *str )
 {
-  guchar data[sizeof(value_t)+1];
-  value_t *value = (value_t *)(data+1);
+  guchar data[2];
 
   data[0] = EXPR_OP_IMMEDIATE;
-  value->type = EXPR_TYPE_STRING;
-  g_byte_array_append(code, data, sizeof(value_t)+1);
+  data[1] = EXPR_TYPE_STRING;
+  g_byte_array_append(code, data, 2);
   g_byte_array_append(code, (guint8 *)str, strlen(str)+1);
 }
 
@@ -30,8 +29,7 @@ static void parser_emit_numeric ( GByteArray *code, gdouble numeric )
   value_t *value = (value_t *)(data+1);
 
   data[0] = EXPR_OP_IMMEDIATE;
-  value->type = EXPR_TYPE_NUMERIC;
-  value->value.numeric = numeric;
+  *value = value_new_numeric(numeric);
   g_byte_array_append(code, data, sizeof(value_t)+1);
 }
 

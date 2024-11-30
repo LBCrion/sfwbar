@@ -16,12 +16,10 @@ static value_t vm_pop ( vm_t *vm )
   value_t val;
 
   if(!vm->stack->len)
-    val.type = EXPR_TYPE_NA;
-  else
-  {
-    val = ((value_t *)(vm->stack->data))[vm->stack->len-1];
-    g_array_remove_index(vm->stack, vm->stack->len-1);
-  }
+    return value_na;
+
+  val = ((value_t *)(vm->stack->data))[vm->stack->len-1];
+  g_array_remove_index(vm->stack, vm->stack->len-1);
 
   return val;
 }
@@ -37,56 +35,62 @@ static gboolean vm_op_binary ( vm_t *vm )
   v2 = vm_pop(vm);
   v1 = vm_pop(vm);
 
-  result.type = EXPR_TYPE_NA;
+  result = value_na;
 
-  if(v1.type==EXPR_TYPE_STRING && v2.type==EXPR_TYPE_STRING)
+  if(value_is_na(v1) && !value_is_na(v2))
   {
-    if(op == '+')
-    {
-      result.type = EXPR_TYPE_STRING;
-      result.value.string = g_strconcat(v1.value.string, v2.value.string, NULL);
-    }
-    else if(op == '=')
-    {
-      result.type = EXPR_TYPE_NUMERIC;
-      result.value.numeric = !g_ascii_strcasecmp(v1.value.string, v2.value.string);
-    }
+    vm_push(vm, v2);
+    return TRUE;
+  }
+  if(!value_is_na(v1) && value_is_na(v2))
+  {
+    vm_push(vm, v1);
+    return TRUE;
   }
 
-  else if(v1.type==EXPR_TYPE_NUMERIC && v2.type==EXPR_TYPE_NUMERIC)
+  if(value_is_string(v1) && value_is_string(v2))
   {
-    result.type = EXPR_TYPE_NUMERIC;
+    if(op == '+')
+      result = value_new_string(
+          g_strconcat(v1.value.string, v2.value.string, NULL));
+    else if(op == '=')
+      result = value_new_numeric(
+          !g_ascii_strcasecmp(v1.value.string, v2.value.string));
+  }
+
+  else if(value_is_numeric(v1) && value_is_numeric(v2))
+  {
     if(op=='+')
-      result.value.numeric = v1.value.numeric + v2.value.numeric;
+      result = value_new_numeric(v1.value.numeric + v2.value.numeric);
     else if(op=='-')
-      result.value.numeric = v1.value.numeric - v2.value.numeric;
+      result = value_new_numeric(v1.value.numeric - v2.value.numeric);
     else if(op=='*')
-      result.value.numeric = v1.value.numeric * v2.value.numeric;
+      result = value_new_numeric(v1.value.numeric * v2.value.numeric);
     else if(op=='/')
-      result.value.numeric = v1.value.numeric / v2.value.numeric;
+      result = value_new_numeric(v1.value.numeric / v2.value.numeric);
     else if(op=='%')
-      result.value.numeric = (gint)v1.value.numeric %- (gint)v2.value.numeric;
+      result = value_new_numeric(
+          (gint)v1.value.numeric % (gint)v2.value.numeric);
     else if(op=='&')
-      result.value.numeric = v1.value.numeric && v2.value.numeric;
+      result = value_new_numeric(v1.value.numeric && v2.value.numeric);
     else if(op=='|')
-      result.value.numeric = v1.value.numeric || v2.value.numeric;
+      result = value_new_numeric(v1.value.numeric || v2.value.numeric);
     else if(op=='<')
-      result.value.numeric = v1.value.numeric < v2.value.numeric;
+      result = value_new_numeric(v1.value.numeric < v2.value.numeric);
     else if(op=='>')
-      result.value.numeric = v1.value.numeric > v2.value.numeric;
+      result = value_new_numeric(v1.value.numeric > v2.value.numeric);
     else if(op=='=')
-      result.value.numeric = v1.value.numeric == v2.value.numeric;
+      result = value_new_numeric(v1.value.numeric == v2.value.numeric);
     else if(op=='!')
-      result.value.numeric = v1.value.numeric != v2.value.numeric;
+      result = value_new_numeric(v1.value.numeric != v2.value.numeric);
     else
-      result.type = EXPR_TYPE_NA;
+      result= value_na;
   }
 
   vm_push(vm, result);
-  if(v1.type == EXPR_TYPE_STRING)
-    g_free(v1.value.string);
-  if(v2.type == EXPR_TYPE_STRING)
-    g_free(v2.value.string);
+  value_free(v1);
+  value_free(v2);
+
   return TRUE;
 }
 
@@ -96,17 +100,13 @@ static value_t vm_ptr_to_value ( gpointer ptr, gboolean str )
 
   if(!ptr)
   {
-    value.type = EXPR_TYPE_NA;
+    value = value_na;
   }
   else if(str)
-  {
-    value.type = EXPR_TYPE_STRING;
-    value.value.string = ptr?ptr:g_strdup("");
-  }
+    value = value_new_string(ptr?ptr:g_strdup(""));
   else
   {
-    value.type = EXPR_TYPE_NUMERIC;
-    value.value.numeric = *((gdouble *)ptr);
+    value = value_new_numeric(*((gdouble *)ptr));
     g_free(ptr);
   }
 
@@ -135,9 +135,9 @@ static gpointer *vm_function_params_read ( vm_t *vm, gint np,
   for(i=0; i<strlen(spec) && j<np; i++)
   {
     v1 = &((value_t *)(vm->stack->data))[vm->stack->len-np+j];
-    if(g_ascii_tolower(spec[i])=='n' && v1->type==EXPR_TYPE_NUMERIC)
+    if(g_ascii_tolower(spec[i])=='n' && value_is_numeric(*v1))
       params[j++] = &(v1->value.numeric);
-    else if(g_ascii_tolower(spec[i])=='s' && v1->type==EXPR_TYPE_STRING)
+    else if(g_ascii_tolower(spec[i])=='s' && value_is_string(*v1))
       params[j++] = v1->value.string;
     else if(!g_ascii_islower(spec[i]))
       break;
@@ -158,7 +158,7 @@ static gboolean vm_function ( vm_t *vm )
 
   if(np>vm->stack->len)
     return FALSE;
-  result.type = EXPR_TYPE_NA;
+  result = value_na;
   if( (func = vm_func_lookup(name)) )
   {
     value_t *stack;
@@ -192,8 +192,7 @@ static gboolean vm_function ( vm_t *vm )
   for(i=0; i<np; i++)
   {
     v1 = vm_pop(vm);
-    if(v1.type == EXPR_TYPE_STRING)
-      g_free(v1.value.string);
+    value_free(v1);
   }
   vm_push(vm, result);
 
@@ -232,13 +231,14 @@ value_t vm_run ( expr_cache_t *expr )
     if(*vm->ip == EXPR_OP_IMMEDIATE)
     {
       v1 = *((value_t *)(vm->ip+1));
-      if(v1.type==EXPR_TYPE_STRING)
+      if(value_is_string(v1))
       {
-        v1.value.string=g_strdup((gchar *)vm->ip+1+sizeof(value_t));
-        vm->ip+=strlen(v1.value.string)+1;
+        v1.value.string=g_strdup((gchar *)vm->ip+2);
+        vm->ip+=strlen(v1.value.string)+2;
       }
+      else
+        vm->ip+=sizeof(value_t);
       vm_push(vm, v1);
-      vm->ip+=sizeof(value_t);
     }
     else if(*vm->ip == EXPR_OP_CACHED)
       vm->use_cached = *(++vm->ip);
@@ -251,22 +251,20 @@ value_t vm_run ( expr_cache_t *expr )
     else if(*vm->ip == EXPR_OP_JZ)
     {
       v1 = vm_pop(vm);
-      if(v1.type != EXPR_TYPE_NUMERIC || !v1.value.numeric)
+      if(!value_is_numeric(v1) || !v1.value.numeric)
         vm->ip+=*((gint *)(vm->ip+1));
-      if(v1.type == EXPR_TYPE_STRING)
-        g_free(v1.value.string);
+      value_free(v1);
       vm->ip+=sizeof(gint);
     }
     else if(*vm->ip == '!')
     {
       v1 = vm_pop(vm);
-      if(v1.type==EXPR_TYPE_NUMERIC)
+      if(value_is_numeric(v1))
         v1.value.numeric = !v1.value.numeric;
       else
       {
-        if(v1.type == EXPR_TYPE_STRING)
-          g_free(v1.value.string);
-        v1.type = EXPR_TYPE_NA;
+        value_free(v1);
+        v1 = value_na;
       }
       vm_push(vm, v1);
     }
@@ -277,12 +275,13 @@ value_t vm_run ( expr_cache_t *expr )
   if(vm->stack->len!=1)
     g_message("stack too long");
 
-  v1.type = EXPR_TYPE_NA;
+
+  v1=value_na;
   while(vm->stack->len>0)
   {
-    v1 = vm_pop(vm);
-    if(v1.type==EXPR_TYPE_STRING && vm->stack->len)
-      g_free(v1.value.string);
+    v1=vm_pop(vm);
+    if(vm->stack->len)
+      value_free(v1);
   }
   expr->stack_depth = MAX(expr->stack_depth, vm->max_stack);
   g_array_unref(vm->stack);

@@ -801,6 +801,9 @@ gboolean expr_cache_eval ( expr_cache_t *expr )
   else
     eval = g_strdup("");
 
+  g_debug("expr: '%s' = '%s', vstate: %d", expr->definition, expr->cache,
+      expr->vstate);
+
   if(!expr->vstate)
     expr->eval = FALSE;
 

@@ -2,6 +2,7 @@
 #define __EXPRN_H__
 
 #include <glib.h>
+#include "vm/value.h"
 #include "vm/expr.h"
 
 enum expr_instruction_t {
@@ -12,22 +13,6 @@ enum expr_instruction_t {
   EXPR_OP_VARIABLE,
   EXPR_OP_FUNCTION
 };
-
-enum expr_type_t {
-  EXPR_TYPE_NUMERIC,
-  EXPR_TYPE_STRING,
-  EXPR_TYPE_BOOLEAN, // Not in use
-  EXPR_TYPE_NA
-};
-
-typedef struct {
-  enum expr_type_t type;
-  union {
-    gboolean boolean;
-    gdouble numeric;
-    gchar *string;
-  } value;
-} value_t;
 
 typedef struct {
   guint8 *ip;
@@ -43,8 +28,6 @@ typedef struct {
   vm_func_t function;
   gboolean deterministic;
 } vm_function_t;
-
-extern const value_t value_na;
 
 GByteArray *parser_expr_compile ( gchar *expr );
 value_t vm_run ( expr_cache_t *cache );
