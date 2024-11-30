@@ -10,25 +10,25 @@
 #include "trigger.h"
 #include "wayland.h"
 #include "idle-inhibit-unstable-v1.h"
+#include "vm/vm.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
 static struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
 
+static value_t idle_inhibit_state ( vm_t *vm, value_t p[], gint np )
+{
+  return value_new_string(g_strdup((vm->cache->widget && g_object_get_data(
+            G_OBJECT(vm->cache->widget), "inhibitor"))?"on":"off"));
+}
+
 gboolean sfwbar_module_init ( void )
 {
+  vm_func_add("idleinhibitstate", idle_inhibit_state, FALSE);
   idle_inhibit_manager = wayland_iface_register(
           zwp_idle_inhibit_manager_v1_interface.name, 1, 1,
           &zwp_idle_inhibit_manager_v1_interface);
   return TRUE;
-}
-
-void *idle_inhibit_expr_func ( void **params, void *widget, void *event )
-{
-  if(widget && g_object_get_data(G_OBJECT(widget), "inhibitor"))
-    return g_strdup("on");
-  else
-    return g_strdup("off");
 }
 
 static void idle_inhibitor_action ( gchar *act, gchar *dummy, void *widget,
@@ -67,18 +67,6 @@ static void idle_inhibitor_action ( gchar *act, gchar *dummy, void *widget,
     trigger_emit("idleinhibitor");
   }
 }
-
-ModuleExpressionHandlerV1 handler1 = {
-  .flags = 0,
-  .name = "IdleInhibitState",
-  .parameters = "",
-  .function = idle_inhibit_expr_func
-};
-
-ModuleExpressionHandlerV1 *sfwbar_expression_handlers[] = {
-  &handler1,
-  NULL
-};
 
 ModuleActionHandlerV1 act_handler1 = {
   .name = "SetIdleInhibitor",
