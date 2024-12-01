@@ -20,6 +20,8 @@ void vm_func_add ( gchar *name, vm_func_t func, gboolean deterministic )
   function->function = func;
   function->deterministic = deterministic;
   g_hash_table_insert(vm_func_table, name, function);
+  expr_dep_trigger(name);
+  g_debug("function: registered '%s'", name);
 }
 
 vm_function_t *vm_func_lookup ( gchar *name )

@@ -173,7 +173,7 @@ static gboolean vm_function ( vm_t *vm )
     value_t *stack;
     stack = (value_t *)vm->stack->data + vm->stack->len - np;
     result = func->function(vm, stack, np);
-    vm->cache->vstate |= func->deterministic;
+    vm->cache->vstate |= (!func->deterministic);
   }
   else if( (handler = module_expr_func_get(name)) )
   {
