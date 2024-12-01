@@ -86,6 +86,7 @@ void trigger_emit_in_main_context ( const gchar *name )
 {
   GList *iter;
 
+  g_debug("trigger: '%s'", name);
   if(trigger_list)
     for(iter=g_hash_table_lookup(trigger_list, name); iter; iter=iter->next)
       TRIGGER(iter->data)->func(TRIGGER(iter->data)->data);
