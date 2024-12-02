@@ -4,6 +4,7 @@
 #include "trigger.h"
 #include "gui/scaleimage.h"
 #include "util/string.h"
+#include "vm/vm.h"
 
 typedef struct _dn_action {
   gchar *id;
@@ -264,7 +265,6 @@ static gchar *dn_parse_image_data ( GVariant *dict )
   if(!g_variant_lookup(dict, "image-data", "(iiibii@ay)", &w, &h, &row_stride,
         &alpha, &bps, &channels, &vdata))
     return NULL;
-  g_message("ncenter: found image data");
 
   data = g_variant_get_fixed_array(vdata, &len, sizeof(guchar));
   if(len != h*row_stride)
@@ -460,8 +460,95 @@ static void dn_name_lost_cb (GDBusConnection *con, const gchar *name,
 {
 }
 
+static value_t dn_get_func ( vm_t *vm, value_t p[], gint np )
+{
+  gchar *result;
+
+  if(np!=1 || !value_is_string(p[0]) || !p[0].value.string)
+    return value_na;
+
+  if( (result = module_queue_get_string(&update_q, p[0].value.string)) )
+    return value_new_string(result);
+  if( (result = module_queue_get_string(&remove_q, p[0].value.string)) )
+    return value_new_string(result);
+
+  return value_na;
+}
+
+static value_t dn_group_func ( vm_t *vm, value_t p[], gint np )
+{
+  dn_notification *notif;
+  GList *iter;
+  guint32 id, count = 0;
+  gboolean header = FALSE;
+
+  if(np!=1 || !value_is_string(p[0]))
+    return value_na;
+
+  if( !(id = g_ascii_strtoull(p[0].value.string, NULL, 10)) )
+    return value_na;
+  for(iter=notif_list; iter; iter=g_list_next(iter))
+    if(DN_NOTIFICATION(iter->data)->id == id)
+      break;
+
+  if(!iter)
+    return value_na;
+  notif = iter->data;
+
+  if(expanded_group)
+  {
+    if(!g_strcmp0(expanded_group, notif->app_name))
+      return value_new_string(g_strdup("visible"));
+    else
+      return value_na;
+  }
+
+  for(iter=notif_list; iter; iter=g_list_next(iter))
+    if(!g_strcmp0(DN_NOTIFICATION(iter->data)->app_name, notif->app_name))
+    {
+      if(!count && iter->data==notif)
+        header = TRUE;
+      count++;
+    }
+
+  if(count==1)
+    return value_new_string(g_strdup("sole"));
+
+  if(count>1 && header)
+    return value_new_string(g_strdup("header"));
+
+  return value_na;
+}
+
+static value_t dn_active_group_func ( vm_t *vm, value_t p[], gint np )
+{
+  return value_new_string(g_strdup(expanded_group));
+}
+
+static value_t dn_count_func ( vm_t *vm, value_t p[], gint np )
+{
+  GList *iter;
+  dn_notification *notif;
+  gdouble result = 0;
+  guint32 id;
+
+  if(np!=1 || !value_is_string(p[0]))
+    return value_new_numeric(g_list_length(notif_list));
+  if( (id=g_ascii_strtoull(p[0].value.string, NULL, 10)) )
+    if( (notif=dn_notification_lookup(id)) )
+      for(iter=notif_list; iter; iter=g_list_next(iter))
+        if(!g_strcmp0(DN_NOTIFICATION(iter->data)->app_name, notif->app_name))
+          result++;
+
+  return value_new_numeric(result);
+}
+
 gboolean sfwbar_module_init ( void )
 {
+  vm_func_add("notificationget", dn_get_func, FALSE);
+  vm_func_add("notificationgroup", dn_group_func, FALSE);
+  vm_func_add("notificationactivegroup", dn_active_group_func, FALSE);
+  vm_func_add("notificationcount", dn_count_func, FALSE);
   update_q.trigger = g_intern_static_string("notification-updated");
   remove_q.trigger = g_intern_static_string("notification-removed");
 
@@ -475,89 +562,6 @@ gboolean sfwbar_module_init ( void )
       G_APP_INFO_CREATE_NONE, NULL);
 
   return TRUE;
-}
-
-static void *dn_get_func ( void **params, void *widget, void *ev )
-{
-  gchar *result;
-
-  if(!params || !params[0])
-    return NULL;
-
-  if( (result = module_queue_get_string(&update_q, params[0])) )
-    return result;
-  if( (result = module_queue_get_string(&remove_q, params[0])) )
-    return result;
-
-  return NULL;
-}
-
-static void *dn_group_func ( void **params, void *widget, void *ev )
-{
-  dn_notification *notif;
-  GList *iter;
-  guint32 id, count = 0;
-  gboolean header = FALSE;
-
-  if(!params || !params[0])
-    return NULL;
-
-  if( !(id = g_ascii_strtoull(params[0], NULL, 10)) )
-    return NULL;
-  for(iter=notif_list; iter; iter=g_list_next(iter))
-    if(DN_NOTIFICATION(iter->data)->id == id)
-      break;
-
-  if(!iter)
-    return NULL;
-  notif = iter->data;
-
-  if(expanded_group)
-  {
-   if(!g_strcmp0(expanded_group, notif->app_name))
-    return g_strdup("visible");
-   else
-     return NULL;
-  }
-
-  for(iter=notif_list; iter; iter=g_list_next(iter))
-    if(!g_strcmp0(DN_NOTIFICATION(iter->data)->app_name, notif->app_name))
-    {
-      if(!count && iter->data==notif)
-        header = TRUE;
-      count++;
-    }
-
-  if(count==1)
-    return g_strdup("sole");
-
-  if(count>1 && header)
-    return g_strdup("header");
-
-  return NULL;
-}
-
-static void *dn_active_group_func ( void **params, void *widget, void *ev )
-{
-  return g_strdup(expanded_group);
-}
-
-static void *dn_count_func ( void **params, void *widget, void *ev )
-{
-  GList *iter;
-  dn_notification *notif;
-  gdouble *result = g_malloc0(sizeof(gdouble));
-  guint32 id;
-
-  if(!params || !params[0])
-    *result = g_list_length(notif_list);
-  else if( (id=g_ascii_strtoull(params[0], NULL, 10)) )
-    if( (notif=dn_notification_lookup(id)) )
-      for(iter=notif_list; iter; iter=g_list_next(iter))
-        if(!g_strcmp0(DN_NOTIFICATION(iter->data)->app_name, notif->app_name))
-          (*result)++;
-
-  return result;
 }
 
 static void dn_expand_action ( gchar *cmd, gchar *name, void *d1,
@@ -614,42 +618,6 @@ static void dn_ack_action ( gchar *cmd, gchar *name, void *d1,
     module_queue_remove(&remove_q);
   trigger_emit("notification-group");
 }
-
-ModuleExpressionHandlerV1 get_handler = {
-  .flags = 0,
-  .name = "NotificationGet",
-  .parameters = "S",
-  .function = dn_get_func
-};
-
-ModuleExpressionHandlerV1 group_handler = {
-  .flags = 0,
-  .name = "NotificationGroup",
-  .parameters = "S",
-  .function = dn_group_func
-};
-
-ModuleExpressionHandlerV1 active_group_handler = {
-  .flags = 0,
-  .name = "NotificationActiveGroup",
-  .parameters = "",
-  .function = dn_active_group_func
-};
-
-ModuleExpressionHandlerV1 count_handler = {
-  .flags = MODULE_EXPR_NUMERIC,
-  .name = "NotificationCount",
-  .parameters = "s",
-  .function = dn_count_func
-};
-
-ModuleExpressionHandlerV1 *sfwbar_expression_handlers[] = {
-  &get_handler,
-  &group_handler,
-  &active_group_handler,
-  &count_handler,
-  NULL
-};
 
 ModuleActionHandlerV1 act_handler1 = {
   .name = "NotificationClose",
