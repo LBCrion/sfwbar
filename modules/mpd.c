@@ -8,6 +8,7 @@
 #include "module.h"
 #include "trigger.h"
 #include "stdio.h"
+#include "vm/vm.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
@@ -134,62 +135,76 @@ static void mpd_bool_set( bool (*get)(const struct mpd_status *),
   set(conn,new);
 }
 
-gboolean sfwbar_module_init ( void )
-{
-  if(mpd_connect(NULL))
-    g_timeout_add (1000,(GSourceFunc )mpd_connect,NULL);
-  return TRUE;
-}
-
-void *mpd_expr_func ( void **params, void *widget, void *event )
+static value_t mpd_expr_func ( vm_t *vm, value_t p[], gint np )
 {
   if(!conn | !status | !song)
-    return g_strdup("disconnected");
-  if(!params || !params[0])
-    return g_strdup("");
+    return value_new_string(g_strdup("disconnected"));
+  if(np!=1 || !value_is_string(p[0]))
+    return value_na;
 
-  if(!g_ascii_strcasecmp(params[0],"title"))
-    return g_strdup(song?mpd_song_get_tag(song,MPD_TAG_TITLE,0):"");
-  else if(!g_ascii_strcasecmp(params[0],"track"))
-    return g_strdup(song?mpd_song_get_tag(song,MPD_TAG_TRACK,0):"");
-  else if(!g_ascii_strcasecmp(params[0],"artist"))
-    return g_strdup(song?mpd_song_get_tag(song,MPD_TAG_ARTIST,0):"");
-  else if(!g_ascii_strcasecmp(params[0],"album"))
-    return g_strdup(song?mpd_song_get_tag(song,MPD_TAG_ALBUM,0):"");
-  else if(!g_ascii_strcasecmp(params[0],"genre"))
-    return g_strdup(song?mpd_song_get_tag(song,MPD_TAG_GENRE,0):"");
-  else if(!g_ascii_strcasecmp(params[0],"volume"))
-    return g_strdup_printf("%d",status?mpd_status_get_volume(status):0);
-  else if(!g_ascii_strcasecmp(params[0],"repeat"))
-    return g_strdup_printf("%d",status?mpd_status_get_repeat(status):0);
-  else if(!g_ascii_strcasecmp(params[0],"random"))
-    return g_strdup_printf("%d",status?mpd_status_get_random(status):0);
-  else if(!g_ascii_strcasecmp(params[0],"queue_len"))
-    return g_strdup_printf("%d",status?mpd_status_get_queue_length(status):0);
-  else if(!g_ascii_strcasecmp(params[0],"queue_pos"))
-    return g_strdup_printf("%d",status?mpd_status_get_song_pos(status):0);
-  else if(!g_ascii_strcasecmp(params[0],"elapsed"))
-    return g_strdup_printf("%llu", (long long unsigned int)(status?
-      (mpd_status_get_elapsed_ms(status) + mpd_status_get_state(status)==MPD_STATE_PLAY?
-         (g_get_monotonic_time()-last_update)/1000:0):0));
-  else if(!g_ascii_strcasecmp(params[0],"length"))
-    return g_strdup_printf("%u",status?mpd_status_get_total_time(status):0);
-  else if(!g_ascii_strcasecmp(params[0],"rate"))
-    return g_strdup_printf("%u",status?mpd_status_get_kbit_rate(status):0);
-  else if(!g_ascii_strcasecmp(params[0],"state"))
+  if(!g_ascii_strcasecmp(p[0].value.string,"title"))
+    return value_new_string(g_strdup(
+          song? mpd_song_get_tag(song, MPD_TAG_TITLE, 0) : ""));
+  if(!g_ascii_strcasecmp(p[0].value.string,"track"))
+    return value_new_string(g_strdup(
+          song? mpd_song_get_tag(song, MPD_TAG_TRACK, 0) : ""));
+  if(!g_ascii_strcasecmp(p[0].value.string,"artist"))
+    return value_new_string(g_strdup(
+          song? mpd_song_get_tag(song, MPD_TAG_ARTIST, 0) : ""));
+  if(!g_ascii_strcasecmp(p[0].value.string,"album"))
+    return value_new_string(g_strdup(
+          song? mpd_song_get_tag(song, MPD_TAG_ALBUM, 0): ""));
+  if(!g_ascii_strcasecmp(p[0].value.string, "genre"))
+    return value_new_string(g_strdup(
+          song? mpd_song_get_tag(song, MPD_TAG_GENRE, 0) : ""));
+  if(!g_ascii_strcasecmp(p[0].value.string, "volume"))
+    return value_new_string(
+        g_strdup_printf("%d", status? mpd_status_get_volume(status) : 0));
+  if(!g_ascii_strcasecmp(p[0].value.string, "repeat"))
+    return value_new_string(
+        g_strdup_printf("%d", status? mpd_status_get_repeat(status) : 0));
+  if(!g_ascii_strcasecmp(p[0].value.string, "random"))
+    return value_new_string(
+        g_strdup_printf("%d", status? mpd_status_get_random(status) : 0));
+  if(!g_ascii_strcasecmp(p[0].value.string, "queue_len"))
+    return value_new_string(
+      g_strdup_printf("%d", status? mpd_status_get_queue_length(status) : 0));
+  if(!g_ascii_strcasecmp(p[0].value.string, "queue_pos"))
+    return value_new_string(
+      g_strdup_printf("%d", status? mpd_status_get_song_pos(status) : 0));
+  if(!g_ascii_strcasecmp(p[0].value.string, "elapsed"))
+    return value_new_string(g_strdup_printf("%llu",
+          (long long unsigned int)(status?  (mpd_status_get_elapsed_ms(status)+
+              mpd_status_get_state(status)==MPD_STATE_PLAY?
+         (g_get_monotonic_time()-last_update)/1000:0) : 0)));
+  if(!g_ascii_strcasecmp(p[0].value.string, "length"))
+    return value_new_string(
+        g_strdup_printf("%u", status? mpd_status_get_total_time(status) : 0));
+  if(!g_ascii_strcasecmp(p[0].value.string, "rate"))
+    return value_new_string(
+        g_strdup_printf("%u", status? mpd_status_get_kbit_rate(status) : 0));
+  if(!g_ascii_strcasecmp(p[0].value.string, "state"))
     switch(mpd_status_get_state(status))
     {
       case MPD_STATE_PLAY:
-        return g_strdup("play");
+        return value_new_string(g_strdup("play"));
       case MPD_STATE_PAUSE:
-        return g_strdup("pause");
+        return value_new_string(g_strdup("pause"));
       case MPD_STATE_STOP:
-        return g_strdup("stop");
+        return value_new_string(g_strdup("stop"));
       default:
-        return g_strdup("unknown");
+        return value_new_string(g_strdup("unknown"));
     }
 
-  return g_strdup("Invalid request");
+  return value_new_string(g_strdup("Invalid request"));
+}
+
+gboolean sfwbar_module_init ( void )
+{
+  vm_func_add("mpd", mpd_expr_func, FALSE);
+  if(mpd_connect(NULL))
+    g_timeout_add (1000,(GSourceFunc )mpd_connect,NULL);
+  return TRUE;
 }
 
 static void mpd_command ( gchar *cmd, gchar *dummy, void *d1,
@@ -226,18 +241,6 @@ static void mpd_set_passwd ( gchar *pwd, gchar *dummy, void *d1,
   else
     password = NULL;
 }
-
-ModuleExpressionHandlerV1 handler1 = {
-  .flags = 0,
-  .name = "Mpd",
-  .parameters = "S",
-  .function = mpd_expr_func
-};
-
-ModuleExpressionHandlerV1 *sfwbar_expression_handlers[] = {
-  &handler1,
-  NULL
-};
 
 ModuleActionHandlerV1 act_handler1 = {
   .name = "MpdSetPassword",
