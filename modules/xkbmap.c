@@ -5,20 +5,12 @@
 
 #include <glib.h>
 #include <xkbcommon/xkbregistry.h>
-#include "../src/module.h"
+#include "module.h"
+#include "vm/vm.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
 static struct rxkb_context *ctx;
-
-gboolean sfwbar_module_init ( void )
-{
-  if( !(ctx = rxkb_context_new (RXKB_CONTEXT_NO_DEFAULT_INCLUDES)) )
-    return FALSE;
-  rxkb_context_include_path_append_default(ctx);
-  rxkb_context_parse_default_ruleset(ctx);
-  return TRUE;
-}
 
 static const gchar *xkb_get_value ( struct rxkb_layout *layout, gchar *type )
 {
@@ -33,30 +25,32 @@ static const gchar *xkb_get_value ( struct rxkb_layout *layout, gchar *type )
   return g_strdup_printf("XkbMap: Invalid type: %s",type);
 }
 
-void *xkb_map_expr_func ( void **params, void *widget, void *event )
+static value_t xkb_map_expr_func ( vm_t *vm, value_t p[], gint np )
 {
   struct rxkb_layout *layout;
 
-  if(!params || !params[0] || !params[1] || !params[2])
-    return g_strdup("XkbMap: missing parameter(s)");
+  if(np!=3 || !value_is_string(p[0]) || !value_is_string(p[1]) ||
+      !value_is_string(p[2]))
+    return value_new_string(g_strdup("XkbMap: missing parameter(s)"));
 
-  for(layout=rxkb_layout_first(ctx);layout;layout=rxkb_layout_next(layout))
+  for(layout=rxkb_layout_first(ctx); layout; layout=rxkb_layout_next(layout))
   {
-    if(!g_strcmp0(params[0],xkb_get_value(layout,params[1])))
-      return g_strdup(xkb_get_value(layout,params[2]));
+    if(!g_strcmp0(value_get_string(p[0]),
+          xkb_get_value(layout, value_get_string(p[1]))))
+      return value_new_string(g_strdup(
+            xkb_get_value(layout, value_get_string(p[2]))));
   }
 
-  return g_strdup_printf("XkbMap: Unknown layout: %s",(gchar *)params[0]);
+  return value_new_string(g_strdup_printf("XkbMap: Unknown layout: %s",
+      value_get_string(p[0])));
 }
 
-ModuleExpressionHandlerV1 handler1 = {
-  .flags = MODULE_EXPR_DETERMINISTIC,
-  .name = "XkbMap",
-  .parameters = "SSS",
-  .function = xkb_map_expr_func
-};
-
-ModuleExpressionHandlerV1 *sfwbar_expression_handlers[] = {
-  &handler1,
-  NULL
-};
+gboolean sfwbar_module_init ( void )
+{
+  if( !(ctx = rxkb_context_new (RXKB_CONTEXT_NO_DEFAULT_INCLUDES)) )
+    return FALSE;
+  vm_func_add("xkbmap", xkb_map_expr_func, TRUE);
+  rxkb_context_include_path_append_default(ctx);
+  rxkb_context_parse_default_ruleset(ctx);
+  return TRUE;
+}
