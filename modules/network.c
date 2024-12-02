@@ -4,6 +4,7 @@
  */
 
 #include "module.h"
+#include "vm/vm.h"
 #include "trigger.h"
 #include <unistd.h>
 #include <ifaddrs.h>
@@ -640,70 +641,39 @@ static gboolean net_rt_request ( gint sock )
 
 #endif /* Linux || FreeBSD || OpenBSD */
 
-gboolean sfwbar_module_init ( void )
-{
-  int sock;
-  GIOChannel *chan;
-
-  if( (sock = net_rt_connect()) <0 )
-    return FALSE;
-
-  g_debug("netstat: socket: %d", sock);
-  if( (chan = g_io_channel_unix_new(sock)) )
-  {
-    g_io_add_watch(chan,G_IO_IN | G_IO_PRI |G_IO_ERR | G_IO_HUP,
-        net_rt_parse, NULL);
-    net_rt_request(sock);
-    return TRUE;
-  }
-  else
-    close(sock);
-
-  return FALSE;
-}
-
-void sfwbar_module_invalidate ( void )
-{
-  GList *iter;
-
-  for(iter=iface_list; iter; iter=g_list_next(iter))
-    IFACE_INFO(iter->data)->invalid = TRUE;
-}
-
-void *network_func_netstat ( void **params, void *widget, void *event )
+static value_t network_func_netstat ( vm_t *vm, value_t p[], gint np )
 {
   iface_info *iface;
-  gdouble *result;
+  gdouble result;
 
-  result = g_malloc0(sizeof(gdouble));
-  if(!params || !params[0])
-    return result;
+  if(np>2 || !value_is_string(p[0]))
+    return value_na;
 
-  if(params[1] && *((gchar *)params[1]))
-    iface = net_iface_get(params[1], FALSE);
+  if(np==2 && value_is_string(p[1]))
+    iface = net_iface_get(p[1].value.string, FALSE);
   else
     iface = route;
   if(!iface)
-    return result;
+    return value_na;
 
   g_mutex_lock(&iface->mutex);
-  if(!g_ascii_strcasecmp(params[0], "signal"))
-    *result = net_get_signal(route?route->name:NULL);
-  else if(!g_ascii_strcasecmp(params[0], "rxrate"))
+  if(!g_ascii_strcasecmp(p[0].value.string, "signal"))
+    result = net_get_signal(route?route->name:NULL);
+  else if(!g_ascii_strcasecmp(p[0].value.string, "rxrate"))
   {
     net_update_traffic(iface->name);
-    *result = (gdouble)(iface->rx_bytes-iface->prx_bytes)*
+    result = (gdouble)(iface->rx_bytes-iface->prx_bytes)*
         1000000/iface->time_diff;
   }
-  else if(!g_ascii_strcasecmp(params[0], "txrate"))
+  else if(!g_ascii_strcasecmp(p[0].value.string, "txrate"))
   {
     net_update_traffic(iface->name);
-    *result = (gdouble)(iface->tx_bytes-iface->ptx_bytes)*
+    result = (gdouble)(iface->tx_bytes-iface->ptx_bytes)*
       1000000/iface->time_diff;
   }
   g_mutex_unlock(&iface->mutex);
 
-  return result;
+  return value_new_numeric(result);
 }
 
 static gchar *net_get_cidr ( guint32 addr )
@@ -724,63 +694,75 @@ static gchar *net_getaddr ( void *ina, gint type  )
   return g_strdup(inet_ntop(type, ina, addr, INET_ADDRSTRLEN));
 }
 
-void *network_func_netinfo ( void **params, void *widget, void *event )
+static value_t network_func_netinfo ( vm_t *vm, value_t p[], gint np )
 {
   gchar *result;
   iface_info *iface;
 
-  if(!params || !params[0])
-    return NULL;
+  if(np<1 || np>2 || !value_is_string(p[0]))
+    return value_na;
 
-  if(params[1] && *((gchar *)params[1]))
-    iface = net_iface_get(params[1], FALSE);
+  if(np==2 && value_is_string(p[1]))
+    iface = net_iface_get(p[1].value.string, FALSE);
   else
     iface = route;
   if(!iface)
-    return NULL;
+    return value_na;
 
   g_mutex_lock(&iface->mutex);
-  if(!g_ascii_strcasecmp(params[0], "ip"))
+  if(!g_ascii_strcasecmp(p[0].value.string, "ip"))
     result = net_getaddr(&iface->ip, AF_INET);
-  else if(!g_ascii_strcasecmp(params[0], "mask"))
+  else if(!g_ascii_strcasecmp(p[0].value.string, "mask"))
     result = net_getaddr(&iface->mask, AF_INET);
-  else if(!g_ascii_strcasecmp(params[0], "cidr"))
+  else if(!g_ascii_strcasecmp(p[0].value.string, "cidr"))
     result = net_get_cidr(iface->mask.s_addr);
-  else if(!g_ascii_strcasecmp(params[0], "ip6"))
+  else if(!g_ascii_strcasecmp(p[0].value.string, "ip6"))
     result = net_getaddr(&iface->ip6, AF_INET6);
-  else if(!g_ascii_strcasecmp(params[0], "mask6"))
+  else if(!g_ascii_strcasecmp(p[0].value.string, "mask6"))
     result = net_getaddr(&iface->mask6, AF_INET6);
-  else if(!g_ascii_strcasecmp(params[0], "gateway"))
+  else if(!g_ascii_strcasecmp(p[0].value.string, "gateway"))
     result = net_getaddr(&iface->gateway, AF_INET);
-  else if(!g_ascii_strcasecmp(params[0], "gateway6"))
+  else if(!g_ascii_strcasecmp(p[0].value.string, "gateway6"))
     result = net_getaddr(&iface->gateway6, AF_INET6);
-  else if(!g_ascii_strcasecmp(params[0], "essid"))
+  else if(!g_ascii_strcasecmp(p[0].value.string, "essid"))
     result = g_strdup(iface->essid?iface->essid:"");
-  else if(!g_ascii_strcasecmp(params[0], "interface"))
+  else if(!g_ascii_strcasecmp(p[0].value.string, "interface"))
     result = g_strdup(iface->name);
   else
     result = g_strdup("invalid query");
   g_mutex_unlock(&iface->mutex);
 
-  return result;
+  return value_new_string(result);
 }
 
-ModuleExpressionHandlerV1 handler1 = {
-  .flags = 0,
-  .name = "NetInfo",
-  .parameters = "Ss",
-  .function = network_func_netinfo
-};
+gboolean sfwbar_module_init ( void )
+{
+  int sock;
+  GIOChannel *chan;
 
-ModuleExpressionHandlerV1 handler2 = {
-  .flags = MODULE_EXPR_NUMERIC,
-  .name = "NetStat",
-  .parameters = "Ss",
-  .function = network_func_netstat
-};
+  if( (sock = net_rt_connect()) <0 )
+    return FALSE;
 
-ModuleExpressionHandlerV1 *sfwbar_expression_handlers[] = {
-  &handler1,
-  &handler2,
-  NULL
-};
+  g_debug("netstat: socket: %d", sock);
+  if( (chan = g_io_channel_unix_new(sock)) )
+  {
+    vm_func_add("netstat", network_func_netstat, FALSE);
+    vm_func_add("netinfo", network_func_netinfo, FALSE);
+    g_io_add_watch(chan,G_IO_IN | G_IO_PRI |G_IO_ERR | G_IO_HUP,
+        net_rt_parse, NULL);
+    net_rt_request(sock);
+    return TRUE;
+  }
+  else
+    close(sock);
+
+  return FALSE;
+}
+
+void sfwbar_module_invalidate ( void )
+{
+  GList *iter;
+
+  for(iter=iface_list; iter; iter=g_list_next(iter))
+    IFACE_INFO(iter->data)->invalid = TRUE;
+}
