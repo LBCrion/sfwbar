@@ -29,6 +29,10 @@ typedef struct {
   gboolean deterministic;
 } vm_function_t;
 
+#define vm_param_check_string(vm, np, p, n) { if(np>n && (value_is_string(p[n]) || value_is_na(p[n]))) {if(value_is_na(p[n])) p[n] = value_new_string(g_strdup("")); } else return value_na; }
+#define vm_param_check_numeric(vm, np, p, n) { if(np>n && (value_is_numeric(p[n]) || value_is_na(p[n]))) {if(value_is_na(p[n])) p[n] = value_new_numeric(0); } else return value_na; }
+
+
 GByteArray *parser_expr_compile ( gchar *expr );
 value_t vm_run ( expr_cache_t *cache );
 gchar *expr_vm_result_to_string ( vm_t *vm );

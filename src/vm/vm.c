@@ -38,60 +38,46 @@ static gboolean vm_op_binary ( vm_t *vm )
   result = value_na;
 
   if(value_is_na(v1) && value_is_na(v2))
-  {
-    vm_push(vm, value_na);
-    return TRUE;
-  }
-  else if(value_is_na(v1) && !value_is_na(v2))
-  {
-    if(value_is_string(v2))
-      v1 = value_new_string(g_strdup(""));
-    else
-      v1 = value_new_numeric(0);
-  }
-  else if(!value_is_na(v1) && value_is_na(v2))
-  {
-    if(value_is_string(v1))
-      v2 = value_new_string(g_strdup(""));
-    else
-      v2 = value_new_numeric(0);
-  }
+    result = value_na;
 
-  if(value_is_string(v1) && value_is_string(v2))
+  else if(value_like_string(v1) && value_like_string(v2))
   {
     if(op == '+')
       result = value_new_string(
-          g_strconcat(v1.value.string, v2.value.string, NULL));
+          g_strconcat(value_get_string(v1), value_get_string(v2), NULL));
     else if(op == '=')
       result = value_new_numeric(
-          !g_ascii_strcasecmp(v1.value.string, v2.value.string));
+          !g_ascii_strcasecmp(value_get_string(v1), value_get_string(v2)));
+    else if(op == '!')
+      result = value_new_numeric(
+          g_ascii_strcasecmp(value_get_string(v1), value_get_string(v2)));
   }
 
-  else if(value_is_numeric(v1) && value_is_numeric(v2))
+  else if(value_like_numeric(v1) && value_like_numeric(v2))
   {
     if(op=='+')
-      result = value_new_numeric(v1.value.numeric + v2.value.numeric);
+      result = value_new_numeric(value_get_numeric(v1)+value_get_numeric(v2));
     else if(op=='-')
-      result = value_new_numeric(v1.value.numeric - v2.value.numeric);
+      result = value_new_numeric(value_get_numeric(v1)-value_get_numeric(v2));
     else if(op=='*')
-      result = value_new_numeric(v1.value.numeric * v2.value.numeric);
+      result = value_new_numeric(value_get_numeric(v1)*value_get_numeric(v2));
     else if(op=='/')
-      result = value_new_numeric(v1.value.numeric / v2.value.numeric);
+      result = value_new_numeric(value_get_numeric(v1)/value_get_numeric(v2));
     else if(op=='%')
       result = value_new_numeric(
-          (gint)v1.value.numeric % (gint)v2.value.numeric);
+          (gint)value_get_numeric(v1)%(gint)value_get_numeric(v2));
     else if(op=='&')
-      result = value_new_numeric(v1.value.numeric && v2.value.numeric);
+      result = value_new_numeric(value_get_numeric(v1)&&value_get_numeric(v2));
     else if(op=='|')
-      result = value_new_numeric(v1.value.numeric || v2.value.numeric);
+      result = value_new_numeric(value_get_numeric(v1)||value_get_numeric(v2));
     else if(op=='<')
-      result = value_new_numeric(v1.value.numeric < v2.value.numeric);
+      result = value_new_numeric(value_get_numeric(v1)<value_get_numeric(v2));
     else if(op=='>')
-      result = value_new_numeric(v1.value.numeric > v2.value.numeric);
+      result = value_new_numeric(value_get_numeric(v1)>value_get_numeric(v2));
     else if(op=='=')
-      result = value_new_numeric(v1.value.numeric == v2.value.numeric);
+      result = value_new_numeric(value_get_numeric(v1)==value_get_numeric(v2));
     else if(op=='!')
-      result = value_new_numeric(v1.value.numeric != v2.value.numeric);
+      result = value_new_numeric(value_get_numeric(v1)!=value_get_numeric(v2));
     else
       result= value_na;
   }
@@ -242,8 +228,8 @@ value_t vm_run ( expr_cache_t *expr )
       v1 = *((value_t *)(vm->ip+1));
       if(value_is_string(v1))
       {
-        v1.value.string=g_strdup((gchar *)vm->ip+2);
-        vm->ip+=strlen(v1.value.string)+2;
+        v1.value.string = g_strdup((gchar *)vm->ip+2);
+        vm->ip += strlen(value_get_string(v1))+2;
       }
       else
         vm->ip+=sizeof(value_t);
