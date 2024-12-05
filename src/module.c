@@ -48,13 +48,13 @@ void module_actions_add ( ModuleActionHandlerV1 **ahandler, gchar *name )
     if(ahandler[i]->function && ahandler[i]->name)
     {
       lname = g_ascii_strdown(ahandler[i]->name, -1);
-      ahandler[i]->quark = g_quark_from_string(lname);
+      ahandler[i]->id = g_intern_string(lname);
       g_debug("module: register action '%s'",ahandler[i]->name);
-      if(g_datalist_id_get_data(&act_handlers, ahandler[i]->quark))
+      if(g_datalist_get_data(&act_handlers, ahandler[i]->id))
         g_message("Duplicate module action: %s in module %s",
             ahandler[i]->name, name);
       else
-        g_datalist_id_set_data(&act_handlers, ahandler[i]->quark, ahandler[i]);
+        g_datalist_set_data(&act_handlers, ahandler[i]->id, ahandler[i]);
       g_free(lname);
     }
 }
@@ -97,8 +97,8 @@ void module_interface_select ( gchar *interface )
       expr_dep_trigger(list->active->expr_handlers[i]->name);
     }
     for(i=0; list->active->act_handlers[i]; i++)
-      g_datalist_id_remove_data(&act_handlers,
-          list->active->act_handlers[i]->quark);
+      g_datalist_remove_data(&act_handlers,
+          list->active->act_handlers[i]->id);
   }
   list->active = new;
   if(new)
@@ -233,22 +233,22 @@ void module_invalidate_all ( void )
       ((ModuleInvalidator)(iter->data))();
 }
 
-ModuleActionHandlerV1 *module_action_get ( GQuark quark )
+ModuleActionHandlerV1 *module_action_get ( const gchar *id )
 {
-  return g_datalist_id_get_data(&act_handlers, quark);
+  return g_datalist_get_data(&act_handlers, id);
 }
 
-void module_action_exec ( GQuark quark, gchar *param, gchar *addr, void *widget,
+void module_action_exec ( const gchar *id, gchar *param, gchar *addr, void *widget,
     void *ev, void *win, void *state)
 {
   ModuleActionHandlerV1 *handler;
 
-  g_debug("module: checking action `%s`",g_quark_to_string(quark));
+  g_debug("module: checking action `%s`", id);
 
-  handler = module_action_get(quark);
+  handler = module_action_get(id);
   if(!handler)
     return;
-  g_debug("module: calling action `%s`",g_quark_to_string(quark));
+  g_debug("module: calling action `%s`", id);
 
   handler->function(param, addr, widget,ev,win,state);
 }

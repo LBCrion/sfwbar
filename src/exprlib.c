@@ -22,33 +22,33 @@ static value_t expr_lib_mid ( vm_t *vm, value_t p[], gint np )
 
   gint len, c1, c2;
 
-  if(np!=3 || !value_is_string(p[0]) || !value_is_numeric(p[1]) ||
-        !value_is_numeric(p[2]))
+  if(np!=3 || !value_like_string(p[0]) || !value_like_numeric(p[1]) ||
+        !value_like_numeric(p[2]))
     return value_na;
 
-  c1 = p[1].value.numeric;
-  c2 = p[2].value.numeric;
-  len = strlen(p[0].value.string);
+  c1 = value_get_numeric(p[1]);
+  c2 = value_get_numeric(p[2]);
+  len = strlen(value_get_string(p[0]));
 
   /* negative offsets are relative to the end of the string */
   c1 = CLAMP(c1<0? c1+len : c1, 0, len-1);
   c2 = CLAMP(c2<0? c2+len : c2, 0, len-1);
 
-  return value_new_string(g_strndup(p[0].value.string + MIN(c1, c2)-1,
+  return value_new_string(g_strndup(value_get_string(p[0]) + MIN(c1, c2)-1,
         (ABS(c2-c1)+1)*sizeof(gchar)));
 }
 
 /* replace a substring within a string */
 static value_t expr_lib_replace( vm_t *vm, value_t p[], gint np )
 {
-  if(np!=3 || !value_is_string(p[0]) || !value_is_string(p[1]))
+  if(np!=3 || !value_like_string(p[0]) || !value_like_string(p[1]))
     return value_na;
 
-  if(!value_is_string(p[2]))
-    return value_new_string(g_strdup(p[0].value.string));
+  if(!value_like_string(p[2]))
+    return value_new_string(g_strdup(value_get_string(p[0])));
 
-  return value_new_string(str_replace(p[0].value.string, p[1].value.string,
-        p[2].value.string));
+  return value_new_string(str_replace(value_get_string(p[0]), value_get_string(p[1]),
+        value_get_string(p[2])));
 }
 
 static value_t expr_lib_replace_all( vm_t *vm, value_t p[], gint np )
@@ -57,12 +57,12 @@ static value_t expr_lib_replace_all( vm_t *vm, value_t p[], gint np )
   gchar *tmp;
   gint i;
 
-  if(np<1 || !(np%2) || !value_is_string(p[0]) || !p[0].value.string)
+  if(np<1 || !(np%2) || !value_like_string(p[0]) || !value_get_string(p[0]))
     return value_na;
 
-  result = value_new_string(g_strdup(p[0].value.string));
+  result = value_new_string(g_strdup(value_get_string(p[0])));
   for(i=1; i<np; i+=2)
-    if(value_is_string(p[i]) && value_is_string(p[i+1]))
+    if(value_like_string(p[i]) && value_like_string(p[i+1]))
     {
       tmp = result.value.string;
       result.value.string = str_replace(tmp, p[i].value.string,
@@ -73,22 +73,22 @@ static value_t expr_lib_replace_all( vm_t *vm, value_t p[], gint np )
   return result;
 }
 
-static value_t expr_lib_map( vm_t *vm, value_t stack[], gint np )
+static value_t expr_lib_map( vm_t *vm, value_t p[], gint np )
 {
   gint i;
 
-  if(np<2 || np%2 || !stack[0].value.string)
+  if(np<2 || np%2)
     return value_na;
 
   for(i=0; i<np; i++)
-    if(value_is_string(stack[i]))
+    if(!value_like_string(p[i]))
       return value_na;
 
   for(i=1; i<(np-1); i+=2)
-    if(stack[i].value.string &&
-        !g_strcmp0(stack[0].value.string, stack[i].value.string))
-      return value_new_string(g_strdup(stack[i+1].value.string));
-  return value_new_string(g_strdup(stack[np-1].value.string));
+    if(value_get_string(p[i]) &&
+        !g_strcmp0(value_get_string(p[0]), value_get_string(p[i])))
+      return value_new_string(g_strdup(value_get_string(p[i+1])));
+  return value_new_string(g_strdup(value_get_string(p[np-1])));
 }
 
 static value_t expr_lib_lookup( vm_t *vm, value_t p[], gint np )
@@ -96,16 +96,16 @@ static value_t expr_lib_lookup( vm_t *vm, value_t p[], gint np )
   gchar *result = NULL;
   gint i;
 
-  if(np<2 || np%2 || !value_is_numeric(p[0]))
+  if(np<2 || np%2 || !value_like_numeric(p[0]))
     return value_new_string(g_strdup(""));
 
   for(i=(np-3); i>0; i-=2)
-    if(value_is_numeric(p[i]) && value_is_string(p[i+1]) &&
-        p[i].value.numeric < p[0].value.numeric)
-      result = p[i+1].value.string;
+    if(value_like_numeric(p[i]) && value_like_string(p[i+1]) &&
+        value_get_numeric(p[i]) < value_get_numeric(p[0]))
+      result = value_get_string(p[i+1]);
 
-  if(!result && value_is_string(p[np-1]))
-    result = p[np-1].value.string;
+  if(!result && value_like_string(p[np-1]))
+    result = value_get_string(p[np-1]);
 
   return value_new_string(g_strdup(result?result:""));
 }
@@ -117,13 +117,13 @@ static value_t expr_lib_extract( vm_t *vm, value_t p[0], gint np )
   GRegex *regex;
   GMatchInfo *match;
 
-  if(np!=2 || !value_is_string(p[0]) || !value_is_string(p[1]))
+  if(np!=2 || !value_like_string(p[0]) || !value_like_string(p[1]))
     return value_na;
 
-  if( !(regex = g_regex_new(p[1].value.string, 0, 0, NULL)) )
+  if( !(regex = g_regex_new(value_get_string(p[1]), 0, 0, NULL)) )
     return value_na;
 
-  if(g_regex_match (regex, p[0].value.string, 0, &match) && match)
+  if(g_regex_match (regex, value_get_string(p[0]), 0, &match) && match)
     res = value_new_string(g_match_info_fetch (match, 1));
   else
     res = value_na;
@@ -142,14 +142,14 @@ static value_t expr_lib_pad ( vm_t *vm, value_t p[], gint np )
   gint n, len, sign;
   gchar padchar;
 
-  if(np<2 || np>3 || !value_is_string(p[0]) || !value_is_numeric(p[1]))
+  if(np<2 || np>3 || !value_like_string(p[0]) || !value_like_numeric(p[1]))
     return value_na;
 
-  padchar = (np==3 && value_is_string(p[2]) && p[2].value.string)?
-    *(p[2].value.string) : ' ';
+  padchar = (np==3 && value_like_string(p[2]) && value_get_string(p[2]))?
+    *(value_get_string(p[2])) : ' ';
 
-  len = strlen(p[0].value.string);
-  n = p[1].value.numeric;
+  len = strlen(value_get_string(p[0]));
+  n = value_get_numeric(p[1]);
   sign = n>=0;
   n = MAX(n>0?n:-n,len);
 
@@ -157,11 +157,11 @@ static value_t expr_lib_pad ( vm_t *vm, value_t p[], gint np )
   if(sign)
   {
     memset(result, padchar, n-len);
-    strcpy(result+n-len, p[0].value.string);
+    strcpy(result+n-len, value_get_string(p[0]));
   }
   else
   {
-    ptr = g_stpcpy(result, p[0].value.string);
+    ptr = g_stpcpy(result, value_get_string(p[0]));
     memset(ptr, padchar, n-len);
     *(result+n) = '\0';
   }
@@ -179,22 +179,22 @@ static value_t expr_lib_time ( vm_t *vm, value_t p[], gint np )
   if(np>2)
     return value_na;
 
-  if(np<2 || !value_is_string(p[1]))
+  if(np<2 || !value_like_string(p[1]))
     time = g_date_time_new_now_local();
   else
   {
 #if GLIB_MAJOR_VERSION == 2 && GLIB_MINOR_VERSION >= 68
-    if( !(tz = g_time_zone_new_identifier(p[1].value.string)) )
+    if( !(tz = g_time_zone_new_identifier(value_get_string(p[1]))) )
       tz = g_time_zone_new_utc();
 #else
-    tz = g_time_zone_new(p[1].value_string);
+    tz = g_time_zone_new(value_get_string(p[1]));
 #endif
     time = g_date_time_new_now(tz);
     g_time_zone_unref(tz);
   }
 
-  str = g_date_time_format (time, (np>0 && value_is_string(p[0]))?
-      p[0].value.string : "%a %b %d %H:%M:%S %Y" );
+  str = g_date_time_format (time, (np>0 && value_like_string(p[0]))?
+      value_get_string(p[0]) : "%a %b %d %H:%M:%S %Y" );
   g_date_time_unref(time);
 
   return value_new_string(str);
@@ -202,18 +202,18 @@ static value_t expr_lib_time ( vm_t *vm, value_t p[], gint np )
 
 static value_t expr_lib_elapsed_str ( vm_t *vm, value_t p[], gint np )
 {
-  if(np!=1 || !value_is_numeric(p[0]))
+  if(np!=1 || !value_like_numeric(p[0]))
     return value_na;
 
-  if(p[0].value.numeric>3600*24)
+  if(value_get_numeric(p[0])>3600*24)
     return value_new_string(g_strdup_printf("%d days ago",
-          (gint)(p[0].value.numeric/(3600*24))));
-  if(p[0].value.numeric>3600)
+          (gint)(value_get_numeric(p[0])/(3600*24))));
+  if(value_get_numeric(p[0])>3600)
     return value_new_string(g_strdup_printf("%d hours ago",
-        (gint)(p[0].value.numeric/3600)));
-  if(p[0].value.numeric>60)
+        (gint)(value_get_numeric(p[0])/3600)));
+  if(value_get_numeric(p[0])>60)
     return value_new_string(g_strdup_printf("%d minutes ago",
-        (gint)(p[0].value.numeric/60)));
+        (gint)(value_get_numeric(p[0])/60)));
   return value_new_string(g_strdup("Just now"));
 }
 
@@ -228,22 +228,22 @@ static value_t expr_lib_disk ( vm_t *vm, value_t p[], gint np )
 {
   struct statvfs fs;
 
-  if(np!=2 || !value_is_string(p[0]) || !value_is_string(p[1]))
+  if(np!=2 || !value_like_string(p[0]) || !value_like_string(p[1]))
     return value_na;
 
-  if(statvfs(p[0].value.string, &fs))
+  if(statvfs(value_get_string(p[0]), &fs))
     return value_na;
 
-  if(!g_ascii_strcasecmp(p[1].value.string, "total"))
+  if(!g_ascii_strcasecmp(value_get_string(p[1]), "total"))
     return value_new_numeric(fs.f_blocks * fs.f_frsize);
-  if(!g_ascii_strcasecmp(p[1].value.string, "avail"))
+  if(!g_ascii_strcasecmp(value_get_string(p[1]), "avail"))
     return value_new_numeric(fs.f_bavail * fs.f_bsize);
-  if(!g_ascii_strcasecmp(p[1].value.string, "free"))
+  if(!g_ascii_strcasecmp(value_get_string(p[1]), "free"))
     return value_new_numeric(fs.f_bfree * fs.f_bsize);
-  if(!g_ascii_strcasecmp(p[1].value.string, "%avail"))
+  if(!g_ascii_strcasecmp(value_get_string(p[1]), "%avail"))
     return value_new_numeric(((gdouble)(fs.f_bfree*fs.f_bsize) /
         (gdouble)(fs.f_blocks*fs.f_frsize))*100);
-  if(!g_ascii_strcasecmp(p[1].value.string, "%used"))
+  if(!g_ascii_strcasecmp(value_get_string(p[1]), "%used"))
     return value_new_numeric((1.0 - (gdouble)(fs.f_bfree*fs.f_bsize) /
         (gdouble)(fs.f_blocks*fs.f_frsize))*100);
 
@@ -257,60 +257,60 @@ static value_t expr_lib_active ( vm_t *vm, value_t p[], gint np )
 
 static value_t expr_lib_max ( vm_t *vm, value_t p[], gint np )
 {
-  if(np==2 && value_is_numeric(p[0]) && value_is_numeric(p[1]))
-    return value_new_numeric(MAX(p[0].value.numeric, p[1].value.numeric));
+  if(np==2 && value_like_numeric(p[0]) && value_like_numeric(p[1]))
+    return value_new_numeric(MAX(value_get_numeric(p[0]), value_get_numeric(p[1])));
 
   return value_na;
 }
 
 static value_t expr_lib_min ( vm_t *vm, value_t p[], gint np )
 {
-  if(np==2 && value_is_numeric(p[0]) && value_is_numeric(p[1]))
-    return value_new_numeric(MIN(p[0].value.numeric, p[1].value.numeric));
+  if(np==2 && value_like_numeric(p[0]) && value_like_numeric(p[1]))
+    return value_new_numeric(MIN(value_get_numeric(p[0]), value_get_numeric(p[1])));
 
   return value_na;
 }
 
 static value_t expr_lib_val ( vm_t *vm, value_t p[], gint np )
 {
-  if(np==1 && value_is_string(p[0]))
-    return value_new_numeric(strtod(p[0].value.string, NULL));
+  if(np==1 && value_like_string(p[0]))
+    return value_new_numeric(strtod(value_get_string(p[0]), NULL));
 
   return value_na;
 }
 
 static value_t expr_lib_str ( vm_t *vm, value_t p[], gint np )
 {
-  if(np>0 && value_is_numeric(p[0]))
-    return value_new_string(numeric_to_string(p[0].value.numeric,
-        (np==2 && value_is_numeric(p[1]))? p[1].value.numeric : 0));
+  if(np>0 && value_like_numeric(p[0]))
+    return value_new_string(numeric_to_string(value_get_numeric(p[0]),
+        (np==2 && value_like_numeric(p[1]))? value_get_numeric(p[1]) : 0));
   return value_na;
 }
 
 static value_t expr_lib_upper ( vm_t *vm, value_t p[], gint np )
 {
-  if(np==1 && value_is_string(p[0]))
-    return value_new_string(g_ascii_strup(p[0].value.string, -1));
+  if(np==1 && value_like_string(p[0]))
+    return value_new_string(g_ascii_strup(value_get_string(p[0]), -1));
   return value_na;
 }
 
 static value_t expr_lib_lower ( vm_t *vm, value_t p[], gint np )
 {
-  if(np==1 && value_is_string(p[0]))
-    return value_new_string(g_ascii_strdown(p[0].value.string, -1));
+  if(np==1 && value_like_string(p[0]))
+    return value_new_string(g_ascii_strdown(value_get_string(p[0]), -1));
   return value_na;
 }
 
 static value_t expr_lib_escape ( vm_t *vm, value_t p[], gint np )
 {
-  if(np==1 && value_is_string(p[0]))
-    return value_new_string(g_markup_escape_text(p[0].value.string, -1));
+  if(np==1 && value_like_string(p[0]))
+    return value_new_string(g_markup_escape_text(value_get_string(p[0]), -1));
   return value_na;
 }
 
 static value_t expr_lib_bardir ( vm_t *vm, value_t p[], gint np )
 {
-  switch(bar_get_toplevel_dir(vm->cache->widget))
+  switch(bar_get_toplevel_dir(vm->widget))
   {
     case GTK_POS_RIGHT:
       return value_new_string(g_strdup("right"));
@@ -328,34 +328,34 @@ static value_t expr_lib_bardir ( vm_t *vm, value_t p[], gint np )
 static value_t expr_lib_gtkevent ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *widget;
-  GdkEventButton  *ev = (GdkEventButton *)vm->cache->event;
+  GdkEventButton  *ev = (GdkEventButton *)vm->event;
   GtkAllocation alloc;
   GtkStyleContext *style;
   GtkBorder margin, padding, border;
   gint x,y,w,h,dir;
   gdouble result;
 
-  if(np!=1 || !value_is_string(p[0]))
+  if(np!=1 || !value_like_string(p[0]))
     return value_na;
 
-  if(GTK_IS_BIN(vm->cache->widget))
+  if(GTK_IS_BIN(vm->widget))
   {
-    widget = gtk_bin_get_child(GTK_BIN(vm->cache->widget));
-    gtk_widget_translate_coordinates(vm->cache->widget, widget,
+    widget = gtk_bin_get_child(GTK_BIN(vm->widget));
+    gtk_widget_translate_coordinates(vm->widget, widget,
         ev->x, ev->y, &x, &y);
   }
   else
   {
-    widget = vm->cache->widget;
+    widget = vm->widget;
     x = ev->x;
     y = ev->y;
   }
 
-  if(!g_ascii_strcasecmp(p[0].value.string, "x"))
+  if(!g_ascii_strcasecmp(value_get_string(p[0]), "x"))
     dir = GTK_POS_RIGHT;
-  else if(!g_ascii_strcasecmp(p[0].value.string, "y"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "y"))
     dir = GTK_POS_BOTTOM;
-  else if(!g_ascii_strcasecmp(p[0].value.string, "dir"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "dir"))
     gtk_widget_style_get(widget, "direction", &dir, NULL);
   else
     return value_na;
@@ -388,7 +388,7 @@ static value_t expr_lib_gtkevent ( vm_t *vm, value_t p[], gint np )
 
 static value_t expr_lib_widget_id ( vm_t *vm, value_t p[], gint np )
 {
-  gchar *id = base_widget_get_id(vm->cache->widget);
+  gchar *id = base_widget_get_id(vm->widget);
 
   return value_new_string(g_strdup(id?id:""));
 }
@@ -397,23 +397,23 @@ static value_t expr_lib_window_info ( vm_t *vm, value_t p[], gint np )
 {
   window_t *win;
 
-  if(np==1 && value_is_string(p[0]) &&
-      (win = flow_item_get_source(vm->cache->widget)) )
+  if(np==1 && value_like_string(p[0]) &&
+      (win = flow_item_get_source(vm->widget)) )
   {
-    if(!g_ascii_strcasecmp(p[0].value.string, "appid"))
+    if(!g_ascii_strcasecmp(value_get_string(p[0]), "appid"))
       return value_new_string(g_strdup(win->appid));
-    if(!g_ascii_strcasecmp(p[0].value.string, "title"))
+    if(!g_ascii_strcasecmp(value_get_string(p[0]), "title"))
       return value_new_string(g_strdup(win->title));
-    if(!g_ascii_strcasecmp(p[0].value.string, "minimized"))
+    if(!g_ascii_strcasecmp(value_get_string(p[0]), "minimized"))
       return value_new_string(g_strdup_printf("%d",
             !!(win->state & WS_MINIMIZED)));
-    if(!g_ascii_strcasecmp(p[0].value.string, "maximized"))
+    if(!g_ascii_strcasecmp(value_get_string(p[0]), "maximized"))
       return value_new_string(g_strdup_printf("%d",
             !!(win->state & WS_MAXIMIZED)));
-    if(!g_ascii_strcasecmp(p[0].value.string, "fullscreen"))
+    if(!g_ascii_strcasecmp(value_get_string(p[0]), "fullscreen"))
       return value_new_string(g_strdup_printf("%d",
             !!(win->state & WS_FULLSCREEN)));
-    if(!g_ascii_strcasecmp(p[0].value.string, "focused"))
+    if(!g_ascii_strcasecmp(value_get_string(p[0]), "focused"))
       return value_new_string(g_strdup_printf("%d",
             wintree_is_focused(win->uid)));
   }
@@ -426,14 +426,14 @@ static value_t expr_lib_read ( vm_t *vm, value_t p[], gint np )
   gchar *fname, *result;
   GIOChannel *in;
 
-  if(np!=1 || !value_is_string(p[0]))
+  if(np!=1 || !value_like_string(p[0]))
     return value_na;
 
-  if( !(fname = get_xdg_config_file(p[0].value.string, NULL)) )
+  if( !(fname = get_xdg_config_file(value_get_string(p[0]), NULL)) )
     return value_new_string(g_strdup_printf("Read: file not found '%s'",
-          p[0].value.string));
+          value_get_string(p[0])));
 
-  if( (in = g_io_channel_new_file(p[0].value.string, "r", NULL)) )
+  if( (in = g_io_channel_new_file(value_get_string(p[0]), "r", NULL)) )
     g_io_channel_read_to_end(in, &result, NULL, NULL);
   else
     result = NULL;
@@ -448,22 +448,22 @@ static value_t expr_lib_read ( vm_t *vm, value_t p[], gint np )
 
 static value_t expr_iface_provider ( vm_t *vm, value_t p[], int np )
 {
-  if(np!=1 || !value_is_string(p[0]))
+  if(np!=1 || !value_like_string(p[0]))
     return value_na;
-  return value_new_string(module_interface_provider_get(p[0].value.string));
+  return value_new_string(module_interface_provider_get(value_get_string(p[0])));
 }
 
 static value_t expr_ident ( vm_t *vm, value_t p[], int np )
 {
   value_t result;
 
-  if(np!=1 || !value_is_string(p[0]) || !p[0].value.string)
+  if(np!=1 || !value_like_string(p[0]) || !value_get_string(p[0]))
     return value_na;
 
-  result = value_new_numeric(scanner_is_variable(p[0].value.string) ||
-    module_is_function(p[0].value.string));
+  result = value_new_numeric(scanner_is_variable(value_get_string(p[0])) ||
+    module_is_function(value_get_string(p[0])));
   if(!result.value.numeric)
-    expr_dep_add(p[0].value.string, vm->cache);
+    expr_dep_add(value_get_string(p[0]), vm->expr);
 
   return result;
 }

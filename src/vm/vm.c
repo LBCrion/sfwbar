@@ -159,12 +159,13 @@ static gboolean vm_function ( vm_t *vm )
     value_t *stack;
     stack = (value_t *)vm->stack->data + vm->stack->len - np;
     result = func->function(vm, stack, np);
-    vm->cache->vstate |= (!func->deterministic);
+    if(vm->expr)
+      vm->expr->vstate |= (!func->deterministic);
   }
   else if( (handler = module_expr_func_get(name)) )
   {
     if(handler->flags & MODULE_EXPR_RAW)
-      ptr = handler->function((void *)vm, vm->cache->widget, vm->cache->event);
+      ptr = handler->function((void *)vm, vm->widget, vm->event);
     else
     {
       params = vm_function_params_read(vm, np, handler->parameters);
@@ -178,10 +179,10 @@ static gboolean vm_function ( vm_t *vm )
       g_message("func: %s = %s", name, (gchar *)ptr);*/
     result = vm_ptr_to_value(ptr,
         !(handler->flags & MODULE_EXPR_NUMERIC));
-    if(!(handler->flags & MODULE_EXPR_DETERMINISTIC))
-      vm->cache->vstate = TRUE;
+    if(vm->expr && !(handler->flags & MODULE_EXPR_DETERMINISTIC))
+      vm->expr->vstate = TRUE;
   }
-  expr_dep_add(name, vm->cache);
+  expr_dep_add(name, vm->expr);
   vm->ip += sizeof(gpointer)+1;
 
   for(i=0; i<np; i++)
@@ -199,42 +200,44 @@ static void vm_variable ( vm_t *vm )
   value_t value;
   gchar *name = *((gchar **)(vm->ip+1));
 
-  value = scanner_get_value(name, !vm->use_cached, vm->cache);
-  expr_dep_add(name, vm->cache);
+  value = scanner_get_value(name, !vm->use_cached, vm->expr);
+  expr_dep_add(name, vm->expr);
 
   vm_push(vm, value);
   vm->ip += sizeof(gpointer);
 }
 
-value_t vm_run ( expr_cache_t *expr )
+static void vm_immediate ( vm_t *vm )
 {
-  GByteArray *code = expr->code;
-  vm_t *vm;
   value_t v1;
 
-  if(!code)
+  v1 = *((value_t *)(vm->ip+1));
+  if(value_is_string(v1))
+  {
+    v1.value.string = g_strdup((gchar *)vm->ip+2);
+    vm->ip += strlen(value_get_string(v1))+2;
+  }
+  else
+    vm->ip+=sizeof(value_t);
+  vm_push(vm, v1);
+}
+
+static value_t vm_run ( vm_t *vm )
+{
+  value_t v1;
+
+  if(!vm->code)
     return value_na;
 
-  vm = g_malloc0(sizeof(vm_t));
-  vm->stack = g_array_sized_new(FALSE, FALSE, sizeof(value_t),
-      MAX(1, expr->stack_depth));
-  vm->cache = expr;
+  if(!vm->stack)
+    vm->stack = g_array_sized_new(FALSE, FALSE, sizeof(value_t),
+        MAX(1, vm->expr?vm->expr->stack_depth:1));
 
-  for(vm->ip = code->data; (vm->ip-code->data)<code->len; vm->ip++)
+  for(vm->ip = vm->code; (vm->ip-vm->code)<vm->len; vm->ip++)
   {
     //g_message("stack %d, op %d", vm->stack->len, *vm->ip);
     if(*vm->ip == EXPR_OP_IMMEDIATE)
-    {
-      v1 = *((value_t *)(vm->ip+1));
-      if(value_is_string(v1))
-      {
-        v1.value.string = g_strdup((gchar *)vm->ip+2);
-        vm->ip += strlen(value_get_string(v1))+2;
-      }
-      else
-        vm->ip+=sizeof(value_t);
-      vm_push(vm, v1);
-    }
+      vm_immediate(vm);
     else if(*vm->ip == EXPR_OP_CACHED)
       vm->use_cached = *(++vm->ip);
     else if(*vm->ip == EXPR_OP_VARIABLE)
@@ -264,12 +267,21 @@ value_t vm_run ( expr_cache_t *expr )
       vm_push(vm, v1);
     }
     else if(!vm_op_binary(vm))
+    {
       g_message("invalid op");
+      break;
+    }
   }
+
+  return value_na;
+}
+
+static value_t vm_free ( vm_t *vm )
+{
+  value_t v1;
 
   if(vm->stack->len!=1)
     g_message("stack too long");
-
 
   v1=value_na;
   while(vm->stack->len>0)
@@ -278,8 +290,48 @@ value_t vm_run ( expr_cache_t *expr )
     if(vm->stack->len)
       value_free(v1);
   }
-  expr->stack_depth = MAX(expr->stack_depth, vm->max_stack);
+  if(vm->expr)
+    vm->expr->stack_depth = MAX(vm->expr->stack_depth, vm->max_stack);
+
   g_array_unref(vm->stack);
   g_free(vm);
+
   return v1;
+}
+
+value_t vm_expr_eval ( expr_cache_t *expr )
+{
+  vm_t *vm;
+
+  vm = g_malloc0(sizeof(vm_t));
+
+  vm->code = expr->code->data;
+  vm->len = expr->code->len;
+  vm->widget = expr->widget;
+  vm->event = expr->event;
+  vm->expr = expr;
+
+  vm_run(vm);
+
+  return vm_free(vm);
+}
+
+GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2 );
+void vm_run_action ( gchar *func, gchar *expr1, gchar *expr2, GtkWidget *w, GdkEvent *e )
+{
+  GByteArray *code;
+  vm_t *vm;
+
+  vm = g_malloc0(sizeof(vm_t));
+
+  code = parser_action_compat(func, expr1, expr2);
+  vm->code = code->data;
+  vm->len = code->len;
+  vm->widget = w;
+  vm->event = e;
+
+  vm_run(vm);
+  value_free(vm_free(vm));
+
+  g_byte_array_unref(code);
 }

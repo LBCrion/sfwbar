@@ -34,7 +34,7 @@ typedef struct {
 typedef struct {
   gchar *name;
   gint flags;
-  GQuark quark;
+  const gchar *id;
   ModuleActionFunc function;
 } ModuleActionHandlerV1;
 
@@ -76,8 +76,8 @@ void module_invalidate_all ( void );
 gboolean module_is_function ( gchar *identifier );
 gboolean module_check_flag ( gchar *identifier, gint flag );
 void *module_get_value ( GScanner *scanner );
-ModuleActionHandlerV1 *module_action_get ( GQuark quark );
-void module_action_exec ( GQuark quark, gchar *param, gchar *addr, void *,
+ModuleActionHandlerV1 *module_action_get ( const gchar *id );
+void module_action_exec ( const gchar *id, gchar *param, gchar *addr, void *,
     void *, void *, void * );
 void module_actions_add ( ModuleActionHandlerV1 **ahandler, gchar *name );
 void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler, gchar *name);

@@ -32,7 +32,7 @@ static void taskbar_init ( Taskbar *self )
 
   flow_grid_invalidate(GTK_WIDGET(self));
   action = action_new();
-  action->quark = g_quark_from_static_string("taskbaritemdefault");
+  action->id = g_intern_static_string("taskbaritemdefault");
   base_widget_set_action(GTK_WIDGET(self), 1, 0, action);
 }
 

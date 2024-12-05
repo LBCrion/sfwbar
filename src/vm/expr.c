@@ -793,7 +793,7 @@ gboolean expr_cache_eval ( expr_cache_t *expr )
     return FALSE;
 
   expr->vstate = FALSE;
-  v1 = vm_run(expr);
+  v1 = vm_expr_eval(expr);
   if(v1.type==EXPR_TYPE_STRING)
     eval = v1.value.string;
   else if(v1.type==EXPR_TYPE_NUMERIC)
@@ -857,6 +857,9 @@ void expr_dep_add ( gchar *ident, expr_cache_t *expr )
   GList *list;
   expr_cache_t *iter;
   gchar *vname;
+
+  if(!expr)
+    return;
 
   if(!expr_deps)
     expr_deps = g_hash_table_new_full((GHashFunc)str_nhash,

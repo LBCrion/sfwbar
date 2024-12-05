@@ -9,7 +9,7 @@ typedef struct user_action {
   guchar ncond;
   expr_cache_t *command;
   expr_cache_t *addr;
-  GQuark quark;
+  const gchar *id;
 } action_t;
 
 void action_exec ( GtkWidget *, action_t *, GdkEvent *, window_t *, guint16 *);

@@ -14,25 +14,25 @@
 #include "gui/menu.h"
 #include "gui/pageritem.h"
 #include "gui/popup.h"
+#include "util/string.h"
 
-static void exec_action ( gchar *cmd, gchar *name, void *widget,
-    void *event, void *win, void *state )
+static value_t action_exec_impl ( vm_t *vm, value_t p[], gint np )
 {
   gint argc;
   gchar **argv;
 
-  if(!cmd || !g_shell_parse_argv(cmd,&argc,&argv,NULL))
-    return;
-  g_spawn_async(NULL,argv,NULL,G_SPAWN_SEARCH_PATH |
-       G_SPAWN_STDOUT_TO_DEV_NULL |
-       G_SPAWN_STDERR_TO_DEV_NULL,NULL,NULL,NULL,NULL);
-  g_strfreev(argv);
-}
+  if(np!=1 || !value_is_string(p[0]) || !p[0].value.string)
+    return value_na;
 
-static ModuleActionHandlerV1 exec_handler = {
-  .name = "Exec",
-  .function = (ModuleActionFunc)exec_action
-};
+  if(!g_shell_parse_argv(p[0].value.string, &argc, &argv, NULL))
+    return value_na;
+  g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH |
+       G_SPAWN_STDOUT_TO_DEV_NULL |
+       G_SPAWN_STDERR_TO_DEV_NULL, NULL, NULL, NULL, NULL);
+  g_strfreev(argv);
+
+  return value_na;
+}
 
 static void function_action ( gchar *cmd, gchar *name, void *widget,
     void *event, void *win, void *state )
@@ -51,7 +51,7 @@ static void piperead_action ( gchar *cmd, gchar *name, void *widget,
 {
   config_pipe_read(cmd);
 }
-  
+ 
 static ModuleActionHandlerV1 piperead_handler = {
   .name = "PipeRead",
   .function = piperead_action
@@ -482,7 +482,7 @@ static void eval_action ( gchar *cmd, gchar *name, void *widget,
   if(!cmd || !name)
     return;
 
-  val = config_value_string(g_strdup(""), cmd);
+  val = str_escape(cmd);
   scanner_var_new(name, NULL, val, G_TOKEN_SET, VT_FIRST);
   g_free(val);
 }
@@ -554,7 +554,6 @@ static ModuleActionHandlerV1 workspace_activate_handler = {
 };
 
 static ModuleActionHandlerV1 *action_handlers[] = {
-  &exec_handler,
   &function_handler,
   &piperead_handler,
   &menuclear_handler,
@@ -594,5 +593,6 @@ static ModuleActionHandlerV1 *action_handlers[] = {
 
 void action_lib_init ( void )
 {
+  vm_func_add("exec", action_exec_impl, TRUE);
   module_actions_add(action_handlers,"action library");
 }

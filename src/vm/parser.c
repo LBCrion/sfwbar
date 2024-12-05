@@ -246,13 +246,9 @@ static gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code )
   return parser_ops(scanner, code, 0);
 }
 
-GByteArray *parser_expr_compile ( gchar *expr )
+static GScanner *parser_scanner_new ( void )
 {
   GScanner *scanner;
-  GByteArray *code;
-
-  if(!expr)
-    return NULL;
 
   scanner = g_scanner_new(NULL);
   scanner->config->scan_octal = 0;
@@ -268,6 +264,25 @@ GByteArray *parser_expr_compile ( gchar *expr )
       scanner->config->cset_identifier_first, NULL);
   g_scanner_set_scope(scanner, 0);
 
+  return scanner;
+}
+
+static void parser_scanner_free ( GScanner *scanner )
+{
+  g_free(scanner->config->cset_identifier_nth);
+  g_free(scanner->config->cset_identifier_first);
+  g_scanner_destroy(scanner);
+}
+
+GByteArray *parser_expr_compile ( gchar *expr )
+{
+  GScanner *scanner;
+  GByteArray *code;
+
+  if(!expr)
+    return NULL;
+
+  scanner = parser_scanner_new();
   g_scanner_input_text(scanner, expr, strlen(expr));
 
   code = g_byte_array_new();
@@ -276,9 +291,48 @@ GByteArray *parser_expr_compile ( gchar *expr )
     g_byte_array_free(code, TRUE);
     code = NULL;
   }
-  g_free(scanner->config->cset_identifier_nth);
-  g_free(scanner->config->cset_identifier_first);
-  g_scanner_destroy(scanner);
+
+  parser_scanner_free(scanner);
+
+  return code;
+}
+
+GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2 )
+{
+  gint np = !!expr1 + !!expr2;
+  GByteArray *code;
+  GScanner *scanner;
+  guint8 data[sizeof(gpointer)+2];
+
+  scanner = parser_scanner_new();
+  code = g_byte_array_new();
+  if(expr1)
+  {
+    g_scanner_input_text(scanner, expr1, strlen(expr1));
+    if(!parser_expr_parse(scanner, code))
+    {
+      g_byte_array_free(code, TRUE);
+      parser_scanner_free(scanner);
+      return NULL;
+    }
+    parser_scanner_free(scanner);
+  }
+  if(expr2)
+  {
+    g_scanner_input_text(scanner, expr2, strlen(expr2));
+    if(!parser_expr_parse(scanner, code))
+    {
+      g_byte_array_free(code, TRUE);
+      parser_scanner_free(scanner);
+      return NULL;
+    }
+    parser_scanner_free(scanner);
+  }
+
+  *((gconstpointer *)(data+2)) = parser_identifier_lookup(action);
+  data[0]=EXPR_OP_FUNCTION;
+  data[1]=np;
+  g_byte_array_append(code, data, sizeof(gpointer)+2);
 
   return code;
 }

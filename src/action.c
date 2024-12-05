@@ -8,7 +8,7 @@
 #include "trigger.h"
 #include "gui/taskbaritem.h"
 #include "util/string.h"
-#include "vm/expr.h"
+#include "vm/vm.h"
 
 static GHashTable *functions;
 
@@ -69,7 +69,14 @@ void action_exec ( GtkWidget *widget, action_t *action,
   if(!action)
     return;
 
-  if( !(ahandler = module_action_get(action->quark)) )
+  if(vm_func_lookup((gchar *)action->id))
+  {
+    vm_run_action((gchar *)action->id, action->command->definition,
+        action->addr->definition, widget, event);
+    return;
+  }
+
+  if( !(ahandler = module_action_get(action->id)) )
     return;
 
   addr = (ahandler->flags & MODULE_ACT_ADDRESS_ONLY)?
@@ -133,7 +140,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
     return;
   }
 
-  module_action_exec(action->quark,
+  module_action_exec(action->id,
       (ahandler->flags & MODULE_ACT_CMD_BY_DEF)?action->command->definition:
       action->command->cache, action->addr->cache, widget, event, win, &state);
 }
@@ -159,7 +166,7 @@ action_t *action_dup ( action_t *src )
   dest = action_new();
   dest->cond = src->cond;
   dest->ncond = src->ncond;
-  dest->quark = src->quark;
+  dest->id = src->id;
 
   dest->command->definition = g_strdup(src->command->definition);
   dest->command->cache = g_strdup(src->command->cache);
