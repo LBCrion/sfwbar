@@ -644,7 +644,7 @@ static gboolean net_rt_request ( gint sock )
 static value_t network_func_netstat ( vm_t *vm, value_t p[], gint np )
 {
   iface_info *iface;
-  gdouble result;
+  gdouble result = 0;
 
   if(np>2 || !value_is_string(p[0]))
     return value_na;
