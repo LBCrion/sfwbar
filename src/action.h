@@ -5,6 +5,8 @@
 #include "vm/expr.h"
 
 typedef struct user_action {
+  guint8 *code;
+  gint len;
   guchar cond;
   guchar ncond;
   expr_cache_t *command;

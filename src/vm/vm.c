@@ -305,8 +305,8 @@ value_t vm_expr_eval ( expr_cache_t *expr )
 
   vm = g_malloc0(sizeof(vm_t));
 
-  vm->code = expr->code->data;
-  vm->len = expr->code->len;
+  vm->code = expr->code;
+  vm->len = expr->len;
   vm->widget = expr->widget;
   vm->event = expr->event;
   vm->expr = expr;
@@ -324,14 +324,14 @@ void vm_run_action ( gchar *func, gchar *expr1, gchar *expr2, GtkWidget *w, GdkE
 
   vm = g_malloc0(sizeof(vm_t));
 
-  code = parser_action_compat(func, expr1, expr2);
-  vm->code = code->data;
-  vm->len = code->len;
-  vm->widget = w;
-  vm->event = e;
+  if( (code = parser_action_compat(func, expr1, expr2)) )
+  {
+    vm->code = g_byte_array_steal(code, &vm->len);
+    g_byte_array_unref(code);
+    vm->widget = w;
+    vm->event = e;
 
-  vm_run(vm);
-  value_free(vm_free(vm));
-
-  g_byte_array_unref(code);
+    vm_run(vm);
+    value_free(vm_free(vm));
+  }
 }

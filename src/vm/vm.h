@@ -34,9 +34,10 @@ typedef struct {
   gboolean deterministic;
 } vm_function_t;
 
-#define vm_param_check_string(vm, np, p, n) { if(np>n && (value_is_string(p[n]) || value_is_na(p[n]))) {if(value_is_na(p[n])) p[n] = value_new_string(g_strdup("")); } else return value_na; }
-#define vm_param_check_numeric(vm, np, p, n) { if(np>n && (value_is_numeric(p[n]) || value_is_na(p[n]))) {if(value_is_na(p[n])) p[n] = value_new_numeric(0); } else return value_na; }
-
+#define vm_param_check_np(vm, np, n, fname) { if(np!=n) { return value_na; } }
+#define vm_param_check_np_range(vm, np, min, max, fname) { if(np<min || np>max) { return value_na; } }
+#define vm_param_check_string(vm, p, n, fname) { if(!value_like_string(p[n])) { return value_na; } }
+#define vm_param_check_numeric(vm, p, n, fname) { if(!value_like_numeric(p[n])) { return value_na; } }
 
 GByteArray *parser_expr_compile ( gchar *expr );
 value_t vm_expr_eval ( expr_cache_t *expr );

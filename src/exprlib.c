@@ -22,9 +22,10 @@ static value_t expr_lib_mid ( vm_t *vm, value_t p[], gint np )
 
   gint len, c1, c2;
 
-  if(np!=3 || !value_like_string(p[0]) || !value_like_numeric(p[1]) ||
-        !value_like_numeric(p[2]))
-    return value_na;
+  vm_param_check_np(vm, np, 3, "mid");
+  vm_param_check_string(vm, p, 0, "mid");
+  vm_param_check_numeric(vm, p, 1, "mid");
+  vm_param_check_numeric(vm, p, 2, "mid");
 
   c1 = value_get_numeric(p[1]);
   c2 = value_get_numeric(p[2]);
@@ -41,11 +42,10 @@ static value_t expr_lib_mid ( vm_t *vm, value_t p[], gint np )
 /* replace a substring within a string */
 static value_t expr_lib_replace( vm_t *vm, value_t p[], gint np )
 {
-  if(np!=3 || !value_like_string(p[0]) || !value_like_string(p[1]))
-    return value_na;
-
-  if(!value_like_string(p[2]))
-    return value_new_string(g_strdup(value_get_string(p[0])));
+  vm_param_check_np(vm, np, 3, "replace");
+  vm_param_check_string(vm, p, 0, "replace");
+  vm_param_check_string(vm, p, 1, "replace");
+  vm_param_check_string(vm, p, 2, "replace");
 
   return value_new_string(str_replace(value_get_string(p[0]), value_get_string(p[1]),
         value_get_string(p[2])));
@@ -117,8 +117,9 @@ static value_t expr_lib_extract( vm_t *vm, value_t p[0], gint np )
   GRegex *regex;
   GMatchInfo *match;
 
-  if(np!=2 || !value_like_string(p[0]) || !value_like_string(p[1]))
-    return value_na;
+  vm_param_check_np(vm, np, 2, "extract");
+  vm_param_check_string(vm, p, 0, "extract");
+  vm_param_check_string(vm, p, 1, "extract");
 
   if( !(regex = g_regex_new(value_get_string(p[1]), 0, 0, NULL)) )
     return value_na;
@@ -142,11 +143,13 @@ static value_t expr_lib_pad ( vm_t *vm, value_t p[], gint np )
   gint n, len, sign;
   gchar padchar;
 
-  if(np<2 || np>3 || !value_like_string(p[0]) || !value_like_numeric(p[1]))
-    return value_na;
+  vm_param_check_np_range(vm, np, 2, 3, "pad");
+  vm_param_check_string(vm, p, 0, "pad");
+  vm_param_check_numeric(vm, p, 1, "pad");
+  if(np==3)
+    vm_param_check_string(vm, p, 3, "pad");
 
-  padchar = (np==3 && value_like_string(p[2]) && value_get_string(p[2]))?
-    *(value_get_string(p[2])) : ' ';
+  padchar = (np==3)?  *(value_get_string(p[2])) : ' ';
 
   len = strlen(value_get_string(p[0]));
   n = value_get_numeric(p[1]);
@@ -176,10 +179,12 @@ static value_t expr_lib_time ( vm_t *vm, value_t p[], gint np )
   GDateTime *time;
   gchar *str;
 
-  if(np>2)
-    return value_na;
-
-  if(np<2 || !value_like_string(p[1]))
+  vm_param_check_np_range(vm, np, 0, 2, "time");
+  if(np>0)
+    vm_param_check_string(vm, p, 0, "time");
+  if(np==2)
+    vm_param_check_string(vm, p, 1, "time");
+  if(np<2)
     time = g_date_time_new_now_local();
   else
   {
@@ -193,8 +198,8 @@ static value_t expr_lib_time ( vm_t *vm, value_t p[], gint np )
     g_time_zone_unref(tz);
   }
 
-  str = g_date_time_format (time, (np>0 && value_like_string(p[0]))?
-      value_get_string(p[0]) : "%a %b %d %H:%M:%S %Y" );
+  str = g_date_time_format (time, (np>0)? value_get_string(p[0]) :
+      "%a %b %d %H:%M:%S %Y" );
   g_date_time_unref(time);
 
   return value_new_string(str);
@@ -228,8 +233,9 @@ static value_t expr_lib_disk ( vm_t *vm, value_t p[], gint np )
 {
   struct statvfs fs;
 
-  if(np!=2 || !value_like_string(p[0]) || !value_like_string(p[1]))
-    return value_na;
+  vm_param_check_np(vm, np, 2, "disk");
+  vm_param_check_string(vm, p, 0, "disk");
+  vm_param_check_string(vm, p, 1, "disk");
 
   if(statvfs(value_get_string(p[0]), &fs))
     return value_na;
@@ -257,55 +263,63 @@ static value_t expr_lib_active ( vm_t *vm, value_t p[], gint np )
 
 static value_t expr_lib_max ( vm_t *vm, value_t p[], gint np )
 {
-  if(np==2 && value_like_numeric(p[0]) && value_like_numeric(p[1]))
-    return value_new_numeric(MAX(value_get_numeric(p[0]), value_get_numeric(p[1])));
+  vm_param_check_np(vm, np, 2, "max");
+  vm_param_check_numeric(vm, p, 0, "max");
+  vm_param_check_numeric(vm, p, 1, "max");
 
-  return value_na;
+  return value_new_numeric(MAX(value_get_numeric(p[0]), value_get_numeric(p[1])));
 }
 
 static value_t expr_lib_min ( vm_t *vm, value_t p[], gint np )
 {
-  if(np==2 && value_like_numeric(p[0]) && value_like_numeric(p[1]))
-    return value_new_numeric(MIN(value_get_numeric(p[0]), value_get_numeric(p[1])));
+  vm_param_check_np(vm, np, 2, "min");
+  vm_param_check_numeric(vm, p, 0, "min");
+  vm_param_check_numeric(vm, p, 1, "min");
 
-  return value_na;
+  return value_new_numeric(MIN(value_get_numeric(p[0]), value_get_numeric(p[1])));
 }
 
 static value_t expr_lib_val ( vm_t *vm, value_t p[], gint np )
 {
-  if(np==1 && value_like_string(p[0]))
-    return value_new_numeric(strtod(value_get_string(p[0]), NULL));
+  vm_param_check_np(vm, np, 1, "val");
+  vm_param_check_string(vm, p, 0, "val");
 
-  return value_na;
+  return value_new_numeric(strtod(value_get_string(p[0]), NULL));
 }
 
 static value_t expr_lib_str ( vm_t *vm, value_t p[], gint np )
 {
-  if(np>0 && value_like_numeric(p[0]))
-    return value_new_string(numeric_to_string(value_get_numeric(p[0]),
-        (np==2 && value_like_numeric(p[1]))? value_get_numeric(p[1]) : 0));
-  return value_na;
+  vm_param_check_np_range(vm, np, 1, 2, "str");
+  vm_param_check_numeric(vm, p, 0, "str");
+  if(np==2)
+    vm_param_check_numeric(vm, p, 1, "str");
+
+  return value_new_string(numeric_to_string(value_get_numeric(p[0]),
+      (np==2)? value_get_numeric(p[1]) : 0));
 }
 
 static value_t expr_lib_upper ( vm_t *vm, value_t p[], gint np )
 {
-  if(np==1 && value_like_string(p[0]))
-    return value_new_string(g_ascii_strup(value_get_string(p[0]), -1));
-  return value_na;
+  vm_param_check_np(vm, np, 1, "upper");
+  vm_param_check_string(vm, p, 0, "upper");
+
+  return value_new_string(g_ascii_strup(value_get_string(p[0]), -1));
 }
 
 static value_t expr_lib_lower ( vm_t *vm, value_t p[], gint np )
 {
-  if(np==1 && value_like_string(p[0]))
-    return value_new_string(g_ascii_strdown(value_get_string(p[0]), -1));
-  return value_na;
+  vm_param_check_np(vm, np, 1, "lower");
+  vm_param_check_string(vm, p, 0, "lower");
+
+  return value_new_string(g_ascii_strdown(value_get_string(p[0]), -1));
 }
 
 static value_t expr_lib_escape ( vm_t *vm, value_t p[], gint np )
 {
-  if(np==1 && value_like_string(p[0]))
-    return value_new_string(g_markup_escape_text(value_get_string(p[0]), -1));
-  return value_na;
+  vm_param_check_np(vm, np, 1, "escape");
+  vm_param_check_string(vm, p, 0, "escape");
+
+  return value_new_string(g_markup_escape_text(value_get_string(p[0]), -1));
 }
 
 static value_t expr_lib_bardir ( vm_t *vm, value_t p[], gint np )
@@ -335,8 +349,8 @@ static value_t expr_lib_gtkevent ( vm_t *vm, value_t p[], gint np )
   gint x,y,w,h,dir;
   gdouble result;
 
-  if(np!=1 || !value_like_string(p[0]))
-    return value_na;
+  vm_param_check_np(vm, np, 1, "GtkEvent");
+  vm_param_check_string(vm, p, 0, "GtkEvent");
 
   if(GTK_IS_BIN(vm->widget))
   {
@@ -397,8 +411,10 @@ static value_t expr_lib_window_info ( vm_t *vm, value_t p[], gint np )
 {
   window_t *win;
 
-  if(np==1 && value_like_string(p[0]) &&
-      (win = flow_item_get_source(vm->widget)) )
+  vm_param_check_np(vm, np, 1, "WindowInfo");
+  vm_param_check_string(vm, p, 0, "WindowInfo");
+
+  if( (win = flow_item_get_source(vm->widget)) )
   {
     if(!g_ascii_strcasecmp(value_get_string(p[0]), "appid"))
       return value_new_string(g_strdup(win->appid));
@@ -426,8 +442,8 @@ static value_t expr_lib_read ( vm_t *vm, value_t p[], gint np )
   gchar *fname, *result;
   GIOChannel *in;
 
-  if(np!=1 || !value_like_string(p[0]))
-    return value_na;
+  vm_param_check_np(vm, np, 1, "read");
+  vm_param_check_string(vm, p, 0, "read");
 
   if( !(fname = get_xdg_config_file(value_get_string(p[0]), NULL)) )
     return value_new_string(g_strdup_printf("Read: file not found '%s'",
@@ -448,8 +464,9 @@ static value_t expr_lib_read ( vm_t *vm, value_t p[], gint np )
 
 static value_t expr_iface_provider ( vm_t *vm, value_t p[], int np )
 {
-  if(np!=1 || !value_like_string(p[0]))
-    return value_na;
+  vm_param_check_np(vm, np, 1, "InterfaceProvider");
+  vm_param_check_string(vm, p, 0, "InterfaceProvider");
+
   return value_new_string(module_interface_provider_get(value_get_string(p[0])));
 }
 
@@ -457,7 +474,9 @@ static value_t expr_ident ( vm_t *vm, value_t p[], int np )
 {
   value_t result;
 
-  if(np!=1 || !value_like_string(p[0]) || !value_get_string(p[0]))
+  vm_param_check_np(vm, np, 1, "Ident");
+  vm_param_check_string(vm, p, 0, "Ident");
+  if(!value_get_string(p[0]))
     return value_na;
 
   result = value_new_numeric(scanner_is_variable(value_get_string(p[0])) ||
