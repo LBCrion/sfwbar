@@ -71,13 +71,13 @@ gboolean config_action ( GScanner *scanner, action_t **action_dst )
   if(!ident)
   {
     action->command->cache = g_strdup(scanner->value.v_string);
-    action->quark = g_quark_from_static_string("exec");
+    action->id = g_intern_static_string("exec");
   }
   else
   {
     for(ptr = ident; *ptr; ptr++)
       *ptr = g_ascii_tolower(*ptr);
-    action->quark = g_quark_from_string(ident);
+    action->id = g_intern_string(ident);
   }
 
   if(addr && cmd)

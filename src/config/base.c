@@ -235,37 +235,10 @@ gboolean config_is_section_end ( GScanner *scanner )
   return TRUE;
 }
 
-gchar *config_value_string ( gchar *dest, gchar *string )
-{
-  gint i,j=0,l;
-  gchar *result;
-
-  l = strlen(dest);
-
-  for(i=0;string[i];i++)
-    if(string[i] == '"' || string[i] == '\\')
-      j++;
-  result = g_malloc(l+i+j+3);
-  memcpy(result,dest,l);
-
-  result[l++]='"';
-  for(i=0;string[i];i++)
-  {
-    if(string[i] == '"' || string[i] == '\\')
-      result[l++]='\\';
-    result[l++] = string[i];
-  }
-  result[l++]='"';
-  result[l]=0;
-
-  g_free(dest);
-  return result;
-}
-
 gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign,
     gchar **id )
 {
-  gchar *value, *temp;
+  gchar *value, *temp, *temp2;
   gint pcount = 0;
   static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
 
@@ -286,7 +259,7 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign,
     }
     else
     {
-      value = config_value_string(g_strdup(""),temp);
+      value = str_escape(temp);
       g_free(temp);
     }
   }
@@ -307,7 +280,11 @@ gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign,
     switch((gint)g_scanner_get_next_token(scanner))
     {
       case G_TOKEN_STRING:
-        value = config_value_string(value, scanner->value.v_string);
+        temp = str_escape(scanner->value.v_string);
+        temp2 = value;
+        value = g_strconcat(temp2, temp, NULL);
+        g_free(temp);
+        g_free(temp2);
         break;
       case G_TOKEN_IDENTIFIER:
         temp = value;

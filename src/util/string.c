@@ -58,6 +58,29 @@ gchar *str_replace ( gchar *str, gchar *old, gchar *new )
   return dest;
 }
 
+gchar *str_escape ( gchar *string )
+{
+  gint i,j=0,l=0;
+  gchar *result;
+
+  for(i=0; string[i]; i++)
+    if(string[i] == '"' || string[i] == '\\')
+      j++;
+  result = g_malloc(i+j+3);
+
+  result[l++]='"';
+  for(i=0;string[i];i++)
+  {
+    if(string[i] == '"' || string[i] == '\\')
+      result[l++]='\\';
+    result[l++] = string[i];
+  }
+  result[l++]='"';
+  result[l]=0;
+
+  return result;
+}
+
 void *ptr_pass ( void *ptr )
 {
   return ptr;
