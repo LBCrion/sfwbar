@@ -7,6 +7,7 @@
 #include <gio/gio.h>
 #include "module.h"
 #include "trigger.h"
+#include "vm/vm.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
@@ -714,10 +715,49 @@ static void bz_name_disappeared_cb (GDBusConnection *con, const gchar *name,
   g_dbus_connection_signal_unsubscribe(bz_con, sub_chg);
 }
 
+static value_t bz_expr_get ( vm_t *vm, value_t p[], gint np )
+{
+  gchar *result = NULL;
+
+  if(np!=1 || !value_is_string(p[0]))
+    return value_na;
+
+  if( (result = module_queue_get_string(&update_q, value_get_string(p[0]))) )
+    return value_new_string(result);
+  if( (result = module_queue_get_string(&remove_q, value_get_string(p[0]))) )
+    return value_new_string(result);
+
+  return value_na;
+}
+
+static value_t bz_expr_state ( vm_t *vm, value_t p[], gint np )
+{
+  gdouble *result;
+  value_t ret;
+
+  if(np==1 && value_is_string(p[0]))
+  {
+    if(!g_ascii_strcasecmp(value_get_string(p[0]), "Running"))
+      return value_new_numeric(!!g_atomic_pointer_get(&adapters));
+
+    if( (result = module_queue_get_numeric(&update_q, value_get_string(p[0]))) )
+    {
+      ret = value_new_numeric(*result);
+      g_free(result);
+      return ret;
+    }
+  }
+
+  return value_na;
+}
+
 gboolean sfwbar_module_init ( void )
 {
   if( !(bz_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
     return FALSE;
+
+  vm_func_add("bluezget", bz_expr_get, FALSE);
+  vm_func_add("bluezstate", bz_expr_state, FALSE);
 
   update_q.trigger = g_intern_static_string("bluez_updated");
   remove_q.trigger = g_intern_static_string("bluez_removed");
@@ -726,41 +766,6 @@ gboolean sfwbar_module_init ( void )
       bz_name_appeared_cb, bz_name_disappeared_cb, NULL, NULL);
 
   return TRUE;
-}
-
-static void *bz_expr_get ( void **params, void *widget, void *event )
-{
-  gchar *result = NULL;
-
-  if(!params || !params[0])
-    return g_strdup("");
-
-  if( (result = module_queue_get_string(&update_q, params[0])) )
-    return result;
-  if( (result = module_queue_get_string(&remove_q, params[0])) )
-    return result;
-
-  return strdup("");
-}
-
-static void *bz_expr_state ( void **params, void *widget, void *event )
-{
-  gdouble *result;
-
-  if(params && params[0])
-  {
-    if(!g_ascii_strcasecmp(params[0], "Running"))
-    {
-      result = g_malloc0(sizeof(gdouble));
-      *result = !!g_atomic_pointer_get(&adapters);
-      return result;
-    }
-
-    if( (result = module_queue_get_numeric(&update_q, params[0])) )
-      return result;
-  }
-
-  return g_malloc0(sizeof(double));
 }
 
 static void bz_action_ack ( gchar *cmd, gchar *name, void *d1,
@@ -833,26 +838,6 @@ static void bz_action_remove ( gchar *cmd, gchar *name, void *d1,
   if(device)
     bz_remove(device);
 }
-
-ModuleExpressionHandlerV1 get_handler = {
-  .flags = 0,
-  .name = "BluezGet",
-  .parameters = "S",
-  .function = bz_expr_get
-};
-
-ModuleExpressionHandlerV1 state_handler = {
-  .flags = MODULE_EXPR_NUMERIC,
-  .name = "BluezState",
-  .parameters = "S",
-  .function = bz_expr_state
-};
-
-ModuleExpressionHandlerV1 *sfwbar_expression_handlers[] = {
-  &get_handler,
-  &state_handler,
-  NULL
-};
 
 ModuleActionHandlerV1 ack_handler = {
   .name = "BluezAck",
