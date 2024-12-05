@@ -18,8 +18,8 @@ static struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
 
 static value_t idle_inhibit_state ( vm_t *vm, value_t p[], gint np )
 {
-  return value_new_string(g_strdup((vm->cache->widget && g_object_get_data(
-            G_OBJECT(vm->cache->widget), "inhibitor"))?"on":"off"));
+  return value_new_string(g_strdup((vm->widget && g_object_get_data(
+            G_OBJECT(vm->widget), "inhibitor"))?"on":"off"));
 }
 
 gboolean sfwbar_module_init ( void )
