@@ -543,12 +543,88 @@ static value_t dn_count_func ( vm_t *vm, value_t p[], gint np )
   return value_new_numeric(result);
 }
 
+static value_t dn_expand_action ( vm_t *vm, value_t p[], gint np )
+{
+  guint64 id;
+  gchar *end;
+
+  vm_param_check_np(vm, np, 1, "NotificationExpand");
+  vm_param_check_string(vm, p, 0, "NotificationExpand");
+
+  if(value_is_string(p[0]) && p[0].value.string &&
+      (id = g_ascii_strtoull(p[0].value.string, &end, 10)) &&
+      !(end && *end) && id <= G_MAXUINT32)
+    dn_notification_expand(id);
+
+  return value_na;
+}
+
+static value_t dn_collapse_action ( vm_t *vm, value_t p[], gint np )
+{
+  dn_notification_collapse();
+
+  return value_na;
+}
+
+static value_t dn_close_action ( vm_t *vm, value_t p[], gint np )
+{
+  guint64 id;
+  gchar *end;
+
+  vm_param_check_np(vm, np, 1, "NotificationClose");
+  vm_param_check_string(vm, p, 0, "NotificationClose");
+
+  if(value_is_string(p[0]) && p[0].value.string &&
+      (id = g_ascii_strtoull(p[0].value.string, &end, 10)) &&
+      !(end && *end) && id <= G_MAXUINT32)
+    dn_notification_close(id, 2);
+
+  return value_na;
+}
+
+static value_t dn_action_action ( vm_t *vm, value_t p[], gint np )
+{
+  guint64 id;
+  gchar *end;
+
+  vm_param_check_np(vm, np, 2, "NotificationAction");
+  vm_param_check_string(vm, p, 0, "NotificationAction");
+  vm_param_check_string(vm, p, 1, "NotificationAction");
+
+  if(value_is_string(p[0]) && p[0].value.string && value_is_string(p[1]) &&
+      p[1].value.string &&
+      (id = g_ascii_strtoull(p[0].value.string, &end, 10)) &&
+      !(end && *end) && id <= G_MAXUINT32)
+    dn_notification_action(id, p[1].value.string);
+
+  return value_na;
+}
+
+static value_t dn_ack_action ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "NotificationAck");
+  vm_param_check_string(vm, p, 0, "NotificationAck");
+
+  if(!g_ascii_strcasecmp(value_get_string(p[0]), "updated"))
+    module_queue_remove(&update_q);
+  if(!g_ascii_strcasecmp(value_get_string(p[0]), "removed"))
+    module_queue_remove(&remove_q);
+  trigger_emit("notification-group");
+
+  return value_na;
+}
+
 gboolean sfwbar_module_init ( void )
 {
   vm_func_add("notificationget", dn_get_func, FALSE);
   vm_func_add("notificationgroup", dn_group_func, FALSE);
   vm_func_add("notificationactivegroup", dn_active_group_func, FALSE);
   vm_func_add("notificationcount", dn_count_func, FALSE);
+  vm_func_add("notificationclose", dn_close_action, TRUE);
+  vm_func_add("notificationaction", dn_action_action, TRUE);
+  vm_func_add("notificationack", dn_ack_action, TRUE);
+  vm_func_add("notificationexpand", dn_expand_action, TRUE);
+  vm_func_add("notificationcollapse", dn_collapse_action, TRUE);
   update_q.trigger = g_intern_static_string("notification-updated");
   remove_q.trigger = g_intern_static_string("notification-removed");
 
@@ -563,92 +639,3 @@ gboolean sfwbar_module_init ( void )
 
   return TRUE;
 }
-
-static void dn_expand_action ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  guint64 id;
-  gchar *end;
-
-  if(!cmd || !(id = g_ascii_strtoull(cmd, &end, 10)) || (end && *end) ||
-      id > G_MAXUINT32)
-    return;
-
-  dn_notification_expand(id);
-}
-
-static void dn_collapse_action ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  dn_notification_collapse();
-}
-
-static void dn_close_action ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  guint64 id;
-  gchar *end;
-
-  if(!cmd || !(id = g_ascii_strtoull(cmd, &end, 10)) || (end && *end) ||
-      id > G_MAXUINT32)
-    return;
-
-  dn_notification_close(id, 2);
-}
-
-static void dn_action_action ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  guint64 id;
-  gchar *end;
-
-  if(!cmd || !name || !(id = g_ascii_strtoull(name, &end, 10)) ||
-      (end && *end) || id > G_MAXUINT32)
-    return;
-
-  dn_notification_action(id, cmd);
-}
-
-static void dn_ack_action ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  if(!g_ascii_strcasecmp(cmd, "updated"))
-    module_queue_remove(&update_q);
-  if(!g_ascii_strcasecmp(cmd, "removed"))
-    module_queue_remove(&remove_q);
-  trigger_emit("notification-group");
-}
-
-ModuleActionHandlerV1 act_handler1 = {
-  .name = "NotificationClose",
-  .function = dn_close_action
-};
-
-ModuleActionHandlerV1 act_handler2 = {
-  .name = "NotificationAction",
-  .function = dn_action_action
-};
-
-ModuleActionHandlerV1 act_handler3 = {
-  .name = "NotificationAck",
-  .function = dn_ack_action
-};
-
-ModuleActionHandlerV1 act_handler4 = {
-  .name = "NotificationExpand",
-  .function = dn_expand_action
-};
-
-ModuleActionHandlerV1 act_handler5 = {
-  .name = "NotificationCollapse",
-  .function = dn_collapse_action
-};
-
-ModuleActionHandlerV1 *sfwbar_action_handlers[] = {
-  &act_handler1,
-  &act_handler2,
-  &act_handler3,
-  &act_handler4,
-  &act_handler5,
-  NULL
-};
