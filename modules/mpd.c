@@ -199,61 +199,58 @@ static value_t mpd_expr_func ( vm_t *vm, value_t p[], gint np )
   return value_new_string(g_strdup("Invalid request"));
 }
 
+static value_t mpd_command ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "MpdCommand");
+  vm_param_check_string(vm, p, 0, "MpdCommand");
+
+  if(!value_is_string(p[0]) || !p[0].value.string)
+    return value_na;
+
+  mpd_run_noidle(conn);
+  if(!g_ascii_strcasecmp(p[0].value.string, "play"))
+    mpd_run_play(conn);
+  else if(!g_ascii_strcasecmp(p[0].value.string, "prev"))
+    mpd_run_previous(conn);
+  else if(!g_ascii_strcasecmp(p[0].value.string, "next"))
+    mpd_run_next(conn);
+  else if(!g_ascii_strcasecmp(p[0].value.string, "pause"))
+    mpd_run_toggle_pause(conn);
+  else if(!g_ascii_strcasecmp(p[0].value.string, "stop"))
+    mpd_run_stop(conn);
+  else if(!g_ascii_strncasecmp(p[0].value.string, "random", 6))
+    mpd_bool_set(mpd_status_get_random, mpd_run_random, p[0].value.string+6);
+  else if(!g_ascii_strncasecmp(p[0].value.string, "repeat", 6))
+    mpd_bool_set(mpd_status_get_repeat, mpd_run_repeat, p[0].value.string+6);
+
+  mpd_response_finish(conn);
+  mpd_send_idle_mask(conn,MPD_IDLE_PLAYER | MPD_IDLE_OPTIONS);
+
+  return value_na;
+}
+
+static value_t mpd_set_passwd ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "MpdSetPassword");
+  vm_param_check_string(vm, p, 0, "MpdSetPassword");
+
+  if(value_is_string(p[0]) && p[0].value.string && *(p[0].value.string))
+  {
+    g_free(password);
+    password = g_strdup(p[0].value.string);
+  }
+  else
+    password = NULL;
+
+  return value_na;
+}
+
 gboolean sfwbar_module_init ( void )
 {
   vm_func_add("mpd", mpd_expr_func, FALSE);
+  vm_func_add("mpdcommand", mpd_command, TRUE);
+  vm_func_add("mpdsetpassword", mpd_set_passwd, TRUE);
   if(mpd_connect(NULL))
     g_timeout_add (1000,(GSourceFunc )mpd_connect,NULL);
   return TRUE;
 }
-
-static void mpd_command ( gchar *cmd, gchar *dummy, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  if(!conn)
-    return;
-  mpd_run_noidle(conn);
-  if(!g_ascii_strcasecmp(cmd,"play"))
-    mpd_run_play(conn);
-  else if(!g_ascii_strcasecmp(cmd,"prev"))
-    mpd_run_previous(conn);
-  else if(!g_ascii_strcasecmp(cmd,"next"))
-    mpd_run_next(conn);
-  else if(!g_ascii_strcasecmp(cmd,"pause"))
-    mpd_run_toggle_pause(conn);
-  else if(!g_ascii_strcasecmp(cmd,"stop"))
-    mpd_run_stop(conn);
-  else if(!g_ascii_strncasecmp(cmd,"random",6))
-    mpd_bool_set(mpd_status_get_random, mpd_run_random, cmd+6);
-  else if(!g_ascii_strncasecmp(cmd,"repeat",6))
-    mpd_bool_set(mpd_status_get_repeat, mpd_run_repeat, cmd+6);
-
-  mpd_response_finish(conn);
-  mpd_send_idle_mask(conn,MPD_IDLE_PLAYER | MPD_IDLE_OPTIONS);
-}
-
-static void mpd_set_passwd ( gchar *pwd, gchar *dummy, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  g_free(password);
-  if(pwd && *pwd)
-    password = g_strdup(pwd);
-  else
-    password = NULL;
-}
-
-ModuleActionHandlerV1 act_handler1 = {
-  .name = "MpdSetPassword",
-  .function = mpd_set_passwd
-};
-
-ModuleActionHandlerV1 act_handler2 = {
-  .name = "MpdCommand",
-  .function = mpd_command
-};
-
-ModuleActionHandlerV1 *sfwbar_action_handlers[] = {
-  &act_handler1,
-  &act_handler2,
-  NULL
-};
