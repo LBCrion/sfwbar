@@ -751,6 +751,83 @@ static value_t bz_expr_state ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
+static value_t bz_action_ack ( vm_t *vm, value_t p[], gint np )
+{
+  module_queue_remove(&update_q);
+
+  return value_na;
+}
+
+static value_t bz_action_ack_removed ( vm_t *vm, value_t p[], gint np )
+{
+  module_queue_remove(&remove_q);
+
+  return value_na;
+}
+
+static value_t bz_action_scan ( vm_t *vm, value_t p[], gint np )
+{
+  bz_scan(bz_con, 10000);
+
+  return value_na;
+}
+
+static value_t bz_action_connect ( vm_t *vm, value_t p[], gint np )
+{
+  BzDevice *device;
+
+  vm_param_check_np(vm, np, 1, "BluezConnect");
+  vm_param_check_string(vm, p, 0, "BluezConnect");
+
+  if(devices)
+  {
+    device = g_hash_table_lookup(devices, value_get_string(p[0]));
+    if(device && !device->connected)
+      bz_connect(device);
+  }
+
+  return value_na;
+}
+
+static value_t bz_action_pair ( vm_t *vm, value_t p[], gint np )
+{
+  BzDevice *device;
+
+  vm_param_check_np(vm, np, 1, "BluezPair");
+  vm_param_check_string(vm, p, 0, "BluezPair");
+
+  if(devices && (device=g_hash_table_lookup(devices, value_get_string(p[0]))) )
+    bz_pair(device);
+
+  return value_na;
+}
+
+static value_t bz_action_disconnect ( vm_t *vm, value_t p[], gint np )
+{
+  BzDevice *device;
+
+  vm_param_check_np(vm, np, 1, "BluezDisconnect");
+  vm_param_check_string(vm, p, 0, "BluezDisconnect");
+
+  if(devices && (device=g_hash_table_lookup(devices, value_get_string(p[0]))) )
+    bz_disconnect(device);
+
+  return value_na;
+}
+
+static value_t bz_action_remove ( vm_t *vm, value_t p[], gint np )
+{
+  BzDevice *device;
+
+  vm_param_check_np(vm, np, 1, "BluezRemove");
+  vm_param_check_string(vm, p, 0, "BluezRemove");
+
+  if(devices && (device=g_hash_table_lookup(devices, value_get_string(p[0]))) )
+    bz_remove(device);
+
+  return value_na;
+}
+
 gboolean sfwbar_module_init ( void )
 {
   if( !(bz_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
@@ -758,6 +835,13 @@ gboolean sfwbar_module_init ( void )
 
   vm_func_add("bluezget", bz_expr_get, FALSE);
   vm_func_add("bluezstate", bz_expr_state, FALSE);
+  vm_func_add("bluezack", bz_action_ack, TRUE);
+  vm_func_add("bluezackremoved", bz_action_ack_removed, TRUE);
+  vm_func_add("bluezscan", bz_action_scan, TRUE);
+  vm_func_add("bluezconnect", bz_action_connect, TRUE);
+  vm_func_add("bluezpair", bz_action_pair, TRUE);
+  vm_func_add("bluezdisconnect", bz_action_disconnect, TRUE);
+  vm_func_add("bluezremove", bz_action_remove, TRUE);
 
   update_q.trigger = g_intern_static_string("bluez_updated");
   remove_q.trigger = g_intern_static_string("bluez_removed");
@@ -767,120 +851,3 @@ gboolean sfwbar_module_init ( void )
 
   return TRUE;
 }
-
-static void bz_action_ack ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  module_queue_remove(&update_q);
-}
-
-static void bz_action_ack_removed ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  module_queue_remove(&remove_q);
-}
-
-static void bz_action_scan ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  bz_scan(bz_con, 10000);
-}
-
-static void bz_action_connect ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  BzDevice *device;
-
-  if(!devices)
-    return;
-
-  device = g_hash_table_lookup(devices, cmd);
-  if(!device || device->connected)
-    return;
-  bz_connect(device);
-}
-
-static void bz_action_pair ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  BzDevice *device;
-
-  if(!devices)
-    return;
-
-  device = g_hash_table_lookup(devices, cmd);
-  if(device)
-    bz_pair(device);
-}
-
-static void bz_action_disconnect ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  BzDevice *device;
-
-  if(!devices)
-    return;
-
-  device = g_hash_table_lookup(devices, cmd);
-  if(device)
-    bz_disconnect(device);
-}
-
-static void bz_action_remove ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  BzDevice *device;
-
-  if(!devices)
-    return;
-
-  device = g_hash_table_lookup(devices, cmd);
-  if(device)
-    bz_remove(device);
-}
-
-ModuleActionHandlerV1 ack_handler = {
-  .name = "BluezAck",
-  .function = bz_action_ack
-};
-
-ModuleActionHandlerV1 ack_removed_handler = {
-  .name = "BluezAckRemoved",
-  .function = bz_action_ack_removed
-};
-
-ModuleActionHandlerV1 scan_handler = {
-  .name = "BluezScan",
-  .function = bz_action_scan
-};
-
-ModuleActionHandlerV1 connect_handler = {
-  .name = "BluezConnect",
-  .function = bz_action_connect
-};
-
-ModuleActionHandlerV1 pair_handler = {
-  .name = "BluezPair",
-  .function = bz_action_pair
-};
-
-ModuleActionHandlerV1 remove_handler = {
-  .name = "BluezRemove",
-  .function = bz_action_remove
-};
-
-ModuleActionHandlerV1 disconnect_handler = {
-  .name = "BluezDisconnect",
-  .function = bz_action_disconnect
-};
-
-ModuleActionHandlerV1 *sfwbar_action_handlers[] = {
-  &ack_handler,
-  &ack_removed_handler,
-  &scan_handler,
-  &connect_handler,
-  &disconnect_handler,
-  &pair_handler,
-  &remove_handler,
-  NULL
-};
