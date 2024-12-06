@@ -19,61 +19,55 @@ static struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
 static value_t idle_inhibit_state ( vm_t *vm, value_t p[], gint np )
 {
   return value_new_string(g_strdup((vm->widget && g_object_get_data(
-            G_OBJECT(vm->widget), "inhibitor"))?"on":"off"));
+            G_OBJECT(vm->widget), "inhibitor"))? "on" : "off"));
 }
 
-gboolean sfwbar_module_init ( void )
-{
-  vm_func_add("idleinhibitstate", idle_inhibit_state, FALSE);
-  idle_inhibit_manager = wayland_iface_register(
-          zwp_idle_inhibit_manager_v1_interface.name, 1, 1,
-          &zwp_idle_inhibit_manager_v1_interface);
-  return TRUE;
-}
-
-static void idle_inhibitor_action ( gchar *act, gchar *dummy, void *widget,
-    void *d2, void *d3, void *d4 )
+static value_t idle_inhibitor_action ( vm_t *vm, value_t p[], gint np )
 {
   struct wl_surface *surface;
   struct zwp_idle_inhibitor_v1 *inhibitor;
   gboolean inhibit;
 
-  inhibitor = g_object_get_data(G_OBJECT(widget), "inhibitor");
+  vm_param_check_np(vm, np, 1, "SetIdleInhibitor");
+  vm_param_check_string(vm, p, 0, "SetIdleInhibitor");
 
-  if(!g_ascii_strcasecmp(act, "on"))
+  inhibitor = g_object_get_data(G_OBJECT(vm->widget), "inhibitor");
+
+  if(!g_ascii_strcasecmp(value_get_string(p[0]), "on"))
     inhibit = TRUE;
-  else if(!g_ascii_strcasecmp(act, "off"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "off"))
     inhibit = FALSE;
-  else if(!g_ascii_strcasecmp(act, "toggle"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "toggle"))
     inhibit = !inhibitor;
   else
-    return;
+    return value_na;
 
   if(inhibit && !inhibitor)
   {
     if( !(surface = gdk_wayland_window_get_wl_surface(
-        gtk_widget_get_window(widget))) )
-      return;
+        gtk_widget_get_window(vm->widget))) )
+      return value_na;
 
     inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(
         idle_inhibit_manager, surface );
-    g_object_set_data(G_OBJECT(widget), "inhibitor", inhibitor);
+    g_object_set_data(G_OBJECT(vm->widget), "inhibitor", inhibitor);
     trigger_emit("idleinhibitor");
   }
   else if( !inhibit && inhibitor )
   {
-    g_object_set_data(G_OBJECT(widget), "inhibitor", NULL);
+    g_object_set_data(G_OBJECT(vm->widget), "inhibitor", NULL);
     zwp_idle_inhibitor_v1_destroy(inhibitor);
     trigger_emit("idleinhibitor");
   }
+  return value_na;
 }
 
-ModuleActionHandlerV1 act_handler1 = {
-  .name = "SetIdleInhibitor",
-  .function = idle_inhibitor_action
-};
-
-ModuleActionHandlerV1 *sfwbar_action_handlers[] = {
-  &act_handler1,
-  NULL
-};
+gboolean sfwbar_module_init ( void )
+{
+  vm_func_add("idleinhibitstate", idle_inhibit_state, FALSE);
+  vm_func_add("setidleinhibitor", idle_inhibitor_action, TRUE);
+  idle_inhibit_manager = wayland_iface_register(
+          zwp_idle_inhibit_manager_v1_interface.name, 1, 1,
+          &zwp_idle_inhibit_manager_v1_interface);
+  return TRUE;
+}
