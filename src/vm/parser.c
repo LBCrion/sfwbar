@@ -304,10 +304,10 @@ GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2 )
   GScanner *scanner;
   guint8 data[sizeof(gpointer)+2];
 
-  scanner = parser_scanner_new();
   code = g_byte_array_new();
   if(expr1)
   {
+    scanner = parser_scanner_new();
     g_scanner_input_text(scanner, expr1, strlen(expr1));
     if(!parser_expr_parse(scanner, code))
     {
@@ -319,6 +319,7 @@ GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2 )
   }
   if(expr2)
   {
+    scanner = parser_scanner_new();
     g_scanner_input_text(scanner, expr2, strlen(expr2));
     if(!parser_expr_parse(scanner, code))
     {
