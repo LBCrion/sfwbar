@@ -435,7 +435,8 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, expr_cache_t *expr )
 
   if(!update || !var->invalid)
   {
-    expr->vstate = expr->vstate || var->vstate;
+    if(expr)
+      expr->vstate = expr->vstate || var->vstate;
     return var;
   }
 
@@ -449,7 +450,8 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, expr_cache_t *expr )
       var->expr->parent = NULL;
       var->inuse = FALSE;
       var->vstate = var->expr->vstate;
-      expr->vstate = expr->vstate || var->expr->vstate;
+      if(expr)
+        expr->vstate = expr->vstate || var->expr->vstate;
       scanner_var_reset(var,NULL);
       scanner_var_values_update(var,g_strdup(var->expr->cache));
       var->invalid = FALSE;
@@ -458,7 +460,8 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, expr_cache_t *expr )
   else
   {
     scanner_file_glob(var->file);
-    expr->vstate = TRUE;
+    if(expr)
+      expr->vstate = TRUE;
     var->vstate = TRUE;
   }
 
@@ -515,10 +518,10 @@ value_t scanner_get_value ( gchar *ident, gboolean update, expr_cache_t *expr )
   g_free(fname);
   if(result.type == EXPR_TYPE_NUMERIC)
     g_debug("scanner: %s = %f (vstate: %d)", ident, result.value.numeric,
-        expr->vstate);
+        expr?  expr->vstate: 0);
   else if(result.type == EXPR_TYPE_STRING)
     g_debug("scanner: %s = %s (vstate: %d)", ident, result.value.string,
-        expr->vstate);
+        expr?  expr->vstate: 0);
   return result;
 }
 
