@@ -479,13 +479,11 @@ value_t scanner_get_value ( gchar *ident, gboolean update, expr_cache_t *expr )
   var = scanner_var_update(id, update, expr);
   g_free(id);
 
-  result.type = EXPR_TYPE_NA;
-
   if(!var)
   {
     g_free(fname);
     expr_dep_add(ident, expr);
-    return result;
+    return value_na;
   }
   if(var->type == G_TOKEN_SET)
     expr_dep_add(ident, expr);
@@ -512,7 +510,7 @@ value_t scanner_get_value ( gchar *ident, gboolean update, expr_cache_t *expr )
     else if(!g_strcmp0(fname,".age"))
       result.value.numeric = (g_get_monotonic_time() - var->ptime);
     else
-      result.type = EXPR_TYPE_NA;
+      result = value_na;
   }
 
   g_free(fname);
