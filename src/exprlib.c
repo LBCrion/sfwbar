@@ -111,7 +111,7 @@ static value_t expr_lib_lookup( vm_t *vm, value_t p[], gint np )
 }
 
 /* Extract substring using regex */
-static value_t expr_lib_extract( vm_t *vm, value_t p[0], gint np )
+static value_t expr_lib_extract( vm_t *vm, value_t p[], gint np )
 {
   value_t res;
   GRegex *regex;
