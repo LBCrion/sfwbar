@@ -322,10 +322,9 @@ void vm_run_action ( gchar *func, gchar *expr1, gchar *expr2, GtkWidget *w, GdkE
   GByteArray *code;
   vm_t *vm;
 
-  vm = g_malloc0(sizeof(vm_t));
-
   if( (code = parser_action_compat(func, expr1, expr2)) )
   {
+    vm = g_malloc0(sizeof(vm_t));
     vm->code = g_byte_array_steal(code, &vm->len);
     g_byte_array_unref(code);
     vm->widget = w;
