@@ -227,10 +227,10 @@ static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
   children = gtk_container_get_children(GTK_CONTAINER(
         base_widget_get_child(priv->tgroup)));
   if(children && !g_list_next(children) &&
-      base_widget_check_action_slot(priv->tgroup, slot))
+      base_widget_check_action_slot(priv->shell, slot))
   {
     win = flow_item_get_source(children->data);
-    if( (action = base_widget_get_action(priv->tgroup, slot,
+    if( (action = base_widget_get_action(priv->shell, slot,
         base_widget_get_modifiers(self))) )
       action_exec(self, action, (GdkEvent *)ev,
           win?win:wintree_from_id(wintree_get_focus()), NULL);
