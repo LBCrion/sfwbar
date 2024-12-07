@@ -280,6 +280,7 @@ static void sni_menu_get_layout_cb ( GObject *src, GAsyncResult *res,
   GVariantIter *iter;
   gchar *tmp;
   guint32 rev, id;
+  struct ats_timeout_ctx *ctx;
 
   if( !(result = g_dbus_connection_call_finish(G_DBUS_CONNECTION(src), res,
           NULL)) )
@@ -306,7 +307,7 @@ static void sni_menu_get_layout_cb ( GObject *src, GAsyncResult *res,
   g_variant_unref(dict);
   g_variant_unref(result);
 
-  struct ats_timeout_ctx *ctx = g_slice_new(struct ats_timeout_ctx);
+  ctx = g_slice_new(struct ats_timeout_ctx);
   ctx->sni = sni;
   ctx->timeout = g_timeout_add(
     1000, G_SOURCE_FUNC(sni_menu_cancel_ats_suppression), ctx);
