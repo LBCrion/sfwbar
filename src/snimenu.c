@@ -10,12 +10,6 @@
 #include "gui/menu.h"
 #include "gui/scaleimage.h"
 
-struct ats_timeout_ctx {
-  sni_item_t *sni;
-  guint timeout;
-  gulong handle;
-};
-
 const gchar *sni_menu_iface = "com.canonical.dbusmenu";
 
 static void sni_menu_parse ( GtkWidget *widget, GVariantIter *viter );
@@ -99,17 +93,10 @@ static void sni_menu_map_cb( GtkWidget *menu, sni_item_t *sni )
         (GAsyncReadyCallback)sni_menu_about_to_show_cb, menu);
 }
 
-static void ats_timeout_ctx_free ( struct ats_timeout_ctx *ctx )
+static gboolean sni_menu_cancel_ats_suppression ( GtkWidget *menu_obj )
 {
-  g_signal_handler_disconnect(ctx->sni->cancel, ctx->handle);
-  g_slice_free(struct ats_timeout_ctx, ctx);
-}
-
-static gboolean sni_menu_cancel_ats_suppression ( struct ats_timeout_ctx *ctx )
-{
-  g_object_set_data(G_OBJECT(ctx->sni->menu_obj), "suppress_ats",
+  g_object_set_data(G_OBJECT(menu_obj), "suppress_ats",
       GINT_TO_POINTER(FALSE));
-  ats_timeout_ctx_free(ctx);
   return FALSE;
 }
 
@@ -262,15 +249,6 @@ static void sni_menu_parse ( GtkWidget *widget, GVariantIter *viter )
   g_list_free(children);
 }
 
-static void sni_menu_remove_ats_timeout ( GCancellable *cancel, gpointer data )
-{
-  struct ats_timeout_ctx *ctx = data;
-  (void)cancel;
-
-  g_source_remove(ctx->timeout);
-  ats_timeout_ctx_free(ctx);
-}
-
 static void sni_menu_get_layout_cb ( GObject *src, GAsyncResult *res,
     gpointer data )
 {
@@ -280,7 +258,6 @@ static void sni_menu_get_layout_cb ( GObject *src, GAsyncResult *res,
   GVariantIter *iter;
   gchar *tmp;
   guint32 rev, id;
-  struct ats_timeout_ctx *ctx;
 
   if( !(result = g_dbus_connection_call_finish(G_DBUS_CONNECTION(src), res,
           NULL)) )
@@ -307,12 +284,8 @@ static void sni_menu_get_layout_cb ( GObject *src, GAsyncResult *res,
   g_variant_unref(dict);
   g_variant_unref(result);
 
-  ctx = g_slice_new(struct ats_timeout_ctx);
-  ctx->sni = sni;
-  ctx->timeout = g_timeout_add(
-    1000, G_SOURCE_FUNC(sni_menu_cancel_ats_suppression), ctx);
-  ctx->handle = g_cancellable_connect(
-    sni->cancel, G_CALLBACK(sni_menu_remove_ats_timeout), ctx, NULL);
+  g_timeout_add(1000, G_SOURCE_FUNC(sni_menu_cancel_ats_suppression),
+      g_object_ref(sni->menu_obj));
 }
 
 static void sni_menu_about_to_show_cb ( GDBusConnection *con, GAsyncResult *res,
