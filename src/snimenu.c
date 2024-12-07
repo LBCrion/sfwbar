@@ -285,7 +285,7 @@ static void sni_menu_get_layout_cb ( GObject *src, GAsyncResult *res,
   g_variant_unref(dict);
   g_variant_unref(result);
   g_timeout_add(1000, G_SOURCE_FUNC(sni_menu_cancel_ats_suppression),
-      g_object_ref(sni->menu_obj));
+      sni->menu_obj);
 }
 
 static void sni_menu_about_to_show_cb ( GDBusConnection *con, GAsyncResult *res,
@@ -347,6 +347,8 @@ void sni_menu_init ( sni_item_t *sni )
     gtk_widget_destroy(sni->menu_obj);
 
   sni->menu_obj = gtk_menu_new();
+  g_signal_connect(G_OBJECT(sni->menu_obj), "destroy",
+      G_CALLBACK(g_source_remove_by_user_data), NULL);
   g_signal_connect(G_OBJECT(sni->menu_obj), "map",
       G_CALLBACK(sni_menu_map_cb), sni);
 
