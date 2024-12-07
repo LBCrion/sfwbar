@@ -97,7 +97,6 @@ static gboolean sni_menu_cancel_ats_suppression ( GtkWidget *menu_obj )
 {
   g_object_set_data(G_OBJECT(menu_obj), "suppress_ats",
       GINT_TO_POINTER(FALSE));
-  g_object_unref(menu_obj);
   return FALSE;
 }
 
