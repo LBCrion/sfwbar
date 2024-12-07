@@ -284,7 +284,6 @@ static void sni_menu_get_layout_cb ( GObject *src, GAsyncResult *res,
   g_variant_iter_free(iter);
   g_variant_unref(dict);
   g_variant_unref(result);
-
   g_timeout_add(1000, G_SOURCE_FUNC(sni_menu_cancel_ats_suppression),
       g_object_ref(sni->menu_obj));
 }
