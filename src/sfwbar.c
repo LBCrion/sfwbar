@@ -103,6 +103,7 @@ static void activate (GtkApplication* app, gpointer data )
   hypr_ipc_init();
   wayfire_ipc_init();
   foreign_toplevel_init();
+  ew_init();
   cw_init();
   app_info_init();
 

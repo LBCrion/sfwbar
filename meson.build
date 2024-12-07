@@ -34,6 +34,7 @@ wayland_protos = ['wlr-foreign-toplevel-management-unstable-v1',
                   'xdg-output-unstable-v1',
                   'wlr-layer-shell-unstable-v1',
                   'cosmic-workspace-unstable-v1',
+                  'ext-workspace-v1',
 ]
 wayland_targets=[]
 
@@ -105,6 +106,7 @@ libsrc = [
     'src/config/switcher.c',
     'src/config/toplevel.c',
     'src/ipc/cosmic-workspaces.c',
+    'src/ipc/ext-workspace.c',
     'src/ipc/foreign-toplevel.c',
     'src/ipc/hyprland.c',
     'src/ipc/sway.c',
