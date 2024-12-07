@@ -159,12 +159,6 @@ static void ew_workspace_group_handle_workspace_enter(void *data,
     struct ext_workspace_group_handle_v1 *workspace_group,
     struct ext_workspace_handle_v1 *workspace)
 {
-  workspace_t *ws;
-
-  ws = workspace_new(workspace);
-  workspace_set_state(ws, WS_STATE_VISIBLE);
-
-  ext_workspace_handle_v1_add_listener(workspace, &ew_workspace_impl, ws);
 }
 
 static void ew_workspace_group_handle_workspace_leave(void *data,
@@ -193,12 +187,24 @@ static const struct ext_workspace_group_handle_v1_listener
 };
 
 /* Manager */
-static void ew_workspace_manager_handle_workspace_group(void *data,
+static void ew_workspace_manager_handle_workspace_group ( void *data,
     struct ext_workspace_manager_v1 *workspace_manager,
     struct ext_workspace_group_handle_v1 *workspace_group)
 {
   ext_workspace_group_handle_v1_add_listener(
     workspace_group, &ew_workspace_group_impl, NULL);
+}
+
+static void ew_workspace_manager_handle_workspace ( void *data,
+    struct ext_workspace_manager_v1 *workspace_manager,
+    struct ext_workspace_handle_v1 *workspace)
+{
+  workspace_t *ws;
+
+  ws = workspace_new(workspace);
+  workspace_set_state(ws, WS_STATE_VISIBLE);
+
+  ext_workspace_handle_v1_add_listener(workspace, &ew_workspace_impl, ws);
 }
 
 static void ew_workspace_manager_handle_done(void *data,
@@ -218,6 +224,7 @@ static const struct ext_workspace_manager_v1_listener
   workspace_manager_impl =
 {
   .workspace_group = ew_workspace_manager_handle_workspace_group,
+  .workspace = ew_workspace_manager_handle_workspace,
   .done = ew_workspace_manager_handle_done,
   .finished = ew_workspace_manager_handle_finished,
 };
