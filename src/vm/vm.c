@@ -338,6 +338,7 @@ void vm_run_action ( gchar *func, gchar *expr1, gchar *expr2, GtkWidget *w,
     GdkEvent *e, guint16 cond, guint16 ncond )
 {
   GByteArray *code;
+  value_t v1;
   vm_t *vm;
 
   if( (code = parser_action_compat(func, expr1, expr2, cond, ncond)) )
@@ -349,6 +350,7 @@ void vm_run_action ( gchar *func, gchar *expr1, gchar *expr2, GtkWidget *w,
     vm->event = e;
 
     vm_run(vm);
-    value_free(vm_free(vm));
+    v1 = vm_free(vm);
+    value_free(v1);
   }
 }
