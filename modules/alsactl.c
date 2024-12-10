@@ -8,6 +8,7 @@
 #include "module.h"
 #include "trigger.h"
 #include "util/string.h"
+#include "vm/vm.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = 2;
@@ -161,7 +162,7 @@ static gboolean alsa_addr_parse ( mixer_api_t *api, gchar *address,
 {
   gchar *ptr, *device, *chan_ptr, *elem_str;
 
-  if(!address)
+  if(!address || !*address)
     address = api->default_name?api->default_name:"default";
 
   device = alsa_device_get(address, &ptr);
@@ -343,33 +344,6 @@ void alsa_source_remove ( GSource *src )
   g_source_destroy(src);
 }
 
-void alsa_activate ( void )
-{
-  g_idle_add((GSourceFunc)alsa_source_subscribe_all, NULL);
-}
-
-void alsa_deactivate ( void )
-{
-  g_hash_table_remove_all(alsa_sources);
-  g_clear_pointer(&playback_api.default_name, g_free);
-  g_clear_pointer(&capture_api.default_name, g_free);
-  sfwbar_interface.active = !!channel_q.list | !!remove_q.list;
-}
-
-gboolean sfwbar_module_init ( void )
-{
-  gint card = -1;
-
-  channel_q.trigger = g_intern_static_string("volume-conf");
-  remove_q.trigger = g_intern_static_string("volume-conf-removed");
-  alsa_sources = g_hash_table_new_full( g_str_hash, g_str_equal, NULL,
-      (GDestroyNotify)alsa_source_remove );
-
-  if(snd_card_next(&card) >=0 && card >= 0)
-    module_interface_activate(&sfwbar_interface);
-  return TRUE;
-}
-
 static glong alsa_volume_avg_get ( snd_mixer_elem_t *element, mixer_api_t *api )
 {
   glong vol, tvol = 0;
@@ -428,43 +402,41 @@ mixer_api_t *alsa_api_parse ( gchar *cmd, gchar **verb )
     return NULL;
 }
 
-void *alsa_expr_func ( void **params, void *widget, void *event )
+static value_t alsa_func_volume ( vm_t *vm, value_t p[], gint np )
 {
   snd_mixer_elem_t *element;
   snd_mixer_selem_channel_id_t channel;
   alsa_source_t *src;
-  gdouble *result;
   gchar *verb;
   mixer_api_t *api;
 
-  result = g_malloc0(sizeof(gdouble));
-  if(!params || !params[0])
-    return result;
+  vm_param_check_np_range(vm, np, 1, 2, "Volume");
+  vm_param_check_string(vm, p, 0, "Volume");
+  if(np==2)
+    vm_param_check_string(vm, p, 1, "Volume");
 
-  if( !(api = alsa_api_parse(params[0], &verb)) )
-    return result;
+  if( !(api = alsa_api_parse(value_get_string(p[np-1]), &verb)) )
+    return value_na;
 
   if(!g_ascii_strcasecmp(verb, "count"))
-  {
-    *result = g_hash_table_size(alsa_sources);
-    return result;
-  }
+    return value_new_numeric( g_hash_table_size(alsa_sources));
 
-  if(!alsa_addr_parse(api, params[1], &src, &element, &channel) || !element)
-    return result;
+  if(!alsa_addr_parse(api, (np==2)? value_get_string(p[0]) : NULL, &src,
+        &element, &channel) || !element)
+    return value_na;
 
   if(!g_ascii_strcasecmp(verb, "volume"))
-    *result = alsa_volume_get(element, channel, api);
-  else if(!g_ascii_strcasecmp(verb, "mute"))
-    *result = alsa_mute_get(element, api);
-  else if(!g_ascii_strcasecmp(verb, "is-default"))
-    *result = !g_strcmp0(api->default_name?api->default_name:"default",
-        src->name);
+    return value_new_numeric(alsa_volume_get(element, channel, api));
+  if(!g_ascii_strcasecmp(verb, "mute"))
+    return value_new_numeric(alsa_mute_get(element, api));
+  if(!g_ascii_strcasecmp(verb, "is-default"))
+    return value_new_numeric(!g_strcmp0(
+          api->default_name? api->default_name : "default", src->name));
 
-  return result;
+  return value_na;
 }
 
-void *alsa_info_expr_func ( void **params, void *widget, void *event )
+static value_t alsa_func_volume_info ( vm_t *vm, value_t p[], gint np )
 {
   snd_mixer_elem_t *element;
   snd_mixer_selem_channel_id_t channel;
@@ -472,34 +444,37 @@ void *alsa_info_expr_func ( void **params, void *widget, void *event )
   gchar *verb;
   mixer_api_t *api;
 
-  if(!params || !params[0])
-    return NULL;
+  vm_param_check_np_range(vm, np, 1, 2, "VolumeInfo");
+  vm_param_check_string(vm, p, 0, "VolumeInfo");
+  if(np==2)
+    vm_param_check_string(vm, p, 1, "VolumeInfo");
 
-  if( !(api = alsa_api_parse(params[0], &verb)) )
-    return NULL;
+  if( !(api = alsa_api_parse(value_get_string(p[np-1]), &verb)) )
+    return value_na;
 
-  if(!alsa_addr_parse(api, params[1], &src, &element, &channel) || !element)
-    return NULL;
+  if(!alsa_addr_parse(api, (np==2)? value_get_string(p[0]) : NULL, &src,
+        &element, &channel) || !element)
+    return value_na;
 
   if(!g_ascii_strcasecmp(verb, "description"))
-    return g_strdup(src->desc);
+    return value_new_string(g_strdup(src->desc));
 
-  return NULL;
+  return value_na;
 }
 
-static void *alsa_channel_func ( void **params, void *widget, void *event )
+static value_t alsa_func_channel ( vm_t *vm, value_t p[], gint np )
 {
   gchar *result;
 
-  if(!params || !params[0])
-    return g_strdup("");
+  vm_param_check_np(vm, np, 1, "VolumeConf");
+  vm_param_check_string(vm, p, 0, "VolumeConf");
 
-  if( (result = module_queue_get_string(&channel_q, params[0])) )
-    return result;
-  if( (result = module_queue_get_string(&remove_q, params[0])) )
-    return result;
+  if( (result = module_queue_get_string(&channel_q, value_get_string(p[0]))) )
+    return value_new_string(result);
+  if( (result = module_queue_get_string(&remove_q, value_get_string(p[0]))) )
+    return value_new_string(result);
 
-  return g_strdup("");
+  return value_na;
 }
 
 static void alsa_volume_set ( snd_mixer_elem_t *element,
@@ -585,8 +560,7 @@ static void alsa_default_set ( mixer_api_t *api, gchar *name )
   }
 }
 
-static void alsa_action ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
+static value_t alsa_action_volumectl ( vm_t *vm, value_t p[], gint np )
 {
   alsa_source_t *src;
   snd_mixer_elem_t *element;
@@ -594,34 +568,43 @@ static void alsa_action ( gchar *cmd, gchar *name, void *d1,
   gchar *verb;
   mixer_api_t *api;
 
-  if( !(api = alsa_api_parse(cmd, &verb)) )
-    return;
+  vm_param_check_np_range(vm, np, 1, 2, "VolumeCtl");
+  vm_param_check_string(vm, p, 0, "VolumeCtl");
+  if(np==2)
+    vm_param_check_string(vm, p, 1, "VolumeCtl");
 
-  if(!g_ascii_strncasecmp(verb, "set-default",11))
+  if( !(api = alsa_api_parse(value_get_string(p[np-1]), &verb)) )
+    return value_na;
+
+  if(!g_ascii_strncasecmp(verb, "set-default", 11))
   {
     alsa_default_set(api, verb+11);
-    return;
+    return value_na;
   }
 
-  if(!alsa_addr_parse(api, name, &src, &element, &channel) || !element)
-    return;
+  if(!alsa_addr_parse(api, (np==2)? value_get_string(p[0]) : NULL, &src,
+        &element, &channel) || !element)
+    return value_na;
 
   if(!g_ascii_strncasecmp(verb ,"volume", 6))
     alsa_volume_set(element, channel, verb+6, api);
   else if(!g_ascii_strncasecmp(verb, "mute", 4))
     alsa_mute_set(element, verb+4, api);
   else
-    return;
+    return value_na;
 
   trigger_emit("volume");
+  return value_na;
 }
 
-static void alsa_channel_ack_action ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
+static value_t alsa_action_volumeack ( vm_t *vm, value_t p[], gint np )
 {
-  if(!g_ascii_strcasecmp(cmd, "volume-conf"))
+  vm_param_check_np(vm, np, 1, "VolumeAck");
+  vm_param_check_string(vm, p, 0, "VolumeAck");
+
+  if(!g_ascii_strcasecmp(value_get_string(p[0]), "volume-conf"))
     module_queue_remove(&channel_q);
-  else if(!g_ascii_strcasecmp(cmd, "volume-conf-removed"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "volume-conf-removed"))
     module_queue_remove(&remove_q);
   if(!sfwbar_interface.ready)
   {
@@ -630,56 +613,55 @@ static void alsa_channel_ack_action ( gchar *cmd, gchar *name, void *d1,
     if(!sfwbar_interface.active)
       sfwbar_interface.ready = TRUE;
   }
+
+  return value_na;
 }
 
-ModuleExpressionHandlerV1 handler1 = {
-  .flags = MODULE_EXPR_NUMERIC,
-  .name = "Volume",
-  .parameters = "Ss",
-  .function = alsa_expr_func
-};
+void alsa_activate ( void )
+{
+  vm_func_add("volume", alsa_func_volume, FALSE);
+  vm_func_add("volumeinfo", alsa_func_volume_info, FALSE);
+  vm_func_add("volumeconf", alsa_func_channel, FALSE);
+  vm_func_add("volumectl", alsa_action_volumectl, TRUE);
+  vm_func_add("volumeack", alsa_action_volumeack, TRUE);
+  g_idle_add((GSourceFunc)alsa_source_subscribe_all, NULL);
+}
 
-ModuleExpressionHandlerV1 handler2 = {
-  .name = "VolumeInfo",
-  .parameters = "Ss",
-  .function = alsa_info_expr_func
-};
+void alsa_deactivate ( void )
+{
+  g_hash_table_remove_all(alsa_sources);
+  g_clear_pointer(&playback_api.default_name, g_free);
+  g_clear_pointer(&capture_api.default_name, g_free);
+  sfwbar_interface.active = !!channel_q.list | !!remove_q.list;
+}
 
-ModuleExpressionHandlerV1 handler3 = {
-  .flags = 0,
-  .name = "VolumeConf",
-  .parameters = "S",
-  .function = alsa_channel_func
-};
+void alsa_finalize ( void )
+{
+  vm_func_remove("volume");
+  vm_func_remove("volumeinfo");
+  vm_func_remove("volumeconf");
+  vm_func_remove("volumectl");
+  vm_func_remove("volumeack");
+}
 
-ModuleExpressionHandlerV1 *alsa_expr_handlers[] = {
-  &handler1,
-  &handler2,
-  &handler3,
-  NULL
-};
+gboolean sfwbar_module_init ( void )
+{
+  gint card = -1;
 
-ModuleActionHandlerV1 act_handler1 = {
-  .name = "VolumeCtl",
-  .function = alsa_action
-};
+  channel_q.trigger = g_intern_static_string("volume-conf");
+  remove_q.trigger = g_intern_static_string("volume-conf-removed");
+  alsa_sources = g_hash_table_new_full( g_str_hash, g_str_equal, NULL,
+      (GDestroyNotify)alsa_source_remove );
 
-ModuleActionHandlerV1 act_handler2 = {
-  .name = "VolumeAck",
-  .function = alsa_channel_ack_action
-};
-
-ModuleActionHandlerV1 *alsa_action_handlers[] = {
-  &act_handler1,
-  &act_handler2,
-  NULL
-};
+  if(snd_card_next(&card) >=0 && card >= 0)
+    module_interface_activate(&sfwbar_interface);
+  return TRUE;
+}
 
 ModuleInterfaceV1 sfwbar_interface = {
   .interface = "volume-control",
   .provider = "ALSA",
-  .expr_handlers = alsa_expr_handlers,
-  .act_handlers = alsa_action_handlers,
   .activate = alsa_activate,
-  .deactivate = alsa_deactivate
+  .deactivate = alsa_deactivate,
+  .finalize = alsa_finalize
 };
