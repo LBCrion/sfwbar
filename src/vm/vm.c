@@ -212,14 +212,17 @@ static void vm_immediate ( vm_t *vm )
 {
   value_t v1;
 
-  memcpy(&v1, vm->ip+1, sizeof(value_t));
-  if(value_is_string(v1))
+  if(*(vm->ip+1) != EXPR_TYPE_STRING)
   {
+    memcpy(&v1, vm->ip+1, sizeof(value_t));
+    vm->ip+=sizeof(value_t);
+  }
+  else
+  {
+    v1.type = EXPR_TYPE_STRING;
     v1.value.string = g_strdup((gchar *)vm->ip+2);
     vm->ip += strlen(value_get_string(v1))+2;
   }
-  else
-    vm->ip+=sizeof(value_t);
   vm_push(vm, v1);
 }
 

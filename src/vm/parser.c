@@ -26,20 +26,20 @@ static void parser_emit_string ( GByteArray *code, gchar *str )
 static void parser_emit_numeric ( GByteArray *code, gdouble numeric )
 {
   guchar data[sizeof(value_t)+1];
-  value_t *value = (value_t *)(data+1);
+  value_t value;
 
   data[0] = EXPR_OP_IMMEDIATE;
-  *value = value_new_numeric(numeric);
+  value = value_new_numeric(numeric);
+  memcpy(data+1, &value, sizeof(value_t));
   g_byte_array_append(code, data, sizeof(value_t)+1);
 }
 
 static void parser_emit_na ( GByteArray *code )
 {
   guchar data[sizeof(value_t)+1];
-  value_t *value = (value_t *)(data+1);
 
   data[0] = EXPR_OP_IMMEDIATE;
-  *value = value_na;
+  memcpy(data+1, &value_na, sizeof(value_t));
   g_byte_array_append(code, data, sizeof(value_t)+1);
 }
 
