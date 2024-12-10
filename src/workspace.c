@@ -74,8 +74,7 @@ void workspace_unref ( gpointer id )
 {
   workspace_t *ws;
 
-  ws = workspace_from_id(id);
-  if(!ws)
+  if( !(ws = workspace_from_id(id)) )
     return;
 
   ws->refcount--;
@@ -83,6 +82,9 @@ void workspace_unref ( gpointer id )
     return;
 
   g_debug("Workspace: destroying workspace: '%s'", ws->name);
+
+  if(ws == focus)
+    focus = NULL;
 
   if(g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0))
   {
