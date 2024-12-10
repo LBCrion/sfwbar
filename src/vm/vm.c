@@ -147,13 +147,14 @@ static gboolean vm_function ( vm_t *vm )
   ModuleExpressionHandlerV1 *handler;
   vm_function_t *func;
   value_t v1, result, *stack;
-  gchar *name = *((gchar **)(vm->ip+2));
+  gchar *name;
   guint8 np = *(vm->ip+1);
   gpointer *params, *ptr;
   gint i;
 
   if(np>vm->stack->len)
     return FALSE;
+  memcpy(&name, vm->ip+2, sizeof(gchar *));
   result = value_na;
   if( (func = vm_func_lookup(name)) )
   {
@@ -211,7 +212,7 @@ static void vm_immediate ( vm_t *vm )
 {
   value_t v1;
 
-  v1 = *((value_t *)(vm->ip+1));
+  memcpy(&v1, vm->ip+1, sizeof(value_t));
   if(value_is_string(v1))
   {
     v1.value.string = g_strdup((gchar *)vm->ip+2);
@@ -225,6 +226,7 @@ static void vm_immediate ( vm_t *vm )
 static value_t vm_run ( vm_t *vm )
 {
   value_t v1;
+  gint jmp;
 
   if(!vm->code)
     return value_na;
@@ -248,12 +250,18 @@ static value_t vm_run ( vm_t *vm )
     else if(*vm->ip == EXPR_OP_FUNCTION)
       vm_function(vm);
     else if(*vm->ip == EXPR_OP_JMP)
-      vm->ip+=*((guint *)(vm->ip+1))+sizeof(gint);
+    {
+      memcpy(&jmp, vm->ip+1, sizeof(gint));
+      vm->ip+=jmp+sizeof(gint);
+    }
     else if(*vm->ip == EXPR_OP_JZ)
     {
       v1 = vm_pop(vm);
       if(!value_is_numeric(v1) || !v1.value.numeric)
-        vm->ip+=*((gint *)(vm->ip+1));
+      {
+        memcpy(&jmp, vm->ip+1, sizeof(gint));
+        vm->ip+=jmp;
+      }
       value_free(v1);
       vm->ip+=sizeof(gint);
     }

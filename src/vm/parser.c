@@ -45,7 +45,8 @@ static void parser_emit_na ( GByteArray *code )
 
 static void parser_jump_backpatch ( GByteArray *code, gint olen, gint clen )
 {
-  *((gint *)(code->data + olen)) = (clen - olen);
+  gint data = clen - olen;
+  memcpy(code->data + olen, &data, sizeof(gint));
 }
 
 static const gchar *parser_identifier_lookup ( gchar *identifier )
@@ -119,6 +120,7 @@ static gboolean parser_if ( GScanner *scanner, GByteArray *code )
 static gboolean parser_identifier ( GScanner *scanner, GByteArray *code )
 {
   guint8 np, data[sizeof(gpointer)+2];
+  gconstpointer ptr;
 
   if(!g_ascii_strcasecmp(scanner->value.v_identifier, "if"))
     return parser_if(scanner, code);
@@ -138,8 +140,8 @@ static gboolean parser_identifier ( GScanner *scanner, GByteArray *code )
     scanner->config->identifier_2_string = TRUE;
   if(g_scanner_peek_next_token(scanner)=='(')
   {
-    *((gconstpointer *)(data+2)) = parser_identifier_lookup(
-        scanner->value.v_identifier);
+    ptr = parser_identifier_lookup(scanner->value.v_identifier);
+    memcpy(data+2, &ptr, sizeof(gpointer));
     g_scanner_get_next_token(scanner);
 
     np = 0;
@@ -164,8 +166,8 @@ static gboolean parser_identifier ( GScanner *scanner, GByteArray *code )
   }
   else
   {
-    *((gconstpointer *)(data+1)) = parser_identifier_lookup(
-        scanner->value.v_identifier);
+    ptr = parser_identifier_lookup(scanner->value.v_identifier);
+    memcpy(data+1, &ptr, sizeof(gpointer));
     data[0] = EXPR_OP_VARIABLE;
     g_byte_array_append(code, data, sizeof(gpointer)+1);
     scanner->config->identifier_2_string = FALSE;
@@ -314,6 +316,7 @@ GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
   GByteArray *code;
   GScanner *scanner;
   guint8 data[sizeof(gpointer)+2];
+  gconstpointer ptr;
   gint alen;
 
   code = g_byte_array_new();
@@ -323,7 +326,8 @@ GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
     parser_emit_numeric(code, cond);
     parser_emit_numeric(code, ncond);
 
-    *((gconstpointer *)(data+2)) = parser_identifier_lookup("checkstate");
+    ptr = parser_identifier_lookup("checkstate");
+    memcpy(data+2, &ptr, sizeof(gpointer));
     data[0]=EXPR_OP_FUNCTION;
     data[1]=2;
     g_byte_array_append(code, data, sizeof(gpointer)+2);
@@ -355,7 +359,8 @@ GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
     parser_scanner_free(scanner);
   }
 
-  *((gconstpointer *)(data+2)) = parser_identifier_lookup(action);
+  ptr = parser_identifier_lookup(action);
+  memcpy(data+2, &ptr, sizeof(gpointer));
   data[0]=EXPR_OP_FUNCTION;
   data[1]=np;
   g_byte_array_append(code, data, sizeof(gpointer)+2);
