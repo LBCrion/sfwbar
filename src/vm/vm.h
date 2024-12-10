@@ -2,6 +2,7 @@
 #define __EXPRN_H__
 
 #include <gtk/gtk.h>
+#include "wintree.h"
 #include "vm/value.h"
 #include "vm/expr.h"
 
@@ -24,6 +25,7 @@ typedef struct {
   guint16 wstate;
   GtkWidget *widget;
   GdkEvent *event;
+  window_t *win;
   expr_cache_t *expr;
 } vm_t;
 
@@ -49,5 +51,6 @@ void vm_func_add ( gchar *name, vm_func_t func, gboolean deterministic );
 vm_function_t *vm_func_lookup ( gchar *name );
 gboolean vm_func_remove ( gchar *name );
 
-void vm_run_action ( gchar *func, gchar *expr1, gchar *expr2, GtkWidget *w, GdkEvent *e );
+void vm_run_action ( gchar *func, gchar *expr1, gchar *expr2, GtkWidget *w,
+    GdkEvent *e, guint16 cond, guint16 ncond );
 #endif

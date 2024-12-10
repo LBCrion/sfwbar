@@ -2,6 +2,7 @@
 #include "expr.h"
 #include "scanner.h"
 #include "module.h"
+#include "gui/taskbaritem.h"
 
 const value_t value_na = { .type = EXPR_TYPE_NA };
 
@@ -145,7 +146,7 @@ static gboolean vm_function ( vm_t *vm )
 {
   ModuleExpressionHandlerV1 *handler;
   vm_function_t *func;
-  value_t v1, result;
+  value_t v1, result, *stack;
   gchar *name = *((gchar **)(vm->ip+2));
   guint8 np = *(vm->ip+1);
   gpointer *params, *ptr;
@@ -156,7 +157,6 @@ static gboolean vm_function ( vm_t *vm )
   result = value_na;
   if( (func = vm_func_lookup(name)) )
   {
-    value_t *stack;
     stack = (value_t *)vm->stack->data + vm->stack->len - np;
     result = func->function(vm, stack, np);
     if(vm->expr)
@@ -228,6 +228,9 @@ static value_t vm_run ( vm_t *vm )
 
   if(!vm->code)
     return value_na;
+  if(IS_TASKBAR_ITEM(vm->widget))
+    vm->win = flow_item_get_source(vm->widget);
+  vm->wstate = action_state_build(vm->widget, vm->win);
 
   if(!vm->stack)
     vm->stack = g_array_sized_new(FALSE, FALSE, sizeof(value_t),
@@ -280,8 +283,10 @@ static value_t vm_free ( vm_t *vm )
 {
   value_t v1;
 
-  if(vm->stack->len!=1)
+  if(vm->stack->len>1)
     g_message("stack too long");
+  if(vm->stack->len<1)
+    g_message("stack too short");
 
   v1=value_na;
   while(vm->stack->len>0)
@@ -316,13 +321,15 @@ value_t vm_expr_eval ( expr_cache_t *expr )
   return vm_free(vm);
 }
 
-GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2 );
-void vm_run_action ( gchar *func, gchar *expr1, gchar *expr2, GtkWidget *w, GdkEvent *e )
+GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
+    guint16 cond, guint16 ncond );
+void vm_run_action ( gchar *func, gchar *expr1, gchar *expr2, GtkWidget *w,
+    GdkEvent *e, guint16 cond, guint16 ncond )
 {
   GByteArray *code;
   vm_t *vm;
 
-  if( (code = parser_action_compat(func, expr1, expr2)) )
+  if( (code = parser_action_compat(func, expr1, expr2, cond, ncond)) )
   {
     vm = g_malloc0(sizeof(vm_t));
     vm->code = g_byte_array_steal(code, &vm->len);

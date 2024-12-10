@@ -24,5 +24,6 @@ void action_function_exec ( gchar *, GtkWidget *, GdkEvent *, window_t *,
 void action_trigger_add ( action_t *action, gchar *trigger );
 action_t *action_trigger_lookup ( const gchar *trigger );
 void action_lib_init ( void );
+guint16 action_state_build ( GtkWidget *widget, window_t *win );
 
 #endif

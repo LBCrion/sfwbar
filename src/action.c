@@ -72,7 +72,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
   if(vm_func_lookup((gchar *)action->id))
   {
     vm_run_action((gchar *)action->id, action->command->definition,
-        action->addr->definition, widget, event);
+        action->addr->definition, widget, event, action->cond, action->ncond);
     return;
   }
 

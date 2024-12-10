@@ -33,6 +33,16 @@ static void parser_emit_numeric ( GByteArray *code, gdouble numeric )
   g_byte_array_append(code, data, sizeof(value_t)+1);
 }
 
+static void parser_emit_na ( GByteArray *code )
+{
+  guchar data[sizeof(value_t)+1];
+  value_t *value = (value_t *)(data+1);
+
+  data[0] = EXPR_OP_IMMEDIATE;
+  *value = value_na;
+  g_byte_array_append(code, data, sizeof(value_t)+1);
+}
+
 static void parser_jump_backpatch ( GByteArray *code, gint olen, gint clen )
 {
   *((gint *)(code->data + olen)) = (clen - olen);
@@ -91,7 +101,7 @@ static gboolean parser_if ( GScanner *scanner, GByteArray *code )
   if(g_scanner_get_next_token(scanner)!=',')
     return FALSE;
 
-  /* JZ over len change + JMP instruction (1 + sizeof(gint *)) */
+  /* JZ over len change + JMP instruction (1 + sizeof(gint)) */
   parser_jump_backpatch(code, alen, code->len + 1);
   alen = parser_emit_jump(code, EXPR_OP_JMP);
 
@@ -297,14 +307,29 @@ GByteArray *parser_expr_compile ( gchar *expr )
   return code;
 }
 
-GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2 )
+GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
+    guint16 cond, guint16 ncond )
 {
   gint np = !!expr1 + !!expr2;
   GByteArray *code;
   GScanner *scanner;
   guint8 data[sizeof(gpointer)+2];
+  gint alen;
 
   code = g_byte_array_new();
+
+  if(cond || ncond)
+  {
+    parser_emit_numeric(code, cond);
+    parser_emit_numeric(code, ncond);
+
+    *((gconstpointer *)(data+2)) = parser_identifier_lookup("checkstate");
+    data[0]=EXPR_OP_FUNCTION;
+    data[1]=2;
+    g_byte_array_append(code, data, sizeof(gpointer)+2);
+    alen = parser_emit_jump(code, EXPR_OP_JZ);
+  }
+
   if(expr1)
   {
     scanner = parser_scanner_new();
@@ -334,6 +359,14 @@ GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2 )
   data[0]=EXPR_OP_FUNCTION;
   data[1]=np;
   g_byte_array_append(code, data, sizeof(gpointer)+2);
+
+  if(cond || ncond)
+  {
+    parser_jump_backpatch(code, alen, code->len + 1);
+    alen = parser_emit_jump(code, EXPR_OP_JMP);
+    parser_emit_na(code);
+    parser_jump_backpatch(code, alen, code->len + sizeof(gint));
+  }
 
   return code;
 }

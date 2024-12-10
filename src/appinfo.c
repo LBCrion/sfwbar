@@ -13,6 +13,9 @@ static time_t app_info_mtime;
 
 void app_icon_map_add ( gchar *appid, gchar *icon )
 {
+  if(!appid || !icon)
+    return;
+
   if(!icon_map)
     icon_map = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
