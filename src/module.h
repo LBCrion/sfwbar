@@ -47,6 +47,7 @@ typedef struct {
   ModuleActionHandlerV1 **act_handlers;
   void (*activate) (void);
   void (*deactivate) (void);
+  void (*finalize) (void);
 } ModuleInterfaceV1;
 
 typedef struct {

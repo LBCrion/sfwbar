@@ -21,6 +21,8 @@ void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler,gchar *name )
 {
   gint i;
 
+  if(!ehandler)
+    return;
   for(i=0;ehandler[i];i++)
     if(ehandler[i]->function && ehandler[i]->name)
     {
@@ -44,7 +46,9 @@ void module_actions_add ( ModuleActionHandlerV1 **ahandler, gchar *name )
   gint i;
   gchar *lname;
 
-  for(i=0;ahandler[i];i++)
+  if(!ahandler)
+    return;
+  for(i=0; ahandler[i]; i++)
     if(ahandler[i]->function && ahandler[i]->name)
     {
       lname = g_ascii_strdown(ahandler[i]->name, -1);
@@ -91,14 +95,18 @@ void module_interface_select ( gchar *interface )
 
   if(list->active)
   {
-    for(i=0; list->active->expr_handlers[i]; i++)
-    {
-      g_hash_table_remove(expr_handlers, list->active->expr_handlers[i]->name);
-      expr_dep_trigger(list->active->expr_handlers[i]->name);
-    }
-    for(i=0; list->active->act_handlers[i]; i++)
-      g_datalist_remove_data(&act_handlers,
-          list->active->act_handlers[i]->id);
+    if(list->active->expr_handlers)
+      for(i=0; list->active->expr_handlers[i]; i++)
+      {
+        g_hash_table_remove(expr_handlers, list->active->expr_handlers[i]->name);
+        expr_dep_trigger(list->active->expr_handlers[i]->name);
+      }
+    if(list->active->act_handlers)
+      for(i=0; list->active->act_handlers[i]; i++)
+        g_datalist_remove_data(&act_handlers,
+            list->active->act_handlers[i]->id);
+    if(list->active->finalize)
+      list->active->finalize();
   }
   list->active = new;
   if(new)
