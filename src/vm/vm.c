@@ -154,7 +154,7 @@ static gboolean vm_function ( vm_t *vm )
 
   if(np>vm->stack->len)
     return FALSE;
-  memcpy(&name, vm->ip+2, sizeof(gchar *));
+  memcpy(&name, vm->ip+2, sizeof(gpointer));
   result = value_na;
   if( (func = vm_func_lookup(name)) )
   {
@@ -199,8 +199,9 @@ static gboolean vm_function ( vm_t *vm )
 static void vm_variable ( vm_t *vm )
 {
   value_t value;
-  gchar *name = *((gchar **)(vm->ip+1));
+  gchar *name;
 
+  memcpy(&name, vm->ip+1, sizeof(gpointer));
   value = scanner_get_value(name, !vm->use_cached, vm->expr);
   expr_dep_add(name, vm->expr);
 
