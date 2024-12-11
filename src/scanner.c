@@ -475,7 +475,7 @@ value_t scanner_get_value ( gchar *ident, gboolean update, expr_cache_t *expr )
   ScanVar *var;
   gchar *fname, *id;
 
-  id = scanner_parse_identifier(ident,&fname);
+  id = scanner_parse_identifier(ident, &fname);
   var = scanner_var_update(id, update, expr);
   g_free(id);
 
@@ -490,24 +490,21 @@ value_t scanner_get_value ( gchar *ident, gboolean update, expr_cache_t *expr )
 
   if(*ident == '$')
   {
-    if(var->str)
-    {
-      result.type = EXPR_TYPE_STRING;
-      result.value.string  = g_strdup(var->str);
-    }
+    result.type = EXPR_TYPE_STRING;
+    result.value.string  = g_strdup(var->str);
   }
   else
   {
     result.type = EXPR_TYPE_NUMERIC;
-    if(!g_strcmp0(fname,".val"))
+    if(!g_strcmp0(fname, ".val"))
       result.value.numeric = var->val;
-    else if(!g_strcmp0(fname,".pval"))
+    else if(!g_strcmp0(fname, ".pval"))
       result.value.numeric = var->pval;
-    else if(!g_strcmp0(fname,".count"))
+    else if(!g_strcmp0(fname, ".count"))
       result.value.numeric = var->count;
-    else if(!g_strcmp0(fname,".time"))
+    else if(!g_strcmp0(fname, ".time"))
       result.value.numeric = var->time;
-    else if(!g_strcmp0(fname,".age"))
+    else if(!g_strcmp0(fname, ".age"))
       result.value.numeric = (g_get_monotonic_time() - var->ptime);
     else
       result = value_na;
