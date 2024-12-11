@@ -3,6 +3,7 @@
 #include "module.h"
 #include "trigger.h"
 #include "gui/popup.h"
+#include "vm/vm.h"
 
 typedef struct _nm_apoint nm_apoint_t;
 typedef struct _nm_ap_node nm_ap_node_t;
@@ -899,46 +900,12 @@ static void nm_object_list_cb ( GDBusConnection *con, GAsyncResult *res,
   g_variant_unref(result);
 }
 
-static void nm_activate ( void )
-{
-  sub_add = g_dbus_connection_signal_subscribe(nm_con, nm_owner,
-      nm_iface_objmgr, "InterfacesAdded", NULL, NULL,
-      G_DBUS_SIGNAL_FLAGS_NONE, nm_object_new, NULL, NULL);
-
-  sub_del = g_dbus_connection_signal_subscribe(nm_con, nm_owner,
-      nm_iface_objmgr, "InterfacesRemoved", NULL, NULL,
-      G_DBUS_SIGNAL_FLAGS_NONE, nm_object_removed, NULL, NULL);
-
-  sub_chg = g_dbus_connection_signal_subscribe(nm_con, nm_owner,
-      nm_iface_objprop, "PropertiesChanged", NULL, NULL,
-      G_DBUS_SIGNAL_FLAGS_NONE, nm_object_changed, NULL, NULL);
-
-  g_dbus_connection_call(nm_con, nm_iface, "/org/freedesktop", nm_iface_objmgr,
-      "GetManagedObjects", NULL, G_VARIANT_TYPE("(a{oa{sa{sv}}})"),
-      G_DBUS_CALL_FLAGS_NONE, -1, NULL, (GAsyncReadyCallback)nm_object_list_cb,
-      NULL);
-}
-
 static void nm_name_appeared_cb (GDBusConnection *con, const gchar *name,
     const gchar *owner, gpointer d)
 {
   g_free(nm_owner);
   nm_owner = g_strdup(owner);
   module_interface_activate(&sfwbar_interface);
-}
-
-static void nm_deactivate ( void )
-{
-  g_dbus_connection_signal_unsubscribe(nm_con, sub_add);
-  g_dbus_connection_signal_unsubscribe(nm_con, sub_del);
-  g_dbus_connection_signal_unsubscribe(nm_con, sub_chg);
-  g_hash_table_remove_all(dialog_list);
-  g_hash_table_remove_all(new_conns);
-  g_hash_table_remove_all(active_list);
-  g_hash_table_remove_all(conn_list);
-  g_hash_table_remove_all(ap_nodes);
-
-  sfwbar_interface.active = !!update_q.list | !!remove_q.list;
 }
 
 static void nm_name_disappeared_cb (GDBusConnection *con, const gchar *name,
@@ -971,6 +938,176 @@ static void nm_secret_agent_method(GDBusConnection *con,
         "org.freedesktop.NetworkManager.SecretAgent.UserCanceled", "");
 }
 
+static value_t nm_expr_get ( vm_t *vm, value_t p[], gint np )
+{
+  nm_device_t *device;
+  GList *iter;
+  gchar *result;
+
+  vm_param_check_np_range(vm, np, 1, 2, "WifiGet");
+  vm_param_check_string(vm, p, 0, "WifiGet");
+  if(np==2)
+    vm_param_check_string(vm, p, 1, "WifiGet");
+
+  if( (result = module_queue_get_string(&update_q, value_get_string(p[0]))) )
+    return value_new_string(result);
+
+  if( (result = module_queue_get_string(&remove_q, value_get_string(p[0]))) )
+    return value_new_string(result);
+
+  if(default_dev && !g_ascii_strcasecmp(value_get_string(p[0]),
+        "DeviceStrength"))
+  {
+    iter = NULL;
+    if(np==2)
+      for(iter=devices; iter; iter=g_list_next(iter))
+        if(!g_strcmp0(NM_DEVICE(iter->data)->name, value_get_string(p[1])))
+          break;
+
+    device = iter?iter->data:default_dev;
+    return value_new_string(g_strdup_printf("%d",
+        (device && device->active && device->active->ap)?
+        device->active->ap->strength : 0));
+  }
+  return value_na;
+}
+
+static value_t nm_action_ack ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 0, "WifiAck");
+
+  module_queue_remove(&update_q);
+  if(!sfwbar_interface.ready)
+  {
+    sfwbar_interface.active = !!update_q.list | !!remove_q.list;
+    module_interface_select(sfwbar_interface.interface);
+  }
+
+  return value_na;
+}
+
+static value_t nm_action_ack_removed  ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 0, "WifiAckRemoved");
+
+  module_queue_remove(&remove_q);
+  if(!sfwbar_interface.ready)
+  {
+    sfwbar_interface.active = !!update_q.list | !!remove_q.list;
+    module_interface_select(sfwbar_interface.interface);
+  }
+
+  return value_na;
+}
+
+static value_t nm_action_scan ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 0, "WifiScan");
+
+  if(!default_dev)
+    return value_na;
+  trigger_emit("wifi_scan");
+  g_dbus_connection_call(nm_con, nm_iface, default_dev->path,
+      nm_iface_wireless, "RequestScan", g_variant_new("(a{sv})", NULL),
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+
+  return value_na;
+}
+
+static value_t nm_action_connect ( vm_t *vm, value_t p[], gint np )
+{
+  nm_apoint_t *ap;
+
+  vm_param_check_np(vm, np, 0, "WifiConnect");
+  vm_param_check_string(vm, p, 1, "WifiConnect");
+
+  if(value_get_string(p[0]) &&
+      (ap = g_hash_table_lookup(apoint_list, value_get_string(p[0]))) )
+    nm_conn_new(ap);
+
+  return value_na;
+}
+
+static value_t nm_action_disconnect ( vm_t *vm, value_t p[], gint np )
+{
+  nm_apoint_t *ap;
+
+  vm_param_check_np(vm, np, 0, "WifiDisconnect");
+  vm_param_check_string(vm, p, 1, "WifiDIsconnect");
+
+  if(value_get_string(p[0]) &&
+      (ap = g_hash_table_lookup(apoint_list, value_get_string(p[0]))) )
+    nm_active_disconnect(ap->active);
+
+  return value_na;
+}
+
+static value_t nm_action_forget ( vm_t *vm, value_t p[], gint np )
+{
+  nm_apoint_t *ap;
+
+  vm_param_check_np(vm, np, 0, "WifiForget");
+  vm_param_check_string(vm, p, 1, "WifiForget");
+
+  if(value_get_string(p[0]) &&
+      (ap = g_hash_table_lookup(apoint_list, value_get_string(p[0]))) )
+    nm_conn_forget(ap->conn);
+
+  return value_na;
+}
+
+static void nm_activate ( void )
+{
+  vm_func_add("wifiget", nm_expr_get, FALSE);
+  vm_func_add("wifiack", nm_action_ack, FALSE);
+  vm_func_add("wifiackremoved", nm_action_ack_removed, FALSE);
+  vm_func_add("wifiscan", nm_action_scan, FALSE);
+  vm_func_add("wificonnect", nm_action_connect, FALSE);
+  vm_func_add("wifidisconnect", nm_action_disconnect, FALSE);
+  vm_func_add("wififorget", nm_action_forget, FALSE);
+  sub_add = g_dbus_connection_signal_subscribe(nm_con, nm_owner,
+      nm_iface_objmgr, "InterfacesAdded", NULL, NULL,
+      G_DBUS_SIGNAL_FLAGS_NONE, nm_object_new, NULL, NULL);
+
+  sub_del = g_dbus_connection_signal_subscribe(nm_con, nm_owner,
+      nm_iface_objmgr, "InterfacesRemoved", NULL, NULL,
+      G_DBUS_SIGNAL_FLAGS_NONE, nm_object_removed, NULL, NULL);
+
+  sub_chg = g_dbus_connection_signal_subscribe(nm_con, nm_owner,
+      nm_iface_objprop, "PropertiesChanged", NULL, NULL,
+      G_DBUS_SIGNAL_FLAGS_NONE, nm_object_changed, NULL, NULL);
+
+  g_dbus_connection_call(nm_con, nm_iface, "/org/freedesktop", nm_iface_objmgr,
+      "GetManagedObjects", NULL, G_VARIANT_TYPE("(a{oa{sa{sv}}})"),
+      G_DBUS_CALL_FLAGS_NONE, -1, NULL, (GAsyncReadyCallback)nm_object_list_cb,
+      NULL);
+}
+
+static void nm_deactivate ( void )
+{
+  g_dbus_connection_signal_unsubscribe(nm_con, sub_add);
+  g_dbus_connection_signal_unsubscribe(nm_con, sub_del);
+  g_dbus_connection_signal_unsubscribe(nm_con, sub_chg);
+  g_hash_table_remove_all(dialog_list);
+  g_hash_table_remove_all(new_conns);
+  g_hash_table_remove_all(active_list);
+  g_hash_table_remove_all(conn_list);
+  g_hash_table_remove_all(ap_nodes);
+
+  sfwbar_interface.active = !!update_q.list | !!remove_q.list;
+}
+
+static void nm_finalize ( void )
+{
+  vm_func_remove("wifiget");
+  vm_func_remove("wifiack");
+  vm_func_remove("wifiackremoved");
+  vm_func_remove("wifiscan");
+  vm_func_remove("wificonnect");
+  vm_func_remove("wifidisconnect");
+  vm_func_remove("wififorget");
+}
+
 gboolean sfwbar_module_init ( void )
 {
   GDBusNodeInfo *node;
@@ -1001,154 +1138,10 @@ gboolean sfwbar_module_init ( void )
   return TRUE;
 }
 
-static void *nm_expr_get ( void **params, void *widget, void *event )
-{
-  nm_device_t *device;
-  GList *iter;
-  gchar *result;
-
-  if(!params || !params[0])
-    return g_strdup("");
-
-  if( (result = module_queue_get_string(&update_q, params[0])) )
-    return result;
-
-  if( (result = module_queue_get_string(&remove_q, params[0])) )
-    return result;
-
-  if(default_dev && !g_ascii_strcasecmp(params[0], "DeviceStrength"))
-  {
-    iter = NULL;
-    if(params[1])
-      for(iter=devices; iter; iter=g_list_next(iter))
-        if(!g_strcmp0(NM_DEVICE(iter->data)->name, params[1]))
-          break;
-
-    device = iter?iter->data:default_dev;
-    return g_strdup_printf("%d",
-        (device && device->active && device->active->ap)?
-        device->active->ap->strength:0);
-  }
-  return g_strdup("");
-}
-
-static void nm_action_ack ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  module_queue_remove(&update_q);
-  if(!sfwbar_interface.ready)
-  {
-    sfwbar_interface.active = !!update_q.list | !!remove_q.list;
-    module_interface_select(sfwbar_interface.interface);
-  }
-}
-
-static void nm_action_ack_removed ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  module_queue_remove(&remove_q);
-  if(!sfwbar_interface.ready)
-  {
-    sfwbar_interface.active = !!update_q.list | !!remove_q.list;
-    module_interface_select(sfwbar_interface.interface);
-  }
-}
-
-static void nm_action_scan ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  if(!default_dev)
-    return;
-  trigger_emit("wifi_scan");
-  g_dbus_connection_call(nm_con, nm_iface, default_dev->path,
-      nm_iface_wireless, "RequestScan", g_variant_new("(a{sv})", NULL),
-      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
-}
-
-static void nm_action_connect ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  nm_apoint_t *ap;
-
-  if(cmd && (ap = g_hash_table_lookup(apoint_list, cmd)) )
-    nm_conn_new(ap);
-}
-
-static void nm_action_disconnect ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  nm_apoint_t *ap;
-
-  if(cmd && (ap = g_hash_table_lookup(apoint_list, cmd)) )
-    nm_active_disconnect(ap->active);
-}
-
-static void nm_action_forget ( gchar *cmd, gchar *name, void *d1,
-    void *d2, void *d3, void *d4 )
-{
-  nm_apoint_t *ap;
-
-  if(cmd && (ap = g_hash_table_lookup(apoint_list, cmd)) )
-    nm_conn_forget(ap->conn);
-}
-
-static ModuleExpressionHandlerV1 get_handler = {
-  .flags = 0,
-  .name = "WifiGet",
-  .parameters = "Ss",
-  .function = nm_expr_get
-};
-
-static ModuleExpressionHandlerV1 *nm_expr_handlers[] = {
-  &get_handler,
-  NULL
-};
-
-static ModuleActionHandlerV1 ack_handler = {
-  .name = "WifiAck",
-  .function = nm_action_ack
-};
-
-static ModuleActionHandlerV1 ack_removed_handler = {
-  .name = "WifiAckRemoved",
-  .function = nm_action_ack_removed
-};
-
-static ModuleActionHandlerV1 scan_handler = {
-  .name = "WifiScan",
-  .function = nm_action_scan
-};
-
-static ModuleActionHandlerV1 connect_handler = {
-  .name = "WifiConnect",
-  .function = nm_action_connect
-};
-
-static ModuleActionHandlerV1 disconnect_handler = {
-  .name = "WifiDisconnect",
-  .function = nm_action_disconnect
-};
-
-static ModuleActionHandlerV1 forget_handler = {
-  .name = "WifiForget",
-  .function = nm_action_forget
-};
-
-static ModuleActionHandlerV1 *nm_action_handlers[] = {
-  &ack_handler,
-  &ack_removed_handler,
-  &scan_handler,
-  &connect_handler,
-  &disconnect_handler,
-  &forget_handler,
-  NULL
-};
-
 ModuleInterfaceV1 sfwbar_interface = {
   .interface = "wifi",
   .provider = "NetworkManager",
-  .expr_handlers = nm_expr_handlers,
-  .act_handlers = nm_action_handlers,
   .activate = nm_activate,
-  .deactivate = nm_deactivate
+  .deactivate = nm_deactivate,
+  .finalize = nm_finalize
 };
