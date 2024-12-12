@@ -573,7 +573,7 @@ static value_t alsa_action_volumectl ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 1, "VolumeCtl");
 
-  if( !(api = alsa_api_parse(value_get_string(p[np-1]), &verb)) )
+  if( !(api = alsa_api_parse(value_get_string(p[0]), &verb)) )
     return value_na;
 
   if(!g_ascii_strncasecmp(verb, "set-default", 11))
@@ -582,11 +582,11 @@ static value_t alsa_action_volumectl ( vm_t *vm, value_t p[], gint np )
     return value_na;
   }
 
-  if(!alsa_addr_parse(api, (np==2)? value_get_string(p[0]) : NULL, &src,
+  if(!alsa_addr_parse(api, (np==2)? value_get_string(p[np-1]) : NULL, &src,
         &element, &channel) || !element)
     return value_na;
 
-  if(!g_ascii_strncasecmp(verb ,"volume", 6))
+  if(!g_ascii_strncasecmp(verb, "volume", 6))
     alsa_volume_set(element, channel, verb+6, api);
   else if(!g_ascii_strncasecmp(verb, "mute", 4))
     alsa_mute_set(element, verb+4, api);
