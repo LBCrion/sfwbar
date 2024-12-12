@@ -334,17 +334,23 @@ static ModuleActionHandlerV1 settooltip_handler = {
   .function = (ModuleActionFunc)settooltip_action
 };
 
-static void userstate_action ( gchar *value, gchar *name, void *widget,
-    void *event, window_t *win, guint16 *st )
+static value_t action_userstate ( vm_t *vm, value_t p[], gint np )
 {
-  gchar *state;
+  GtkWidget *widget;
+  gchar *state, *value;
   guint16 mask;
 
-  if(!widget || !value)
-    return;
+  vm_param_check_np_range(vm, np, 1, 2, "UserState");
+  vm_param_check_string(vm, p, 0, "UserState");
+  if(np==2)
+    vm_param_check_string(vm, p, 1, "UserState");
 
-  state = strchr(value,':');
-  if(!state)
+  widget = np==2? base_widget_from_id(value_get_string(p[0])) : vm->widget;
+
+  if(!widget || !(value = value_get_string(p[np-1])) )
+    return value_na;
+
+  if( !(state = strchr(value , ':')) )
   {
     state = value;
     mask = WS_USERSTATE;
@@ -352,23 +358,13 @@ static void userstate_action ( gchar *value, gchar *name, void *widget,
   else
   {
     state++;
-    if(g_ascii_digit_value(*value)==2)
-      mask = WS_USERSTATE2;
-    else
-      mask = WS_USERSTATE;
+    mask = g_ascii_digit_value(*value)==2? WS_USERSTATE2 : WS_USERSTATE;
   }
 
-  if(!g_ascii_strcasecmp(state,"on"))
-    base_widget_set_state(widget,mask,TRUE);
-  else
-    base_widget_set_state(widget,mask,FALSE);
-}
+  base_widget_set_state(widget, mask, !g_ascii_strcasecmp(state, "on"));
 
-static ModuleActionHandlerV1 userstate_handler = {
-  .name = "UserState",
-  .flags = MODULE_ACT_WIDGET_ADDRESS,
-  .function = (ModuleActionFunc)userstate_action
-};
+  return value_na;
+}
 
 static value_t action_popup ( vm_t *vm, value_t p[], gint np )
 {
@@ -466,29 +462,23 @@ static value_t action_unmaximize ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
-static void eval_action ( gchar *cmd, gchar *name, void *widget,
-    void *event, window_t *win, guint16 *state )
+static value_t action_eval ( vm_t *vm, value_t p[], gint np )
 {
-  gchar *val;
+  vm_param_check_np(vm, np, 2, "Eval");
+  vm_param_check_string(vm, p, 1, "Eval");
 
-  if(!cmd || !name)
-    return;
+  scanner_var_new(value_get_string(p[1]), NULL,
+      value_is_string(p[0])? p[0].value.string :
+      numeric_to_string(value_get_numeric(p[0]), -1), G_TOKEN_SET, VT_FIRST);
 
-  val = str_escape(cmd);
-  scanner_var_new(name, NULL, val, G_TOKEN_SET, VT_FIRST);
-  g_free(val);
+  return value_na;
 }
-
-static ModuleActionHandlerV1 eval_handler = {
-  .name = "Eval",
-  .function = (ModuleActionFunc)eval_action
-};
 
 static value_t action_switcher ( vm_t *vm, value_t p[], gint np )
 {
   if(np==0 || !g_strcasecmp(value_get_string(p[0]), "forward"))
     trigger_emit("switcher_forward");
-  if(np==1 && !g_strcasecmp(value_get_string(p[0]), "back"))
+  else if(np==1 && !g_strcasecmp(value_get_string(p[0]), "back"))
     trigger_emit("switcher_back");
 
   return value_na;
@@ -561,8 +551,6 @@ static ModuleActionHandlerV1 *action_handlers[] = {
   &setvalue_handler,
   &setstyle_handler,
   &settooltip_handler,
-  &userstate_handler,
-  &eval_handler,
   NULL
 };
 
@@ -587,6 +575,7 @@ void action_lib_init ( void )
   vm_func_add("setbarsensor", action_setbarsensor, TRUE);
   vm_func_add("setbarvisibility", action_setbarvisibility, TRUE);
   vm_func_add("setexclusivezone", action_setexclusivezone, TRUE);
+  vm_func_add("userstate", action_userstate, TRUE);
   vm_func_add("focus", action_focus, TRUE);
   vm_func_add("close", action_close, TRUE);
   vm_func_add("minimize", action_minimize, TRUE);
@@ -594,6 +583,7 @@ void action_lib_init ( void )
   vm_func_add("unminimize", action_unminimize, TRUE);
   vm_func_add("unmaximize", action_unmaximize, TRUE);
   vm_func_add("clientsend", action_client_send, TRUE);
+  vm_func_add("eval", action_eval, TRUE);
   vm_func_add("switcherevent", action_switcher, TRUE);
   vm_func_add("workspaceactivate", action_workspace_activate, TRUE);
   vm_func_add("taskbaritemdefault", action_taskbar_item, TRUE);
