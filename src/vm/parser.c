@@ -117,63 +117,69 @@ static gboolean parser_if ( GScanner *scanner, GByteArray *code )
   return TRUE;
 }
 
-static gboolean parser_identifier ( GScanner *scanner, GByteArray *code )
+static gboolean parser_function ( GScanner *scanner, GByteArray *code )
 {
+  static guint8 mark = EXPR_OP_MARK;
   guint8 np, data[sizeof(gpointer)+2];
   gconstpointer ptr;
 
+  if(!g_ascii_strcasecmp(scanner->value.v_identifier, "ident"))
+    scanner->config->identifier_2_string = TRUE;
+
+  ptr = parser_identifier_lookup(scanner->value.v_identifier);
+  memcpy(data+2, &ptr, sizeof(gpointer));
+  g_scanner_get_next_token(scanner); // consume '('
+
+  np = 0;
+  if(g_scanner_peek_next_token(scanner)!=')')
+    do
+    {
+      g_byte_array_append(code, &mark, 1);
+      if(!parser_expr_parse(scanner, code))
+        return FALSE;
+      np++;
+    } while(g_scanner_get_next_token(scanner)==',' && np<255);
+  else
+    g_scanner_get_next_token(scanner);
+
+  if(scanner->token != ')')
+    return FALSE;
+
+  data[0]=EXPR_OP_FUNCTION;
+  data[1]=np;
+  g_byte_array_append(code, data, sizeof(gpointer)+2);
+  scanner->config->identifier_2_string = FALSE;
+
+  return TRUE;
+}
+
+static void parser_variable ( GScanner *scanner, GByteArray *code )
+{
+  guint8 data[sizeof(gpointer)+1];
+  gconstpointer ptr;
+
+  ptr = parser_identifier_lookup(scanner->value.v_identifier);
+  memcpy(data+1, &ptr, sizeof(gpointer));
+  data[0] = EXPR_OP_VARIABLE;
+  g_byte_array_append(code, data, sizeof(gpointer)+1);
+}
+
+static gboolean parser_identifier ( GScanner *scanner, GByteArray *code )
+{
   if(!g_ascii_strcasecmp(scanner->value.v_identifier, "if"))
     return parser_if(scanner, code);
   else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "cached"))
     return parser_cached(scanner, code);
   else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "true"))
-  {
     parser_emit_numeric(code, TRUE);
-    return TRUE;
-  }
   else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "false"))
-  {
     parser_emit_numeric(code, FALSE);
-    return TRUE;
-  }
-  else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "ident"))
-    scanner->config->identifier_2_string = TRUE;
-  if(g_scanner_peek_next_token(scanner)=='(')
-  {
-    ptr = parser_identifier_lookup(scanner->value.v_identifier);
-    memcpy(data+2, &ptr, sizeof(gpointer));
-    g_scanner_get_next_token(scanner);
-
-    np = 0;
-    if(g_scanner_peek_next_token(scanner)!=')')
-      do
-      {
-        if(!parser_expr_parse(scanner, code))
-          return FALSE;
-        np++;
-      } while(g_scanner_get_next_token(scanner)==',' && np<255);
-    else
-      g_scanner_get_next_token(scanner);
-
-    if(scanner->token != ')')
-      return FALSE;
-
-    data[0]=EXPR_OP_FUNCTION;
-    data[1]=np;
-    g_byte_array_append(code, data, sizeof(gpointer)+2);
-    scanner->config->identifier_2_string = FALSE;
-    return TRUE;
-  }
+  else if(g_scanner_peek_next_token(scanner)=='(')
+    return parser_function(scanner, code);
   else
-  {
-    ptr = parser_identifier_lookup(scanner->value.v_identifier);
-    memcpy(data+1, &ptr, sizeof(gpointer));
-    data[0] = EXPR_OP_VARIABLE;
-    g_byte_array_append(code, data, sizeof(gpointer)+1);
-    scanner->config->identifier_2_string = FALSE;
-    return TRUE;
-  }
-  return FALSE;
+    parser_variable(scanner, code);
+
+  return TRUE;
 }
 
 static gboolean parser_value ( GScanner *scanner, GByteArray *code )

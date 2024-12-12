@@ -253,6 +253,8 @@ static value_t vm_run ( vm_t *vm )
       vm_variable(vm);
     else if(*vm->ip == EXPR_OP_FUNCTION)
       vm_function(vm);
+    else if(*vm->ip == EXPR_OP_MARK)
+      vm->mark = vm->ip;
     else if(*vm->ip == EXPR_OP_JMP)
     {
       memcpy(&jmp, vm->ip+1, sizeof(gint));

@@ -12,12 +12,14 @@ enum expr_instruction_t {
   EXPR_OP_JMP,
   EXPR_OP_CACHED,
   EXPR_OP_VARIABLE,
-  EXPR_OP_FUNCTION
+  EXPR_OP_FUNCTION,
+  EXPR_OP_MARK
 };
 
 typedef struct {
   guint8 *ip;
   guint8 *code;
+  guint8 *mark;
   gsize len;
   GArray *stack;
   gint max_stack;
