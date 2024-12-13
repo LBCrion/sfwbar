@@ -178,6 +178,7 @@ static void net_update_essid ( gchar *interface )
   gint sock;
   gchar lessid[IW_ESSID_MAX_SIZE+1];
   iface_info *iface;
+  gboolean diff;
 
   if(!interface)
     return;
@@ -194,10 +195,13 @@ static void net_update_essid ( gchar *interface )
   sock = socket(AF_INET, SOCK_DGRAM, 0);
   if(sock >= 0 && ioctl(sock, SIOCGIWESSID, &wreq) >= 0)
   {
+    diff = g_strcmp0(iface->essid, lessid);
     g_mutex_lock(&iface->mutex);
     g_free(iface->essid);
     iface->essid = g_strdup(lessid);
     g_mutex_unlock(&iface->mutex);
+    if(diff)
+      trigger_emit("network");
   }
   if(sock >= 0)
     close(sock);

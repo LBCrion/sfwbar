@@ -494,25 +494,6 @@ void base_widget_set_tooltip ( GtkWidget *self, guint8 *code, gsize len )
         G_CALLBACK(base_widget_tooltip_update), self);
 }
 
-/*void base_widget_set_value ( GtkWidget *self, gchar *value )
-{
-  BaseWidgetPrivate *priv;
-
-  g_return_if_fail(IS_BASE_WIDGET(self));
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
-
-  expr_cache_set(priv->value, value);
-  priv->value->widget = self;
-
-  if(expr_cache_eval(priv->value) || priv->always_update)
-    base_widget_update_value(self);
-
-  g_mutex_lock(&widget_mutex);
-  if(!g_list_find(widgets_scan,self))
-    widgets_scan = g_list_append(widgets_scan,self);
-  g_mutex_unlock(&widget_mutex);
-}*/
-
 void base_widget_set_value ( GtkWidget *self, guint8 *code, gsize len )
 {
   BaseWidgetPrivate *priv;

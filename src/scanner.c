@@ -433,7 +433,7 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, expr_cache_t *expr )
   if(!var)
     return NULL;
 
-  if(!update || !var->invalid)
+  if(!update || (!var->invalid && var->type != G_TOKEN_SET))
   {
     if(expr)
       expr->vstate = expr->vstate || var->vstate;
