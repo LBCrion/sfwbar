@@ -297,7 +297,7 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
 
   dpriv->trigger = spriv->trigger;
   if(spriv->tooltip)
-    base_widget_set_tooltip(dest, g_strdup(spriv->tooltip->definition));
+    base_widget_set_tooltip(dest, spriv->tooltip->code, spriv->tooltip->len);
   base_widget_set_local_state(dest, spriv->local_state);
   base_widget_set_state(dest, spriv->user_state, TRUE);
   base_widget_set_rect(dest, spriv->rect);
@@ -400,8 +400,8 @@ void base_widget_set_local_state ( GtkWidget *self, gboolean state )
   if(state)
   {
     ppriv = base_widget_get_instance_private(BASE_WIDGET(parent));
-    base_widget_set_value(self, g_strdup(ppriv->value->definition));
-    base_widget_set_style(self, g_strdup(ppriv->style->definition));
+    base_widget_set_value(self, ppriv->value->code, ppriv->value->len);
+    base_widget_set_style(self, ppriv->style->code, ppriv->style->len);
   }
   else
   {
@@ -462,7 +462,7 @@ gboolean base_widget_style ( GtkWidget *self )
   return FALSE;
 }
 
-void base_widget_set_tooltip ( GtkWidget *self, gchar *tooltip )
+void base_widget_set_tooltip ( GtkWidget *self, guint8 *code, gsize len )
 {
   BaseWidgetPrivate *priv;
 
@@ -472,10 +472,13 @@ void base_widget_set_tooltip ( GtkWidget *self, gchar *tooltip )
   if(!priv->tooltip)
     return;
 
-  expr_cache_set(priv->tooltip, tooltip);
-  priv->value->widget = self;
+  g_free(priv->tooltip->code);
+  priv->tooltip->code = g_memdup(code, len);
+  priv->tooltip->len = len;
+  priv->tooltip->widget = self;
+  priv->tooltip->eval = !!code;
 
-  if(!tooltip)
+  if(!code)
   {
     gtk_widget_set_has_tooltip(self, FALSE);
     return;
@@ -491,7 +494,7 @@ void base_widget_set_tooltip ( GtkWidget *self, gchar *tooltip )
         G_CALLBACK(base_widget_tooltip_update), self);
 }
 
-void base_widget_set_value ( GtkWidget *self, gchar *value )
+/*void base_widget_set_value ( GtkWidget *self, gchar *value )
 {
   BaseWidgetPrivate *priv;
 
@@ -508,9 +511,31 @@ void base_widget_set_value ( GtkWidget *self, gchar *value )
   if(!g_list_find(widgets_scan,self))
     widgets_scan = g_list_append(widgets_scan,self);
   g_mutex_unlock(&widget_mutex);
+}*/
+
+void base_widget_set_value ( GtkWidget *self, guint8 *code, gsize len )
+{
+  BaseWidgetPrivate *priv;
+
+  g_return_if_fail(IS_BASE_WIDGET(self));
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  g_free(priv->value->code);
+  priv->value->code = g_memdup(code, len);
+  priv->value->len = len;
+  priv->value->widget = self;
+  priv->value->eval = !!code;
+
+  if(expr_cache_eval(priv->value) || priv->always_update)
+    base_widget_update_value(self);
+
+  g_mutex_lock(&widget_mutex);
+  if(!g_list_find(widgets_scan,self))
+    widgets_scan = g_list_append(widgets_scan,self);
+  g_mutex_unlock(&widget_mutex);
 }
 
-void base_widget_set_style ( GtkWidget *self, gchar *style )
+void base_widget_set_style ( GtkWidget *self, guint8 *code, gsize len )
 {
   BaseWidgetPrivate *priv;
 
@@ -518,11 +543,36 @@ void base_widget_set_style ( GtkWidget *self, gchar *style )
   self = base_widget_get_mirror_parent(self);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  expr_cache_set(priv->style, style);
+  g_free(priv->style->code);
+  priv->style->code = g_memdup(code, len);
+  priv->style->len = len;
   priv->style->widget = self;
+  priv->style->eval = !!code;
 
   if(expr_cache_eval(priv->style))
     base_widget_style(self);
+
+  g_mutex_lock(&widget_mutex);
+  if(!g_list_find(widgets_scan, self))
+    widgets_scan = g_list_append(widgets_scan, self);
+  g_mutex_unlock(&widget_mutex);
+}
+
+void base_widget_set_style_static ( GtkWidget *self, gchar *style )
+{
+  BaseWidgetPrivate *priv;
+
+  g_return_if_fail(IS_BASE_WIDGET(self));
+  self = base_widget_get_mirror_parent(self);
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  g_free(priv->style->code);
+  priv->style->code = NULL;
+  priv->style->len = 0;
+  priv->style->cache = style;
+  priv->style->eval = FALSE;
+
+  base_widget_style(self);
 
   g_mutex_lock(&widget_mutex);
   if(!g_list_find(widgets_scan, self))

@@ -789,7 +789,7 @@ gboolean expr_cache_eval ( expr_cache_t *expr )
   value_t v1;
   gchar *eval;
 
-  if(!expr || !expr->definition || !expr->eval)
+  if(!expr || !expr->eval)
     return FALSE;
 
   expr->vstate = FALSE;

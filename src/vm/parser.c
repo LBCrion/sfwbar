@@ -1,7 +1,7 @@
 
 #include "vm/vm.h"
 
-static gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code );
+static guint8 mark = EXPR_OP_MARK;
 
 static gint parser_emit_jump ( GByteArray *code, guint8 op )
 {
@@ -119,7 +119,6 @@ static gboolean parser_if ( GScanner *scanner, GByteArray *code )
 
 static gboolean parser_function ( GScanner *scanner, GByteArray *code )
 {
-  static guint8 mark = EXPR_OP_MARK;
   guint8 np, data[sizeof(gpointer)+2];
   gconstpointer ptr;
 
@@ -259,7 +258,7 @@ static gboolean parser_ops ( GScanner *scanner, GByteArray *code, gint l )
   return TRUE;
 }
 
-static gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code )
+gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code )
 {
   return parser_ops(scanner, code, 0);
 }
@@ -344,6 +343,7 @@ GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
   {
     scanner = parser_scanner_new();
     g_scanner_input_text(scanner, expr1, strlen(expr1));
+    g_byte_array_append(code, &mark, 1);
     if(!parser_expr_parse(scanner, code))
     {
       g_byte_array_free(code, TRUE);
@@ -356,6 +356,7 @@ GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
   {
     scanner = parser_scanner_new();
     g_scanner_input_text(scanner, expr2, strlen(expr2));
+    g_byte_array_append(code, &mark, 1);
     if(!parser_expr_parse(scanner, code))
     {
       g_byte_array_free(code, TRUE);

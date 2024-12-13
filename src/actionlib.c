@@ -142,7 +142,7 @@ static value_t action_setmonitor ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, np-1, "SetMonitor");
 
   if( np==2 && (bar = bar_from_name(value_get_string(p[0]))) )
-    bar_set_monitor(bar, value_get_string(p[np-1]));
+    bar_set_monitor(bar, value_get_string(p[1]));
   else
     bar_address_all(NULL, value_get_string(p[np-1]), bar_set_monitor);
 
@@ -159,7 +159,7 @@ static value_t action_setlayer ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, np-1, "SetLayer");
 
   if( np==2 && (bar = bar_from_name(value_get_string(p[0]))) )
-    bar_set_layer(bar, value_get_string(p[np-1]));
+    bar_set_layer(bar, value_get_string(p[1]));
   else
     bar_address_all(NULL, value_get_string(p[np-1]), bar_set_layer);
 
@@ -176,7 +176,7 @@ static value_t action_setmirror ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, np-1, "SetMirror");
 
   if( np==2 && (bar = bar_from_name(value_get_string(p[0]))) )
-    bar_set_mirrors_old(bar, value_get_string(p[np-1]));
+    bar_set_mirrors_old(bar, value_get_string(p[1]));
   else
     bar_address_all(NULL, value_get_string(p[np-1]), bar_set_mirrors_old);
 
@@ -193,7 +193,7 @@ static value_t action_setbarsize ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, np-1, "SetBarSize");
 
   if( np==2 && (bar = bar_from_name(value_get_string(p[0]))) )
-    bar_set_size(bar, value_get_string(p[np-1]));
+    bar_set_size(bar, value_get_string(p[1]));
   else
     bar_address_all(NULL, value_get_string(p[np-1]), bar_set_size);
 
@@ -212,12 +212,12 @@ static value_t action_setbarmargin ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, np-1, "SetBarMargin");
 
   if( np==2 && (bar = bar_from_name(value_get_string(p[0]))) )
-    bar_set_margin(bar, g_ascii_strtoll(value_get_string(p[np-1]), NULL, 10));
+    bar_set_margin(bar, g_ascii_strtoll(value_get_string(p[1]), NULL, 10));
   else if( (list = bar_get_list()) )
   {
     g_hash_table_iter_init(&iter, list);
     while(g_hash_table_iter_next(&iter, NULL, (gpointer *)&bar))
-      bar_set_margin(bar, g_ascii_strtoll(value_get_string(p[np-1]), NULL, 10));
+      bar_set_margin(bar, g_ascii_strtoll(value_get_string(p[np-1]), NULL,10));
   }
 
   return value_na;
@@ -232,7 +232,7 @@ static value_t action_setbarid ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, np-1, "SetBarID");
 
   if( np==2 && (bar = bar_from_name(value_get_string(p[0]))) )
-    bar_set_id(bar, value_get_string(p[np-1]));
+    bar_set_id(bar, value_get_string(p[1]));
   else
     bar_address_all(NULL, value_get_string(p[np-1]), bar_set_id);
 
@@ -274,7 +274,7 @@ static value_t action_setexclusivezone ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, np-1, "SetExclusiveZone");
 
   if( np==2 && (bar = bar_from_name(value_get_string(p[0]))) )
-    bar_set_exclusive_zone(bar, value_get_string(p[np-1]));
+    bar_set_exclusive_zone(bar, value_get_string(p[1]));
   else
     bar_address_all(NULL, value_get_string(p[np-1]), bar_set_exclusive_zone);
 
@@ -295,44 +295,53 @@ static value_t action_setbarvisibility ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
-static void setvalue_action ( gchar *cmd, gchar *name, void *widget,
-    void *event, window_t *win, guint16 *state )
+static value_t action_setvalue ( vm_t *vm, value_t p[], gint np )
 {
-  if(widget && cmd)
-    base_widget_set_value(widget,g_strdup(cmd));
+  GtkWidget *widget;
+
+  vm_param_check_np_range(vm, np, 1, 2, "SetValue");
+  vm_param_check_string(vm, p, 0, "SetValue");
+
+  if(!vm->mark)
+    return value_na;
+
+  if( (widget = np==2?base_widget_from_id(value_get_string(p[0])):vm->widget) )
+    base_widget_set_value(widget, vm->mark+1, vm->ip-vm->mark-1);
+
+  return value_na;
 }
 
-static ModuleActionHandlerV1 setvalue_handler = {
-  .name = "SetValue",
-  .flags = MODULE_ACT_CMD_BY_DEF | MODULE_ACT_WIDGET_ADDRESS,
-  .function = (ModuleActionFunc)setvalue_action
-};
-
-static void setstyle_action ( gchar *cmd, gchar *name, void *widget,
-    void *event, window_t *win, guint16 *state )
+static value_t action_setstyle ( vm_t *vm, value_t p[], gint np )
 {
-  if(widget && cmd)
-    base_widget_set_style(widget,g_strdup(cmd));
+  GtkWidget *widget;
+
+  vm_param_check_np_range(vm, np, 1, 2, "SetValue");
+  vm_param_check_string(vm, p, 0, "SetValue");
+
+  if(!vm->mark)
+    return value_na;
+
+  if( (widget = np==2?base_widget_from_id(value_get_string(p[0])):vm->widget) )
+    base_widget_set_style(widget, vm->mark+1, vm->ip-vm->mark-1);
+
+  return value_na;
 }
 
-static ModuleActionHandlerV1 setstyle_handler = {
-  .name = "SetStyle",
-  .flags = MODULE_ACT_CMD_BY_DEF | MODULE_ACT_WIDGET_ADDRESS,
-  .function = (ModuleActionFunc)setstyle_action
-};
-
-static void settooltip_action ( gchar *cmd, gchar *name, void *widget,
-    void *event, window_t *win, guint16 *state )
+static value_t action_settooltip ( vm_t *vm, value_t p[], gint np )
 {
-  if(widget && cmd)
-    base_widget_set_tooltip(widget,g_strdup(cmd));
-}
+  GtkWidget *widget;
 
-static ModuleActionHandlerV1 settooltip_handler = {
-  .name = "SetTooltip",
-  .flags = MODULE_ACT_CMD_BY_DEF | MODULE_ACT_WIDGET_ADDRESS,
-  .function = (ModuleActionFunc)settooltip_action
-};
+  vm_param_check_np_range(vm, np, 1, 2, "SetValue");
+  vm_param_check_string(vm, p, 0, "SetValue");
+
+  if(!vm->mark)
+    return value_na;
+
+  if( (widget = np==2?base_widget_from_id(value_get_string(p[0])):vm->widget) )
+    base_widget_set_style(widget, vm->mark+1, vm->ip-vm->mark-1);
+
+  return value_na;
+}
 
 static value_t action_userstate ( vm_t *vm, value_t p[], gint np )
 {
@@ -465,17 +474,19 @@ static value_t action_unmaximize ( vm_t *vm, value_t p[], gint np )
 static value_t action_eval ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np(vm, np, 2, "Eval");
-  vm_param_check_string(vm, p, 1, "Eval");
+  vm_param_check_string(vm, p, 0, "Eval");
 
-  scanner_var_new(value_get_string(p[1]), NULL,
-      value_is_string(p[0])? p[0].value.string :
-      numeric_to_string(value_get_numeric(p[0]), -1), G_TOKEN_SET, VT_FIRST);
+  scanner_var_new(value_get_string(p[0]), NULL,
+      value_is_string(p[1])? p[1].value.string :
+      numeric_to_string(value_get_numeric(p[1]), -1), G_TOKEN_SET, VT_FIRST);
 
   return value_na;
 }
 
 static value_t action_switcher ( vm_t *vm, value_t p[], gint np )
 {
+  vm_param_check_np_range(vm, np, 0, 1, "SwitcherEvent");
+
   if(np==0 || !g_strcasecmp(value_get_string(p[0]), "forward"))
     trigger_emit("switcher_forward");
   else if(np==1 && !g_strcasecmp(value_get_string(p[0]), "back"))
@@ -547,13 +558,6 @@ static value_t action_check_state ( vm_t *vm, value_t p[], gint np )
   return value_new_numeric(TRUE);
 }
 
-static ModuleActionHandlerV1 *action_handlers[] = {
-  &setvalue_handler,
-  &setstyle_handler,
-  &settooltip_handler,
-  NULL
-};
-
 void action_lib_init ( void )
 {
   vm_func_add("exec", action_exec_impl, TRUE);
@@ -576,6 +580,9 @@ void action_lib_init ( void )
   vm_func_add("setbarvisibility", action_setbarvisibility, TRUE);
   vm_func_add("setexclusivezone", action_setexclusivezone, TRUE);
   vm_func_add("userstate", action_userstate, TRUE);
+  vm_func_add("setvalue", action_setvalue, TRUE);
+  vm_func_add("setstyle", action_setstyle, TRUE);
+  vm_func_add("settooltip", action_settooltip, TRUE);
   vm_func_add("focus", action_focus, TRUE);
   vm_func_add("close", action_close, TRUE);
   vm_func_add("minimize", action_minimize, TRUE);
@@ -589,5 +596,4 @@ void action_lib_init ( void )
   vm_func_add("taskbaritemdefault", action_taskbar_item, TRUE);
   vm_func_add("clearwidget", action_clear_widget, TRUE);
   vm_func_add("checkstate", action_check_state, FALSE);
-  module_actions_add(action_handlers,"action library");
 }

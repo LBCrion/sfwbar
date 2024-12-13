@@ -513,10 +513,10 @@ value_t scanner_get_value ( gchar *ident, gboolean update, expr_cache_t *expr )
   g_free(fname);
   if(result.type == EXPR_TYPE_NUMERIC)
     g_debug("scanner: %s = %f (vstate: %d)", ident, result.value.numeric,
-        expr?  expr->vstate: 0);
+        (expr?  expr->vstate: 0));
   else if(result.type == EXPR_TYPE_STRING)
     g_debug("scanner: %s = %s (vstate: %d)", ident, result.value.string,
-        expr?  expr->vstate: 0);
+        (expr?  expr->vstate: 0));
   return result;
 }
 

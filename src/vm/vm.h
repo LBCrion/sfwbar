@@ -44,6 +44,7 @@ typedef struct {
 #define vm_param_check_numeric(vm, p, n, fname) { if(!value_like_numeric(p[n])) { return value_na; } }
 
 GByteArray *parser_expr_compile ( gchar *expr );
+gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code );
 value_t vm_expr_eval ( expr_cache_t *expr );
 gchar *expr_vm_result_to_string ( vm_t *vm );
 gint expr_vm_get_func_params ( vm_t *vm, value_t *params[] );

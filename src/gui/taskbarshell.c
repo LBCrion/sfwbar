@@ -142,7 +142,7 @@ void taskbar_shell_init_child ( GtkWidget *self, GtkWidget *child )
   flow_grid_set_sort(child, priv->sort);
   for(iter=priv->css; iter; iter=g_list_next(iter))
     base_widget_set_css(child, g_strdup(iter->data));
-  base_widget_set_style(child, g_strdup(priv->style));
+  base_widget_set_style_static(child, g_strdup(priv->style));
 }
 
 void taskbar_shell_invalidate ( GtkWidget *self )
@@ -219,7 +219,7 @@ void taskbar_shell_set_group_style ( GtkWidget *self, gchar *style )
 
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
     if( (taskbar=priv->get_taskbar(self, iter->data, FALSE)) && taskbar!=self )
-      base_widget_set_style(taskbar, g_strdup(style));
+      base_widget_set_style_static(taskbar, g_strdup(style));
 
   g_list_foreach(base_widget_get_mirror_children(self),
       (GFunc)taskbar_shell_set_group_style, style);

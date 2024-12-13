@@ -670,10 +670,10 @@ static value_t pulse_volume_ctl_action ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 1, "VolumeCtl");
 
-  if( !(iface = pulse_interface_get(value_get_string(p[0]), &command)) )
+  if( !(iface = pulse_interface_get(value_get_string(p[np-1]), &command)) )
     return value_na;
 
-  if( !(info = pulse_addr_parse(np==2? value_get_string(p[np-1]) : NULL, iface,
+  if( !(info = pulse_addr_parse(np==2? value_get_string(p[0]) : NULL, iface,
           &cidx)) )
     return value_na;
 

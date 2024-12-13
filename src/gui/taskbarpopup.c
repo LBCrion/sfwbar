@@ -301,7 +301,7 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *shell )
   gtk_container_add(GTK_CONTAINER(priv->popover), priv->tgroup);
   css_widget_apply(priv->tgroup, g_strdup(
         g_object_get_data(G_OBJECT(shell), "g_css")));
-  base_widget_set_style(priv->tgroup,g_strdup(
+  base_widget_set_style_static(priv->tgroup,g_strdup(
         g_object_get_data(G_OBJECT(shell), "g_style")));
   gtk_widget_show(priv->tgroup);
 

@@ -17,6 +17,7 @@
 #include "gui/pager.h"
 #include "gui/popup.h"
 #include "gui/tray.h"
+#include "vm/vm.h"
 
 void config_widget (GScanner *scanner, GtkWidget *widget);
 
@@ -175,6 +176,7 @@ gboolean config_flowgrid_property ( GScanner *scanner, GtkWidget *widget )
 gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
 {
   GtkWindow *win;
+  GByteArray *code;
   gchar *trigger;
   gint key;
 
@@ -187,8 +189,15 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
     switch(key)
     {
       case G_TOKEN_STYLE:
-        base_widget_set_style(widget,
-            config_get_value(scanner, "style", TRUE, NULL));
+        if(!config_expect_token(scanner, '=', "expecting style = expression"))
+          return FALSE;
+        code = g_byte_array_new();
+        if(parser_expr_parse(scanner, code))
+        {
+          base_widget_set_style(widget, code->data, code->len);
+          g_byte_array_unref(code);
+        }
+        config_check_and_consume(scanner, ';');
         return TRUE;
       case G_TOKEN_CSS:
         base_widget_set_css(widget, config_assign_string(scanner, "css"));
@@ -218,12 +227,26 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
     switch(key)
     {
       case G_TOKEN_VALUE:
-        base_widget_set_value(widget,
-            config_get_value(scanner,"value",TRUE,NULL));
+        if(!config_expect_token(scanner, '=', "expecting value = expression"))
+          return FALSE;
+        code = g_byte_array_new();
+        if(parser_expr_parse(scanner, code))
+        {
+          base_widget_set_value(widget, code->data, code->len);
+          g_byte_array_unref(code);
+        }
+        config_check_and_consume(scanner, ';');
         return TRUE;
       case G_TOKEN_TOOLTIP:
-        base_widget_set_tooltip(widget,
-            config_get_value(scanner,"tooltip",TRUE,NULL));
+        if(!config_expect_token(scanner, '=', "expecting tooltip = expression"))
+          return FALSE;
+        code = g_byte_array_new();
+        if(parser_expr_parse(scanner, code))
+        {
+          base_widget_set_tooltip(widget, code->data, code->len);
+          g_byte_array_unref(code);
+        }
+        config_check_and_consume(scanner, ';');
         return TRUE;
     }
 
