@@ -1018,8 +1018,8 @@ static value_t nm_action_connect ( vm_t *vm, value_t p[], gint np )
 {
   nm_apoint_t *ap;
 
-  vm_param_check_np(vm, np, 0, "WifiConnect");
-  vm_param_check_string(vm, p, 1, "WifiConnect");
+  vm_param_check_np(vm, np, 1, "WifiConnect");
+  vm_param_check_string(vm, p, 0, "WifiConnect");
 
   if(value_get_string(p[0]) &&
       (ap = g_hash_table_lookup(apoint_list, value_get_string(p[0]))) )
@@ -1032,8 +1032,8 @@ static value_t nm_action_disconnect ( vm_t *vm, value_t p[], gint np )
 {
   nm_apoint_t *ap;
 
-  vm_param_check_np(vm, np, 0, "WifiDisconnect");
-  vm_param_check_string(vm, p, 1, "WifiDIsconnect");
+  vm_param_check_np(vm, np, 1, "WifiDisconnect");
+  vm_param_check_string(vm, p, 0, "WifiDIsconnect");
 
   if(value_get_string(p[0]) &&
       (ap = g_hash_table_lookup(apoint_list, value_get_string(p[0]))) )
@@ -1046,8 +1046,8 @@ static value_t nm_action_forget ( vm_t *vm, value_t p[], gint np )
 {
   nm_apoint_t *ap;
 
-  vm_param_check_np(vm, np, 0, "WifiForget");
-  vm_param_check_string(vm, p, 1, "WifiForget");
+  vm_param_check_np(vm, np, 1, "WifiForget");
+  vm_param_check_string(vm, p, 0, "WifiForget");
 
   if(value_get_string(p[0]) &&
       (ap = g_hash_table_lookup(apoint_list, value_get_string(p[0]))) )
