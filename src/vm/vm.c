@@ -81,6 +81,9 @@ static gboolean vm_op_binary ( vm_t *vm )
       result = value_new_numeric(value_get_numeric(v1)!=value_get_numeric(v2));
     else
       result= value_na;
+
+    if(!value_get_numeric(result) && (op=='<' || op=='>') && *(vm->ip+1)=='=')
+      result = value_new_numeric(value_get_numeric(v1)==value_get_numeric(v2));
   }
 
   vm_push(vm, result);
