@@ -227,7 +227,8 @@ static gboolean parser_value ( GScanner *scanner, GByteArray *code )
 static gboolean parser_ops ( GScanner *scanner, GByteArray *code, gint l )
 {
   static gchar *expr_ops_list[] = { "&|", "!<>=", "+-", "*/%", NULL };
-  static const gchar *ne = "=!";
+  static const guchar *ne = (guchar *)"=!", equal = '=';
+  gboolean or_equal;
   guchar op;
 
   if(!expr_ops_list[l])
@@ -237,6 +238,7 @@ static gboolean parser_ops ( GScanner *scanner, GByteArray *code, gint l )
     return FALSE;
   while(strchr(expr_ops_list[l], g_scanner_peek_next_token(scanner)))
   {
+    or_equal = FALSE;
     if(g_scanner_eof(scanner))
       return TRUE;
     if( !(op = g_scanner_get_next_token(scanner)) )
@@ -247,13 +249,21 @@ static gboolean parser_ops ( GScanner *scanner, GByteArray *code, gint l )
     else if(op=='!')
       g_scanner_get_next_token(scanner);
 
+    if((op=='>' || op=='<') && g_scanner_peek_next_token(scanner)=='=')
+    {
+      or_equal = TRUE;
+      g_scanner_get_next_token(scanner);
+    }
     if(!parser_ops(scanner, code, l+1))
       return FALSE;
 
     if(op!='!')
       g_byte_array_append(code, &op, 1);
     else
-      g_byte_array_append(code, (guchar *)ne, 2);
+      g_byte_array_append(code, ne, 2);
+
+    if(or_equal)
+      g_byte_array_append(code, &equal, 1);
   }
   return TRUE;
 }

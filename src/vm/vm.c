@@ -82,10 +82,11 @@ static gboolean vm_op_binary ( vm_t *vm )
     else
       result= value_na;
 
-    if(!value_get_numeric(result) && (op=='<' || op=='>') && *(vm->ip+1)=='=')
+    if((op=='<' || op=='>') && *(vm->ip+1)=='=')
     {
-      result = value_new_numeric(value_get_numeric(v1)==value_get_numeric(v2));
       vm->ip++;
+      result.value.numeric = value_get_numeric(result) ||
+        (value_get_numeric(v1)==value_get_numeric(v2));
     }
   }
 
