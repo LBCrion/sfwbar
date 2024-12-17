@@ -1,7 +1,9 @@
 
+#include "util/string.h"
 #include "vm/vm.h"
 
 static guint8 mark = EXPR_OP_MARK;
+static GHashTable *macros;
 
 static gint parser_emit_jump ( GByteArray *code, guint8 op )
 {
@@ -163,6 +165,21 @@ static void parser_variable ( GScanner *scanner, GByteArray *code )
   g_byte_array_append(code, data, sizeof(gpointer)+1);
 }
 
+static gboolean parser_macro_handle ( GScanner *scanner, GByteArray *code )
+{
+  GBytes *bytes;
+  gsize len;
+  gconstpointer data;
+
+  if(!macros ||
+      !(bytes = g_hash_table_lookup(macros, scanner->value.v_identifier)) )
+    return FALSE;
+
+  data = g_bytes_get_data(bytes, &len);
+  g_byte_array_append(code, data, len);
+  return TRUE;
+}
+
 static gboolean parser_identifier ( GScanner *scanner, GByteArray *code )
 {
   if(!g_ascii_strcasecmp(scanner->value.v_identifier, "if"))
@@ -175,7 +192,7 @@ static gboolean parser_identifier ( GScanner *scanner, GByteArray *code )
     parser_emit_numeric(code, FALSE);
   else if(g_scanner_peek_next_token(scanner)=='(')
     return parser_function(scanner, code);
-  else
+  else if(!parser_macro_handle(scanner, code))
     parser_variable(scanner, code);
 
   return TRUE;
@@ -271,6 +288,38 @@ static gboolean parser_ops ( GScanner *scanner, GByteArray *code, gint l )
 gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code )
 {
   return parser_ops(scanner, code, 0);
+}
+
+gboolean parser_macro_add ( GScanner *scanner )
+{
+  GByteArray *code;
+  gchar *name;
+
+  if(g_scanner_get_next_token(scanner) != G_TOKEN_IDENTIFIER)
+    return FALSE;
+  name = g_strdup(scanner->value.v_identifier);
+  if(g_scanner_get_next_token(scanner) != '=')
+  {
+    g_free(name);
+    return FALSE;
+  }
+
+  code = g_byte_array_new();
+
+  if(!parser_expr_parse(scanner, code))
+  {
+    g_byte_array_free(code, TRUE);
+    g_free(name);
+    return FALSE;
+  }
+
+  if(!macros)
+    macros = g_hash_table_new_full( (GHashFunc)str_nhash,
+        (GEqualFunc)str_nequal, g_free, (GDestroyNotify)g_bytes_unref);
+
+  g_hash_table_insert(macros, name, g_byte_array_free_to_bytes(code));
+
+  return TRUE;
 }
 
 static GScanner *parser_scanner_new ( void )

@@ -8,6 +8,7 @@
 #include "module.h"
 #include "gui/bar.h"
 #include "gui/menu.h"
+#include "vm/vm.h"
 
 gboolean config_action_conditions ( GScanner *scanner, action_t *action )
 {
@@ -358,7 +359,7 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
         config_include(scanner, NULL);
         break;
       case G_TOKEN_DEFINE:
-        config_define(scanner);
+        parser_macro_add(scanner);
         break;
       case G_TOKEN_SET:
         config_set(scanner);
