@@ -480,7 +480,7 @@ static value_t expr_ident ( vm_t *vm, value_t p[], int np )
     return value_na;
 
   result = value_new_numeric(scanner_is_variable(value_get_string(p[0])) ||
-    module_is_function(value_get_string(p[0])));
+    !!vm_func_lookup(value_get_string(p[0])));
   if(!result.value.numeric)
     expr_dep_add(value_get_string(p[0]), vm->expr);
 

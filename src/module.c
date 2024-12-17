@@ -13,62 +13,14 @@
 #include "vm/vm.h"
 
 static GList *module_list;
-static GHashTable *expr_handlers, *interfaces;
-static GData *act_handlers;
+static GHashTable *interfaces;
 static GList *invalidators;
-
-void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler,gchar *name )
-{
-  gint i;
-
-  if(!ehandler)
-    return;
-  for(i=0;ehandler[i];i++)
-    if(ehandler[i]->function && ehandler[i]->name)
-    {
-      if(!expr_handlers)
-        expr_handlers = g_hash_table_new((GHashFunc)str_nhash,
-          (GEqualFunc)str_nequal);
-      g_debug("module: register expr function '%s'",ehandler[i]->name);
-      if(g_hash_table_lookup(expr_handlers,ehandler[i]->name))
-        g_message("Duplicate module expr function: %s in module %s",
-            ehandler[i]->name,name);
-      else
-      {
-        g_hash_table_insert(expr_handlers,ehandler[i]->name,ehandler[i]);
-        expr_dep_trigger(ehandler[i]->name);
-      }
-    }
-}
-
-void module_actions_add ( ModuleActionHandlerV1 **ahandler, gchar *name )
-{
-  gint i;
-  gchar *lname;
-
-  if(!ahandler)
-    return;
-  for(i=0; ahandler[i]; i++)
-    if(ahandler[i]->function && ahandler[i]->name)
-    {
-      lname = g_ascii_strdown(ahandler[i]->name, -1);
-      ahandler[i]->id = g_intern_string(lname);
-      g_debug("module: register action '%s'",ahandler[i]->name);
-      if(g_datalist_get_data(&act_handlers, ahandler[i]->id))
-        g_message("Duplicate module action: %s in module %s",
-            ahandler[i]->name, name);
-      else
-        g_datalist_set_data(&act_handlers, ahandler[i]->id, ahandler[i]);
-      g_free(lname);
-    }
-}
 
 void module_interface_select ( gchar *interface )
 {
   ModuleInterfaceList *list;
   ModuleInterfaceV1 *new;
   GList *iter;
-  gint i;
 
   if( !(list = g_hash_table_lookup(interfaces, interface)) )
     return;
@@ -95,24 +47,12 @@ void module_interface_select ( gchar *interface )
 
   if(list->active)
   {
-    if(list->active->expr_handlers)
-      for(i=0; list->active->expr_handlers[i]; i++)
-      {
-        g_hash_table_remove(expr_handlers, list->active->expr_handlers[i]->name);
-        expr_dep_trigger(list->active->expr_handlers[i]->name);
-      }
-    if(list->active->act_handlers)
-      for(i=0; list->active->act_handlers[i]; i++)
-        g_datalist_remove_data(&act_handlers,
-            list->active->act_handlers[i]->id);
     if(list->active->finalize)
       list->active->finalize();
   }
   list->active = new;
   if(new)
   {
-    module_actions_add(new->act_handlers, new->provider);
-    module_expr_funcs_add(new->expr_handlers, new->provider);
     new->activate();
     new->active = TRUE;
   }
@@ -166,8 +106,6 @@ gchar *module_interface_provider_get ( gchar *interface )
 gboolean module_load ( gchar *name )
 {
   GModule *module;
-  ModuleExpressionHandlerV1 **ehandler;
-  ModuleActionHandlerV1 **ahandler;
   ModuleInvalidator invalidator;
   ModuleInitializer init;
   ModuleInterfaceV1 *iface;
@@ -220,12 +158,6 @@ gboolean module_load ( gchar *name )
   if(g_module_symbol(module,"sfwbar_module_invalidate",(void **)&invalidator))
     invalidators = g_list_prepend(invalidators,invalidator);
 
-  if(g_module_symbol(module,"sfwbar_expression_handlers",(void **)&ehandler))
-    module_expr_funcs_add(ehandler, name);
-
-  if(g_module_symbol(module,"sfwbar_action_handlers",(void **)&ahandler))
-    module_actions_add(ahandler, name);
-
   if(g_module_symbol(module,"sfwbar_interface",(void **)&iface))
     module_interface_add(iface, name);
 
@@ -240,94 +172,6 @@ void module_invalidate_all ( void )
     if(iter->data)
       ((ModuleInvalidator)(iter->data))();
 }
-
-ModuleActionHandlerV1 *module_action_get ( const gchar *id )
-{
-  return g_datalist_get_data(&act_handlers, id);
-}
-
-void module_action_exec ( const gchar *id, gchar *param, gchar *addr, void *widget,
-    void *ev, void *win, void *state)
-{
-  ModuleActionHandlerV1 *handler;
-
-  g_debug("module: checking action `%s`", id);
-
-  handler = module_action_get(id);
-  if(!handler)
-    return;
-  g_debug("module: calling action `%s`", id);
-
-  handler->function(param, addr, widget,ev,win,state);
-}
-
-gboolean module_is_function ( gchar *identifier )
-{
-  if(expr_handlers &&
-      g_hash_table_lookup(expr_handlers,identifier))
-    return TRUE;
-  if(vm_func_lookup(identifier))
-    return TRUE;
-  return FALSE;
-}
-
-gboolean module_check_flag ( gchar *identifier, gint flag )
-{
-  ModuleExpressionHandlerV1 *handler;
-
-  if(!expr_handlers)
-    return FALSE;
-
-  handler = g_hash_table_lookup(expr_handlers,identifier);
-  if(!handler)
-    return FALSE;
-  return !!(handler->flags & flag);
-}
-
-ModuleExpressionHandlerV1 *module_expr_func_get ( gchar *name )
-{
-  return g_hash_table_lookup(expr_handlers, name);
-}
-
-/*void *module_get_value ( GScanner *scanner )
-{
-  ModuleExpressionHandlerV1 *handler;
-  void **params;
-  ExprCache *expr;
-  gchar *result;
-  gint i;
-
-  E_STATE(scanner)->type = EXPR_VARIANT;
-  if(!expr_handlers)
-    return NULL;
-
-  if(!(handler =
-        g_hash_table_lookup(expr_handlers, scanner->value.v_identifier)))
-    return NULL;
-
-  g_debug("module: calling function `%s`", handler->name);
-  params = expr_module_parameters(scanner, handler->parameters, handler->name);
-
-  expr=E_STATE(scanner)->expr;
-  while(!expr->widget && expr->parent)
-    expr=expr->parent;
-
-  result = handler->function(params, expr->widget, expr->event);
-
-  if(params)
-    for(i=0; i<strlen(handler->parameters); i++)
-      g_free(params[i]);
-  g_free(params);
-
-  if(handler->flags & MODULE_EXPR_NUMERIC)
-    E_STATE(scanner)->type = EXPR_NUMERIC;
-  else
-    E_STATE(scanner)->type = EXPR_STRING;
-  if(!(handler->flags & MODULE_EXPR_DETERMINISTIC))
-    E_STATE(scanner)->expr->vstate = TRUE;
-
-  return result;
-}*/
 
 void module_queue_append ( module_queue_t *queue, void *item )
 {

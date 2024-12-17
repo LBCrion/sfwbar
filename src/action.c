@@ -4,7 +4,6 @@
  */
 
 #include "action.h"
-#include "module.h"
 #include "trigger.h"
 #include "gui/taskbaritem.h"
 #include "util/string.h"
@@ -60,23 +59,19 @@ guint16 action_state_build ( GtkWidget *widget, window_t *win )
 void action_exec ( GtkWidget *widget, action_t *action,
     GdkEvent *event, window_t *win, guint16 *istate )
 {
-  ModuleActionHandlerV1 *ahandler;
+/*  ModuleActionHandlerV1 *ahandler;
   expr_cache_t *addr;
   GList *children, *iter;
   guint16 state;
-  action_t *caction;
+  action_t *caction;*/
 
   if(!action)
     return;
 
-  if(vm_func_lookup((gchar *)action->id))
-  {
-    vm_run_action((gchar *)action->id, action->addr->definition,
-        action->command->definition, widget, event, action->cond, action->ncond);
-    return;
-  }
+  vm_run_action((gchar *)action->id, action->addr->definition,
+      action->command->definition, widget, event, action->cond, action->ncond);
 
-  if( !(ahandler = module_action_get(action->id)) )
+/*  if( !(ahandler = module_action_get(action->id)) )
     return;
 
   addr = (ahandler->flags & MODULE_ACT_ADDRESS_ONLY)?
@@ -142,7 +137,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
 
   module_action_exec(action->id,
       (ahandler->flags & MODULE_ACT_CMD_BY_DEF)?action->command->definition:
-      action->command->cache, action->addr->cache, widget, event, win, &state);
+      action->command->cache, action->addr->cache, widget, event, win, &state);*/
 }
 
 action_t *action_new ( void )

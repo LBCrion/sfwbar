@@ -98,25 +98,6 @@ static gboolean vm_op_binary ( vm_t *vm )
   return TRUE;
 }
 
-static value_t vm_ptr_to_value ( gpointer ptr, gboolean str )
-{
-  value_t value;
-
-  if(!ptr)
-  {
-    value = value_na;
-  }
-  else if(str)
-    value = value_new_string(ptr?ptr:g_strdup(""));
-  else
-  {
-    value = value_new_numeric(*((gdouble *)ptr));
-    g_free(ptr);
-  }
-
-  return value;
-}
-
 gint expr_vm_get_func_params ( vm_t *vm, value_t *params[] )
 {
   guint8 np = *(vm->ip+1);
@@ -126,38 +107,12 @@ gint expr_vm_get_func_params ( vm_t *vm, value_t *params[] )
   return np;
 }
 
-static gpointer *vm_function_params_read ( vm_t *vm, gint np,
-    gchar *spec )
-{
-  gpointer *params;
-  value_t *v1;
-  gint i, j=0;
-
-  if(!spec)
-    return NULL;
-  params = g_malloc0(sizeof(gpointer)*strlen(spec));
-  for(i=0; i<strlen(spec) && j<np; i++)
-  {
-    v1 = &((value_t *)(vm->stack->data))[vm->stack->len-np+j];
-    if(g_ascii_tolower(spec[i])=='n' && value_is_numeric(*v1))
-      params[j++] = &(v1->value.numeric);
-    else if(g_ascii_tolower(spec[i])=='s' && value_is_string(*v1))
-      params[j++] = v1->value.string;
-    else if(!g_ascii_islower(spec[i]))
-      break;
-  }
-
-  return params;
-}
-
 static gboolean vm_function ( vm_t *vm )
 {
-  ModuleExpressionHandlerV1 *handler;
   vm_function_t *func;
   value_t v1, result, *stack;
   gchar *name;
   guint8 np = *(vm->ip+1);
-  gpointer *params, *ptr;
   gint i;
 
   if(np>vm->stack->len)
@@ -170,26 +125,6 @@ static gboolean vm_function ( vm_t *vm )
     result = func->function(vm, stack, np);
     if(vm->expr)
       vm->expr->vstate |= (!func->deterministic);
-  }
-  else if( (handler = module_expr_func_get(name)) )
-  {
-    if(handler->flags & MODULE_EXPR_RAW)
-      ptr = handler->function((void *)vm, vm->widget, vm->event);
-    else
-    {
-      params = vm_function_params_read(vm, np, handler->parameters);
-      ptr = handler->function(params, NULL, NULL);
-      g_free(params);
-    }
-
-/*    if(handler->flags & MODULE_EXPR_NUMERIC)
-      g_message("func: %s = %lf", name, *((gdouble *)ptr));
-    else
-      g_message("func: %s = %s", name, (gchar *)ptr);*/
-    result = vm_ptr_to_value(ptr,
-        !(handler->flags & MODULE_EXPR_NUMERIC));
-    if(vm->expr && !(handler->flags & MODULE_EXPR_DETERMINISTIC))
-      vm->expr->vstate = TRUE;
   }
   expr_dep_add(name, vm->expr);
   if(np>1)

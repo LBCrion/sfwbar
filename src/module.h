@@ -32,19 +32,10 @@ typedef struct {
 } ModuleExpressionHandlerV1;
 
 typedef struct {
-  gchar *name;
-  gint flags;
-  const gchar *id;
-  ModuleActionFunc function;
-} ModuleActionHandlerV1;
-
-typedef struct {
   gboolean ready;
   gboolean active;
   gchar *interface;
   gchar *provider;
-  ModuleExpressionHandlerV1 **expr_handlers;
-  ModuleActionHandlerV1 **act_handlers;
   void (*activate) (void);
   void (*deactivate) (void);
   void (*finalize) (void);
@@ -74,15 +65,6 @@ void *module_queue_get_numeric ( module_queue_t *queue, gchar *param );
 
 gboolean module_load ( gchar *name );
 void module_invalidate_all ( void );
-gboolean module_is_function ( gchar *identifier );
-gboolean module_check_flag ( gchar *identifier, gint flag );
-void *module_get_value ( GScanner *scanner );
-ModuleActionHandlerV1 *module_action_get ( const gchar *id );
-void module_action_exec ( const gchar *id, gchar *param, gchar *addr, void *,
-    void *, void *, void * );
-void module_actions_add ( ModuleActionHandlerV1 **ahandler, gchar *name );
-void module_expr_funcs_add ( ModuleExpressionHandlerV1 **ehandler, gchar *name);
-ModuleExpressionHandlerV1 *module_expr_func_get ( gchar *name );
 void module_interface_select ( gchar *interface );
 void module_interface_activate ( ModuleInterfaceV1 *iface );
 void module_interface_deactivate ( ModuleInterfaceV1 *iface );
