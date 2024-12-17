@@ -93,6 +93,7 @@ static gboolean vm_op_binary ( vm_t *vm )
   vm_push(vm, result);
   value_free(v1);
   value_free(v2);
+  g_ptr_array_remove_index(vm->pstack, vm->pstack->len-1);
 
   return TRUE;
 }
@@ -191,6 +192,10 @@ static gboolean vm_function ( vm_t *vm )
       vm->expr->vstate = TRUE;
   }
   expr_dep_add(name, vm->expr);
+  if(np>1)
+    g_ptr_array_remove_range(vm->pstack, vm->pstack->len-np+1, np-1);
+  else if(!np)
+    g_ptr_array_add(vm->pstack, vm->ip);
   vm->ip += sizeof(gpointer)+1;
 
   for(i=0; i<np; i++)
@@ -213,6 +218,7 @@ static void vm_variable ( vm_t *vm )
   expr_dep_add(name, vm->expr);
 
   vm_push(vm, value);
+  g_ptr_array_add(vm->pstack, vm->ip);
   vm->ip += sizeof(gpointer);
 }
 
@@ -220,6 +226,7 @@ static void vm_immediate ( vm_t *vm )
 {
   value_t v1;
 
+  g_ptr_array_add(vm->pstack, vm->ip);
   if(*(vm->ip+1) != EXPR_TYPE_STRING)
   {
     memcpy(&v1, vm->ip+1, sizeof(value_t));
@@ -247,7 +254,10 @@ static value_t vm_run ( vm_t *vm )
 
   if(!vm->stack)
     vm->stack = g_array_sized_new(FALSE, FALSE, sizeof(value_t),
-        MAX(1, vm->expr?vm->expr->stack_depth:1));
+        MAX(1, vm->expr? vm->expr->stack_depth : 1));
+  if(!vm->pstack)
+    vm->pstack = g_ptr_array_sized_new(
+        MAX(1, vm->expr? vm->expr->stack_depth: 1));
 
   for(vm->ip = vm->code; (vm->ip-vm->code)<vm->len; vm->ip++)
   {
@@ -260,8 +270,6 @@ static value_t vm_run ( vm_t *vm )
       vm_variable(vm);
     else if(*vm->ip == EXPR_OP_FUNCTION)
       vm_function(vm);
-    else if(*vm->ip == EXPR_OP_MARK)
-      vm->mark = vm->ip;
     else if(*vm->ip == EXPR_OP_JMP)
     {
       memcpy(&jmp, vm->ip+1, sizeof(gint));
@@ -269,6 +277,7 @@ static value_t vm_run ( vm_t *vm )
     }
     else if(*vm->ip == EXPR_OP_JZ)
     {
+      g_ptr_array_remove_index(vm->pstack, vm->pstack->len-1);
       v1 = vm_pop(vm);
       if(!value_is_numeric(v1) || !v1.value.numeric)
       {
@@ -320,6 +329,7 @@ static value_t vm_free ( vm_t *vm )
     vm->expr->stack_depth = MAX(vm->expr->stack_depth, vm->max_stack);
 
   g_array_unref(vm->stack);
+  g_ptr_array_free(vm->pstack, TRUE);
   g_free(vm);
 
   return v1;

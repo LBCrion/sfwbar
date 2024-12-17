@@ -298,15 +298,18 @@ static value_t action_setbarvisibility ( vm_t *vm, value_t p[], gint np )
 static value_t action_setvalue ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *widget;
+  guint8 *mark;
 
   vm_param_check_np_range(vm, np, 1, 2, "SetValue");
   vm_param_check_string(vm, p, 0, "SetValue");
 
-  if(!vm->mark)
+  if(!vm->pstack->len)
     return value_na;
 
+  mark = vm->pstack->pdata[vm->pstack->len-1];
+
   if( (widget = np==2?base_widget_from_id(value_get_string(p[0])):vm->widget) )
-    base_widget_set_value(widget, vm->mark+1, vm->ip-vm->mark-1);
+    base_widget_set_value(widget, mark, vm->ip - mark);
 
   return value_na;
 }
@@ -314,15 +317,18 @@ static value_t action_setvalue ( vm_t *vm, value_t p[], gint np )
 static value_t action_setstyle ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *widget;
+  guint8 *mark;
 
   vm_param_check_np_range(vm, np, 1, 2, "SetValue");
   vm_param_check_string(vm, p, 0, "SetValue");
 
-  if(!vm->mark)
+  if(!vm->pstack->len)
     return value_na;
 
+  mark = vm->pstack->pdata[vm->pstack->len-1];
+
   if( (widget = np==2?base_widget_from_id(value_get_string(p[0])):vm->widget) )
-    base_widget_set_style(widget, vm->mark+1, vm->ip-vm->mark-1);
+    base_widget_set_style(widget, mark, vm->ip - mark);
 
   return value_na;
 }
@@ -330,15 +336,18 @@ static value_t action_setstyle ( vm_t *vm, value_t p[], gint np )
 static value_t action_settooltip ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *widget;
+  guint8 *mark;
 
   vm_param_check_np_range(vm, np, 1, 2, "SetValue");
   vm_param_check_string(vm, p, 0, "SetValue");
 
-  if(!vm->mark)
+  if(!vm->pstack->len)
     return value_na;
 
+  mark = vm->pstack->pdata[vm->pstack->len-1];
+
   if( (widget = np==2?base_widget_from_id(value_get_string(p[0])):vm->widget) )
-    base_widget_set_style(widget, vm->mark+1, vm->ip-vm->mark-1);
+    base_widget_set_tooltip(widget, mark, vm->ip - mark);
 
   return value_na;
 }
