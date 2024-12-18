@@ -297,7 +297,7 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
 
   dpriv->trigger = spriv->trigger;
   if(spriv->tooltip)
-    base_widget_set_tooltip(dest, spriv->tooltip->code, spriv->tooltip->len);
+    base_widget_set_tooltip(dest, spriv->tooltip->code);
   base_widget_set_local_state(dest, spriv->local_state);
   base_widget_set_state(dest, spriv->user_state, TRUE);
   base_widget_set_rect(dest, spriv->rect);
@@ -400,8 +400,8 @@ void base_widget_set_local_state ( GtkWidget *self, gboolean state )
   if(state)
   {
     ppriv = base_widget_get_instance_private(BASE_WIDGET(parent));
-    base_widget_set_value(self, ppriv->value->code, ppriv->value->len);
-    base_widget_set_style(self, ppriv->style->code, ppriv->style->len);
+    base_widget_set_value(self, ppriv->value->code);
+    base_widget_set_style(self, ppriv->style->code);
   }
   else
   {
@@ -462,7 +462,7 @@ gboolean base_widget_style ( GtkWidget *self )
   return FALSE;
 }
 
-void base_widget_set_tooltip ( GtkWidget *self, guint8 *code, gsize len )
+void base_widget_set_tooltip ( GtkWidget *self, GBytes *code )
 {
   BaseWidgetPrivate *priv;
 
@@ -472,9 +472,8 @@ void base_widget_set_tooltip ( GtkWidget *self, guint8 *code, gsize len )
   if(!priv->tooltip)
     return;
 
-  g_free(priv->tooltip->code);
-  priv->tooltip->code = g_memdup(code, len);
-  priv->tooltip->len = len;
+  g_bytes_unref(priv->tooltip->code);
+  priv->tooltip->code = g_bytes_ref(code);
   priv->tooltip->widget = self;
   priv->tooltip->eval = !!code;
 
@@ -494,16 +493,15 @@ void base_widget_set_tooltip ( GtkWidget *self, guint8 *code, gsize len )
         G_CALLBACK(base_widget_tooltip_update), self);
 }
 
-void base_widget_set_value ( GtkWidget *self, guint8 *code, gsize len )
+void base_widget_set_value ( GtkWidget *self, GBytes *code )
 {
   BaseWidgetPrivate *priv;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  g_free(priv->value->code);
-  priv->value->code = g_memdup(code, len);
-  priv->value->len = len;
+  g_bytes_unref(priv->value->code);
+  priv->value->code = g_bytes_ref(code);
   priv->value->widget = self;
   priv->value->eval = !!code;
 
@@ -516,7 +514,7 @@ void base_widget_set_value ( GtkWidget *self, guint8 *code, gsize len )
   g_mutex_unlock(&widget_mutex);
 }
 
-void base_widget_set_style ( GtkWidget *self, guint8 *code, gsize len )
+void base_widget_set_style ( GtkWidget *self, GBytes *code )
 {
   BaseWidgetPrivate *priv;
 
@@ -524,9 +522,8 @@ void base_widget_set_style ( GtkWidget *self, guint8 *code, gsize len )
   self = base_widget_get_mirror_parent(self);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  g_free(priv->style->code);
-  priv->style->code = g_memdup(code, len);
-  priv->style->len = len;
+  g_bytes_unref(priv->style->code);
+  priv->style->code = g_bytes_ref(code);
   priv->style->widget = self;
   priv->style->eval = !!code;
 
@@ -549,7 +546,6 @@ void base_widget_set_style_static ( GtkWidget *self, gchar *style )
 
   g_free(priv->style->code);
   priv->style->code = NULL;
-  priv->style->len = 0;
   priv->style->cache = style;
   priv->style->eval = FALSE;
 
@@ -873,7 +869,7 @@ void base_widget_set_action ( GtkWidget *self, gint slot,
   base_widget_action_configure(self, slot);
 }
 
-void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src )
+/*void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src )
 {
   BaseWidgetPrivate *spriv;
   base_widget_attachment_t *attach;
@@ -888,7 +884,7 @@ void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src )
     base_widget_set_action(dest, attach->event, attach->mods,
         action_dup(attach->action));
   }
-}
+}*/
 
 GtkWidget *base_widget_mirror ( GtkWidget *src )
 {

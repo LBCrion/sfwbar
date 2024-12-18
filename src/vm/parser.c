@@ -348,7 +348,7 @@ static void parser_scanner_free ( GScanner *scanner )
   g_scanner_destroy(scanner);
 }
 
-GByteArray *parser_expr_compile ( gchar *expr )
+GBytes *parser_expr_compile ( gchar *expr )
 {
   GScanner *scanner;
   GByteArray *code;
@@ -368,10 +368,10 @@ GByteArray *parser_expr_compile ( gchar *expr )
 
   parser_scanner_free(scanner);
 
-  return code;
+  return code? g_byte_array_free_to_bytes(code) : NULL;
 }
 
-GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
+GBytes *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
     guint16 cond, guint16 ncond )
 {
   gint np = !!expr1 + !!expr2;
@@ -435,5 +435,5 @@ GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
     parser_jump_backpatch(code, alen, code->len + sizeof(gint));
   }
 
-  return code;
+  return g_byte_array_free_to_bytes(code);
 }

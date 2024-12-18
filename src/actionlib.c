@@ -93,8 +93,8 @@ static value_t action_menuitemclear ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_menu ( vm_t *vm, value_t p[], gint np )
 {
-  vm_param_check_np(vm, np, 1, "MenuClear");
-  vm_param_check_string(vm, p, 0, "MenuClear");
+  vm_param_check_np(vm, np, 1, "Menu");
+  vm_param_check_string(vm, p, 0, "Menu");
 
   menu_popup(vm->widget, menu_from_name(value_get_string(p[0])), vm->event,
       vm->win?vm->win->uid:NULL, &vm->wstate);
@@ -309,7 +309,8 @@ static value_t action_setvalue ( vm_t *vm, value_t p[], gint np )
   mark = vm->pstack->pdata[vm->pstack->len-1];
 
   if( (widget = np==2?base_widget_from_id(value_get_string(p[0])):vm->widget) )
-    base_widget_set_value(widget, mark, vm->ip - mark);
+    base_widget_set_value(widget,
+        g_bytes_new_take(g_memdup(mark, vm->ip - mark), vm->ip - mark));
 
   return value_na;
 }
@@ -328,7 +329,8 @@ static value_t action_setstyle ( vm_t *vm, value_t p[], gint np )
   mark = vm->pstack->pdata[vm->pstack->len-1];
 
   if( (widget = np==2?base_widget_from_id(value_get_string(p[0])):vm->widget) )
-    base_widget_set_style(widget, mark, vm->ip - mark);
+    base_widget_set_style(widget,
+        g_bytes_new_take(g_memdup(mark, vm->ip - mark), vm->ip - mark));
 
   return value_na;
 }
@@ -347,7 +349,8 @@ static value_t action_settooltip ( vm_t *vm, value_t p[], gint np )
   mark = vm->pstack->pdata[vm->pstack->len-1];
 
   if( (widget = np==2?base_widget_from_id(value_get_string(p[0])):vm->widget) )
-    base_widget_set_tooltip(widget, mark, vm->ip - mark);
+    base_widget_set_tooltip(widget,
+        g_bytes_new_take(g_memdup(mark, vm->ip - mark), vm->ip - mark));
 
   return value_na;
 }

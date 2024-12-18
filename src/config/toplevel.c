@@ -36,10 +36,12 @@ gboolean config_action_conditions ( GScanner *scanner, action_t *action )
   return !scanner->max_parse_errors;
 }
 
+GBytes *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
+    guint16 cond, guint16 ncond );
 gboolean config_action ( GScanner *scanner, action_t **action_dst )
 {
   action_t *action;
-  gchar *ident, *ptr, *addr = NULL, *cmd = NULL;
+  gchar *ident, *addr = NULL, *cmd = NULL;
 
   action = action_new();
 
@@ -69,7 +71,11 @@ gboolean config_action ( GScanner *scanner, action_t **action_dst )
     return FALSE;
   }
 
-  if(!ident)
+  action->code = parser_action_compat(ident? ident: "exec", addr? addr : cmd,
+      addr? cmd : NULL, action->cond, action->ncond);
+  *action_dst = action;
+
+/*  if(!ident)
   {
     action->command->cache = g_strdup(scanner->value.v_string);
     action->id = g_intern_static_string("exec");
@@ -90,7 +96,7 @@ gboolean config_action ( GScanner *scanner, action_t **action_dst )
     expr_cache_set(action->command, addr);
 
   *action_dst = action;
-  g_free(ident);
+  g_free(ident);*/
   return TRUE;
 }
 

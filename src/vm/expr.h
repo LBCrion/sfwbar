@@ -6,8 +6,7 @@
 typedef struct expr_cache {
   gchar *definition;
   gchar *cache;
-  guint8 *code;
-  gsize len;
+  GBytes *code;
   GtkWidget *widget;
   GdkEvent *event;
   gboolean eval;

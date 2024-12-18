@@ -129,7 +129,7 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
     case G_TOKEN_SET:
       expr_cache_free(var->expr);
       var->expr = expr_cache_new();
-      expr_cache_set(var->expr, g_strdup(pattern));
+      expr_cache_set(var->expr, pattern);
       var->vstate = 1;
       expr_dep_trigger(name);
       break;
@@ -176,7 +176,7 @@ void scanner_var_values_update ( ScanVar *var, gchar *value)
   if(!value)
     return;
 
-  if(var->multi!=VT_FIRST || !var->count)
+  if(var->multi!=VT_FIRST || !var->count || var->type==G_TOKEN_SET)
   {
     g_free(var->str);
     var->str = value;
@@ -452,7 +452,8 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, expr_cache_t *expr )
       var->vstate = var->expr->vstate;
       if(expr)
         expr->vstate = expr->vstate || var->expr->vstate;
-      scanner_var_reset(var,NULL);
+      if(var->invalid)
+        scanner_var_reset(var, NULL);
       scanner_var_values_update(var,g_strdup(var->expr->cache));
       var->invalid = FALSE;
     }

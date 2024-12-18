@@ -276,8 +276,7 @@ value_t vm_expr_eval ( expr_cache_t *expr )
 
   vm = g_malloc0(sizeof(vm_t));
 
-  vm->code = expr->code;
-  vm->len = expr->len;
+  vm->code = (gpointer)g_bytes_get_data(expr->code, &vm->len);
   vm->widget = expr->widget;
   vm->event = expr->event;
   vm->expr = expr;
@@ -287,25 +286,17 @@ value_t vm_expr_eval ( expr_cache_t *expr )
   return vm_free(vm);
 }
 
-GByteArray *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
-    guint16 cond, guint16 ncond );
-void vm_run_action ( gchar *func, gchar *expr1, gchar *expr2, GtkWidget *w,
-    GdkEvent *e, guint16 cond, guint16 ncond )
+void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event )
 {
-  GByteArray *code;
   value_t v1;
   vm_t *vm;
 
-  if( (code = parser_action_compat(func, expr1, expr2, cond, ncond)) )
-  {
-    vm = g_malloc0(sizeof(vm_t));
-    vm->code = g_byte_array_steal(code, &vm->len);
-    g_byte_array_unref(code);
-    vm->widget = w;
-    vm->event = e;
+  vm = g_malloc0(sizeof(vm_t));
+  vm->code = (gpointer)g_bytes_get_data(code, &vm->len);
+  vm->widget = widget;
+  vm->event = event;
 
-    vm_run(vm);
-    v1 = vm_free(vm);
-    value_free(v1);
-  }
+  vm_run(vm);
+  v1 = vm_free(vm);
+  value_free(v1);
 }

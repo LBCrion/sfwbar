@@ -827,22 +827,14 @@ expr_cache_t *expr_cache_new ( void )
 
 void expr_cache_set ( expr_cache_t *expr, gchar *def )
 {
-  GByteArray *code;
+  GBytes *code;
 
-  if(!g_strcmp0(expr->definition, def))
-  {
-    g_free(def);
+  if( !(code = parser_expr_compile(def)) )
     return;
-  }
-  if( (code = parser_expr_compile(def)) )
-  {
-    g_free(expr->definition);
-    expr->definition = def;
-    g_free(expr->code);
-    expr->code = g_byte_array_steal(code, &expr->len);
-    g_byte_array_unref(code);
-    expr->eval = TRUE;
-  }
+
+  g_bytes_unref(expr->code);
+  expr->code = code;
+  expr->eval = TRUE;
 }
 
 void expr_cache_free ( expr_cache_t *expr )
@@ -852,7 +844,7 @@ void expr_cache_free ( expr_cache_t *expr )
   expr_dep_remove(expr);
   g_free(expr->definition);
   g_free(expr->cache);
-  g_free(expr->code);
+  g_bytes_unref(expr->code);
   g_free(expr);
 }
 

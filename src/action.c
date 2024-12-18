@@ -65,11 +65,10 @@ void action_exec ( GtkWidget *widget, action_t *action,
   guint16 state;
   action_t *caction;*/
 
-  if(!action)
-    return;
-
-  vm_run_action((gchar *)action->id, action->addr->definition,
-      action->command->definition, widget, event, action->cond, action->ncond);
+  if(action && action->code)
+    vm_run_action(action->code, widget, event);
+//  vm_run_action((gchar *)action->id, action->addr->definition,
+//      action->command->definition, widget, event, action->cond, action->ncond);
 
 /*  if( !(ahandler = module_action_get(action->id)) )
     return;
@@ -145,13 +144,13 @@ action_t *action_new ( void )
   action_t *new;
 
   new = g_malloc0(sizeof(action_t));
-  new->command = expr_cache_new();
-  new->addr = expr_cache_new();
+//  new->command = expr_cache_new();
+//  new->addr = expr_cache_new();
 
   return new;
 }
 
-action_t *action_dup ( action_t *src )
+/*action_t *action_dup ( action_t *src )
 {
   action_t *dest;
 
@@ -170,15 +169,16 @@ action_t *action_dup ( action_t *src )
   dest->addr->cache = g_strdup(src->addr->cache);
   dest->addr->eval = src->addr->eval;
   return dest;
-}
+}*/
 
 void action_free ( action_t *action, GObject *old )
 {
   if(!action)
     return;
 
-  expr_cache_free(action->command);
-  expr_cache_free(action->addr);
+//  expr_cache_free(action->command);
+//  expr_cache_free(action->addr);
+  g_bytes_unref(action->code);
 
   g_free(action);
 }

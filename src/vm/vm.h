@@ -42,10 +42,11 @@ typedef struct {
 #define vm_param_check_string(vm, p, n, fname) { if(!value_like_string(p[n])) { return value_na; } }
 #define vm_param_check_numeric(vm, p, n, fname) { if(!value_like_numeric(p[n])) { return value_na; } }
 
-GByteArray *parser_expr_compile ( gchar *expr );
+GBytes *parser_expr_compile ( gchar *expr );
 gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code );
 gboolean parser_macro_add ( GScanner *scanner );
 value_t vm_expr_eval ( expr_cache_t *expr );
+void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event );
 gchar *expr_vm_result_to_string ( vm_t *vm );
 gint expr_vm_get_func_params ( vm_t *vm, value_t *params[] );
 
@@ -54,6 +55,4 @@ void vm_func_add ( gchar *name, vm_func_t func, gboolean deterministic );
 vm_function_t *vm_func_lookup ( gchar *name );
 gboolean vm_func_remove ( gchar *name );
 
-void vm_run_action ( gchar *func, gchar *expr1, gchar *expr2, GtkWidget *w,
-    GdkEvent *e, guint16 cond, guint16 ncond );
 #endif

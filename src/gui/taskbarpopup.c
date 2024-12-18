@@ -322,7 +322,7 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *shell )
   g_signal_connect(priv->popover, "grab-notify",
       G_CALLBACK(taskbar_popup_grab_cb), self);
 
-  base_widget_copy_actions(priv->tgroup, shell);
+//  base_widget_copy_actions(priv->tgroup, shell);
 
   g_object_ref_sink(G_OBJECT(self));
   flow_grid_add_child(shell, self);

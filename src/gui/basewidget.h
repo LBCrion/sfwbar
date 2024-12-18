@@ -73,9 +73,9 @@ typedef struct _base_widget_attachment {
 
 GType base_widget_get_type ( void );
 
-void base_widget_set_tooltip ( GtkWidget *self, guint8 *code, gsize len );
-void base_widget_set_value ( GtkWidget *self, guint8 *code, gsize len );
-void base_widget_set_style ( GtkWidget *self, guint8 *code, gsize len );
+void base_widget_set_tooltip ( GtkWidget *self, GBytes *code );
+void base_widget_set_value ( GtkWidget *self, GBytes *code );
+void base_widget_set_style ( GtkWidget *self, GBytes *code );
 void base_widget_set_style_static ( GtkWidget *self, gchar *style );
 void base_widget_set_local_state ( GtkWidget *self, gboolean state );
 void base_widget_set_trigger ( GtkWidget *self, gchar *trigger );

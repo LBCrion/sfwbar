@@ -5,13 +5,12 @@
 #include "vm/expr.h"
 
 typedef struct user_action {
-  guint8 *code;
-  gint len;
+  GBytes *code;
   guchar cond;
   guchar ncond;
-  expr_cache_t *command;
-  expr_cache_t *addr;
-  const gchar *id;
+//  expr_cache_t *command;
+//  expr_cache_t *addr;
+//  const gchar *id;
 } action_t;
 
 void action_exec ( GtkWidget *, action_t *, GdkEvent *, window_t *, guint16 *);
