@@ -43,8 +43,10 @@ typedef struct {
 #define vm_param_check_numeric(vm, p, n, fname) { if(!value_like_numeric(p[n])) { return value_na; } }
 
 GBytes *parser_expr_compile ( gchar *expr );
+GBytes *parser_action_compile ( GScanner *scanner );
 gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code );
 gboolean parser_macro_add ( GScanner *scanner );
+const gchar *parser_identifier_lookup ( gchar *identifier );
 value_t vm_expr_eval ( expr_cache_t *expr );
 void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event );
 gchar *expr_vm_result_to_string ( vm_t *vm );

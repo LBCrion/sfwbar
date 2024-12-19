@@ -11,6 +11,7 @@
 #include "taskbar.h"
 #include "wintree.h"
 #include "config.h"
+#include "vm/vm.h"
 
 G_DEFINE_TYPE_WITH_CODE (Taskbar, taskbar, FLOW_GRID_TYPE,
     G_ADD_PRIVATE (Taskbar))
@@ -26,15 +27,18 @@ static void taskbar_class_init ( TaskbarClass *kclass )
   BASE_WIDGET_CLASS(kclass)->action_exec = NULL;
 }
 
-GBytes *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
-    guint16 cond, guint16 ncond );
 static void taskbar_init ( Taskbar *self )
 {
   action_t *action;
+  static guint8 data[sizeof(gpointer)+2];
+  gchar *fptr = (gchar *)parser_identifier_lookup("taskbaritemdefault");
 
   flow_grid_invalidate(GTK_WIDGET(self));
   action = action_new();
-  action->code = parser_action_compat("taskbaritemdefault", NULL, NULL, 0, 0);
+  data[0] = EXPR_OP_FUNCTION;
+  memcpy(data+2, &fptr, sizeof(gpointer));
+
+  action->code = g_bytes_new_static(data, sizeof(gpointer)+2);
   base_widget_set_action(GTK_WIDGET(self), 1, 0, action);
 }
 

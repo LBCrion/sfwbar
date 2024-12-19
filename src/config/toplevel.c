@@ -10,93 +10,23 @@
 #include "gui/menu.h"
 #include "vm/vm.h"
 
-gboolean config_action_conditions ( GScanner *scanner, action_t *action )
-{
-  gboolean neg;
-  gint c;
-
-  do
-  {
-    neg = config_check_and_consume(scanner, '!');
-
-    g_scanner_get_next_token(scanner);
-    if( (c = config_lookup_key(scanner, config_act_cond)) )
-    {
-      if(neg)
-        action->ncond |= c;
-      else
-        action->cond |= c;
-    }
-    else
-      g_scanner_error(scanner,"invalid condition '%s' in action",
-          scanner->value.v_identifier);
-
-  } while (config_check_and_consume(scanner, '|'));
-
-  return !scanner->max_parse_errors;
-}
-
 GBytes *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
     guint16 cond, guint16 ncond );
 gboolean config_action ( GScanner *scanner, action_t **action_dst )
 {
+  GBytes *code;
   action_t *action;
-  gchar *ident, *addr = NULL, *cmd = NULL;
 
-  action = action_new();
-
-  config_parse_sequence(scanner,
-      SEQ_OPT, '[', NULL, NULL, NULL,
-      SEQ_CON, -2, config_action_conditions, action, NULL,
-      SEQ_CON, ']', NULL, NULL, "missing ']' in conditional action",
-      SEQ_OPT, G_TOKEN_IDENTIFIER, NULL, &ident, NULL,
-      SEQ_END);
-
-  if( !config_lookup_next_key(scanner, config_toplevel_keys) &&
-      !config_lookup_next_key(scanner, config_prop_keys) &&
-      !config_lookup_next_key(scanner, config_flowgrid_props))
-    config_parse_sequence(scanner,
-        SEQ_OPT, G_TOKEN_VALUE, NULL, &addr, NULL,
-        SEQ_OPT, ',', NULL, NULL, NULL,
-        SEQ_CON, G_TOKEN_VALUE, NULL, &cmd,
-          "Missing argument after ',' in action",
-        SEQ_OPT, ';', NULL, NULL, NULL,
-        SEQ_END);
-
-  if(scanner->max_parse_errors)
+  if( !(code = parser_action_compile(scanner)) )
   {
-    action_free(action, NULL);
-    g_free(ident);
     *action_dst = NULL;
     return FALSE;
   }
 
-  action->code = parser_action_compat(ident? ident: "exec", addr? addr : cmd,
-      addr? cmd : NULL, action->cond, action->ncond);
+  action = action_new();
+  action->code = code;
   *action_dst = action;
 
-/*  if(!ident)
-  {
-    action->command->cache = g_strdup(scanner->value.v_string);
-    action->id = g_intern_static_string("exec");
-  }
-  else
-  {
-    for(ptr = ident; *ptr; ptr++)
-      *ptr = g_ascii_tolower(*ptr);
-    action->id = g_intern_string(ident);
-  }
-
-  if(addr && cmd)
-  {
-    expr_cache_set(action->command, cmd);
-    expr_cache_set(action->addr, addr);
-  }
-  else if(addr)
-    expr_cache_set(action->command, addr);
-
-  *action_dst = action;
-  g_free(ident);*/
   return TRUE;
 }
 
@@ -254,7 +184,6 @@ void config_function ( GScanner *scanner )
 
   g_free(name);
 }
-
 
 void config_set ( GScanner *scanner )
 {

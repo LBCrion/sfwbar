@@ -1,6 +1,7 @@
 
 #include "util/string.h"
 #include "vm/vm.h"
+#include "config.h"
 
 static GHashTable *macros;
 
@@ -50,7 +51,7 @@ static void parser_jump_backpatch ( GByteArray *code, gint olen, gint clen )
   memcpy(code->data + olen, &data, sizeof(gint));
 }
 
-static const gchar *parser_identifier_lookup ( gchar *identifier )
+const gchar *parser_identifier_lookup ( gchar *identifier )
 {
   gchar *lower;
   const gchar *result;
@@ -371,22 +372,37 @@ GBytes *parser_expr_compile ( gchar *expr )
   return code? g_byte_array_free_to_bytes(code) : NULL;
 }
 
-GBytes *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
-    guint16 cond, guint16 ncond )
+GBytes *parser_action_compile ( GScanner *scanner )
 {
-  gint np = !!expr1 + !!expr2;
   GByteArray *code;
-  GScanner *scanner;
-  guint8 data[sizeof(gpointer)+2];
   gconstpointer ptr;
-  gint alen;
+  gboolean neg;
+  guint8 data[sizeof(gpointer)+2];
+  gint alen, flag, cond = 0, np = 0;
+
+  if(config_check_and_consume(scanner, '['))
+  {
+    do
+    {
+      neg = config_check_and_consume(scanner, '!');
+
+      g_scanner_get_next_token(scanner);
+      if( (flag = config_lookup_key(scanner, config_act_cond)) )
+        cond |= (neg? flag<<8 : flag);
+      else
+        g_scanner_error(scanner,"invalid condition '%s' in action",
+            scanner->value.v_identifier);
+
+    } while (config_check_and_consume(scanner, '|'));
+    if(!config_check_and_consume(scanner, ']'))
+      return NULL;
+  }
 
   code = g_byte_array_new();
-
-  if(cond || ncond)
+  if(cond)
   {
     parser_emit_numeric(code, cond);
-    parser_emit_numeric(code, ncond);
+    parser_emit_numeric(code, cond>>8);
 
     ptr = parser_identifier_lookup("checkstate");
     memcpy(data+2, &ptr, sizeof(gpointer));
@@ -396,38 +412,36 @@ GBytes *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
     alen = parser_emit_jump(code, EXPR_OP_JZ);
   }
 
-  if(expr1)
+  if(g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
+    ptr = parser_identifier_lookup("exec");
+  else if(config_check_and_consume(scanner, G_TOKEN_IDENTIFIER))
+    ptr = parser_identifier_lookup(scanner->value.v_identifier);
+  else
   {
-    scanner = parser_scanner_new();
-    g_scanner_input_text(scanner, expr1, strlen(expr1));
-    if(!parser_expr_parse(scanner, code))
-    {
-      g_byte_array_free(code, TRUE);
-      parser_scanner_free(scanner);
-      return NULL;
-    }
-    parser_scanner_free(scanner);
-  }
-  if(expr2)
-  {
-    scanner = parser_scanner_new();
-    g_scanner_input_text(scanner, expr2, strlen(expr2));
-    if(!parser_expr_parse(scanner, code))
-    {
-      g_byte_array_free(code, TRUE);
-      parser_scanner_free(scanner);
-      return NULL;
-    }
-    parser_scanner_free(scanner);
+    g_message("action name missing");
+    g_scanner_get_next_token(scanner);
+    g_byte_array_free(code, TRUE);
+    return NULL;
   }
 
-  ptr = parser_identifier_lookup(action);
+  if( !config_lookup_next_key(scanner, config_toplevel_keys) &&
+      !config_lookup_next_key(scanner, config_prop_keys) &&
+      !config_lookup_next_key(scanner, config_flowgrid_props) &&
+      scanner->next_token != '}')
+  {
+    do
+    {
+      if(parser_expr_parse(scanner, code))
+        np++;
+    } while(config_check_and_consume(scanner, ','));
+  }
+
   memcpy(data+2, &ptr, sizeof(gpointer));
   data[0]=EXPR_OP_FUNCTION;
   data[1]=np;
   g_byte_array_append(code, data, sizeof(gpointer)+2);
 
-  if(cond || ncond)
+  if(cond)
   {
     parser_jump_backpatch(code, alen, code->len + 1);
     alen = parser_emit_jump(code, EXPR_OP_JMP);
