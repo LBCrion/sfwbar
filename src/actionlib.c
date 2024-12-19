@@ -485,12 +485,27 @@ static value_t action_unmaximize ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_eval ( vm_t *vm, value_t p[], gint np )
 {
+  gchar buf[G_ASCII_DTOSTR_BUF_SIZE], *ptr;
+  guint8 *data;
+
   vm_param_check_np(vm, np, 2, "Eval");
   vm_param_check_string(vm, p, 0, "Eval");
 
+  if(value_is_string(p[1]))
+    ptr = p[1].value.string;
+  else
+    ptr = g_ascii_dtostr(buf, G_ASCII_DTOSTR_BUF_SIZE,value_get_numeric(p[1]));
+
+  if(!ptr)
+    return value_na;
+
+  data = g_malloc(strlen(ptr) + 3);
+  data[0] = EXPR_OP_IMMEDIATE;
+  data[1] = EXPR_TYPE_STRING;
+  memcpy(data+2, ptr, strlen(ptr)+1);
+
   scanner_var_new(value_get_string(p[0]), NULL,
-      value_is_string(p[1])? p[1].value.string :
-      numeric_to_string(value_get_numeric(p[1]), -1), G_TOKEN_SET, VT_FIRST);
+      (gchar *)g_bytes_new_take(data, strlen(ptr)+3), G_TOKEN_SET, VT_FIRST);
 
   return value_na;
 }

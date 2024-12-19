@@ -10,8 +10,6 @@
 #include "gui/menu.h"
 #include "vm/vm.h"
 
-GBytes *parser_action_compat ( gchar *action, gchar *expr1, gchar *expr2,
-    guint16 cond, guint16 ncond );
 gboolean config_action ( GScanner *scanner, action_t **action_dst )
 {
   GBytes *code;
@@ -187,21 +185,24 @@ void config_function ( GScanner *scanner )
 
 void config_set ( GScanner *scanner )
 {
+  GByteArray *code;
   gchar *ident;
-  gchar *value;
 
   config_parse_sequence(scanner,
       SEQ_REQ, G_TOKEN_IDENTIFIER, NULL, &ident,
         "Missing identifier after 'set'",
       SEQ_REQ, '=', NULL, NULL, "Missing '=' after 'set'",
-      SEQ_REQ, G_TOKEN_VALUE, NULL, &value, "Missing value after 'set'",
       SEQ_END);
 
-  if(!scanner->max_parse_errors && ident && value)
-    scanner_var_new(ident, NULL, value, G_TOKEN_SET, VT_FIRST);
+  code = g_byte_array_new();
+
+  if(ident && parser_expr_parse(scanner, code))
+    scanner_var_new(ident, NULL, (gchar *)g_byte_array_free_to_bytes(code),
+        G_TOKEN_SET, VT_FIRST);
+  else
+    g_byte_array_free(code, TRUE);
 
   g_free(ident);
-  g_free(value);
 }
 
 void config_mappid_map ( GScanner *scanner )

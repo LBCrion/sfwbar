@@ -321,57 +321,6 @@ gboolean parser_macro_add ( GScanner *scanner )
   return TRUE;
 }
 
-static GScanner *parser_scanner_new ( void )
-{
-  GScanner *scanner;
-
-  scanner = g_scanner_new(NULL);
-  scanner->config->scan_octal = 0;
-  scanner->config->scan_identifier_1char = 1;
-  scanner->config->symbol_2_token = 1;
-  scanner->config->case_sensitive = 0;
-  scanner->config->numbers_2_int = 1;
-  scanner->config->int_2_float = 1;
-
-  scanner->config->cset_identifier_nth = g_strconcat(".",
-      scanner->config->cset_identifier_nth, NULL);
-  scanner->config->cset_identifier_first = g_strconcat("$",
-      scanner->config->cset_identifier_first, NULL);
-  g_scanner_set_scope(scanner, 0);
-
-  return scanner;
-}
-
-static void parser_scanner_free ( GScanner *scanner )
-{
-  g_free(scanner->config->cset_identifier_nth);
-  g_free(scanner->config->cset_identifier_first);
-  g_scanner_destroy(scanner);
-}
-
-GBytes *parser_expr_compile ( gchar *expr )
-{
-  GScanner *scanner;
-  GByteArray *code;
-
-  if(!expr)
-    return NULL;
-
-  scanner = parser_scanner_new();
-  g_scanner_input_text(scanner, expr, strlen(expr));
-
-  code = g_byte_array_new();
-  if(!parser_expr_parse(scanner, code))
-  {
-    g_byte_array_free(code, TRUE);
-    code = NULL;
-  }
-
-  parser_scanner_free(scanner);
-
-  return code? g_byte_array_free_to_bytes(code) : NULL;
-}
-
 GBytes *parser_action_compile ( GScanner *scanner )
 {
   GByteArray *code;
@@ -427,7 +376,10 @@ GBytes *parser_action_compile ( GScanner *scanner )
   if( !config_lookup_next_key(scanner, config_toplevel_keys) &&
       !config_lookup_next_key(scanner, config_prop_keys) &&
       !config_lookup_next_key(scanner, config_flowgrid_props) &&
-      scanner->next_token != '}')
+      (scanner->next_token == G_TOKEN_FLOAT ||
+       scanner->next_token == G_TOKEN_STRING ||
+       scanner->next_token == G_TOKEN_IDENTIFIER ||
+       strchr("+-!(", scanner->next_token)) )
   {
     do
     {
@@ -435,6 +387,8 @@ GBytes *parser_action_compile ( GScanner *scanner )
         np++;
     } while(config_check_and_consume(scanner, ','));
   }
+
+  config_check_and_consume(scanner, ';');
 
   memcpy(data+2, &ptr, sizeof(gpointer));
   data[0]=EXPR_OP_FUNCTION;

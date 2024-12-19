@@ -825,18 +825,6 @@ expr_cache_t *expr_cache_new ( void )
   return g_malloc0(sizeof(expr_cache_t));
 }
 
-void expr_cache_set ( expr_cache_t *expr, gchar *def )
-{
-  GBytes *code;
-
-  if( !(code = parser_expr_compile(def)) )
-    return;
-
-  g_bytes_unref(expr->code);
-  expr->code = code;
-  expr->eval = TRUE;
-}
-
 void expr_cache_free ( expr_cache_t *expr )
 {
   if(!expr)
