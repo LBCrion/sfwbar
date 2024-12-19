@@ -129,7 +129,8 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
     case G_TOKEN_SET:
       expr_cache_free(var->expr);
       var->expr = expr_cache_new();
-      expr_cache_set(var->expr, pattern);
+      var->expr->code = (GBytes *)pattern;
+      var->expr->eval = TRUE;
       var->vstate = 1;
       expr_dep_trigger(name);
       break;
