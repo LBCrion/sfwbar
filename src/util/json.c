@@ -28,7 +28,7 @@ gssize recv_retry ( gint sock, gpointer buff, gsize len )
 {
   gssize rlen, tlen=0;
 
-  while(tlen<len && (rlen = recv(sock, buff+tlen, len-tlen, 0))>0 )
+  while(tlen<len && tlen>0 && (rlen = recv(sock, buff+tlen, len-tlen, 0))>0 )
     tlen += rlen;
 
   return tlen;
