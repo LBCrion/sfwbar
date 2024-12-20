@@ -90,6 +90,8 @@ void trigger_emit_in_main_context ( const gchar *name )
   if(trigger_list)
     for(iter=g_hash_table_lookup(trigger_list, name); iter; iter=iter->next)
       TRIGGER(iter->data)->func(TRIGGER(iter->data)->data);
+
+  return FALSE;
 }
 
 void trigger_emit ( gchar *name )
