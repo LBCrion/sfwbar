@@ -21,7 +21,7 @@ vm_function_t *vm_func_lookup ( gchar *name )
 
   func = g_malloc0(sizeof(vm_function_t));
   func->name = g_strdup(name);
-  g_hash_table_insert(vm_func_table, name, func);
+  g_hash_table_insert(vm_func_table, func->name, func);
 
   return func;
 }
