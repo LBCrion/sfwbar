@@ -147,7 +147,7 @@ static value_t expr_lib_pad ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, 0, "pad");
   vm_param_check_numeric(vm, p, 1, "pad");
   if(np==3)
-    vm_param_check_string(vm, p, 3, "pad");
+    vm_param_check_string(vm, p, 2, "pad");
 
   padchar = (np==3)?  *(value_get_string(p[2])) : ' ';
 
