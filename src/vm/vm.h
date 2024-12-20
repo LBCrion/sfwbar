@@ -33,6 +33,7 @@ typedef struct {
 typedef value_t (*vm_func_t)(vm_t *vm, value_t params[], gint np);
 
 typedef struct {
+  gchar *name;
   vm_func_t function;
   gboolean deterministic;
 } vm_function_t;
@@ -55,6 +56,6 @@ gint expr_vm_get_func_params ( vm_t *vm, value_t *params[] );
 void vm_func_init ( void );
 void vm_func_add ( gchar *name, vm_func_t func, gboolean deterministic );
 vm_function_t *vm_func_lookup ( gchar *name );
-gboolean vm_func_remove ( gchar *name );
+void vm_func_remove ( gchar *name );
 
 #endif

@@ -31,7 +31,7 @@ static void taskbar_init ( Taskbar *self )
 {
   action_t *action;
   static guint8 data[sizeof(gpointer)+2];
-  gchar *fptr = (gchar *)parser_identifier_lookup("taskbaritemdefault");
+  gpointer fptr = vm_func_lookup("taskbaritemdefault");
 
   flow_grid_invalidate(GTK_WIDGET(self));
   action = action_new();

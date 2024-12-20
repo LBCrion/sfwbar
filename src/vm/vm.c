@@ -111,22 +111,21 @@ static gboolean vm_function ( vm_t *vm )
 {
   vm_function_t *func;
   value_t v1, result, *stack;
-  gchar *name;
   guint8 np = *(vm->ip+1);
   gint i;
 
   if(np>vm->stack->len)
     return FALSE;
-  memcpy(&name, vm->ip+2, sizeof(gpointer));
+  memcpy(&func, vm->ip+2, sizeof(gpointer));
   result = value_na;
-  if( (func = vm_func_lookup(name)) )
+  if(func->function)
   {
     stack = (value_t *)vm->stack->data + vm->stack->len - np;
     result = func->function(vm, stack, np);
     if(vm->expr)
       vm->expr->vstate |= (!func->deterministic);
   }
-  expr_dep_add(name, vm->expr);
+  expr_dep_add(func->name, vm->expr);
   if(np>1)
     g_ptr_array_remove_range(vm->pstack, vm->pstack->len-np+1, np-1);
   else if(!np)

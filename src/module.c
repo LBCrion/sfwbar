@@ -45,11 +45,9 @@ void module_interface_select ( gchar *interface )
   g_debug("module: switching interface '%s' from '%s' to '%s'", interface,
       list->active?list->active->provider:"none", new?new->provider:"none");
 
-  if(list->active)
-  {
-    if(list->active->finalize)
+  if(list->active && list->active->finalize)
       list->active->finalize();
-  }
+
   list->active = new;
   if(new)
   {

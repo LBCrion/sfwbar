@@ -127,7 +127,7 @@ static gboolean parser_function ( GScanner *scanner, GByteArray *code )
   if(!g_ascii_strcasecmp(scanner->value.v_identifier, "ident"))
     scanner->config->identifier_2_string = TRUE;
 
-  ptr = parser_identifier_lookup(scanner->value.v_identifier);
+  ptr = vm_func_lookup(scanner->value.v_identifier);
   memcpy(data+2, &ptr, sizeof(gpointer));
   g_scanner_get_next_token(scanner); // consume '('
 
@@ -353,7 +353,7 @@ GBytes *parser_action_compile ( GScanner *scanner )
     parser_emit_numeric(code, cond & 0xff);
     parser_emit_numeric(code, cond>>8);
 
-    ptr = parser_identifier_lookup("checkstate");
+    ptr = vm_func_lookup("checkstate");
     memcpy(data+2, &ptr, sizeof(gpointer));
     data[0]=EXPR_OP_FUNCTION;
     data[1]=2;
@@ -362,9 +362,9 @@ GBytes *parser_action_compile ( GScanner *scanner )
   }
 
   if(g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
-    ptr = parser_identifier_lookup("exec");
+    ptr = vm_func_lookup("exec");
   else if(config_check_and_consume(scanner, G_TOKEN_IDENTIFIER))
-    ptr = parser_identifier_lookup(scanner->value.v_identifier);
+    ptr = vm_func_lookup(scanner->value.v_identifier);
   else
   {
     g_message("action name missing");

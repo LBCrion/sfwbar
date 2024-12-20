@@ -473,14 +473,19 @@ static value_t expr_iface_provider ( vm_t *vm, value_t p[], int np )
 static value_t expr_ident ( vm_t *vm, value_t p[], int np )
 {
   value_t result;
+  vm_function_t *func;
 
   vm_param_check_np(vm, np, 1, "Ident");
   vm_param_check_string(vm, p, 0, "Ident");
   if(!value_get_string(p[0]))
     return value_na;
 
-  result = value_new_numeric(scanner_is_variable(value_get_string(p[0])) ||
-    !!vm_func_lookup(value_get_string(p[0])));
+  func = vm_func_lookup(value_get_string(p[0]));
+  if(func->function)
+    result = value_new_numeric(TRUE);
+  else
+    result = value_new_numeric(scanner_is_variable(value_get_string(p[0])));
+
   if(!result.value.numeric)
     expr_dep_add(value_get_string(p[0]), vm->expr);
 
