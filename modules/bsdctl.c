@@ -282,25 +282,19 @@ static SysctlVar *sysctl_var_get ( gchar *name )
   return var;
 }
 
-void *bsdctl_func ( void **params, void *widget, void *event )
+static value_t bsdctl_func ( vm_t *vm, value_t p[], gint np )
 {
   SysctlVar *var;
 
-  if(!params || !params[0])
-    return g_strdup("");
+  vm_param_check_np(vm, np, 1, "BSDCtl");
+  vm_param_check_string(vm, p, 0, "BSDCtl");
 
-  var = sysctl_var_get(params[0]);
-  return sysctl_query(var);
+  var = sysctl_var_get(value_get_string(p[0]));
+  return value_new_string(sysctl_query(var));
 }
 
-ModuleExpressionHandlerV1 handler1 = {
-  .flags = 0,
-  .name = "BSDCtl",
-  .parameters = "S",
-  .function = bsdctl_func
-};
-
-ModuleExpressionHandlerV1 *sfwbar_expression_handlers[] = {
-  &handler1,
-  NULL
-};
+gboolean sfwbar_module_init ( void )
+{
+  vm_func_add("BSDCtl", bsdctl_func, FALSE);
+  return TRUE;
+}
