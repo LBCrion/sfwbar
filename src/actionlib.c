@@ -288,9 +288,8 @@ static value_t action_setbarvisibility ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np_range(vm, np, 1, 2, "SetBarVisibility");
   vm_param_check_string(vm, p, np-1, "SetBarVisibility");
 
-  if( np==2)
-    bar_set_visibility((np==2)? bar_from_name(value_get_string(p[0])) : NULL,
-        NULL, *p[np-1].value.string);
+  bar_set_visibility((np==2)? bar_from_name(value_get_string(p[0])) : NULL,
+      NULL, *value_get_string(p[np-1]));
 
   return value_na;
 }
