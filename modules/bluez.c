@@ -10,7 +10,7 @@
 #include "vm/vm.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 sfwbar_module_version = 2;
+guint16 sfwbar_module_version = MODULE_API_VERSION;
 
 static GHashTable *devices;
 static GList *adapters;

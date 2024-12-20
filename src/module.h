@@ -4,6 +4,8 @@
 
 #include <glib.h>
 
+#define MODULE_API_VERSION 3
+
 typedef struct _module_queue {
   GList *list;
   GMutex mutex;
@@ -16,20 +18,8 @@ typedef struct _module_queue {
   gint limit;
 } module_queue_t;
 
-typedef gpointer (*ModuleExpressionFunc)(gpointer *, gpointer, gpointer);
-typedef void (*ModuleActionFunc)(gchar *, gchar *, void *, void *, void *,
-    void *);
 typedef void (*ModuleInvalidator)( void );
 typedef gboolean (*ModuleInitializer)( void );
-typedef gboolean (*ModuleEmitTrigger) ( gchar * );
-typedef void (*ModuleInitTrigger) (GMainContext *, ModuleEmitTrigger );
-
-typedef struct {
-  gchar *name;
-  ModuleExpressionFunc function;
-  gchar *parameters;
-  gint flags;
-} ModuleExpressionHandlerV1;
 
 typedef struct {
   gboolean ready;
@@ -45,18 +35,6 @@ typedef struct {
   GList *list;
   ModuleInterfaceV1 *active;
 } ModuleInterfaceList;
-
-enum ModuleFlags {
-  MODULE_EXPR_NUMERIC       = 1,
-  MODULE_EXPR_DETERMINISTIC = 2,
-  MODULE_EXPR_RAW           = 4
-};
-
-enum ModuleActionFlags {
-  MODULE_ACT_WIDGET_ADDRESS = 1,
-  MODULE_ACT_CMD_BY_DEF     = 2,
-  MODULE_ACT_ADDRESS_ONLY   = 4
-};
 
 void module_queue_append ( module_queue_t *queue, void *item );
 void module_queue_remove ( module_queue_t *queue );

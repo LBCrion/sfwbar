@@ -140,7 +140,7 @@ gboolean module_load ( gchar *name )
     return FALSE;
   }
   if(!g_module_symbol(module,"sfwbar_module_version",(void **)&ver) ||
-      !ver || *ver != 2 )
+      !ver || *ver != MODULE_API_VERSION )
   {
     g_debug("module: invalid version for %s",name);
     return FALSE;

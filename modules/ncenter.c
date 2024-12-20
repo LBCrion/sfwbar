@@ -28,7 +28,7 @@ typedef struct _dn_notification {
 #define DN_NOTIFICATION(x) ((dn_notification *)(x))
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 sfwbar_module_version = 2;
+guint16 sfwbar_module_version = MODULE_API_VERSION;
 
 static GDBusConnection *dn_con;
 static guint32 dn_id_counter = 1;

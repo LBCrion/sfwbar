@@ -13,7 +13,7 @@
 #include "vm/vm.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 sfwbar_module_version = 2;
+guint16 sfwbar_module_version = MODULE_API_VERSION;
 static struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
 
 static value_t idle_inhibit_state ( vm_t *vm, value_t p[], gint np )

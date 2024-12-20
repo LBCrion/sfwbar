@@ -45,7 +45,7 @@ typedef struct _pulse_interface {
 
 pa_mainloop_api *papi;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 sfwbar_module_version = 2;
+guint16 sfwbar_module_version = MODULE_API_VERSION;
 extern ModuleInterfaceV1 sfwbar_interface;
 
 static pa_context *pctx;

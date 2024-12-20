@@ -33,7 +33,7 @@ typedef struct _iface_info {
 iface_info *route;
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
-guint16 sfwbar_module_version = 2;
+guint16 sfwbar_module_version = MODULE_API_VERSION;
 guint32 seq = 1;
 GList *iface_list;
 gint qual, level, noise;
