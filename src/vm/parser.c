@@ -350,7 +350,7 @@ GBytes *parser_action_compile ( GScanner *scanner )
   code = g_byte_array_new();
   if(cond)
   {
-    parser_emit_numeric(code, cond);
+    parser_emit_numeric(code, cond & 0xff);
     parser_emit_numeric(code, cond>>8);
 
     ptr = parser_identifier_lookup("checkstate");
