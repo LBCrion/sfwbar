@@ -82,7 +82,7 @@ void trigger_remove ( gchar *name, GSourceFunc func, void *data )
     }
 }
 
-void trigger_emit_in_main_context ( const gchar *name )
+gboolean trigger_emit_in_main_context ( const gchar *name )
 {
   GList *iter;
 
