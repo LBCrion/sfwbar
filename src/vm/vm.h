@@ -12,7 +12,8 @@ enum expr_instruction_t {
   EXPR_OP_JMP,
   EXPR_OP_CACHED,
   EXPR_OP_VARIABLE,
-  EXPR_OP_FUNCTION
+  EXPR_OP_FUNCTION,
+  EXPR_OP_DISCARD
 };
 
 typedef struct {
@@ -44,7 +45,7 @@ typedef struct {
 #define vm_param_check_numeric(vm, p, n, fname) { if(!value_like_numeric(p[n])) { return value_na; } }
 
 GBytes *parser_expr_compile ( gchar *expr );
-GBytes *parser_action_compile ( GScanner *scanner );
+GBytes *parser_closure_parse ( GScanner *scanner );
 gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code );
 gboolean parser_macro_add ( GScanner *scanner );
 const gchar *parser_identifier_lookup ( gchar *identifier );

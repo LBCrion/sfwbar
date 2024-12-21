@@ -321,9 +321,8 @@ gboolean parser_macro_add ( GScanner *scanner )
   return TRUE;
 }
 
-GBytes *parser_action_compile ( GScanner *scanner )
+gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
 {
-  GByteArray *code;
   gconstpointer ptr;
   gboolean neg;
   guint8 data[sizeof(gpointer)+2];
@@ -344,10 +343,9 @@ GBytes *parser_action_compile ( GScanner *scanner )
 
     } while (config_check_and_consume(scanner, '|'));
     if(!config_check_and_consume(scanner, ']'))
-      return NULL;
+      return FALSE;
   }
 
-  code = g_byte_array_new();
   if(cond)
   {
     parser_emit_numeric(code, cond & 0xff);
@@ -369,8 +367,7 @@ GBytes *parser_action_compile ( GScanner *scanner )
   {
     g_message("action name missing");
     g_scanner_get_next_token(scanner);
-    g_byte_array_free(code, TRUE);
-    return NULL;
+    return FALSE;
   }
 
   if( !config_lookup_next_key(scanner, config_toplevel_keys) &&
@@ -401,6 +398,35 @@ GBytes *parser_action_compile ( GScanner *scanner )
     alen = parser_emit_jump(code, EXPR_OP_JMP);
     parser_emit_na(code);
     parser_jump_backpatch(code, alen, code->len + sizeof(gint));
+  }
+
+  return TRUE;
+}
+
+GBytes *parser_closure_parse ( GScanner *scanner )
+{
+  GByteArray *code;
+  static guint8 discard = EXPR_OP_DISCARD;
+  code = g_byte_array_new();
+
+  if(!config_check_and_consume(scanner, '{'))
+  {
+    if(!parser_action_parse(scanner, code))
+    {
+      g_byte_array_free(code, TRUE);
+      return NULL;
+    }
+  }
+  else
+  {
+    while(!config_check_and_consume(scanner, '}'))
+      if(!parser_action_parse(scanner, code))
+      {
+        g_byte_array_free(code, TRUE);
+        return NULL;
+      }
+      else
+        g_byte_array_append(code, &discard, 1);
   }
 
   return g_byte_array_free_to_bytes(code);

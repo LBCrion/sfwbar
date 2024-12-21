@@ -14,7 +14,7 @@ set XVolumeAction = If(!Ident($VolumeAction),"pavucontrol",$VolumeAction)
 set XVolumeSinkMenuTmpl = "
 Menu('XVolumeSinkMenu') {
   Item('@SINK_DESC@',
-      VolumeCtl Extract(WidgetId(),'(.*)_menu'), 'client-set-sink @SINK_NAME@',
+      { VolumeCtl Extract(WidgetId(),'(.*)_menu'), 'client-set-sink @SINK_NAME@' },
       '@SINK_NAME@')
 }"
 

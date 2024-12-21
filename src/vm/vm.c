@@ -220,6 +220,11 @@ static value_t vm_run ( vm_t *vm )
       value_free(v1);
       vm->ip+=sizeof(gint);
     }
+    else if (*vm->ip == EXPR_OP_DISCARD)
+    {
+      v1 = vm_pop(vm);
+      value_free(v1);
+    }
     else if(*vm->ip == '!')
     {
       v1 = vm_pop(vm);
@@ -249,7 +254,7 @@ static value_t vm_free ( vm_t *vm )
   if(vm->stack->len>1)
     g_message("stack too long");
   if(vm->stack->len<1)
-    g_message("stack too short");
+    return value_na;
 
   v1=value_na;
   while(vm->stack->len>0)

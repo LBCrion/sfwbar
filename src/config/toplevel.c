@@ -15,7 +15,7 @@ gboolean config_action ( GScanner *scanner, action_t **action_dst )
   GBytes *code;
   action_t *action;
 
-  if( !(code = parser_action_compile(scanner)) )
+  if( !(code = parser_closure_parse(scanner)) )
   {
     *action_dst = NULL;
     return FALSE;
