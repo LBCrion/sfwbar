@@ -857,22 +857,29 @@ static value_t iw_action_ack_removed ( vm_t *vm, value_t p[], gint np )
 
 static value_t iw_action_scan ( vm_t *vm, value_t p[], gint np )
 {
-  iw_device_t *device;
+  iw_device_t *device = NULL;
   GList *iter;
 
-  vm_param_check_np(vm, np, 1, "WifiScan");
-  vm_param_check_string(vm, p, 0, "WifiScan");
-  
-  for(iter=iw_devices; iter; iter=g_list_next(iter))
-    if(!g_strcmp0(((iw_device_t *)iter->data)->name, value_get_string(p[0])))
-      break;
+  vm_param_check_np_range(vm, np, 0, 1, "WifiScan");
 
-  if(iter)
-    device = iter->data;
-  else if(iw_devices)
-    device = iw_devices->data;
-  else
-    return value_na;
+  if(np)
+  {
+    vm_param_check_string(vm, p, 0, "WifiScan");
+    for(iter=iw_devices; iter; iter=g_list_next(iter))
+      if(!g_strcmp0(((iw_device_t *)iter->data)->name, value_get_string(p[0])))
+        break;
+
+    if(iter)
+      device = iter->data;
+  }
+
+  if(!device)
+  {
+    if(iw_devices)
+      device = iw_devices->data;
+    else
+      return value_na;
+  }
 
   iw_scan_start(device->path);
 
