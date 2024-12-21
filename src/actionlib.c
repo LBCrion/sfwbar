@@ -37,29 +37,24 @@ static value_t action_exec_impl ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_function ( vm_t *vm, value_t p[], gint np )
 {
-  GtkWidget *widget, *saved_widget = vm->widget;
-  window_t *saved_window = vm->win;
-  guint16 saved_state = vm->wstate;
+  GtkWidget *widget = NULL;
+  window_t *win;
+  guint16 state;
 
   vm_param_check_np_range(vm, np, 1, 2, "Function");
   vm_param_check_string(vm, p, 0, "Function");
+
   if(np==2)
   {
     vm_param_check_string(vm, p, 1, "Function");
-    if( (widget = base_widget_from_id(value_get_string(p[0]))) )
-    {
-      vm->widget = widget;
-      if(IS_TASKBAR_ITEM(widget))
-        vm->win = flow_item_get_source(widget);
-      vm->wstate = action_state_build(vm->widget, vm->win);
-    }
+    widget = base_widget_from_id(value_get_string(p[0]));
   }
 
-  action_function_exec(value_get_string(p[np-1]), vm->widget, vm->event, vm->win, &vm->wstate);
+  widget = widget? widget : vm->widget;
+  win = IS_TASKBAR_ITEM(widget)? flow_item_get_source(widget) : vm->win;
+  state = action_state_build(vm->widget, vm->win);
 
-  vm->widget = saved_widget;
-  vm->win = saved_window;
-  vm->wstate = saved_state;
+  action_function_exec(value_get_string(p[np-1]), widget, vm->event, win, &state);
 
   return value_na;
 }
@@ -571,7 +566,7 @@ static value_t action_check_state ( vm_t *vm, value_t p[], gint np )
 
   cond = (guint16)value_get_numeric(p[0]) & ~WS_CHILDREN;
   ncond = (guint16)value_get_numeric(p[1]) & ~WS_CHILDREN;
-  
+
   if(((cond & 0x0f) || (ncond & 0x0f)) && !vm->win)
     return value_new_numeric(FALSE);
   if(((cond & 0xf0) || (ncond & 0xf0)) && !vm->widget )

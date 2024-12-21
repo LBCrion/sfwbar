@@ -66,7 +66,7 @@ void action_exec ( GtkWidget *widget, action_t *action,
   action_t *caction;*/
 
   if(action && action->code)
-    vm_run_action(action->code, widget, event);
+    vm_run_action(action->code, widget, event, istate);
 //  vm_run_action((gchar *)action->id, action->addr->definition,
 //      action->command->definition, widget, event, action->cond, action->ncond);
 

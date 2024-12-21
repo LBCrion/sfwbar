@@ -184,7 +184,6 @@ static value_t vm_run ( vm_t *vm )
     return value_na;
   if(IS_TASKBAR_ITEM(vm->widget))
     vm->win = flow_item_get_source(vm->widget);
-  vm->wstate = action_state_build(vm->widget, vm->win);
 
   if(!vm->stack)
     vm->stack = g_array_sized_new(FALSE, FALSE, sizeof(value_t),
@@ -279,13 +278,15 @@ value_t vm_expr_eval ( expr_cache_t *expr )
   vm->widget = expr->widget;
   vm->event = expr->event;
   vm->expr = expr;
+  vm->wstate = action_state_build(vm->widget, vm->win);
 
   vm_run(vm);
 
   return vm_free(vm);
 }
 
-void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event )
+void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
+    guint16 *state )
 {
   value_t v1;
   vm_t *vm;
@@ -294,6 +295,7 @@ void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event )
   vm->code = (gpointer)g_bytes_get_data(code, &vm->len);
   vm->widget = widget;
   vm->event = event;
+  vm->wstate = state? *state : action_state_build(vm->widget, vm->win);
 
   vm_run(vm);
   v1 = vm_free(vm);
