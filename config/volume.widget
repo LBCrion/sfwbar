@@ -18,6 +18,11 @@ Menu('XVolumeSinkMenu') {
       '@SINK_NAME@')
 }"
 
+Menu('XVolumeDeviceMenu') {
+  Item("Set As Default Device",
+      { VolumeCtl 'sink-set-default-device ' + Extract(WidgetId(), '(.*)_name') } )
+}
+
 set XVolumeControlTmpl = "
 grid 'volume_section_@DEVICE_IFACE@' {
   grid '@DEVICE_ID@' {
@@ -46,6 +51,7 @@ grid 'volume_section_@DEVICE_IFACE@' {
       style = 'volume_device_name'
       value = VolumeInfo('@DEVICE_IFACE@-description','@DEVICE_ID@')
       trigger = 'volume'
+      action[3] = Menu 'XVolumeDeviceMenu'
       loc (3,1,1,1)
     }
     grid '@DEVICE_ID@_misc' {

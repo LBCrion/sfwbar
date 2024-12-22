@@ -41,6 +41,9 @@ typedef struct _pulse_interface {
       pa_context_success_cb_t, void *);
   pa_operation *(*set_mute)(pa_context *, uint32_t, int,
       pa_context_success_cb_t, void *);
+  pa_operation *(*set_default)(pa_context *, const char *name,
+      pa_context_success_cb_t, void *);
+
 } pulse_interface_t;
 
 pa_mainloop_api *papi;
@@ -128,6 +131,7 @@ static pulse_interface_t pulse_interfaces[] = {
     .list = NULL,
     .set_volume = pa_context_set_sink_volume_by_index,
     .set_mute = pa_context_set_sink_mute_by_index,
+    .set_default = pa_context_set_default_sink,
   },
   {
     .prefix = "source",
@@ -135,6 +139,7 @@ static pulse_interface_t pulse_interfaces[] = {
     .list = NULL,
     .set_volume = pa_context_set_source_volume_by_index,
     .set_mute = pa_context_set_source_mute_by_index,
+    .set_default = pa_context_set_default_source,
   },
   {
     .prefix = "client",
@@ -234,6 +239,26 @@ static void pulse_set_name ( pulse_interface_t *iface, const gchar *name,
   g_free(iface->name);
   iface->name = g_strdup(name);
   trigger_emit("volume");
+}
+
+static void pulse_set_default ( pulse_interface_t *iface, const gchar *name )
+{
+  pulse_info *info;
+
+  if(!iface || !name)
+    return;
+
+  while(*name == ' ')
+    name++;
+
+  if(g_str_has_prefix(name, "@pulse"))
+  {
+    if( (info=pulse_addr_parse(name, iface, NULL)) )
+      name = info->name;
+  }
+
+  if(iface->set_default)
+    iface->set_default(pctx, name, NULL, NULL);
 }
 
 static void pulse_remove_device ( pulse_interface_t *iface, guint32 idx )
@@ -683,6 +708,8 @@ static value_t pulse_volume_ctl_action ( vm_t *vm, value_t p[], gint np )
     pulse_mute_adjust(iface, info, command+4);
   else if(!g_ascii_strncasecmp(command, "set-sink", 8))
     pulse_client_set_sink(info, command+8);
+  else if(!g_ascii_strncasecmp(command, "set-default-device", 18))
+    pulse_set_default(iface, command+18);
   else if(!g_ascii_strncasecmp(command, "set-default", 11))
     pulse_set_name(iface, command+11, TRUE);
 
@@ -727,9 +754,8 @@ static void pulse_deactivate ( void )
   gint i;
 
   g_debug("pulse: deactivating");
-  pa_context_subscribe(pctx,PA_SUBSCRIPTION_MASK_NULL,
-        NULL, NULL);
-  pa_context_set_subscribe_callback(pctx, NULL ,NULL);
+  pa_context_subscribe(pctx,PA_SUBSCRIPTION_MASK_NULL, NULL, NULL);
+  pa_context_set_subscribe_callback(pctx, NULL, NULL);
 
   for(i=0; i<3; i++)
       while(pulse_interfaces[i].list)
