@@ -36,6 +36,9 @@ extern const value_t value_na;
   ((value_is_string(v)&&v.value.string)?v.value.string:"")
 #define value_get_numeric(v) (value_is_numeric(v)?v.value.numeric:0)
 
+#define value_as_numeric(v) (value_like_numeric(v)? value_get_numeric(v) : \
+    (value_is_string(v)? g_ascii_strtod(v.value.string, NULL) : 0))
+
 #define value_free(v) { if(value_is_string(v)) g_free(v.value.string); }
 
 #endif

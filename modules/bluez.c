@@ -16,7 +16,7 @@ static GHashTable *devices;
 static GList *adapters;
 static GDBusConnection *bz_con;
 static const gchar *bz_serv = "org.bluez";
-static guint sub_add, sub_del, sub_chg;
+static guint sub_add, sub_del, sub_chg, sub_adapter_chg;
 
 typedef struct _bz_device {
   gchar *path;
@@ -271,23 +271,12 @@ static BzAdapter *bz_adapter_get ( void )
   return adapters->data;
 }
 
-static void bz_scan_stop_cb ( GDBusConnection *con, GAsyncResult *res,
-    BzAdapter *adapter)
-{
-  GVariant *result;
-
-  trigger_emit("bluez_scan_complete");
-  result = g_dbus_connection_call_finish(con, res, NULL);
-  if(result)
-    g_variant_unref(result);
-}
-
 static gboolean bz_scan_stop ( BzAdapter *adapter )
 {
   g_debug("bluez: scan off");
   g_dbus_connection_call(bz_con, bz_serv, adapter->path,
       adapter->iface, "StopDiscovery", NULL, NULL, G_DBUS_CALL_FLAGS_NONE,
-      -1, NULL, (GAsyncReadyCallback)bz_scan_stop_cb, NULL);
+      -1, NULL, NULL, NULL);
   adapter->timeout_handle = 0;
   return FALSE;
 }
@@ -299,10 +288,8 @@ static void bz_scan_cb ( GDBusConnection *con, GAsyncResult *res,
 
   result = g_dbus_connection_call_finish(con, res, NULL);
   if(!result)
-  {
-    trigger_emit("bluez_scan_complete");
     return;
-  }
+
   g_variant_unref(result);
 
   if(adapter->scan_timeout)
@@ -319,7 +306,6 @@ static void bz_scan ( GDBusConnection *con, guint timeout )
     return;
 
   adapter->scan_timeout = timeout;
-  trigger_emit("bluez_scan");
 
   g_debug("bluez: scan on");
   g_dbus_connection_call(con, bz_serv, adapter->path,
@@ -663,6 +649,22 @@ static void bz_device_changed ( GDBusConnection *con, const gchar *sender,
   g_variant_iter_free(piter);
 }
 
+static void bz_adapter_changed ( GDBusConnection *con, const gchar *sender,
+    const gchar *path, const gchar *iface, const gchar *signal,
+    GVariant *params, gpointer data )
+{
+  GVariant *dict;
+  BzAdapter *adapter;
+  gboolean scanning;
+
+  if( !(adapter = bz_adapter_get()) || g_strcmp0(adapter->path, path) )
+    return;
+
+  g_variant_get(params,"(&s@a{sv}@as)", NULL, &dict, NULL);
+  if(g_variant_lookup(dict, "Discovering", "b", &scanning))
+    trigger_emit(scanning? "bluez_scan" : "bluez_scan_complete");
+}
+
 static void bz_init_cb ( GDBusConnection *con, GAsyncResult *res, gpointer data )
 {
   GVariant *result;
@@ -693,6 +695,10 @@ static void bz_name_appeared_cb (GDBusConnection *con, const gchar *name,
       "org.freedesktop.DBus.Properties", "PropertiesChanged", NULL,
       "org.bluez.Device1",  G_DBUS_SIGNAL_FLAGS_NONE, bz_device_changed,
       NULL, NULL);
+  sub_adapter_chg = g_dbus_connection_signal_subscribe(con, owner,
+      "org.freedesktop.DBus.Properties", "PropertiesChanged", NULL,
+      "org.bluez.Adapter1",  G_DBUS_SIGNAL_FLAGS_NONE, bz_adapter_changed,
+      NULL, NULL);
   g_dbus_connection_call(bz_con, bz_serv, "/org/bluez",
       "org.bluez.AgentManager1", "RegisterAgent",
       g_variant_new("(os)", "/org/hosers/sfwbar", "NoInputNoOutput"),
@@ -713,6 +719,7 @@ static void bz_name_disappeared_cb (GDBusConnection *con, const gchar *name,
   g_dbus_connection_signal_unsubscribe(bz_con, sub_add);
   g_dbus_connection_signal_unsubscribe(bz_con, sub_del);
   g_dbus_connection_signal_unsubscribe(bz_con, sub_chg);
+  g_dbus_connection_signal_unsubscribe(bz_con, sub_adapter_chg);
 }
 
 static value_t bz_expr_get ( vm_t *vm, value_t p[], gint np )
@@ -767,7 +774,8 @@ static value_t bz_action_ack_removed ( vm_t *vm, value_t p[], gint np )
 
 static value_t bz_action_scan ( vm_t *vm, value_t p[], gint np )
 {
-  bz_scan(bz_con, 10000);
+  vm_param_check_np_range(vm, np, 0, 1, "BluezScan");
+  bz_scan(bz_con, np? value_as_numeric(p[0])*1000 : 10000);
 
   return value_na;
 }
