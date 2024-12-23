@@ -24,7 +24,7 @@ static gboolean taskbar_item_action_exec ( GtkWidget *self, gint slot,
   TaskbarItemPrivate *priv;
   GdkModifierType mods;
   GtkWidget *shell, *parent;
-  action_t *action;
+  GBytes *action;
 
   g_return_val_if_fail(IS_TASKBAR_ITEM(self), FALSE);
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));

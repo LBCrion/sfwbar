@@ -15,7 +15,7 @@ static gboolean pager_item_action_exec ( GtkWidget *self, gint slot,
 {
   PagerItemPrivate *priv;
   GdkModifierType mods;
-  action_t *action;
+  GBytes *action;
 
   g_return_val_if_fail(IS_PAGER_ITEM(self),FALSE);
   priv = pager_item_get_instance_private(PAGER_ITEM(self));

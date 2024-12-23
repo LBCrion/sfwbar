@@ -138,7 +138,7 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
   gtk_menu_popup_at_widget(GTK_MENU(menu), widget, wanchor, manchor, event);
 }
 
-gboolean menu_action_cb ( GtkWidget *w ,action_t *action )
+gboolean menu_action_cb ( GtkWidget *w, GBytes *action )
 {
   GtkWidget *parent;
   gpointer wid;
@@ -200,7 +200,7 @@ void menu_item_update ( GtkWidget *item, const gchar *label, const gchar *icon )
     gtk_label_set_text_with_mnemonic(GTK_LABEL(wlabel), label);
 }
 
-GtkWidget *menu_item_new ( gchar *label, action_t *action, gchar *id )
+GtkWidget *menu_item_new ( gchar *label, GBytes *action, gchar *id )
 {
   GtkWidget *item;
   gchar *text, *icon;
@@ -220,7 +220,7 @@ GtkWidget *menu_item_new ( gchar *label, action_t *action, gchar *id )
   {
     g_signal_connect(G_OBJECT(item), "activate",
         G_CALLBACK(menu_action_cb), action);
-    g_object_weak_ref(G_OBJECT(item), (GWeakNotify)action_free, action);
+    g_object_weak_ref(G_OBJECT(item), (GWeakNotify)g_bytes_unref, action);
   }
 
   if(id)

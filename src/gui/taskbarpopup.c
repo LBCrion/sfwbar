@@ -219,7 +219,7 @@ static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
   TaskbarPopupPrivate *priv;
   GList *children;
   window_t *win;
-  action_t *action;
+  GBytes *action;
 
   g_return_val_if_fail(IS_TASKBAR_POPUP(self),FALSE);
   priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));

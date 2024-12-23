@@ -29,16 +29,15 @@ static void taskbar_class_init ( TaskbarClass *kclass )
 
 static void taskbar_init ( Taskbar *self )
 {
-  action_t *action;
+  GBytes *action;
   static guint8 data[sizeof(gpointer)+2];
   gpointer fptr = vm_func_lookup("taskbaritemdefault");
 
   flow_grid_invalidate(GTK_WIDGET(self));
-  action = action_new();
   data[0] = EXPR_OP_FUNCTION;
   memcpy(data+2, &fptr, sizeof(gpointer));
 
-  action->code = g_bytes_new_static(data, sizeof(gpointer)+2);
+  action = g_bytes_new_static(data, sizeof(gpointer)+2);
   base_widget_set_action(GTK_WIDGET(self), 1, 0, action);
 }
 

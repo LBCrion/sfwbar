@@ -66,7 +66,7 @@ struct _BaseWidgetPrivate
 };
 
 typedef struct _base_widget_attachment {
-  action_t *action;
+  GBytes *action;
   gint event;
   GdkModifierType mods;
 } base_widget_attachment_t;
@@ -82,7 +82,7 @@ void base_widget_set_trigger ( GtkWidget *self, gchar *trigger );
 void base_widget_set_id ( GtkWidget *self, gchar *id );
 void base_widget_set_interval ( GtkWidget *self, gint64 interval );
 void base_widget_set_state ( GtkWidget *self, guint16 mask, gboolean state );
-void base_widget_set_action ( GtkWidget *, gint, GdkModifierType, action_t *);
+void base_widget_set_action ( GtkWidget *, gint, GdkModifierType, GBytes *);
 void base_widget_set_max_width ( GtkWidget *self, guint x );
 void base_widget_set_max_height ( GtkWidget *self, guint x );
 gboolean base_widget_update_value ( GtkWidget *self );
@@ -98,7 +98,7 @@ gchar *base_widget_get_id ( GtkWidget *self );
 GtkWidget *base_widget_get_child ( GtkWidget *self );
 GtkWidget *base_widget_from_id ( gchar *id );
 gchar *base_widget_get_value ( GtkWidget *self );
-action_t *base_widget_get_action ( GtkWidget *self, gint, GdkModifierType );
+GBytes *base_widget_get_action ( GtkWidget *self, gint, GdkModifierType );
 gpointer base_widget_scanner_thread ( GMainContext *gmc );
 void base_widget_set_css ( GtkWidget *widget, gchar *css );
 //gboolean base_widget_emit_trigger ( const gchar *trigger );

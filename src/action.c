@@ -11,7 +11,7 @@
 
 static GHashTable *functions;
 
-void action_function_add ( gchar *name, action_t *action )
+void action_function_add ( gchar *name, GBytes *action )
 {
   if(!functions)
     functions = g_hash_table_new_full((GHashFunc)str_nhash,
@@ -56,7 +56,7 @@ guint16 action_state_build ( GtkWidget *widget, window_t *win )
   return state;
 }
 
-void action_exec ( GtkWidget *widget, action_t *action,
+void action_exec ( GtkWidget *widget, GBytes *action,
     GdkEvent *event, window_t *win, guint16 *istate )
 {
 /*  ModuleActionHandlerV1 *ahandler;
@@ -65,8 +65,8 @@ void action_exec ( GtkWidget *widget, action_t *action,
   guint16 state;
   action_t *caction;*/
 
-  if(action && action->code)
-    vm_run_action(action->code, widget, event, istate);
+  if(action)
+    vm_run_action(action, widget, event, istate);
 //  vm_run_action((gchar *)action->id, action->addr->definition,
 //      action->command->definition, widget, event, action->cond, action->ncond);
 
@@ -139,56 +139,12 @@ void action_exec ( GtkWidget *widget, action_t *action,
       action->command->cache, action->addr->cache, widget, event, win, &state);*/
 }
 
-action_t *action_new ( void )
-{
-  action_t *new;
-
-  new = g_malloc0(sizeof(action_t));
-//  new->command = expr_cache_new();
-//  new->addr = expr_cache_new();
-
-  return new;
-}
-
-/*action_t *action_dup ( action_t *src )
-{
-  action_t *dest;
-
-  if(!src)
-    return NULL;
-
-  dest = action_new();
-  dest->cond = src->cond;
-  dest->ncond = src->ncond;
-  dest->id = src->id;
-
-  dest->command->definition = g_strdup(src->command->definition);
-  dest->command->cache = g_strdup(src->command->cache);
-  dest->command->eval = src->command->eval;
-  dest->addr->definition = g_strdup(src->addr->definition);
-  dest->addr->cache = g_strdup(src->addr->cache);
-  dest->addr->eval = src->addr->eval;
-  return dest;
-}*/
-
-void action_free ( action_t *action, GObject *old )
-{
-  if(!action)
-    return;
-
-//  expr_cache_free(action->command);
-//  expr_cache_free(action->addr);
-  g_bytes_unref(action->code);
-
-  g_free(action);
-}
-
-void action_trigger_cb ( action_t *action )
+void action_trigger_cb ( GBytes *action )
 {
   action_exec(NULL, action, NULL, NULL, NULL);
 }
 
-void action_trigger_add ( action_t *action, gchar *trigger )
+void action_trigger_add ( GBytes *action, gchar *trigger )
 {
   trigger_add(trigger, (GSourceFunc)action_trigger_cb, action);
 }

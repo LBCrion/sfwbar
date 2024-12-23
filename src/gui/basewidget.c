@@ -28,7 +28,7 @@ static void base_widget_attachment_free ( base_widget_attachment_t *attach )
   if(!attach)
     return;
 
-  action_free(attach->action, NULL);
+  g_bytes_unref(attach->action);
   g_free(attach);
 }
 
@@ -212,19 +212,16 @@ static gboolean base_widget_scroll_event ( GtkWidget *self,
 static gboolean base_widget_action_exec_impl ( GtkWidget *self, gint slot,
     GdkEvent *ev )
 {
-  action_t *action;
+  GBytes *action;
 
   if(!base_widget_check_action_slot(self, slot))
     return FALSE;
 
-  action = base_widget_get_action(self, slot,
-        base_widget_get_modifiers(self));
-  if(!action)
-    return FALSE;
-
-  action_exec(self, action, (GdkEvent *)ev,
-      wintree_from_id(wintree_get_focus()), NULL);
-  return TRUE;
+  if( (action = base_widget_get_action(self, slot,
+        base_widget_get_modifiers(self))) )
+    action_exec(self, action, (GdkEvent *)ev,
+        wintree_from_id(wintree_get_focus()), NULL);
+  return !!action;
 }
 
 static gboolean base_widget_drag_motion( GtkWidget *self, GdkDragContext *ctx,
@@ -755,7 +752,7 @@ gint64 base_widget_get_next_poll ( GtkWidget *self )
   return priv->next_poll;
 }
 
-action_t *base_widget_get_action ( GtkWidget *self, gint n,
+GBytes *base_widget_get_action ( GtkWidget *self, gint n,
     GdkModifierType mods )
 {
   BaseWidgetPrivate *priv;
@@ -829,7 +826,7 @@ void base_widget_set_css ( GtkWidget *self, gchar *css )
 }
 
 void base_widget_set_action ( GtkWidget *self, gint slot,
-    GdkModifierType mods, action_t *action )
+    GdkModifierType mods, GBytes *action )
 {
   BaseWidgetPrivate *priv;
   base_widget_attachment_t *attach;
@@ -851,7 +848,7 @@ void base_widget_set_action ( GtkWidget *self, gint slot,
   if(iter)
   {
     attach = iter->data;
-    action_free(attach->action, NULL);
+    g_bytes_unref(attach->action);
   }
   else
   {
@@ -959,7 +956,7 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
 
 void base_widget_autoexec ( GtkWidget *self, gpointer data )
 {
-  action_t *action;
+  GBytes *action;
 
   if(GTK_IS_CONTAINER(self))
     gtk_container_forall(GTK_CONTAINER(self), base_widget_autoexec, data);
@@ -967,7 +964,7 @@ void base_widget_autoexec ( GtkWidget *self, gpointer data )
   if(!IS_BASE_WIDGET(self))
     return;
 
-  action = base_widget_get_action(self, 0, 0);
-  if(action)
-    action_exec(self, action, NULL, wintree_from_id(wintree_get_focus()),NULL);
+  if( (action = base_widget_get_action(self, 0, 0)) )
+    action_exec(self, action, NULL, wintree_from_id(wintree_get_focus()),
+        NULL);
 }

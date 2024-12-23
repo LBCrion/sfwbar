@@ -75,7 +75,7 @@ gboolean config_action_slot ( GScanner *scanner, gint *slot )
 void config_widget_action ( GScanner *scanner, GtkWidget *widget )
 {
   gint slot = 1, mod = 0;
-  action_t *action = NULL;
+  GBytes *action = NULL;
 
   config_parse_sequence(scanner,
       SEQ_OPT, '[', NULL, NULL, NULL,
@@ -90,7 +90,7 @@ void config_widget_action ( GScanner *scanner, GtkWidget *widget )
   if(!scanner->max_parse_errors)
     base_widget_set_action(widget, slot, mod, action);
   else if(action)
-    action_free(action, NULL);
+    g_bytes_unref(action);
 }
 
 gboolean config_include ( GScanner *scanner, GtkWidget *container )

@@ -10,28 +10,17 @@
 #include "gui/menu.h"
 #include "vm/vm.h"
 
-gboolean config_action ( GScanner *scanner, action_t **action_dst )
+gboolean config_action ( GScanner *scanner, GBytes **action_dst )
 {
-  GBytes *code;
-  action_t *action;
+  *action_dst = parser_closure_parse(scanner);
 
-  if( !(code = parser_closure_parse(scanner)) )
-  {
-    *action_dst = NULL;
-    return FALSE;
-  }
-
-  action = action_new();
-  action->code = code;
-  *action_dst = action;
-
-  return TRUE;
+  return !!*action_dst;
 }
 
 GtkWidget *config_menu_item ( GScanner *scanner )
 {
   gchar *label, *id;
-  action_t *action;
+  GBytes *action;
   GtkWidget *item;
 
   config_parse_sequence(scanner,
@@ -162,7 +151,7 @@ void config_menu_clear ( GScanner *scanner )
 void config_function ( GScanner *scanner )
 {
   gchar *name;
-  action_t *action;
+  GBytes *action;
 
   config_parse_sequence(scanner,
       SEQ_REQ, '(', NULL, NULL, "missing '(' after 'function'",
@@ -226,7 +215,7 @@ void config_mappid_map ( GScanner *scanner )
 void config_trigger_action ( GScanner *scanner )
 {
   gchar *trigger;
-  action_t *action;
+  GBytes *action;
 
   config_parse_sequence(scanner,
       SEQ_REQ, G_TOKEN_STRING, NULL, &trigger,
@@ -236,8 +225,8 @@ void config_trigger_action ( GScanner *scanner )
       SEQ_OPT, ';', NULL, NULL, NULL,
       SEQ_END);
 
-if(!scanner->max_parse_errors)
-  action_trigger_add(action, trigger);
+  if(!scanner->max_parse_errors)
+    action_trigger_add(action, trigger);
 }
 
 void config_module ( GScanner *scanner )
