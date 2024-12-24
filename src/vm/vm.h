@@ -53,7 +53,7 @@ typedef struct {
 #define vm_param_check_numeric(vm, p, n, fname) { if(!value_like_numeric(p[n])) { return value_na; } }
 
 GBytes *parser_expr_compile ( gchar *expr );
-GBytes *parser_closure_parse ( GScanner *scanner );
+gboolean parser_block_parse ( GScanner *scanner, GByteArray *code );
 gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code );
 gboolean parser_macro_add ( GScanner *scanner );
 const gchar *parser_identifier_lookup ( gchar *identifier );

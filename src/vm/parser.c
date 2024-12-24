@@ -47,7 +47,7 @@ static void parser_emit_na ( GByteArray *code )
 
 static void parser_jump_backpatch ( GByteArray *code, gint olen, gint clen )
 {
-  gint data = clen - olen;
+  gint data = clen - olen - sizeof(gint);
   memcpy(code->data + olen, &data, sizeof(gint));
 }
 
@@ -105,13 +105,13 @@ static gboolean parser_if ( GScanner *scanner, GByteArray *code )
     return FALSE;
 
   /* JZ over len change + JMP instruction (1 + sizeof(gint)) */
-  parser_jump_backpatch(code, alen, code->len + 1);
+  parser_jump_backpatch(code, alen, code->len + sizeof(gint) + 1);
   alen = parser_emit_jump(code, EXPR_OP_JMP);
 
   if(!parser_expr_parse(scanner, code))
     return FALSE;
   /* JMP over len change */
-  parser_jump_backpatch(code, alen, code->len - sizeof(gint));
+  parser_jump_backpatch(code, alen, code->len);
 
   if(g_scanner_get_next_token(scanner)!=')')
     return FALSE;
@@ -394,40 +394,52 @@ gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
 
   if(cond)
   {
-    parser_jump_backpatch(code, alen, code->len + 1);
+    parser_jump_backpatch(code, alen, code->len + sizeof(gint) + 1);
     alen = parser_emit_jump(code, EXPR_OP_JMP);
     parser_emit_na(code);
-    parser_jump_backpatch(code, alen, code->len - sizeof(gint));
+    parser_jump_backpatch(code, alen, code->len);
   }
 
   return TRUE;
 }
 
-GBytes *parser_closure_parse ( GScanner *scanner )
+gboolean parser_block_parse ( GScanner *scanner, GByteArray *code )
 {
-  GByteArray *code;
+  gint alen;
   static guint8 discard = EXPR_OP_DISCARD;
-  code = g_byte_array_new();
 
   if(!config_check_and_consume(scanner, '{'))
   {
     if(!parser_action_parse(scanner, code))
-    {
-      g_byte_array_free(code, TRUE);
-      return NULL;
-    }
+      return FALSE;
   }
   else
   {
     while(!config_check_and_consume(scanner, '}'))
-      if(!parser_action_parse(scanner, code))
+      if(g_scanner_peek_next_token(scanner) == G_TOKEN_IDENTIFIER &&
+        !g_ascii_strcasecmp(scanner->next_value.v_identifier, "if"))
       {
-        g_byte_array_free(code, TRUE);
-        return NULL;
+        g_scanner_get_next_token(scanner);
+        parser_expr_parse(scanner, code);
+        alen = parser_emit_jump(code, EXPR_OP_JZ);
+        parser_block_parse(scanner, code);
+        if(g_scanner_peek_next_token(scanner) == G_TOKEN_IDENTIFIER &&
+          !g_ascii_strcasecmp(scanner->next_value.v_identifier, "else"))
+        {
+          g_scanner_get_next_token(scanner);
+          parser_jump_backpatch(code, alen, code->len + sizeof(gint) + 1);
+          alen = parser_emit_jump(code, EXPR_OP_JMP);
+          parser_block_parse(scanner, code);
+          parser_jump_backpatch(code, alen, code->len);
+        }
+        else
+          parser_jump_backpatch(code, alen, code->len);
       }
+      else if(!parser_action_parse(scanner, code))
+        return FALSE;
       else
         g_byte_array_append(code, &discard, 1);
   }
 
-  return g_byte_array_free_to_bytes(code);
+  return TRUE;
 }

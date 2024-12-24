@@ -12,7 +12,13 @@
 
 gboolean config_action ( GScanner *scanner, GBytes **action_dst )
 {
-  *action_dst = parser_closure_parse(scanner);
+  GByteArray *code;
+
+  code = g_byte_array_new();
+  if(parser_block_parse(scanner, code))
+    *action_dst = g_byte_array_free_to_bytes(code);
+  else
+    g_byte_array_unref(code);
 
   return !!*action_dst;
 }
@@ -151,7 +157,7 @@ void config_menu_clear ( GScanner *scanner )
 void config_function ( GScanner *scanner )
 {
   gchar *name;
-  GBytes *action;
+  GByteArray *code;
 
   config_parse_sequence(scanner,
       SEQ_REQ, '(', NULL, NULL, "missing '(' after 'function'",
@@ -161,8 +167,11 @@ void config_function ( GScanner *scanner )
 
   if(!scanner->max_parse_errors)
   {
-    action = parser_closure_parse(scanner);
-    vm_func_add_user(name, action);
+    code = g_byte_array_new();
+    if(parser_block_parse(scanner, code))
+      vm_func_add_user(name, g_byte_array_free_to_bytes(code));
+    else
+      g_byte_array_unref(code);
   }
 
   g_free(name);
