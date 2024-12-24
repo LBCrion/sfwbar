@@ -397,7 +397,7 @@ gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
     parser_jump_backpatch(code, alen, code->len + 1);
     alen = parser_emit_jump(code, EXPR_OP_JMP);
     parser_emit_na(code);
-    parser_jump_backpatch(code, alen, code->len + sizeof(gint));
+    parser_jump_backpatch(code, alen, code->len - sizeof(gint));
   }
 
   return TRUE;

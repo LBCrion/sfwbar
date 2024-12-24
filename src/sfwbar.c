@@ -13,6 +13,7 @@
 #include "gui/monitor.h"
 #include "gui/bar.h"
 #include "gui/css.h"
+#include "vm/vm.h"
 
 extern gchar *confname;
 extern gchar *sockname;
@@ -127,7 +128,7 @@ static void activate (GtkApplication* app, gpointer data )
         (GThreadFunc)base_widget_scanner_thread,
         g_main_context_get_thread_default()));
 
-  action_function_exec("SfwBarInit", NULL, NULL, NULL, NULL);
+  vm_run_user_defined("SfwBarInit", NULL, NULL, NULL, NULL);
 
   g_unix_signal_add(SIGHUP, (GSourceFunc)sfwbar_restart, NULL);
 }

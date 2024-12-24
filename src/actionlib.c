@@ -16,6 +16,7 @@
 #include "gui/popup.h"
 #include "gui/taskbaritem.h"
 #include "util/string.h"
+#include "vm/vm.h"
 
 static value_t action_exec_impl ( vm_t *vm, value_t p[], gint np )
 {
@@ -54,7 +55,8 @@ static value_t action_function ( vm_t *vm, value_t p[], gint np )
   win = IS_TASKBAR_ITEM(widget)? flow_item_get_source(widget) : vm->win;
   state = action_state_build(vm->widget, vm->win);
 
-  action_function_exec(value_get_string(p[np-1]), widget, vm->event, win, &state);
+  vm_run_user_defined(value_get_string(p[np-1]), widget, vm->event, win,
+      &state);
 
   return value_na;
 }

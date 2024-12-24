@@ -5,6 +5,7 @@
 #include "gui/taskbaritem.h"
 
 const value_t value_na = { .type = EXPR_TYPE_NA };
+static value_t vm_run ( vm_t *vm );
 
 static void vm_push ( vm_t *vm, value_t val )
 {
@@ -112,18 +113,34 @@ static gboolean vm_function ( vm_t *vm )
   vm_function_t *func;
   value_t v1, result, *stack;
   guint8 np = *(vm->ip+1);
+  guint8 *saved_code, *saved_ip;
+  gsize saved_len;
   gint i;
 
   if(np>vm->stack->len)
     return FALSE;
   memcpy(&func, vm->ip+2, sizeof(gpointer));
   result = value_na;
-  if(func->function)
+  if(!(func->flags & VM_FUNC_USERDEFINED) && func->ptr.function)
   {
     stack = (value_t *)vm->stack->data + vm->stack->len - np;
-    result = func->function(vm, stack, np);
+    result = func->ptr.function(vm, stack, np);
     if(vm->expr)
-      vm->expr->vstate |= (!func->deterministic);
+      vm->expr->vstate |= !(func->flags & VM_FUNC_DETERMINISTIC);
+  }
+  else if((func->flags & VM_FUNC_USERDEFINED) && func->ptr.code)
+  {
+    saved_code = vm->code;
+    saved_ip = vm->ip;
+    saved_len = vm->len;
+
+    vm->code = (guint8 *)g_bytes_get_data(func->ptr.code, &vm->len);
+    vm_run(vm);
+
+    vm->code = saved_code;
+    vm->ip = saved_ip;
+    vm->len = saved_len;
+    result = vm_pop(vm);
   }
   expr_dep_add(func->name, vm->expr);
   if(np>1)
@@ -249,25 +266,30 @@ static value_t vm_run ( vm_t *vm )
 
 static value_t vm_free ( vm_t *vm )
 {
-  value_t v1;
+  value_t v1 = value_na;
 
-  if(vm->stack->len>1)
-    g_message("stack too long");
-  if(vm->stack->len<1)
-    return value_na;
-
-  v1=value_na;
-  while(vm->stack->len>0)
+  if(vm->stack)
   {
-    v1=vm_pop(vm);
-    if(vm->stack->len)
-      value_free(v1);
-  }
-  if(vm->expr)
-    vm->expr->stack_depth = MAX(vm->expr->stack_depth, vm->max_stack);
+    if(vm->stack->len>1)
+      g_message("stack too long");
 
-  g_array_unref(vm->stack);
-  g_ptr_array_free(vm->pstack, TRUE);
+    if(vm->stack->len>0)
+      while(vm->stack->len>0)
+      {
+       v1=vm_pop(vm);
+       if(vm->stack->len)
+          value_free(v1);
+      }
+
+    if(vm->expr)
+      vm->expr->stack_depth = MAX(vm->expr->stack_depth, vm->max_stack);
+
+    g_array_unref(vm->stack);
+  }
+
+  if(vm->pstack)
+    g_ptr_array_free(vm->pstack, TRUE);
+
   g_free(vm);
 
   return v1;
@@ -291,11 +313,13 @@ value_t vm_expr_eval ( expr_cache_t *expr )
 }
 
 void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
-    guint16 *state )
+    window_t *win, guint16 *state )
 {
   value_t v1;
   vm_t *vm;
 
+  if(!code)
+    return;
   vm = g_malloc0(sizeof(vm_t));
   vm->code = (gpointer)g_bytes_get_data(code, &vm->len);
   vm->widget = widget;
@@ -305,4 +329,16 @@ void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
   vm_run(vm);
   v1 = vm_free(vm);
   value_free(v1);
+}
+
+void vm_run_user_defined ( gchar *name, GtkWidget *widget, GdkEvent *event,
+    window_t *win, guint16 *state )
+{
+  vm_function_t *func;
+
+  func = vm_func_lookup(name);
+  if(func->flags & VM_FUNC_USERDEFINED)
+    vm_run_action(func->ptr.code, widget, event, win, state);
+
+
 }

@@ -16,6 +16,11 @@ enum expr_instruction_t {
   EXPR_OP_DISCARD
 };
 
+enum vm_func_flags_t {
+  VM_FUNC_DETERMINISTIC,
+  VM_FUNC_USERDEFINED
+};
+
 typedef struct {
   guint8 *ip;
   guint8 *code;
@@ -35,8 +40,11 @@ typedef value_t (*vm_func_t)(vm_t *vm, value_t params[], gint np);
 
 typedef struct {
   gchar *name;
-  vm_func_t function;
-  gboolean deterministic;
+  guint8 flags;
+  union {
+    vm_func_t function;
+    GBytes *code;
+  } ptr;
 } vm_function_t;
 
 #define vm_param_check_np(vm, np, n, fname) { if(np!=n) { return value_na; } }
@@ -50,12 +58,16 @@ gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code );
 gboolean parser_macro_add ( GScanner *scanner );
 const gchar *parser_identifier_lookup ( gchar *identifier );
 value_t vm_expr_eval ( expr_cache_t *expr );
-void vm_run_action ( GBytes *code, GtkWidget *w, GdkEvent *e, guint16 *s);
+void vm_run_action ( GBytes *code, GtkWidget *w, GdkEvent *e, window_t *win,
+    guint16 *s);
+void vm_run_user_defined ( gchar *action, GtkWidget *widget, GdkEvent *event,
+    window_t *win, guint16 *state );
 gchar *expr_vm_result_to_string ( vm_t *vm );
 gint expr_vm_get_func_params ( vm_t *vm, value_t *params[] );
 
 void vm_func_init ( void );
 void vm_func_add ( gchar *name, vm_func_t func, gboolean deterministic );
+void vm_func_add_user ( gchar *name, GBytes *code );
 vm_function_t *vm_func_lookup ( gchar *name );
 void vm_func_remove ( gchar *name );
 

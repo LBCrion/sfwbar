@@ -481,7 +481,7 @@ static value_t expr_ident ( vm_t *vm, value_t p[], int np )
     return value_na;
 
   func = vm_func_lookup(value_get_string(p[0]));
-  if(func->function)
+  if(func->ptr.function)
     result = value_new_numeric(TRUE);
   else
     result = value_new_numeric(scanner_is_variable(value_get_string(p[0])));

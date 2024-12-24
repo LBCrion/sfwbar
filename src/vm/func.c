@@ -32,8 +32,19 @@ void vm_func_add ( gchar *name, vm_func_t function, gboolean deterministic )
 
   func = vm_func_lookup(name);
 
-  func->function = function;
-  func->deterministic = deterministic;
+  func->ptr.function = function;
+  func->flags |= (deterministic? VM_FUNC_DETERMINISTIC : 0);
+  expr_dep_trigger(name);
+  g_debug("function: registered '%s'", name);
+}
+
+void vm_func_add_user ( gchar *name, GBytes *code )
+{
+  vm_function_t *func;
+
+  func = vm_func_lookup(name);
+  func->ptr.code = code;
+  func->flags = VM_FUNC_USERDEFINED;
   expr_dep_trigger(name);
   g_debug("function: registered '%s'", name);
 }
@@ -45,5 +56,5 @@ void vm_func_remove ( gchar *name )
   if( !(func = g_hash_table_lookup(vm_func_table, name)) )
     return;
 
-  func->function = NULL;
+  func->ptr.function = NULL;
 }

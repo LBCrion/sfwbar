@@ -157,17 +157,13 @@ void config_function ( GScanner *scanner )
       SEQ_REQ, '(', NULL, NULL, "missing '(' after 'function'",
       SEQ_REQ, G_TOKEN_STRING, NULL ,&name, "missing function name",
       SEQ_REQ, ')', NULL, NULL, "missing ')' after 'function'",
-      SEQ_OPT, '{', NULL, NULL, "missing '{' after 'function'",
       SEQ_END);
 
   if(!scanner->max_parse_errors)
-    while(!config_is_section_end(scanner))
-    {
-      if(config_action(scanner, &action))
-        action_function_add(name, action);
-      else
-        g_scanner_error(scanner, "invalid action");
-    }
+  {
+    action = parser_closure_parse(scanner);
+    vm_func_add_user(name, action);
+  }
 
   g_free(name);
 }

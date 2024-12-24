@@ -9,38 +9,6 @@
 #include "util/string.h"
 #include "vm/vm.h"
 
-static GHashTable *functions;
-
-void action_function_add ( gchar *name, GBytes *action )
-{
-  if(!functions)
-    functions = g_hash_table_new_full((GHashFunc)str_nhash,
-        (GEqualFunc)str_nequal, g_free, NULL);
-
-  g_hash_table_insert(functions, g_strdup(name),
-        g_list_append(g_hash_table_lookup(functions, name), action));
-}
-
-void action_function_exec ( gchar *name, GtkWidget *w, GdkEvent *ev,
-    window_t *win, guint16 *state )
-{
-  GList *iter;
-  window_t *stat_win;
-
-  if(!name || !functions)
-    return;
-
-  if(win)
-    stat_win = g_memdup2(win, sizeof(window_t));
-  else
-    stat_win = NULL;
-
-  for(iter=g_hash_table_lookup(functions, name); iter; iter=g_list_next(iter))
-    action_exec(w, iter->data, ev, stat_win, state);
-
-  g_free(stat_win);
-}
-
 guint16 action_state_build ( GtkWidget *widget, window_t *win )
 {
   guint16 state = 0;
@@ -66,7 +34,7 @@ void action_exec ( GtkWidget *widget, GBytes *action,
   action_t *caction;*/
 
   if(action)
-    vm_run_action(action, widget, event, istate);
+    vm_run_action(action, widget, event, win, istate);
 //  vm_run_action((gchar *)action->id, action->addr->definition,
 //      action->command->definition, widget, event, action->cond, action->ncond);
 
