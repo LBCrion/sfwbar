@@ -58,6 +58,7 @@ gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code );
 gboolean parser_macro_add ( GScanner *scanner );
 const gchar *parser_identifier_lookup ( gchar *identifier );
 value_t vm_expr_eval ( expr_cache_t *expr );
+value_t vm_function_call ( vm_t *vm, GBytes *code );
 void vm_run_action ( GBytes *code, GtkWidget *w, GdkEvent *e, window_t *win,
     guint16 *s);
 void vm_run_user_defined ( gchar *action, GtkWidget *widget, GdkEvent *event,

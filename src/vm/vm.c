@@ -26,6 +26,17 @@ static value_t vm_pop ( vm_t *vm )
   return val;
 }
 
+static void vm_stack_unwind ( vm_t *vm, gsize target )
+{
+  value_t v1;
+
+  while(vm->stack->len>target)
+  {
+    v1 = vm_pop(vm);
+    value_free(v1);
+  }
+}
+
 static gboolean vm_op_binary ( vm_t *vm )
 {
   value_t v1, v2, result;
@@ -108,40 +119,55 @@ gint expr_vm_get_func_params ( vm_t *vm, value_t *params[] )
   return np;
 }
 
+value_t vm_function_call ( vm_t *vm, GBytes *code )
+{
+  guint8 *saved_code, *saved_ip;
+  gsize saved_len, saved_stack;
+
+  if(!code)
+    return value_na;
+
+  saved_code = vm->code;
+  saved_ip = vm->ip;
+  saved_len = vm->len;
+  saved_stack = vm->stack->len;
+
+  vm->code = (guint8 *)g_bytes_get_data(code, &vm->len);
+  vm_run(vm);
+
+  if(vm->expr)
+    vm->expr->vstate = TRUE;
+
+  vm->code = saved_code;
+  vm->ip = saved_ip;
+  vm->len = saved_len;
+  vm_stack_unwind(vm, saved_stack);
+
+  return vm_pop(vm);
+}
+
 static gboolean vm_function ( vm_t *vm )
 {
   vm_function_t *func;
-  value_t v1, result, *stack;
+  value_t v1, result;
   guint8 np = *(vm->ip+1);
-  guint8 *saved_code, *saved_ip;
-  gsize saved_len;
   gint i;
 
   if(np>vm->stack->len)
     return FALSE;
   memcpy(&func, vm->ip+2, sizeof(gpointer));
-  result = value_na;
   if(!(func->flags & VM_FUNC_USERDEFINED) && func->ptr.function)
   {
-    stack = (value_t *)vm->stack->data + vm->stack->len - np;
-    result = func->ptr.function(vm, stack, np);
+    result = func->ptr.function(vm,
+        (value_t *)vm->stack->data + vm->stack->len - np, np);
     if(vm->expr)
       vm->expr->vstate |= !(func->flags & VM_FUNC_DETERMINISTIC);
   }
-  else if((func->flags & VM_FUNC_USERDEFINED) && func->ptr.code)
-  {
-    saved_code = vm->code;
-    saved_ip = vm->ip;
-    saved_len = vm->len;
+  else if(func->flags & VM_FUNC_USERDEFINED)
+    result = vm_function_call(vm, func->ptr.code);
+  else
+    result = value_na;
 
-    vm->code = (guint8 *)g_bytes_get_data(func->ptr.code, &vm->len);
-    vm_run(vm);
-
-    vm->code = saved_code;
-    vm->ip = saved_ip;
-    vm->len = saved_len;
-    result = vm_pop(vm);
-  }
   expr_dep_add(func->name, vm->expr);
   if(np>1)
     g_ptr_array_remove_range(vm->pstack, vm->pstack->len-np+1, np-1);
@@ -274,12 +300,10 @@ static value_t vm_free ( vm_t *vm )
       g_message("stack too long");
 
     if(vm->stack->len>0)
-      while(vm->stack->len>0)
-      {
-       v1=vm_pop(vm);
-       if(vm->stack->len)
-          value_free(v1);
-      }
+    {
+      vm_stack_unwind(vm, 1);
+      v1 = vm_pop(vm);
+    }
 
     if(vm->expr)
       vm->expr->stack_depth = MAX(vm->expr->stack_depth, vm->max_stack);
@@ -339,6 +363,4 @@ void vm_run_user_defined ( gchar *name, GtkWidget *widget, GdkEvent *event,
   func = vm_func_lookup(name);
   if(func->flags & VM_FUNC_USERDEFINED)
     vm_run_action(func->ptr.code, widget, event, win, state);
-
-
 }

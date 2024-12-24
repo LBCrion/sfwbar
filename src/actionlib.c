@@ -38,7 +38,8 @@ static value_t action_exec_impl ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_function ( vm_t *vm, value_t p[], gint np )
 {
-  GtkWidget *widget = NULL;
+  vm_function_t *func;
+  GtkWidget *widget;
   window_t *win;
   guint16 state;
 
@@ -51,12 +52,20 @@ static value_t action_function ( vm_t *vm, value_t p[], gint np )
     widget = base_widget_from_id(value_get_string(p[0]));
   }
 
-  widget = widget? widget : vm->widget;
-  win = IS_TASKBAR_ITEM(widget)? flow_item_get_source(widget) : vm->win;
-  state = action_state_build(vm->widget, vm->win);
+  widget = vm->widget;
+  win = vm->win;
+  state = vm->wstate;
+  vm->widget = widget? widget : vm->widget;
+  vm->win = IS_TASKBAR_ITEM(widget)? flow_item_get_source(widget) : vm->win;
+  vm->wstate = action_state_build(vm->widget, vm->win);
 
-  vm_run_user_defined(value_get_string(p[np-1]), widget, vm->event, win,
-      &state);
+  if( (func = vm_func_lookup(value_get_string(p[np-1]))) &&
+      (func->flags & VM_FUNC_USERDEFINED) )
+    vm_function_call(vm, func->ptr.code);
+
+  vm->widget = widget;
+  vm->win = win;
+  vm->wstate = state;
 
   return value_na;
 }
