@@ -492,6 +492,17 @@ static value_t expr_ident ( vm_t *vm, value_t p[], int np )
   return result;
 }
 
+static value_t action_gettext ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np_range(vm, np, 1, 2, "GT");
+  vm_param_check_string(vm, p, 0, "GT");
+  if(np==2)
+    vm_param_check_string(vm, p, 1, "GT");
+
+  return value_new_string((gchar *)g_dgettext(
+        np==2? value_get_string(p[1]) : "sfwbar", value_get_string(p[0])));
+}
+
 void expr_lib_init ( void )
 {
   vm_func_init();
@@ -521,4 +532,5 @@ void expr_lib_init ( void )
   vm_func_add("windowinfo", expr_lib_window_info, FALSE);
   vm_func_add("read", expr_lib_read, FALSE);
   vm_func_add("interfaceprovider", expr_iface_provider, FALSE);
+  vm_func_add("gt", action_gettext, FALSE);
 }

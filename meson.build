@@ -25,6 +25,8 @@ conf_data.set('module_dir',
     get_option('prefix') / get_option('libdir') / 'sfwbar')
 conf_data.set('conf_dir',
     get_option('prefix') / get_option('datadir') / 'sfwbar')
+conf_data.set('locale_dir',
+    get_option('prefix') / get_option('datadir') / 'locale')
 configure_file(input: 'meson.h.meson', output: 'meson.h',
     configuration: conf_data )
 

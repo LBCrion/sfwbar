@@ -4,8 +4,10 @@
  */
 
 #include <glib-unix.h>
+#include <glib/gi18n.h>
 #include "sfwbar.h"
 #include "appinfo.h"
+#include "meson.h"
 #include "wayland.h"
 #include "config/config.h"
 #include "ipc/sway.h"
@@ -94,6 +96,9 @@ static void activate (GtkApplication* app, gpointer data )
   GList *clist, *iter;
 
   application = app;
+  bindtextdomain("sfwbar", LOCALE_DIR);
+  bind_textdomain_codeset("sfwbar", "UTF-8");
+  textdomain("sfwbar");
   config_init();
   expr_lib_init();
   action_lib_init();
