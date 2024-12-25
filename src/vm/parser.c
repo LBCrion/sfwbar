@@ -405,7 +405,7 @@ gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
 
 gboolean parser_block_parse ( GScanner *scanner, GByteArray *code )
 {
-  gint alen;
+  gint alen, rlen;
   static guint8 discard = EXPR_OP_DISCARD;
 
   if(!config_check_and_consume(scanner, '{'))
@@ -416,24 +416,38 @@ gboolean parser_block_parse ( GScanner *scanner, GByteArray *code )
   else
   {
     while(!config_check_and_consume(scanner, '}'))
-      if(g_scanner_peek_next_token(scanner) == G_TOKEN_IDENTIFIER &&
-        !g_ascii_strcasecmp(scanner->next_value.v_identifier, "if"))
+      if(config_check_identifier(scanner, "if"))
       {
         g_scanner_get_next_token(scanner);
-        parser_expr_parse(scanner, code);
+        if(!parser_expr_parse(scanner, code))
+          return FALSE;
         alen = parser_emit_jump(code, EXPR_OP_JZ);
-        parser_block_parse(scanner, code);
-        if(g_scanner_peek_next_token(scanner) == G_TOKEN_IDENTIFIER &&
-          !g_ascii_strcasecmp(scanner->next_value.v_identifier, "else"))
+        if(!parser_block_parse(scanner, code))
+          return FALSE;
+        if(config_check_identifier(scanner, "else"))
         {
           g_scanner_get_next_token(scanner);
           parser_jump_backpatch(code, alen, code->len + sizeof(gint) + 1);
           alen = parser_emit_jump(code, EXPR_OP_JMP);
-          parser_block_parse(scanner, code);
+          if(!parser_block_parse(scanner, code))
+            return FALSE;
           parser_jump_backpatch(code, alen, code->len);
         }
         else
           parser_jump_backpatch(code, alen, code->len);
+      }
+      else if(config_check_identifier(scanner, "while"))
+      {
+        g_scanner_get_next_token(scanner);
+        rlen = code->len;
+        if(!parser_expr_parse(scanner, code))
+          return FALSE;
+        alen = parser_emit_jump(code, EXPR_OP_JZ);
+        if(!parser_block_parse(scanner, code))
+          return FALSE;
+        parser_emit_jump(code, EXPR_OP_JMP);
+        parser_jump_backpatch(code, code->len - sizeof(int), rlen);
+        parser_jump_backpatch(code, alen, code->len);
       }
       else if(!parser_action_parse(scanner, code))
         return FALSE;
