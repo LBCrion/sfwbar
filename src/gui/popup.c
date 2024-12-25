@@ -6,7 +6,6 @@
 #include "css.h"
 #include "window.h"
 #include "grid.h"
-#include "config.h"
 #include "basewidget.h"
 #include "popup.h"
 #include "bar.h"

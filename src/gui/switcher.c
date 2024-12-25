@@ -11,8 +11,8 @@
 #include "switcher.h"
 #include "wintree.h"
 #include "pager.h"
-#include "config.h"
 #include "bar.h"
+#include "config/config.h"
 
 G_DEFINE_TYPE_WITH_CODE (Switcher, switcher, FLOW_GRID_TYPE,
     G_ADD_PRIVATE (Switcher))

@@ -5,7 +5,6 @@
 
 #include <glib-unix.h>
 #include <gtk-layer-shell.h>
-#include "config.h"
 #include "window.h"
 #include "meson.h"
 #include "trigger.h"

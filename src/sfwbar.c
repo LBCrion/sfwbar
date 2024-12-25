@@ -7,7 +7,7 @@
 #include "sfwbar.h"
 #include "appinfo.h"
 #include "wayland.h"
-#include "config.h"
+#include "config/config.h"
 #include "ipc/sway.h"
 #include "gui/basewidget.h"
 #include "gui/monitor.h"

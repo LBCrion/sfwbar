@@ -10,7 +10,7 @@
 #include "taskbarshell.h"
 #include "taskbar.h"
 #include "wintree.h"
-#include "config.h"
+#include "config/config.h"
 #include "vm/vm.h"
 
 G_DEFINE_TYPE_WITH_CODE (Taskbar, taskbar, FLOW_GRID_TYPE,

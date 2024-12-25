@@ -3,12 +3,12 @@
  * Copyright 2023- sfwbar maintainers
  */
 
-#include "config.h"
 #include "action.h"
 #include "module.h"
 #include "client.h"
 #include "trigger.h"
 #include "appinfo.h"
+#include "config/config.h"
 #include "gui/bar.h"
 #include "gui/basewidget.h"
 #include "gui/menu.h"

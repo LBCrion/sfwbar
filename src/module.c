@@ -4,10 +4,10 @@
  */
 
 #include <gmodule.h>
-#include "config.h"
 #include "meson.h"
 #include "module.h"
 #include "trigger.h"
+#include "config/config.h"
 #include "util/string.h"
 #include "vm/expr.h"
 #include "vm/vm.h"

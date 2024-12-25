@@ -4,12 +4,12 @@
  */
 
 #include "css.h"
-#include "flowgrid.h"
-#include "basewidget.h"
-#include "taskbarpopup.h"
-#include "config.h"
+#include "gui/flowgrid.h"
+#include "gui/basewidget.h"
+#include "gui/taskbarpopup.h"
+#include "config/config.h"
 #include "window.h"
-#include "bar.h"
+#include "gui/bar.h"
 
 G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, BASE_WIDGET_TYPE,
     G_ADD_PRIVATE(FlowGrid))

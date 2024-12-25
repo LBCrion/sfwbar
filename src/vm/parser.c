@@ -1,7 +1,7 @@
 
+#include "config/config.h"
 #include "util/string.h"
 #include "vm/vm.h"
-#include "config.h"
 
 static GHashTable *macros;
 

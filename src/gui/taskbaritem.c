@@ -13,7 +13,7 @@
 #include "pager.h"
 #include "bar.h"
 #include "wintree.h"
-#include "config.h"
+#include "config/config.h"
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarItem, taskbar_item, FLOW_ITEM_TYPE,
     G_ADD_PRIVATE (TaskbarItem))

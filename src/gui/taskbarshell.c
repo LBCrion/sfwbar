@@ -10,7 +10,7 @@
 #include "taskbarshell.h"
 #include "taskbar.h"
 #include "wintree.h"
-#include "config.h"
+#include "config/config.h"
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarShell, taskbar_shell, TASKBAR_TYPE,
     G_ADD_PRIVATE (TaskbarShell))

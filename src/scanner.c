@@ -7,8 +7,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <glob.h>
-#include "config.h"
 #include "client.h"
+#include "config/config.h"
 #include "util/json.h"
 #include "util/string.h"
 #include "vm/expr.h"
