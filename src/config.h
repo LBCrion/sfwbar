@@ -6,6 +6,9 @@
 
 #define config_lookup_key(x,y) GPOINTER_TO_INT(config_lookup_ptr(x,y))
 #define config_lookup_next_key(x,y) GPOINTER_TO_INT(config_lookup_next_ptr(x,y))
+#define config_check_identifier(x,y) \
+  (g_scanner_peek_next_token(x)==G_TOKEN_IDENTIFIER && \
+   !g_ascii_strcasecmp(x->next_value.v_identifier,y))
 
 enum ConfigSequenceType {
   SEQ_OPT,
