@@ -499,8 +499,8 @@ static value_t action_gettext ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 1, "GT");
 
-  return value_new_string((gchar *)g_dgettext(
-        np==2? value_get_string(p[1]) : "sfwbar", value_get_string(p[0])));
+  return value_new_string(g_strdup(g_dgettext(
+        np==2? value_get_string(p[1]) : "sfwbar", value_get_string(p[0]))));
 }
 
 void expr_lib_init ( void )
