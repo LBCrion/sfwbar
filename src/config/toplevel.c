@@ -253,7 +253,7 @@ void config_module ( GScanner *scanner )
 
 GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
 {
-  scanner->user_data = NULL;
+  GtkWidget *layout = NULL;
 
   while(g_scanner_peek_next_token(scanner) != G_TOKEN_EOF)
   {
@@ -268,7 +268,7 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
         config_scanner(scanner);
         break;
       case G_TOKEN_LAYOUT:
-        config_layout(scanner, container);
+        layout = config_layout(scanner, container);
         break;
       case G_TOKEN_POPUP:
         config_popup(scanner);
@@ -333,5 +333,5 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
         break;
     }
   }
-  return scanner->user_data;
+  return layout;
 }

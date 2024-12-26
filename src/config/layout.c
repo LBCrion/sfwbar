@@ -450,23 +450,21 @@ void config_widget ( GScanner *scanner, GtkWidget *widget )
   }
 }
 
-void config_layout ( GScanner *scanner, GtkWidget *container )
+GtkWidget *config_layout ( GScanner *scanner, GtkWidget *container )
 {
   GtkWidget *layout;
 
   scanner->max_parse_errors = FALSE;
   if(container)
-  {
-    if(!scanner->user_data)
-      scanner->user_data = grid_new();
-    layout = scanner->user_data;
-  }
-  else if(config_check_and_consume(scanner, G_TOKEN_STRING))
-    layout = bar_grid_from_name(scanner->value.v_string);
+    layout = grid_new();
   else
-    layout = bar_grid_from_name(NULL);
+    layout = bar_grid_from_name(
+        config_check_and_consume(scanner, G_TOKEN_STRING)?
+        scanner->value.v_string : NULL);
 
   config_widget(scanner, layout);
+
+  return layout;
 }
 
 void config_popup ( GScanner *scanner )

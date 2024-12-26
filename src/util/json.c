@@ -289,7 +289,6 @@ struct json_object *jpath_parse ( gchar *path, struct json_object *obj )
   scanner->config->numbers_2_int = 1;
   scanner->config->identifier_2_string = 1;
   scanner->input_name = path;
-  scanner->user_data = path;
   g_scanner_input_text(scanner, path, strlen(path));
 
   if(g_scanner_get_next_token(scanner)!=G_TOKEN_CHAR)
