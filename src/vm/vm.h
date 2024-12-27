@@ -13,7 +13,12 @@ enum expr_instruction_t {
   EXPR_OP_CACHED,
   EXPR_OP_VARIABLE,
   EXPR_OP_FUNCTION,
-  EXPR_OP_DISCARD
+  EXPR_OP_DISCARD,
+  EXPR_OP_LOCAL,
+  EXPR_OP_ASSIGN,
+  EXPR_OP_FP_PUSH,
+  EXPR_OP_FP_POP,
+  EXPR_OP_RETURN
 };
 
 enum vm_func_flags_t {
@@ -27,6 +32,7 @@ typedef struct {
   gsize len;
   GArray *stack;
   GPtrArray *pstack;
+  GArray *fp;
   gint max_stack;
   gboolean use_cached;
   guint16 wstate;

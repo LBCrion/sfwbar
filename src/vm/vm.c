@@ -143,7 +143,7 @@ value_t vm_function_call ( vm_t *vm, GBytes *code )
   vm->len = saved_len;
   vm_stack_unwind(vm, saved_stack);
 
-  return vm_pop(vm);
+  return value_na;
 }
 
 static gboolean vm_function ( vm_t *vm )
@@ -155,6 +155,7 @@ static gboolean vm_function ( vm_t *vm )
 
   if(np>vm->stack->len)
     return FALSE;
+
   memcpy(&func, vm->ip+2, sizeof(gpointer));
   if(!(func->flags & VM_FUNC_USERDEFINED) && func->ptr.function)
   {
@@ -180,6 +181,7 @@ static gboolean vm_function ( vm_t *vm )
     v1 = vm_pop(vm);
     value_free(v1);
   }
+
   vm_push(vm, result);
 
   return TRUE;
@@ -197,6 +199,45 @@ static void vm_variable ( vm_t *vm )
   vm_push(vm, value);
   g_ptr_array_add(vm->pstack, vm->ip);
   vm->ip += sizeof(gpointer);
+}
+
+static void vm_local ( vm_t *vm )
+{
+  value_t v1;
+  guint16 scope, pos;
+
+  memcpy(&scope, vm->ip+1, sizeof(guint16));
+  memcpy(&pos, vm->ip+sizeof(guint16)+1, sizeof(guint16));
+
+
+  if(vm->fp->len <= scope)
+  {
+    vm_push(vm, value_na);
+    g_ptr_array_add(vm->pstack, vm->ip);
+    return;
+  }
+  v1 = ((value_t *)(vm->stack->data))
+    [g_array_index(vm->fp, gint, vm->fp->len-1-scope)+pos-1];
+  if(value_is_string(v1))
+    v1.value.string = g_strdup(v1.value.string);
+
+  vm_push(vm, v1);
+  g_ptr_array_add(vm->pstack, vm->ip);
+  vm->ip += sizeof(guint16)*2;
+}
+
+static void vm_assign ( vm_t *vm )
+{
+  value_t v1;
+  guint16 scope, pos;
+
+  memcpy(&scope, vm->ip+1, sizeof(guint16));
+  memcpy(&pos, vm->ip+sizeof(guint16)+1, sizeof(guint16));
+
+  v1 = vm_pop(vm);
+  ((value_t *)(vm->stack->data))
+    [g_array_index(vm->fp, gint, vm->fp->len-1-scope)+pos-1] = v1;
+  vm->ip += sizeof(guint16)*2;
 }
 
 static void vm_immediate ( vm_t *vm )
@@ -233,7 +274,9 @@ static value_t vm_run ( vm_t *vm )
         MAX(1, vm->expr? vm->expr->stack_depth : 1));
   if(!vm->pstack)
     vm->pstack = g_ptr_array_sized_new(
-        MAX(1, vm->expr? vm->expr->stack_depth: 1));
+        MAX(1, vm->expr? vm->expr->stack_depth : 1));
+  if(!vm->fp)
+    vm->fp = g_array_new(FALSE, FALSE, sizeof(gint));
 
   for(vm->ip = vm->code; (vm->ip-vm->code)<vm->len; vm->ip++)
   {
@@ -244,8 +287,19 @@ static value_t vm_run ( vm_t *vm )
       vm->use_cached = *(++vm->ip);
     else if(*vm->ip == EXPR_OP_VARIABLE)
       vm_variable(vm);
+    else if(*vm->ip == EXPR_OP_LOCAL)
+      vm_local(vm);
+    else if(*vm->ip == EXPR_OP_ASSIGN)
+      vm_assign(vm);
     else if(*vm->ip == EXPR_OP_FUNCTION)
       vm_function(vm);
+    else if(*vm->ip == EXPR_OP_FP_PUSH)
+      g_array_append_val(vm->fp, vm->stack->len);
+    else if(*vm->ip == EXPR_OP_FP_POP)
+    {
+      vm_stack_unwind(vm, g_array_index(vm->fp, gint, vm->fp->len-1));
+      g_array_remove_index_fast(vm->fp, vm->fp->len-1);
+    }
     else if(*vm->ip == EXPR_OP_JMP)
     {
       memcpy(&jmp, vm->ip+1, sizeof(gint));
