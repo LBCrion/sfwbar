@@ -25,15 +25,25 @@ gboolean config_action ( GScanner *scanner, GBytes **action_dst )
 
 GtkWidget *config_menu_item ( GScanner *scanner )
 {
-  gchar *label, *id;
+  gchar *id;
   GBytes *action;
+  GByteArray *label;
+  expr_cache_t *expr;
   GtkWidget *item;
 
+  if(!config_expect_token(scanner, '(', "missing '(' after 'item'"))
+    return NULL;
+
+  label = g_byte_array_new();
+  if(!parser_expr_parse(scanner, label))
+  {
+    g_byte_array_unref(label);
+    return NULL;
+  }
+
   config_parse_sequence(scanner,
-      SEQ_REQ, '(', NULL, NULL, "missing '(' after 'item'",
-      SEQ_REQ, G_TOKEN_STRING, NULL, &label, "missing label in 'item'",
       SEQ_REQ, ',', NULL, NULL, "missing ',' in 'item'",
-      SEQ_REQ,  -2, config_action, &action, NULL,
+      SEQ_REQ, -2, config_action, &action, NULL,
       SEQ_OPT, ',', NULL, NULL, NULL,
       SEQ_CON, G_TOKEN_STRING, NULL, &id, "missing id in 'item'",
       SEQ_REQ, ')', NULL, NULL, "missing ')' after 'item'",
@@ -41,11 +51,17 @@ GtkWidget *config_menu_item ( GScanner *scanner )
       SEQ_END);
 
   if(!scanner->max_parse_errors && label && action)
-    item = menu_item_new(label, action, id);
+  {
+    item = menu_item_new("", action, id);
+    expr = expr_cache_new();
+    expr->code = g_byte_array_free_to_bytes(label);
+    expr->eval = TRUE;
+    g_object_set_data_full(G_OBJECT(item), "label", expr,
+        (GDestroyNotify)expr_cache_free);
+  }
   else
     item = NULL;
 
-  g_free(label);
   g_free(id);
 
   return item;

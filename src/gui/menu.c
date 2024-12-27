@@ -9,6 +9,7 @@
 #include "scaleimage.h"
 #include "popup.h"
 #include "util/string.h"
+#include "vm/vm.h"
 
 static GHashTable *menus, *menu_items;
 
@@ -105,6 +106,38 @@ static void menu_popdown_cb ( GtkWidget *widget, GtkWidget *menu )
   gtk_menu_popdown(GTK_MENU(menu));
 }
 
+static void menu_set_names ( GtkWidget *menu );
+static void menu_item_set_name ( GtkWidget *item, void *d )
+{
+  expr_cache_t *expr;
+  GtkWidget *sub;
+  gchar *text, *icon;
+
+  if(!GTK_IS_MENU_ITEM(item))
+    return;
+
+  if( (expr = g_object_get_data(G_OBJECT(item), "label")) )
+  {
+    if(expr_cache_eval(expr))
+    {
+      if( (icon = strchr(expr->cache, '%')) )
+        text = g_strndup(expr->cache, icon-expr->cache);
+      else
+        text = g_strdup(expr->cache);
+      menu_item_update(item, text, icon);
+      g_free(text);
+    }
+  }
+
+  if( (sub=gtk_menu_item_get_submenu(GTK_MENU_ITEM(item))) )
+    menu_set_names(sub);
+}
+
+static void menu_set_names ( GtkWidget *menu )
+{
+  gtk_container_foreach(GTK_CONTAINER(menu), menu_item_set_name, NULL);
+}
+
 void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
     gpointer wid, guint16 *state )
 {
@@ -113,6 +146,8 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
 
   if(!menu || !widget)
     return;
+
+  menu_set_names(menu);
 
   if(state)
     g_object_set_data( G_OBJECT(menu), "state", GUINT_TO_POINTER(*state) );
