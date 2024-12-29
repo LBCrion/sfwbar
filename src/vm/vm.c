@@ -5,7 +5,7 @@
 #include "gui/taskbaritem.h"
 
 const value_t value_na = { .type = EXPR_TYPE_NA };
-static value_t vm_run ( vm_t *vm );
+static value_t vm_run ( vm_t *vm, guint8 np );
 
 static void vm_push ( vm_t *vm, value_t val )
 {
@@ -110,16 +110,7 @@ static gboolean vm_op_binary ( vm_t *vm )
   return TRUE;
 }
 
-gint expr_vm_get_func_params ( vm_t *vm, value_t *params[] )
-{
-  guint8 np = *(vm->ip+1);
-
-  *params = (value_t *)vm->stack->data + vm->stack->len - np;
-
-  return np;
-}
-
-value_t vm_function_call ( vm_t *vm, GBytes *code )
+value_t vm_function_call ( vm_t *vm, GBytes *code, guint8 np )
 {
   value_t v1;
   guint8 *saved_code, *saved_ip;
@@ -134,7 +125,7 @@ value_t vm_function_call ( vm_t *vm, GBytes *code )
   saved_stack = vm->stack->len;
 
   vm->code = (guint8 *)g_bytes_get_data(code, &vm->len);
-  vm_run(vm);
+  vm_run(vm, np);
 
   if(vm->expr)
     vm->expr->vstate = TRUE;
@@ -167,7 +158,7 @@ static gboolean vm_function ( vm_t *vm )
       vm->expr->vstate |= !(func->flags & VM_FUNC_DETERMINISTIC);
   }
   else if(func->flags & VM_FUNC_USERDEFINED)
-    result = vm_function_call(vm, func->ptr.code);
+    result = vm_function_call(vm, func->ptr.code, np);
   else
     result = value_na;
 
@@ -206,39 +197,29 @@ static void vm_variable ( vm_t *vm )
 static void vm_local ( vm_t *vm )
 {
   value_t v1;
-  guint16 scope, pos;
+  guint16 pos;
 
-  memcpy(&scope, vm->ip+1, sizeof(guint16));
-  memcpy(&pos, vm->ip+sizeof(guint16)+1, sizeof(guint16));
+  memcpy(&pos, vm->ip+1, sizeof(guint16));
 
-  if(vm->fp->len <= scope)
-  {
-    vm_push(vm, value_na);
-    g_ptr_array_add(vm->pstack, vm->ip);
-    return;
-  }
-  v1 = ((value_t *)(vm->stack->data))
-    [g_array_index(vm->fp, gint, vm->fp->len-1-scope)+pos-1];
+  v1 = ((value_t *)(vm->stack->data))[vm->fp+pos-1];
   if(value_is_string(v1))
     v1.value.string = g_strdup(v1.value.string);
 
   vm_push(vm, v1);
   g_ptr_array_add(vm->pstack, vm->ip);
-  vm->ip += sizeof(guint16)*2;
+  vm->ip += sizeof(guint16);
 }
 
 static void vm_assign ( vm_t *vm )
 {
   value_t v1;
-  guint16 scope, pos;
+  guint16 pos;
 
-  memcpy(&scope, vm->ip+1, sizeof(guint16));
-  memcpy(&pos, vm->ip+sizeof(guint16)+1, sizeof(guint16));
+  memcpy(&pos, vm->ip+1, sizeof(guint16));
 
   v1 = vm_pop(vm);
-  ((value_t *)(vm->stack->data))
-    [g_array_index(vm->fp, gint, vm->fp->len-1-scope)+pos-1] = v1;
-  vm->ip += sizeof(guint16)*2;
+  ((value_t *)(vm->stack->data))[vm->fp+pos-1] = v1;
+  vm->ip += sizeof(guint16)*1;
 }
 
 static void vm_immediate ( vm_t *vm )
@@ -260,11 +241,10 @@ static void vm_immediate ( vm_t *vm )
   vm_push(vm, v1);
 }
 
-static value_t vm_run ( vm_t *vm )
+static value_t vm_run ( vm_t *vm, guint8 np )
 {
-  GArray *saved_fp;
   value_t v1;
-  gint jmp;
+  gint jmp, saved_fp;
 
   if(!vm->code)
     return value_na;
@@ -279,8 +259,7 @@ static value_t vm_run ( vm_t *vm )
         MAX(1, vm->expr? vm->expr->stack_depth : 1));
 
   saved_fp = vm->fp;
-  vm->fp = g_array_new(FALSE, FALSE, sizeof(gint));
-  g_array_append_val(vm->fp, vm->stack->len);
+  vm->fp = vm->stack->len - np;
 
   for(vm->ip = vm->code; (vm->ip-vm->code)<vm->len; vm->ip++)
   {
@@ -299,13 +278,6 @@ static value_t vm_run ( vm_t *vm )
       break;
     else if(*vm->ip == EXPR_OP_FUNCTION)
       vm_function(vm);
-    else if(*vm->ip == EXPR_OP_FP_PUSH)
-      g_array_append_val(vm->fp, vm->stack->len);
-    else if(*vm->ip == EXPR_OP_FP_POP)
-    {
-      vm_stack_unwind(vm, g_array_index(vm->fp, gint, vm->fp->len-1));
-      g_array_remove_index_fast(vm->fp, vm->fp->len-1);
-    }
     else if(*vm->ip == EXPR_OP_JMP)
     {
       memcpy(&jmp, vm->ip+1, sizeof(gint));
@@ -347,8 +319,8 @@ static value_t vm_run ( vm_t *vm )
     }
   }
 
-  g_array_free(vm->fp, TRUE);
   vm->fp = saved_fp;
+
   return value_na;
 }
 
@@ -390,7 +362,7 @@ value_t vm_expr_eval ( expr_cache_t *expr )
   vm->expr = expr;
   vm->wstate = action_state_build(vm->widget, vm->win);
 
-  vm_run(vm);
+  vm_run(vm, 0);
 
   return vm_free(vm);
 }
@@ -409,7 +381,7 @@ void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
   vm->event = event;
   vm->wstate = state? *state : action_state_build(vm->widget, vm->win);
 
-  vm_run(vm);
+  vm_run(vm, 0);
   v1 = vm_free(vm);
   value_free(v1);
 }

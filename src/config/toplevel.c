@@ -15,7 +15,7 @@ gboolean config_action ( GScanner *scanner, GBytes **action_dst )
   GByteArray *code;
 
   code = g_byte_array_new();
-  if(parser_block_parse(scanner, code))
+  if(parser_block_parse(scanner, code, TRUE))
     *action_dst = g_byte_array_free_to_bytes(code);
   else
     g_byte_array_unref(code);
@@ -175,6 +175,12 @@ void config_function ( GScanner *scanner )
   gchar *name;
   GByteArray *code;
 
+  if(g_scanner_peek_next_token(scanner)==G_TOKEN_IDENTIFIER)
+  {
+    parser_function_parse(scanner);
+    return;
+  }
+
   config_parse_sequence(scanner,
       SEQ_REQ, '(', NULL, NULL, "missing '(' after 'function'",
       SEQ_REQ, G_TOKEN_STRING, NULL ,&name, "missing function name",
@@ -184,7 +190,7 @@ void config_function ( GScanner *scanner )
   if(!scanner->max_parse_errors)
   {
     code = g_byte_array_new();
-    if(parser_block_parse(scanner, code))
+    if(parser_block_parse(scanner, code, TRUE))
       vm_func_add_user(name, g_byte_array_free_to_bytes(code));
     else
       g_byte_array_unref(code);

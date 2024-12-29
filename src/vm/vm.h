@@ -16,8 +16,6 @@ enum expr_instruction_t {
   EXPR_OP_DISCARD,
   EXPR_OP_LOCAL,
   EXPR_OP_ASSIGN,
-  EXPR_OP_FP_PUSH,
-  EXPR_OP_FP_POP,
   EXPR_OP_RETURN
 };
 
@@ -30,9 +28,9 @@ typedef struct {
   guint8 *ip;
   guint8 *code;
   gsize len;
+  gsize fp;
   GArray *stack;
   GPtrArray *pstack;
-  GArray *fp;
   gint max_stack;
   gboolean use_cached;
   guint16 wstate;
@@ -59,18 +57,18 @@ typedef struct {
 #define vm_param_check_numeric(vm, p, n, fname) { if(!value_like_numeric(p[n])) { return value_na; } }
 
 GBytes *parser_expr_compile ( gchar *expr );
-gboolean parser_block_parse ( GScanner *scanner, GByteArray *code );
+gboolean parser_block_parse ( GScanner *scanner, GByteArray *, gboolean vars );
 gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code );
 gboolean parser_macro_add ( GScanner *scanner );
+gboolean parser_function_parse( GScanner *scanner );
 const gchar *parser_identifier_lookup ( gchar *identifier );
+
 value_t vm_expr_eval ( expr_cache_t *expr );
-value_t vm_function_call ( vm_t *vm, GBytes *code );
+value_t vm_function_call ( vm_t *vm, GBytes *code, guint8 np );
 void vm_run_action ( GBytes *code, GtkWidget *w, GdkEvent *e, window_t *win,
     guint16 *s);
 void vm_run_user_defined ( gchar *action, GtkWidget *widget, GdkEvent *event,
     window_t *win, guint16 *state );
-gchar *expr_vm_result_to_string ( vm_t *vm );
-gint expr_vm_get_func_params ( vm_t *vm, value_t *params[] );
 
 void vm_func_init ( void );
 void vm_func_add ( gchar *name, vm_func_t func, gboolean deterministic );

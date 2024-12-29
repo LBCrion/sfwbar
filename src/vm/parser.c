@@ -3,8 +3,6 @@
 #include "util/string.h"
 #include "vm/vm.h"
 
-#define VAR_LIST(x) ((GList *)x->user_data)
-
 static GHashTable *macros;
 
 static gint parser_emit_jump ( GByteArray *code, guint8 op )
@@ -17,15 +15,14 @@ static gint parser_emit_jump ( GByteArray *code, guint8 op )
   return code->len - sizeof(gint);
 }
 
-static void parser_emit_local ( GByteArray *code, guint16 scope, guint16 pos,
+static void parser_emit_local ( GByteArray *code, guint16 pos,
     guint8 op )
 {
-  guint8 data[sizeof(guint16)*2+1];
+  guint8 data[sizeof(guint16)+1];
 
   data[0] = op;
-  memcpy(data+1, &scope, sizeof(guint16));
-  memcpy(data+sizeof(guint16)+1, &pos, sizeof(guint16));
-  g_byte_array_append(code, data, sizeof(guint16)*2+1);
+  memcpy(data+1, &pos, sizeof(guint16));
+  g_byte_array_append(code, data, sizeof(guint16)+1);
 }
 
 static void parser_emit_string ( GByteArray *code, gchar *str )
@@ -76,20 +73,13 @@ const gchar *parser_identifier_lookup ( gchar *identifier )
   return result;
 }
 
-static gboolean parser_local_lookup ( GScanner *scanner, guint16 *scope,
+static gboolean parser_local_lookup ( GScanner *scanner,
     guint16 *pos )
 {
-  GList *iter;
-
-  *scope = 0;
-  for(iter=scanner->user_data; iter; iter=g_list_next(iter))
-    if( (*pos = GPOINTER_TO_INT(g_hash_table_lookup(iter->data,
-              scanner->value.v_identifier))) )
-      break;
-    else
-      *scope = *scope + 1;
-
-  return !!iter;
+  if(!scanner->user_data)
+    return FALSE;
+  return !!(*pos = GPOINTER_TO_INT(g_hash_table_lookup(
+          scanner->user_data, scanner->value.v_identifier)));
 }
 
 static gboolean parser_cached ( GScanner *scanner, GByteArray *code )
@@ -186,11 +176,11 @@ static void parser_variable ( GScanner *scanner, GByteArray *code )
 {
   guint8 data[sizeof(gpointer)+1];
   gconstpointer ptr;
-  guint16 scope, pos;
+  guint16 pos;
 
-  if(parser_local_lookup(scanner, &scope, &pos))
+  if(parser_local_lookup(scanner, &pos))
   {
-    parser_emit_local(code, scope, pos, EXPR_OP_LOCAL);
+    parser_emit_local(code, pos, EXPR_OP_LOCAL);
     return;
   }
 
@@ -359,9 +349,9 @@ gboolean parser_macro_add ( GScanner *scanner )
 
 static gboolean parser_assign_parse ( GScanner *scanner, GByteArray *code )
 {
-  guint16 scope, pos;
+  guint16 pos;
 
-  if(!parser_local_lookup(scanner, &scope, &pos))
+  if(!parser_local_lookup(scanner, &pos))
     return FALSE;
   
   g_scanner_get_next_token(scanner); // consume '='
@@ -369,7 +359,7 @@ static gboolean parser_assign_parse ( GScanner *scanner, GByteArray *code )
   if(!parser_expr_parse(scanner, code))
     return FALSE;
 
-  parser_emit_local(code, scope, pos, EXPR_OP_ASSIGN);
+  parser_emit_local(code, pos, EXPR_OP_ASSIGN);
   return TRUE;
 }
 
@@ -461,6 +451,28 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
   return TRUE;
 }
 
+static gboolean parser_var_decl_parse ( GScanner *scanner, GByteArray *code )
+{
+  guint16 pos = g_hash_table_size(scanner->user_data) + 1;
+
+  while(config_check_identifier(scanner, "var"))
+  {
+    g_scanner_get_next_token(scanner);
+    do
+    {
+      if(!config_check_and_consume(scanner, G_TOKEN_IDENTIFIER))
+        return FALSE;
+      parser_emit_na(code);
+      g_hash_table_insert(scanner->user_data,
+          g_strdup(scanner->value.v_identifier), GUINT_TO_POINTER(pos++));
+
+    } while(config_check_and_consume(scanner, ','));
+    config_check_and_consume(scanner, ';');
+  }
+
+  return TRUE;
+}
+
 static gboolean parser_block_parse_in ( GScanner *scanner, GByteArray *code )
 {
   guint8 return_op = EXPR_OP_RETURN;
@@ -473,14 +485,14 @@ static gboolean parser_block_parse_in ( GScanner *scanner, GByteArray *code )
       if(!parser_expr_parse(scanner, code))
         return FALSE;
       alen = parser_emit_jump(code, EXPR_OP_JZ);
-      if(!parser_block_parse(scanner, code))
+      if(!parser_block_parse(scanner, code, FALSE))
         return FALSE;
       if(config_check_identifier(scanner, "else"))
       {
         g_scanner_get_next_token(scanner);
         parser_jump_backpatch(code, alen, code->len + sizeof(gint) + 1);
         alen = parser_emit_jump(code, EXPR_OP_JMP);
-        if(!parser_block_parse(scanner, code))
+        if(!parser_block_parse(scanner, code, FALSE))
           return FALSE;
         parser_jump_backpatch(code, alen, code->len);
       }
@@ -494,7 +506,7 @@ static gboolean parser_block_parse_in ( GScanner *scanner, GByteArray *code )
       if(!parser_expr_parse(scanner, code))
         return FALSE;
       alen = parser_emit_jump(code, EXPR_OP_JZ);
-      if(!parser_block_parse(scanner, code))
+      if(!parser_block_parse(scanner, code, FALSE))
         return FALSE;
       parser_emit_jump(code, EXPR_OP_JMP);
       parser_jump_backpatch(code, code->len - sizeof(int), rlen);
@@ -507,56 +519,84 @@ static gboolean parser_block_parse_in ( GScanner *scanner, GByteArray *code )
         parser_emit_na(code);
       else
       {
-        parser_expr_parse(scanner, code);
+        if(!parser_expr_parse(scanner, code))
+          return FALSE;
         config_check_and_consume(scanner, ';');
       }
       g_byte_array_append(code, &return_op, 1);
     }
-    else if(!parser_block_parse(scanner, code))
+    else if(!parser_block_parse(scanner, code, FALSE))
       return FALSE;
 
   return TRUE;
 }
 
-gboolean parser_block_parse ( GScanner *scanner, GByteArray *code )
+gboolean parser_block_parse ( GScanner *scanner, GByteArray *code,
+    gboolean add_vars )
 {
-  static guint8 fp_push = EXPR_OP_FP_PUSH, fp_pop = EXPR_OP_FP_POP;
   gboolean ret;
-  guint16 pos = 1;
 
   if(!config_check_and_consume(scanner, '{'))
     return parser_action_parse(scanner, code);
 
-  scanner->user_data = g_list_prepend(VAR_LIST(scanner),
-      g_hash_table_new_full( (GHashFunc)str_nhash, (GEqualFunc)str_nequal,
-        g_free, NULL));
+  scanner->user_data = scanner->user_data? scanner->user_data :
+    g_hash_table_new_full( (GHashFunc)str_nhash, (GEqualFunc)str_nequal,
+        g_free, NULL);
 
-  g_byte_array_append(code, &fp_push, 1);
-
-  while(config_check_identifier(scanner, "var"))
-  {
-    g_scanner_get_next_token(scanner);
-    do
-    {
-      if(!config_check_and_consume(scanner, G_TOKEN_IDENTIFIER))
-        return FALSE;
-      parser_emit_na(code);
-      g_hash_table_insert(VAR_LIST(scanner)->data,
-          g_strdup(scanner->value.v_identifier), GUINT_TO_POINTER(pos++));
-
-    } while(config_check_and_consume(scanner, ','));
-    config_check_and_consume(scanner, ';');
-  }
+  if(add_vars)
+    parser_var_decl_parse(scanner, code);
 
   ret = parser_block_parse_in(scanner, code);
 
-  if(scanner->user_data)
-  {
-    g_hash_table_destroy(VAR_LIST(scanner)->data);
-    scanner->user_data = g_list_remove(VAR_LIST(scanner),
-        VAR_LIST(scanner)->data);
-  }
-  g_byte_array_append(code, &fp_pop, 1);
+  if(add_vars)
+    g_clear_pointer(&scanner->user_data, g_hash_table_destroy);
 
   return ret;
+}
+
+gboolean parser_function_parse( GScanner *scanner )
+{
+  GByteArray *acode;
+  GHashTable *inputs;
+  gchar *name;
+  guint16 n = 1;
+
+  if(!config_check_and_consume(scanner, G_TOKEN_IDENTIFIER))
+    return FALSE;
+
+  name = g_strdup(scanner->value.v_identifier);
+
+  if(!config_check_and_consume(scanner, '('))
+  {
+    g_free(name);
+    return FALSE;
+  }
+  inputs = g_hash_table_new_full( (GHashFunc)str_nhash, (GEqualFunc)str_nequal,
+        g_free, NULL);
+
+  while (config_check_and_consume(scanner, G_TOKEN_IDENTIFIER)) {
+      g_hash_table_insert(inputs, g_strdup(scanner->value.v_identifier),
+            GINT_TO_POINTER(n));
+    if(!config_check_and_consume(scanner, ','))
+      break;
+  }
+
+  acode = g_byte_array_new();
+  scanner->user_data = inputs;
+
+  if(!config_check_and_consume(scanner, ')'))
+   return FALSE;
+  if(
+      !parser_block_parse(scanner, acode, TRUE))
+  {
+    g_free(name);
+    g_byte_array_unref(acode);
+    return FALSE;
+  }
+
+  vm_func_add_user(name, g_byte_array_free_to_bytes(acode));
+
+  g_free(name);
+
+  return TRUE;
 }
