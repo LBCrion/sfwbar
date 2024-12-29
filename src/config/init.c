@@ -42,7 +42,7 @@ static GScannerConfig scanner_config = {
   .scan_comment_multi = 1,
 
   .scan_identifier = 1,
-  .scan_identifier_1char = 0,
+  .scan_identifier_1char = 1,
   .scan_identifier_NULL = 0,
   .scan_symbols = 1,
   .scan_binary = 0,

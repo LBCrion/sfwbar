@@ -418,7 +418,7 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
     ptr = vm_func_lookup(scanner->value.v_identifier);
   else
   {
-    g_message("action name missingi %d", scanner->next_token);
+    g_message("action name missing");
     g_scanner_get_next_token(scanner);
     return FALSE;
   }
@@ -463,6 +463,7 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
 
 static gboolean parser_block_parse_in ( GScanner *scanner, GByteArray *code )
 {
+  guint8 return_op = EXPR_OP_RETURN;
   gint alen, rlen;
 
   while(!config_check_and_consume(scanner, '}'))
@@ -499,7 +500,19 @@ static gboolean parser_block_parse_in ( GScanner *scanner, GByteArray *code )
       parser_jump_backpatch(code, code->len - sizeof(int), rlen);
       parser_jump_backpatch(code, alen, code->len);
     }
-    else if(!parser_action_parse(scanner, code))
+    else if(config_check_identifier(scanner, "return"))
+    {
+      g_scanner_get_next_token(scanner);
+      if(config_check_and_consume(scanner, ';'))
+        parser_emit_na(code);
+      else
+      {
+        parser_expr_parse(scanner, code);
+        config_check_and_consume(scanner, ';');
+      }
+      g_byte_array_append(code, &return_op, 1);
+    }
+    else if(!parser_block_parse(scanner, code))
       return FALSE;
 
   return TRUE;

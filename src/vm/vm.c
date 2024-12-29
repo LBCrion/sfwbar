@@ -121,6 +121,7 @@ gint expr_vm_get_func_params ( vm_t *vm, value_t *params[] )
 
 value_t vm_function_call ( vm_t *vm, GBytes *code )
 {
+  value_t v1;
   guint8 *saved_code, *saved_ip;
   gsize saved_len, saved_stack;
 
@@ -141,9 +142,10 @@ value_t vm_function_call ( vm_t *vm, GBytes *code )
   vm->code = saved_code;
   vm->ip = saved_ip;
   vm->len = saved_len;
+  v1 = (vm->stack->len > saved_stack)? vm_pop(vm) : value_na;
   vm_stack_unwind(vm, saved_stack);
 
-  return value_na;
+  return v1;
 }
 
 static gboolean vm_function ( vm_t *vm )
@@ -209,7 +211,6 @@ static void vm_local ( vm_t *vm )
   memcpy(&scope, vm->ip+1, sizeof(guint16));
   memcpy(&pos, vm->ip+sizeof(guint16)+1, sizeof(guint16));
 
-
   if(vm->fp->len <= scope)
   {
     vm_push(vm, value_na);
@@ -261,6 +262,7 @@ static void vm_immediate ( vm_t *vm )
 
 static value_t vm_run ( vm_t *vm )
 {
+  GArray *saved_fp;
   value_t v1;
   gint jmp;
 
@@ -275,8 +277,10 @@ static value_t vm_run ( vm_t *vm )
   if(!vm->pstack)
     vm->pstack = g_ptr_array_sized_new(
         MAX(1, vm->expr? vm->expr->stack_depth : 1));
-  if(!vm->fp)
-    vm->fp = g_array_new(FALSE, FALSE, sizeof(gint));
+
+  saved_fp = vm->fp;
+  vm->fp = g_array_new(FALSE, FALSE, sizeof(gint));
+  g_array_append_val(vm->fp, vm->stack->len);
 
   for(vm->ip = vm->code; (vm->ip-vm->code)<vm->len; vm->ip++)
   {
@@ -291,6 +295,8 @@ static value_t vm_run ( vm_t *vm )
       vm_local(vm);
     else if(*vm->ip == EXPR_OP_ASSIGN)
       vm_assign(vm);
+    else if(*vm->ip == EXPR_OP_RETURN)
+      break;
     else if(*vm->ip == EXPR_OP_FUNCTION)
       vm_function(vm);
     else if(*vm->ip == EXPR_OP_FP_PUSH)
@@ -341,6 +347,8 @@ static value_t vm_run ( vm_t *vm )
     }
   }
 
+  g_array_free(vm->fp, TRUE);
+  vm->fp = saved_fp;
   return value_na;
 }
 
@@ -353,11 +361,8 @@ static value_t vm_free ( vm_t *vm )
     if(vm->stack->len>1)
       g_message("stack too long");
 
-    if(vm->stack->len>0)
-    {
-      vm_stack_unwind(vm, 1);
-      v1 = vm_pop(vm);
-    }
+    vm_stack_unwind(vm, 1);
+    v1 = vm->stack->len? vm_pop(vm) : value_na;
 
     if(vm->expr)
       vm->expr->stack_depth = MAX(vm->expr->stack_depth, vm->max_stack);
