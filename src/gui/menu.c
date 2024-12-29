@@ -124,7 +124,7 @@ static void menu_item_set_name ( GtkWidget *item, void *d )
         text = g_strndup(expr->cache, icon-expr->cache);
       else
         text = g_strdup(expr->cache);
-      menu_item_update(item, text, icon);
+      menu_item_update(item, text, icon?icon+1:NULL);
       g_free(text);
     }
   }
