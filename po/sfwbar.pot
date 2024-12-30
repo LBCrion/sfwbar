@@ -1,1 +1,185 @@
+# Swfbar pot file
+# Copyright (C) 2024
+# This file is distributed under the same license as the sfwbar package.
+# FIRST AUTHOR <sfslinux@gmail.com>, 2024.
+#
+#, fuzzy
+msgid ""
+msgsrt ""
+"Project-Id-Version: sfwbar\n"
+"Report-Msgid-Bugs-To: https://github.com/LBCrion/sfwbar/issues\n"
+"POT-Creation-Date: 2024-12-26 21:07+1000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: sfs linux <sfslinux@gmail.com>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
 
+#: src/config/startmenu.widget
+msgid "Application menu"
+msgsrt ""
+
+#: src/config/alsa-module.widget
+msgid "Volume"
+msgsrt ""
+
+msgid "muted"
+msgsrt ""
+
+msgid "h"
+msgsrt ""
+
+msgid "m"
+msgsrt ""
+
+msgid "Connecting"
+msgsrt ""
+
+msgid "January"
+msgsrt ""
+
+msgid "February"
+msgsrt ""
+
+msgid "March"
+msgsrt ""
+
+msgid "April"
+msgsrt ""
+
+msgid "May"
+msgsrt ""
+
+msgid "June"
+msgsrt ""
+
+msgid "July"
+msgsrt ""
+
+msgid "August"
+msgsrt ""
+
+msgid "September"
+msgsrt ""
+
+msgid "October"
+msgsrt ""
+
+msgid "November"
+msgsrt ""
+
+msgid "December"
+msgsrt ""
+
+msgid "Mo"
+msgsrt ""
+
+msgid "Tu"
+msgsrt ""
+
+msgid "We"
+msgsrt ""
+
+msgid "Th"
+msgsrt ""
+
+msgid "Fr"
+msgsrt ""
+
+msgid "Sa"
+msgsrt ""
+
+msgid "Su"
+msgsrt ""
+
+msgid "Memory"
+msgsrt ""
+
+msgid "Notification Center"
+msgsrt ""
+
+msgid "Show Desktop"
+msgsrt ""
+
+msgid "Set As Default Device"
+msgsrt ""
+
+msgid "expand/collapse channels"
+msgsrt ""
+
+msgid "route to sink"
+msgsrt ""
+
+msgid "Scanning"
+msgsrt ""
+
+msgid "Scan"
+msgsrt ""
+
+msgid "Other"
+msgsrt ""
+
+msgid "Known"
+msgsrt ""
+
+msgid "Connected"
+msgsrt ""
+
+msgid "Connect"
+msgsrt ""
+
+msgid "Disconnect"
+msgsrt ""
+
+msgid "Forget"
+msgsrt ""
+
+msgid "Known networks"
+msgsrt ""
+
+msgid "Other networks"
+msgsrt ""
+
+msgid "focus"
+msgsrt ""
+
+msgid "close"
+msgsrt ""
+
+msgid "(un)minimize"
+msgsrt ""
+
+msgid "(un)maximize"
+msgsrt ""
+
+msgid "Form"
+msgsrt ""
+
+msgid "Port"
+msgsrt ""
+
+msgid "Monitor"
+msgsrt ""
+
+msgid "sinks"
+msgsrt ""
+
+msgid "clients"
+msgsrt ""
+
+msgid  "Pair"
+msgsrt ""
+
+msgid  "Remove"
+msgsrt ""
+
+msgid  "Available devices"
+msgsrt ""
+
+msgid  "Paired devices"
+msgsrt ""
+
+msgid  "Battery"
+msgsrt ""
