@@ -821,7 +821,7 @@ Operation    Description
 ``>``        greater than
 ``>=``       greater than or equal
 ``<``        less than
-``>=``       less than or equal
+``<=``       less than or equal
 ``=``        equal
 ``Val``      convert a string into a number, the argument is a string or a
              string expression to convert.
@@ -868,6 +868,7 @@ Operation      Description
                function will return DefaultString.
 ``ReplaceAll`` Perform multiple substring replacements in a string,
                ``ReplaceAll(string, old1, new1, ... )``
+``GT``         gettext substring i.e. ``GT("msgid" [,"domain"])``
 ============== ===================================================================
 
 In addition the following query functions are supported
