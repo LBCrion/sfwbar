@@ -201,9 +201,7 @@ static void vm_local ( vm_t *vm )
 
   memcpy(&pos, vm->ip+1, sizeof(guint16));
 
-  v1 = ((value_t *)(vm->stack->data))[vm->fp+pos-1];
-  if(value_is_string(v1))
-    v1.value.string = g_strdup(v1.value.string);
+  v1 = value_dup(((value_t *)(vm->stack->data))[vm->fp+pos-1]);
 
   vm_push(vm, v1);
   g_ptr_array_add(vm->pstack, vm->ip);

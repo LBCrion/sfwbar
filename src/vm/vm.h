@@ -55,6 +55,7 @@ typedef struct {
 #define vm_param_check_np_range(vm, np, min, max, fname) { if(np<min || np>max) { return value_na; } }
 #define vm_param_check_string(vm, p, n, fname) { if(!value_like_string(p[n])) { return value_na; } }
 #define vm_param_check_numeric(vm, p, n, fname) { if(!value_like_numeric(p[n])) { return value_na; } }
+#define vm_param_check_array(vm, p, n, fname) { if(!value_is_array(p[n])) { return value_na; } }
 
 GBytes *parser_expr_compile ( gchar *expr );
 gboolean parser_block_parse ( GScanner *scanner, GByteArray *, gboolean vars );
