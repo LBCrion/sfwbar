@@ -49,7 +49,7 @@ layout {
   button {
     value = "user-desktop"
     style = "showdesktop"
-    tooltip = "Show Desktop"
+    tooltip = GT("Show Desktop")
     action = Function "target", "ShowDesktop"
   }
   taskbar "target" {

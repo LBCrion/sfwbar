@@ -19,7 +19,7 @@ Menu('XVolumeSinkMenu') {
 }"
 
 Menu('XVolumeDeviceMenu') {
-  Item("Set As Default Device",
+  Item(GT("Set As Default Device"),
       { VolumeCtl 'sink-set-default-device ' + Extract(WidgetId(), '(.*)_name') } )
 }
 
@@ -43,7 +43,7 @@ grid 'volume_section_@DEVICE_IFACE@' {
     image '@DEVICE_ID@_expand' {
       value = 'pan-end'
       style = 'volume_control_expander'
-      tooltip = 'expand/collapse channels'
+      tooltip = GT('expand/collapse channels')
       action = Function 'XVolumeToggleChannels'
       loc(2,1,1,1)
     }
@@ -61,7 +61,7 @@ grid 'volume_section_@DEVICE_IFACE@' {
             'checkbox-checked', 'checkbox')
         style = If('@DEVICE_IFACE@' = 'sink' & Volume('sink-count')>1,
             'volume_default', 'hidden')
-        tooltip = 'set as default @DEVICE_IFACE@'
+        tooltip = GT('set as default') + ' @DEVICE_IFACE@'
         trigger = 'volume'
         action = VolumeCtl '@DEVICE_IFACE@-set-default @DEVICE_ID@'
       }
@@ -69,7 +69,7 @@ grid 'volume_section_@DEVICE_IFACE@' {
         value = 'open-menu'
         style = If('@DEVICE_IFACE@' = 'client' & Volume('sink-count')>1,
             'volume_client_menu', 'hidden')
-        tooltip = 'route to sink'
+        tooltip = GT('route to sink')
         action = Menu 'XVolumeSinkMenu'
         trigger = 'volume'
       }
@@ -152,7 +152,7 @@ TriggerAction "volume-conf-removed", Function "XVolumeChannelRemove"
 PopUp "XVolumeWindow" {
   style = "volume_popup"
   label {
-    value = "sinks"
+    value = GT("sinks")
     style = If(Volume("sink-count")>0, "volume_separator", "hidden")
     trigger = "volume"
   }
@@ -160,7 +160,7 @@ PopUp "XVolumeWindow" {
     style = "volume_section"
   }
   label {
-    value = "clients"
+    value = GT("clients")
     style = If(Volume("client-count")>0, "volume_separator", "hidden")
     trigger = "volume"
   }
@@ -179,11 +179,11 @@ layout {
                 0, $XVolumeLowIcon,
                 $XVolumeMutedIcon))
     trigger = "volume"
-    tooltip = "Volume: " + Str(Volume("sink-volume"),0) + "%" +
+    tooltip = GT("Volume") + ": " + Str(Volume("sink-volume"),0) + "%" +
       If(Volume("sink-mute")," (muted)","") +
-      "\nForm: " + VolumeInfo("sink-form") +
-      "\nPort: " + VolumeInfo("sink-port") +
-      "\nMonitor: " + VolumeInfo("sink-monitor")
+      "\n" + GT("Form") + ": " + VolumeInfo("sink-form") +
+      "\n" + GT("Port") + ": " + VolumeInfo("sink-port") +
+      "\n" + GT("Monitor") + ": " + VolumeInfo("sink-monitor")
     style = If(Ident(volume),"module","hidden")
     action[RightClick] = VolumeCtl "sink-mute toggle"
     action[MiddleClick] = Exec $XPulseAction

@@ -9,8 +9,12 @@ function("ToggleMaximize") {
 }
 
 menu("winops") {
-  item("focus", Focus );
-  item("close", Close );
-  item("(un)minimize", Function "ToggleMinimize" );
-  item("(un)maximize", Function "ToggleMaximize" );
+#  item(" focus%gtk-find", Focus );
+#  item(" close%window-close-symbolic", Close );
+#  item(" (un)minimize%window-minimize-symbolic", Function "ToggleMinimize" );
+#  item(" (un)maximize%window-maximize-symbolic", Function "ToggleMaximize" );
+  item(" "+GT("focus")+"%gtk-find", Focus );
+  item(" "+GT("close")+"%window-close-symbolic", Close );
+  item(" "+GT("(un)minimize")+"%window-minimize-symbolic", Function "ToggleMinimize" );
+  item(" "+GT("(un)maximize")+"%window-maximize-symbolic", Function "ToggleMaximize" );
 }

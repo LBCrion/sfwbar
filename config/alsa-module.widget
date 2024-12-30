@@ -45,8 +45,8 @@ layout {
   button {
     value = $XAlsaIcon
     trigger = "alsa"
-    tooltip = "Volume: " + Str(XAlsaVolume,0) + "%" +
-      If(XAlsaMuted," (muted)","")
+    tooltip = GT("Volume") + ": " + Str(XAlsaVolume,0) + "%" +
+      If(XAlsaMuted," (" + GT("muted") + ")","")
     style = If(Ident(alsa),"module","hidden")
     action[Ctrl+LeftClick] = AlsaCmd "playback-mute toggle"
     action[RightClick] = PopUp "XAlsaWindow"

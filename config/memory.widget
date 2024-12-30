@@ -5,7 +5,7 @@ layout {
     interval = 1000
     style = If(XMemPresent,"memory","hidden")
     value = XMemUtilization
-    tooltip = "Memory: " + Str(XMemUtilization*100) + "%"
+    tooltip = GT("Memory") + ": " + Str(XMemUtilization*100) + "%"
     action = Exec $Term + " -e top -o %MEM"
   }
 }
