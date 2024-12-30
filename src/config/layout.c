@@ -194,6 +194,8 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         code = g_byte_array_new();
         if(parser_expr_parse(scanner, code))
           base_widget_set_style(widget, g_byte_array_free_to_bytes(code));
+        else
+          g_byte_array_free(code, TRUE);
         config_check_and_consume(scanner, ';');
         return TRUE;
       case G_TOKEN_CSS:
@@ -229,6 +231,8 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         code = g_byte_array_new();
         if(parser_expr_parse(scanner, code))
           base_widget_set_value(widget, g_byte_array_free_to_bytes(code));
+        else
+          g_byte_array_free(code, TRUE);
         config_check_and_consume(scanner, ';');
         return TRUE;
       case G_TOKEN_TOOLTIP:
@@ -237,6 +241,8 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         code = g_byte_array_new();
         if(parser_expr_parse(scanner, code))
           base_widget_set_tooltip(widget, g_byte_array_free_to_bytes(code));
+        else
+          g_byte_array_free(code, TRUE);
         config_check_and_consume(scanner, ';');
         return TRUE;
     }

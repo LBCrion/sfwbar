@@ -470,7 +470,7 @@ void base_widget_set_tooltip ( GtkWidget *self, GBytes *code )
     return;
 
   g_bytes_unref(priv->tooltip->code);
-  priv->tooltip->code = g_bytes_ref(code);
+  priv->tooltip->code = code;
   priv->tooltip->widget = self;
   priv->tooltip->eval = !!code;
 
@@ -498,7 +498,7 @@ void base_widget_set_value ( GtkWidget *self, GBytes *code )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   g_bytes_unref(priv->value->code);
-  priv->value->code = g_bytes_ref(code);
+  priv->value->code = code;
   priv->value->widget = self;
   priv->value->eval = !!code;
 
@@ -520,7 +520,7 @@ void base_widget_set_style ( GtkWidget *self, GBytes *code )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   g_bytes_unref(priv->style->code);
-  priv->style->code = g_bytes_ref(code);
+  priv->style->code = code;
   priv->style->widget = self;
   priv->style->eval = !!code;
 
