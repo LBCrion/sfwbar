@@ -1,0 +1,185 @@
+# Swfbar pot file
+# Copyright (C) 2024
+# This file is distributed under the same license as the sfwbar package.
+# FIRST AUTHOR <sfslinux@gmail.com>, 2024.
+#
+#, fuzzy
+msgid  ""
+msgstr ""
+"Project-Id-Version: sfwbar\n"
+"Report-Msgid-Bugs-To: https://github.com/LBCrion/sfwbar/issues\n"
+"POT-Creation-Date: 2024-12-26 21:07+1000\n"
+"PO-Revision-Date: 2024-12-26 21:07+1000\n"
+"Last-Translator: sfs linux <sfslinux@gmail.com>\n"
+"Language-Team: Russian <https://forum.puppyrus.org/index.php?topic=24354.0>\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/config/startmenu.widget
+msgid "Application menu"
+msgstr "Меню"
+
+#: src/config/alsa-module.widget
+msgid "Volume"
+msgstr "Громкость"
+
+msgid "muted"
+msgstr "выкл."
+
+msgid "h"
+msgstr "ч"
+
+msgid "m"
+msgstr "м"
+
+msgid "Connecting"
+msgstr "Подключение"
+
+msgid "January"
+msgstr "Январь"
+
+msgid "February"
+msgstr "Февраль"
+
+msgid "March"
+msgstr "Март"
+
+msgid "April"
+msgstr "Апрель"
+
+msgid "May"
+msgstr "Май"
+
+msgid "June"
+msgstr "Июнь"
+
+msgid "July"
+msgstr "Июль"
+
+msgid "August"
+msgstr "Август"
+
+msgid "September"
+msgstr "Сентябрь"
+
+msgid "October"
+msgstr "Октябрь"
+
+msgid "November"
+msgstr "Ноябрь"
+
+msgid "December"
+msgstr "Декабрь"
+
+msgid "Mo"
+msgstr "Пн"
+
+msgid "Tu"
+msgstr "Вт"
+
+msgid "We"
+msgstr "Ср"
+
+msgid "Th"
+msgstr "Чт"
+
+msgid "Fr"
+msgstr "Пт"
+
+msgid "Sa"
+msgstr "Сб"
+
+msgid "Su"
+msgstr "Вс"
+
+msgid "Memory"
+msgstr "Память"
+
+msgid "Notification Center"
+msgstr "Центр уведомлений"
+
+msgid "Show Desktop"
+msgstr "Показать рабочий стол"
+
+msgid "Set As Default Device"
+msgstr "По умолчанию"
+
+msgid "expand/collapse channels"
+msgstr "развернуть/свернуть каналы"
+
+msgid "route to sink"
+msgstr "переключить выход"
+
+msgid "Scanning"
+msgstr "Поиск"
+
+msgid "Scan"
+msgstr "Искать"
+
+msgid "Other"
+msgstr "Другие"
+
+msgid "Known"
+msgstr "Известные"
+
+msgid "Connected"
+msgstr "Подключено"
+
+msgid "Connect"
+msgstr "Вкл."
+
+msgid "Disconnect"
+msgstr "Выкл."
+
+msgid "Forget"
+msgstr "Забыть"
+
+msgid "Known networks"
+msgstr "Известные сети"
+
+msgid "Other networks"
+msgstr "Другие сети"
+
+msgid "focus"
+msgstr "фокус"
+
+msgid "close"
+msgstr "закрыть"
+
+msgid "(un)minimize"
+msgstr "свернуть / развернуть"
+
+msgid "(un)maximize"
+msgstr "окно / полный экран"
+
+msgid "Form"
+msgstr "Формат"
+
+msgid "Port"
+msgstr "Порт"
+
+msgid "Monitor"
+msgstr "Монитор"
+
+msgid "sinks"
+msgstr "выходы (sinks)"
+
+msgid "clients"
+msgstr "клиенты"
+
+msgid  "Pair"
+msgstr "Сопряжение"
+
+msgid  "Remove"
+msgstr "Удалить"
+
+msgid  "Available devices"
+msgstr "Доступные устройства"
+
+msgid  "Paired devices"
+msgstr "Сопряженные устройства"
+
+msgid  "Battery"
+msgstr "Батарея"

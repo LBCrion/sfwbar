@@ -57,18 +57,18 @@ Set XCalMOff = (Val(Map(Str(XCalMonth),
     "0"))+If(XCalMonth>2 & XCalYearIsLeap,1,0))%7
 
 Set XCalDate = Map(Str(XCalMonth),
-        "1", "January",
-        "2", "February",
-        "3", "March",
-        "4", "April",
-        "5", "May",
-        "6", "June",
-        "7", "July",
-        "8", "August",
-        "9", "September",
-        "10", "October",
-        "11", "November",
-        "12", "December",
+        "1", GT("January"),
+        "2", GT("February"),
+        "3", GT("March"),
+        "4", GT("April"),
+        "5", GT("May"),
+        "6", GT("June"),
+        "7", GT("July"),
+        "8", GT("August"),
+        "9", GT("September"),
+        "10", GT("October"),
+        "11", GT("November"),
+        "12", GT("December"),
         "Huh?") + " " + Str(XCalYear)
 
 Function("XCalPopUp") {
@@ -170,37 +170,37 @@ Popup("XCal") {
     loc(1,4)
     style = 'cal_grid'
     label {
-      value = "Mo"
+      value = GT("Mo")
       style = "cal_cell_current"
       loc(0,0)
     }
     label {
-      value = "Tu"
+      value = GT("Tu")
       style = "cal_cell_current"
       loc(1,0)
     }
     label {
-      value = "We"
+      value = GT("We")
       style = "cal_cell_current"
       loc(2,0)
     }
     label {
-      value = "Th"
+      value = GT("Th")
       style = "cal_cell_current"
       loc(3,0)
     }
     label {
-      value = "Fr"
+      value = GT("Fr")
       style = "cal_cell_current"
       loc(4,0)
     }
     label {
-      value = "Sa"
+      value = GT("Sa")
       style = "cal_cell_current"
       loc(5,0)
     }
     label {
-      value = "Su"
+      value = GT("Su")
       style = "cal_cell_current"
       loc(6,0)
     }

@@ -138,7 +138,7 @@ Function("XNotificationRemove") {
 PopUp "XNotificationWindow" {
   style = "notification_popup"
   label {
-    value = "Notification Center"
+    value = GT("Notification Center")
     style = "notification_header"
     loc(1,1,2,1)
   }

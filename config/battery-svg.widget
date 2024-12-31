@@ -56,9 +56,9 @@ layout {
     action[0] = PipeRead If(!Ident(BSDCtl),XBatteryInit,"")
     value = $XBatterySvg
     style = If(!Ident($XBatteryState) & !Ident(BSDCtl),"hidden","module")
-    tooltip = Str(XBatteryLevel) + "%" + If(XBatteryTime, " " +
-          Str(XBatteryTime/60 - XBatteryTime%60/60) + "h" +
-          Str(XBatteryTime%60) + "m", "")
+    tooltip = GT("Battery") + ": " + Str(XBatteryLevel) + "%" + If(XBatteryTime, " " +
+          Str(XBatteryTime/60 - XBatteryTime%60/60) + GT("h") +
+          Str(XBatteryTime%60) + GT("m"), "")
     interval = 1000
   }
 }

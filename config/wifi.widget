@@ -3,8 +3,8 @@ module("wifi-iwd")
 
 TriggerAction "wifi_updated", Function "XWifiUpdate"
 TriggerAction "wifi_removed", Function "XWifiRemove"
-TriggerAction "wifi_scan", SetValue "XWifiScanButton", "Scanning ..."
-TriggerAction "wifi_scan_complete", SetValue "XWifiScanButton", "Scan"
+TriggerAction "wifi_scan", SetValue "XWifiScanButton", GT("Scanning") + " ..."
+TriggerAction "wifi_scan_complete", SetValue "XWifiScanButton", GT("Scan")
 
 define XWifiIcon = "network-wireless-signal-" +
   Lookup(Val(WifiGet("Strength")),
@@ -61,9 +61,9 @@ Function("XWifiConnect") {
 }
 
 Menu("XWifiItemMenu") {
-  item("Connect", Function "XWifiConnect" );
-  item("Disconnect", WifiDisconnect Extract(WidgetId(),"(.*)_grid") );
-  item("Forget", WifiForget Extract(WidgetId(),"(.*)_grid") );
+  item(GT("Connect"), Function "XWifiConnect" );
+  item(GT("Disconnect"), WifiDisconnect Extract(WidgetId(),"(.*)_grid") );
+  item(GT("Forget"), WifiForget Extract(WidgetId(),"(.*)_grid") );
 }
 
 PopUp "XWifiWindow" {
@@ -75,21 +75,21 @@ PopUp "XWifiWindow" {
     }
     style = "XWifiFrame"
     label {
-      value = "Known networks"
+      value = GT("Known networks")
       style = "XWifiSeparator"
     }
     grid "XWifiGridKnown" {
       style = "XWifiSection"
     }
     label {
-      value = "Other networks"
+      value = GT("Other networks")
       style = "XWifiSeparator"
     }
     grid "XWifiGridOther" {
       style = "XWifiSection"
     }
     label "XWifiScanButton" {
-      value = "Scan"
+      value = GT("Scan")
       style = "XWifiScan"
       action = WifiScan
     }
@@ -142,7 +142,7 @@ image#XWifiIconConnected {
 }
 
 image#XWifiIconConnected {
-  color: red;
+  color: green;
 }
 
 label#XWifiHeader {
@@ -193,3 +193,8 @@ label#wifi_dialog_title {
   margin: 10px;
 }
 
+#wifi_button_ok,
+#wifi_user_entry,
+#wifi_passphrase_entry {
+  background-color: @theme_bg_color;
+}

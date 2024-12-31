@@ -18,7 +18,7 @@ layout {
   style = "module"
   button {
     value = $AlsaIcon
-    tooltip = "Volume: " + Str(AlsaVolume,0) + "%" + If(AlsaMuted," (muted)","")
+    tooltip = GT("Volume") + ": " + Str(AlsaVolume,0) + "%" + If(AlsaMuted," (" + GT("muted") + ")","")
     style = If(Ident($AlsaVolume),"module","hidden")
     trigger = "alsactl"
     action[LeftClick] = Exec "amixer sset Master toggle\n"
