@@ -2,8 +2,8 @@ module("bluez")
 
 TriggerAction "bluez_updated", Function "XBluezUpdate"
 TriggerAction "bluez_removed", Function "XBluezRemove"
-TriggerAction "bluez_scan", SetValue "XBluezScanButton", "Scanning ..."
-TriggerAction "bluez_scan_complete", SetValue "XBluezScanButton", "Scan"
+TriggerAction "bluez_scan", SetValue "XBluezScanButton", GT("Scanning") + " ..."
+TriggerAction "bluez_scan_complete", SetValue "XBluezScanButton", GT("Scan")
 
 set XBluezTmpl = "
 grid 'XBluezGrid@BLUEZ_PAIRED@' {
@@ -39,10 +39,10 @@ grid 'XBluezGrid@BLUEZ_PAIRED@' {
 }"
 
 Menu("XBluezItemMenu") {
-  item("Connect", BluezConnect Extract(WidgetId(),"(.*)_grid") );
-  item("Disconnect", BluezDisConnect Extract(WidgetId(),"(.*)_grid") );
-  item("Pair", BluezPair Extract(WidgetId(),"(.*)_grid") );
-  item("Remove", BluezRemove Extract(WidgetId(),"(.*)_grid") );
+  item(GT("Connect"), BluezConnect Extract(WidgetId(),"(.*)_grid") );
+  item(GT("Disconnect"), BluezDisConnect Extract(WidgetId(),"(.*)_grid") );
+  item(GT("Pair"), BluezPair Extract(WidgetId(),"(.*)_grid") );
+  item(GT("Remove"), BluezRemove Extract(WidgetId(),"(.*)_grid") );
 }
 
 Function("XBluezUpdate") {
@@ -91,21 +91,21 @@ PopUp "XBluezWindow" {
     }
     style = "XBluezFrame"
     label {
-      value = "Paired devices"
+      value = GT("Paired devices")
       style = "XBluezSeparator"
     }
     grid "XBluezGridPaired" {
       style = "XBluezSection"
     }
     label {
-      value = "Available devices"
+      value = GT("Available devices")
       style = "XBluezSeparator"
     }
     grid "XBluezGridAvail" {
       style = "XBluezSection"
     }
     label "XBluezScanButton" {
-      value = "Scan"
+      value = GT("Scan")
       style = "XBluezScan"
       action = BluezScan
     }
@@ -119,6 +119,7 @@ layout {
     style = "module"
     value = "bluetooth"
     action = Function "XBluezPop"
+    tooltip = "Bluetooth"
   }
 }
 

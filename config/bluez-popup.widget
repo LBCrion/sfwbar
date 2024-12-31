@@ -40,7 +40,7 @@ Function("XBluezUpdate") {
           "loc(1,0,2,1)" +
         "} " +
         "label '" + BluezGet("Path") +"_status' {" +
-          "value = '" + If(BluezState("Connecting")," Connecting ...","") + "' " +
+          "value = '" + If(BluezState("Connecting")," " + GT("Connecting") + " ...","") + "' " +
           "style = 'XBluezStatus' " +
           "interval = 0 " +
           "loc(2,1,1,1)" +
