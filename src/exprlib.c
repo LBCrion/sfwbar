@@ -32,8 +32,8 @@ static value_t expr_lib_mid ( vm_t *vm, value_t p[], gint np )
   len = strlen(value_get_string(p[0]));
 
   /* negative offsets are relative to the end of the string */
-  c1 = CLAMP(c1<0? c1+len : c1, 0, len-1);
-  c2 = CLAMP(c2<0? c2+len : c2, 0, len-1);
+  c1 = CLAMP(c1<0? c1+len+1 : c1, 0, len);
+  c2 = CLAMP(c2<0? c2+len+1 : c2, 0, len);
 
   return value_new_string(g_strndup(value_get_string(p[0]) + MIN(c1, c2)-1,
         (ABS(c2-c1)+1)*sizeof(gchar)));
@@ -574,6 +574,39 @@ static value_t expr_array_size ( vm_t *vm, value_t p[], gint np )
   return value_new_numeric(value_is_array(p[0])? p[0].value.array->len : 0);
 }
 
+static value_t expr_test_file ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "TestFile");
+  vm_param_check_string(vm, p, 0, "TestFile");
+
+  return value_new_numeric(file_test_read(value_get_string(p[0])));
+}
+
+static value_t expr_ls ( vm_t *vm, value_t p[], gint np )
+{
+  GArray *array;
+  GDir *dir;
+  value_t v1;
+  const gchar *file;
+
+  vm_param_check_np(vm, np, 1, "ls");
+  vm_param_check_string(vm, p, 0, "ls");
+
+  array = g_array_new(FALSE, FALSE, sizeof(value_t));
+  g_array_set_clear_func(array, (GDestroyNotify)value_free);
+  if( (dir = g_dir_open(value_get_string(p[0]), 0, NULL)) )
+  {
+    while( (file = g_dir_read_name(dir)) )
+    {
+      v1 = value_new_string(g_strdup(file));
+      g_array_append_val(array, v1);
+    }
+    g_dir_close(dir);
+  }
+
+  return value_new_array(array);
+}
+
 void expr_lib_init ( void )
 {
   vm_func_init();
@@ -609,4 +642,6 @@ void expr_lib_init ( void )
   vm_func_add("arrayassign", expr_array_assign, FALSE);
   vm_func_add("arrayconcat", expr_array_concat, FALSE);
   vm_func_add("arraysize", expr_array_size, FALSE);
+  vm_func_add("testfile", expr_test_file, FALSE);
+  vm_func_add("ls", expr_ls, FALSE);
 }

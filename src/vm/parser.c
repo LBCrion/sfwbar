@@ -407,6 +407,7 @@ static gboolean parser_assign_parse ( GScanner *scanner, GByteArray *code )
       return FALSE;
     parser_emit_function(code, vm_func_lookup("arrayassign"), 3);
     parser_emit_local(code, pos, EXPR_OP_ASSIGN);
+    config_check_and_consume(scanner, ';');
     return TRUE;
   }
   
@@ -417,6 +418,7 @@ static gboolean parser_assign_parse ( GScanner *scanner, GByteArray *code )
     return FALSE;
 
   parser_emit_local(code, pos, EXPR_OP_ASSIGN);
+  config_check_and_consume(scanner, ';');
   return TRUE;
 }
 
@@ -461,7 +463,7 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
     ptr = vm_func_lookup(scanner->value.v_identifier);
   else
   {
-    g_message("action name missing");
+    g_scanner_error(scanner, "action name missing %d", scanner->next_token);
     g_scanner_get_next_token(scanner);
     return FALSE;
   }
@@ -597,6 +599,8 @@ gboolean parser_block_parse ( GScanner *scanner, GByteArray *code,
 
   ret = parser_block_parse_in(scanner, code);
 
+  config_check_and_consume(scanner, ';');
+
   if(add_vars)
     g_clear_pointer(&scanner->user_data, g_hash_table_destroy);
 
@@ -625,7 +629,7 @@ gboolean parser_function_parse( GScanner *scanner )
 
   while (config_check_and_consume(scanner, G_TOKEN_IDENTIFIER)) {
       g_hash_table_insert(inputs, g_strdup(scanner->value.v_identifier),
-            GINT_TO_POINTER(n));
+            GINT_TO_POINTER(n++));
     if(!config_check_and_consume(scanner, ','))
       break;
   }

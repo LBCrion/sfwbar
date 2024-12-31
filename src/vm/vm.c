@@ -219,7 +219,7 @@ static void vm_assign ( vm_t *vm )
   memcpy(&pos, vm->ip+1, sizeof(guint16));
 
   v1 = vm_pop(vm);
-  ((value_t *)(vm->stack->data))[vm->fp+pos-1] = v1;
+  ((value_t *)(vm->stack->data))[vm->fp+pos-1] = value_dup(v1);
   vm->ip += sizeof(guint16)*1;
 }
 
