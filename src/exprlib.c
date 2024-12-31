@@ -32,8 +32,8 @@ static value_t expr_lib_mid ( vm_t *vm, value_t p[], gint np )
   len = strlen(value_get_string(p[0]));
 
   /* negative offsets are relative to the end of the string */
-  c1 = CLAMP(c1<0? c1+len+1 : c1, 0, len);
-  c2 = CLAMP(c2<0? c2+len+1 : c2, 0, len);
+  c1 = CLAMP(c1<0? c1+len+1 : c1, 1, len);
+  c2 = CLAMP(c2<0? c2+len+1 : c2, 1, len);
 
   return value_new_string(g_strndup(value_get_string(p[0]) + MIN(c1, c2)-1,
         (ABS(c2-c1)+1)*sizeof(gchar)));
