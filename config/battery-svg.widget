@@ -6,11 +6,12 @@ set XBatteryTime = If(!Ident(BSDCtl),
     If(XBatteryCurrent,XBatteryLeft/XBatteryCurrent*60,0),
     Val(BSDCtl("hw.acpi.battery.time")))
 set XBatterySvgSign = If( XBatteryDischarging, $XBatterySvgMinus, $XBatterySvgPlus )
+
 set XBatterySvg = '<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 66 108">
   <defs>
     <linearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="' + Str(If((90 - XBatteryLevel) < 0, 0, (90 - XBatteryLevel))) +
+      <stop offset="' + Str(Max(0, 90 - XBatteryLevel)) +
       '%" style="stop-color:rgb(0,0,0);stop-opacity:0" />
       <stop offset="' + Str(100 - XBatteryLevel) + 
       '%" style="stop-color:Rgb('+Str(Min(256,512-5.12*XBatteryLevel))+','+Str(Min(256,5.12*XBatteryLevel))+',0);stop-opacity:0.7" />
@@ -21,39 +22,41 @@ set XBatterySvg = '<?xml version="1.0" encoding="UTF-8"?>
   '+$XBatterySvgSign+'
 </svg>'
 
-define XBatteryInit = "/usr/bin/env python3 << END
-import os
-sysdir = '/sys/class/power_supply'
-list = os.scandir(sysdir)
-batdir=''
-for entry in list:
-  if(entry.name.startswith('BAT')):
-    batdir = os.path.join(sysdir,entry.name)
-if(batdir==''):
-  exit(1)
-list = os.scandir(batdir)
-print('scanner {')
-for entry in list:
-  if(entry.name.endswith('_full')):
-    print('file(\"' + os.path.join(batdir,entry.name) +
-          '\") { XBatteryTotal = Grab(First) }')
-  if(entry.name.endswith('_now') and
-          ('charge' in entry.name or 'energy' in entry.name)):
-    print('file(\"' + os.path.join(batdir,entry.name) +
-          '\") { XBatteryLeft = Grab(First) }')
-  if(entry.name == 'current_now'):
-    print('file(\"' + os.path.join(batdir,entry.name) +
-          '\") { XBatteryCurrent = Grab(First) }')
-  if(entry.name == 'status'):
-    print('file(\"' + os.path.join(batdir,entry.name) +
-          '\") { XBatteryState = RegEx(\"^(.*)$\",First) }')
-print('}')
-END"
+Function XBatteryInit() {
+  Var base, dir, sub, file, i, j;
+
+  If(Ident("BSDCtl"))
+    return;
+
+  base = "/sys/class/power_supply";
+  dir = ls(base);
+  i = 0;
+
+  while i<ArraySize(dir) {
+    If Mid(dir[i], 1, 3)="BAT" {
+      sub = ls(base + "/" + dir[i]);
+      j = 0;
+      while j<ArraySize(sub) {
+        file = base + "/" + dir[i] + "/" + sub[j];
+        If mid(sub[j], -5, -1) = "_full"
+          Config "file('" + file + "') { XBatteryTotal = Grab(First) }"
+        If sub[j] = "charge_now" | sub[j] = "energy_now"
+          Config "file('" + file + "') { XBatteryLeft = Grab(First) }"
+        If sub[j] = "current_now"
+          Config "file('" + file + "') { XBatteryCurrent = Grab(First) }"
+        If sub[j] = "status"
+          Config "File ('" + file + "') { XBatteryState = RegEx(\"^(.*)$\",First) }";
+        j = j + 1;
+      }
+    }
+    i = i + 1;
+  }
+}
 
 layout {
   style = "module"
   button "XBatteryModule" {
-    action[0] = PipeRead If(!Ident(BSDCtl),XBatteryInit,"")
+    action[0] = XBatteryInit()
     value = $XBatterySvg
     style = If(!Ident($XBatteryState) & !Ident(BSDCtl),"hidden","module")
     tooltip = GT("Battery") + ": " + Str(XBatteryLevel) + "%" + If(XBatteryTime, " " +
