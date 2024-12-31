@@ -48,8 +48,8 @@ extern const value_t value_na;
 #define value_as_numeric(v) (value_like_numeric(v)? value_get_numeric(v) : \
     (value_is_string(v)? g_ascii_strtod(v.value.string, NULL) : 0))
 
-//#define value_free(v) { if(value_is_string(v)) g_free(v.value.string); }
 void value_free ( value_t );
 value_t value_dup ( value_t );
+value_t value_array_concat ( value_t v1, value_t v2 );
 
 #endif

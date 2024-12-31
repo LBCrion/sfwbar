@@ -492,7 +492,7 @@ static value_t expr_ident ( vm_t *vm, value_t p[], int np )
   return result;
 }
 
-static value_t action_gettext ( vm_t *vm, value_t p[], gint np )
+static value_t expr_gettext ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np_range(vm, np, 1, 2, "GT");
   vm_param_check_string(vm, p, 0, "GT");
@@ -503,7 +503,7 @@ static value_t action_gettext ( vm_t *vm, value_t p[], gint np )
         np==2? value_get_string(p[1]) : "sfwbar", value_get_string(p[0]))));
 }
 
-static value_t action_array_build ( vm_t *vm, value_t p[], gint np )
+static value_t expr_array_build ( vm_t *vm, value_t p[], gint np )
 {
   GArray *array;
   value_t v1;
@@ -521,13 +521,13 @@ static value_t action_array_build ( vm_t *vm, value_t p[], gint np )
   return value_new_array(array);
 }
 
-static value_t action_array_index ( vm_t *vm, value_t p[], gint np )
+static value_t expr_array_index ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np(vm, np, 2, "ArrayIndex");
   vm_param_check_array(vm, p, 0, "ArrayIndex");
   vm_param_check_numeric(vm, p, 1, "ArrayIndex");
 
-  if(!value_is_array(p[0]) ||
+  if(!value_is_array(p[0]) || (gint)value_get_numeric(p[1])<0 ||
       p[0].value.array->len <= ((gint)value_get_numeric(p[1])))
   return value_na;
 
@@ -535,9 +535,10 @@ static value_t action_array_index ( vm_t *vm, value_t p[], gint np )
       (gint)value_get_numeric(p[1]));
 }
 
-static value_t action_array_assign ( vm_t *vm, value_t p[], gint np )
+static value_t expr_array_assign ( vm_t *vm, value_t p[], gint np )
 {
-  value_t *v1, varr;
+  value_t *v1;
+  GArray *arr;
   gint n;
 
   vm_param_check_np(vm, np, 3, "ArrayAssign");
@@ -547,16 +548,30 @@ static value_t action_array_assign ( vm_t *vm, value_t p[], gint np )
   if(!value_is_array(p[0]))
     return value_na;
 
-  varr = value_dup(p[0]);
+  arr = g_array_ref(p[0].value.array);
   n = (gint)value_get_numeric(p[1]);
-  if(p[0].value.array->len <= n)
-    g_array_set_size(varr.value.array, n+1);
+  if(n<0 || n>=arr->len)
+    g_array_set_size(arr, n+1);
 
-  v1 = &g_array_index(varr.value.array, value_t, n);
+  v1 = &g_array_index(arr, value_t, n);
   value_free(*v1);
   *v1 = value_dup(p[2]);
 
-  return varr;
+  return value_new_array(arr);
+}
+
+static value_t expr_array_concat ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 2, "ArrayConcat");
+
+  return value_array_concat(p[0], p[1]);
+}
+
+static value_t expr_array_size ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "ArraySize");
+
+  return value_new_numeric(value_is_array(p[0])? p[0].value.array->len : 0);
 }
 
 void expr_lib_init ( void )
@@ -588,8 +603,10 @@ void expr_lib_init ( void )
   vm_func_add("windowinfo", expr_lib_window_info, FALSE);
   vm_func_add("read", expr_lib_read, FALSE);
   vm_func_add("interfaceprovider", expr_iface_provider, FALSE);
-  vm_func_add("gt", action_gettext, FALSE);
-  vm_func_add("arraybuild", action_array_build, FALSE);
-  vm_func_add("arrayindex", action_array_index, FALSE);
-  vm_func_add("arrayassign", action_array_assign, FALSE);
+  vm_func_add("gt", expr_gettext, FALSE);
+  vm_func_add("arraybuild", expr_array_build, FALSE);
+  vm_func_add("arrayindex", expr_array_index, FALSE);
+  vm_func_add("arrayassign", expr_array_assign, FALSE);
+  vm_func_add("arrayconcat", expr_array_concat, FALSE);
+  vm_func_add("arraysize", expr_array_size, FALSE);
 }

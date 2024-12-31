@@ -242,10 +242,9 @@ static gboolean parser_identifier ( GScanner *scanner, GByteArray *code )
   return TRUE;
 }
 
-static gboolean parser_list_handle ( GScanner *scanner, GByteArray *code )
+static gboolean parser_array_handle ( GScanner *scanner, GByteArray *code )
 {
-  guint8 data[sizeof(gpointer)+2], np = 0;
-  gconstpointer ptr;
+  guint8 np = 0;
 
   if(g_scanner_peek_next_token(scanner)!=']')
     do {
@@ -257,11 +256,7 @@ static gboolean parser_list_handle ( GScanner *scanner, GByteArray *code )
   if(!config_expect_token(scanner, ']', "Expected ']' at the end of the list"))
     return FALSE;
 
-  data[0]=EXPR_OP_FUNCTION;
-  data[1]=np;
-  ptr = vm_func_lookup("arraybuild");
-  memcpy(data+2, &ptr, sizeof(gpointer));
-  g_byte_array_append(code, data, sizeof(gpointer)+2);
+  parser_emit_function(code, vm_func_lookup("arraybuild"), np);
 
   return TRUE;
 }
@@ -280,7 +275,7 @@ static gboolean parser_value ( GScanner *scanner, GByteArray *code )
   else if(token == G_TOKEN_STRING)
     parser_emit_string(code, scanner->value.v_string);
   else if(token == '[')
-    parser_list_handle(scanner, code);
+    parser_array_handle(scanner, code);
   else if(token == G_TOKEN_IDENTIFIER)
     return parser_identifier(scanner, code);
   else if(token == '+')
@@ -429,7 +424,6 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
 {
   gconstpointer ptr;
   gboolean neg;
-  guint8 data[sizeof(gpointer)+2];
   static guint8 discard = EXPR_OP_DISCARD;
   gint alen, flag, cond = 0, np = 0;
 
@@ -457,11 +451,7 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
     parser_emit_numeric(code, cond & 0xff);
     parser_emit_numeric(code, cond>>8);
 
-    ptr = vm_func_lookup("checkstate");
-    memcpy(data+2, &ptr, sizeof(gpointer));
-    data[0]=EXPR_OP_FUNCTION;
-    data[1]=2;
-    g_byte_array_append(code, data, sizeof(gpointer)+2);
+    parser_emit_function(code, vm_func_lookup("checkstate"), 2);
     alen = parser_emit_jump(code, EXPR_OP_JZ);
   }
 
@@ -478,9 +468,6 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
 
   if(!cond && parser_local_lookup(scanner))
     return parser_assign_parse(scanner, code);
-/*  if(!cond && scanner->token==G_TOKEN_IDENTIFIER &&
-      g_scanner_peek_next_token(scanner)=='=')
-    return parser_assign_parse(scanner, code);*/
 
   if( !config_lookup_next_key(scanner, config_toplevel_keys) &&
       !config_lookup_next_key(scanner, config_prop_keys) &&
@@ -499,10 +486,7 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
 
   config_check_and_consume(scanner, ';');
 
-  memcpy(data+2, &ptr, sizeof(gpointer));
-  data[0]=EXPR_OP_FUNCTION;
-  data[1]=np;
-  g_byte_array_append(code, data, sizeof(gpointer)+2);
+  parser_emit_function(code, ptr, np);
 
   if(cond)
   {
