@@ -33,7 +33,8 @@ typedef struct _pulse_channel {
 typedef struct _pulse_interface {
   const gchar *prefix;
   gchar *default_name;
-  gchar *name;
+  gchar *default_device;
+  gchar *default_control;
   gboolean fixed;
   GList *list;
   module_queue_t queue;
@@ -201,7 +202,7 @@ static pulse_info *pulse_addr_parse ( const gchar *addr,
   {
     for(iter=iface->list; iter; iter=g_list_next(iter))
       if(!g_strcmp0(((pulse_info *)iter->data)->name,
-            device?device:iface->name))
+            device?device:iface->default_control))
         break;
     info = iter?iter->data:NULL;
   }
@@ -218,12 +219,12 @@ static pulse_info *pulse_addr_parse ( const gchar *addr,
   return info;
 }
 
-static void pulse_set_name ( pulse_interface_t *iface, const gchar *name,
+static void pulse_set_default_control ( pulse_interface_t *iface, const gchar *name,
     gboolean fixed )
 {
   pulse_info *info;
 
-  if( !iface || !name || (!fixed && iface->fixed))
+  if(!iface || !name || (!fixed && iface->fixed))
     return;
 
   while(*name == ' ')
@@ -236,9 +237,18 @@ static void pulse_set_name ( pulse_interface_t *iface, const gchar *name,
   }
 
   iface->fixed = fixed;
-  g_free(iface->name);
-  iface->name = g_strdup(name);
+  g_free(iface->default_control);
+  iface->default_control = g_strdup(name);
   trigger_emit("volume");
+}
+
+static void pulse_set_default_device ( pulse_interface_t *iface,
+    const gchar *name )
+{
+  g_free(iface->default_device);
+  iface->default_device = g_strdup(name);
+
+  pulse_set_default_control (iface, name, FALSE);
 }
 
 static void pulse_set_default ( pulse_interface_t *iface, const gchar *name )
@@ -443,8 +453,8 @@ static void pulse_source_cb ( pa_context *ctx, const pa_source_info *pinfo,
 static void pulse_server_cb ( pa_context *ctx, const pa_server_info *info,
     void *d )
 {
-  pulse_set_name(&pulse_interfaces[0], info->default_sink_name, FALSE);
-  pulse_set_name(&pulse_interfaces[1], info->default_source_name, FALSE);
+  pulse_set_default_device(&pulse_interfaces[0], info->default_sink_name);
+  pulse_set_default_device(&pulse_interfaces[1], info->default_source_name);
   pulse_operation(pa_context_get_sink_info_list(ctx, pulse_sink_cb, NULL),
       "pa_context_get_sink_info_list");
   pulse_operation(pa_context_get_source_info_list(ctx, pulse_source_cb, NULL),
@@ -629,8 +639,10 @@ static value_t pulse_volume_func ( vm_t *vm, value_t p[], gint np )
     return value_new_numeric(info->mute);
   if(!g_ascii_strcasecmp(cmd, "count"))
     return value_new_numeric(g_list_length(iface->list));
+  if(info && !g_ascii_strcasecmp(cmd, "is-default-device"))
+    return value_new_numeric(!g_strcmp0(info->name, iface->default_device));
   if(info && !g_ascii_strcasecmp(cmd, "is-default"))
-    return value_new_numeric(!g_strcmp0(info->name, iface->name));
+    return value_new_numeric(!g_strcmp0(info->name, iface->default_control));
 
   return value_na;
 }
@@ -711,7 +723,7 @@ static value_t pulse_volume_ctl_action ( vm_t *vm, value_t p[], gint np )
   else if(!g_ascii_strncasecmp(command, "set-default-device", 18))
     pulse_set_default(iface, command+18);
   else if(!g_ascii_strncasecmp(command, "set-default", 11))
-    pulse_set_name(iface, command+11, TRUE);
+    pulse_set_default_control(iface, command+11, TRUE);
 
   return value_na;
 }
