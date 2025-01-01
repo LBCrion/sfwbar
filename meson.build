@@ -121,6 +121,8 @@ libsrc = [
 deps = [gtk3, glib, gio_unix, gmod, glsh, wayl, json, lbrt ]
 doc_list = [ 'sfwbar' ]
 
+subdir('po')
+
 cargs = ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
     '-DGDK_DISABLE_DEPRECATED',
     '-DGTK_DISABLE_DEPRECATED']
