@@ -53,6 +53,9 @@ static gboolean vm_op_binary ( vm_t *vm )
   if(value_is_na(v1) && value_is_na(v2))
     result = value_na;
 
+  else if(value_is_array(v1) || value_is_array(v2))
+    result = value_array_concat(v1, v2);
+
   else if(value_like_string(v1) && value_like_string(v2))
   {
     if(op == '+')
@@ -201,9 +204,7 @@ static void vm_local ( vm_t *vm )
 
   memcpy(&pos, vm->ip+1, sizeof(guint16));
 
-  v1 = ((value_t *)(vm->stack->data))[vm->fp+pos-1];
-  if(value_is_string(v1))
-    v1.value.string = g_strdup(v1.value.string);
+  v1 = value_dup(((value_t *)(vm->stack->data))[vm->fp+pos-1]);
 
   vm_push(vm, v1);
   g_ptr_array_add(vm->pstack, vm->ip);
@@ -218,7 +219,7 @@ static void vm_assign ( vm_t *vm )
   memcpy(&pos, vm->ip+1, sizeof(guint16));
 
   v1 = vm_pop(vm);
-  ((value_t *)(vm->stack->data))[vm->fp+pos-1] = v1;
+  ((value_t *)(vm->stack->data))[vm->fp+pos-1] = value_dup(v1);
   vm->ip += sizeof(guint16)*1;
 }
 
