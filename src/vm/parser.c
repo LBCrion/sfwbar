@@ -529,7 +529,6 @@ static gboolean parser_block_parse_in ( GScanner *scanner, GByteArray *code )
   guint8 return_op = EXPR_OP_RETURN;
   gint alen, rlen;
 
-  while(!config_check_and_consume(scanner, '}'))
     if(config_check_identifier(scanner, "if"))
     {
       g_scanner_get_next_token(scanner);
@@ -576,8 +575,10 @@ static gboolean parser_block_parse_in ( GScanner *scanner, GByteArray *code )
       }
       g_byte_array_append(code, &return_op, 1);
     }
-    else if(!parser_block_parse(scanner, code, FALSE))
-      return FALSE;
+    else if(scanner->next_token == '{')
+      return parser_block_parse(scanner, code, FALSE);
+    else 
+      return parser_action_parse(scanner, code);
 
   return TRUE;
 }
@@ -588,7 +589,10 @@ gboolean parser_block_parse ( GScanner *scanner, GByteArray *code,
   gboolean ret;
 
   if(!config_check_and_consume(scanner, '{'))
-    return parser_action_parse(scanner, code);
+    return parser_block_parse_in(scanner, code);
+
+//  g_scanner_error(scanner, "block");
+//  scanner->max_parse_errors = 0;
 
   scanner->user_data = scanner->user_data? scanner->user_data :
     g_hash_table_new_full( (GHashFunc)str_nhash, (GEqualFunc)str_nequal,
@@ -597,7 +601,11 @@ gboolean parser_block_parse ( GScanner *scanner, GByteArray *code,
   if(add_vars)
     parser_var_decl_parse(scanner, code);
 
-  ret = parser_block_parse_in(scanner, code);
+  while(!config_check_and_consume(scanner, '}'))
+    if( !(ret = parser_block_parse_in(scanner, code)))
+      break;
+//  g_scanner_error(scanner, "end");
+//  scanner->max_parse_errors = 0;
 
   config_check_and_consume(scanner, ';');
 
