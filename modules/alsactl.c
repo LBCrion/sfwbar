@@ -415,13 +415,13 @@ static value_t alsa_func_volume ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 1, "Volume");
 
-  if( !(api = alsa_api_parse(value_get_string(p[np-1]), &verb)) )
+  if( !(api = alsa_api_parse(value_get_string(p[0]), &verb)) )
     return value_na;
 
   if(!g_ascii_strcasecmp(verb, "count"))
     return value_new_numeric( g_hash_table_size(alsa_sources));
 
-  if(!alsa_addr_parse(api, (np==2)? value_get_string(p[0]) : NULL, &src,
+  if(!alsa_addr_parse(api, (np==2)? value_get_string(p[1]) : NULL, &src,
         &element, &channel) || !element)
     return value_na;
 
@@ -429,7 +429,8 @@ static value_t alsa_func_volume ( vm_t *vm, value_t p[], gint np )
     return value_new_numeric(alsa_volume_get(element, channel, api));
   if(!g_ascii_strcasecmp(verb, "mute"))
     return value_new_numeric(alsa_mute_get(element, api));
-  if(!g_ascii_strcasecmp(verb, "is-default"))
+  if(!g_ascii_strcasecmp(verb, "is-default") ||
+      !g_ascii_strcasecmp(verb, "is-default-device"))
     return value_new_numeric(!g_strcmp0(
           api->default_name? api->default_name : "default", src->name));
 
@@ -449,10 +450,10 @@ static value_t alsa_func_volume_info ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 1, "VolumeInfo");
 
-  if( !(api = alsa_api_parse(value_get_string(p[np-1]), &verb)) )
+  if( !(api = alsa_api_parse(value_get_string(p[0]), &verb)) )
     return value_na;
 
-  if(!alsa_addr_parse(api, (np==2)? value_get_string(p[0]) : NULL, &src,
+  if(!alsa_addr_parse(api, (np==2)? value_get_string(p[1]) : NULL, &src,
         &element, &channel) || !element)
     return value_na;
 
@@ -575,6 +576,12 @@ static value_t alsa_action_volumectl ( vm_t *vm, value_t p[], gint np )
 
   if( !(api = alsa_api_parse(value_get_string(p[np-1]), &verb)) )
     return value_na;
+
+  if(!g_ascii_strncasecmp(verb, "set-default-device", 18))
+  {
+    alsa_default_set(api, verb+18);
+    return value_na;
+  }
 
   if(!g_ascii_strncasecmp(verb, "set-default", 11))
   {
