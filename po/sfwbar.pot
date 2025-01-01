@@ -183,3 +183,6 @@ msgsrt ""
 
 msgid  "Battery"
 msgsrt ""
+
+msgid  "Set As Default Control Interface"
+msgstr ""
