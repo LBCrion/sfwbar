@@ -6,123 +6,86 @@ Set XCalTmpl = "grid 'cal_grid' {
   }
 }"
 
-Set XCalPrevMonth = If(XCalMonth=1, 12, XCalMonth-1)
-Set XCalPrevYear = If(XCalMonth=1, XCalYear-1, XCalYear)
-Set XCalYearIsLeap = XCalYear%4=0 & (XCalYear%100!=0 | XCalYear%400=0)
-Set XCalPrevYearIsLeap = XCalPrevYear%4=0 &
-  (XCalPrevYear%100!=0 | XCalPrevYear%400=0)
-Set XCalNumDays = Map(Str(XCalMonth),
-    "12", "31",
-    "11", "30",
-    "10", "31",
-    "9", "30",
-    "8", "31",
-    "7", "31",
-    "6", "30",
-    "5", "31",
-    "4", "30",
-    "3", "31",
-    "2", If(XCalYearIsLeap, "29", "28"),
-    "1", "31",
-    "0")
+Set XCalWeekdayTmpl = "grid 'cal_grid' {
+    label {
+      value = GT('$CAL_WEEKDAY$')
+      style = 'cal_cell_current'
+      loc($CAL_COL$, 0)
+    }
+}"
 
-Set XCalPrevNumDays = Map(Str(XCalPrevMonth),
-    "12", "31",
-    "11", "30",
-    "10", "31",
-    "9", "30",
-    "8", "31",
-    "7", "31",
-    "6", "30",
-    "5", "31",
-    "4", "30",
-    "3", "31",
-    "2", If(XCalPrevYearIsLeap, "29", "28"),
-    "1", "31",
-    "0")
-
-Set XCalMOff = (Val(Map(Str(XCalMonth),
-    "12", "5",
-    "11", "3",
-    "10", "0",
-    "9", "5",
-    "8", "2",
-    "7", "6",
-    "6", "4",
-    "5", "1",
-    "4", "6",
-    "3", "3",
-    "2", "3",
-    "1", "0",
-    "0"))+If(XCalMonth>2 & XCalYearIsLeap,1,0))%7
-
-Set XCalDate = Map(Str(XCalMonth),
-        "1", GT("January"),
-        "2", GT("February"),
-        "3", GT("March"),
-        "4", GT("April"),
-        "5", GT("May"),
-        "6", GT("June"),
-        "7", GT("July"),
-        "8", GT("August"),
-        "9", GT("September"),
-        "10", GT("October"),
-        "11", GT("November"),
-        "12", GT("December"),
-        "Huh?") + " " + Str(XCalYear)
-
-Function("XCalPopUp") {
-  Eval "XCalYear", time("%Y")
-  Eval "XCalMonth", time("%m")
-  Eval "XCalDay", time("%d")
-  Function "XCalInit"
-  PopUp "XCal"
+Function XCalIsLeapYear ( year )
+{
+  return year%4=0 & (year%100!=0 | year%400=0);
 }
 
-Function("XCalInitLoop") {
-  Config ReplaceAll($XCalTmpl,
-      "$CAL_NUM$", $XCalCounter,
-      "$CAL_COL$", Str(XCalCounter%7,0),
-      "$CAL_ROW$", Str((XCalCounter-XCalCounter%7)/7+1,0),
-      "$CAL_DAY$", Str(XCalCounter-XCalDOW+If(XCalCounter-XCalDOW<0,
-          XCalPrevNumDays+1,
-          If(XCalCounter-XCalDOW+1>XCalNumDays,1-XCalNumDays,1))),
-      '$CAL_STYLE$',If(XCalCounter-XCalDOW<0 |
-          XCalCounter-XCalDOW+1>XCalNumDays,
-          'cal_cell_other', 'cal_cell_current')
+Function XCalDaysInAMonth ( emonth )
+{
+  Var numdays_table;
+
+  numdays_table = [31,28,31,30,31,30,31,31,30,31,30,31];
+  return numdays_table[emonth%12] +
+    If(emonth%12=1 & XCalIsLeapYear((emonth-month)/12), 1, 0);
+}
+
+Function XCalFDOW ( month, year ) {
+  Var moff_table, moff, is_leap;
+
+  moff_table = [0,3,3,6,1,4,6,2,5,0,3,5];
+  moff = moff_table[month-1];
+  if (month>2 & XCalIsLeapYear(year)) {
+    moff = (moff + 1)%7;}
+
+  return (moff+5*((year-1)%4)+4*((year-1)%100)+6*((year-1)%400))%7;
+}
+
+Function XCalBuild(emonth) {
+  var day, month, year, fdow, ndays, pndays, i, weekdays, months;
+
+  weekdays = ["Mo","Tu","We","Th","Fr","Sa","Su"];
+  months = ["January", "February", "March", "April", "May", "June",
+         "July", "August", "September", "October","November", "December"];
+
+  Eval "XCalYearMonth", emonth
+  month = emonth%12;
+  year = (emonth - month)/12;
+
+  Config "label 'cal_date' { value = '"+GT(months[month])+" "+Str(year)+"' }"
+
+  i = 0;
+  While i < 7 {
+    Config ReplaceAll($XCalWeekdayTmpl,
+        "$CAL_WEEKDAY$", GT(weekdays[i]),
+        "$CAL_COL$", Str(i));
+    i = i + 1;
+  }
+
+  ndays = XCalDaysInAMonth(emonth);
+  pndays = XCalDaysInAMonth(emonth-1);
+  fdow = XCalFDOW(month, year);
+  i = 0;
+  While i<42 {
+    day = i - fdow + 1;
+    if day < 1
+      day = day + pndays;
+    else if day > ndays
+      day = day - ndays;
+
+    Config ReplaceAll($XCalTmpl,
+        "$CAL_NUM$", Str(i),
+        "$CAL_COL$", Str(i%7),
+        "$CAL_ROW$", Str((i-i%7)/7+1),
+        "$CAL_DAY$", Str(day),
+        '$CAL_STYLE$', 'cal_cell_'+If(i<fdow | i>=ndays+fdow, 'other', 'current')
       )
-  Eval "XCalCounter", XCalCounter+1
-  Function If(XCalCounter<42, "XCalInitLoop", "Noop")
+    i = i + 1;
+  }
 }
 
-Function("XCalInit") {
-  Config "label 'cal_date' { value = $XCalDate }"
-  Eval "XCalDOW", (XCalMoff+
-      5*((XCalYear-1)%4)+4*((XCalYear-1)%100)+6*((XCalYear-1)%400))%7
-  Eval "XCalCounter", 0
-  Function "XCalInitLoop"
-}
-
-Function("XCalNextMonth") {
-  Eval "XCalYear", XCalYear + If(XCalMonth=12,1,0)
-  Eval "XCalMonth", If(XCalMonth=12,1,XCalMonth+1)
-  Function "XCalInit"
-}
-
-Function("XCalPrevMonth") {
-  Eval "XCalYear", XCalYear - If(XCalMonth=1,1,0)
-  Eval "XCalMonth", If(XCalMonth=1,12,XCalMonth-1)
-  Function "XCalInit"
-}
-
-Function("XCalPrevYear") {
-  Eval "XCalYear", XCalYear-1
-  Function "XCalInit"
-}
-
-Function("XCalNextYear") {
-  Eval "XCalYear", XCalYear+1
-  Function "XCalInit"
+Function XCalPopUp() {
+  Eval "XCalYearMonth", val(time("%Y"))*12+val(time("%m"))-1;
+  XCalBuild XCalYearMonth
+  PopUp "XCal"
 }
 
 Popup("XCal") {
@@ -144,12 +107,12 @@ Popup("XCal") {
     image {
       value = 'go-first'
       style = 'cal_arrow'
-      action = Function "XCalPrevYear"
+      action = XCalBuild XCalYearMonth-12
     }
     image {
       value = 'go-previous'
       style = 'cal_arrow'
-      action = Function "XCalPrevMonth"
+      action = XCalBuild XCalYearMonth-1
     }
     label 'cal_date' {
       style = "cal_date"
@@ -157,53 +120,18 @@ Popup("XCal") {
     image {
       value = 'go-next'
       style = 'cal_arrow'
-      action = Function "XCalNextMonth"
+      action = XCalBuild XCalYearMonth+1
     }
     image {
       value = 'go-last'
       style = 'cal_arrow'
-      action = Function "XCalNextYear"
+      action = XCalBuild XCalYearMonth+12
     }
   }
 
   grid "cal_grid" {
     loc(1,4)
     style = 'cal_grid'
-    label {
-      value = GT("Mo")
-      style = "cal_cell_current"
-      loc(0,0)
-    }
-    label {
-      value = GT("Tu")
-      style = "cal_cell_current"
-      loc(1,0)
-    }
-    label {
-      value = GT("We")
-      style = "cal_cell_current"
-      loc(2,0)
-    }
-    label {
-      value = GT("Th")
-      style = "cal_cell_current"
-      loc(3,0)
-    }
-    label {
-      value = GT("Fr")
-      style = "cal_cell_current"
-      loc(4,0)
-    }
-    label {
-      value = GT("Sa")
-      style = "cal_cell_current"
-      loc(5,0)
-    }
-    label {
-      value = GT("Su")
-      style = "cal_cell_current"
-      loc(6,0)
-    }
   }
 }
 
