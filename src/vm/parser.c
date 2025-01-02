@@ -55,6 +55,16 @@ static void parser_emit_na ( GByteArray *code )
   g_byte_array_append(code, data, sizeof(value_t)+1);
 }
 
+static void parser_emit_function ( GByteArray *code, const void *f, guint8 np )
+{
+  guint8 data[sizeof(gpointer)+2];
+
+  memcpy(data+2, &f, sizeof(gpointer));
+  data[0]=EXPR_OP_FUNCTION;
+  data[1]=np;
+  g_byte_array_append(code, data, sizeof(gpointer)+2);
+}
+
 static void parser_jump_backpatch ( GByteArray *code, gint olen, gint clen )
 {
   gint data = clen - olen - sizeof(gint);
@@ -85,7 +95,7 @@ static gboolean parser_cached ( GScanner *scanner, GByteArray *code )
 {
   guchar data[2];
 
-  if(g_scanner_get_next_token(scanner)!='(')
+  if(!config_expect_token(scanner, '(', "Expect '(' after Cached"))
     return FALSE;
 
   data[0] = EXPR_OP_CACHED;
@@ -98,7 +108,7 @@ static gboolean parser_cached ( GScanner *scanner, GByteArray *code )
   data[1] = FALSE;
   g_byte_array_append(code, data, 2);
 
-  if(g_scanner_get_next_token(scanner)!=')')
+  if(!config_expect_token(scanner, ')', "Expect ')' after Cached()"))
     return FALSE;
 
   return TRUE;
@@ -108,18 +118,18 @@ static gboolean parser_if ( GScanner *scanner, GByteArray *code )
 {
   gint alen;
 
-  if(g_scanner_get_next_token(scanner)!='(')
+  if(!config_expect_token(scanner, '(', "Expect '(' after If"))
     return FALSE;
   if(!parser_expr_parse(scanner, code))
     return FALSE;
-  if(g_scanner_get_next_token(scanner)!=',')
+  if(!config_expect_token(scanner, ',', "Expect ',' after If condition"))
     return FALSE;
 
   alen = parser_emit_jump(code, EXPR_OP_JZ);
 
   if(!parser_expr_parse(scanner, code))
     return FALSE;
-  if(g_scanner_get_next_token(scanner)!=',')
+  if(!config_expect_token(scanner, ',', "Expect ',' after If expression"))
     return FALSE;
 
   /* JZ over len change + JMP instruction (1 + sizeof(gint)) */
@@ -131,20 +141,10 @@ static gboolean parser_if ( GScanner *scanner, GByteArray *code )
   /* JMP over len change */
   parser_jump_backpatch(code, alen, code->len);
 
-  if(g_scanner_get_next_token(scanner)!=')')
+  if(!config_expect_token(scanner, ')', "Expect ')' after If()"))
     return FALSE;
 
   return TRUE;
-}
-
-static void parser_emit_function ( GByteArray *code, const void *f, guint8 np )
-{
-  guint8 data[sizeof(gpointer)+2];
-
-  memcpy(data+2, &f, sizeof(gpointer));
-  data[0]=EXPR_OP_FUNCTION;
-  data[1]=np;
-  g_byte_array_append(code, data, sizeof(gpointer)+2);
 }
 
 static gboolean parser_function ( GScanner *scanner, GByteArray *code )
@@ -301,7 +301,11 @@ static gboolean parser_value ( GScanner *scanner, GByteArray *code )
     return parser_expr_parse(scanner, code) &&
       (g_scanner_get_next_token(scanner)==')');
   else
+  {
+    g_scanner_error(scanner,
+        "Unexpected token in expression. Expected a value.");
     return FALSE;
+  }
 
   return TRUE;
 }
@@ -326,10 +330,8 @@ static gboolean parser_ops ( GScanner *scanner, GByteArray *code, gint l )
     if( !(op = g_scanner_get_next_token(scanner)) )
       return TRUE;
 
-    if(op=='!' && g_scanner_peek_next_token(scanner)!='=')
+    if(op=='!' && !config_expect_token(scanner,'=', "Missing = in !="))
       return FALSE;
-    else if(op=='!')
-      g_scanner_get_next_token(scanner);
 
     if((op=='>' || op=='<') && g_scanner_peek_next_token(scanner)=='=')
     {
@@ -363,7 +365,7 @@ gboolean parser_macro_add ( GScanner *scanner )
   if(g_scanner_get_next_token(scanner) != G_TOKEN_IDENTIFIER)
     return FALSE;
   name = g_strdup(scanner->value.v_identifier);
-  if(g_scanner_get_next_token(scanner) != '=')
+  if(!config_expect_token(scanner, '=', "Exepcted = after `define`"))
   {
     g_free(name);
     return FALSE;
@@ -444,7 +446,7 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
             "???");
 
     } while (config_check_and_consume(scanner, '|'));
-    if(!config_check_and_consume(scanner, ']'))
+    if(!config_expect_token(scanner, ']', "Expected ] after condition block"))
       return FALSE;
   }
 
@@ -463,7 +465,7 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
     ptr = vm_func_lookup(scanner->value.v_identifier);
   else
   {
-    g_scanner_error(scanner, "action name missing %d", scanner->next_token);
+    g_scanner_error(scanner, "action name missing. Got %x", scanner->next_token);
     g_scanner_get_next_token(scanner);
     return FALSE;
   }
@@ -487,7 +489,6 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
   }
 
   config_check_and_consume(scanner, ';');
-
   parser_emit_function(code, ptr, np);
 
   if(cond)
@@ -524,61 +525,62 @@ static gboolean parser_var_decl_parse ( GScanner *scanner, GByteArray *code )
   return TRUE;
 }
 
-static gboolean parser_block_parse_in ( GScanner *scanner, GByteArray *code )
+static gboolean parser_instr_parse ( GScanner *scanner, GByteArray *code )
 {
   guint8 return_op = EXPR_OP_RETURN;
   gint alen, rlen;
 
-    if(config_check_identifier(scanner, "if"))
+  if(config_check_identifier(scanner, "if"))
+  {
+    g_scanner_get_next_token(scanner);
+    if(!parser_expr_parse(scanner, code))
+      return FALSE;
+    alen = parser_emit_jump(code, EXPR_OP_JZ);
+    if(!parser_block_parse(scanner, code, FALSE))
+      return FALSE;
+    if(config_check_identifier(scanner, "else"))
     {
       g_scanner_get_next_token(scanner);
-      if(!parser_expr_parse(scanner, code))
-        return FALSE;
-      alen = parser_emit_jump(code, EXPR_OP_JZ);
+      parser_jump_backpatch(code, alen, code->len + sizeof(gint) + 1);
+      alen = parser_emit_jump(code, EXPR_OP_JMP);
       if(!parser_block_parse(scanner, code, FALSE))
         return FALSE;
-      if(config_check_identifier(scanner, "else"))
-      {
-        g_scanner_get_next_token(scanner);
-        parser_jump_backpatch(code, alen, code->len + sizeof(gint) + 1);
-        alen = parser_emit_jump(code, EXPR_OP_JMP);
-        if(!parser_block_parse(scanner, code, FALSE))
-          return FALSE;
-        parser_jump_backpatch(code, alen, code->len);
-      }
-      else
-        parser_jump_backpatch(code, alen, code->len);
-    }
-    else if(config_check_identifier(scanner, "while"))
-    {
-      g_scanner_get_next_token(scanner);
-      rlen = code->len;
-      if(!parser_expr_parse(scanner, code))
-        return FALSE;
-      alen = parser_emit_jump(code, EXPR_OP_JZ);
-      if(!parser_block_parse(scanner, code, FALSE))
-        return FALSE;
-      parser_emit_jump(code, EXPR_OP_JMP);
-      parser_jump_backpatch(code, code->len - sizeof(int), rlen);
       parser_jump_backpatch(code, alen, code->len);
     }
-    else if(config_check_identifier(scanner, "return"))
+    else
+      parser_jump_backpatch(code, alen, code->len);
+  }
+  else if(config_check_identifier(scanner, "while"))
+  {
+    g_scanner_get_next_token(scanner);
+    rlen = code->len;
+    if(!parser_expr_parse(scanner, code))
+      return FALSE;
+    alen = parser_emit_jump(code, EXPR_OP_JZ);
+    if(!parser_block_parse(scanner, code, FALSE))
+      return FALSE;
+    parser_emit_jump(code, EXPR_OP_JMP);
+    parser_jump_backpatch(code, code->len - sizeof(int), rlen);
+    parser_jump_backpatch(code, alen, code->len);
+  }
+  else if(config_check_identifier(scanner, "return"))
+  {
+    g_scanner_get_next_token(scanner);
+    if(config_check_and_consume(scanner, ';'))
+      parser_emit_na(code);
+    else
     {
-      g_scanner_get_next_token(scanner);
-      if(config_check_and_consume(scanner, ';'))
-        parser_emit_na(code);
-      else
-      {
-        if(!parser_expr_parse(scanner, code))
-          return FALSE;
-        config_check_and_consume(scanner, ';');
-      }
-      g_byte_array_append(code, &return_op, 1);
+      if(!parser_expr_parse(scanner, code))
+        return FALSE;
+      config_check_and_consume(scanner, ';');
     }
-    else if(scanner->next_token == '{')
-      return parser_block_parse(scanner, code, FALSE);
-    else 
-      return parser_action_parse(scanner, code);
+    g_byte_array_append(code, &return_op, 1);
+  }
+
+  else if(scanner->next_token == '{')
+    return parser_block_parse(scanner, code, FALSE);
+  else
+    return parser_action_parse(scanner, code);
 
   return TRUE;
 }
@@ -589,10 +591,7 @@ gboolean parser_block_parse ( GScanner *scanner, GByteArray *code,
   gboolean ret;
 
   if(!config_check_and_consume(scanner, '{'))
-    return parser_block_parse_in(scanner, code);
-
-//  g_scanner_error(scanner, "block");
-//  scanner->max_parse_errors = 0;
+    return parser_instr_parse(scanner, code);
 
   scanner->user_data = scanner->user_data? scanner->user_data :
     g_hash_table_new_full( (GHashFunc)str_nhash, (GEqualFunc)str_nequal,
@@ -602,10 +601,8 @@ gboolean parser_block_parse ( GScanner *scanner, GByteArray *code,
     parser_var_decl_parse(scanner, code);
 
   while(!config_check_and_consume(scanner, '}'))
-    if( !(ret = parser_block_parse_in(scanner, code)))
+    if( !(ret = parser_instr_parse(scanner, code)))
       break;
-//  g_scanner_error(scanner, "end");
-//  scanner->max_parse_errors = 0;
 
   config_check_and_consume(scanner, ';');
 
@@ -622,12 +619,14 @@ gboolean parser_function_parse( GScanner *scanner )
   gchar *name;
   guint16 n = 1;
 
-  if(!config_check_and_consume(scanner, G_TOKEN_IDENTIFIER))
+  if(!config_expect_token(scanner, G_TOKEN_IDENTIFIER,
+        "Missing identifier in a function declration"))
     return FALSE;
 
   name = g_strdup(scanner->value.v_identifier);
 
-  if(!config_check_and_consume(scanner, '('))
+  if(!config_expect_token(scanner, '(',
+        "Missing '(' in a function declaration"))
   {
     g_free(name);
     return FALSE;
@@ -645,10 +644,9 @@ gboolean parser_function_parse( GScanner *scanner )
   acode = g_byte_array_new();
   scanner->user_data = inputs;
 
-  if(!config_check_and_consume(scanner, ')'))
+  if(!config_expect_token(scanner, ')', "Missing ')' in function declaration"))
    return FALSE;
-  if(
-      !parser_block_parse(scanner, acode, TRUE))
+  if(!parser_block_parse(scanner, acode, TRUE))
   {
     g_free(name);
     g_byte_array_unref(acode);
@@ -656,7 +654,6 @@ gboolean parser_function_parse( GScanner *scanner )
   }
 
   vm_func_add_user(name, g_byte_array_free_to_bytes(acode));
-
   g_free(name);
 
   return TRUE;
