@@ -658,3 +658,15 @@ gboolean parser_function_parse( GScanner *scanner )
 
   return TRUE;
 }
+
+GBytes *parser_exec_build ( gchar *cmd )
+{
+  GByteArray *code;
+
+  if(!cmd)
+    return NULL;
+  code = g_byte_array_new();
+  parser_emit_string(code, cmd);
+  parser_emit_function(code, vm_func_lookup("exec"), 1);
+  return g_byte_array_free_to_bytes(code);
+}

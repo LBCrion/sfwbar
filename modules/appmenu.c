@@ -245,7 +245,8 @@ static GtkWidget *app_menu_item_build ( gchar *title, gchar *icon )
   item = gtk_menu_item_new();
   gtk_widget_set_name(item, "menu_item");
   menu_item_update(item, title, icon);
-  g_object_set_data(G_OBJECT(item), "title", title);
+  g_object_set_data_full(G_OBJECT(item), "title",
+      g_strconcat("_", title, NULL), g_free);
 
   return item;
 }
@@ -501,6 +502,41 @@ static value_t app_menu_func_filter ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
+static value_t app_menu_item_add ( vm_t *vm, value_t p[], gboolean top )
+{
+  GtkWidget *item;
+  gchar *id;
+
+  if(!vm->pstack->len)
+    return value_na;
+
+  id = top? g_strconcat("__", value_get_string(p[0]), NULL) :
+      g_strdup(value_get_string(p[0]));
+
+  item = menu_item_new(value_get_string(p[0]),
+      parser_exec_build(value_get_string(p[1])), NULL);
+  g_object_set_data_full(G_OBJECT(item), "title", id, g_free);
+  app_menu_item_insert(app_menu_main, item);
+
+  return value_na;
+}
+
+static value_t app_menu_item_top ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 2, "AppMenuItemTop");
+  vm_param_check_string(vm, p, 0, "AppMenuItemTop");
+
+  return app_menu_item_add(vm, p, TRUE);
+}
+
+static value_t app_menu_item_bottom ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 2, "AppMenuItemBottom");
+  vm_param_check_string(vm, p, 0, "AppMenuItemBottom");
+
+  return app_menu_item_add(vm, p, FALSE);
+}
+
 gboolean sfwbar_module_init ( void )
 {
   GDBusConnection *con;
@@ -527,6 +563,8 @@ gboolean sfwbar_module_init ( void )
   app_menu_main = menu_new(app_menu_name);
   app_info_add_handlers(app_menu_handle_add, app_menu_handle_delete);
   vm_func_add("AppMenuFilter", app_menu_func_filter, TRUE);
+  vm_func_add("AppMenuItemTop", app_menu_item_top, TRUE);
+  vm_func_add("AppMenuItemBottom", app_menu_item_bottom, TRUE);
   
   return TRUE;
 }
