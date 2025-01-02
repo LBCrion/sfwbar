@@ -11,12 +11,14 @@
 #include "appinfo.h"
 #include "gui/menu.h"
 #include "gui/scaleimage.h"
+#include "vm/vm.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = MODULE_API_VERSION;
 extern ModuleInterfaceV1 sfwbar_interface;
 
 static GHashTable *app_menu_items;
+static GHashTable *app_menu_filter;
 static GtkWidget *app_menu_main;
 static gchar *app_menu_name = "app_menu_system";
 static const gchar *locale_iface = "org.freedesktop.locale1";
@@ -285,6 +287,8 @@ static void app_menu_handle_add ( const gchar *id )
   app_menu_item_t *item;
   const gchar *filename;
 
+  if(g_hash_table_lookup(app_menu_filter, id))
+    return;
   if(g_hash_table_lookup(app_menu_items, id))
     return;
   if( !(app = g_desktop_app_info_new(id)) )
@@ -487,6 +491,16 @@ static void app_info_locale_changed_cb ( GDBusConnection *con,
   g_variant_unref(dict);
 }
 
+static value_t app_menu_func_filter ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "AppMenuFilter");
+  vm_param_check_string(vm, p, 0, "AppMenuFilter");
+
+  g_hash_table_insert(app_menu_filter, g_strdup(value_get_string(p[0])), "");
+
+  return value_na;
+}
+
 gboolean sfwbar_module_init ( void )
 {
   GDBusConnection *con;
@@ -508,8 +522,11 @@ gboolean sfwbar_module_init ( void )
   }
 
   app_menu_items = g_hash_table_new(g_str_hash, g_str_equal);
+  app_menu_filter = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
+      NULL);
   app_menu_main = menu_new(app_menu_name);
   app_info_add_handlers(app_menu_handle_add, app_menu_handle_delete);
+  vm_func_add("AppMenuFilter", app_menu_func_filter, TRUE);
   
   return TRUE;
 }
