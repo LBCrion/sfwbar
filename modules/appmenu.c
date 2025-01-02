@@ -287,6 +287,7 @@ static void app_menu_handle_add ( const gchar *id )
   app_menu_dir_t *cat;
   app_menu_item_t *item;
   const gchar *filename;
+  gchar *comment;
 
   if(g_hash_table_lookup(app_menu_filter, id))
     return;
@@ -319,6 +320,9 @@ static void app_menu_handle_add ( const gchar *id )
     item->cat = cat;
     item->id = g_strdup(id);
     item->widget = app_menu_item_build(item->name, item->icon);
+    comment = g_desktop_app_info_get_locale_string(app, "Comment");
+    gtk_widget_set_tooltip_text(item->widget, comment);
+    g_free(comment);
 
     g_hash_table_insert(app_menu_items, item->id, item);
     g_object_set_data_full(G_OBJECT(item->widget), "iteminfo", item,
