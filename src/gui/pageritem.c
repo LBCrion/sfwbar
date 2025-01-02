@@ -58,6 +58,7 @@ void pager_item_update ( GtkWidget *self )
       GPOINTER_TO_INT(g_object_get_data(G_OBJECT(priv->pager),"preview")));
   css_set_class(priv->button, "focused", workspace_is_focused(priv->ws));
   css_set_class(priv->button, "visible", priv->ws->state & WS_STATE_VISIBLE);
+  css_set_class(priv->button, "urgent", priv->ws->state & WS_STATE_URGENT);
 
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
