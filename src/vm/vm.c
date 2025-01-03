@@ -128,7 +128,7 @@ value_t vm_function_call ( vm_t *vm, GBytes *code, guint8 np )
   saved_stack = vm->stack->len;
 
   vm->code = (guint8 *)g_bytes_get_data(code, &vm->len);
-  vm_run(vm, np);
+  v1 = vm_run(vm, np);
 
   if(vm->expr)
     vm->expr->vstate = TRUE;
@@ -136,7 +136,6 @@ value_t vm_function_call ( vm_t *vm, GBytes *code, guint8 np )
   vm->code = saved_code;
   vm->ip = saved_ip;
   vm->len = saved_len;
-  v1 = (vm->stack->len > saved_stack)? vm_pop(vm) : value_na;
   vm_stack_unwind(vm, saved_stack);
 
   return v1;
@@ -322,20 +321,17 @@ static value_t vm_run ( vm_t *vm, guint8 np )
 
   vm->fp = saved_fp;
 
-  return value_na;
+  return vm_pop(vm);
 }
 
-static value_t vm_free ( vm_t *vm )
+static void vm_free ( vm_t *vm )
 {
-  value_t v1 = value_na;
-
   if(vm->stack)
   {
-    if(vm->stack->len>1)
+    if(vm->stack->len)
       g_message("stack too long");
 
-    vm_stack_unwind(vm, 1);
-    v1 = vm->stack->len? vm_pop(vm) : value_na;
+    vm_stack_unwind(vm, 0);
 
     if(vm->expr)
       vm->expr->stack_depth = MAX(vm->expr->stack_depth, vm->max_stack);
@@ -347,12 +343,11 @@ static value_t vm_free ( vm_t *vm )
     g_ptr_array_free(vm->pstack, TRUE);
 
   g_free(vm);
-
-  return v1;
 }
 
 value_t vm_expr_eval ( expr_cache_t *expr )
 {
+  value_t v1;
   vm_t *vm;
 
   vm = g_malloc0(sizeof(vm_t));
@@ -363,15 +358,15 @@ value_t vm_expr_eval ( expr_cache_t *expr )
   vm->expr = expr;
   vm->wstate = action_state_build(vm->widget, vm->win);
 
-  vm_run(vm, 0);
+  v1 = vm_run(vm, 0);
+  vm_free(vm);
 
-  return vm_free(vm);
+  return v1;
 }
 
 void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
     window_t *win, guint16 *state )
 {
-  value_t v1;
   vm_t *vm;
 
   if(!code)
@@ -382,9 +377,8 @@ void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
   vm->event = event;
   vm->wstate = state? *state : action_state_build(vm->widget, vm->win);
 
-  vm_run(vm, 0);
-  v1 = vm_free(vm);
-  value_free(v1);
+  value_free(vm_run(vm, 0));
+  vm_free(vm);
 }
 
 void vm_run_user_defined ( gchar *name, GtkWidget *widget, GdkEvent *event,
