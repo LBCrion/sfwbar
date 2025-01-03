@@ -9,11 +9,7 @@ function("ToggleMaximize") {
 }
 
 menu("winops") {
-#  item(" focus%gtk-find", Focus );
-#  item(" close%window-close-symbolic", Close );
-#  item(" (un)minimize%window-minimize-symbolic", Function "ToggleMinimize" );
-#  item(" (un)maximize%window-maximize-symbolic", Function "ToggleMaximize" );
-  item(" "+GT("focus")+"%gtk-find", Focus );
+  item(" "+GT("focus")+"%focus-windows-symbolic", Focus );
   item(" "+GT("close")+"%window-close-symbolic", Close );
   item(" "+GT("(un)minimize")+"%window-minimize-symbolic", Function "ToggleMinimize" );
   item(" "+GT("(un)maximize")+"%window-maximize-symbolic", Function "ToggleMaximize" );
