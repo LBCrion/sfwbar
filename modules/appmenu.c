@@ -24,6 +24,7 @@ static gchar *app_menu_name = "app_menu_system";
 static const gchar *locale_iface = "org.freedesktop.locale1";
 static const gchar *locale_path = "/org/freedesktop/locale1";
 static gchar *app_menu_locale = NULL;
+static gint c_top, c_bottom;
 
 typedef struct _app_menu_map_entry {
   gchar *from;
@@ -290,7 +291,10 @@ static void app_menu_handle_add ( const gchar *id )
   gchar *comment;
 
   if(g_hash_table_lookup(app_menu_filter, id))
+  {
+    g_debug("appmenu item: filter out '%s'", id);
     return;
+  }
   if(g_hash_table_lookup(app_menu_items, id))
     return;
   if( !(app = g_desktop_app_info_new(id)) )
@@ -514,8 +518,7 @@ static value_t app_menu_item_add ( vm_t *vm, value_t p[], gboolean top )
   if(!vm->pstack->len)
     return value_na;
 
-  id = top? g_strconcat("__", value_get_string(p[0]), NULL) :
-      g_strdup(value_get_string(p[0]));
+  id = g_strdup_printf("%s%d", top? "__" : "", top? c_top++ : c_bottom++);
 
   item = menu_item_new(value_get_string(p[0]),
       parser_exec_build(value_get_string(p[1])), NULL);
