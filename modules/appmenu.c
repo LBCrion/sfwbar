@@ -514,16 +514,14 @@ static value_t app_menu_func_filter ( vm_t *vm, value_t p[], gint np )
 static value_t app_menu_item_add ( vm_t *vm, value_t p[], gboolean top )
 {
   GtkWidget *item;
-  gchar *id;
 
   if(!vm->pstack->len)
     return value_na;
 
-  id = g_strdup_printf("%s%d", top? "__" : "", top? c_top++ : c_bottom++);
-
   item = menu_item_new(value_get_string(p[0]),
       parser_exec_build(value_get_string(p[1])), NULL);
-  g_object_set_data_full(G_OBJECT(item), "title", id, g_free);
+  g_object_set_data_full(G_OBJECT(item), "title", g_strdup_printf("%s%04d",
+        top? "__" : "z", top? c_top++ : c_bottom++), g_free);
   app_menu_item_insert(app_menu_main, item);
 
   return value_na;
