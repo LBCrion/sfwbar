@@ -407,31 +407,55 @@ static value_t expr_lib_widget_id ( vm_t *vm, value_t p[], gint np )
   return value_new_string(g_strdup(id?id:""));
 }
 
+static value_t expr_lib_widget_state ( vm_t *vm, value_t p[], gint np )
+{
+  GtkWidget *widget;
+  gint state;
+
+  vm_param_check_np_range(vm, np, 1, 2, "WidgetState");
+  if(np==2)
+    vm_param_check_string(vm, p, 0, "WidgetState");
+
+  widget = np==2?  base_widget_from_id(value_get_string(p[0])) : vm->widget;
+  if(!IS_BASE_WIDGET(widget))
+    return value_na;
+
+  state = base_widget_get_state(widget);
+
+  if(value_as_numeric(p[np-1])==1)
+    return value_new_numeric(state & WS_USERSTATE);
+  if(value_as_numeric(p[np-1])==2)
+    return value_new_numeric(state & WS_USERSTATE2);
+
+  return value_na;
+}
+
 static value_t expr_lib_window_info ( vm_t *vm, value_t p[], gint np )
 {
+  GtkWidget *widget;
   window_t *win;
 
-  vm_param_check_np(vm, np, 1, "WindowInfo");
+  vm_param_check_np_range(vm, np, 1, 2, "WindowInfo");
   vm_param_check_string(vm, p, 0, "WindowInfo");
+  if(np==2)
+    vm_param_check_string(vm, p, 1, "WindowInfo");
 
-  if( (win = flow_item_get_source(vm->widget)) )
+  widget = np==2?  base_widget_from_id(value_get_string(p[0])) : vm->widget;
+
+  if( (win = flow_item_get_source(widget)) )
   {
-    if(!g_ascii_strcasecmp(value_get_string(p[0]), "appid"))
+    if(!g_ascii_strcasecmp(value_get_string(p[np-1]), "appid"))
       return value_new_string(g_strdup(win->appid));
-    if(!g_ascii_strcasecmp(value_get_string(p[0]), "title"))
+    if(!g_ascii_strcasecmp(value_get_string(p[np-1]), "title"))
       return value_new_string(g_strdup(win->title));
-    if(!g_ascii_strcasecmp(value_get_string(p[0]), "minimized"))
-      return value_new_string(g_strdup_printf("%d",
-            !!(win->state & WS_MINIMIZED)));
-    if(!g_ascii_strcasecmp(value_get_string(p[0]), "maximized"))
-      return value_new_string(g_strdup_printf("%d",
-            !!(win->state & WS_MAXIMIZED)));
-    if(!g_ascii_strcasecmp(value_get_string(p[0]), "fullscreen"))
-      return value_new_string(g_strdup_printf("%d",
-            !!(win->state & WS_FULLSCREEN)));
-    if(!g_ascii_strcasecmp(value_get_string(p[0]), "focused"))
-      return value_new_string(g_strdup_printf("%d",
-            wintree_is_focused(win->uid)));
+    if(!g_ascii_strcasecmp(value_get_string(p[np-1]), "minimized"))
+      return value_new_numeric(!!(win->state & WS_MINIMIZED));
+    if(!g_ascii_strcasecmp(value_get_string(p[np-1]), "maximized"))
+      return value_new_numeric(!!(win->state & WS_MAXIMIZED));
+    if(!g_ascii_strcasecmp(value_get_string(p[np-1]), "fullscreen"))
+      return value_new_numeric(!!(win->state & WS_FULLSCREEN));
+    if(!g_ascii_strcasecmp(value_get_string(p[np-1]), "focused"))
+      return value_new_numeric(wintree_is_focused(win->uid));
   }
 
   return value_na;
@@ -582,6 +606,37 @@ static value_t expr_test_file ( vm_t *vm, value_t p[], gint np )
   return value_new_numeric(file_test_read(value_get_string(p[0])));
 }
 
+static value_t expr_widget_children ( vm_t *vm, value_t p[], gint np )
+{
+  GtkWidget *widget;
+  GList *children, *iter;
+  GArray *array;
+  value_t v1;
+
+  vm_param_check_np_range(vm, np, 0, 1, "WidgetChildren");
+
+  widget = np?  base_widget_from_id(value_get_string(p[0])) : vm->widget;
+
+  array = g_array_new(FALSE, FALSE, sizeof(value_t));
+  g_array_set_clear_func(array, (GDestroyNotify)value_free);
+
+  if(!IS_BASE_WIDGET(widget))
+    return value_new_array(array);
+
+  children = gtk_container_get_children(GTK_CONTAINER(base_widget_get_child(
+          widget)));
+
+  for(iter=children; iter; iter=g_list_next(iter))
+    if(IS_BASE_WIDGET(iter->data))
+    {
+      v1 = value_new_string(g_strdup(base_widget_get_id(iter->data)));
+      g_array_append_val(array, v1);
+    }
+  g_list_free(children);
+
+  return value_new_array(array);
+}
+
 static value_t expr_ls ( vm_t *vm, value_t p[], gint np )
 {
   GArray *array;
@@ -633,6 +688,7 @@ void expr_lib_init ( void )
   vm_func_add("bardir", expr_lib_bardir, FALSE);
   vm_func_add("gtkevent", expr_lib_gtkevent, FALSE);
   vm_func_add("widgetid", expr_lib_widget_id, FALSE);
+  vm_func_add("widgetstate", expr_lib_widget_state, FALSE);
   vm_func_add("windowinfo", expr_lib_window_info, FALSE);
   vm_func_add("read", expr_lib_read, FALSE);
   vm_func_add("interfaceprovider", expr_iface_provider, FALSE);
@@ -642,6 +698,7 @@ void expr_lib_init ( void )
   vm_func_add("arrayassign", expr_array_assign, FALSE);
   vm_func_add("arrayconcat", expr_array_concat, FALSE);
   vm_func_add("arraysize", expr_array_size, FALSE);
+  vm_func_add("widgetchildren", expr_widget_children, FALSE);
   vm_func_add("testfile", expr_test_file, FALSE);
   vm_func_add("ls", expr_ls, FALSE);
 }
