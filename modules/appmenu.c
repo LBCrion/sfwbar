@@ -506,6 +506,7 @@ static value_t app_menu_func_filter ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, 0, "AppMenuFilter");
 
   g_hash_table_insert(app_menu_filter, g_strdup(value_get_string(p[0])), "");
+  app_menu_handle_delete (value_get_string(p[0]));
 
   return value_na;
 }
