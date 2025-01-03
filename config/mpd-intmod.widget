@@ -60,7 +60,7 @@ PopUp "XMpdWindow" {
     image {
       value = "media-playback-stop"
       action = MpdCmd "stop"
-      style = If(mpd("state")="stop","mpd_icon_red","mpd_icon")
+      style = If($MpdState="stop","mpd_icon_red","mpd_icon")
       trigger = "mpd"
     }
     image {
