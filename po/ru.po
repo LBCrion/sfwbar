@@ -183,3 +183,6 @@ msgstr "Сопряженные устройства"
 
 msgid  "Battery"
 msgstr "Батарея"
+
+msgid  "Set As Default Control Interface"
+msgstr "Установить Интерфейс Управления по умолчанию"
