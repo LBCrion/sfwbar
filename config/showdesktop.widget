@@ -1,48 +1,34 @@
-function("ShowDesktopSaveFocus") {
-  [Focused] UserState "2:on"
-  [!Focused] UserState "2:off"
+Function ShowWindows() {
+  Var i, wins;
+
+  wins = WidgetChildren("target");
+  i = 0;
+  While i <ArraySize(wins) {
+    If WidgetState(wins[i], 1) {
+      UserState wins[i], "off";
+      UnMinimize wins[i];
+    }
+    i = i + 1;
+  }
+  Focus $XShowDesktopFocus
+  UserState "off"
 }
 
-function("ShowdesktopMinimize") {
-  [!Minimized] UserState "on"
-  [Minimized] UserState "off"
-  [!Minimized] Minimize
-}
+Function HideWindows() {
+  Var i, wins;
 
-function("ShowDesktopRestore") {
-  [UserState] UnMinimize
-}
-
-function("ShowDesktopRestoreFocus") {
-  [UserState2] Focus
-}
-
-function("ShowDesktopCheckWindow") {
-  [!Minimized] UserState "target","2:on"
-}
-
-function("ShowDesktopReminimize")
-{
-  [!Minimized] UserState "on"
-  [!Minimized] Minimize
-}
-
-function("ShowDesktopUnminimized") {
-  [UserState2 | Children] Function "ShowDesktopSaveFocus"
-  [UserState2 | Children]  Function "ShowDesktopReminimize"
-  [!UserState2 | Children] Function "ShowDesktopRestore"
-  [!UserState2 | Children] Function "ShowDesktopRestoreFocus"
-  [!UserState2] UserState "off"
-  [UserState2] UserState "on"
-}
-
-function("ShowDesktop") {
-  [!UserState | Children] Function "ShowDesktopSaveFocus"
-  [!UserState | Children] Function "ShowDesktopMinimize"
-  [UserState] UserState "2:off"
-  [UserState| Children ] Function "ShowDesktopCheckWindow"
-  [UserState] Function "target","ShowDesktopUnminimized"
-  [!UserState] UserState "on"
+  wins = WidgetChildren("target");
+  i = 0;
+  While i <ArraySize(wins) {
+    If WindowInfo(wins[i], "focused")
+      Eval "XShowDesktopFocus", wins[i]
+    If !WindowInfo(wins[i], "minimized") {
+      UserState wins[i], "on";
+      Minimize wins[i];
+    }
+    i = i + 1;
+  }
+  UserState "on"
 }
 
 layout {
@@ -50,7 +36,12 @@ layout {
     value = "user-desktop"
     style = "showdesktop"
     tooltip = GT("Show Desktop")
-    action = Function "target", "ShowDesktop"
+    action = {
+      if WidgetState(1)
+        ShowWindows;
+      else
+        HideWindows;
+    }
   }
   taskbar "target" {
     css = "* { -GtkWidget-visible: false; }"
