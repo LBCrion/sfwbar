@@ -1,7 +1,7 @@
 # Swfbar pot file
 # Copyright (C) 2024
 # This file is distributed under the same license as the sfwbar package.
-# FIRST AUTHOR <sfslinux@gmail.com>, 2024.
+# FIRST AUTHOR <ckdeneon@163.com>, 2024.
 #
 #, fuzzy
 msgid  ""
@@ -10,8 +10,8 @@ msgstr ""
 "Report-Msgid-Bugs-To: https://github.com/LBCrion/sfwbar/issues\n"
 "POT-Creation-Date: 2024-12-26 21:07+1000\n"
 "PO-Revision-Date: 2024-12-26 21:07+1000\n"
-"Last-Translator: sfs linux <sfslinux@gmail.com>\n"
-"Language-Team: Chinese <https://forum.puppyrus.org/index.php?topic=24354.0>\n"
+"Last-Translator: knm100 <ckdeneon@gmail.com>\n"
+"Language-Team: Chinese \n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
