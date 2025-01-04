@@ -65,7 +65,7 @@ msgid "September"
 msgstr "九月"
 
 msgid "October"
-msgstr "10月"
+msgstr "十月"
 
 msgid "November"
 msgstr "十一月"
