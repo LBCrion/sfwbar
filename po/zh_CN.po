@@ -23,7 +23,7 @@ msgstr "程序菜单"
 
 #: src/config/alsa-module.widget
 msgid "Volume"
-msgstr "卷标"
+msgstr "音量"
 
 msgid "muted"
 msgstr "静音"
@@ -149,19 +149,19 @@ msgid "close"
 msgstr "关闭"
 
 msgid "(un)minimize"
-msgstr "非最小化"
+msgstr "恢复/最小化"
 
 msgid "(un)maximize"
-msgstr "非最大化"
+msgstr "恢复/最大化"
 
 msgid "Form"
-msgstr "格式"
+msgstr "音源"
 
 msgid "Port"
 msgstr "端口"
 
 msgid "Monitor"
-msgstr "显示器"
+msgstr "监听"
 
 msgid "sinks"
 msgstr "接收端(sinks)"
