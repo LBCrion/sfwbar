@@ -232,7 +232,7 @@ static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
     win = flow_item_get_source(children->data);
     if( (action = base_widget_get_action(priv->shell, slot,
         base_widget_get_modifiers(self))) )
-      action_exec(children->data, action, (GdkEvent *)ev,
+      action_exec(self, action, (GdkEvent *)ev,
           win?win:wintree_from_id(wintree_get_focus()), NULL);
   }
   g_list_free(children);

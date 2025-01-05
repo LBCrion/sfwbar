@@ -375,6 +375,7 @@ void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
   vm->code = (gpointer)g_bytes_get_data(code, &vm->len);
   vm->widget = widget;
   vm->event = event;
+  vm->win = win;
   vm->wstate = state? *state : action_state_build(vm->widget, vm->win);
 
   value_free(vm_run(vm, 0));
