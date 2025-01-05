@@ -182,8 +182,6 @@ void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,
 void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
     sni_watcher_t *watcher)
 {
- // GList *iter;
-
   if(watcher->regid)
     g_dbus_connection_unregister_object(con, watcher->regid);
 
@@ -194,9 +192,6 @@ void sni_watcher_register_cb ( GDBusConnection *con, const gchar *name,
   g_bus_own_name(G_BUS_TYPE_SESSION, watcher->iface,
       G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL,
       (GBusNameLostCallback)sni_watcher_unregister_cb, watcher, NULL);
-
-//  for(iter=watcher->host->items; iter; iter=g_list_next(iter))
-//    sni_watcher_item_add(watcher, ((sni_item_t *)iter->data)->uid);
 
   g_debug("sni watcher %s registered",watcher->iface);
 }

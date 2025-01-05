@@ -210,8 +210,6 @@ GtkWidget *taskbar_pager_new( workspace_t *ws, GtkWidget *shell )
   gtk_container_add(GTK_CONTAINER(priv->grid), priv->taskbar);
   gtk_widget_show_all(self);
 
-//  base_widget_copy_actions(priv->taskbar, shell);
-
   g_object_ref_sink(G_OBJECT(self));
   flow_grid_add_child(shell, self);
   flow_item_invalidate(self);

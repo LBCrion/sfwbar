@@ -13,9 +13,6 @@
 #define IS_BASE_WIDGET_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass), BASE_WIDGET_TYPE))
 #define BASE_WIDGET_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), BASE_WIDGET_TYPE, BaseWidgetClass))
 
-//G_DECLARE_DERIVABLE_TYPE (BaseWidget, base_widget, BASE, WIDGET, GtkEventBox)
-//#define IS_BASE_WIDGET BASE_IS_WIDGET
-
 typedef struct _BaseWidgetClass BaseWidgetClass;
 typedef struct _BaseWidget BaseWidget;
 
@@ -101,7 +98,6 @@ gchar *base_widget_get_value ( GtkWidget *self );
 GBytes *base_widget_get_action ( GtkWidget *self, gint, GdkModifierType );
 gpointer base_widget_scanner_thread ( GMainContext *gmc );
 void base_widget_set_css ( GtkWidget *widget, gchar *css );
-//gboolean base_widget_emit_trigger ( const gchar *trigger );
 void base_widget_autoexec ( GtkWidget *self, gpointer data );
 void base_widget_set_always_update ( GtkWidget *self, gboolean update );
 void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src );
