@@ -100,7 +100,7 @@ static void base_widget_size_allocate ( GtkWidget *self, GtkAllocation *alloc )
     gtk_widget_get_preferred_height(base_widget_get_child(self), &m, &n);
     alloc->height = MAX(m,MIN(priv->maxh, alloc->height));
   }
-  BASE_WIDGET_GET_CLASS(self)->old_size_allocate(self, alloc);
+  GTK_WIDGET_CLASS(base_widget_parent_class)->size_allocate(self, alloc);
 }
 
 static void base_widget_get_pref_width ( GtkWidget *self, gint *m, gint *n )
@@ -305,7 +305,6 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
 static void base_widget_class_init ( BaseWidgetClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = base_widget_destroy;
-  kclass->old_size_allocate = GTK_WIDGET_CLASS(kclass)->size_allocate;
   kclass->action_exec = base_widget_action_exec_impl;
   kclass->action_configure = base_widget_action_configure_impl;
   kclass->mirror = base_widget_mirror_impl;
@@ -865,23 +864,6 @@ void base_widget_set_action ( GtkWidget *self, gint slot,
 
   base_widget_action_configure(self, slot);
 }
-
-/*void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src )
-{
-  BaseWidgetPrivate *spriv;
-  base_widget_attachment_t *attach;
-  GList *iter;
-
-  g_return_if_fail(IS_BASE_WIDGET(dest) && IS_BASE_WIDGET(src));
-  spriv = base_widget_get_instance_private(BASE_WIDGET(src));
-
-  for(iter=spriv->actions; iter; iter=g_list_next(iter))
-  {
-    attach = iter->data;
-    base_widget_set_action(dest, attach->event, attach->mods,
-        action_dup(attach->action));
-  }
-}*/
 
 GtkWidget *base_widget_mirror ( GtkWidget *src )
 {

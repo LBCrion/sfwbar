@@ -26,7 +26,6 @@ struct _BaseWidgetClass
   GtkEventBoxClass parent_class;
 
   void (*update_value)(GtkWidget *self);
-  void (*old_size_allocate)(GtkWidget *, GtkAllocation * );
   void (*mirror)(GtkWidget *self, GtkWidget *src);
   gboolean (*action_exec)( GtkWidget *self, gint slot, GdkEvent *ev );
   void (*action_configure)( GtkWidget *self, gint slot );
