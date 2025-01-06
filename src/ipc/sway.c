@@ -231,6 +231,7 @@ static workspace_t *sway_ipc_workspace_new ( struct json_object *obj )
 
 static void sway_ipc_workspace_event ( struct json_object *obj )
 {
+  workspace_t *ws;
   const gchar *change;
   gpointer id;
   struct json_object *current;
@@ -254,6 +255,20 @@ static void sway_ipc_workspace_event ( struct json_object *obj )
      be called by workspace_set_focus */
   if(!g_strcmp0(change, "focus"))
     workspace_set_focus(id);
+  else if(!g_strcmp0(change, "urgent") && (ws = workspace_from_id(id)))
+  {
+    set_bit(ws->state, WS_STATE_URGENT,
+        json_bool_by_name(current, "urgent", FALSE));
+    ws->state |= WS_STATE_INVALID;
+    workspace_commit(ws);
+  }
+  else if(!g_strcmp0(change, "visible") && (ws = workspace_from_id(id)))
+  {
+    set_bit(ws->state, WS_STATE_VISIBLE,
+        json_bool_by_name(current, "visible", FALSE));
+    ws->state |= WS_STATE_INVALID;
+    workspace_commit(ws);
+  }
 }
 
 static void sway_ipc_workspace_populate ( void )
