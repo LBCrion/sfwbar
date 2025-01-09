@@ -54,24 +54,26 @@ static gboolean bar_sensor_hide ( GtkWidget *self )
   return FALSE;
 }
 
-static gboolean bar_leave_notify_event ( GtkWidget *self,
-    GdkEventCrossing *event )
+static void bar_sensor_unref_event ( GtkWidget *self )
 {
   BarPrivate *priv;
 
-  g_return_val_if_fail(IS_BAR(self), FALSE);
+  g_return_if_fail(IS_BAR(self));
   priv = bar_get_instance_private(BAR(self));
 
-  if(event->detail==GDK_NOTIFY_INFERIOR)
-    return TRUE;
-
   if(!priv->sensor_timeout || !priv->sensor_state || priv->sensor_block)
-    return TRUE;
+    return;
 
   if(!priv->sensor_handle)
     priv->sensor_handle = g_timeout_add(priv->sensor_timeout,
         (GSourceFunc)bar_sensor_hide, self);
+}
 
+static gboolean bar_leave_notify_event ( GtkWidget *self,
+    GdkEventCrossing *event )
+{
+  if(event->detail!=GDK_NOTIFY_INFERIOR)
+    bar_sensor_unref_event(self);
   return TRUE;
 }
 
@@ -703,6 +705,7 @@ void bar_set_sensor ( GtkWidget *self, gint64 timeout )
   {
     if(!priv->sensor)
     {
+      window_set_unref_func(self, (void *)(void *)bar_sensor_unref_event);
       priv->sensor = gtk_grid_new();
       g_object_ref_sink(priv->sensor);
       css_add_class(priv->sensor,"sensor");
