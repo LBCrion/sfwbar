@@ -70,7 +70,7 @@ void bar_set_sensor ( GtkWidget *self, gint64 timeout );
 void bar_set_mirrors ( GtkWidget *self, GList *mirrors );
 void bar_set_visibility ( GtkWidget *, const gchar *, gchar );
 void bar_set_mirrors_old ( GtkWidget *self, gchar *mirror );
-void bar_visibility_toggle_all ( gpointer d );
+gboolean bar_visibility_toggle_all ( gpointer d );
 gboolean bar_update_monitor ( GtkWidget * );
 void bar_save_monitor ( GtkWidget * );
 GtkWidget *bar_from_name ( gchar *name );

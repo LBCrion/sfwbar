@@ -235,7 +235,7 @@ static void bar_class_init ( BarClass *kclass )
   GTK_WIDGET_CLASS(kclass)->leave_notify_event = bar_leave_notify_event;
   GTK_WIDGET_CLASS(kclass)->style_updated = bar_style_updated;
   GTK_WIDGET_CLASS(kclass)->map = bar_map;
-  g_unix_signal_add(SIGUSR2,(GSourceFunc)bar_visibility_toggle_all,NULL);
+  g_unix_signal_add(SIGUSR2, (GSourceFunc)bar_visibility_toggle_all, NULL);
 }
 
 GtkWidget *bar_from_name ( gchar *name )
@@ -409,9 +409,11 @@ void bar_set_id ( GtkWidget *self, gchar *id )
   g_list_foreach(priv->mirror_children, (GFunc)bar_set_id, id);
 }
 
-void bar_visibility_toggle_all ( gpointer d )
+gboolean bar_visibility_toggle_all ( gpointer d )
 {
   bar_set_visibility (NULL, NULL, 't');
+
+  return TRUE;
 }
 
 void bar_set_visibility ( GtkWidget *self, const gchar *id, gchar state )
