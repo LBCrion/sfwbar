@@ -4,12 +4,14 @@
  */
 
 #include <glib.h>
-#include <locale.h>
+#include "locale1.h"
+#include "trigger.h"
 #include "module.h"
 #include "meson.h"
 #include "sfwbar.h"
 #include "appinfo.h"
 #include "gui/menu.h"
+#include "gui/menuitem.h"
 #include "gui/scaleimage.h"
 #include "vm/vm.h"
 
@@ -21,10 +23,6 @@ static GHashTable *app_menu_items;
 static GHashTable *app_menu_filter;
 static GtkWidget *app_menu_main;
 static gchar *app_menu_name = "app_menu_system";
-static const gchar *locale_iface = "org.freedesktop.locale1";
-static const gchar *locale_path = "/org/freedesktop/locale1";
-static gchar *app_menu_locale = NULL;
-static gint c_top, c_bottom;
 
 typedef struct _app_menu_map_entry {
   gchar *from;
@@ -44,8 +42,6 @@ typedef struct _app_menu_dir {
 typedef struct _app_menu_item_t {
   app_menu_dir_t *cat;
   gchar *id;
-  gchar *name;
-  gchar *icon;
   GtkWidget *widget;
 } app_menu_item_t;
 
@@ -233,36 +229,19 @@ static app_menu_dir_t *app_menu_cat_lookup ( const gchar *cats )
 static void app_menu_item_free ( app_menu_item_t *item )
 {
   g_hash_table_remove(app_menu_items, item->id);
-  g_free(item->name);
   g_free(item->id);
-  g_free(item->icon);
   g_free(item);
-}
-
-static GtkWidget *app_menu_item_build ( gchar *title, gchar *icon )
-{
-  GtkWidget *item;
-
-  item = gtk_menu_item_new();
-  gtk_widget_set_name(item, "menu_item");
-  menu_item_update(item, title, icon);
-  g_object_set_data_full(G_OBJECT(item), "title",
-      g_strconcat("_", title, NULL), g_free);
-
-  return item;
 }
 
 static void app_menu_item_insert ( GtkWidget *menu, GtkWidget *item )
 {
   GList *list, *iter;
-  gchar *title;
   gint count = 0;
 
-  title = g_object_get_data(G_OBJECT(item), "title");
   list = gtk_container_get_children(GTK_CONTAINER(menu));
   for(iter=list; iter; iter=g_list_next(iter))
   {
-    if(g_ascii_strcasecmp(title, g_object_get_data(iter->data, "title"))<=0)
+    if(menu_item_compare(item, iter->data)<=0)
       break;
     count++;
   }
@@ -270,25 +249,12 @@ static void app_menu_item_insert ( GtkWidget *menu, GtkWidget *item )
   gtk_menu_shell_insert(GTK_MENU_SHELL(menu), item, count);
 }
 
-static void app_menu_activate_cb ( GtkWidget *w, gchar *id )
-{
-  GDesktopAppInfo *app;
-
-  if( !(app = g_desktop_app_info_new(id)) )
-    return;
-  g_app_info_launch((GAppInfo *)app, NULL, NULL, NULL);
-  g_object_unref(app);
-}
-
 static void app_menu_handle_add ( const gchar *id )
 {
   GDesktopAppInfo *app;
   GtkWidget *submenu;
-  GKeyFile *keyfile;
   app_menu_dir_t *cat;
   app_menu_item_t *item;
-  const gchar *filename;
-  gchar *comment;
 
   if(g_hash_table_lookup(app_menu_filter, id))
   {
@@ -303,41 +269,22 @@ static void app_menu_handle_add ( const gchar *id )
       (cat = app_menu_cat_lookup(g_desktop_app_info_get_categories(app))))
   {
     item = g_malloc0(sizeof(app_menu_item_t));
-    if( !(item->icon = g_desktop_app_info_get_string(app, "Icon")) )
-      item->icon = g_strdup(cat->icon);
-    keyfile = g_key_file_new();
-    if( (filename = g_desktop_app_info_get_filename(app)) &&
-        g_key_file_load_from_file(keyfile, filename,
-          G_KEY_FILE_KEEP_TRANSLATIONS, NULL))
-    {
-      item->name = g_key_file_get_locale_string(keyfile,
-          G_KEY_FILE_DESKTOP_GROUP, "X-GNOME-FullName",
-          app_menu_locale, NULL);
-      if(!item->name)
-        item->name = g_key_file_get_locale_string(keyfile,
-            G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_NAME,
-            app_menu_locale, NULL);
-    }
-    if(!item->name)
-      item->name = g_strdup(g_app_info_get_display_name((GAppInfo *)app));
-    g_key_file_unref(keyfile);
     item->cat = cat;
     item->id = g_strdup(id);
-    item->widget = app_menu_item_build(item->name, item->icon);
-    comment = g_desktop_app_info_get_locale_string(app, "Comment");
-    gtk_widget_set_tooltip_text(item->widget, comment);
-    g_free(comment);
+    item->widget = menu_item_get(NULL, TRUE);
+    menu_item_update_from_app(item->widget, app);
+    menu_item_set_sort_index(item->widget, 2);
 
     g_hash_table_insert(app_menu_items, item->id, item);
     g_object_set_data_full(G_OBJECT(item->widget), "iteminfo", item,
         (GDestroyNotify)app_menu_item_free);
-    g_signal_connect(G_OBJECT(item->widget), "activate",
-        G_CALLBACK(app_menu_activate_cb), item->id);
 
     if(!cat->widget)
     {
-      cat->widget = app_menu_item_build(
-          cat->local_title?cat->local_title:cat->title, cat->icon);
+      cat->widget = menu_item_get(NULL, TRUE);
+      menu_item_set_label(cat->widget, cat->local_title?cat->local_title:cat->title);
+      menu_item_set_icon(cat->widget, cat->icon);
+      menu_item_set_sort_index(cat->widget, 2);
       submenu = gtk_menu_new();
       gtk_menu_set_reserve_toggle_size(GTK_MENU(submenu), FALSE);
       gtk_menu_item_set_submenu(GTK_MENU_ITEM(cat->widget), submenu);
@@ -347,8 +294,8 @@ static void app_menu_handle_add ( const gchar *id )
     app_menu_item_insert(
         gtk_menu_item_get_submenu(GTK_MENU_ITEM(cat->widget)), item->widget);
 
-    g_debug("appmenu item: '%s', title: '%s', icon: '%s', cat: %s'", item->id,
-        item->name, item->icon, item->cat?item->cat->title:"null");
+//    g_debug("appmenu item: '%s', title: '%s', icon: '%s', cat: %s'", item->id,
+//        item->name, item->icon, item->cat?item->cat->title:"null");
   }
   g_object_unref(app);
 }
@@ -399,7 +346,7 @@ static void app_info_categories_update1 ( const gchar *dir )
         name = g_key_file_get_locale_string(keyfile, G_KEY_FILE_DESKTOP_GROUP,
             "Name", "C", NULL);
         lname = g_key_file_get_locale_string(keyfile, G_KEY_FILE_DESKTOP_GROUP,
-            "Name", app_menu_locale, NULL);
+            "Name", locale1_get_locale(), NULL);
         for(i=0; app_menu_map[i].category; i++)
           if(!app_menu_map[i].local_title &&
               !g_strcmp0(name, app_menu_map[i].title) &&
@@ -431,73 +378,13 @@ static void app_info_categories_update ( void )
   app_info_categories_update1(SYSTEM_CONF_DIR);
 }
 
-static void app_info_locale_handle ( GVariantIter *iter )
+static gboolean app_info_locale_handle ( gpointer data )
 {
-  gchar *lstr, **lstrv, *locale = NULL;
-
-  while(g_variant_iter_next(iter, "&s", &lstr))
-  {
-    lstrv = g_strsplit(lstr, "=", 2);
-    if(!g_strcmp0(lstrv[0], "LC_MESSAGE"))
-    {
-      g_free(locale);
-      locale = g_strdup(lstrv[1]);
-    }
-    else if(!g_strcmp0(lstrv[0], "LANG") && !locale)
-      locale = g_strdup(lstrv[1]);
-    g_strfreev(lstrv);
-  }
-  if(!locale || !g_strcmp0(locale, app_menu_locale))
-  {
-    g_free(locale);
-    return;
-  }
-  g_clear_pointer(&app_menu_locale, g_free);
-  app_menu_locale = locale;
   app_info_categories_update();
   app_info_remove_handlers(app_menu_handle_add, app_menu_handle_delete);
   app_info_add_handlers(app_menu_handle_add, app_menu_handle_delete);
-}
 
-static void app_info_locale_cb ( GDBusConnection *con, GAsyncResult *res,
-    void *data)
-{
-  GVariant *result, *inner;
-  GVariantIter *iter;
-
-  if( !(result = g_dbus_connection_call_finish(con, res, NULL)) )
-    return;
-  g_variant_get(result, "(v)", &inner);
-  if(inner && g_variant_is_of_type(inner, G_VARIANT_TYPE("as")))
-  {
-    g_variant_get(inner, "as", &iter);
-    app_info_locale_handle(iter);
-    g_variant_iter_free(iter);
-  }
-  g_variant_unref(result);
-}
-
-static void app_info_locale_changed_cb ( GDBusConnection *con,
-    const gchar *sender, const gchar *path, const gchar *iface,
-    const gchar *signal, GVariant *params, gpointer data )
-{
-  GVariant *dict;
-  GVariantIter *iter;
-
-  g_variant_get(params, "(&s@a{sv}@as)", NULL, &dict, NULL);
-  if(!dict)
-    return;
-
-  if(g_variant_lookup(dict, "Locale", "as", &iter))
-  {
-    g_dbus_connection_call(con, locale_iface, locale_path,
-        "org.freedesktop.DBus.Properties", "Get",
-        g_variant_new("(ss)", locale_iface, "Locale"), NULL,
-        G_DBUS_CALL_FLAGS_NONE, -1, NULL, (GAsyncReadyCallback)app_info_locale_cb,
-        NULL);
-    g_variant_iter_free(iter);
-  }
-  g_variant_unref(dict);
+  return TRUE;
 }
 
 static value_t app_menu_func_filter ( vm_t *vm, value_t p[], gint np )
@@ -518,10 +405,10 @@ static value_t app_menu_item_add ( vm_t *vm, value_t p[], gboolean top )
   if(!vm->pstack->len)
     return value_na;
 
-  item = menu_item_new(value_get_string(p[0]),
-      parser_exec_build(value_get_string(p[1])), NULL);
-  g_object_set_data_full(G_OBJECT(item), "title", g_strdup_printf("%s%04d",
-        top? "__" : "z", top? c_top++ : c_bottom++), g_free);
+  item = menu_item_get(NULL, TRUE);
+  menu_item_set_label(item, value_get_string(p[0]));
+  menu_item_set_action(item, parser_exec_build(value_get_string(p[1])));
+  menu_item_set_sort_index(item, top? 1 : 3);
   app_menu_item_insert(app_menu_main, item);
 
   return value_na;
@@ -545,23 +432,9 @@ static value_t app_menu_item_bottom ( vm_t *vm, value_t p[], gint np )
 
 gboolean sfwbar_module_init ( void )
 {
-  GDBusConnection *con;
-
-  app_menu_locale = g_strdup(setlocale(LC_MESSAGES, NULL));
   app_info_categories_update();
-  if( (con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
-  {
-    g_dbus_connection_signal_subscribe(con, locale_iface,
-        "org.freedesktop.DBus.Properties", "PropertiesChanged", NULL,
-        NULL,  G_DBUS_SIGNAL_FLAGS_NONE, app_info_locale_changed_cb,
-        NULL, NULL);
-
-    g_dbus_connection_call(con, locale_iface, locale_path,
-        "org.freedesktop.DBus.Properties", "Get",
-        g_variant_new("(ss)", locale_iface, "Locale"), NULL,
-        G_DBUS_CALL_FLAGS_NONE, -1, NULL, (GAsyncReadyCallback)app_info_locale_cb,
-        NULL);
-  }
+  locale1_init();
+  trigger_add("locale1", app_info_locale_handle, NULL);
 
   app_menu_items = g_hash_table_new(g_str_hash, g_str_equal);
   app_menu_filter = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,

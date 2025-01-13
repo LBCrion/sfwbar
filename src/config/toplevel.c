@@ -8,6 +8,7 @@
 #include "module.h"
 #include "gui/bar.h"
 #include "gui/menu.h"
+#include "gui/menuitem.h"
 #include "vm/vm.h"
 
 gboolean config_action ( GScanner *scanner, GBytes **action_dst )
@@ -52,12 +53,12 @@ GtkWidget *config_menu_item ( GScanner *scanner )
 
   if(!scanner->max_parse_errors && label && action)
   {
-    item = menu_item_new("", action, id);
+    item = menu_item_get(id, TRUE);
     expr = expr_cache_new();
     expr->code = g_byte_array_free_to_bytes(label);
     expr->eval = TRUE;
-    g_object_set_data_full(G_OBJECT(item), "label", expr,
-        (GDestroyNotify)expr_cache_free);
+    menu_item_set_label_expr(item, expr);
+    menu_item_set_action(item, action);
   }
   else
     item = NULL;
@@ -86,7 +87,8 @@ GtkWidget *config_submenu ( GScanner *scanner )
 
   if(!scanner->max_parse_errors && itemname)
   {
-    item = menu_item_new(itemname, NULL, subid);
+    item = menu_item_get(subid, TRUE);
+    menu_item_set_label(item, itemname);
     submenu = menu_new(subname);
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), submenu);
     if(items)

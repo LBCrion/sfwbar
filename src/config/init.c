@@ -219,7 +219,7 @@ void config_init ( void )
   config_add_key(config_prop_keys, "Mirror", G_TOKEN_MIRROR);
 
 
-config_flowgrid_props = g_hash_table_new((GHashFunc)str_nhash,
+  config_flowgrid_props = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);
   config_add_key(config_flowgrid_props, "Cols", G_TOKEN_COLS);
   config_add_key(config_flowgrid_props, "Rows", G_TOKEN_ROWS);

@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include "sni.h"
 #include "gui/menu.h"
+#include "gui/menuitem.h"
 #include "gui/scaleimage.h"
 
 const gchar *sni_menu_iface = "com.canonical.dbusmenu";
@@ -60,7 +61,7 @@ static GtkWidget *sni_menu_item_find ( GtkWidget *widget, gint32 id )
   if( !(submenu = gtk_menu_item_get_submenu(GTK_MENU_ITEM(widget))) )
     return NULL;
 
-  if(GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "id"))==id)
+  if(menu_item_get_sort_index(widget)==id)
     return submenu;
 
   children = gtk_container_get_children(GTK_CONTAINER(submenu));
@@ -76,7 +77,9 @@ static sni_item_t *sni_menu_item_get_sni_item ( GtkWidget *item )
 {
   GtkWidget *parent;
 
-  parent = gtk_widget_get_ancestor(item, GTK_TYPE_MENU);
+  if( !(parent = gtk_widget_get_ancestor(item, GTK_TYPE_MENU)) )
+    return NULL;
+
   while(GTK_IS_MENU_ITEM(gtk_menu_get_attach_widget(GTK_MENU(parent))))
     parent = gtk_widget_get_ancestor(
         gtk_menu_get_attach_widget(GTK_MENU(parent)), GTK_TYPE_MENU);
@@ -85,12 +88,19 @@ static sni_item_t *sni_menu_item_get_sni_item ( GtkWidget *item )
 
 static void sni_menu_map_cb( GtkWidget *menu, sni_item_t *sni )
 {
-  if(sni && !g_object_get_data(G_OBJECT(sni->menu_obj), "suppress_ats"))
-    g_dbus_connection_call(sni_get_connection(), sni->dest, sni->menu_path,
-        sni_menu_iface, "AboutToShow", g_variant_new("(i)",
-          GPOINTER_TO_INT(g_object_get_data(G_OBJECT(menu), "id"))),
-        G_VARIANT_TYPE("(b)"), G_DBUS_CALL_FLAGS_NONE, -1, NULL,
-        (GAsyncReadyCallback)sni_menu_about_to_show_cb, menu);
+  GtkWidget *parent;
+  gint id;
+
+  if(!sni || g_object_get_data(G_OBJECT(sni->menu_obj), "suppress_ats"))
+    return;
+
+  parent = gtk_menu_get_attach_widget(GTK_MENU(menu));
+  id = parent && GTK_IS_MENU_ITEM(parent)? menu_item_get_sort_index(parent): 0;
+
+  g_dbus_connection_call(sni_get_connection(), sni->dest, sni->menu_path,
+      sni_menu_iface, "AboutToShow", g_variant_new("(i)", id),
+      G_VARIANT_TYPE("(b)"), G_DBUS_CALL_FLAGS_NONE, -1, NULL,
+      (GAsyncReadyCallback)sni_menu_about_to_show_cb, menu);
 }
 
 static gboolean sni_menu_cancel_ats_suppression ( GtkWidget *menu_obj )
@@ -127,7 +137,9 @@ static void sni_menu_item_update ( GtkWidget *item, GVariant *dict,
     if( !(g_variant_lookup(dict, "label", "&s", &label)) )
       label = "";
 
-    menu_item_update(item, label, icon);
+    menu_item_set_label(item, label);
+    if(icon)
+      menu_item_set_icon(item, icon);
 
     has_submenu = g_variant_lookup(dict, "children-display", "&s", &sub) &&
       !g_strcmp0(sub, "submenu");
@@ -160,7 +172,7 @@ static void sni_menu_item_activate_cb ( GtkWidget *item, gpointer data )
   sni_item_t *sni;
   gint32 id;
 
-  if( !(id = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(item), "id"))) )
+  if( !(id = menu_item_get_sort_index(item)) )
     return;
 
   if( !(sni = sni_menu_item_get_sni_item(item)) )
@@ -199,53 +211,52 @@ static GtkWidget *sni_menu_item_new ( guint32 id, GVariant *dict,
   else
     item = gtk_menu_item_new();
 
-  g_object_set_data(G_OBJECT(item), "id", GINT_TO_POINTER(id));
+  menu_item_init(item);
+  menu_item_set_sort_index(item, id);
+
   g_signal_connect(G_OBJECT(item), "activate",
       G_CALLBACK(sni_menu_item_activate_cb), NULL);
 
   return item;
 }
 
-static void sni_menu_parse ( GtkWidget *widget, GVariantIter *viter )
+static void sni_menu_parse ( GtkWidget *menu, GVariantIter *viter )
 {
   GtkWidget *item, *prev = NULL;
   GVariantIter *niter;
   GVariant *object, *dict;
-  GList *children, *remove, *iter;
-  guint32 id, position;
+  GList *remove, *iter, *children;
+  guint32 id;
 
-  children = gtk_container_get_children(GTK_CONTAINER(widget));
+  children = gtk_container_get_children(GTK_CONTAINER(menu));
   remove = g_list_copy(children);
   while(g_variant_iter_next(viter, "v", &object))
   {
     g_variant_get(object, "(i@a{sv}av)", &id, &dict, &niter);
     g_variant_unref(object);
-    position = 0;
     for(iter=children; iter; iter=g_list_next(iter))
-      if(id > GPOINTER_TO_INT(g_object_get_data(iter->data, "id")))
-        position++;
-    for(iter=children; iter; iter=g_list_next(iter))
-      if(GPOINTER_TO_INT(g_object_get_data(iter->data, "id"))==id)
+      if(menu_item_get_sort_index(iter->data)==id)
         break;
-
-    item = iter?iter->data:sni_menu_item_new(id, dict, prev);
-    remove = g_list_remove(remove, item);
-
-    if(!iter)
+    if(iter)
     {
-      gtk_menu_shell_insert(GTK_MENU_SHELL(widget), item, position);
-      children = g_list_prepend(children, item);
+      item = iter->data;
+      remove = g_list_remove(remove, item);
     }
+    else
+    {
+      item = sni_menu_item_new(id, dict, prev);
+      children = g_list_prepend(children, item);
+      menu_item_insert(menu, item);
+    }
+
     sni_menu_item_update(item, dict, niter);
 
     g_variant_unref(dict);
     g_variant_iter_free(niter);
     prev = item;
   }
-  gtk_menu_shell_deselect(GTK_MENU_SHELL(widget));
-  for(iter=remove; iter; iter=g_list_next(iter))
-    gtk_widget_destroy(iter->data);
-  g_list_free(remove);
+  gtk_menu_shell_deselect(GTK_MENU_SHELL(menu));
+  g_list_free_full(remove, (GDestroyNotify)gtk_widget_destroy);
   g_list_free(children);
 }
 
@@ -303,7 +314,7 @@ static void sni_menu_about_to_show_cb ( GDBusConnection *con, GAsyncResult *res,
     {
       sni = sni_menu_item_get_sni_item(item);
       parent = gtk_menu_get_attach_widget(GTK_MENU(item));
-      id = parent?GPOINTER_TO_INT(g_object_get_data(G_OBJECT(parent), "id")):0;
+      id = parent?menu_item_get_sort_index(parent):0;
       g_debug("sni: menu refresh: '%s', node: %d", sni->dest, id);
       g_dbus_connection_call(sni_get_connection(), sni->dest, sni->menu_path,
           sni_menu_iface, "GetLayout", g_variant_new("(iias)", id, -1, NULL),
