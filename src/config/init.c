@@ -217,7 +217,7 @@ void config_init ( void )
   config_add_key(config_prop_keys, "Monitor", G_TOKEN_MONITOR);
   config_add_key(config_prop_keys, "Margin", G_TOKEN_MARGIN);
   config_add_key(config_prop_keys, "Mirror", G_TOKEN_MIRROR);
-
+  config_add_key(config_prop_keys, "Tooltips", G_TOKEN_TOOLTIPS);
 
   config_flowgrid_props = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);

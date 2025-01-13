@@ -187,6 +187,13 @@ static void taskbar_item_update ( GtkWidget *self )
     taskbar_item_set_image(priv->icon, appid);
   }
 
+  if(taskbar_shell_get_tooltips(priv->taskbar) &&
+      !gtk_widget_get_tooltip_text(self))
+    gtk_widget_set_tooltip_text(self, priv->win->title);
+  else if(!taskbar_shell_get_tooltips(priv->taskbar) &&
+      gtk_widget_get_tooltip_text(self))
+    gtk_widget_set_tooltip_text(self, NULL);
+
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);
 

@@ -262,6 +262,10 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
   if(IS_TASKBAR_SHELL(widget))
     switch(key)
     {
+      case G_TOKEN_TOOLTIPS:
+        taskbar_shell_set_tooltips(widget,
+            config_assign_boolean(scanner, FALSE, "tooltips"));
+        return TRUE;
       case G_TOKEN_PEROUTPUT:
         if(config_assign_boolean(scanner,FALSE,"filter_output"))
           taskbar_shell_set_filter(widget, G_TOKEN_OUTPUT);

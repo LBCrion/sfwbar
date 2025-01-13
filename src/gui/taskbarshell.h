@@ -29,6 +29,7 @@ struct _TaskbarShellPrivate
   GtkWidget *(*get_taskbar)(GtkWidget *, window_t *, gboolean);
   gboolean icons, labels, sort, floating_filter;
   gint rows, cols, filter, title_width;
+  gboolean tooltips;
   guint timer_h;
   gchar *style;
   GList *css;
@@ -55,5 +56,7 @@ void taskbar_shell_set_group_sort ( GtkWidget *self, gboolean );
 void taskbar_shell_set_group_title_width ( GtkWidget *self, gint );
 void taskbar_shell_set_group_style ( GtkWidget *self, gchar * );
 void taskbar_shell_set_group_css ( GtkWidget *self, gchar * );
+void taskbar_shell_set_tooltips ( GtkWidget *self, gboolean tooltips );
+gboolean taskbar_shell_get_tooltips ( GtkWidget *self );
 
 #endif

@@ -343,3 +343,29 @@ void taskbar_shell_set_group_icons ( GtkWidget *self, gboolean icons )
   priv->icons = icons;
   taskbar_shell_propagate(self, icons, flow_grid_set_icons);
 }
+
+void taskbar_shell_set_tooltips ( GtkWidget *self, gboolean tooltips )
+{
+  TaskbarShellPrivate *priv;
+
+  g_return_if_fail(IS_FLOW_GRID(self));
+  priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
+
+  if(priv->tooltips == tooltips)
+    return;
+
+  priv->tooltips = tooltips;
+  taskbar_shell_invalidate(self);
+  g_list_foreach(base_widget_get_mirror_children(self),
+      (GFunc)taskbar_shell_invalidate, NULL);
+}
+
+gboolean taskbar_shell_get_tooltips ( GtkWidget *self )
+{
+  TaskbarShellPrivate *priv;
+
+  g_return_val_if_fail(IS_FLOW_GRID(self), FALSE);
+  priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
+
+  return priv->tooltips;
+}
