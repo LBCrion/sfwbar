@@ -5,7 +5,7 @@
 #
 #, fuzzy
 msgid ""
-msgsrt ""
+msgstr ""
 "Project-Id-Version: sfwbar\n"
 "Report-Msgid-Bugs-To: https://github.com/LBCrion/sfwbar/issues\n"
 "POT-Creation-Date: 2024-12-26 21:07+1000\n"
@@ -19,170 +19,170 @@ msgsrt ""
 
 #: src/config/startmenu.widget
 msgid "Application menu"
-msgsrt "Menu"
+msgstr "Menu"
 
 #: src/config/alsa-module.widget
 msgid "Volume"
-msgsrt "Glośność"
+msgstr "Glośność"
 
 msgid "muted"
-msgsrt "wyciszony"
+msgstr "wyciszony"
 
 msgid "h"
-msgsrt "g"
+msgstr "g"
 
 msgid "m"
-msgsrt "m"
+msgstr "m"
 
 msgid "Connecting"
-msgsrt "Łączenie"
+msgstr "Łączenie"
 
 msgid "January"
-msgsrt "Styczeń"
+msgstr "Styczeń"
 
 msgid "February"
-msgsrt "Luty"
+msgstr "Luty"
 
 msgid "March"
-msgsrt "Marzec"
+msgstr "Marzec"
 
 msgid "April"
-msgsrt "Kwiecień"
+msgstr "Kwiecień"
 
 msgid "May"
-msgsrt "Maj"
+msgstr "Maj"
 
 msgid "June"
-msgsrt "Czerwiec"
+msgstr "Czerwiec"
 
 msgid "July"
-msgsrt "Lipiec"
+msgstr "Lipiec"
 
 msgid "August"
-msgsrt "Sierpień"
+msgstr "Sierpień"
 
 msgid "September"
-msgsrt "Wrzesień"
+msgstr "Wrzesień"
 
 msgid "October"
-msgsrt "Październik"
+msgstr "Październik"
 
 msgid "November"
-msgsrt "Listopad"
+msgstr "Listopad"
 
 msgid "December"
-msgsrt "Grudzień"
+msgstr "Grudzień"
 
 msgid "Mo"
-msgsrt "Po"
+msgstr "Po"
 
 msgid "Tu"
-msgsrt "Wt"
+msgstr "Wt"
 
 msgid "We"
-msgsrt "Śr"
+msgstr "Śr"
 
 msgid "Th"
-msgsrt "Cz"
+msgstr "Cz"
 
 msgid "Fr"
-msgsrt "Pi"
+msgstr "Pi"
 
 msgid "Sa"
-msgsrt "So"
+msgstr "So"
 
 msgid "Su"
-msgsrt "Ni"
+msgstr "Ni"
 
 msgid "Memory"
-msgsrt "Pamięć"
+msgstr "Pamięć"
 
 msgid "Notification Center"
-msgsrt "Centrum Powiadomień"
+msgstr "Centrum Powiadomień"
 
 msgid "Show Desktop"
-msgsrt "Pokaż Pulpit"
+msgstr "Pokaż Pulpit"
 
 msgid "Set As Default Device"
-msgsrt "Ustaw jako domyślne"
+msgstr "Ustaw jako domyślne"
 
 msgid "expand/collapse channels"
-msgsrt "rozwiń/zwiń kanały"
+msgstr "rozwiń/zwiń kanały"
 
 msgid "route to sink"
-msgsrt "kieruj do wyjścia"
+msgstr "kieruj do wyjścia"
 
 msgid "Scanning"
-msgsrt "Skanowanie"
+msgstr "Skanowanie"
 
 msgid "Scan"
-msgsrt "Skanuj"
+msgstr "Skanuj"
 
 msgid "Other"
-msgsrt "Inne"
+msgstr "Inne"
 
 msgid "Known"
-msgsrt "Znane"
+msgstr "Znane"
 
 msgid "Connected"
-msgsrt "Połączono"
+msgstr "Połączono"
 
 msgid "Connect"
-msgsrt "Połącz"
+msgstr "Połącz"
 
 msgid "Disconnect"
-msgsrt "Rozłącz"
+msgstr "Rozłącz"
 
 msgid "Forget"
-msgsrt "Zapomnij"
+msgstr "Zapomnij"
 
 msgid "Known networks"
-msgsrt "Znane sieci"
+msgstr "Znane sieci"
 
 msgid "Other networks"
-msgsrt "Inne sieci"
+msgstr "Inne sieci"
 
 msgid "focus"
-msgsrt "aktywuj"
+msgstr "aktywuj"
 
 msgid "close"
-msgsrt "zamknij"
+msgstr "zamknij"
 
 msgid "(un)minimize"
-msgsrt "pokaż / ukryj"
+msgstr "pokaż / ukryj"
 
 msgid "(un)maximize"
-msgsrt "okno / pełny ekran"
+msgstr "okno / pełny ekran"
 
 msgid "Form"
-msgsrt "Format"
+msgstr "Format"
 
 msgid "Port"
-msgsrt "Port"
+msgstr "Port"
 
 msgid "Monitor"
-msgsrt "Monitor"
+msgstr "Monitor"
 
 msgid "sinks"
-msgsrt "wyjścia (sinks)"
+msgstr "wyjścia (sinks)"
 
 msgid "clients"
-msgsrt "klienty"
+msgstr "klienty"
 
-msgid  "Pair"
-msgsrt "Sparuj"
+msgid "Pair"
+msgstr "Sparuj"
 
-msgid  "Remove"
-msgsrt "Usuń"
+msgid "Remove"
+msgstr "Usuń"
 
-msgid  "Available devices"
-msgsrt "Dostępne urządzenia"
+msgid "Available devices"
+msgstr "Dostępne urządzenia"
 
-msgid  "Paired devices"
-msgsrt "Sparowane urządzenia"
+msgid "Paired devices"
+msgstr "Sparowane urządzenia"
 
-msgid  "Battery"
-msgsrt "Bateria"
+msgid "Battery"
+msgstr "Bateria"
 
-msgid  "Set As Default Control Interface"
+msgid "Set As Default Control Interface"
 msgstr "Ustaw jako domyślne"
