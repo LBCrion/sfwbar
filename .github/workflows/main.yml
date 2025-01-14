@@ -29,7 +29,7 @@ jobs:
       - name: Run a multi-line script
         run: |
           sudo apt-get update
-          sudo apt-get -y install libgtk-3-dev meson libgtk-layer-shell-dev libjson-c-dev libmpdclient-dev libpulse-dev bluez libbluetooth-dev libasound2-dev libxkbregistry-dev wayland-protocols
+          sudo apt-get -y install libgtk-3-dev meson libgtk-layer-shell-dev libjson-c-dev libmpdclient-dev libpulse-dev bluez libbluetooth-dev libasound2-dev libxkbregistry-dev wayland-protocols gettext
           meson setup build --werror -Dpulse=enabled -Dmpd=enabled -Dnetwork=enabled -Dalsa=enabled -Dbluez=enabled -Dxkb=enabled -Didleinhibit=enabled 
           ninja -C build
           DESTDIR=./install ninja -C build install
