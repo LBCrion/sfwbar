@@ -363,8 +363,12 @@ void taskbar_shell_set_tooltips ( GtkWidget *self, gboolean tooltips )
 gboolean taskbar_shell_get_tooltips ( GtkWidget *self )
 {
   TaskbarShellPrivate *priv;
+  GtkWidget *parent;
 
-  g_return_val_if_fail(IS_FLOW_GRID(self), FALSE);
+  if( (parent = taskbar_get_parent(self)) )
+    self = flow_item_get_parent(parent);
+
+  g_return_val_if_fail(IS_TASKBAR_SHELL(self));
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
 
   return priv->tooltips;
