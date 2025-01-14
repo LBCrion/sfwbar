@@ -17,18 +17,19 @@ static ScanFile *sway_file;
 
 extern gchar *sockname;
 
-static json_object *sway_ipc_poll ( gint sock, gint32 *etype )
+static json_object *sway_ipc_poll ( gint sock, guint32 *etype )
 {
-  static gint8 sway_ipc_header[14] = {0x69, 0x33, 0x2d, 0x69, 0x70, 0x63};
-  static guint32 *sway_ipc_len = (void *)&sway_ipc_header + 6;
-  static guint32 *sway_ipc_type = (void *)&sway_ipc_header + 10;
+  gint8 sway_ipc_header[14] = {0x69, 0x33, 0x2d, 0x69, 0x70, 0x63};
+  guint32 len;
 
   if(recv_retry(sock, sway_ipc_header, 14)!=14)
     return NULL;
 
   if(etype)
-    *etype = *sway_ipc_type;
-  return recv_json(sock, *sway_ipc_len);
+    memcpy(etype, sway_ipc_header + 10, sizeof(guint32));
+
+  memcpy(&len, sway_ipc_header + 6, sizeof(guint32));
+  return recv_json(sock, len);
 }
 
 static int sway_ipc_open (int to)
@@ -338,7 +339,7 @@ static void sway_ipc_window_event ( struct json_object *obj )
           json_string_by_name(container, "type"), "floating_con"));
 }
 
-static void sway_ipc_scan_input ( struct json_object *obj, gint32 etype )
+static void sway_ipc_scan_input ( struct json_object *obj, guint32 etype )
 {
   struct json_object *scan;
   static gchar *ename[] = {
@@ -370,7 +371,7 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
     gpointer data )
 {
   struct json_object *obj;
-  gint32 etype;
+  guint32 etype;
 
   if(main_ipc==-1)
     return FALSE;
