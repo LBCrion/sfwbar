@@ -55,7 +55,7 @@ static void menu_item_activate ( GtkMenuItem *self, gpointer d )
 void menu_item_update_from_app ( GtkWidget *self, GDesktopAppInfo *app )
 {
   GKeyFile *keyfile;
-  gchar *icon, *comment, *label;
+  gchar *icon, *comment, *label = NULL;
   MenuItemPrivate *priv;
 
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
