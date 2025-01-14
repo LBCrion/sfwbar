@@ -5,7 +5,7 @@
 #
 #, fuzzy
 msgid ""
-msgsrt ""
+msgstr ""
 "Project-Id-Version: sfwbar\n"
 "Report-Msgid-Bugs-To: https://github.com/LBCrion/sfwbar/issues\n"
 "POT-Creation-Date: 2024-12-26 21:07+1000\n"
@@ -19,170 +19,170 @@ msgsrt ""
 
 #: src/config/startmenu.widget
 msgid "Application menu"
-msgsrt ""
+msgstr ""
 
 #: src/config/alsa-module.widget
 msgid "Volume"
-msgsrt ""
+msgstr ""
 
 msgid "muted"
-msgsrt ""
+msgstr ""
 
 msgid "h"
-msgsrt ""
+msgstr ""
 
 msgid "m"
-msgsrt ""
+msgstr ""
 
 msgid "Connecting"
-msgsrt ""
+msgstr ""
 
 msgid "January"
-msgsrt ""
+msgstr ""
 
 msgid "February"
-msgsrt ""
+msgstr ""
 
 msgid "March"
-msgsrt ""
+msgstr ""
 
 msgid "April"
-msgsrt ""
+msgstr ""
 
 msgid "May"
-msgsrt ""
+msgstr ""
 
 msgid "June"
-msgsrt ""
+msgstr ""
 
 msgid "July"
-msgsrt ""
+msgstr ""
 
 msgid "August"
-msgsrt ""
+msgstr ""
 
 msgid "September"
-msgsrt ""
+msgstr ""
 
 msgid "October"
-msgsrt ""
+msgstr ""
 
 msgid "November"
-msgsrt ""
+msgstr ""
 
 msgid "December"
-msgsrt ""
+msgstr ""
 
 msgid "Mo"
-msgsrt ""
+msgstr ""
 
 msgid "Tu"
-msgsrt ""
+msgstr ""
 
 msgid "We"
-msgsrt ""
+msgstr ""
 
 msgid "Th"
-msgsrt ""
+msgstr ""
 
 msgid "Fr"
-msgsrt ""
+msgstr ""
 
 msgid "Sa"
-msgsrt ""
+msgstr ""
 
 msgid "Su"
-msgsrt ""
+msgstr ""
 
 msgid "Memory"
-msgsrt ""
+msgstr ""
 
 msgid "Notification Center"
-msgsrt ""
+msgstr ""
 
 msgid "Show Desktop"
-msgsrt ""
+msgstr ""
 
 msgid "Set As Default Device"
-msgsrt ""
+msgstr ""
 
 msgid "expand/collapse channels"
-msgsrt ""
+msgstr ""
 
 msgid "route to sink"
-msgsrt ""
+msgstr ""
 
 msgid "Scanning"
-msgsrt ""
+msgstr ""
 
 msgid "Scan"
-msgsrt ""
+msgstr ""
 
 msgid "Other"
-msgsrt ""
+msgstr ""
 
 msgid "Known"
-msgsrt ""
+msgstr ""
 
 msgid "Connected"
-msgsrt ""
+msgstr ""
 
 msgid "Connect"
-msgsrt ""
+msgstr ""
 
 msgid "Disconnect"
-msgsrt ""
+msgstr ""
 
 msgid "Forget"
-msgsrt ""
+msgstr ""
 
 msgid "Known networks"
-msgsrt ""
+msgstr ""
 
 msgid "Other networks"
-msgsrt ""
+msgstr ""
 
 msgid "focus"
-msgsrt ""
+msgstr ""
 
 msgid "close"
-msgsrt ""
+msgstr ""
 
 msgid "(un)minimize"
-msgsrt ""
+msgstr ""
 
 msgid "(un)maximize"
-msgsrt ""
+msgstr ""
 
 msgid "Form"
-msgsrt ""
+msgstr ""
 
 msgid "Port"
-msgsrt ""
+msgstr ""
 
 msgid "Monitor"
-msgsrt ""
+msgstr ""
 
 msgid "sinks"
-msgsrt ""
+msgstr ""
 
 msgid "clients"
-msgsrt ""
+msgstr ""
 
 msgid  "Pair"
-msgsrt ""
+msgstr ""
 
 msgid  "Remove"
-msgsrt ""
+msgstr ""
 
 msgid  "Available devices"
-msgsrt ""
+msgstr ""
 
 msgid  "Paired devices"
-msgsrt ""
+msgstr ""
 
 msgid  "Battery"
-msgsrt ""
+msgstr ""
 
 msgid  "Set As Default Control Interface"
 msgstr ""
