@@ -434,29 +434,12 @@ static void scale_image_class_init ( ScaleImageClass *kclass )
       "clip drop shadow to padding box", TRUE, G_PARAM_READABLE));
 }
 
-static void scale_image_init ( ScaleImage *self )
-{
-  ScaleImagePrivate *priv;
-
-  g_return_if_fail(IS_SCALE_IMAGE(self));
-  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
-  priv->file = NULL;
-  priv->fname = NULL;
-  priv->pixbuf = NULL;
-  priv->cs = NULL;
-  priv->width = 0;
-  priv->height = 0;
-  priv->fallback = FALSE;
-  priv->ftype = SI_NONE;
-}
-
 GtkWidget *scale_image_new()
 {
   return GTK_WIDGET(g_object_new(scale_image_get_type(), NULL));
 }
 
-gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
-    gchar *extra )
+static gboolean scale_image_set ( GtkWidget *self )
 {
   static gchar *exts[4] = {"", ".svg", ".png", ".xpm"};
   ScaleImagePrivate *priv;
@@ -467,15 +450,6 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
   g_return_val_if_fail(IS_SCALE_IMAGE(self), FALSE);
   priv = scale_image_get_instance_private( SCALE_IMAGE(self));
 
-  if(!image)
-    return FALSE;
-
-  if( !g_strcmp0(priv->file, image) && !g_strcmp0(priv->extra, extra) )
-    return (priv->ftype != SI_NONE);
-
-  scale_image_clear(self);
-  priv->file = g_strdup(image);
-  priv->extra = g_strdup(extra);
   priv->symbolic = FALSE;
   gtk_widget_queue_draw(self);
 
@@ -505,7 +479,7 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
   {
     test = g_strconcat(priv->file, (i%2!=priv->symbolic_pref)?"-symbolic":"",
         exts[i/2], NULL);
-    temp = get_xdg_config_file(test, extra);
+    temp = get_xdg_config_file(test, priv->extra);
     g_free(test);
     if(temp)
     {
@@ -523,4 +497,44 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
   }
 
   return priv->ftype != SI_NONE;
+}
+
+gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
+    gchar *extra )
+{
+  ScaleImagePrivate *priv;
+
+  g_return_val_if_fail(IS_SCALE_IMAGE(self), FALSE);
+  priv = scale_image_get_instance_private( SCALE_IMAGE(self));
+
+  if(!image)
+    return FALSE;
+
+  if( !g_strcmp0(priv->file, image) && !g_strcmp0(priv->extra, extra) )
+    return (priv->ftype != SI_NONE);
+
+  scale_image_clear(self);
+  priv->file = g_strdup(image);
+  priv->extra = g_strdup(extra);
+
+  return scale_image_set(self);
+}
+
+static void scale_image_init ( ScaleImage *self )
+{
+  ScaleImagePrivate *priv;
+
+  g_return_if_fail(IS_SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
+  priv->file = NULL;
+  priv->fname = NULL;
+  priv->pixbuf = NULL;
+  priv->cs = NULL;
+  priv->width = 0;
+  priv->height = 0;
+  priv->fallback = FALSE;
+  priv->ftype = SI_NONE;
+
+  g_signal_connect_swapped(G_OBJECT(gtk_icon_theme_get_default()), "changed",
+      G_CALLBACK(scale_image_set), self);
 }
