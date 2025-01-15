@@ -88,7 +88,10 @@ void menu_item_update_from_app ( GtkWidget *self, GDesktopAppInfo *app )
   if( !(priv->flags & MI_ICON) )
   {
     if( (icon = g_desktop_app_info_get_string(app, "Icon")) )
+    {
       scale_image_set_image(priv->icon, icon, NULL);
+      css_set_class(priv->icon, "hidden", FALSE);
+    }
     g_free(icon);
   }
   if( !(priv->flags & MI_TOOLTIP) )
