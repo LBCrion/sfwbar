@@ -6,7 +6,7 @@
 #include <gdk/gdk.h>
 
 gint socket_connect ( const gchar *sockaddr, gint to );
-gssize recv_retry ( gint sock, gpointer buff, gsize len );
+gssize recv_retry ( gint sock, gpointer buff, gssize len );
 json_object *recv_json ( gint sock, gssize len );
 
 const gchar *json_string_by_name ( struct json_object *obj, gchar *name );
