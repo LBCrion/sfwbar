@@ -46,16 +46,16 @@ static value_t action_function ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np_range(vm, np, 1, 2, "Function");
   vm_param_check_string(vm, p, 0, "Function");
 
+  widget = vm->widget;
   if(np==2)
   {
     vm_param_check_string(vm, p, 1, "Function");
-    widget = base_widget_from_id(value_get_string(p[0]));
+    vm->widget = base_widget_from_id(value_get_string(p[0]));
+    vm->widget = vm->widget? vm->widget : widget;
   }
 
-  widget = vm->widget;
   win = vm->win;
   state = vm->wstate;
-  vm->widget = widget? widget : vm->widget;
   vm->win = IS_TASKBAR_ITEM(widget)? flow_item_get_source(widget) : vm->win;
   vm->wstate = action_state_build(vm->widget, vm->win);
 
