@@ -38,6 +38,7 @@ struct _ScaleImagePrivate
   gchar *file;
   gchar *extra;
   gchar *fname;
+  GtkIconTheme *theme;
   GdkPixbuf *pixbuf;
   cairo_surface_t *cs, *shadow;
 };

@@ -162,8 +162,8 @@ static void scale_image_surface_update ( GtkWidget *self, gint w, gint h )
   priv->fallback = FALSE;
 
   if(priv->ftype == SI_ICON)
-    buf =  gtk_icon_theme_load_icon(gtk_icon_theme_get_default(),
-        priv->fname, MIN(w, h), 0, NULL);
+    buf =  gtk_icon_theme_load_icon(priv->theme, priv->fname, MIN(w, h), 0,
+        NULL);
 
   else if(priv->ftype == SI_FILE && priv->fname)
     buf = gdk_pixbuf_new_from_file_at_scale(priv->fname, w, h, TRUE, NULL);
@@ -359,8 +359,12 @@ static void scale_image_clear ( GtkWidget *self )
 
 static void scale_image_destroy ( GtkWidget *self )
 {
-  g_return_if_fail(IS_SCALE_IMAGE(self));
+  ScaleImagePrivate *priv;
 
+  g_return_if_fail(IS_SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
+
+  g_signal_handlers_disconnect_by_data(priv->theme, self);
   scale_image_clear(self);
   GTK_WIDGET_CLASS(scale_image_parent_class)->destroy(self);
 }
@@ -535,6 +539,7 @@ static void scale_image_init ( ScaleImage *self )
   priv->fallback = FALSE;
   priv->ftype = SI_NONE;
 
-  g_signal_connect_swapped(G_OBJECT(gtk_icon_theme_get_default()), "changed",
+  priv->theme = gtk_icon_theme_get_default();
+  g_signal_connect_swapped(G_OBJECT(priv->theme), "changed",
       G_CALLBACK(scale_image_set), self);
 }
