@@ -137,11 +137,22 @@ gchar *menu_item_get_id ( GtkWidget *self )
 void menu_item_set_label ( GtkWidget *self, const gchar *label )
 {
   MenuItemPrivate *priv;
+  gchar *icon, save;
 
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv && priv->label);
 
-  gtk_label_set_text_with_mnemonic(GTK_LABEL(priv->label), label);
+  if( (icon = strchr(label, '%')) )
+  {
+    save = *icon;
+    *icon = 0;
+    gtk_label_set_text_with_mnemonic(GTK_LABEL(priv->label), label);
+    *icon = save;
+    menu_item_set_icon(self, icon+1);
+    }
+    else
+      gtk_label_set_text_with_mnemonic(GTK_LABEL(priv->label), label);
+
   priv->flags |= MI_LABEL;
 }
 
@@ -319,24 +330,12 @@ void menu_item_remove ( gchar *id )
 void menu_item_label_update ( GtkWidget *self )
 {
   MenuItemPrivate *priv;
-  gchar *icon, save;
 
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv);
 
   if(expr_cache_eval(priv->label_expr))
-  {
-    if( (icon = strchr(priv->label_expr->cache, '%')) )
-    {
-      save = *icon;
-      *icon = 0;
-      menu_item_set_label(self, priv->label_expr->cache);
-      *icon = save;
-      menu_item_set_icon(self, icon+1);
-    }
-    else
-      menu_item_set_label(self, priv->label_expr->cache);
-  }
+    menu_item_set_label(self, priv->label_expr->cache);
 }
 
 void menu_item_insert ( GtkWidget *menu, GtkWidget *item )
