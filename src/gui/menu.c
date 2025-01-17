@@ -97,26 +97,12 @@ static void menu_popdown_cb ( GtkWidget *widget, GtkWidget *menu )
 static void menu_set_names ( GtkWidget *menu );
 static void menu_item_set_name ( GtkWidget *item, void *d )
 {
-//  expr_cache_t *expr;
   GtkWidget *sub;
-//  gchar *text, *icon;
 
   if(!GTK_IS_MENU_ITEM(item))
     return;
 
   menu_item_label_update(item);
-/*  if( (expr = g_object_get_data(G_OBJECT(item), "label")) )
-  {
-    if(expr_cache_eval(expr))
-    {
-      if( (icon = strchr(expr->cache, '%')) )
-        text = g_strndup(expr->cache, icon-expr->cache);
-      else
-        text = g_strdup(expr->cache);
-      menu_item_update(item, text, icon?icon+1:NULL);
-      g_free(text);
-    }
-  }*/
 
   if( (sub=gtk_menu_item_get_submenu(GTK_MENU_ITEM(item))) )
     menu_set_names(sub);
@@ -144,7 +130,7 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
   g_object_set_data( G_OBJECT(menu), "caller", widget );
 
   window = gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
-  g_signal_handlers_disconnect_matched(G_OBJECT(menu),G_SIGNAL_MATCH_FUNC,
+  g_signal_handlers_disconnect_matched(G_OBJECT(menu), G_SIGNAL_MATCH_FUNC,
       0, 0, NULL, G_CALLBACK(window_unref), NULL);
   if(gtk_window_get_window_type(GTK_WINDOW(window)) == GTK_WINDOW_POPUP)
     g_signal_connect(G_OBJECT(menu), "unmap",
