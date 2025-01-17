@@ -249,7 +249,7 @@ static void app_menu_item_insert ( GtkWidget *menu, GtkWidget *item )
   gtk_menu_shell_insert(GTK_MENU_SHELL(menu), item, count);
 }
 
-static void app_menu_handle_add ( const gchar *id )
+static gboolean app_menu_add ( gchar *id )
 {
   GDesktopAppInfo *app;
   GtkWidget *submenu;
@@ -259,12 +259,16 @@ static void app_menu_handle_add ( const gchar *id )
   if(g_hash_table_lookup(app_menu_filter, id))
   {
     g_debug("appmenu item: filter out '%s'", id);
-    return;
+    g_free(id);
+    return FALSE;
   }
-  if(g_hash_table_lookup(app_menu_items, id))
-    return;
-  if( !(app = g_desktop_app_info_new(id)) )
-    return;
+  if(g_hash_table_lookup(app_menu_items, id) ||
+      !(app = g_desktop_app_info_new(id)) )
+  {
+    g_free(id);
+    return FALSE;
+  }
+
   if(!g_desktop_app_info_get_nodisplay(app) &&
       (cat = app_menu_cat_lookup(g_desktop_app_info_get_categories(app))))
   {
@@ -298,6 +302,13 @@ static void app_menu_handle_add ( const gchar *id )
 //        item->name, item->icon, item->cat?item->cat->title:"null");
   }
   g_object_unref(app);
+
+  return FALSE;
+}
+
+static void app_menu_handle_add ( const gchar *id )
+{
+  g_timeout_add(1000, (GSourceFunc)app_menu_add, g_strdup(id));
 }
 
 static void app_menu_handle_delete ( const gchar *id )
