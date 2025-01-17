@@ -24,17 +24,13 @@ GtkWidget *taskbar_pager_get_taskbar ( GtkWidget *shell, window_t *win,
     gboolean create )
 {
   TaskbarPagerPrivate *priv;
-  workspace_t *ws;
   GtkWidget *holder;
 
-  if( !(ws = workspace_from_id(win->workspace)) )
-    return NULL;
-
-  if( !(holder = flow_grid_find_child(shell, ws)) )
+  if( !(holder = flow_grid_find_child(shell, win->workspace)) )
   {
     if(!create)
       return NULL;
-    holder = taskbar_pager_new(ws, shell);
+    holder = taskbar_pager_new(win->workspace, shell);
   }
 
   priv = taskbar_pager_get_instance_private(TASKBAR_PAGER(holder));

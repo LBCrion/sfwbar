@@ -114,6 +114,7 @@ static void sway_window_handle ( struct json_object *container,
   gpointer wid;
   window_t *win;
   const gchar *app_id;
+  guint16 state;
 
   wid = GINT_TO_POINTER(json_int_by_name(container, "id", G_MININT64));
   if( !(win = wintree_from_id(GINT_TO_POINTER(wid))) )
@@ -142,6 +143,8 @@ static void sway_window_handle ( struct json_object *container,
     }
   }
 
+  state = win->state;
+
   if(json_bool_by_name(container, "focused", FALSE))
     wintree_set_focus(wid);
   set_bit(win->state, WS_FULLSCREEN | WS_MAXIMIZED,
@@ -155,6 +158,9 @@ static void sway_window_handle ( struct json_object *container,
     win->state &= ~WS_MINIMIZED;
     wintree_set_workspace(win->uid, workspace_id_from_name(parent));
   }
+
+  if(state!=win->state)
+    wintree_commit(win);
 
   if(!g_list_find_custom(win->outputs, monitor, (GCompareFunc)g_strcmp0) &&
       g_strcmp0(monitor, "__i3"))
@@ -216,8 +222,17 @@ static workspace_t *sway_ipc_workspace_new ( struct json_object *obj )
   if( !(id = GINT_TO_POINTER(json_int_by_name(obj, "id", 0))) )
     return NULL;
 
-  ws = workspace_new(id);
-  workspace_set_name(ws, json_string_by_name(obj, "name"));
+  if( !(ws = workspace_from_id(id)) && 
+    !(ws = workspace_from_name(json_string_by_name(obj, "name"))) )
+  {
+    ws = workspace_new(id);
+    workspace_set_name(ws, json_string_by_name(obj, "name"));
+  }
+  else
+  {
+    workspace_ref(ws);
+    ws->id = id;
+  }
 
   if(json_bool_by_name(obj, "focused", FALSE))
     state |= WS_STATE_FOCUSED;
@@ -419,15 +434,13 @@ static void sway_ipc_minimize ( gpointer id )
 static void sway_ipc_unminimize ( gpointer id )
 {
   window_t *win;
-  workspace_t *ws;
 
   win = wintree_from_id(id);
   if(!win)
     return;
-  ws = workspace_from_id(win->workspace);
-  if(ws)
+  if(win->workspace)
     sway_ipc_command("[con_id=%d] move window to workspace %s",
-        GPOINTER_TO_INT(id), ws->name);
+        GPOINTER_TO_INT(id), win->workspace->name);
   else
     sway_ipc_command("[con_id=%d] focus", GPOINTER_TO_INT(id));
 }
@@ -445,15 +458,13 @@ static void sway_ipc_unmaximize ( gpointer id )
 static void sway_ipc_focus ( gpointer id )
 {
   window_t *win;
-  workspace_t *ws;
 
   win = wintree_from_id(id);
   if(!win)
     return;
-  ws = workspace_from_id(win->workspace);
-  if(ws && win->floating)
+  if(win->workspace && win->floating)
     sway_ipc_command("[con_id=%d] move window to workspace %s",
-        GPOINTER_TO_INT(id), ws->name);
+        GPOINTER_TO_INT(id), win->workspace->name);
   sway_ipc_command("[con_id=%d] focus", GPOINTER_TO_INT(id));
 }
 

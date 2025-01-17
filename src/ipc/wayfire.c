@@ -364,7 +364,8 @@ static void wayfire_ipc_window_place ( gpointer wid )
     return;
   view->deltax = wloc.x;
   view->deltay = wloc.y;
-  wayfire_ipc_move_to(wid, win->workspace);
+  if(win->workspace)
+    wayfire_ipc_move_to(wid, win->workspace->id);
 }
 
 static void wayfire_ipc_window_new ( struct json_object *view )

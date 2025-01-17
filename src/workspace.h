@@ -63,6 +63,7 @@ gchar *workspace_get_monitor ( gpointer wsid );
 gboolean workspace_get_can_create ( void );
 void workspace_pin_add ( gchar *pin );
 GList *workspace_get_list ( void );
+workspace_t *workspace_from_name ( const gchar *name );
 void workspace_ref ( gpointer id );
 void workspace_unref ( gpointer id );
 

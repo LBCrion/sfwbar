@@ -315,7 +315,12 @@ void workspace_set_state ( workspace_t *ws, guint32 state )
   if(!ws)
     return;
 
+  if((state & ~WS_STATE_INVALID) ==
+      ((ws->state & WS_STATE_ALL) & ~WS_STATE_INVALID) )
+    return;
+
   ws->state = (ws->state & WS_CAP_ALL) | state | WS_STATE_INVALID;
+  workspace_commit(ws);
 
   g_debug("Workspace: '%s' state change: focused: %s, visible: %s, urgent: %s",
       ws->name, ws->state & WS_STATE_FOCUSED ? "yes" : "no",

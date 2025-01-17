@@ -123,7 +123,7 @@ gboolean switcher_check ( GtkWidget *switcher, window_t *win )
           bar_get_output(base_widget_get_child(switcher)),
           (GCompareFunc)g_strcmp0));
     case G_TOKEN_WORKSPACE:
-      return (!win->workspace || win->workspace==workspace_get_focused());
+      return (!win->workspace || win->workspace->id==workspace_get_focused());
   }
 
   return !wintree_is_filtered(win);

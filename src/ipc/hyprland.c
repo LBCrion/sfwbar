@@ -91,20 +91,21 @@ static void hypr_ipc_command ( gchar *cmd, ... )
   va_end(args);
 }
 
-static gchar *hypr_ipc_workspace_data ( gpointer id, gchar *field )
+static gchar *hypr_ipc_workspace_data ( workspace_t *ws, gchar *field )
 {
-  json_object *json,*ptr;
+  json_object *json, *ptr;
   gint i;
   gchar *res = NULL;
 
-  if(!hypr_ipc_request(ipc_sockaddr,"j/workspaces",&json) || !json)
-    return res;
+  if(!ws || !hypr_ipc_request(ipc_sockaddr, "j/workspaces", &json) || !json)
+    return NULL;
+
   if(json_object_is_type(json, json_type_array))
-    for(i=0;i<json_object_array_length(json);i++)
+    for(i=0; i<json_object_array_length(json); i++)
     {
-      ptr = json_object_array_get_idx(json,i);
-      if(id==GINT_TO_POINTER(json_int_by_name(ptr,"id",0)))
-        res = g_strdup(json_string_by_name(ptr,field));
+      ptr = json_object_array_get_idx(json, i);
+      if(ws->id==GINT_TO_POINTER(json_int_by_name(ptr, "id", 0)))
+        res = g_strdup(json_string_by_name(ptr, field));
     }
   json_object_put(json);
   return res;
@@ -158,12 +159,12 @@ static gboolean hypr_ipc_get_clients ( gpointer *uid )
   gpointer id;
   gint i;
 
-  if(!hypr_ipc_request(ipc_sockaddr,"j/clients",&json) || !json)
+  if(!hypr_ipc_request(ipc_sockaddr, "j/clients", &json) || !json)
     return FALSE;
   if( json_object_is_type(json, json_type_array) )
-    for(i=0;i<json_object_array_length(json);i++)
+    for(i=0; i<json_object_array_length(json); i++)
     {
-      ptr = json_object_array_get_idx(json,i);
+      ptr = json_object_array_get_idx(json, i);
       id = hypr_ipc_window_id(ptr);
       if(id && (!uid || uid == id))
         hypr_ipc_handle_window(ptr);
@@ -408,7 +409,8 @@ static void hypr_ipc_minimize ( gpointer id )
     json_object_put(json);
   }
   hypr_ipc_command("dispatch movetoworkspace special");
-  hypr_ipc_command("workspace %d",GPOINTER_TO_INT(win->workspace));
+  if(win->workspace)
+    hypr_ipc_command("workspace %d",GPOINTER_TO_INT(win->workspace->id));
 
   if(focus!=id)
     wintree_set_focus(focus);
@@ -425,7 +427,7 @@ static void hypr_ipc_unminimize ( gpointer id )
     return;
 
   if(win->workspace)
-    workspace = GPOINTER_TO_INT(win->workspace);
+    workspace = GPOINTER_TO_INT(win->workspace->id);
   else
   {
     if(!hypr_ipc_request(ipc_sockaddr,"j/monitors",&json) || !json ||
@@ -465,18 +467,18 @@ static void hypr_ipc_set_workspace ( workspace_t *ws )
 {
   gchar *name;
 
-  name = hypr_ipc_workspace_data(ws->id,"name");
+  name = hypr_ipc_workspace_data(ws, "name");
   if(name)
-    hypr_ipc_command("dispatch workspace name:%s",name);
+    hypr_ipc_command("dispatch workspace name:%s", name);
   else
-    hypr_ipc_command("dispatch workspace name:%s",ws->name);
+    hypr_ipc_command("dispatch workspace name:%s", ws->name);
   g_free(name);
 }
 
 static void hypr_ipc_move_to ( gpointer id, gpointer wsid )
 {
   hypr_ipc_command("dispatch movetoworkspace %d,address:0x%lx",
-      wsid ,GPOINTER_TO_SIZE(id));
+      wsid, GPOINTER_TO_SIZE(id));
 }
 
 static struct wintree_api hypr_wintree_api = {

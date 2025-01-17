@@ -228,14 +228,17 @@ void wintree_set_app_id ( gpointer wid, const gchar *app_id)
 void wintree_set_workspace ( gpointer wid, gpointer wsid )
 {
   window_t *win;
+  workspace_t *ws;
 
   win = wintree_from_id(wid);
-  if(!win || win->workspace == wsid)
+  ws = workspace_from_id(wsid);
+  if(!win || !ws || win->workspace == ws)
     return;
 
   LISTENER_CALL(window_destroy, win);
-  workspace_unref(win->workspace);
-  win->workspace = wsid;
+  if(win->workspace)
+    workspace_unref(win->workspace->id);
+  win->workspace = ws;
   workspace_ref(wsid);
   LISTENER_CALL(window_new, win);
 }
@@ -276,7 +279,7 @@ void wintree_window_delete ( gpointer id )
 
   wt_list = g_list_delete_link(wt_list, iter);
   LISTENER_CALL(window_destroy, win);
-  workspace_unref(win->workspace);
+  workspace_unref(win->workspace->id);
   g_free(win->appid);
   g_free(win->title);
   g_list_free_full(win->outputs,g_free);
@@ -422,7 +425,8 @@ gboolean wintree_placer_calc ( gpointer wid, GdkRectangle *place )
     return FALSE;
 
   place->width = place->height = 0;
-  nobs = workspace_get_geometry(wid, place, win->workspace, &obs, &output, &focus);
+  nobs = workspace_get_geometry(wid, place, win->workspace->id, &obs, &output,
+      &focus);
 
   x = g_malloc((nobs+1)*sizeof(int));
   y = g_malloc((nobs+1)*sizeof(int));

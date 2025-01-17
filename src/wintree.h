@@ -10,7 +10,7 @@ typedef struct wt_window {
   gchar *title;
   gchar *appid;
   GList *outputs;
-  gpointer *workspace;
+  workspace_t *workspace;
   gint64 pid;
   gpointer uid;
   guint16 state;

@@ -22,7 +22,6 @@ static void flow_item_dnd_dest_impl ( GtkWidget *dest, GtkWidget *src,
 {
   FlowItemPrivate *priv, *spriv;
   window_t *swin, *dwin;
-  workspace_t *ws;
   GtkAllocation alloc;
   gboolean after;
 
@@ -45,9 +44,8 @@ static void flow_item_dnd_dest_impl ( GtkWidget *dest, GtkWidget *src,
   {
     swin = flow_item_get_source(src);
     dwin = flow_item_get_source(dest);
-    ws = workspace_from_id(dwin->workspace);
-    if(swin && ws)
-      wintree_move_to(swin->uid, ws->id);
+    if(swin && dwin && dwin->workspace)
+      wintree_move_to(swin->uid, dwin->workspace->id);
   }
 }
 
