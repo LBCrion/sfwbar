@@ -452,7 +452,10 @@ static gboolean scale_image_set ( GtkWidget *self )
   gchar *temp,*test;
 
   g_return_val_if_fail(IS_SCALE_IMAGE(self), FALSE);
-  priv = scale_image_get_instance_private( SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
+
+  if(!priv->file)
+    return FALSE;
 
   priv->symbolic = FALSE;
   gtk_widget_queue_draw(self);
