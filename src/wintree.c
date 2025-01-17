@@ -279,7 +279,8 @@ void wintree_window_delete ( gpointer id )
 
   wt_list = g_list_delete_link(wt_list, iter);
   LISTENER_CALL(window_destroy, win);
-  workspace_unref(win->workspace->id);
+  if(win->workspace)
+    workspace_unref(win->workspace->id);
   g_free(win->appid);
   g_free(win->title);
   g_list_free_full(win->outputs,g_free);
@@ -415,7 +416,7 @@ gboolean wintree_placer_calc ( gpointer wid, GdkRectangle *place )
 
   if(!placer || !place || !wid)
     return FALSE;
-  if( !(win = wintree_from_id(GINT_TO_POINTER(wid))) )
+  if( !(win = wintree_from_id(GINT_TO_POINTER(wid))) || !win->workspace )
     return FALSE;
   count = 0;
   for(iter=wt_list; iter; iter=g_list_next(iter) )
