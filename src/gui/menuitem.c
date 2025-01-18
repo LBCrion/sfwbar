@@ -264,7 +264,6 @@ static void menu_item_priv_free( MenuItemPrivate *priv )
 
   if(priv->id)
     g_hash_table_remove(menu_items, priv->id);
-  g_clear_pointer(&priv->id, g_free);
   g_clear_pointer(&priv->desktop_file, g_free);
   g_clear_pointer(&priv->action, g_bytes_unref);
   g_free(priv);
@@ -323,7 +322,7 @@ void menu_item_remove ( gchar *id )
   if(gtk_menu_item_get_submenu(GTK_MENU_ITEM(item)))
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), NULL);
 
-  g_hash_table_remove(menu_items, id);
+  gtk_widget_destroy(item);
 }
 
 void menu_item_label_update ( GtkWidget *self )
