@@ -532,7 +532,7 @@ static value_t expr_array_build ( vm_t *vm, value_t p[], gint np )
   value_t v1;
   gint i;
 
-  array = g_array_new(FALSE, FALSE, sizeof(value_t));
+  array = g_array_sized_new(FALSE, FALSE, sizeof(value_t), np);
   g_array_set_clear_func(array, (GDestroyNotify)value_free);
 
   for(i=0; i<np; i++)
