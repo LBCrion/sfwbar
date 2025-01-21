@@ -61,7 +61,7 @@ static value_t action_function ( vm_t *vm, value_t p[], gint np )
 
   if( (func = vm_func_lookup(value_get_string(p[np-1]))) &&
       (func->flags & VM_FUNC_USERDEFINED) )
-    vm_function_call(vm, func->ptr.code, 0);
+    value_free(vm_function_call(vm, func->ptr.code, 0));
 
   vm->widget = widget;
   vm->win = win;

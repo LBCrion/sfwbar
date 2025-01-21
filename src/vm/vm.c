@@ -5,7 +5,7 @@
 #include "gui/taskbaritem.h"
 
 const value_t value_na = { .type = EXPR_TYPE_NA };
-static value_t vm_run ( vm_t *vm, guint8 np );
+static value_t vm_run ( vm_t *vm );
 
 static void vm_push ( vm_t *vm, value_t val )
 {
@@ -28,13 +28,8 @@ static value_t vm_pop ( vm_t *vm )
 
 static void vm_stack_unwind ( vm_t *vm, gsize target )
 {
-  value_t v1;
-
   while(vm->stack->len>target)
-  {
-    v1 = vm_pop(vm);
-    value_free(v1);
-  }
+    value_free(vm_pop(vm));
 }
 
 static gboolean vm_op_binary ( vm_t *vm )
@@ -117,7 +112,7 @@ value_t vm_function_call ( vm_t *vm, GBytes *code, guint8 np )
 {
   value_t v1;
   guint8 *saved_code, *saved_ip;
-  gsize saved_len, saved_stack;
+  gsize saved_len, saved_stack, saved_fp;
 
   if(!code)
     return value_na;
@@ -126,9 +121,11 @@ value_t vm_function_call ( vm_t *vm, GBytes *code, guint8 np )
   saved_ip = vm->ip;
   saved_len = vm->len;
   saved_stack = vm->stack->len;
+  saved_fp = vm->fp;
 
   vm->code = (guint8 *)g_bytes_get_data(code, &vm->len);
-  v1 = vm_run(vm, np);
+  vm->fp = vm->stack->len - np;
+  v1 = vm_run(vm);
 
   if(vm->expr)
     vm->expr->vstate = TRUE;
@@ -136,6 +133,7 @@ value_t vm_function_call ( vm_t *vm, GBytes *code, guint8 np )
   vm->code = saved_code;
   vm->ip = saved_ip;
   vm->len = saved_len;
+  vm->fp = saved_fp;
   vm_stack_unwind(vm, saved_stack);
 
   return v1;
@@ -144,14 +142,18 @@ value_t vm_function_call ( vm_t *vm, GBytes *code, guint8 np )
 static gboolean vm_function ( vm_t *vm )
 {
   vm_function_t *func;
-  value_t v1, result;
+  value_t result;
   guint8 np = *(vm->ip+1);
   gint i;
 
   if(np>vm->stack->len)
+  {
+    g_message("vm: not enough parameters");
     return FALSE;
+  }
 
   memcpy(&func, vm->ip+2, sizeof(gpointer));
+  result = value_na;
   if(!(func->flags & VM_FUNC_USERDEFINED) && func->ptr.function)
   {
     result = func->ptr.function(vm,
@@ -165,17 +167,14 @@ static gboolean vm_function ( vm_t *vm )
     result = value_na;
 
   expr_dep_add(func->name, vm->expr);
-  if(np>1)
+  if(np>1 && vm->pstack->len>np-1)
     g_ptr_array_remove_range(vm->pstack, vm->pstack->len-np+1, np-1);
   else if(!np)
     g_ptr_array_add(vm->pstack, vm->ip);
   vm->ip += sizeof(gpointer)+1;
 
   for(i=0; i<np; i++)
-  {
-    v1 = vm_pop(vm);
-    value_free(v1);
-  }
+    value_free(vm_pop(vm));
 
   vm_push(vm, result);
 
@@ -198,27 +197,23 @@ static void vm_variable ( vm_t *vm )
 
 static void vm_local ( vm_t *vm )
 {
-  value_t v1;
   guint16 pos;
 
   memcpy(&pos, vm->ip+1, sizeof(guint16));
 
-  v1 = value_dup(((value_t *)(vm->stack->data))[vm->fp+pos-1]);
-
-  vm_push(vm, v1);
+  vm_push(vm, value_dup(((value_t *)(vm->stack->data))[vm->fp+pos-1]));
   g_ptr_array_add(vm->pstack, vm->ip);
   vm->ip += sizeof(guint16);
 }
 
 static void vm_assign ( vm_t *vm )
 {
-  value_t v1;
   guint16 pos;
 
   memcpy(&pos, vm->ip+1, sizeof(guint16));
 
-  v1 = vm_pop(vm);
-  ((value_t *)(vm->stack->data))[vm->fp+pos-1] = value_dup(v1);
+  value_free(((value_t *)(vm->stack->data))[vm->fp+pos-1]);
+  ((value_t *)(vm->stack->data))[vm->fp+pos-1] = vm_pop(vm);
   vm->ip += sizeof(guint16)*1;
 }
 
@@ -234,17 +229,16 @@ static void vm_immediate ( vm_t *vm )
   }
   else
   {
-    v1.type = EXPR_TYPE_STRING;
-    v1.value.string = g_strdup((gchar *)vm->ip+2);
+    v1 = value_new_string(g_strdup((gchar *)vm->ip+2));
     vm->ip += strlen(value_get_string(v1))+2;
   }
   vm_push(vm, v1);
 }
 
-static value_t vm_run ( vm_t *vm, guint8 np )
+static value_t vm_run ( vm_t *vm )
 {
   value_t v1;
-  gint jmp, saved_fp;
+  gint jmp;
 
   if(!vm->code)
     return value_na;
@@ -257,9 +251,6 @@ static value_t vm_run ( vm_t *vm, guint8 np )
   if(!vm->pstack)
     vm->pstack = g_ptr_array_sized_new(
         MAX(1, vm->expr? vm->expr->stack_depth : 1));
-
-  saved_fp = vm->fp;
-  vm->fp = vm->stack->len - np;
 
   for(vm->ip = vm->code; (vm->ip-vm->code)<vm->len; vm->ip++)
   {
@@ -296,21 +287,15 @@ static value_t vm_run ( vm_t *vm, guint8 np )
       vm->ip+=sizeof(gint);
     }
     else if (*vm->ip == EXPR_OP_DISCARD)
-    {
-      v1 = vm_pop(vm);
-      value_free(v1);
-    }
+      value_free(vm_pop(vm));
     else if(*vm->ip == '!')
     {
       v1 = vm_pop(vm);
       if(value_is_numeric(v1))
-        v1.value.numeric = !v1.value.numeric;
+        vm_push(vm, value_new_numeric(!v1.value.numeric));
       else
-      {
-        value_free(v1);
-        v1 = value_na;
-      }
-      vm_push(vm, v1);
+        vm_push(vm, value_na);
+      value_free(v1);
     }
     else if(!vm_op_binary(vm))
     {
@@ -318,8 +303,6 @@ static value_t vm_run ( vm_t *vm, guint8 np )
       break;
     }
   }
-
-  vm->fp = saved_fp;
 
   return vm_pop(vm);
 }
@@ -358,7 +341,7 @@ value_t vm_expr_eval ( expr_cache_t *expr )
   vm->expr = expr;
   vm->wstate = action_state_build(vm->widget, vm->win);
 
-  v1 = vm_run(vm, 0);
+  v1 = vm_run(vm);
   vm_free(vm);
 
   return v1;
@@ -378,7 +361,7 @@ void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
   vm->win = win;
   vm->wstate = state? *state : action_state_build(vm->widget, vm->win);
 
-  value_free(vm_run(vm, 0));
+  value_free(vm_run(vm));
   vm_free(vm);
 }
 

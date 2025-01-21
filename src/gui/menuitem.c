@@ -264,6 +264,7 @@ static void menu_item_priv_free( MenuItemPrivate *priv )
 
   if(priv->id)
     g_hash_table_remove(menu_items, priv->id);
+  g_clear_pointer(&priv->label_expr, expr_cache_free);
   g_clear_pointer(&priv->desktop_file, g_free);
   g_clear_pointer(&priv->action, g_bytes_unref);
   g_free(priv);

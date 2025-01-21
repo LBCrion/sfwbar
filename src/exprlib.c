@@ -19,7 +19,6 @@
 /* extract a substring */
 static value_t expr_lib_mid ( vm_t *vm, value_t p[], gint np )
 {
-
   gint len, c1, c2;
 
   vm_param_check_np(vm, np, 3, "mid");
