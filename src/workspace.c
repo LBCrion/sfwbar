@@ -345,7 +345,7 @@ workspace_t *workspace_new ( gpointer id )
     ws = g_malloc0(sizeof(workspace_t));
     ws->id = id;
     ws->refcount = 0;
-    workspaces = g_list_prepend(workspaces, ws);
+    workspaces = g_list_append(workspaces, ws);
     workspace_ref(id);
     LISTENER_CALL(workspace_new, ws);
   }
