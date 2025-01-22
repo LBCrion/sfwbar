@@ -24,27 +24,30 @@ gboolean config_action ( GScanner *scanner, GBytes **action_dst )
   return !!*action_dst;
 }
 
+gboolean config_expr ( GScanner *scanner, GBytes **expr_dst )
+{
+  GByteArray *result;
+
+  result = g_byte_array_new();
+  if(parser_expr_parse(scanner, result))
+    *expr_dst = g_byte_array_free_to_bytes(result);
+  else
+    g_byte_array_unref(result);
+  return !!*expr_dst;
+}
+
 GtkWidget *config_menu_item ( GScanner *scanner )
 {
   gchar *id;
-  GBytes *action;
-  GByteArray *label;
+  GBytes *action, *label;
   expr_cache_t *expr;
   GtkWidget *item;
 
-  if(!config_expect_token(scanner, '(', "missing '(' after 'item'"))
-    return NULL;
-
-  label = g_byte_array_new();
-  if(!parser_expr_parse(scanner, label))
-  {
-    g_byte_array_unref(label);
-    return NULL;
-  }
-
   config_parse_sequence(scanner,
+      SEQ_REQ, '(', NULL, NULL, "missing '(' after 'item'",
+      SEQ_REQ, -2, config_expr, &label, "invalid title expression in item",
       SEQ_REQ, ',', NULL, NULL, "missing ',' in 'item'",
-      SEQ_REQ, -2, config_action, &action, NULL,
+      SEQ_REQ, -2, config_action, &action, "invalid action in item",
       SEQ_OPT, ',', NULL, NULL, NULL,
       SEQ_CON, G_TOKEN_STRING, NULL, &id, "missing id in 'item'",
       SEQ_REQ, ')', NULL, NULL, "missing ')' after 'item'",
@@ -55,13 +58,19 @@ GtkWidget *config_menu_item ( GScanner *scanner )
   {
     item = menu_item_get(id, TRUE);
     expr = expr_cache_new();
-    expr->code = g_byte_array_free_to_bytes(label);
+    expr->code = label;
     expr->eval = TRUE;
     menu_item_set_label_expr(item, expr);
     menu_item_set_action(item, action);
   }
   else
+  {
     item = NULL;
+    if(label)
+      g_bytes_unref(label);
+    if(action)
+      g_bytes_unref(action);
+  }
 
   g_free(id);
 
@@ -175,7 +184,7 @@ void config_menu_clear ( GScanner *scanner )
 void config_function ( GScanner *scanner )
 {
   gchar *name;
-  GByteArray *code;
+  GBytes *code;
 
   if(g_scanner_peek_next_token(scanner)==G_TOKEN_IDENTIFIER)
   {
@@ -189,21 +198,15 @@ void config_function ( GScanner *scanner )
       SEQ_REQ, ')', NULL, NULL, "missing ')' after 'function'",
       SEQ_END);
 
-  if(!scanner->max_parse_errors)
-  {
-    code = g_byte_array_new();
-    if(parser_block_parse(scanner, code, TRUE))
-      vm_func_add_user(name, g_byte_array_free_to_bytes(code));
-    else
-      g_byte_array_unref(code);
-  }
+  if(!scanner->max_parse_errors && name && config_action(scanner, &code))
+      vm_func_add_user(name, code);
 
   g_free(name);
 }
 
 void config_set ( GScanner *scanner )
 {
-  GByteArray *code;
+  GBytes *code;
   gchar *ident;
 
   config_parse_sequence(scanner,
@@ -212,13 +215,8 @@ void config_set ( GScanner *scanner )
       SEQ_REQ, '=', NULL, NULL, "Missing '=' after 'set'",
       SEQ_END);
 
-  code = g_byte_array_new();
-
-  if(ident && parser_expr_parse(scanner, code))
-    scanner_var_new(ident, NULL, (gchar *)g_byte_array_free_to_bytes(code),
-        G_TOKEN_SET, VT_FIRST);
-  else
-    g_byte_array_free(code, TRUE);
+  if(ident && code && config_expr(scanner, &code))
+    scanner_var_new(ident, NULL, (gchar *)code, G_TOKEN_SET, VT_FIRST);
 
   g_free(ident);
 }
@@ -251,7 +249,6 @@ void config_trigger_action ( GScanner *scanner )
         "missing trigger in TriggerAction",
       SEQ_REQ, ',', NULL, NULL, "missing ',' in TriggerAction",
       SEQ_REQ, -2, config_action, &action, NULL,
-      SEQ_OPT, ';', NULL, NULL, NULL,
       SEQ_END);
 
   if(!scanner->max_parse_errors)

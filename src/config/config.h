@@ -45,6 +45,7 @@ gdouble config_assign_number ( GScanner *scanner, gchar *expr );
 void *config_assign_tokens ( GScanner *scanner, GHashTable *keys, gchar *err );
 GList *config_assign_string_list ( GScanner *scanner );
 gboolean config_action ( GScanner *scanner, GBytes **action_dst );
+gboolean config_expr ( GScanner *scanner, GBytes **expr_dst );
 void config_action_finish ( GScanner *scanner );
 void config_define ( GScanner *scanner );
 gchar *config_get_value ( GScanner *, gchar *, gboolean, gchar **);

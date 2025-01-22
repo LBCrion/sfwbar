@@ -176,7 +176,7 @@ gboolean config_flowgrid_property ( GScanner *scanner, GtkWidget *widget )
 gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
 {
   GtkWindow *win;
-  GByteArray *code;
+  GBytes *expr;
   gchar *trigger;
   gint key;
 
@@ -191,11 +191,8 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
       case G_TOKEN_STYLE:
         if(!config_expect_token(scanner, '=', "expecting style = expression"))
           return FALSE;
-        code = g_byte_array_new();
-        if(parser_expr_parse(scanner, code))
-          base_widget_set_style(widget, g_byte_array_free_to_bytes(code));
-        else
-          g_byte_array_free(code, TRUE);
+        if(config_expr(scanner, &expr))
+          base_widget_set_style(widget, expr);
         config_check_and_consume(scanner, ';');
         return TRUE;
       case G_TOKEN_CSS:
@@ -228,21 +225,15 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
       case G_TOKEN_VALUE:
         if(!config_expect_token(scanner, '=', "expecting value = expression"))
           return FALSE;
-        code = g_byte_array_new();
-        if(parser_expr_parse(scanner, code))
-          base_widget_set_value(widget, g_byte_array_free_to_bytes(code));
-        else
-          g_byte_array_free(code, TRUE);
+        if(config_expr(scanner, &expr))
+          base_widget_set_value(widget, expr);
         config_check_and_consume(scanner, ';');
         return TRUE;
       case G_TOKEN_TOOLTIP:
         if(!config_expect_token(scanner, '=', "expecting tooltip = expression"))
           return FALSE;
-        code = g_byte_array_new();
-        if(parser_expr_parse(scanner, code))
-          base_widget_set_tooltip(widget, g_byte_array_free_to_bytes(code));
-        else
-          g_byte_array_free(code, TRUE);
+        if(config_expr(scanner, &expr))
+          base_widget_set_tooltip(widget, expr);
         config_check_and_consume(scanner, ';');
         return TRUE;
     }
