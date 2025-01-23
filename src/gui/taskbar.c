@@ -33,12 +33,12 @@ static void taskbar_init ( Taskbar *self )
   static guint8 data[sizeof(gpointer)+2];
   gpointer fptr = vm_func_lookup("taskbaritemdefault");
 
-  flow_grid_invalidate(GTK_WIDGET(self));
   data[0] = EXPR_OP_FUNCTION;
   memcpy(data+2, &fptr, sizeof(gpointer));
 
   action = g_bytes_new_static(data, sizeof(gpointer)+2);
   base_widget_set_action(GTK_WIDGET(self), 1, 0, action);
+  flow_grid_invalidate(GTK_WIDGET(self));
 }
 
 GtkWidget *taskbar_new ( GtkWidget *parent )

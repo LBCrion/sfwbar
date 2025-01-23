@@ -194,7 +194,7 @@ void config_function ( GScanner *scanner )
 
   config_parse_sequence(scanner,
       SEQ_REQ, '(', NULL, NULL, "missing '(' after 'function'",
-      SEQ_REQ, G_TOKEN_STRING, NULL ,&name, "missing function name",
+      SEQ_REQ, G_TOKEN_STRING, NULL, &name, "missing function name",
       SEQ_REQ, ')', NULL, NULL, "missing ')' after 'function'",
       SEQ_END);
 
@@ -215,7 +215,7 @@ void config_set ( GScanner *scanner )
       SEQ_REQ, '=', NULL, NULL, "Missing '=' after 'set'",
       SEQ_END);
 
-  if(ident && code && config_expr(scanner, &code))
+  if(ident && config_expr(scanner, &code))
     scanner_var_new(ident, NULL, (gchar *)code, G_TOKEN_SET, VT_FIRST);
 
   g_free(ident);

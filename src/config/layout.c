@@ -23,7 +23,7 @@ void config_widget (GScanner *scanner, GtkWidget *widget);
 
 GdkRectangle config_get_loc ( GScanner *scanner )
 {
-  GdkRectangle rect = { .x = 0, .y =0, .width = 1, .height =1 };
+  GdkRectangle rect = { .x=0, .y=0, .width=1, .height=1 };
 
   config_parse_sequence(scanner,
       SEQ_REQ, '(', NULL, NULL, "missing '(' after loc",
@@ -84,7 +84,6 @@ void config_widget_action ( GScanner *scanner, GtkWidget *widget )
       SEQ_CON, ']', NULL, NULL, "missing ']' after action",
       SEQ_REQ, '=', NULL, NULL, "missing '=' after action",
       SEQ_REQ, -2, config_action, &action, "missing action",
-      SEQ_OPT, ';', NULL, NULL, NULL,
       SEQ_END);
 
   if(!scanner->max_parse_errors)
