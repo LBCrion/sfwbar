@@ -95,21 +95,22 @@ static gboolean parser_cached ( GScanner *scanner, GByteArray *code )
 {
   guchar data[2];
 
-  if(!config_expect_token(scanner, '(', "Expect '(' after Cached"))
-    return FALSE;
-
   data[0] = EXPR_OP_CACHED;
   data[1] = TRUE;
   g_byte_array_append(code, data, 2);
 
-  if(!parser_expr_parse(scanner, code))
+  config_parse_sequence(scanner,
+      SEQ_REQ, '(', NULL, NULL, "Expect '(' after Cached",
+      SEQ_REQ, -2, parser_expr_parse, code, "missing expression in Cached",
+      SEQ_REQ, ')', NULL, NULL, "Expect ')' after Cached",
+      SEQ_OPT, ';', NULL, NULL, NULL,
+      SEQ_END);
+
+  if(scanner->max_parse_errors)
     return FALSE;
 
   data[1] = FALSE;
   g_byte_array_append(code, data, 2);
-
-  if(!config_expect_token(scanner, ')', "Expect ')' after Cached()"))
-    return FALSE;
 
   return TRUE;
 }
@@ -118,33 +119,33 @@ static gboolean parser_if ( GScanner *scanner, GByteArray *code )
 {
   gint alen;
 
-  if(!config_expect_token(scanner, '(', "Expect '(' after If"))
-    return FALSE;
-  if(!parser_expr_parse(scanner, code))
-    return FALSE;
-  if(!config_expect_token(scanner, ',', "Expect ',' after If condition"))
+  config_parse_sequence(scanner,
+      SEQ_REQ, '(', NULL, NULL, "Expect '(' after If",
+      SEQ_REQ, -2, parser_expr_parse, code, "Missing condition in If()",
+      SEQ_REQ, ',', NULL, NULL, "Expect ',' after If condition",
+      SEQ_END);
+  if(scanner->max_parse_errors)
     return FALSE;
 
   alen = parser_emit_jump(code, EXPR_OP_JZ);
 
-  if(!parser_expr_parse(scanner, code))
-    return FALSE;
-  if(!config_expect_token(scanner, ',', "Expect ',' after If expression"))
-    return FALSE;
+  config_parse_sequence(scanner,
+      SEQ_REQ, -2, parser_expr_parse, code, "Missing true expression in If()",
+      SEQ_REQ, ',', NULL, NULL, "Expect ',' after true condition in If()",
+      SEQ_END);
 
   /* JZ over len change + JMP instruction (1 + sizeof(gint)) */
   parser_jump_backpatch(code, alen, code->len + sizeof(gint) + 1);
   alen = parser_emit_jump(code, EXPR_OP_JMP);
 
-  if(!parser_expr_parse(scanner, code))
-    return FALSE;
+  config_parse_sequence(scanner,
+      SEQ_REQ, -2, parser_expr_parse, code, "Missing true expression in If()",
+      SEQ_REQ, ')', NULL, NULL, "Expect ')' at the end of If()",
+      SEQ_END);
   /* JMP over len change */
   parser_jump_backpatch(code, alen, code->len);
 
-  if(!config_expect_token(scanner, ')', "Expect ')' after If()"))
-    return FALSE;
-
-  return TRUE;
+  return !scanner->max_parse_errors;
 }
 
 static gboolean parser_function ( GScanner *scanner, GByteArray *code )
@@ -169,13 +170,13 @@ static gboolean parser_function ( GScanner *scanner, GByteArray *code )
   else
     g_scanner_get_next_token(scanner);
 
-  if(scanner->token != ')')
-    return FALSE;
+  if(scanner->token!=')')
+    g_scanner_error(scanner, "Expecting ')' at the enf of a function call");
 
   parser_emit_function(code, ptr, np);
   scanner->config->identifier_2_string = FALSE;
 
-  return TRUE;
+  return scanner->token == ')';
 }
 
 static gboolean parser_variable ( GScanner *scanner, GByteArray *code )
@@ -399,29 +400,24 @@ static gboolean parser_assign_parse ( GScanner *scanner, GByteArray *code )
   if(config_check_and_consume(scanner, '['))
   {
     parser_emit_local(code, pos, EXPR_OP_LOCAL);
-    if(!parser_expr_parse(scanner, code))
-      return FALSE;
-    if(!config_expect_token(scanner, ']', "Expect ']' after array index"))
-      return FALSE;
-    if(!config_expect_token(scanner, '=', "Expect '=' after a variable"))
-      return FALSE;
-    if(!parser_expr_parse(scanner, code))
-      return FALSE;
+    config_parse_sequence(scanner,
+        SEQ_REQ, -2 , parser_expr_parse, code, "Expect index in []",
+        SEQ_REQ, ']', NULL, NULL, "Expect ']' after array index",
+        SEQ_REQ, '=', NULL, NULL, "Expect '=' after a variable",
+        SEQ_REQ, -2, parser_expr_parse, code, "Expect expression after =",
+        SEQ_OPT, ';', NULL, NULL, NULL,
+        SEQ_END);
     parser_emit_function(code, vm_func_lookup("arrayassign"), 3);
-    parser_emit_local(code, pos, EXPR_OP_ASSIGN);
-    config_check_and_consume(scanner, ';');
-    return TRUE;
   }
+  else
+    config_parse_sequence(scanner,
+        SEQ_REQ, '=', NULL, NULL, "Expect '=' after a variable",
+        SEQ_REQ, -2, parser_expr_parse, code, "Expect expression after =",
+        SEQ_OPT, ';', NULL, NULL, NULL,
+        SEQ_END);
   
-  if(!config_expect_token(scanner, '=', "Expect '=' after a variable"))
-    return FALSE;
-
-  if(!parser_expr_parse(scanner, code))
-    return FALSE;
-
   parser_emit_local(code, pos, EXPR_OP_ASSIGN);
-  config_check_and_consume(scanner, ';');
-  return TRUE;
+  return !scanner->max_parse_errors;
 }
 
 static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
@@ -601,7 +597,7 @@ gboolean parser_block_parse ( GScanner *scanner, GByteArray *code,
     parser_var_decl_parse(scanner, code);
 
   while(!config_check_and_consume(scanner, '}'))
-    if( !(ret = parser_instr_parse(scanner, code)))
+    if( !(ret = parser_instr_parse(scanner, code)) )
       break;
 
   config_check_and_consume(scanner, ';');
