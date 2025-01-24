@@ -26,9 +26,6 @@ GHashTable *config_scanner_types, *config_scanner_flags, *config_filter_keys;
 GHashTable *config_axis_keys, *config_taskbar_types, *config_widget_keys;
 GHashTable *config_prop_keys, *config_placer_keys, *config_flowgrid_props;
 
-#define config_add_key(table, str, key) \
-  g_hash_table_insert(table, str, GINT_TO_POINTER(key))
-
 static GScannerConfig scanner_config = {
   .cset_skip_characters = (" \t\n\r"),
   .cset_identifier_first = (G_CSET_a_2_z G_CSET_A_2_Z "_$"),
@@ -237,6 +234,8 @@ void config_init ( void )
   config_add_key(config_placer_keys, "XOrigin", G_TOKEN_XORIGIN);
   config_add_key(config_placer_keys, "YOrigin", G_TOKEN_YORIGIN);
   config_add_key(config_placer_keys, "Children", G_TOKEN_CHILDREN);
+
+  parser_init();
 }
 
 void config_log_error ( GScanner *scanner, gchar *message, gboolean error )

@@ -263,7 +263,7 @@ static value_t vm_run ( vm_t *vm )
       vm_variable(vm);
     else if(*vm->ip == EXPR_OP_LOCAL)
       vm_local(vm);
-    else if(*vm->ip == EXPR_OP_ASSIGN)
+    else if(*vm->ip == EXPR_OP_LOCAL_ASSIGN)
       vm_assign(vm);
     else if(*vm->ip == EXPR_OP_RETURN)
       break;

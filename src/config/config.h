@@ -9,6 +9,9 @@
 #define config_check_identifier(x,y) \
   (g_scanner_peek_next_token(x)==G_TOKEN_IDENTIFIER && \
    !g_ascii_strcasecmp(x->next_value.v_identifier,y))
+#define config_add_key(table, str, key) \
+  g_hash_table_insert(table, str, GINT_TO_POINTER(key))
+
 
 enum ConfigSequenceType {
   SEQ_OPT,
