@@ -58,7 +58,7 @@ typedef struct {
 #define vm_param_check_array(vm, p, n, fname) { if(!value_is_array(p[n])) { return value_na; } }
 
 GBytes *parser_expr_compile ( gchar *expr );
-gboolean parser_block_parse ( GScanner *scanner, GByteArray *, gboolean vars );
+gboolean parser_block_parse ( GScanner *scanner, GByteArray * );
 gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code );
 gboolean parser_macro_add ( GScanner *scanner );
 gboolean parser_function_parse( GScanner *scanner );

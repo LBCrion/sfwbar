@@ -16,10 +16,13 @@ gboolean config_action ( GScanner *scanner, GBytes **action_dst )
   GByteArray *code;
 
   code = g_byte_array_new();
-  if(parser_block_parse(scanner, code, TRUE))
+  if(parser_block_parse(scanner, code))
     *action_dst = g_byte_array_free_to_bytes(code);
   else
+  {
     g_byte_array_unref(code);
+    *action_dst = NULL;
+  }
 
   return !!*action_dst;
 }
@@ -181,29 +184,6 @@ void config_menu_clear ( GScanner *scanner )
   g_free(name);
 }
 
-void config_function ( GScanner *scanner )
-{
-  gchar *name;
-  GBytes *code;
-
-  if(g_scanner_peek_next_token(scanner)==G_TOKEN_IDENTIFIER)
-  {
-    parser_function_parse(scanner);
-    return;
-  }
-
-  config_parse_sequence(scanner,
-      SEQ_REQ, '(', NULL, NULL, "missing '(' after 'function'",
-      SEQ_REQ, G_TOKEN_STRING, NULL, &name, "missing function name",
-      SEQ_REQ, ')', NULL, NULL, "missing ')' after 'function'",
-      SEQ_END);
-
-  if(!scanner->max_parse_errors && name && config_action(scanner, &code))
-      vm_func_add_user(name, code);
-
-  g_free(name);
-}
-
 void config_set ( GScanner *scanner )
 {
   GBytes *code;
@@ -340,7 +320,7 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
         wintree_filter_title(scanner->value.v_string);
         break;
       case G_TOKEN_FUNCTION:
-        config_function(scanner);
+        parser_function_parse(scanner);
         break;
       case G_TOKEN_MODULE:
         config_module(scanner);
