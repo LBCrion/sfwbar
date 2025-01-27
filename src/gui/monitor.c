@@ -51,7 +51,7 @@ static void monitor_surface_enter ( void *data,
 
 struct wl_surface_listener monitor_surface_listener = {
   .enter = monitor_surface_enter,
-  .leave = monitor_noop
+  .leave = (void (*)(void *, struct wl_surface *, struct wl_output *))monitor_noop
 };
 
 void monitor_layer_surface_configure ( void *data,
@@ -64,7 +64,7 @@ void monitor_layer_surface_configure ( void *data,
 
 struct zwlr_layer_surface_v1_listener monitor_layer_surface_listener = {
   .configure = monitor_layer_surface_configure,
-  .closed = monitor_noop
+  .closed = (void (*)(void *, struct zwlr_layer_surface_v1 *))monitor_noop
 };
 
 void monitor_default_probe ( void )
@@ -161,11 +161,11 @@ static void monitor_handle_done ( void *monitor,
 }
 
 static const struct zxdg_output_v1_listener xdg_output_listener = {
-  .logical_position = monitor_noop,
-  .logical_size = monitor_noop,
+  .logical_position = (void (*)(void *, struct zxdg_output_v1 *, int32_t,  int32_t))monitor_noop,
+  .logical_size = (void (*)(void *, struct zxdg_output_v1 *, int32_t,  int32_t))monitor_noop,
   .done = monitor_handle_done,
   .name = monitor_handle_name,
-  .description = monitor_noop,
+  .description = (void (*)(void *, struct zxdg_output_v1 *, const char *))monitor_noop,
 };
 
 static void xdg_output_new ( GdkMonitor *monitor )
