@@ -269,8 +269,9 @@ static gboolean app_menu_add ( gchar *id )
     return FALSE;
   }
 
-  if(!g_desktop_app_info_get_nodisplay(app) &&
-      (cat = app_menu_cat_lookup(g_desktop_app_info_get_categories(app))))
+  if( !g_desktop_app_info_get_nodisplay(app) &&
+      !g_desktop_app_info_get_is_hidden(app) &&
+      (cat = app_menu_cat_lookup(g_desktop_app_info_get_categories(app))) )
   {
     item = g_malloc0(sizeof(app_menu_item_t));
     item->cat = cat;
