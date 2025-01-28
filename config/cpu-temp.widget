@@ -9,6 +9,6 @@ layout {
   label {
     style = "value"
     interval = 1000
-    value = Str(XCpuTemp/1000,0)+"C"
+    value = Str(XCpuTemp, 0)+"°C"
   }
 }
