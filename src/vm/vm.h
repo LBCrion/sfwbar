@@ -16,6 +16,8 @@ enum expr_instruction_t {
   EXPR_OP_DISCARD,
   EXPR_OP_LOCAL,
   EXPR_OP_LOCAL_ASSIGN,
+  EXPR_OP_HEAP,
+  EXPR_OP_HEAP_ASSIGN,
   EXPR_OP_RETURN
 };
 

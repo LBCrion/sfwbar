@@ -39,7 +39,7 @@ gboolean config_expr ( GScanner *scanner, GBytes **expr_dst )
   return !!*expr_dst;
 }
 
-GtkWidget *config_menu_item ( GScanner *scanner )
+static GtkWidget *config_menu_item ( GScanner *scanner )
 {
   gchar *id;
   GBytes *action, *label;
@@ -80,7 +80,7 @@ GtkWidget *config_menu_item ( GScanner *scanner )
   return item;
 }
 
-GtkWidget *config_submenu ( GScanner *scanner )
+static GtkWidget *config_submenu ( GScanner *scanner )
 {
   GtkWidget *item, *submenu;
   gchar *itemname, *subname, *subid;
@@ -145,7 +145,7 @@ void config_menu_items ( GScanner *scanner, GtkWidget *menu )
   }
 }
 
-void config_menu ( GScanner *scanner )
+static void config_menu ( GScanner *scanner )
 {
   gchar *name = NULL;
   GtkWidget *menu;
@@ -167,7 +167,7 @@ void config_menu ( GScanner *scanner )
   config_check_and_consume(scanner, ';');
 }
 
-void config_menu_clear ( GScanner *scanner )
+static void config_menu_clear ( GScanner *scanner )
 {
   gchar *name = NULL;
 
@@ -184,7 +184,7 @@ void config_menu_clear ( GScanner *scanner )
   g_free(name);
 }
 
-void config_set ( GScanner *scanner )
+static void config_set ( GScanner *scanner )
 {
   GBytes *code;
   gchar *ident;
@@ -201,7 +201,7 @@ void config_set ( GScanner *scanner )
   g_free(ident);
 }
 
-void config_mappid_map ( GScanner *scanner )
+static void config_mappid_map ( GScanner *scanner )
 {
   gchar *pattern = NULL, *appid = NULL;
 
@@ -219,7 +219,7 @@ void config_mappid_map ( GScanner *scanner )
   g_free(appid);
 }
 
-void config_trigger_action ( GScanner *scanner )
+static void config_trigger_action ( GScanner *scanner )
 {
   gchar *trigger;
   GBytes *action;
@@ -235,7 +235,7 @@ void config_trigger_action ( GScanner *scanner )
     action_trigger_add(action, trigger);
 }
 
-void config_module ( GScanner *scanner )
+static void config_module ( GScanner *scanner )
 {
   gchar *name;
 
@@ -250,6 +250,25 @@ void config_module ( GScanner *scanner )
     module_load ( name );
 
   g_free(name);
+}
+
+static void config_vars ( GScanner *scanner )
+{
+  do {
+    if(!config_expect_token(scanner, G_TOKEN_IDENTIFIER,
+          "expect an identifier in var declaration"))
+      return;
+
+    if(!g_hash_table_lookup(SCANNER_DATA(scanner)->heap,
+          scanner->value.v_identifier))
+      g_hash_table_insert(SCANNER_DATA(scanner)->heap,
+          g_strdup(scanner->value.v_identifier), g_malloc0(sizeof(value_t)));
+    else
+      g_message("dusplicate declaration of variable %s",
+          scanner->value.v_identifier);
+
+  } while(config_check_and_consume(scanner, ','));
+  config_check_and_consume(scanner, ';');
 }
 
 GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
@@ -294,6 +313,9 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
         break;
       case G_TOKEN_SET:
         config_set(scanner);
+        break;
+      case G_TOKEN_VAR:
+        config_vars(scanner);
         break;
       case G_TOKEN_TRIGGERACTION:
         config_trigger_action(scanner);

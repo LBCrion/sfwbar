@@ -16,13 +16,23 @@ static gint parser_emit_jump ( GByteArray *code, guint8 op )
 }
 
 static void parser_emit_local ( GByteArray *code, guint16 pos,
-    guint8 op )
+   guint8 op )
 {
   guint8 data[sizeof(guint16)+1];
 
   data[0] = op;
   memcpy(data+1, &pos, sizeof(guint16));
   g_byte_array_append(code, data, sizeof(guint16)+1);
+}
+
+static void parser_emit_ptr_op ( GByteArray *code, gconstpointer vptr,
+   guint8 op )
+{
+  guint8 data[sizeof(gpointer)+1];
+
+  data[0] = op;
+  memcpy(data+1, &vptr, sizeof(gpointer));
+  g_byte_array_append(code, data, sizeof(gpointer)+1);
 }
 
 static void parser_emit_string ( GByteArray *code, gchar *str )
@@ -85,10 +95,18 @@ const gchar *parser_identifier_lookup ( gchar *identifier )
 
 static guint16 parser_local_lookup ( GScanner *scanner )
 {
-  if(!scanner->user_data || scanner->token!=G_TOKEN_IDENTIFIER)
+  if(!SCANNER_DATA(scanner)->locals || scanner->token!=G_TOKEN_IDENTIFIER)
     return 0;
   return GPOINTER_TO_INT(g_hash_table_lookup(
-          scanner->user_data, scanner->value.v_identifier));
+          SCANNER_DATA(scanner)->locals, scanner->value.v_identifier));
+}
+
+static value_t *parser_heap_lookup ( GScanner *scanner )
+{
+  if(!(SCANNER_DATA(scanner)->heap || scanner->token!=G_TOKEN_IDENTIFIER))
+    return NULL;
+  return g_hash_table_lookup(SCANNER_DATA(scanner)->heap,
+      scanner->value.v_identifier);
 }
 
 static gboolean parser_cached ( GScanner *scanner, GByteArray *code )
@@ -179,34 +197,35 @@ static gboolean parser_function ( GScanner *scanner, GByteArray *code )
   return scanner->token == ')';
 }
 
+static gboolean parser_index_parse( GScanner *scanner, GByteArray *code )
+{
+  if(!parser_expr_parse(scanner, code))
+    return FALSE;
+  if(!config_expect_token(scanner, ']', "Expect ']' after array index"))
+    return FALSE;
+
+  parser_emit_function(code, vm_func_lookup("arrayindex"), 2);
+  return TRUE;
+}
+
 static gboolean parser_variable ( GScanner *scanner, GByteArray *code )
 {
-  guint8 data[sizeof(gpointer)+1];
-  gconstpointer ptr;
   guint16 pos;
+  value_t *vptr;
 
   if( (pos = parser_local_lookup(scanner)) )
+    parser_emit_local(code, pos, EXPR_OP_LOCAL);
+  else if( (vptr = parser_heap_lookup(scanner)) )
+    parser_emit_ptr_op(code, vptr, EXPR_OP_HEAP);
+  else
   {
-    if(config_check_and_consume(scanner, '['))
-    {
-      parser_emit_local(code, pos, EXPR_OP_LOCAL);
-      if(!parser_expr_parse(scanner, code))
-        return FALSE;
-      if(!config_expect_token(scanner, ']', "Expect ']' after array index"))
-        return FALSE;
-
-      parser_emit_function(code, vm_func_lookup("arrayindex"), 2);
-    }
-    else
-      parser_emit_local(code, pos, EXPR_OP_LOCAL);
+    parser_emit_ptr_op(code,
+      parser_identifier_lookup(scanner->value.v_identifier), EXPR_OP_VARIABLE);
     return TRUE;
   }
 
-  ptr = parser_identifier_lookup(scanner->value.v_identifier);
-  memcpy(data+1, &ptr, sizeof(gpointer));
-  data[0] = EXPR_OP_VARIABLE;
-  g_byte_array_append(code, data, sizeof(gpointer)+1);
-
+  if(config_check_and_consume(scanner, '['))
+    return parser_index_parse(scanner, code);
   return TRUE;
 }
 
@@ -391,14 +410,16 @@ gboolean parser_macro_add ( GScanner *scanner )
 }
 
 static gboolean parser_assign_parse ( GScanner *scanner, GByteArray *code,
-    guint16 pos )
+    guint16 pos, value_t *vptr )
 {
-  if(!pos)
-    return FALSE;
+  g_return_val_if_fail(pos || vptr, FALSE);
 
   if(config_check_and_consume(scanner, '['))
   {
-    parser_emit_local(code, pos, EXPR_OP_LOCAL);
+    if(pos)
+      parser_emit_local(code, pos, EXPR_OP_LOCAL);
+    else
+      parser_emit_ptr_op(code, vptr, EXPR_OP_HEAP);
     config_parse_sequence(scanner,
         SEQ_REQ, -2 , parser_expr_parse, code, "Expect index in []",
         SEQ_REQ, ']', NULL, NULL, "Expect ']' after array index",
@@ -414,8 +435,12 @@ static gboolean parser_assign_parse ( GScanner *scanner, GByteArray *code,
         SEQ_REQ, -2, parser_expr_parse, code, "Expect expression after =",
         SEQ_OPT, ';', NULL, NULL, NULL,
         SEQ_END);
-  
-  parser_emit_local(code, pos, EXPR_OP_LOCAL_ASSIGN);
+
+  if(pos)
+    parser_emit_local(code, pos, EXPR_OP_LOCAL_ASSIGN);
+  else
+    parser_emit_ptr_op(code, vptr, EXPR_OP_HEAP_ASSIGN);
+
   return !scanner->max_parse_errors;
 }
 
@@ -466,7 +491,10 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
   }
 
   if(!cond && parser_local_lookup(scanner))
-    return parser_assign_parse(scanner, code, parser_local_lookup(scanner));
+    return parser_assign_parse(scanner, code, parser_local_lookup(scanner),
+        NULL);
+  if(!cond && parser_heap_lookup(scanner))
+    return parser_assign_parse(scanner, code, 0, parser_heap_lookup(scanner));
 
   if( !config_lookup_next_key(scanner, config_toplevel_keys) &&
       !config_lookup_next_key(scanner, config_prop_keys) &&
@@ -506,8 +534,9 @@ static gboolean parser_var_declare ( GScanner *scanner, GByteArray *code,
   if(!config_check_and_consume(scanner, G_TOKEN_IDENTIFIER))
     return FALSE;
 
-  g_hash_table_insert(scanner->user_data,g_strdup(scanner->value.v_identifier),
-      GUINT_TO_POINTER(g_hash_table_size(scanner->user_data)+1));
+  g_hash_table_insert(SCANNER_DATA(scanner)->locals,
+      g_strdup(scanner->value.v_identifier), GUINT_TO_POINTER(
+        g_hash_table_size(SCANNER_DATA(scanner)->locals)+1));
 
   if(!param)
   {
@@ -517,7 +546,8 @@ static gboolean parser_var_declare ( GScanner *scanner, GByteArray *code,
   }
 
   if(g_scanner_peek_next_token(scanner) == '=')
-    parser_assign_parse(scanner, code, g_hash_table_size(scanner->user_data));
+    parser_assign_parse(scanner, code,
+        g_hash_table_size(SCANNER_DATA(scanner)->locals), NULL);
 
   return TRUE;
 }
@@ -611,8 +641,8 @@ gboolean parser_block_parse ( GScanner *scanner, GByteArray *code )
 {
   gboolean result, alloc_hash;
 
-  if( (alloc_hash = !scanner->user_data) )
-    scanner->user_data = g_hash_table_new_full( (GHashFunc)str_nhash,
+  if( (alloc_hash = !SCANNER_DATA(scanner)->locals) )
+    SCANNER_DATA(scanner)->locals = g_hash_table_new_full((GHashFunc)str_nhash,
         (GEqualFunc)str_nequal, g_free, NULL);
 
   if(!config_check_and_consume(scanner, '{'))
@@ -624,7 +654,7 @@ gboolean parser_block_parse ( GScanner *scanner, GByteArray *code )
 
   config_check_and_consume(scanner, ';');
   if(alloc_hash)
-    g_clear_pointer(&scanner->user_data, g_hash_table_destroy);
+    g_clear_pointer(&SCANNER_DATA(scanner)->locals, g_hash_table_destroy);
 
   return result;
 }
@@ -633,9 +663,9 @@ static gboolean parser_params_parse ( GScanner *scanner, GByteArray *code )
 {
   while(config_check_and_consume(scanner, G_TOKEN_IDENTIFIER))
   {
-    g_hash_table_insert(scanner->user_data,
+    g_hash_table_insert(SCANNER_DATA(scanner)->locals,
         g_strdup(scanner->value.v_identifier),
-        GINT_TO_POINTER(g_hash_table_size(scanner->user_data)+1));
+        GINT_TO_POINTER(g_hash_table_size(SCANNER_DATA(scanner)->locals)+1));
     if(!config_check_and_consume(scanner, ','))
       break;
   }
@@ -664,7 +694,7 @@ gboolean parser_function_parse( GScanner *scanner )
   }
 
   acode = g_byte_array_new();
-  scanner->user_data = g_hash_table_new_full( (GHashFunc)str_nhash,
+  SCANNER_DATA(scanner)->locals = g_hash_table_new_full((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal, g_free, NULL);
 
   config_parse_sequence(scanner,
@@ -681,7 +711,7 @@ gboolean parser_function_parse( GScanner *scanner )
   else
     g_byte_array_unref(acode);
   g_free(name);
-  g_clear_pointer(&scanner->user_data, g_hash_table_destroy);
+  g_clear_pointer(&SCANNER_DATA(scanner)->locals, g_hash_table_destroy);
 
   return !scanner->max_parse_errors;
 }

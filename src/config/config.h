@@ -4,6 +4,13 @@
 #include <gtk/gtk.h>
 #include "action.h"
 
+typedef struct {
+  GHashTable *locals;
+  GHashTable *heap;
+} scanner_data_t;
+
+#define SCANNER_DATA(x) ((scanner_data_t *)((x)->user_data))
+
 #define config_lookup_key(x,y) GPOINTER_TO_INT(config_lookup_ptr(x,y))
 #define config_lookup_next_key(x,y) GPOINTER_TO_INT(config_lookup_next_ptr(x,y))
 #define config_check_identifier(x,y) \
@@ -11,7 +18,6 @@
    !g_ascii_strcasecmp(x->next_value.v_identifier,y))
 #define config_add_key(table, str, key) \
   g_hash_table_insert(table, str, GINT_TO_POINTER(key))
-
 
 enum ConfigSequenceType {
   SEQ_OPT,
@@ -141,6 +147,7 @@ enum {
   G_TOKEN_REGEX,
   G_TOKEN_JSON,
   G_TOKEN_SET,
+  G_TOKEN_VAR,
   G_TOKEN_GRAB,
   G_TOKEN_WORKSPACE,
   G_TOKEN_OUTPUT,

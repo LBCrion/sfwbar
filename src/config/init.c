@@ -119,6 +119,7 @@ void config_init ( void )
   config_add_key(config_toplevel_keys, "DisownMinimized",
       G_TOKEN_DISOWNMINIMIZED);
   config_add_key(config_toplevel_keys, "Function", G_TOKEN_FUNCTION);
+  config_add_key(config_toplevel_keys, "Var", G_TOKEN_VAR);
   config_add_key(config_toplevel_keys, "Set", G_TOKEN_SET);
   config_add_key(config_toplevel_keys, "MenuClear", G_TOKEN_MENUCLEAR);
   config_add_key(config_toplevel_keys, "Menu", G_TOKEN_MENU);
@@ -264,6 +265,9 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container )
 
   scanner->msg_handler = config_log_error;
   scanner->max_parse_errors = FALSE;
+  scanner->user_data = g_malloc0(sizeof(scanner_data_t));
+  SCANNER_DATA(scanner)->heap = g_hash_table_new_full((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal, g_free, NULL);
 
   tmp = strstr(data,"\n#CSS");
   if(tmp)
@@ -281,6 +285,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container )
   scanner->input_name = fname;
   g_scanner_input_text( scanner, data, strlen(data) );
   w = config_parse_toplevel ( scanner, container );
+  g_clear_pointer(&SCANNER_DATA(scanner)->heap, g_hash_table_destroy);
   g_scanner_destroy(scanner);
 
   return w;

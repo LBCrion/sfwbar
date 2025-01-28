@@ -206,7 +206,17 @@ static void vm_local ( vm_t *vm )
   vm->ip += sizeof(guint16);
 }
 
-static void vm_assign ( vm_t *vm )
+static void vm_heap ( vm_t *vm )
+{
+  value_t *vptr;
+
+  memcpy(&vptr, vm->ip+1, sizeof(gpointer));
+  vm_push(vm, value_dup(*vptr));
+  g_ptr_array_add(vm->pstack, vm->ip);
+  vm->ip += sizeof(gpointer);
+}
+
+static void vm_local_assign ( vm_t *vm )
 {
   guint16 pos;
 
@@ -214,7 +224,17 @@ static void vm_assign ( vm_t *vm )
 
   value_free(((value_t *)(vm->stack->data))[vm->fp+pos-1]);
   ((value_t *)(vm->stack->data))[vm->fp+pos-1] = vm_pop(vm);
-  vm->ip += sizeof(guint16)*1;
+  vm->ip += sizeof(guint16);
+}
+
+static void vm_heap_assign ( vm_t *vm )
+{
+  value_t *vptr;
+
+  memcpy(&vptr, vm->ip+1, sizeof(gpointer));
+  value_free(*vptr);
+  *vptr = vm_pop(vm);
+  vm->ip += sizeof(gpointer);
 }
 
 static void vm_immediate ( vm_t *vm )
@@ -263,8 +283,12 @@ static value_t vm_run ( vm_t *vm )
       vm_variable(vm);
     else if(*vm->ip == EXPR_OP_LOCAL)
       vm_local(vm);
+    else if(*vm->ip == EXPR_OP_HEAP)
+      vm_heap(vm);
     else if(*vm->ip == EXPR_OP_LOCAL_ASSIGN)
-      vm_assign(vm);
+      vm_local_assign(vm);
+    else if(*vm->ip == EXPR_OP_HEAP_ASSIGN)
+      vm_heap_assign(vm);
     else if(*vm->ip == EXPR_OP_RETURN)
       break;
     else if(*vm->ip == EXPR_OP_FUNCTION)
@@ -299,7 +323,7 @@ static value_t vm_run ( vm_t *vm )
     }
     else if(!vm_op_binary(vm))
     {
-      g_message("invalid op");
+      g_message("invalid op %d", *vm->ip);
       break;
     }
   }
