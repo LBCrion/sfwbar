@@ -7,5 +7,5 @@ scanner {
 module("bsdctl")
 
 Set BsdCPUTemp = BSDCtl("dev.cpu.0.temperature")
-Set XCpuTemp = If(!Ident(BSDCtl), CPUTemp, Val(BsdCPUTemp)/10-273.2)
+Set XCpuTemp = If(!Ident(BSDCtl), CPUTemp, BsdCPUTemp/10-273.2)
 Set XCpuTempPresent = If(Ident(BSDCtl), $BsdCPUTemp!="", CPUTemp.count)
