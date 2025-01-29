@@ -103,7 +103,7 @@ static guint16 parser_local_lookup ( GScanner *scanner )
 
 static value_t *parser_heap_lookup ( GScanner *scanner )
 {
-  if(!(SCANNER_DATA(scanner)->heap || scanner->token!=G_TOKEN_IDENTIFIER))
+  if(!SCANNER_DATA(scanner)->heap || scanner->token!=G_TOKEN_IDENTIFIER)
     return NULL;
   return g_hash_table_lookup(SCANNER_DATA(scanner)->heap,
       scanner->value.v_identifier);

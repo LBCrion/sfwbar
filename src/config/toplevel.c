@@ -264,7 +264,7 @@ static void config_vars ( GScanner *scanner )
       g_hash_table_insert(SCANNER_DATA(scanner)->heap,
           g_strdup(scanner->value.v_identifier), g_malloc0(sizeof(value_t)));
     else
-      g_message("dusplicate declaration of variable %s",
+      g_message("duplicate declaration of variable %s",
           scanner->value.v_identifier);
 
   } while(config_check_and_consume(scanner, ','));

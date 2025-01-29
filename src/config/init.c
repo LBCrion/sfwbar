@@ -285,7 +285,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container )
   scanner->input_name = fname;
   g_scanner_input_text( scanner, data, strlen(data) );
   w = config_parse_toplevel ( scanner, container );
-  g_clear_pointer(&SCANNER_DATA(scanner)->heap, g_hash_table_destroy);
+  g_clear_pointer(&(SCANNER_DATA(scanner)->heap), g_hash_table_destroy);
   g_scanner_destroy(scanner);
 
   return w;
