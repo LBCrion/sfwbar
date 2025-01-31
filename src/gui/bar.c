@@ -20,6 +20,21 @@ G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW, G_ADD_PRIVATE (Bar))
 static GHashTable *bar_list;
 extern GtkApplication *application;
 
+static void bar_reveal ( GtkWidget *self )
+{
+  BarPrivate *priv;
+
+  g_return_if_fail(IS_BAR(self));
+  priv = bar_get_instance_private(BAR(self));
+
+  gtk_revealer_set_reveal_child(priv->revealer, FALSE);
+  gtk_widget_show(self);
+//  gtk_widget_set_size_request(self, 0, 30);
+  gtk_revealer_set_transition_type(priv->revealer,
+    GTK_REVEALER_TRANSITION_TYPE_CROSSFADE);
+  gtk_revealer_set_reveal_child(priv->revealer, TRUE);
+}
+
 static gboolean bar_sensor_unblock_cb ( GtkWidget *self )
 {
   BarPrivate *priv;
@@ -28,6 +43,23 @@ static gboolean bar_sensor_unblock_cb ( GtkWidget *self )
   priv = bar_get_instance_private(BAR(self));
   priv->sensor_block = FALSE;
 
+  return FALSE;
+}
+
+static gboolean bar_sensor_hide_complete ( GtkWidget *self )
+{
+  BarPrivate *priv;
+
+  g_return_val_if_fail(IS_BAR(self), FALSE);
+  priv = bar_get_instance_private(BAR(self));
+  if(gtk_revealer_get_child_revealed(priv->revealer))
+    return TRUE;
+
+  css_add_class(self, "sensor");
+  gtk_container_remove(GTK_CONTAINER(self), gtk_bin_get_child(GTK_BIN(self)));
+  gtk_container_add(GTK_CONTAINER(self), priv->sensor);
+  priv->sensor_state = FALSE;
+  priv->hide_handle = 0;
   return FALSE;
 }
 
@@ -43,12 +75,10 @@ static gboolean bar_sensor_hide ( GtkWidget *self )
 
   if(window_ref_check(self))
     return TRUE;
+  gtk_revealer_set_reveal_child(priv->revealer, FALSE);
   priv->sensor_block = TRUE;
   g_idle_add((GSourceFunc)bar_sensor_unblock_cb, self);
-  css_add_class(self, "sensor");
-  gtk_container_remove(GTK_CONTAINER(self), gtk_bin_get_child(GTK_BIN(self)));
-  gtk_container_add(GTK_CONTAINER(self), priv->sensor);
-  priv->sensor_state = FALSE;
+  priv->hide_handle = g_idle_add((GSourceFunc)bar_sensor_hide_complete, self);
   priv->sensor_handle = 0;
 
   return FALSE;
@@ -86,16 +116,23 @@ static void bar_sensor_show_bar ( GtkWidget *self )
 
   bar_sensor_cancel_hide(self);
   priv->sensor_state = TRUE;
-
-  if(gtk_bin_get_child(GTK_BIN(self)) != priv->sensor)
-    return;
-
   priv->sensor_block = TRUE;
   g_idle_add((GSourceFunc)bar_sensor_unblock_cb, self);
-  css_remove_class(self,"sensor");
-  gtk_container_remove(GTK_CONTAINER(self), gtk_bin_get_child(GTK_BIN(self)));
-  gtk_widget_show(priv->box);
-  gtk_container_add(GTK_CONTAINER(self), priv->box);
+  css_remove_class(self, "sensor");
+
+  if(priv->hide_handle)
+  {
+    g_source_remove(priv->hide_handle);
+    priv->hide_handle = 0;
+  }
+
+  if(gtk_bin_get_child(GTK_BIN(self))==priv->sensor)
+  {
+    gtk_container_remove(GTK_CONTAINER(self), gtk_bin_get_child(GTK_BIN(self)));
+    gtk_container_add(GTK_CONTAINER(self), GTK_WIDGET(priv->revealer));
+  }
+  
+  bar_reveal(self);
 }
 
 static gboolean bar_enter_notify_event ( GtkWidget *self,
@@ -243,7 +280,7 @@ GtkWidget *bar_from_name ( gchar *name )
   if(!bar_list)
     return NULL;
 
-  return g_hash_table_lookup(bar_list,name?name:"sfwbar");
+  return g_hash_table_lookup(bar_list, name? name : "sfwbar");
 }
 
 GtkWidget *bar_grid_from_name ( gchar *addr )
@@ -256,25 +293,23 @@ GtkWidget *bar_grid_from_name ( gchar *addr )
   if(!addr)
     addr = "sfwbar";
 
-  if(!g_ascii_strcasecmp(addr,"*"))
+  if(!g_ascii_strcasecmp(addr, "*"))
     return NULL;
 
-  ptr = strchr(addr,':');
-
-  if(ptr)
+  if( (ptr = strchr(addr, ':')) )
   {
     grid = ptr + 1;
     if(ptr == addr)
       name = g_strdup("sfwbar");
     else
-      name = g_strndup(addr,ptr-addr);
+      name = g_strndup(addr, ptr-addr);
   }
   else
   {
     grid = NULL;
     name = g_strdup(addr);
   }
-  if(!g_ascii_strcasecmp(name,"*"))
+  if(!g_ascii_strcasecmp(name, "*"))
   {
     g_message(
         "invalid bar name '*' in grid address %s, defaulting to 'sfwbar'",
@@ -288,9 +323,9 @@ GtkWidget *bar_grid_from_name ( gchar *addr )
   g_free(name);
   priv = bar_get_instance_private(BAR(bar));
 
-  if(grid && !g_ascii_strcasecmp(grid,"center"))
+  if(grid && !g_ascii_strcasecmp(grid, "center"))
     widget = priv->center;
-  else if(grid && !g_ascii_strcasecmp(grid,"end"))
+  else if(grid && !g_ascii_strcasecmp(grid, "end"))
     widget = priv->end;
   else
     widget = priv->start;
@@ -302,12 +337,12 @@ GtkWidget *bar_grid_from_name ( gchar *addr )
 
   base_widget_set_style_static(widget, g_strdup("layout"));
 
-  if(grid && !g_ascii_strcasecmp(grid,"center"))
+  if(grid && !g_ascii_strcasecmp(grid, "center"))
   {
     gtk_box_set_center_widget(GTK_BOX(priv->box), widget);
     priv->center = widget;
   }
-  else if(grid && !g_ascii_strcasecmp(grid,"end"))
+  else if(grid && !g_ascii_strcasecmp(grid, "end"))
   {
     gtk_box_pack_end(GTK_BOX(priv->box), widget, TRUE, TRUE, 0);
     priv->end = widget;
@@ -568,13 +603,10 @@ gboolean bar_update_monitor ( GtkWidget *self )
     return TRUE;
 
   gdisp = gdk_display_get_default();
-  if(priv->jump)
-  {
-    if( !(match = gdk_display_get_primary_monitor(gdisp)) )
-      match = gdk_display_get_monitor(gdisp, 0);
-  }
-  else
+  if(!priv->jump)
     match = NULL;
+  else if( !(match = gdk_display_get_primary_monitor(gdisp)) )
+    match = gdk_display_get_monitor(gdisp, 0);
 
   nmon = gdk_display_get_n_monitors(gdisp);
   if(priv->output)
@@ -591,7 +623,7 @@ gboolean bar_update_monitor ( GtkWidget *self )
   {
     gtk_layer_set_monitor(GTK_WINDOW(self), match);
     if(priv->visible)
-      gtk_widget_show(self);
+      bar_reveal(self);
   }
 
   /* remove any mirrors from new primary output */
@@ -725,6 +757,20 @@ void bar_set_sensor ( GtkWidget *self, gint64 timeout )
     bar_set_sensor(iter->data, timeout);
 }
 
+void bar_set_transition ( GtkWidget *self, guint duration )
+{
+  BarPrivate *priv;
+  GList *iter;
+
+  g_return_if_fail(IS_BAR(self));
+  priv = bar_get_instance_private(BAR(self));
+
+  priv->sensor_transition = duration;
+  gtk_revealer_set_transition_duration(priv->revealer, duration);
+  for(iter = priv->mirror_children; iter; iter=g_list_next(iter))
+    bar_set_transition(iter->data, duration);
+}
+
 static gboolean bar_on_delete ( GtkWidget *self )
 {
   BarPrivate *priv;
@@ -753,8 +799,11 @@ GtkWidget *bar_new ( gchar *name )
   priv->output = g_strdup(monitor_get_name(priv->current_monitor));
   priv->dir = -1;
   priv->box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  g_object_ref_sink(priv->box);
-  gtk_container_add(GTK_CONTAINER(self), priv->box);
+  priv->revealer = GTK_REVEALER(gtk_revealer_new());
+  gtk_container_add(GTK_CONTAINER(priv->revealer), priv->box);
+
+  g_object_ref_sink(priv->revealer);
+  gtk_container_add(GTK_CONTAINER(self), GTK_WIDGET(priv->revealer));
   g_object_set_data(G_OBJECT(priv->box), "parent_window", self);
   gtk_layer_init_for_window(GTK_WINDOW(self));
   gtk_widget_set_name(self, name);
@@ -763,6 +812,11 @@ GtkWidget *bar_new ( gchar *name )
   gtk_layer_set_layer(GTK_WINDOW(self), GTK_LAYER_SHELL_LAYER_TOP);
   gtk_layer_set_monitor(GTK_WINDOW(self), priv->current_monitor);
   bar_style_updated(self);
+  gtk_widget_show(priv->box);
+  gtk_widget_show(GTK_WIDGET(priv->revealer));
+
+  css_widget_apply(self, g_strdup_printf(
+      "window#%s.sensor { background-color: rgba(0,0,0,0); }", name));
 
   if(priv->name)
   {
@@ -812,6 +866,7 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
   dpriv->output = g_strdup(monitor_get_name(monitor));
 
   bar_set_sensor(self, spriv->sensor_timeout);
+  bar_set_transition(self, spriv->sensor_transition);
 
   gtk_layer_set_monitor(GTK_WINDOW(self), monitor);
   gtk_widget_show(self);

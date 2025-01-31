@@ -345,6 +345,10 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         bar_set_sensor(gtk_widget_get_ancestor(widget, BAR_TYPE),
             (gint64)config_assign_number(scanner, "sensor timeout"));
         return TRUE;
+      case G_TOKEN_TRANSITION:
+        bar_set_transition(gtk_widget_get_ancestor(widget, BAR_TYPE),
+            (gint64)config_assign_number(scanner, "sensor timeout"));
+        return TRUE;
       case G_TOKEN_BAR_ID:
         bar_set_id(gtk_widget_get_ancestor(widget, BAR_TYPE),
             config_assign_string(scanner, "bar id"));
