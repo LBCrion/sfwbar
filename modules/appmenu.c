@@ -249,6 +249,19 @@ static void app_menu_item_insert ( GtkWidget *menu, GtkWidget *item )
   gtk_menu_shell_insert(GTK_MENU_SHELL(menu), item, count);
 }
 
+static gboolean app_menu_check_boolean ( GDesktopAppInfo *app, gchar *key )
+{
+  gchar *value;
+  gboolean result;
+
+  if( !(value = g_desktop_app_info_get_string(app, key)) )
+    return FALSE;
+
+  result = !g_ascii_strncasecmp(value, "true", 4) && !g_ascii_isalpha(value[4]);
+  g_free(value);
+  return result;
+}
+
 static gboolean app_menu_add ( gchar *id )
 {
   GDesktopAppInfo *app;
@@ -269,8 +282,8 @@ static gboolean app_menu_add ( gchar *id )
     return FALSE;
   }
 
-  if( !g_desktop_app_info_get_nodisplay(app) &&
-      !g_desktop_app_info_get_is_hidden(app) &&
+  if( !app_menu_check_boolean(app, "Hidden") &&
+      !app_menu_check_boolean(app, "NoDisplay") &&
       (cat = app_menu_cat_lookup(g_desktop_app_info_get_categories(app))) )
   {
     item = g_malloc0(sizeof(app_menu_item_t));
