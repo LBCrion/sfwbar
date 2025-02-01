@@ -22,8 +22,8 @@ enum expr_instruction_t {
 };
 
 enum vm_func_flags_t {
-  VM_FUNC_DETERMINISTIC,
-  VM_FUNC_USERDEFINED
+  VM_FUNC_DETERMINISTIC = 1,
+  VM_FUNC_USERDEFINED = 2,
 };
 
 typedef struct {

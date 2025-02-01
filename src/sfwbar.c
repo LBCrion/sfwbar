@@ -120,7 +120,7 @@ static void activate (GtkApplication* app, gpointer data )
 
   clist = gtk_window_list_toplevels();
   for(iter = clist; iter; iter = g_list_next(iter) )
-    if(GTK_IS_BOX(gtk_bin_get_child(GTK_BIN(iter->data))))
+    if(IS_BAR(iter->data))
     {
       css_widget_cascade(GTK_WIDGET(iter->data), NULL);
       base_widget_autoexec(iter->data, NULL);
