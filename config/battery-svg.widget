@@ -56,7 +56,7 @@ Function XBatteryInit() {
 layout {
   style = "module"
   button "XBatteryModule" {
-    action[0] = XBatteryInit()
+    action[0] = XBatteryInit
     value = $XBatterySvg
     style = If(!Ident($XBatteryState) & !Ident(BSDCtl),"hidden","module")
     tooltip = GT("Battery") + ": " + Str(XBatteryLevel) + "%" + If(XBatteryTime, " " +
