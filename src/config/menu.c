@@ -133,6 +133,7 @@ void config_menu_items ( GScanner *scanner, GtkWidget *menu )
   while(!config_is_section_end(scanner))
   {
     g_scanner_get_next_token(scanner);
+    item = NULL;
     switch(config_lookup_key(scanner, config_menu_keys))
     {
       case G_TOKEN_ITEM:
@@ -146,7 +147,7 @@ void config_menu_items ( GScanner *scanner, GtkWidget *menu )
         break;
       case G_TOKEN_SORT:
         g_object_set_data(G_OBJECT(menu), "sort",
-            GINT_TO_POINTER(config_assign_number(scanner, "sort")));
+            GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "sort")));
         break;
       default:
         item = NULL;
