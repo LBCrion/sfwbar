@@ -32,7 +32,7 @@ void menu_item_update_from_app ( GtkWidget *self, GDesktopAppInfo *app);
 void menu_item_set_id ( GtkWidget *self, gchar *id );
 gchar *menu_item_get_id ( GtkWidget *self );
 void menu_item_set_label ( GtkWidget *self, const gchar *label );
-void menu_item_set_label_expr ( GtkWidget *self, expr_cache_t *expr );
+void menu_item_set_label_expr ( GtkWidget *self, GBytes *code );
 void menu_item_set_icon ( GtkWidget *self, const gchar *icon );
 void menu_item_set_action ( GtkWidget *self, GBytes *action );
 void menu_item_set_tooltip ( GtkWidget *self, gchar *tooltip );

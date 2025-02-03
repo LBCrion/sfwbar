@@ -5,6 +5,7 @@
 
 #include "config.h"
 #include "util/string.h"
+#include "vm/vm.h"
 
 static GHashTable *defines;
 
@@ -35,6 +36,34 @@ gboolean config_check_and_consume ( GScanner *scanner, gint token )
 
   g_scanner_get_next_token(scanner);
   return TRUE;
+}
+
+gboolean config_action ( GScanner *scanner, GBytes **action_dst )
+{
+  GByteArray *code;
+
+  code = g_byte_array_new();
+  if(parser_block_parse(scanner, code))
+    *action_dst = g_byte_array_free_to_bytes(code);
+  else
+  {
+    g_byte_array_unref(code);
+    *action_dst = NULL;
+  }
+
+  return !!*action_dst;
+}
+
+gboolean config_expr ( GScanner *scanner, GBytes **expr_dst )
+{
+  GByteArray *result;
+
+  result = g_byte_array_new();
+  if(parser_expr_parse(scanner, result))
+    *expr_dst = g_byte_array_free_to_bytes(result);
+  else
+    g_byte_array_unref(result);
+  return !!*expr_dst;
 }
 
 void config_parse_sequence ( GScanner *scanner, ... )
@@ -223,9 +252,42 @@ GList *config_assign_string_list ( GScanner *scanner )
   return g_list_reverse(list);
 }
 
+GBytes *config_assign_action ( GScanner *scanner, gchar *err )
+{
+  GBytes *code;
+  scanner->max_parse_errors = FALSE;
+
+  if(!config_expect_token(scanner, '=', "Missing '=' in %s = <code>", err))
+    return NULL;
+
+  if(!config_action(scanner, &code))
+    return NULL;
+
+  config_check_and_consume(scanner, ';');
+
+  return code;
+}
+
+GBytes *config_assign_expr ( GScanner *scanner, gchar *err )
+{
+  GBytes *code;
+  scanner->max_parse_errors = FALSE;
+
+  if(!config_expect_token(scanner, '=', "Missing '=' in %s = <code>", err))
+    return NULL;
+
+  if(!config_expr(scanner, &code))
+    return NULL;
+
+  config_check_and_consume(scanner, ';');
+
+  return code;
+}
+
 gboolean config_is_section_end ( GScanner *scanner )
 {
-  if(g_scanner_peek_next_token(scanner) == G_TOKEN_EOF)
+  if(g_scanner_peek_next_token(scanner) == G_TOKEN_EOF ||
+      scanner->max_parse_errors)
     return TRUE;
 
   if(!config_check_and_consume(scanner, '}'))

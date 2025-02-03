@@ -18,6 +18,7 @@ typedef struct expr_cache {
 gboolean expr_cache_eval ( expr_cache_t *expr );
 void expr_lib_init ( void );
 expr_cache_t *expr_cache_new ( void );
+expr_cache_t *expr_cache_new_with_code ( GBytes *code );
 void expr_cache_set ( expr_cache_t *expr, gchar *def );
 void expr_cache_free ( expr_cache_t *expr );
 void expr_dep_add ( gchar *ident, expr_cache_t *expr );

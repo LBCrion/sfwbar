@@ -300,10 +300,12 @@ static gboolean app_menu_add ( gchar *id )
     if(!cat->widget)
     {
       cat->widget = menu_item_get(NULL, TRUE);
-      menu_item_set_label(cat->widget, cat->local_title?cat->local_title:cat->title);
+      menu_item_set_label(cat->widget,
+          cat->local_title? cat->local_title : cat->title);
       menu_item_set_icon(cat->widget, cat->icon);
       menu_item_set_sort_index(cat->widget, 2);
       submenu = gtk_menu_new();
+      g_object_set_data(G_OBJECT(submenu), "sort", GINT_TO_POINTER(TRUE));
       gtk_menu_set_reserve_toggle_size(GTK_MENU(submenu), FALSE);
       gtk_menu_item_set_submenu(GTK_MENU_ITEM(cat->widget), submenu);
       app_menu_item_insert(app_menu_main, cat->widget);
@@ -465,6 +467,7 @@ gboolean sfwbar_module_init ( void )
   app_menu_filter = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
       NULL);
   app_menu_main = menu_new(app_menu_name);
+  g_object_set_data(G_OBJECT(app_menu_main), "sort", GINT_TO_POINTER(TRUE));
   app_info_add_handlers(app_menu_handle_add, app_menu_handle_delete);
   vm_func_add("AppMenuFilter", app_menu_func_filter, TRUE);
   vm_func_add("AppMenuItemTop", app_menu_item_top, TRUE);

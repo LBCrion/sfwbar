@@ -25,6 +25,7 @@ GHashTable *config_toplevel_keys, *config_menu_keys, *config_scanner_keys;
 GHashTable *config_scanner_types, *config_scanner_flags, *config_filter_keys;
 GHashTable *config_axis_keys, *config_taskbar_types, *config_widget_keys;
 GHashTable *config_prop_keys, *config_placer_keys, *config_flowgrid_props;
+GHashTable *config_menu_item_keys;
 
 static GScannerConfig scanner_config = {
   .cset_skip_characters = (" \t\n\r"),
@@ -139,6 +140,7 @@ void config_init ( void )
   config_add_key(config_menu_keys, "Item", G_TOKEN_ITEM);
   config_add_key(config_menu_keys, "Separator", G_TOKEN_SEPARATOR);
   config_add_key(config_menu_keys, "SubMenu", G_TOKEN_SUBMENU);
+  config_add_key(config_menu_keys, "Sort", G_TOKEN_SORT);
 
   config_scanner_keys = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);
@@ -236,6 +238,14 @@ void config_init ( void )
   config_add_key(config_placer_keys, "XOrigin", G_TOKEN_XORIGIN);
   config_add_key(config_placer_keys, "YOrigin", G_TOKEN_YORIGIN);
   config_add_key(config_placer_keys, "Children", G_TOKEN_CHILDREN);
+
+  config_menu_item_keys = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
+  config_add_key(config_menu_item_keys, "Label", G_TOKEN_LABEL);
+  config_add_key(config_menu_item_keys, "Action", G_TOKEN_ACTION);
+  config_add_key(config_menu_item_keys, "Tooltip", G_TOKEN_TOOLTIP);
+  config_add_key(config_menu_item_keys, "Index", G_TOKEN_INDEX);
+  config_add_key(config_menu_item_keys, "Submenu", G_TOKEN_SUBMENU);
 
   parser_init();
 }

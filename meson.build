@@ -106,6 +106,7 @@ libsrc = [
     'src/config/base.c',
     'src/config/init.c',
     'src/config/layout.c',
+    'src/config/menu.c',
     'src/config/placer.c',
     'src/config/scanner.c',
     'src/config/switcher.c',

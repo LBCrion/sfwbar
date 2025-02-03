@@ -32,7 +32,7 @@ extern GHashTable *config_scanner_keys, *config_scanner_types;
 extern GHashTable *config_scanner_flags, *config_filter_keys;
 extern GHashTable *config_axis_keys, *config_taskbar_types;
 extern GHashTable *config_widget_keys, *config_prop_keys, *config_placer_keys;
-extern GHashTable *config_flowgrid_props;
+extern GHashTable *config_flowgrid_props, *config_menu_item_keys;
 
 typedef gboolean (*parse_func) ( GScanner *, void * );
 
@@ -53,6 +53,8 @@ gchar *config_assign_string ( GScanner *scanner, gchar *expr );
 gdouble config_assign_number ( GScanner *scanner, gchar *expr );
 void *config_assign_tokens ( GScanner *scanner, GHashTable *keys, gchar *err );
 GList *config_assign_string_list ( GScanner *scanner );
+GBytes *config_assign_action ( GScanner *scanner, gchar *err );
+GBytes *config_assign_expr ( GScanner *scanner, gchar *err );
 gboolean config_action ( GScanner *scanner, GBytes **action_dst );
 gboolean config_expr ( GScanner *scanner, GBytes **expr_dst );
 void config_action_finish ( GScanner *scanner );
@@ -69,6 +71,8 @@ void config_switcher ( GScanner *scanner );
 void config_placer ( GScanner *scanner );
 void config_popup ( GScanner *scanner );
 GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container );
+void config_menu_clear ( GScanner *scanner );
+void config_menu ( GScanner *scanner );
 
 enum {
   G_TOKEN_SCANNER = G_TOKEN_LAST + 50,
@@ -162,6 +166,7 @@ enum {
   G_TOKEN_MONITOR,
   G_TOKEN_MARGIN,
   G_TOKEN_MIRROR,
+  G_TOKEN_INDEX,
 };
 
 #endif

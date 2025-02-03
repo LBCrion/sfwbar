@@ -155,15 +155,20 @@ void menu_item_set_label ( GtkWidget *self, const gchar *label )
   priv->flags |= MI_LABEL;
 }
 
-void menu_item_set_label_expr ( GtkWidget *self, expr_cache_t *expr )
+void menu_item_set_label_expr ( GtkWidget *self, GBytes *code )
 {
   MenuItemPrivate *priv;
 
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv && priv->label);
 
-  expr_cache_free(priv->label_expr);
-  priv->label_expr = expr;
+  if(priv->label_expr)
+  {
+    priv->label_expr->code = code;
+    priv->label_expr->eval = TRUE;
+  }
+  else
+    priv->label_expr = expr_cache_new_with_code(code);
 }
 
 void menu_item_set_icon ( GtkWidget *self, const gchar *icon )

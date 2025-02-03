@@ -58,6 +58,17 @@ expr_cache_t *expr_cache_new ( void )
   return g_malloc0(sizeof(expr_cache_t));
 }
 
+expr_cache_t *expr_cache_new_with_code ( GBytes *code )
+{
+  expr_cache_t *expr;
+
+  expr = expr_cache_new();
+  expr->code = code;
+  expr->eval = TRUE;
+
+  return expr;
+}
+
 void expr_cache_free ( expr_cache_t *expr )
 {
   if(!expr)

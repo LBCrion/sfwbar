@@ -66,12 +66,8 @@ GtkWidget *menu_new ( gchar *name )
 {
   GtkWidget *menu;
 
-  if(name)
-  {
-    menu = menu_from_name(name);
-    if(menu)
+  if( (menu = menu_from_name(name)) )
       return menu;
-  }
 
   menu = gtk_menu_new();
   gtk_widget_set_name(menu, name);
