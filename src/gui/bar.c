@@ -817,6 +817,7 @@ GtkWidget *bar_new ( gchar *name )
 
   css_widget_apply(self, g_strdup_printf(
       "window#%s.sensor { background-color: rgba(0,0,0,0); }", name));
+  bar_update_monitor(self);
 
   if(priv->name)
   {
