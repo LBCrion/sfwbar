@@ -167,6 +167,7 @@ enum {
   G_TOKEN_MARGIN,
   G_TOKEN_MIRROR,
   G_TOKEN_INDEX,
+  G_TOKEN_DESKTOPID,
 };
 
 #endif

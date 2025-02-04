@@ -246,6 +246,7 @@ void config_init ( void )
   config_add_key(config_menu_item_keys, "Tooltip", G_TOKEN_TOOLTIP);
   config_add_key(config_menu_item_keys, "Index", G_TOKEN_INDEX);
   config_add_key(config_menu_item_keys, "Submenu", G_TOKEN_SUBMENU);
+  config_add_key(config_menu_item_keys, "DesktopId", G_TOKEN_DESKTOPID);
 
   parser_init();
 }

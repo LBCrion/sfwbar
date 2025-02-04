@@ -105,9 +105,16 @@ void menu_item_update_from_app ( GtkWidget *self, GDesktopAppInfo *app )
 void menu_item_update_from_desktop ( GtkWidget *self, const gchar *desktop_id )
 {
   GDesktopAppInfo *app;
+  gchar *desktop_file;
 
-  if( (app = g_desktop_app_info_new(desktop_id)) )
+  if(g_str_has_suffix(desktop_id, ".desktop"))
+    desktop_file = g_strdup(desktop_id);
+  else
+    desktop_file = g_strconcat(desktop_id, ".desktop", NULL);
+
+  if( (app = g_desktop_app_info_new(desktop_file)) )
     menu_item_update_from_app(self, app);
+  g_free(desktop_file);
 }
 
 void menu_item_set_id ( GtkWidget *self, gchar *id )

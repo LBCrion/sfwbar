@@ -28,6 +28,11 @@ static gboolean config_menu_item_props ( GScanner *scanner, GtkWidget *item )
       case G_TOKEN_INDEX:
         menu_item_set_sort_index(item, config_assign_number(scanner, "index"));
         break;
+      case G_TOKEN_DESKTOPID:
+        menu_item_update_from_desktop(item,
+            config_assign_string(scanner, "DesktopId"));
+        gtk_widget_show_all(item);
+        break;
       case G_TOKEN_SUBMENU:
         submenu = menu_new(config_check_and_consume(scanner, G_TOKEN_STRING)?
               scanner->value.v_string : NULL);
