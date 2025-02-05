@@ -46,7 +46,7 @@ struct _BarPrivate {
   GList *sensor_refs;
   gboolean hidden;
   gboolean jump;
-  gboolean visible;
+  gboolean visible, visible_by_mod;
   gboolean full_size;
   gchar *output;
   GdkMonitor *current_monitor;

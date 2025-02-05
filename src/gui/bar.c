@@ -20,6 +20,21 @@ G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW, G_ADD_PRIVATE (Bar))
 static GHashTable *bar_list;
 extern GtkApplication *application;
 
+static void bar_revealer_notify ( GtkRevealer *revealer, GParamSpec *spec,
+    GtkWidget *self )
+{
+  BarPrivate *priv;
+
+  g_return_if_fail(IS_BAR(self));
+  priv = bar_get_instance_private(BAR(self));
+
+  if(!gtk_revealer_get_child_revealed(revealer) && !priv->visible)
+    gtk_widget_hide(self);
+  else if(gtk_revealer_get_child_revealed(revealer) && !priv->visible &&
+      !priv->visible_by_mod)
+    gtk_revealer_set_reveal_child(revealer, FALSE);
+}
+
 static void bar_reveal ( GtkWidget *self )
 {
   BarPrivate *priv;
@@ -483,11 +498,12 @@ void bar_set_visibility ( GtkWidget *self, const gchar *id, gchar state )
   else if(state != 'x' && state != 'v')
     priv->visible = TRUE;
 
-  visible = priv->visible || (state == 'v');
-  if(!visible && gtk_widget_is_visible(self))
-    gtk_widget_hide(self);
-  else if(!gtk_widget_is_visible(self))
-    bar_update_monitor(self);
+  priv->visible_by_mod = (state == 'v');
+  visible = priv->visible || priv->visible_by_mod;
+  if(!visible && gtk_revealer_get_reveal_child(priv->revealer))
+    gtk_revealer_set_reveal_child(priv->revealer, FALSE);
+  else if(visible && !gtk_revealer_get_reveal_child(priv->revealer))
+    bar_reveal(self);
 
   for(liter=priv->mirror_children; liter; liter=g_list_next(liter))
     bar_set_visibility(liter->data, id, state);
@@ -546,7 +562,7 @@ void bar_set_exclusive_zone ( GtkWidget *self, gchar *zone )
   BarPrivate *priv;
 
   g_return_if_fail(IS_BAR(self));
-  g_return_if_fail(zone!=NULL);
+  g_return_if_fail(zone);
   priv = bar_get_instance_private(BAR(self));
 
   g_free(priv->ezone);
@@ -617,13 +633,14 @@ gboolean bar_update_monitor ( GtkWidget *self )
         match = gmon;
     }
 
-  gtk_widget_hide(self);
-  priv->current_monitor = match;
-  if(match)
+  if(priv->current_monitor != match)
   {
+    priv->current_monitor = match;
+    if(priv->visible)
+      gtk_widget_hide(self);
     gtk_layer_set_monitor(GTK_WINDOW(self), match);
     if(priv->visible)
-      bar_reveal(self);
+      gtk_widget_show(self);
   }
 
   /* remove any mirrors from new primary output */
@@ -795,11 +812,11 @@ GtkWidget *bar_new ( gchar *name )
   priv->name = g_strdup(name);
   priv->visible = TRUE;
   priv->jump = TRUE;
-  priv->current_monitor = monitor_default_get();
-  priv->output = g_strdup(monitor_get_name(priv->current_monitor));
+  priv->output = g_strdup(monitor_get_name(monitor_default_get()));
   priv->dir = -1;
   priv->box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   priv->revealer = GTK_REVEALER(gtk_revealer_new());
+  g_signal_connect(G_OBJECT(priv->revealer), "notify::child-revealed", G_CALLBACK(bar_revealer_notify), self);
   gtk_container_add(GTK_CONTAINER(priv->revealer), priv->box);
 
   g_object_ref_sink(priv->revealer);
@@ -818,6 +835,7 @@ GtkWidget *bar_new ( gchar *name )
   css_widget_apply(self, g_strdup_printf(
       "window#%s.sensor { background-color: rgba(0,0,0,0); }", name));
   bar_update_monitor(self);
+  bar_reveal(self);
 
   if(priv->name)
   {
@@ -916,7 +934,7 @@ void bar_set_interactivity ( GtkWidget *widget, gboolean interactivity )
 
   win = GTK_WINDOW(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW));
   if(gtk_window_get_window_type(win)==GTK_WINDOW_POPUP)
-    win = g_object_get_data(G_OBJECT(win),"parent_window");
+    win = g_object_get_data(G_OBJECT(win), "parent_window");
 
   if(!win || !gtk_layer_is_layer_window(win))
     return;
