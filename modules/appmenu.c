@@ -291,7 +291,7 @@ static gboolean app_menu_add ( gchar *id )
     item->id = g_strdup(id);
     item->widget = menu_item_get(NULL, TRUE);
     menu_item_update_from_app(item->widget, app);
-    menu_item_set_sort_index(item->widget, 2);
+    menu_item_set_sort_index(item->widget, 500);
 
     g_hash_table_insert(app_menu_items, item->id, item);
     g_object_set_data_full(G_OBJECT(item->widget), "iteminfo", item,
@@ -303,7 +303,7 @@ static gboolean app_menu_add ( gchar *id )
       menu_item_set_label(cat->widget,
           cat->local_title? cat->local_title : cat->title);
       menu_item_set_icon(cat->widget, cat->icon);
-      menu_item_set_sort_index(cat->widget, 2);
+      menu_item_set_sort_index(cat->widget, 500);
       submenu = gtk_menu_new();
       g_object_set_data(G_OBJECT(submenu), "sort", GINT_TO_POINTER(TRUE));
       gtk_menu_set_reserve_toggle_size(GTK_MENU(submenu), FALSE);
@@ -435,7 +435,7 @@ static value_t app_menu_item_add ( vm_t *vm, value_t p[], gboolean top )
   item = menu_item_get(NULL, TRUE);
   menu_item_set_label(item, value_get_string(p[0]));
   menu_item_set_action(item, parser_exec_build(value_get_string(p[1])));
-  menu_item_set_sort_index(item, top? 1 : 3);
+  menu_item_set_sort_index(item, top? 1 : 999);
   app_menu_item_insert(app_menu_main, item);
 
   return value_na;
