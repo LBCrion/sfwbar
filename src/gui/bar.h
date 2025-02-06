@@ -38,7 +38,7 @@ struct _BarPrivate {
   gint dir;
   GtkAlign halign, valign;
   GtkWidget *start, *center, *end;
-  GtkWidget *box, *sensor;
+  GtkWidget *box, *sensor, *ebox;
   GtkRevealer *revealer;
   gint64 sensor_timeout, sensor_transition;
   gboolean sensor_state, sensor_block;

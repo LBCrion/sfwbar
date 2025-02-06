@@ -38,15 +38,28 @@ static void bar_revealer_notify ( GtkRevealer *revealer, GParamSpec *spec,
 static void bar_reveal ( GtkWidget *self )
 {
   BarPrivate *priv;
+  gint dir;
 
   g_return_if_fail(IS_BAR(self));
   priv = bar_get_instance_private(BAR(self));
 
   gtk_revealer_set_reveal_child(priv->revealer, FALSE);
   gtk_widget_show(self);
-//  gtk_widget_set_size_request(self, 0, 30);
-  gtk_revealer_set_transition_type(priv->revealer,
-    GTK_REVEALER_TRANSITION_TYPE_CROSSFADE);
+
+  gtk_widget_set_size_request(self, 0, 1);
+  gtk_widget_style_get(self, "direction", &dir, NULL);
+  if(dir == GTK_POS_TOP)
+    gtk_revealer_set_transition_type(priv->revealer,
+      GTK_REVEALER_TRANSITION_TYPE_SLIDE_DOWN);
+  else if(dir == GTK_POS_BOTTOM)
+    gtk_revealer_set_transition_type(priv->revealer,
+      GTK_REVEALER_TRANSITION_TYPE_SLIDE_UP);
+  else if(dir == GTK_POS_LEFT)
+    gtk_revealer_set_transition_type(priv->revealer,
+      GTK_REVEALER_TRANSITION_TYPE_SLIDE_RIGHT);
+  else if(dir == GTK_POS_RIGHT)
+    gtk_revealer_set_transition_type(priv->revealer,
+      GTK_REVEALER_TRANSITION_TYPE_SLIDE_LEFT);
   gtk_revealer_set_reveal_child(priv->revealer, TRUE);
 }
 
@@ -61,21 +74,21 @@ static gboolean bar_sensor_unblock_cb ( GtkWidget *self )
   return FALSE;
 }
 
-static gboolean bar_sensor_hide_complete ( GtkWidget *self )
+static void bar_sensor_hide_complete ( GtkWidget *self )
 {
   BarPrivate *priv;
 
-  g_return_val_if_fail(IS_BAR(self), FALSE);
+  g_return_if_fail(IS_BAR(self));
   priv = bar_get_instance_private(BAR(self));
   if(gtk_revealer_get_child_revealed(priv->revealer))
-    return TRUE;
+    return;
 
   css_add_class(self, "sensor");
   gtk_container_remove(GTK_CONTAINER(self), gtk_bin_get_child(GTK_BIN(self)));
   gtk_container_add(GTK_CONTAINER(self), priv->sensor);
   priv->sensor_state = FALSE;
-  priv->hide_handle = 0;
-  return FALSE;
+  g_signal_handlers_disconnect_by_func(priv->revealer,
+      bar_sensor_hide_complete, self);
 }
 
 static gboolean bar_sensor_hide ( GtkWidget *self )
@@ -93,7 +106,8 @@ static gboolean bar_sensor_hide ( GtkWidget *self )
   gtk_revealer_set_reveal_child(priv->revealer, FALSE);
   priv->sensor_block = TRUE;
   g_idle_add((GSourceFunc)bar_sensor_unblock_cb, self);
-  priv->hide_handle = g_idle_add((GSourceFunc)bar_sensor_hide_complete, self);
+  g_signal_connect_swapped(G_OBJECT(priv->revealer),
+      "notify::child-revealed", G_CALLBACK(bar_sensor_hide_complete), self);
   priv->sensor_handle = 0;
 
   return FALSE;
@@ -135,16 +149,13 @@ static void bar_sensor_show_bar ( GtkWidget *self )
   g_idle_add((GSourceFunc)bar_sensor_unblock_cb, self);
   css_remove_class(self, "sensor");
 
-  if(priv->hide_handle)
-  {
-    g_source_remove(priv->hide_handle);
-    priv->hide_handle = 0;
-  }
+  g_signal_handlers_disconnect_by_func(priv->revealer,
+      bar_sensor_hide_complete, self);
 
   if(gtk_bin_get_child(GTK_BIN(self))==priv->sensor)
   {
     gtk_container_remove(GTK_CONTAINER(self), gtk_bin_get_child(GTK_BIN(self)));
-    gtk_container_add(GTK_CONTAINER(self), GTK_WIDGET(priv->revealer));
+    gtk_container_add(GTK_CONTAINER(self), GTK_WIDGET(priv->ebox));
   }
   
   bar_reveal(self);
@@ -201,9 +212,9 @@ static void bar_style_updated ( GtkWidget *self )
   priv = bar_get_instance_private(BAR(self));
   GTK_WIDGET_CLASS(bar_parent_class)->style_updated(self);
 
-  gtk_widget_style_get(self,"halign",&halign,NULL);
-  gtk_widget_style_get(self,"valign",&valign,NULL);
-  gtk_widget_style_get(self,"direction",&dir,NULL);
+  gtk_widget_style_get(self, "halign", &halign, NULL);
+  gtk_widget_style_get(self, "valign", &valign, NULL);
+  gtk_widget_style_get(self, "direction", &dir, NULL);
 
   if(!priv->size || !priv->current_monitor)
     full_size = TRUE;
@@ -288,6 +299,8 @@ static void bar_class_init ( BarClass *kclass )
   GTK_WIDGET_CLASS(kclass)->style_updated = bar_style_updated;
   GTK_WIDGET_CLASS(kclass)->map = bar_map;
   g_unix_signal_add(SIGUSR2, (GSourceFunc)bar_visibility_toggle_all, NULL);
+  g_object_set(G_OBJECT(gtk_settings_get_default()), "gtk-enable-animations",
+        TRUE, NULL);
 }
 
 GtkWidget *bar_from_name ( gchar *name )
@@ -815,12 +828,20 @@ GtkWidget *bar_new ( gchar *name )
   priv->output = g_strdup(monitor_get_name(monitor_default_get()));
   priv->dir = -1;
   priv->box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  priv->ebox = gtk_grid_new();
   priv->revealer = GTK_REVEALER(gtk_revealer_new());
-  g_signal_connect(G_OBJECT(priv->revealer), "notify::child-revealed", G_CALLBACK(bar_revealer_notify), self);
+  gtk_widget_set_valign(GTK_WIDGET(priv->revealer), GTK_ALIGN_END);
+  gtk_widget_set_valign(priv->ebox, GTK_ALIGN_FILL);
+  gtk_widget_set_vexpand(priv->ebox, TRUE);
+  gtk_widget_set_name(priv->ebox, "ebox");
+  gtk_widget_set_name(GTK_WIDGET(priv->revealer), "revealer");
+  g_signal_connect(G_OBJECT(priv->revealer), "notify::child-revealed",
+      G_CALLBACK(bar_revealer_notify), self);
   gtk_container_add(GTK_CONTAINER(priv->revealer), priv->box);
 
-  g_object_ref_sink(priv->revealer);
-  gtk_container_add(GTK_CONTAINER(self), GTK_WIDGET(priv->revealer));
+  g_object_ref_sink(priv->ebox);
+  gtk_container_add(GTK_CONTAINER(self), GTK_WIDGET(priv->ebox));
+  gtk_container_add(GTK_CONTAINER(priv->ebox), GTK_WIDGET(priv->revealer));
   g_object_set_data(G_OBJECT(priv->box), "parent_window", self);
   gtk_layer_init_for_window(GTK_WINDOW(self));
   gtk_widget_set_name(self, name);
@@ -830,6 +851,7 @@ GtkWidget *bar_new ( gchar *name )
   gtk_layer_set_monitor(GTK_WINDOW(self), priv->current_monitor);
   bar_style_updated(self);
   gtk_widget_show(priv->box);
+  gtk_widget_show(priv->ebox);
   gtk_widget_show(GTK_WIDGET(priv->revealer));
 
   css_widget_apply(self, g_strdup_printf(
