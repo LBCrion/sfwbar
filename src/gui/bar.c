@@ -239,9 +239,15 @@ static void bar_style_updated ( GtkWidget *self )
   if(!full_size)
   {
     if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
+    {
       gtk_widget_set_size_request(GTK_WIDGET(priv->revealer), (gint)size, 1);
+      gtk_widget_set_size_request(self, (gint)size, 1);
+    }
     else
+    {
       gtk_widget_set_size_request(GTK_WIDGET(priv->revealer), 1, (gint)size);
+      gtk_widget_set_size_request(self, 1, (gint)size);
+    }
   }
 
   if(priv->dir == dir && priv->halign == halign && priv->valign == valign &&
