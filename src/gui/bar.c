@@ -830,9 +830,6 @@ GtkWidget *bar_new ( gchar *name )
   priv->box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   priv->ebox = gtk_grid_new();
   priv->revealer = GTK_REVEALER(gtk_revealer_new());
-  gtk_widget_set_valign(GTK_WIDGET(priv->revealer), GTK_ALIGN_END);
-  gtk_widget_set_valign(priv->ebox, GTK_ALIGN_FILL);
-  gtk_widget_set_vexpand(priv->ebox, TRUE);
   gtk_widget_set_name(priv->ebox, "ebox");
   gtk_widget_set_name(GTK_WIDGET(priv->revealer), "revealer");
   g_signal_connect(G_OBJECT(priv->revealer), "notify::child-revealed",
