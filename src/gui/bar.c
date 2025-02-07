@@ -46,8 +46,8 @@ static void bar_reveal ( GtkWidget *self )
   gtk_revealer_set_reveal_child(priv->revealer, FALSE);
   gtk_widget_show(self);
 
-  gtk_widget_set_size_request(self, 0, 1);
   gtk_widget_style_get(self, "direction", &dir, NULL);
+
   if(dir == GTK_POS_TOP)
     gtk_revealer_set_transition_type(priv->revealer,
       GTK_REVEALER_TRANSITION_TYPE_SLIDE_DOWN);
@@ -239,9 +239,9 @@ static void bar_style_updated ( GtkWidget *self )
   if(!full_size)
   {
     if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
-      gtk_widget_set_size_request(self, (gint)size, -1);
+      gtk_widget_set_size_request(GTK_WIDGET(priv->revealer), (gint)size, 1);
     else
-      gtk_widget_set_size_request(self, -1, (gint)size);
+      gtk_widget_set_size_request(GTK_WIDGET(priv->revealer), 1, (gint)size);
   }
 
   if(priv->dir == dir && priv->halign == halign && priv->valign == valign &&
