@@ -48,7 +48,10 @@ static void bar_reveal ( GtkWidget *self )
 
   gtk_widget_style_get(self, "direction", &dir, NULL);
 
-  if(dir == GTK_POS_TOP)
+  if(!priv->sensor_transition)
+    gtk_revealer_set_transition_type(priv->revealer,
+      GTK_REVEALER_TRANSITION_TYPE_NONE);
+  else if(dir == GTK_POS_TOP)
     gtk_revealer_set_transition_type(priv->revealer,
       GTK_REVEALER_TRANSITION_TYPE_SLIDE_DOWN);
   else if(dir == GTK_POS_BOTTOM)
@@ -216,16 +219,17 @@ static void bar_style_updated ( GtkWidget *self )
   gtk_widget_style_get(self, "valign", &valign, NULL);
   gtk_widget_style_get(self, "direction", &dir, NULL);
 
+  if(priv->current_monitor)
+    gdk_monitor_get_geometry(priv->current_monitor, &rect);
   if(!priv->size || !priv->current_monitor)
     full_size = TRUE;
   else
   {
-    gdk_monitor_get_geometry(priv->current_monitor, &rect);
     size = g_ascii_strtod(priv->size, &end);
     if(*end=='%')
     {
       if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
-       size *= (gdouble)rect.width/100;
+        size *= (gdouble)rect.width/100;
       else
         size *= (gdouble)rect.height/100;
     }
@@ -240,15 +244,21 @@ static void bar_style_updated ( GtkWidget *self )
   {
     if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
     {
-      gtk_widget_set_size_request(GTK_WIDGET(priv->revealer), (gint)size, 1);
-      gtk_widget_set_size_request(self, (gint)size, 1);
+      gtk_widget_set_size_request(GTK_WIDGET(priv->revealer), size,
+          priv->sensor_transition? 1 : -1);
+      gtk_widget_set_size_request(self, size, 1);
     }
     else
     {
-      gtk_widget_set_size_request(GTK_WIDGET(priv->revealer), 1, (gint)size);
-      gtk_widget_set_size_request(self, 1, (gint)size);
+      gtk_widget_set_size_request(GTK_WIDGET(priv->revealer),
+          priv->sensor_transition? 1 : -1, size);
+      gtk_widget_set_size_request(self, 1, size);
     }
   }
+  else if(priv->current_monitor)
+    gtk_widget_set_size_request(GTK_WIDGET(priv->revealer),
+        (dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)? rect.width : 1,
+        (dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)? 1 : rect.height);
 
   if(priv->dir == dir && priv->halign == halign && priv->valign == valign &&
       priv->full_size == full_size)
@@ -803,6 +813,7 @@ void bar_set_transition ( GtkWidget *self, guint duration )
 
   priv->sensor_transition = duration;
   gtk_revealer_set_transition_duration(priv->revealer, duration);
+  bar_style_updated(self);
   for(iter = priv->mirror_children; iter; iter=g_list_next(iter))
     bar_set_transition(iter->data, duration);
 }
