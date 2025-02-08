@@ -208,7 +208,7 @@ static void bar_style_updated ( GtkWidget *self )
   GtkAlign halign, valign;
   GdkRectangle rect;
   gint dir, size;
-  gboolean top, left, right, bottom, full_size;
+  gboolean horizontal, full_size;
   gchar *end;
 
   g_return_if_fail(IS_BAR(self));
@@ -219,68 +219,43 @@ static void bar_style_updated ( GtkWidget *self )
   gtk_widget_style_get(self, "valign", &valign, NULL);
   gtk_widget_style_get(self, "direction", &dir, NULL);
 
+  horizontal = (dir == GTK_POS_TOP || dir == GTK_POS_BOTTOM);
   if(priv->current_monitor)
+  {
     gdk_monitor_get_geometry(priv->current_monitor, &rect);
-  if(!priv->size || !priv->current_monitor)
-    full_size = TRUE;
-  else
-  {
-    size = g_ascii_strtod(priv->size, &end);
-    if(*end=='%')
-    {
-      if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
-        size *= (gdouble)rect.width/100;
-      else
-        size *= (gdouble)rect.height/100;
-    }
-
-    if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
-      full_size = size >= rect.width;
-    else
-      full_size = size >= rect.height;
-  }
-
-  if(!full_size)
-  {
-    if(dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)
-    {
-      gtk_widget_set_size_request(GTK_WIDGET(priv->revealer), size,
-          priv->sensor_transition? 1 : -1);
-      gtk_widget_set_size_request(self, size, 1);
-    }
+    if(!priv->size)
+      size = horizontal? rect.width : rect.height;
     else
     {
-      gtk_widget_set_size_request(GTK_WIDGET(priv->revealer),
-          priv->sensor_transition? 1 : -1, size);
-      gtk_widget_set_size_request(self, 1, size);
+      size = g_ascii_strtod(priv->size, &end);
+      if(*end=='%')
+        size = (horizontal?  rect.width : rect.height) * size / 100;
     }
-  }
-  else if(priv->current_monitor)
     gtk_widget_set_size_request(GTK_WIDGET(priv->revealer),
-        (dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)? rect.width : 1,
-        (dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)? 1 : rect.height);
+        horizontal? size : 1, horizontal? 1 : size);
+    gtk_widget_set_size_request(self,
+        horizontal? size : 1, horizontal? 1 : size);
+  }
+  full_size = !priv->current_monitor ||
+    (size == (horizontal? rect.width : rect.height));
 
   if(priv->dir == dir && priv->halign == halign && priv->valign == valign &&
       priv->full_size == full_size)
     return;
 
-  top = (dir == GTK_POS_TOP ||
-      ((dir == GTK_POS_LEFT || dir == GTK_POS_RIGHT) &&
-       (full_size || valign == GTK_ALIGN_START)));
-  bottom = (dir == GTK_POS_BOTTOM ||
-      ((dir == GTK_POS_LEFT || dir == GTK_POS_RIGHT) &&
-       (full_size || valign == GTK_ALIGN_END)));
-  left = (dir == GTK_POS_LEFT ||
-      ((dir == GTK_POS_TOP || dir == GTK_POS_BOTTOM) &&
-       (full_size || halign == GTK_ALIGN_START)));
-  right = (dir == GTK_POS_RIGHT ||
-      ((dir == GTK_POS_TOP || dir == GTK_POS_BOTTOM) &&
-       (full_size || halign == GTK_ALIGN_END)));
 
-  gtk_layer_set_anchor(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_TOP, top);
-  gtk_layer_set_anchor(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_LEFT, left);
-  gtk_layer_set_anchor(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_RIGHT, right);
-  gtk_layer_set_anchor(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_BOTTOM, bottom);
+  gtk_layer_set_anchor(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_TOP,
+      (dir == GTK_POS_TOP || ((full_size || valign == GTK_ALIGN_START) &&
+        !horizontal)));
+  gtk_layer_set_anchor(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_LEFT,
+      (dir == GTK_POS_LEFT || ((full_size || halign == GTK_ALIGN_START) &&
+        horizontal)));
+  gtk_layer_set_anchor(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_RIGHT,
+      (dir == GTK_POS_RIGHT || ((full_size || halign == GTK_ALIGN_END) &&
+        horizontal)));
+  gtk_layer_set_anchor(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_BOTTOM,
+      (dir == GTK_POS_BOTTOM || ((full_size || valign == GTK_ALIGN_END) &&
+        !horizontal)));
 
   if(priv->dir != dir)
   {
