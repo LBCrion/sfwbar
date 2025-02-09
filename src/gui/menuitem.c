@@ -191,14 +191,15 @@ void menu_item_set_icon ( GtkWidget *self, const gchar *icon )
   priv->flags |= MI_ICON;
 }
 
-void menu_item_set_tooltip ( GtkWidget *self, gchar *tooltip )
+void menu_item_set_tooltip ( GtkWidget *self, GBytes *code )
 {
   MenuItemPrivate *priv;
 
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv);
 
-  gtk_widget_set_tooltip_text(self, tooltip);
+  g_clear_pointer(&priv->tooltip_expr, expr_cache_free);
+  priv->tooltip_expr = expr_cache_new_with_code(code);
   priv->flags |= MI_TOOLTIP;
 }
 
@@ -347,6 +348,8 @@ void menu_item_label_update ( GtkWidget *self )
 
   if(expr_cache_eval(priv->label_expr))
     menu_item_set_label(self, priv->label_expr->cache);
+  if(expr_cache_eval(priv->tooltip_expr))
+    gtk_widget_set_tooltip_text(self, priv->tooltip_expr->cache);
 }
 
 void menu_item_insert ( GtkWidget *menu, GtkWidget *item )

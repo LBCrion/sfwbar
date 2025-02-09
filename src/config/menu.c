@@ -23,7 +23,7 @@ static gboolean config_menu_item_props ( GScanner *scanner, GtkWidget *item )
         menu_item_set_action(item, config_assign_action(scanner, "action"));
         break;
       case G_TOKEN_TOOLTIP:
-        menu_item_set_tooltip(item, config_assign_string(scanner, "tooltip"));
+        menu_item_set_tooltip(item, config_assign_expr(scanner, "tooltip"));
         break;
       case G_TOKEN_INDEX:
         menu_item_set_sort_index(item, config_assign_number(scanner, "index"));

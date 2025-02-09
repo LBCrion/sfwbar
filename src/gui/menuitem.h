@@ -16,6 +16,7 @@ typedef struct _MenuItemPrivate {
   GtkWidget *menu;
   GBytes *action;
   expr_cache_t *label_expr;
+  expr_cache_t *tooltip_expr;
 } MenuItemPrivate;
 
 enum {
@@ -35,7 +36,7 @@ void menu_item_set_label ( GtkWidget *self, const gchar *label );
 void menu_item_set_label_expr ( GtkWidget *self, GBytes *code );
 void menu_item_set_icon ( GtkWidget *self, const gchar *icon );
 void menu_item_set_action ( GtkWidget *self, GBytes *action );
-void menu_item_set_tooltip ( GtkWidget *self, gchar *tooltip );
+void menu_item_set_tooltip ( GtkWidget *self, GBytes *tooltip );
 void menu_item_set_sort_index ( GtkWidget *self, gint index );
 gint menu_item_get_sort_index ( GtkWidget *self );
 void menu_item_set_submenu ( GtkWidget *self, gchar *subname );
