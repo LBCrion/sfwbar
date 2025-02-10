@@ -59,13 +59,13 @@ static value_t idle_timeout_action ( vm_t *vm, value_t p[], gint np )
 
   vm_param_check_np(vm, np, 2, "IdleTimeout");
   vm_param_check_string(vm, p, 0, "IdleTimeout");
-  vm_param_check_string(vm, p, 1, "IdleTimeout");
 
-  new_timeout = g_ascii_strtoll(value_get_string(p[0]), NULL, 10) * 1000;
+  new_timeout = value_as_numeric(p[1]) * 1000;
 
-  if( (timer = g_hash_table_lookup(idle_timers, value_get_string(p[1]))) &&
+  if( (timer = g_hash_table_lookup(idle_timers, value_get_string(p[0]))) &&
       (timer->timeout != new_timeout)) 
-    g_hash_table_remove(idle_timers, value_get_string(p[1]));
+    g_hash_table_remove(idle_timers, value_get_string(p[0]));
+
 
   if(new_timeout < 1)
     return value_na;
@@ -76,7 +76,7 @@ static value_t idle_timeout_action ( vm_t *vm, value_t p[], gint np )
   {
     timer = g_malloc0(sizeof(idle_notification_t));
     timer->timeout = new_timeout;
-    timer->trigger = g_strdup(value_get_string(p[1]));
+    timer->trigger = g_strdup(value_get_string(p[0]));
     timer->notif = notif;
     ext_idle_notification_v1_add_listener(notif, &idle_listener, timer->trigger);
     g_hash_table_insert(idle_timers, timer->trigger, timer);
