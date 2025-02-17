@@ -113,12 +113,13 @@ gboolean grid_attach ( GtkWidget *self, GtkWidget *child )
 
   priv = grid_get_instance_private(GRID(self));
 
-  base_widget_attach(priv->grid, child, priv->last?priv->last->data:NULL);
+  base_widget_attach(priv->grid, child, priv->last? priv->last->data : NULL);
 
+  if(!g_list_find(priv->last, child))
+    priv->last = g_list_prepend(priv->last, child);
   if(!g_list_find(priv->children, child))
   {
-    priv->children = g_list_append(priv->children,child);
-    priv->last = g_list_prepend(priv->last, child);
+    priv->children = g_list_append(priv->children, child);
     g_signal_connect(G_OBJECT(child), "destroy", (GCallback)grid_detach, self);
   }
 
