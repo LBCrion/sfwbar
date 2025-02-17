@@ -256,11 +256,11 @@ void config_log_error ( GScanner *scanner, gchar *message, gboolean error )
   if(error)
   {
     if(!scanner->max_parse_errors)
-      g_message("%s:%d: %s",scanner->input_name,scanner->line,message);
+      g_message("%s:%d: %s", scanner->input_name, scanner->line, message);
     scanner->max_parse_errors = TRUE;
   }
   else
-    g_message("%s:%d: %s",scanner->input_name,scanner->line,message);
+    g_message("%s:%d: %s", scanner->input_name, scanner->line, message);
 }
 
 GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container )
@@ -281,22 +281,22 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container )
   SCANNER_DATA(scanner)->heap = g_hash_table_new_full((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal, g_free, NULL);
 
-  tmp = strstr(data,"\n#CSS");
+  tmp = strstr(data, "\n#CSS");
   if(tmp)
   {
-    *tmp=0;
+    *tmp = 0;
     css = gtk_css_provider_new();
-    tmp = css_legacy_preprocess(g_strdup(tmp+5));
-    gtk_css_provider_load_from_data(css,tmp,strlen(tmp),NULL);
+    tmp = css_legacy_preprocess(g_strdup(tmp + 5));
+    gtk_css_provider_load_from_data(css, tmp, strlen(tmp), NULL);
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
-      GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
+      GTK_STYLE_PROVIDER(css), GTK_STYLE_PROVIDER_PRIORITY_USER);
     g_object_unref(css);
     g_free(tmp);
   }
 
   scanner->input_name = fname;
-  g_scanner_input_text( scanner, data, strlen(data) );
-  w = config_parse_toplevel ( scanner, container );
+  g_scanner_input_text(scanner, data, strlen(data));
+  w = config_parse_toplevel(scanner, container);
   g_clear_pointer(&(SCANNER_DATA(scanner)->heap), g_hash_table_destroy);
   g_scanner_destroy(scanner);
 

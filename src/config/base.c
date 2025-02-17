@@ -7,8 +7,6 @@
 #include "util/string.h"
 #include "vm/vm.h"
 
-static GHashTable *defines;
-
 gboolean config_expect_token ( GScanner *scanner, gint token, gchar *fmt, ...)
 {
   gchar *errmsg;
@@ -88,8 +86,7 @@ void config_parse_sequence ( GScanner *scanner, ... )
     
     if(dest)
     {
-      if(type == G_TOKEN_STRING || type == G_TOKEN_VALUE ||
-          type == G_TOKEN_IDENTIFIER)
+      if(type == G_TOKEN_STRING || type == G_TOKEN_IDENTIFIER)
         *((gchar **)dest) = NULL;
       else if (type > 0 && type != G_TOKEN_INT && type != G_TOKEN_FLOAT)
         *((gboolean *)dest) = FALSE;
@@ -119,14 +116,6 @@ void config_parse_sequence ( GScanner *scanner, ... )
             break;
           case G_TOKEN_IDENTIFIER:
             *((gchar **)dest) = g_strdup(scanner->value.v_identifier);
-            break;
-          case G_TOKEN_VALUE:
-            *((gchar **)dest) = config_get_value(scanner, err, FALSE, NULL);
-            if(!**((gchar **)dest))
-            {
-              g_free(*((gchar **)dest));
-              *((char **)dest) = NULL;
-            }
             break;
           case G_TOKEN_FLOAT:
             *((gdouble *)dest) = scanner->value.v_float;
@@ -297,124 +286,12 @@ gboolean config_is_section_end ( GScanner *scanner )
   return TRUE;
 }
 
-gchar *config_get_value ( GScanner *scanner, gchar *prop, gboolean assign,
-    gchar **id )
-{
-  gchar *value, *temp, *temp2;
-  gint pcount = 0;
-  static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
-
-  scanner->max_parse_errors = FALSE;
-  if(assign)
-    if(!config_expect_token(scanner, '=', "expecting %s = expression", prop))
-      return NULL;
-
-  if(id && g_scanner_peek_next_token(scanner)==G_TOKEN_STRING)
-  {
-    g_scanner_get_next_token(scanner);
-    temp = g_strdup(scanner->value.v_string);
-    if(g_scanner_peek_next_token(scanner)==',')
-    {
-      g_scanner_get_next_token(scanner);
-      value = g_strdup("");;
-      *id = temp;
-    }
-    else
-    {
-      value = str_escape(temp);
-      g_free(temp);
-    }
-  }
-  else
-    value = g_strdup("");;
-  g_scanner_peek_next_token(scanner);
-  scanner->token = '+';
-  while(((gint)scanner->next_token<G_TOKEN_SCANNER)&&
-      (scanner->next_token!='}')&&
-      (scanner->next_token!=';')&&
-      (scanner->next_token!='[')&&
-      (scanner->next_token!=',' || pcount)&&
-      (scanner->next_token!=')' || pcount)&&
-      (scanner->next_token!=G_TOKEN_IDENTIFIER ||
-        strchr(",(+-*/%=<>!|&", scanner->token))&&
-      (scanner->next_token!=G_TOKEN_EOF))
-  {
-    switch((gint)g_scanner_get_next_token(scanner))
-    {
-      case G_TOKEN_STRING:
-        temp = str_escape(scanner->value.v_string);
-        temp2 = value;
-        value = g_strconcat(temp2, temp, NULL);
-        g_free(temp);
-        g_free(temp2);
-        break;
-      case G_TOKEN_IDENTIFIER:
-        temp = value;
-        if(defines && g_hash_table_contains(defines, scanner->value.v_identifier))
-          value = g_strconcat(value, 
-              g_hash_table_lookup(defines, scanner->value.v_identifier), NULL);
-        else
-          value = g_strconcat(value, scanner->value.v_identifier, NULL);
-        g_free(temp);
-        break;
-      case G_TOKEN_FLOAT:
-        temp = value;
-        value = g_strconcat(temp,g_ascii_dtostr(buf,G_ASCII_DTOSTR_BUF_SIZE,
-              scanner->value.v_float),NULL);
-        g_free(temp);
-        break;
-      default:
-        temp = value;
-        buf[0] = scanner->token;
-        buf[1] = 0;
-        value = g_strconcat(temp, buf, NULL);
-        g_free(temp);
-        break;
-    }
-    if(scanner->token == '(')
-      pcount++;
-    else if(scanner->token == ')')
-      pcount--;
-    g_scanner_peek_next_token(scanner);
-  }
-  config_check_and_consume(scanner, ';');
-  return value;
-}
-
-void config_define ( GScanner *scanner )
-{
-  gchar *ident, *value;
-
-  scanner->max_parse_errors = FALSE;
-  config_parse_sequence(scanner,
-      SEQ_REQ, G_TOKEN_IDENTIFIER, NULL, &ident,
-        "missing identifier after 'define'",
-      SEQ_REQ, '=', NULL, NULL, "missing '=' after 'define'",
-      SEQ_REQ, G_TOKEN_VALUE, NULL, &value, "missing value in 'define'",
-      SEQ_OPT, ';', NULL, NULL, NULL,
-      SEQ_END);
-
-  if(scanner->max_parse_errors || !ident || !value)
-  {
-    g_free(ident);
-    g_free(value);
-    return;
-  }
-
-  if(!defines)
-    defines = g_hash_table_new_full((GHashFunc)str_nhash,
-        (GEqualFunc)str_nequal, g_free, g_free);
-
-  g_hash_table_insert(defines, ident, value);
-}
-
 gpointer config_lookup_ptr ( GScanner *scanner, GHashTable *table )
 {
   if(scanner->token != G_TOKEN_IDENTIFIER)
     return NULL;
 
-  return g_hash_table_lookup(table,
-        scanner->value.v_identifier);
+  return g_hash_table_lookup(table, scanner->value.v_identifier);
 }
 
 gpointer config_lookup_next_ptr ( GScanner *scanner, GHashTable *table )
@@ -422,6 +299,5 @@ gpointer config_lookup_next_ptr ( GScanner *scanner, GHashTable *table )
   if(g_scanner_peek_next_token(scanner) != G_TOKEN_IDENTIFIER)
     return NULL;
 
-  return g_hash_table_lookup(table,
-        scanner->next_value.v_identifier);
+  return g_hash_table_lookup(table, scanner->next_value.v_identifier);
 }
