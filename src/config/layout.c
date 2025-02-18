@@ -175,7 +175,6 @@ gboolean config_flowgrid_property ( GScanner *scanner, GtkWidget *widget )
 gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
 {
   GtkWindow *win;
-  gchar *trigger;
   gint key;
 
   if(config_flowgrid_property(scanner, widget))
@@ -201,9 +200,8 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
             config_assign_boolean(scanner, FALSE, "local"));
         return TRUE;
       case G_TOKEN_TRIGGER:
-        trigger = config_assign_string(scanner, "trigger");
-        base_widget_set_trigger(widget, trigger);
-        g_free(trigger);
+        base_widget_set_trigger(widget,
+            config_assign_string(scanner, "trigger"));
         return TRUE;
       case G_TOKEN_LOC:
         base_widget_set_rect(widget, config_get_loc(scanner));
@@ -293,7 +291,7 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         {
           case G_TOKEN_CSS:
             taskbar_shell_set_group_css(widget,
-                config_assign_string(scanner,"group css"));
+                config_assign_string(scanner, "group css"));
             return TRUE;
           case G_TOKEN_STYLE:
             taskbar_shell_set_group_style(widget,
@@ -372,7 +370,7 @@ GtkWidget *config_widget_find_existing ( GScanner *scanner,
     return NULL;
 
   parent = gtk_widget_get_parent(widget);
-  parent = parent?gtk_widget_get_parent(parent):NULL;
+  parent = parent? gtk_widget_get_parent(parent) : NULL;
 
   if(container && parent != container)
     return NULL;
@@ -432,6 +430,8 @@ void config_widget ( GScanner *scanner, GtkWidget *widget )
   while(!config_is_section_end(scanner))
   {
     g_scanner_get_next_token(scanner);
+    if(scanner->token == ';')
+      continue;
     if(config_widget_property(scanner, widget))
       continue;
     if(config_widget_child(scanner, widget))

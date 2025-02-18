@@ -145,10 +145,10 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
         config_trigger_action(scanner);
         break;
       case G_TOKEN_THEME:
-        bar_set_theme(config_assign_string(scanner,"theme"));
+        bar_set_theme(config_assign_string(scanner, "theme"));
         break;
       case G_TOKEN_ICON_THEME:
-        bar_set_icon_theme(config_assign_string(scanner,"icon theme"));
+        bar_set_icon_theme(config_assign_string(scanner, "icon theme"));
         break;
       case G_TOKEN_MAPAPPID:
         config_mappid_map(scanner);

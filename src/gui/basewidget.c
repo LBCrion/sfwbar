@@ -541,8 +541,9 @@ void base_widget_set_style_static ( GtkWidget *self, gchar *style )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   g_free(priv->style->code);
+  g_free(priv->style->cache);
   priv->style->code = NULL;
-  priv->style->cache = style;
+  priv->style->cache = g_strdup(style);
   priv->style->eval = FALSE;
 
   base_widget_style(self);
@@ -812,16 +813,13 @@ void base_widget_set_css ( GtkWidget *self, gchar *css )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(!css || g_list_find_custom(priv->css, css, (GCompareFunc)g_strcmp0))
-  {
-    g_free(css);
     return;
-  }
 
   css_widget_apply(base_widget_get_child(self), g_strdup(css));
   for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
-    css_widget_apply(base_widget_get_child(iter->data), g_strdup(css));
+    css_widget_apply(base_widget_get_child(iter->data), css);
 
-  priv->css = g_list_append(priv->css, css);
+  priv->css = g_list_append(priv->css, g_strdup(css));
 }
 
 void base_widget_set_action ( GtkWidget *self, gint slot,

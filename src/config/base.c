@@ -167,7 +167,6 @@ gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr)
 
 gchar *config_assign_string ( GScanner *scanner, gchar *expr )
 {
-  gchar *result;
   scanner->max_parse_errors = FALSE;
 
   if(!config_expect_token(scanner, '=', "Missing '=' in %s = <string>", expr))
@@ -177,10 +176,7 @@ gchar *config_assign_string ( GScanner *scanner, gchar *expr )
         "Missing <string> in %s = <string>", expr))
     return NULL;
 
-  result = g_strdup(scanner->value.v_string);
-  config_check_and_consume(scanner, ';');
-
-  return result;
+  return scanner->value.v_string;
 }
 
 gdouble config_assign_number ( GScanner *scanner, gchar *expr )

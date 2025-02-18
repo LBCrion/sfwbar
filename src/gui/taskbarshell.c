@@ -219,7 +219,7 @@ void taskbar_shell_set_group_style ( GtkWidget *self, gchar *style )
 
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
     if( (taskbar=priv->get_taskbar(self, iter->data, FALSE)) && taskbar!=self )
-      base_widget_set_style_static(taskbar, g_strdup(style));
+      base_widget_set_style_static(taskbar, style);
 
   g_list_foreach(base_widget_get_mirror_children(self),
       (GFunc)taskbar_shell_set_group_style, style);
@@ -240,10 +240,10 @@ void taskbar_shell_set_group_css ( GtkWidget *self, gchar *css )
   priv->css = g_list_append(priv->css, g_strdup(css));
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
     if( (taskbar=priv->get_taskbar(self, iter->data, FALSE)) && taskbar!=self )
-      base_widget_set_css(taskbar, g_strdup(css));
+      base_widget_set_css(taskbar, css);
 
   g_list_foreach(base_widget_get_mirror_children(self),
-      (GFunc)taskbar_shell_set_group_css, css);
+      (GFunc)taskbar_shell_set_group_css, g_strdup(css));
 }
 
 static void taskbar_shell_propagate ( GtkWidget *self, gint value,
