@@ -299,7 +299,7 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
   base_widget_set_state(dest, spriv->user_state, TRUE);
   base_widget_set_rect(dest, spriv->rect);
   for(iter=spriv->css; iter; iter=g_list_next(iter))
-    css_widget_apply(base_widget_get_child(dest), g_strdup(iter->data));
+    css_widget_apply(base_widget_get_child(dest), iter->data);
 }
 
 static void base_widget_class_init ( BaseWidgetClass *kclass )
@@ -815,7 +815,7 @@ void base_widget_set_css ( GtkWidget *self, gchar *css )
   if(!css || g_list_find_custom(priv->css, css, (GCompareFunc)g_strcmp0))
     return;
 
-  css_widget_apply(base_widget_get_child(self), g_strdup(css));
+  css_widget_apply(base_widget_get_child(self), css);
   for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
     css_widget_apply(base_widget_get_child(iter->data), css);
 

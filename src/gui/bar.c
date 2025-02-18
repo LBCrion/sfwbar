@@ -808,6 +808,7 @@ GtkWidget *bar_new ( gchar *name )
 {
   GtkWidget *self;
   BarPrivate *priv;
+  gchar *tmp;
 
   self = GTK_WIDGET(g_object_new(bar_get_type(), NULL));
   g_signal_connect(G_OBJECT(self), "delete-event",
@@ -843,8 +844,10 @@ GtkWidget *bar_new ( gchar *name )
   gtk_widget_show(priv->ebox);
   gtk_widget_show(GTK_WIDGET(priv->revealer));
 
-  css_widget_apply(self, g_strdup_printf(
-      "window#%s.sensor { background-color: rgba(0,0,0,0); }", name));
+  tmp = g_strdup_printf(
+      "window#%s.sensor { background-color: rgba(0,0,0,0); }", name);
+  css_widget_apply(self, tmp);
+  g_free(tmp);
   bar_update_monitor(self);
   bar_reveal(self);
 

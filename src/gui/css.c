@@ -269,7 +269,7 @@ gchar *css_legacy_preprocess ( gchar *css_string )
   gchar *tmp, *res;
   gsize i;
 
-  res = css_string;
+  res = g_strdup(css_string);
   for(i=0; old[i]; i++)
   {
     tmp = str_replace(res, old[i], new[i]);
