@@ -15,7 +15,7 @@ static void (*css_style_updated_original)(GtkWidget *);
 void css_file_load ( gchar *name )
 {
   GtkCssProvider *css;
-  gchar *fname, *css_string;
+  gchar *fname, *css_input, *css_string;
 
   if(!name)
     return;
@@ -23,9 +23,10 @@ void css_file_load ( gchar *name )
   fname = get_xdg_config_file(name, NULL);
   if(!fname)
     return;
-  if(g_file_get_contents(fname, &css_string, NULL, NULL))
+  if(g_file_get_contents(fname, &css_input, NULL, NULL))
   {
-    css_string = css_legacy_preprocess(css_string);
+    css_string = css_legacy_preprocess(css_input);
+    g_free(css_input);
     css = gtk_css_provider_new();
     gtk_css_provider_load_from_data(css, css_string, strlen(css_string), NULL);
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
