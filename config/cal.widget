@@ -1,3 +1,5 @@
+Var YearMonth;
+
 Set XCalTmpl = "grid 'cal_grid' {
   label 'XCal_label$CAL_NUM$' {
     value = '$CAL_DAY$'
@@ -29,14 +31,20 @@ Function XCalDaysInAMonth ( emonth )
 }
 
 Function XCalFDOW ( month, year ) {
-  Var moff_table, moff, is_leap;
+  Var moff, is_leap, moff_table = [0,3,3,6,1,4,6,2,5,0,3,5];
 
-  moff_table = [0,3,3,6,1,4,6,2,5,0,3,5];
   moff = moff_table[month];
   if (month>=2 & XCalIsLeapYear(year)) {
     moff = (moff + 1)%7;}
 
   return (moff+5*((year-1)%4)+4*((year-1)%100)+6*((year-1)%400))%7;
+}
+
+Function XCalIsToday ( year, month, day )
+{
+  Return (year = val(time("%Y")) &
+      month = val(time("%m")) &
+      day = val(time("%d")))
 }
 
 Function XCalBuild(emonth) {
@@ -46,7 +54,7 @@ Function XCalBuild(emonth) {
   months = ["January", "February", "March", "April", "May", "June",
          "July", "August", "September", "October","November", "December"];
 
-  Eval "XCalYearMonth", emonth
+  YearMonth = emonth
   month = emonth%12;
   year = (emonth - month)/12;
 
@@ -76,15 +84,17 @@ Function XCalBuild(emonth) {
         "$CAL_COL$", Str(i%7),
         "$CAL_ROW$", Str((i-i%7)/7+1),
         "$CAL_DAY$", Str(day),
-        '$CAL_STYLE$', 'cal_cell_'+If(i<fdow | i>=ndays+fdow, 'other', 'current')
+        '$CAL_STYLE$', 'cal_cell_' + If(XcalIsToday(year, month+1, day),
+          'today', If(i<fdow | i>=ndays+fdow, 'other', 'current'))
+
       )
     i = i + 1;
   }
 }
 
 Function XCalPopUp() {
-  Eval "XCalYearMonth", val(time("%Y"))*12+val(time("%m"))-1;
-  XCalBuild XCalYearMonth
+  YearMonth = val(time("%Y"))*12+val(time("%m"))-1;
+  XCalBuild YearMonth
   PopUp "XCal"
 }
 
@@ -107,12 +117,12 @@ Popup("XCal") {
     image {
       value = 'go-first'
       style = 'cal_arrow'
-      action = XCalBuild XCalYearMonth-12
+      action = XCalBuild YearMonth-12
     }
     image {
       value = 'go-previous'
       style = 'cal_arrow'
-      action = XCalBuild XCalYearMonth-1
+      action = XCalBuild YearMonth-1
     }
     label 'cal_date' {
       style = "cal_date"
@@ -120,12 +130,12 @@ Popup("XCal") {
     image {
       value = 'go-next'
       style = 'cal_arrow'
-      action = XCalBuild XCalYearMonth+1
+      action = XCalBuild YearMonth+1
     }
     image {
       value = 'go-last'
       style = 'cal_arrow'
-      action = XCalBuild XCalYearMonth+12
+      action = XCalBuild YearMonth+12
     }
   }
 
@@ -184,10 +194,15 @@ label#cal_date {
   padding-bottom: 5px;
 }
 
+label#cal_cell_today,
 label#cal_cell_current,
 label#cal_cell_other {
   min-width: 30px;
   min-height: 30px;
+}
+
+label#cal_cell_today {
+  border: solid 1px @theme_border_color;
 }
 
 label#cal_cell_other {
