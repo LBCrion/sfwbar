@@ -213,7 +213,7 @@ if xkbr.found()
   doc_list += 'sfwbar-xkbmap'
 endif
 
-if get_option('appmenu').enabled()
+if get_option('appmenu').enabled() or get_option('appmenu').auto()
   library('appmenu', sources: 'modules/appmenu.c', dependencies: deps,
       include_directories: headers,
       name_prefix: '', install: true,
@@ -261,7 +261,8 @@ if get_option('idleinhibit').enabled() or get_option('idleinhibit').auto()
         'unstable/idle-inhibit/idle-inhibit-unstable-v1.xml',
       command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@' ] ) ]
 
-  library('idleinhibit', sources: ['modules/idleinhibit.c',inhibit_targets], dependencies: deps,
+  library('idleinhibit', sources: ['modules/idleinhibit.c', inhibit_targets],
+      dependencies: deps,
       include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
