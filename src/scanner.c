@@ -425,11 +425,7 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, expr_cache_t *expr )
 {
   ScanVar *var;
 
-  if(!scan_list)
-    return NULL;
-
-  var = g_hash_table_lookup(scan_list, name);
-  if(!var)
+  if(!scan_list || !(var = g_hash_table_lookup(scan_list, name)) )
     return NULL;
 
   if(!update || (!var->invalid && var->type != G_TOKEN_SET))
