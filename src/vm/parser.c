@@ -333,7 +333,7 @@ static gboolean parser_value ( GScanner *scanner, GByteArray *code )
 static gboolean parser_ops ( GScanner *scanner, GByteArray *code, gint l )
 {
   static gchar *expr_ops_list[] = { "&|", "!<>=", "+-", "*/%", NULL };
-  static const guchar *ne = (guchar *)"=!", equal = '=';
+  static const guchar equal = '=';
   gboolean or_equal;
   guchar op;
 
@@ -353,18 +353,16 @@ static gboolean parser_ops ( GScanner *scanner, GByteArray *code, gint l )
     if(op=='!' && !config_expect_token(scanner,'=', "Missing = in !="))
       return FALSE;
 
-    if((op=='>' || op=='<') && g_scanner_peek_next_token(scanner)=='=')
-    {
+    if((op=='>' || op=='<') && config_check_and_consume(scanner, '='))
       or_equal = TRUE;
-      g_scanner_get_next_token(scanner);
-    }
+
     if(!parser_ops(scanner, code, l+1))
       return FALSE;
 
-    if(op!='!')
-      g_byte_array_append(code, &op, 1);
-    else
-      g_byte_array_append(code, ne, 2);
+    if(op=='!')
+      g_byte_array_append(code, &equal, 1);
+
+    g_byte_array_append(code, &op, 1);
 
     if(or_equal)
       g_byte_array_append(code, &equal, 1);

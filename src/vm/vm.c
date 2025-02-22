@@ -59,9 +59,6 @@ static gboolean vm_op_binary ( vm_t *vm )
     else if(op == '=')
       result = value_new_numeric(
           !g_ascii_strcasecmp(value_get_string(v1), value_get_string(v2)));
-    else if(op == '!')
-      result = value_new_numeric(
-          g_ascii_strcasecmp(value_get_string(v1), value_get_string(v2)));
   }
 
   else if(value_like_numeric(v1) && value_like_numeric(v2))
@@ -204,6 +201,8 @@ static void vm_local ( vm_t *vm )
   vm_push(vm, value_dup(((value_t *)(vm->stack->data))[vm->fp+pos-1]));
   g_ptr_array_add(vm->pstack, vm->ip);
   vm->ip += sizeof(guint16);
+  if(vm->expr)
+    vm->expr->vstate = TRUE;
 }
 
 static void vm_heap ( vm_t *vm )
@@ -214,6 +213,8 @@ static void vm_heap ( vm_t *vm )
   vm_push(vm, value_dup(*vptr));
   g_ptr_array_add(vm->pstack, vm->ip);
   vm->ip += sizeof(gpointer);
+  if(vm->expr)
+    vm->expr->vstate = TRUE;
 }
 
 static void vm_local_assign ( vm_t *vm )
