@@ -23,6 +23,7 @@ static GHashTable *app_menu_items;
 static GHashTable *app_menu_filter;
 static GtkWidget *app_menu_main;
 static gchar *app_menu_name = "app_menu_system";
+static gboolean app_menu_flat;
 
 typedef struct _app_menu_map_entry {
   gchar *from;
@@ -45,6 +46,7 @@ typedef struct _app_menu_item_t {
   GtkWidget *widget;
 } app_menu_item_t;
 
+#define CATEGORY_DEFAULT 10
 app_menu_dir_t app_menu_map[] = {
   {"Settings", "Settings", "preferences-system"},
   {"Multimedia", "Sound & Video", "applications-multimedia"},
@@ -223,7 +225,7 @@ static app_menu_dir_t *app_menu_cat_lookup ( const gchar *cats )
           }
     }
   }
-  return result;
+  return result?result:&app_menu_map[CATEGORY_DEFAULT];
 }
 
 static void app_menu_item_free ( app_menu_item_t *item )
@@ -262,6 +264,19 @@ static gboolean app_menu_check_boolean ( GDesktopAppInfo *app, gchar *key )
   return result;
 }
 
+static gboolean app_menu_check_present ( GDesktopAppInfo *app, gchar *key )
+{
+gchar *value;
+gboolean result;
+
+if( !(value = g_desktop_app_info_get_string(app, key)) )
+  return FALSE;
+
+result = !!value;
+g_free(value);
+return result;
+}
+
 static gboolean app_menu_add ( gchar *id )
 {
   GDesktopAppInfo *app;
@@ -284,6 +299,8 @@ static gboolean app_menu_add ( gchar *id )
 
   if( !app_menu_check_boolean(app, "Hidden") &&
       !app_menu_check_boolean(app, "NoDisplay") &&
+      !app_menu_check_present(app, "NotShowIn") &&
+      g_desktop_app_info_get_show_in(app, NULL) &&
       (cat = app_menu_cat_lookup(g_desktop_app_info_get_categories(app))) )
   {
     item = g_malloc0(sizeof(app_menu_item_t));
@@ -297,7 +314,7 @@ static gboolean app_menu_add ( gchar *id )
     g_object_set_data_full(G_OBJECT(item->widget), "iteminfo", item,
         (GDestroyNotify)app_menu_item_free);
 
-    if(!cat->widget)
+    if(!cat->widget && !app_menu_flat)
     {
       cat->widget = menu_item_get(NULL, TRUE);
       menu_item_set_label(cat->widget,
@@ -311,7 +328,7 @@ static gboolean app_menu_add ( gchar *id )
       app_menu_item_insert(app_menu_main, cat->widget);
     }
 
-    app_menu_item_insert(
+    app_menu_item_insert(app_menu_flat? app_menu_main :
         gtk_menu_item_get_submenu(GTK_MENU_ITEM(cat->widget)), item->widget);
 
 //    g_debug("appmenu item: '%s', title: '%s', icon: '%s', cat: %s'", item->id,
@@ -457,6 +474,21 @@ static value_t app_menu_item_bottom ( vm_t *vm, value_t p[], gint np )
   return app_menu_item_add(vm, p, FALSE);
 }
 
+static value_t app_menu_set_flat ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "AppMenuSetFlat");
+  vm_param_check_numeric(vm, p, 0, "AppMenuSetFlat");
+
+  if(app_menu_flat != !!value_get_numeric(p[0]))
+  {
+    app_menu_flat = !!value_get_numeric(p[0]);
+    app_info_categories_update();
+    app_info_remove_handlers(app_menu_handle_add, app_menu_handle_delete);
+    app_info_add_handlers(app_menu_handle_add, app_menu_handle_delete);
+  }
+  return value_na;
+}
+
 gboolean sfwbar_module_init ( void )
 {
   app_info_categories_update();
@@ -472,6 +504,7 @@ gboolean sfwbar_module_init ( void )
   vm_func_add("AppMenuFilter", app_menu_func_filter, TRUE);
   vm_func_add("AppMenuItemTop", app_menu_item_top, TRUE);
   vm_func_add("AppMenuItemBottom", app_menu_item_bottom, TRUE);
+  vm_func_add("AppMenuSetFlat", app_menu_set_flat, TRUE);
   
   return TRUE;
 }
