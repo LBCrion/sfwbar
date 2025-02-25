@@ -200,7 +200,7 @@ static app_menu_dir_t *app_menu_cat_lookup ( const gchar *cats )
   gint i;
 
   if(!cats)
-    return NULL;
+    return &app_menu_map[CATEGORY_DEFAULT];
 
   for(ptr=cats; ptr; ptr=end?end+1:NULL)
   {
