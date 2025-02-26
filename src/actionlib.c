@@ -590,6 +590,92 @@ static value_t action_check_state ( vm_t *vm, value_t p[], gint np )
   return value_new_numeric(TRUE);
 }
 
+static void action_file_trigger_cb ( GFileMonitor *m, GFile *f1, GFile *f2,
+    GFileMonitorEvent ev, gchar *trigger )
+{
+  trigger_emit(trigger);
+}
+
+static value_t action_file_trigger ( vm_t *vm, value_t p[], gint np )
+{
+  GFile *f;
+  GFileMonitor *m;
+
+  vm_param_check_np(vm, np, 2, "");
+  vm_param_check_string(vm, p, 0, "FileTrigger");
+  vm_param_check_string(vm, p, 1, "FileTrigger");
+
+  f = g_file_new_for_path(value_get_string(p[0]));
+  if( !(m = g_file_monitor_file(f, 0, NULL, NULL)) )
+  {
+    g_debug("FileTrigger: unable to setup a file monitor for %s",
+        value_get_string(p[0]));
+    g_object_unref(f);
+    return value_na;
+  }
+  g_signal_connect(G_OBJECT(m), "changed", G_CALLBACK(action_file_trigger_cb),
+      (gpointer)trigger_name_intern(value_get_string(p[1])));
+  return value_na;
+}
+
+static value_t action_emit_trigger ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "");
+  vm_param_check_string(vm, p, 0, "EmitTrigger");
+
+  trigger_emit(value_get_string(p[0]));
+
+  return value_na;
+}
+
+static value_t action_dbus_call (GDBusConnection *con, vm_t *vm, value_t p[],
+    gint np)
+{
+  GVariantBuilder builder;
+  gchar *format;
+  gsize i,j;
+
+  if(np<4)
+    return value_na;
+
+  if(np>4 && value_is_string(p[4]))
+  {
+    g_variant_builder_init(&builder, G_VARIANT_TYPE(value_get_string(p[4])));
+    format = value_get_string(p[4]);
+    j = 5;
+    for(i=0; format[i] && j<=np; i++)
+      if(g_ascii_isalpha(format[i]))
+      {
+        if(format[i]=='s' && value_is_string(p[j]))
+          g_variant_builder_add_value(&builder, g_variant_new_string(
+                value_get_string(p[j])));
+        else if(format[i]=='u' && value_is_numeric(p[j]))
+          g_variant_builder_add_value(&builder, g_variant_new_uint32(
+                (guint32)value_get_numeric(p[j])));
+        else
+          j--;
+        j++;
+      }
+  }
+
+  g_dbus_connection_call(con, value_get_string(p[0]), value_get_string(p[1]),
+      value_get_string(p[2]), value_get_string(p[3]),
+      g_variant_builder_end(&builder),
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+  return value_na;
+}
+
+static value_t action_dbus_call_system ( vm_t *vm, value_t p[], gint np )
+{
+  return action_dbus_call(g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL),
+      vm, p, np);
+}
+
+static value_t action_dbus_call_session ( vm_t *vm, value_t p[], gint np )
+{
+  return action_dbus_call(g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL),
+      vm, p, np);
+}
 void action_lib_init ( void )
 {
   vm_func_add("exec", action_exec_impl, TRUE);
@@ -628,4 +714,8 @@ void action_lib_init ( void )
   vm_func_add("taskbaritemdefault", action_taskbar_item, TRUE);
   vm_func_add("clearwidget", action_clear_widget, TRUE);
   vm_func_add("checkstate", action_check_state, FALSE);
+  vm_func_add("filetrigger", action_file_trigger, FALSE);
+  vm_func_add("emittrigger", action_emit_trigger, FALSE);
+  vm_func_add("DbusCallSystem", action_dbus_call_system, TRUE);
+  vm_func_add("DbusCallSession", action_dbus_call_session, TRUE);
 }
