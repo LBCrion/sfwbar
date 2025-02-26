@@ -15,6 +15,7 @@ pulg = dependency('libpulse-mainloop-glib', required: get_option('pulse'))
 mpdc = dependency('libmpdclient', required: get_option('mpd'))
 xkbr = dependency('xkbregistry', required: get_option('xkb'))
 alsa = dependency('alsa', required: get_option('alsa'))
+pipe = dependency('libpipewire-0.3', required: get_option('pipewire'))
 
 conf_data = configuration_data()
 glsh_ver = glsh.version().split('.')
@@ -185,6 +186,13 @@ if puls.found() and pulg.found()
       dependencies: [deps, puls, pulg],name_prefix: '',
       install: true, install_dir: get_option('libdir') / 'sfwbar' )
   doc_list += 'sfwbar-volume'
+endif
+
+if pipe.found()
+  library('pipewire', sources: 'modules/pipewire.c',
+      include_directories: headers,
+      dependencies: [deps, pipe],name_prefix: '',
+      install: true, install_dir: get_option('libdir') / 'sfwbar' )
 endif
 
 if mpdc.found()
