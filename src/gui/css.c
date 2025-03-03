@@ -25,7 +25,7 @@ void css_file_load ( gchar *name )
     return;
   if(g_file_get_contents(fname, &css_input, NULL, NULL))
   {
-    css_string = css_legacy_preprocess(css_input);
+    css_string = css_legacy_preprocess(css_input, fname);
     g_free(css_input);
     css = gtk_css_provider_new();
     gtk_css_provider_load_from_data(css, css_string, strlen(css_string), NULL);
@@ -212,7 +212,7 @@ void css_widget_apply ( GtkWidget *widget, gchar *css )
 
   cont = gtk_widget_get_style_context (widget);
   provider = gtk_css_provider_new();
-  css = css_legacy_preprocess(css);
+  css = css_legacy_preprocess(css, NULL);
   gtk_css_provider_load_from_data(provider, css, strlen(css), NULL);
   gtk_style_context_add_provider (cont,
     GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
@@ -253,7 +253,7 @@ void css_set_class ( GtkWidget *widget, gchar *css_class, gboolean state )
     gtk_style_context_remove_class(context,css_class);
 }
 
-gchar *css_legacy_preprocess ( gchar *css_string )
+gchar *css_legacy_preprocess ( gchar *css_string, gchar *fname )
 {
   gchar *old[] = { "#taskbar_normal", "#taskbar_active",
     "#taskbar_popup_normal", "#taskbar_popup_active", "#taskbar_group_normal",
@@ -267,7 +267,7 @@ gchar *css_legacy_preprocess ( gchar *css_string )
     "#pager_item.visible", "#pager_item.focused", "#switcher_item",
     "#switcher_item.focused", "#tray_item", "#tray_item.urgent",
     "#tray_item.passive", NULL };
-  gchar *tmp, *res;
+  gchar *tmp, *res, *fpath;
   gsize i;
 
   res = g_strdup(css_string);
@@ -277,5 +277,14 @@ gchar *css_legacy_preprocess ( gchar *css_string )
     g_free(res);
     res = tmp;
   }
+  if(fname)
+  {
+    fpath = g_path_get_dirname(fname);
+    tmp = str_replace(res, "%CSS_FILE_PATH%", fpath);
+    g_free(fpath);
+    g_free(res);
+    res = tmp;
+  }
+
   return res;
 }
