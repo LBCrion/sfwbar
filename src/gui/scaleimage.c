@@ -390,7 +390,7 @@ static void scale_image_style_updated ( GtkWidget *self )
   gtk_widget_style_get(self, "color", &priv->color, NULL);
 
   gtk_widget_style_get(self, "symbolic", &prefer_symbolic, NULL);
-  if(priv->symbolic_pref != prefer_symbolic && priv->ftype == SI_ICON)
+  if(priv->symbolic_pref != prefer_symbolic)
   {
     image = g_strdup(priv->file);
     extra = g_strdup(priv->extra);

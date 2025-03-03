@@ -270,7 +270,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
   GScanner *scanner;
   GtkWidget *w;
   GtkCssProvider *css;
-  gchar *tmp, *fpath;
+  gchar *tmp;
 
   if(!data)
     return NULL;
@@ -284,11 +284,17 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
 //  g_message("store: %p %p", SCANNER_DATA(scanner)->heap, container);
 
   SCANNER_DATA(scanner)->heap->parent = globals;
+  scanner->input_name = fname;
+  g_scanner_input_text(scanner, data, strlen(data));
 
-  tmp = strstr(data, "\n#CSS");
+
+  if( (tmp = strstr(data, "\n#CSS")) )
+    *tmp = 0;
+  w = config_parse_toplevel(scanner, container);
+  g_scanner_destroy(scanner);
+
   if(tmp)
   {
-    *tmp = 0;
     css = gtk_css_provider_new();
     tmp = css_legacy_preprocess(g_strdup(tmp + 5), fname);
     gtk_css_provider_load_from_data(css, tmp, strlen(tmp), NULL);
@@ -297,11 +303,6 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
     g_object_unref(css);
     g_free(tmp);
   }
-
-  scanner->input_name = fname;
-  g_scanner_input_text(scanner, data, strlen(data));
-  w = config_parse_toplevel(scanner, container);
-  g_scanner_destroy(scanner);
 
   return w;
 }
