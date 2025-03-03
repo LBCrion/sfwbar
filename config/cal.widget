@@ -84,8 +84,8 @@ Function XCalBuild(emonth) {
         "$CAL_COL$", Str(i%7),
         "$CAL_ROW$", Str((i-i%7)/7+1),
         "$CAL_DAY$", Str(day),
-        '$CAL_STYLE$', 'cal_cell_' + If(XcalIsToday(year, month+1, day),
-          'today', If(i<fdow | i>=ndays+fdow, 'other', 'current'))
+        '$CAL_STYLE$', 'cal_cell_' + If(i<fdow | i>=ndays+fdow, 'other',
+          If(XcalIsToday(year, month+1, day), 'today', 'current'))
 
       )
     i = i + 1;
