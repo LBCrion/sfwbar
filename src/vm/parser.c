@@ -1,3 +1,7 @@
+/* This entire file is licensed under GNU General Public License v3.0
+ *
+ * Copyright 2025- sfwbar maintainers
+ */
 
 #include "config/config.h"
 #include "util/string.h"
@@ -33,6 +37,15 @@ static void parser_emit_ptr_op ( GByteArray *code, gconstpointer vptr,
   data[0] = op;
   memcpy(data+1, &vptr, sizeof(gpointer));
   g_byte_array_append(code, data, sizeof(gpointer)+1);
+}
+
+static void parser_emit_quark_op ( GByteArray *code, GQuark quark, guint8 op )
+{
+  guint8 data[sizeof(GQuark)+1];
+
+  data[0] = op;
+  memcpy(data+1, &quark, sizeof(GQuark));
+  g_byte_array_append(code, data, sizeof(GQuark)+1);
 }
 
 static void parser_emit_string ( GByteArray *code, gchar *str )
@@ -101,11 +114,11 @@ static guint16 parser_local_lookup ( GScanner *scanner )
           SCANNER_DATA(scanner)->locals, scanner->value.v_identifier));
 }
 
-static value_t *parser_heap_lookup ( GScanner *scanner )
+static vm_var_t *parser_heap_lookup ( GScanner *scanner )
 {
   if(!SCANNER_DATA(scanner)->heap || scanner->token!=G_TOKEN_IDENTIFIER)
     return NULL;
-  return g_hash_table_lookup(SCANNER_DATA(scanner)->heap,
+  return vm_store_lookup_string(SCANNER_DATA(scanner)->heap,
       scanner->value.v_identifier);
 }
 
@@ -211,12 +224,12 @@ static gboolean parser_index_parse( GScanner *scanner, GByteArray *code )
 static gboolean parser_variable ( GScanner *scanner, GByteArray *code )
 {
   guint16 pos;
-  value_t *vptr;
+  vm_var_t *var;
 
   if( (pos = parser_local_lookup(scanner)) )
     parser_emit_local(code, pos, EXPR_OP_LOCAL);
-  else if( (vptr = parser_heap_lookup(scanner)) )
-    parser_emit_ptr_op(code, vptr, EXPR_OP_HEAP);
+  else if( (var = parser_heap_lookup(scanner)) )
+    parser_emit_quark_op(code, var->quark, EXPR_OP_HEAP);
   else
   {
     parser_emit_ptr_op(code,
@@ -408,16 +421,16 @@ gboolean parser_macro_add ( GScanner *scanner )
 }
 
 static gboolean parser_assign_parse ( GScanner *scanner, GByteArray *code,
-    guint16 pos, value_t *vptr )
+    guint16 pos, vm_var_t *var )
 {
-  g_return_val_if_fail(pos || vptr, FALSE);
+  g_return_val_if_fail(pos || var, FALSE);
 
   if(config_check_and_consume(scanner, '['))
   {
     if(pos)
       parser_emit_local(code, pos, EXPR_OP_LOCAL);
     else
-      parser_emit_ptr_op(code, vptr, EXPR_OP_HEAP);
+      parser_emit_quark_op(code, var->quark, EXPR_OP_HEAP);
     config_parse_sequence(scanner,
         SEQ_REQ, -2 , parser_expr_parse, code, "Expect index in []",
         SEQ_REQ, ']', NULL, NULL, "Expect ']' after array index",
@@ -437,7 +450,7 @@ static gboolean parser_assign_parse ( GScanner *scanner, GByteArray *code,
   if(pos)
     parser_emit_local(code, pos, EXPR_OP_LOCAL_ASSIGN);
   else
-    parser_emit_ptr_op(code, vptr, EXPR_OP_HEAP_ASSIGN);
+    parser_emit_quark_op(code, var->quark, EXPR_OP_HEAP_ASSIGN);
 
   return !scanner->max_parse_errors;
 }

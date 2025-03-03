@@ -9,7 +9,7 @@
 #include "gui/menu.h"
 #include "gui/menuitem.h"
 #include "gui/scaleimage.h"
-#include "vm/expr.h"
+#include "vm/vm.h"
 
 static GHashTable *menu_items;
 
@@ -49,7 +49,7 @@ static void menu_item_activate ( GtkMenuItem *self, gpointer d )
   if(!wid)
     wid = wintree_get_focus();
 
-  action_exec(widget, priv->action, NULL, wintree_from_id(wid), &state);
+  vm_run_action(priv->action, widget, NULL, wintree_from_id(wid), &state, NULL);
 }
 
 void menu_item_update_from_app ( GtkWidget *self, GDesktopAppInfo *app )

@@ -91,8 +91,14 @@ static gboolean sfwbar_restart ( gpointer d )
   return FALSE;
 }
 
+static void print_store ( GQuark key, gpointer d, gpointer s)
+{
+  g_message("%s", g_quark_to_string(key));
+}
+
 static void activate (GtkApplication* app, gpointer data )
 {
+  GtkWidget *panel;
   GList *clist, *iter;
 
   application = app;
@@ -116,7 +122,7 @@ static void activate (GtkApplication* app, gpointer data )
   if(bar_id)
     bar_address_all(NULL, bar_id, bar_set_id);
 
-  config_parse(confname?confname:"sfwbar.config", NULL);
+  panel = config_parse(confname?confname:"sfwbar.config", NULL, NULL);
 
   clist = gtk_window_list_toplevels();
   for(iter = clist; iter; iter = g_list_next(iter) )
@@ -133,7 +139,9 @@ static void activate (GtkApplication* app, gpointer data )
         (GThreadFunc)base_widget_scanner_thread,
         g_main_context_get_thread_default()));
 
-  vm_run_user_defined("SfwBarInit", NULL, NULL, NULL, NULL);
+  g_dataset_foreach(base_widget_get_store(panel)->vars, print_store, NULL);
+  vm_run_user_defined("SfwBarInit", NULL, NULL, NULL, NULL,
+      base_widget_get_store(panel));
 
   g_unix_signal_add(SIGHUP, (GSourceFunc)sfwbar_restart, NULL);
 }

@@ -56,7 +56,8 @@ static void config_trigger_action ( GScanner *scanner )
       SEQ_END);
 
   if(!scanner->max_parse_errors)
-    action_trigger_add(action, trigger);
+    action_trigger_add(trigger,
+        vm_closure_new(action, SCANNER_DATA(scanner)->heap));
 }
 
 static void config_module ( GScanner *scanner )
@@ -78,15 +79,20 @@ static void config_module ( GScanner *scanner )
 
 static void config_vars ( GScanner *scanner )
 {
+  vm_store_t *store;
+
+  store = SCANNER_DATA(scanner)->heap;
+  if((gint)scanner->token != G_TOKEN_PRIVATE)
+    while(store->parent)
+      store = store->parent;
+
   do {
     if(!config_expect_token(scanner, G_TOKEN_IDENTIFIER,
           "expect an identifier in var declaration"))
       return;
 
-    if(!g_hash_table_lookup(SCANNER_DATA(scanner)->heap,
-          scanner->value.v_identifier))
-      g_hash_table_insert(SCANNER_DATA(scanner)->heap,
-          g_strdup(scanner->value.v_identifier), g_malloc0(sizeof(value_t)));
+    if(!vm_store_lookup_string(store, scanner->value.v_identifier))
+      vm_store_insert(store, vm_var_new(scanner->value.v_identifier));
     else
       g_message("duplicate declaration of variable %s",
           scanner->value.v_identifier);
@@ -138,6 +144,7 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
       case G_TOKEN_SET:
         config_set(scanner);
         break;
+      case G_TOKEN_PRIVATE:
       case G_TOKEN_VAR:
         config_vars(scanner);
         break;

@@ -75,6 +75,7 @@ libsrc = [
     'src/vm/func.c',
     'src/vm/parser.c',
     'src/vm/value.c',
+    'src/vm/var.c',
     'src/vm/vm.c',
     'src/gui/bar.c',
     'src/gui/basewidget.c',

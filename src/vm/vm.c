@@ -1,3 +1,7 @@
+/* This entire file is licensed under GNU General Public License v3.0
+ *
+ * Copyright 2025- sfwbar maintainers
+ */
 
 #include "expr.h"
 #include "scanner.h"
@@ -207,12 +211,16 @@ static void vm_local ( vm_t *vm )
 
 static void vm_heap ( vm_t *vm )
 {
-  value_t *vptr;
+  GQuark quark;
+  vm_var_t *var;
 
-  memcpy(&vptr, vm->ip+1, sizeof(gpointer));
-  vm_push(vm, value_dup(*vptr));
+  memcpy(&quark, vm->ip+1, sizeof(GQuark));
+  if( (var = vm_store_lookup(vm->store, quark)) )
+    vm_push(vm, value_dup(var->value));
+  else
+    vm_push(vm, value_na);
   g_ptr_array_add(vm->pstack, vm->ip);
-  vm->ip += sizeof(gpointer);
+  vm->ip += sizeof(GQuark);
   if(vm->expr)
     vm->expr->vstate = TRUE;
 }
@@ -230,12 +238,18 @@ static void vm_local_assign ( vm_t *vm )
 
 static void vm_heap_assign ( vm_t *vm )
 {
-  value_t *vptr;
+  GQuark quark;
+  vm_var_t *var;
 
-  memcpy(&vptr, vm->ip+1, sizeof(gpointer));
-  value_free(*vptr);
-  *vptr = vm_pop(vm);
-  vm->ip += sizeof(gpointer);
+  memcpy(&quark, vm->ip+1, sizeof(GQuark));
+  if( (var = vm_store_lookup(vm->store, quark)) )
+  {
+    value_free(var->value);
+    var->value = vm_pop(vm);
+  }
+  else
+    value_free(vm_pop(vm));
+  vm->ip += sizeof(GQuark);
 }
 
 static void vm_immediate ( vm_t *vm )
@@ -373,14 +387,15 @@ value_t vm_expr_eval ( expr_cache_t *expr )
 }
 
 void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
-    window_t *win, guint16 *state )
+    window_t *win, guint16 *state, vm_store_t *store )
 {
   vm_t *vm;
 
-  if(!code)
-    return;
+  g_return_if_fail(code);
+
   vm = g_malloc0(sizeof(vm_t));
   vm->code = (gpointer)g_bytes_get_data(code, &vm->len);
+  vm->store = store;
   vm->widget = widget;
   vm->event = event;
   vm->win = win;
@@ -391,11 +406,11 @@ void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
 }
 
 void vm_run_user_defined ( gchar *name, GtkWidget *widget, GdkEvent *event,
-    window_t *win, guint16 *state )
+    window_t *win, guint16 *state, vm_store_t *store )
 {
   vm_function_t *func;
 
   func = vm_func_lookup(name);
   if(func->flags & VM_FUNC_USERDEFINED)
-    vm_run_action(func->ptr.code, widget, event, win, state);
+    vm_run_action(func->ptr.code, widget, event, win, state, store);
 }

@@ -26,6 +26,18 @@ enum vm_func_flags_t {
   VM_FUNC_USERDEFINED = 2,
 };
 
+typedef struct _vm_store_t vm_store_t;
+struct _vm_store_t {
+  GData *vars;
+  vm_store_t *parent;
+};
+
+typedef struct _vm_var {
+  value_t value;
+  gchar *name;
+  GQuark quark;
+} vm_var_t;
+
 typedef struct {
   guint8 *ip;
   guint8 *code;
@@ -40,6 +52,8 @@ typedef struct {
   GdkEvent *event;
   window_t *win;
   expr_cache_t *expr;
+  vm_store_t *store;
+  vm_store_t *globals;
 } vm_t;
 
 typedef value_t (*vm_func_t)(vm_t *vm, value_t params[], gint np);
@@ -52,6 +66,11 @@ typedef struct {
     GBytes *code;
   } ptr;
 } vm_function_t;
+
+typedef struct {
+  GBytes *code;
+  vm_store_t *store;
+} vm_closure_t;
 
 #define vm_param_check_np(vm, np, n, fname) { if(np!=n) { return value_na; } }
 #define vm_param_check_np_range(vm, np, min, max, fname) { if(np<min || np>max) { return value_na; } }
@@ -71,14 +90,23 @@ GBytes *parser_exec_build ( gchar *cmd );
 value_t vm_expr_eval ( expr_cache_t *expr );
 value_t vm_function_call ( vm_t *vm, GBytes *code, guint8 np );
 void vm_run_action ( GBytes *code, GtkWidget *w, GdkEvent *e, window_t *win,
-    guint16 *s);
+    guint16 *s, vm_store_t *store);
 void vm_run_user_defined ( gchar *action, GtkWidget *widget, GdkEvent *event,
-    window_t *win, guint16 *state );
+    window_t *win, guint16 *state, vm_store_t *store );
 
 void vm_func_init ( void );
 void vm_func_add ( gchar *name, vm_func_t func, gboolean deterministic );
 void vm_func_add_user ( gchar *name, GBytes *code );
 vm_function_t *vm_func_lookup ( gchar *name );
 void vm_func_remove ( gchar *name );
+
+vm_var_t *vm_var_new ( gchar *name );
+void vm_var_free ( vm_var_t *var );
+vm_store_t *vm_store_new ( vm_store_t *parent );
+void vm_store_free ( vm_store_t *store );
+vm_var_t *vm_store_lookup ( vm_store_t *store, GQuark id );
+vm_var_t *vm_store_lookup_string ( vm_store_t *store, gchar *string );
+gboolean vm_store_insert ( vm_store_t *store, vm_var_t *var );
+vm_closure_t *vm_closure_new ( GBytes *code, vm_store_t *store );
 
 #endif

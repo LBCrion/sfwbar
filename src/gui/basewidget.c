@@ -212,15 +212,17 @@ static gboolean base_widget_scroll_event ( GtkWidget *self,
 static gboolean base_widget_action_exec_impl ( GtkWidget *self, gint slot,
     GdkEvent *ev )
 {
+  BaseWidgetPrivate *priv;
   GBytes *action;
 
   if(!base_widget_check_action_slot(self, slot))
     return FALSE;
 
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
   if( (action = base_widget_get_action(self, slot,
         base_widget_get_modifiers(self))) )
-    action_exec(self, action, (GdkEvent *)ev,
-        wintree_from_id(wintree_get_focus()), NULL);
+    vm_run_action(action, self, (GdkEvent *)ev,
+        wintree_from_id(wintree_get_focus()), NULL, priv->store);
   return !!action;
 }
 
@@ -692,6 +694,26 @@ void base_widget_set_max_height ( GtkWidget *self, guint x )
   priv->maxh = x;
 }
 
+void base_widget_set_store ( GtkWidget *self, vm_store_t *store )
+{
+  BaseWidgetPrivate *priv;
+
+  g_return_if_fail(IS_BASE_WIDGET(self));
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  priv->store = store;
+}
+
+vm_store_t * base_widget_get_store ( GtkWidget *self )
+{
+  BaseWidgetPrivate *priv;
+
+  g_return_val_if_fail(IS_BASE_WIDGET(self), NULL);
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  return priv->store;
+}
+
 gchar *base_widget_get_id ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
@@ -936,6 +958,7 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
 
 void base_widget_autoexec ( GtkWidget *self, gpointer data )
 {
+  BaseWidgetPrivate *priv;
   GBytes *action;
 
   if(GTK_IS_CONTAINER(self))
@@ -944,7 +967,8 @@ void base_widget_autoexec ( GtkWidget *self, gpointer data )
   if(!IS_BASE_WIDGET(self))
     return;
 
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
   if( (action = base_widget_get_action(self, 0, 0)) )
-    action_exec(self, action, NULL, wintree_from_id(wintree_get_focus()),
-        NULL);
+    vm_run_action(action, self, NULL, wintree_from_id(wintree_get_focus()),
+        NULL, priv->store);
 }

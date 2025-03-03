@@ -59,6 +59,7 @@ struct _BaseWidgetPrivate
   GList *mirror_children;
   GtkWidget *mirror_parent;
   GdkModifierType saved_modifiers;
+  vm_store_t *store;
 };
 
 typedef struct _base_widget_attachment {
@@ -81,6 +82,8 @@ void base_widget_set_state ( GtkWidget *self, guint16 mask, gboolean state );
 void base_widget_set_action ( GtkWidget *, gint, GdkModifierType, GBytes *);
 void base_widget_set_max_width ( GtkWidget *self, guint x );
 void base_widget_set_max_height ( GtkWidget *self, guint x );
+void base_widget_set_store ( GtkWidget *self, vm_store_t *store );
+vm_store_t * base_widget_get_store ( GtkWidget *self );
 gboolean base_widget_update_value ( GtkWidget *self );
 gboolean base_widget_style ( GtkWidget *self );
 void base_widget_set_rect ( GtkWidget *self, GdkRectangle rect );

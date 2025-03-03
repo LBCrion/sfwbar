@@ -113,7 +113,7 @@ gboolean config_include ( GScanner *scanner, GtkWidget *container )
     return TRUE;
   }
 
-  widget = config_parse(fname, container);
+  widget = config_parse(fname, container, SCANNER_DATA(scanner)->heap);
   if(container)
   {
     config_widget(scanner, widget);
@@ -424,6 +424,7 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
 
 void config_widget ( GScanner *scanner, GtkWidget *widget )
 {
+  base_widget_set_store(widget, SCANNER_DATA(scanner)->heap);
   if(!config_check_and_consume(scanner, '{'))
     return;
 

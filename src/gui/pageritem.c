@@ -7,6 +7,7 @@
 #include "bar.h"
 #include "pager.h"
 #include "pageritem.h"
+#include "vm/vm.h"
 
 G_DEFINE_TYPE_WITH_CODE (PagerItem, pager_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (PagerItem));
 
@@ -35,7 +36,8 @@ static gboolean pager_item_action_exec ( GtkWidget *self, gint slot,
   if(!action)
     return FALSE;
   else
-    action_exec(self, action, ev, wintree_from_id(wintree_get_focus()), NULL);
+    vm_run_action(action, self, ev, wintree_from_id(wintree_get_focus()),
+        NULL, base_widget_get_store(priv->pager));
 
   return TRUE;
 }

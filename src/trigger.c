@@ -4,6 +4,7 @@
  */
 
 #include <glib.h>
+#include "vm/vm.h"
 
 static GHashTable *trigger_list;
 
@@ -45,7 +46,7 @@ const gchar *trigger_add ( gchar *name, GSourceFunc func, void *data )
 
   list = g_hash_table_lookup(trigger_list, trigger_name);
   for(iter=list; iter; iter=g_list_next(iter))
-    if(TRIGGER(iter->data)->func==func && TRIGGER(iter->data)->data==data)
+    if(TRIGGER(iter->data)->func == func && TRIGGER(iter->data)->data == data)
       return NULL;
   trigger = g_malloc0(sizeof(trigger_t));
   trigger->func = func;

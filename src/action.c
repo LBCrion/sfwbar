@@ -24,19 +24,13 @@ guint16 action_state_build ( GtkWidget *widget, window_t *win )
   return state;
 }
 
-void action_exec ( GtkWidget *widget, GBytes *action,
-    GdkEvent *event, window_t *win, guint16 *istate )
+void action_trigger_cb ( vm_closure_t *closure )
 {
-  if(action)
-    vm_run_action(action, widget, event, win, istate);
+  if(closure)
+    vm_run_action(closure->code, NULL, NULL, NULL, NULL, closure->store);
 }
 
-void action_trigger_cb ( GBytes *action )
+void action_trigger_add ( gchar *trigger, vm_closure_t *closure )
 {
-  action_exec(NULL, action, NULL, NULL, NULL);
-}
-
-void action_trigger_add ( GBytes *action, gchar *trigger )
-{
-  trigger_add(trigger, (GSourceFunc)action_trigger_cb, action);
+  trigger_add(trigger, (GSourceFunc)action_trigger_cb, closure );
 }

@@ -1,3 +1,7 @@
+/* This entire file is licensed under GNU General Public License v3.0
+ *
+ * Copyright 2025- sfwbar maintainers
+ */
 
 #include "vm/vm.h"
 #include "util/string.h"

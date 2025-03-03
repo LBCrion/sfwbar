@@ -121,6 +121,7 @@ void config_init ( void )
       G_TOKEN_DISOWNMINIMIZED);
   config_add_key(config_toplevel_keys, "Function", G_TOKEN_FUNCTION);
   config_add_key(config_toplevel_keys, "Var", G_TOKEN_VAR);
+  config_add_key(config_toplevel_keys, "Private", G_TOKEN_PRIVATE);
   config_add_key(config_toplevel_keys, "Set", G_TOKEN_SET);
   config_add_key(config_toplevel_keys, "MenuClear", G_TOKEN_MENUCLEAR);
   config_add_key(config_toplevel_keys, "Menu", G_TOKEN_MENU);
@@ -263,7 +264,8 @@ void config_log_error ( GScanner *scanner, gchar *message, gboolean error )
     g_message("%s:%d: %s", scanner->input_name, scanner->line, message);
 }
 
-GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container )
+GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
+   vm_store_t *globals )
 {
   GScanner *scanner;
   GtkWidget *w;
@@ -278,8 +280,10 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container )
   scanner->msg_handler = config_log_error;
   scanner->max_parse_errors = FALSE;
   scanner->user_data = g_malloc0(sizeof(scanner_data_t));
-  SCANNER_DATA(scanner)->heap = g_hash_table_new_full((GHashFunc)str_nhash,
-      (GEqualFunc)str_nequal, g_free, NULL);
+  SCANNER_DATA(scanner)->heap = vm_store_new(NULL);
+//  g_message("store: %p %p", SCANNER_DATA(scanner)->heap, container);
+
+  SCANNER_DATA(scanner)->heap->parent = globals;
 
   tmp = strstr(data, "\n#CSS");
   if(tmp)
@@ -297,7 +301,6 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container )
   scanner->input_name = fname;
   g_scanner_input_text(scanner, data, strlen(data));
   w = config_parse_toplevel(scanner, container);
-  g_clear_pointer(&(SCANNER_DATA(scanner)->heap), g_hash_table_destroy);
   g_scanner_destroy(scanner);
 
   return w;
@@ -312,7 +315,7 @@ void config_string ( gchar *string )
 
   conf = g_strdup(string);
   g_debug("parsing config string: %s", conf);
-  config_parse_data("config string", conf, NULL);
+  config_parse_data("config string", conf, NULL, NULL);
   g_free(conf);
 }
 
@@ -331,7 +334,7 @@ void config_pipe_read ( gchar *command )
   if( (chan = g_io_channel_unix_new( fileno(fp) )) )
   {
     if(g_io_channel_read_to_end(chan, &conf, NULL, NULL)==G_IO_STATUS_NORMAL)
-      config_parse_data(command, conf, NULL);
+      config_parse_data(command, conf, NULL, NULL);
     g_free(conf);
     g_io_channel_unref(chan);
   }
@@ -339,7 +342,8 @@ void config_pipe_read ( gchar *command )
   pclose(fp);
 }
 
-GtkWidget *config_parse ( gchar *file, GtkWidget *container )
+GtkWidget *config_parse ( gchar *file, GtkWidget *container,
+    vm_store_t *globals )
 {
   GtkWidget *w = NULL;
   gchar *fname, *dir, *base, *cssfile, *csspath, *tmp;
@@ -353,7 +357,7 @@ GtkWidget *config_parse ( gchar *file, GtkWidget *container )
   if(!g_file_get_contents(fname, &conf, NULL, NULL))
     g_error("Error reading config file %s", file);
 
-  w = config_parse_data (fname, conf, container);
+  w = config_parse_data (fname, conf, container, globals);
 
   g_free(conf);
 

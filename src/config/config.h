@@ -2,11 +2,12 @@
 #define __CONFIG_H__
 
 #include <gtk/gtk.h>
+#include "vm/vm.h"
 #include "action.h"
 
 typedef struct {
   GHashTable *locals;
-  GHashTable *heap;
+  vm_store_t *heap;
 } scanner_data_t;
 
 #define SCANNER_DATA(x) ((scanner_data_t *)((x)->user_data))
@@ -41,7 +42,7 @@ gpointer config_lookup_ptr ( GScanner *scanner, GHashTable *table );
 gpointer config_lookup_next_ptr ( GScanner *scanner, GHashTable *table );
 gboolean config_check_and_consume ( GScanner *scanner, gint token );
 gchar *config_value_string ( gchar *dest, gchar *string );
-GtkWidget *config_parse ( gchar *, GtkWidget * );
+GtkWidget *config_parse ( gchar *, GtkWidget *, vm_store_t * );
 void config_pipe_read ( gchar *command );
 void config_string ( gchar *string );
 gboolean config_expect_token ( GScanner *scan, gint token, gchar *fmt, ...);
@@ -152,6 +153,7 @@ enum {
   G_TOKEN_JSON,
   G_TOKEN_SET,
   G_TOKEN_VAR,
+  G_TOKEN_PRIVATE,
   G_TOKEN_GRAB,
   G_TOKEN_WORKSPACE,
   G_TOKEN_OUTPUT,

@@ -9,13 +9,12 @@
 #include "taskbarshell.h"
 #include "taskbaritem.h"
 #include "scaleimage.h"
-#include "action.h"
 #include "bar.h"
 #include "wintree.h"
 #include "menu.h"
 #include "popup.h"
 #include "window.h"
-#include <gtk-layer-shell.h>
+#include "vm/vm.h"
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarPopup, taskbar_popup, FLOW_ITEM_TYPE,
     G_ADD_PRIVATE(TaskbarPopup))
@@ -232,8 +231,9 @@ static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
     win = flow_item_get_source(children->data);
     if( (action = base_widget_get_action(priv->shell, slot,
         base_widget_get_modifiers(self))) )
-      action_exec(self, action, (GdkEvent *)ev,
-          win?win:wintree_from_id(wintree_get_focus()), NULL);
+      vm_run_action(action, self, (GdkEvent *)ev,
+          win?win:wintree_from_id(wintree_get_focus()), NULL,
+          base_widget_get_store(priv->shell));
   }
   g_list_free(children);
 
