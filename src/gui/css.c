@@ -4,9 +4,9 @@
  */
 
 #include "css.h"
-#include "basewidget.h"
-#include "bar.h"
+#include "scanner.h"
 #include "window.h"
+#include "gui/basewidget.h"
 #include "util/file.h"
 #include "util/string.h"
 
@@ -268,6 +268,7 @@ gchar *css_legacy_preprocess ( gchar *css_string, gchar *fname )
     "#switcher_item.focused", "#tray_item", "#tray_item.urgent",
     "#tray_item.passive", NULL };
   gchar *tmp, *res, *fpath;
+  value_t thickness;
   gsize i;
 
   res = g_strdup(css_string);
@@ -280,11 +281,17 @@ gchar *css_legacy_preprocess ( gchar *css_string, gchar *fname )
   if(fname)
   {
     fpath = g_path_get_dirname(fname);
-    tmp = str_replace(res, "%CSS_FILE_PATH%", fpath);
+    tmp = str_replace(res, "@css_file_path", fpath);
     g_free(fpath);
     g_free(res);
     res = tmp;
   }
+  thickness = scanner_get_value("$ThicknessHint", TRUE, NULL);
+  tmp = str_replace(res, "@bar_thickness", value_is_string(thickness)?
+      value_get_string(thickness) : "20px");
+  g_free(res);
+  res = tmp;
+  value_free(thickness);
 
   return res;
 }
