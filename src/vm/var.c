@@ -96,3 +96,10 @@ vm_closure_t *vm_closure_new ( GBytes *code, vm_store_t *store )
 
   return closure;
 }
+
+void vm_closure_free ( vm_closure_t *closure )
+{
+  g_bytes_unref(closure->code);
+  vm_store_free(closure->store);
+  g_free(closure);
+}

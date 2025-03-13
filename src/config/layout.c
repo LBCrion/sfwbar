@@ -113,7 +113,7 @@ gboolean config_include ( GScanner *scanner, GtkWidget *container )
     return TRUE;
   }
 
-  widget = config_parse(fname, container, SCANNER_DATA(scanner)->heap);
+  widget = config_parse(fname, container, SCANNER_HEAP(scanner));
   if(container)
   {
     config_widget(scanner, widget);
@@ -172,10 +172,31 @@ gboolean config_flowgrid_property ( GScanner *scanner, GtkWidget *widget )
   return FALSE;
 }
 
+static gboolean config_widget_variable ( GScanner *scanner, GtkWidget *widget )
+{
+  vm_var_t *var;
+  GBytes *code;
+
+  if( !(var = vm_store_lookup_string(base_widget_get_store(widget),
+          scanner->value.v_identifier)) )
+    return FALSE;
+  if( !(code = config_assign_expr(scanner,
+          (gchar *)g_quark_to_string(var->quark))) )
+    return FALSE;
+
+  var->value = vm_code_eval(code, widget);
+  g_bytes_unref(code);
+
+  return TRUE;
+}
+
 gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
 {
   GtkWindow *win;
   gint key;
+
+  if(config_widget_variable(scanner, widget))
+    return TRUE;
 
   if(config_flowgrid_property(scanner, widget))
     return TRUE;
@@ -424,7 +445,8 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
 
 void config_widget ( GScanner *scanner, GtkWidget *widget )
 {
-  base_widget_set_store(widget, SCANNER_DATA(scanner)->heap);
+  if(!base_widget_get_store(widget))
+    base_widget_set_store(widget, SCANNER_HEAP(scanner));
   if(!config_check_and_consume(scanner, '{'))
     return;
 

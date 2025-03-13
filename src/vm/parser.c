@@ -116,9 +116,9 @@ static guint16 parser_local_lookup ( GScanner *scanner )
 
 static vm_var_t *parser_heap_lookup ( GScanner *scanner )
 {
-  if(!SCANNER_DATA(scanner)->heap || scanner->token!=G_TOKEN_IDENTIFIER)
+  if(!SCANNER_HEAP(scanner) || scanner->token!=G_TOKEN_IDENTIFIER)
     return NULL;
-  return vm_store_lookup_string(SCANNER_DATA(scanner)->heap,
+  return vm_store_lookup_string(SCANNER_HEAP(scanner),
       scanner->value.v_identifier);
 }
 

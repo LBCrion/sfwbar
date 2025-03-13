@@ -280,10 +280,9 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
   scanner->msg_handler = config_log_error;
   scanner->max_parse_errors = FALSE;
   scanner->user_data = g_malloc0(sizeof(scanner_data_t));
-  SCANNER_DATA(scanner)->heap = vm_store_new(NULL);
+  SCANNER_DATA(scanner)->heap_global = globals? globals : vm_store_new(NULL);
 //  g_message("store: %p %p", SCANNER_DATA(scanner)->heap, container);
 
-  SCANNER_DATA(scanner)->heap->parent = globals;
   scanner->input_name = fname;
   g_scanner_input_text(scanner, data, strlen(data));
 

@@ -87,6 +87,7 @@ gboolean parser_function_parse( GScanner *scanner );
 const gchar *parser_identifier_lookup ( gchar *identifier );
 GBytes *parser_exec_build ( gchar *cmd );
 
+value_t vm_code_eval ( GBytes *code, GtkWidget *widget );
 value_t vm_expr_eval ( expr_cache_t *expr );
 value_t vm_function_call ( vm_t *vm, GBytes *code, guint8 np );
 void vm_run_action ( GBytes *code, GtkWidget *w, GdkEvent *e, window_t *win,
@@ -108,5 +109,6 @@ vm_var_t *vm_store_lookup ( vm_store_t *store, GQuark id );
 vm_var_t *vm_store_lookup_string ( vm_store_t *store, gchar *string );
 gboolean vm_store_insert ( vm_store_t *store, vm_var_t *var );
 vm_closure_t *vm_closure_new ( GBytes *code, vm_store_t *store );
+void vm_closure_free ( vm_closure_t *closure );
 
 #endif

@@ -367,6 +367,24 @@ static void vm_free ( vm_t *vm )
   g_free(vm);
 }
 
+value_t vm_code_eval ( GBytes *code, GtkWidget *widget )
+{
+  value_t v1;
+  vm_t *vm;
+
+  vm = g_malloc0(sizeof(vm_t));
+
+  vm->code = (gpointer)g_bytes_get_data(code, &vm->len);
+  vm->widget = widget;
+  vm->wstate = action_state_build(vm->widget, NULL);
+  vm->store = base_widget_get_store(widget);
+
+  v1 = vm_run(vm);
+  vm_free(vm);
+
+  return v1;
+}
+
 value_t vm_expr_eval ( expr_cache_t *expr )
 {
   value_t v1;
@@ -379,6 +397,8 @@ value_t vm_expr_eval ( expr_cache_t *expr )
   vm->event = expr->event;
   vm->expr = expr;
   vm->wstate = action_state_build(vm->widget, vm->win);
+  if(expr->widget)
+    vm->store = base_widget_get_store(expr->widget);
 
   v1 = vm_run(vm);
   vm_free(vm);

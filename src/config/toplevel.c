@@ -57,7 +57,7 @@ static void config_trigger_action ( GScanner *scanner )
 
   if(!scanner->max_parse_errors)
     action_trigger_add(trigger,
-        vm_closure_new(action, SCANNER_DATA(scanner)->heap));
+        vm_closure_new(action, SCANNER_HEAP(scanner)));
 }
 
 static void config_module ( GScanner *scanner )
@@ -77,14 +77,19 @@ static void config_module ( GScanner *scanner )
   g_free(name);
 }
 
-static void config_vars ( GScanner *scanner )
+static void config_vars ( GScanner *scanner, gboolean private )
 {
   vm_store_t *store;
 
-  store = SCANNER_DATA(scanner)->heap;
-  if((gint)scanner->token != G_TOKEN_PRIVATE)
-    while(store->parent)
-      store = store->parent;
+  if(private)
+  {
+
+    if(!SCANNER_DATA(scanner)->heap)
+      SCANNER_DATA(scanner)->heap = vm_store_new(SCANNER_DATA(scanner)->heap_global);
+    store = SCANNER_DATA(scanner)->heap;
+  }
+  else
+    store = SCANNER_DATA(scanner)->heap_global;
 
   do {
     if(!config_expect_token(scanner, G_TOKEN_IDENTIFIER,
@@ -145,8 +150,10 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
         config_set(scanner);
         break;
       case G_TOKEN_PRIVATE:
+        config_vars(scanner, TRUE);
+        break;
       case G_TOKEN_VAR:
-        config_vars(scanner);
+        config_vars(scanner, FALSE);
         break;
       case G_TOKEN_TRIGGERACTION:
         config_trigger_action(scanner);

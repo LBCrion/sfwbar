@@ -253,7 +253,7 @@ GBytes *config_assign_action ( GScanner *scanner, gchar *err )
   return code;
 }
 
-GBytes *config_assign_expr ( GScanner *scanner, gchar *err )
+GBytes *config_assign_expr ( GScanner *scanner, const gchar *err )
 {
   GBytes *code;
   scanner->max_parse_errors = FALSE;

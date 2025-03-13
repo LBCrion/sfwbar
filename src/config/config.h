@@ -8,9 +8,12 @@
 typedef struct {
   GHashTable *locals;
   vm_store_t *heap;
+  vm_store_t *heap_global;
 } scanner_data_t;
 
 #define SCANNER_DATA(x) ((scanner_data_t *)((x)->user_data))
+#define SCANNER_HEAP(x) (SCANNER_DATA(x)->heap? \
+    SCANNER_DATA(x)->heap : SCANNER_DATA(x)->heap_global)
 
 #define config_lookup_key(x,y) GPOINTER_TO_INT(config_lookup_ptr(x,y))
 #define config_lookup_next_key(x,y) GPOINTER_TO_INT(config_lookup_next_ptr(x,y))
@@ -55,7 +58,7 @@ gdouble config_assign_number ( GScanner *scanner, gchar *expr );
 void *config_assign_tokens ( GScanner *scanner, GHashTable *keys, gchar *err );
 GList *config_assign_string_list ( GScanner *scanner );
 GBytes *config_assign_action ( GScanner *scanner, gchar *err );
-GBytes *config_assign_expr ( GScanner *scanner, gchar *err );
+GBytes *config_assign_expr ( GScanner *scanner, const gchar *err );
 gboolean config_action ( GScanner *scanner, GBytes **action_dst );
 gboolean config_expr ( GScanner *scanner, GBytes **expr_dst );
 void config_action_finish ( GScanner *scanner );
