@@ -115,7 +115,7 @@ static dn_notification *dn_notification_dup ( dn_notification *src )
   return dest;
 }
 
-static void dn_notification_free ( dn_notification *notif )
+static void dn_notification_free_dup ( dn_notification *notif )
 {
   if(notif->timeout_handle)
     g_source_remove(notif->timeout_handle);
@@ -127,7 +127,6 @@ static void dn_notification_free ( dn_notification *notif )
   g_free(notif->body);
   g_free(notif->category);
   g_free(notif->desktop);
-  scale_image_cache_remove(notif->image);
   g_free(notif->image);
   g_free(notif->sound_file);
   g_free(notif->sound_name);
@@ -136,6 +135,11 @@ static void dn_notification_free ( dn_notification *notif )
   g_free(notif);
 }
 
+static void dn_notification_free ( dn_notification *notif )
+{
+  scale_image_cache_remove(notif->image);
+  dn_notification_free_dup(notif);
+}
 static gint dn_notification_comp ( dn_notification *n1, dn_notification *n2 )
 {
   if(n1->id != n2->id)
@@ -167,7 +171,7 @@ static gchar *dn_notification_get_str ( dn_notification *notif, gchar *prop )
 }
 
 static module_queue_t update_q = {
-  .free = (void (*)(void *))dn_notification_free,
+  .free = (void (*)(void *))dn_notification_free_dup,
   .duplicate = (void *(*)(void *))dn_notification_dup,
   .get_str = (void *(*)(void *, gchar *))dn_notification_get_str,
   .compare = (gboolean (*)(const void *, const void *))dn_notification_comp,
