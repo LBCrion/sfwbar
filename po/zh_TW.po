@@ -1,0 +1,188 @@
+# Swfbar pot file
+# Copyright (C) 2024
+# This file is distributed under the same license as the sfwbar package.
+# FIRST AUTHOR <sfslinux@gmail.com>, 2024.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: sfwbar\n"
+"Report-Msgid-Bugs-To: https://github.com/LBCrion/sfwbar/issues\n"
+"POT-Creation-Date: 2025-03-14 10:48+0800\n"
+"PO-Revision-Date: 2025-03-14 10:48+0800\n"
+"Last-Translator: Mason <dantemason@gmail.com>\n"
+"Language-Team: Traditional Chinese\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/config/startmenu.widget
+msgid "Application menu"
+msgstr "應用程式選單"
+
+#: src/config/alsa-module.widget
+msgid "Volume"
+msgstr "音量"
+
+msgid "muted"
+msgstr "靜音"
+
+msgid "h"
+msgstr "高"
+
+msgid "m"
+msgstr "中"
+
+msgid "Connecting"
+msgstr "連結中"
+
+msgid "January"
+msgstr "一月"
+
+msgid "February"
+msgstr "二月"
+
+msgid "March"
+msgstr "三月"
+
+msgid "April"
+msgstr "四月"
+
+msgid "May"
+msgstr "五月"
+
+msgid "June"
+msgstr "六月"
+
+msgid "July"
+msgstr "七月"
+
+msgid "August"
+msgstr "八月"
+
+msgid "September"
+msgstr "九月"
+
+msgid "October"
+msgstr "十月"
+
+msgid "November"
+msgstr "十一月"
+
+msgid "December"
+msgstr "十二月"
+
+msgid "Mo"
+msgstr "一"
+
+msgid "Tu"
+msgstr "二"
+
+msgid "We"
+msgstr "三"
+
+msgid "Th"
+msgstr "四"
+
+msgid "Fr"
+msgstr "五"
+
+msgid "Sa"
+msgstr "六"
+
+msgid "Su"
+msgstr "日"
+
+msgid "Memory"
+msgstr "記憶體"
+
+msgid "Notification Center"
+msgstr "通知中心"
+
+msgid "Show Desktop"
+msgstr "顯示桌面"
+
+msgid "Set As Default Device"
+msgstr "設為預設裝置"
+
+msgid "expand/collapse channels"
+msgstr "展開/折疊 頻道"
+
+msgid "route to sink"
+msgstr "繞送到接收端"
+
+msgid "Scanning"
+msgstr "掃描中"
+
+msgid "Scan"
+msgstr "掃描"
+
+msgid "Other"
+msgstr "其他"
+
+msgid "Known"
+msgstr "已知"
+
+msgid "Connected"
+msgstr "已連結"
+
+msgid "Connect"
+msgstr "連結"
+
+msgid "Disconnect"
+msgstr "斷開"
+
+msgid "Forget"
+msgstr "忽略"
+
+msgid "Known networks"
+msgstr "已知網路"
+
+msgid "Other networks"
+msgstr "其他網路"
+
+msgid "focus"
+msgstr "顯示視窗"
+
+msgid "close"
+msgstr "關閉"
+
+msgid "(un)minimize"
+msgstr "恢復/最小化"
+
+msgid "(un)maximize"
+msgstr "恢復/最大化"
+
+msgid "Form"
+msgstr "音源"
+
+msgid "Port"
+msgstr "埠"
+
+msgid "Monitor"
+msgstr "監控"
+
+msgid "sinks"
+msgstr "接收端"
+
+msgid "clients"
+msgstr "客戶端"
+
+msgid  "Pair"
+msgstr "配對"
+
+msgid  "Remove"
+msgstr "移除"
+
+msgid  "Available devices"
+msgstr "可用的裝置"
+
+msgid  "Paired devices"
+msgstr "已配對的裝置"
+
+msgid  "Battery"
+msgstr "電池"
+
+msgid  "Set As Default Control Interface"
+msgstr "設為預設控制界面"
