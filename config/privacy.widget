@@ -1,0 +1,16 @@
+module("pipewire")
+
+layout {
+  button{
+    style = if(PipewireCount("AudioIn"), "module", "hidden")
+    trigger = "pipewire"
+    value = "audio-input-microphone";
+    css = "* { color: red; }"
+  }
+  button{
+    style = if(PipewireCount("VideoIn"), "module", "hidden")
+    trigger = "pipewire"
+    value = "camera-web";
+    css = "* { color: red; }"
+  }
+}
