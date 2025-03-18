@@ -145,11 +145,8 @@ GdkModifierType base_widget_get_modifiers ( GtkWidget *self )
 {
   GdkModifierType state;
 
-  bar_set_interactivity(self, TRUE);
-  bar_set_interactivity(self, TRUE);
   state = gdk_keymap_get_modifier_state(gdk_keymap_get_for_display(
         gdk_display_get_default())) & gtk_accelerator_get_default_mod_mask();
-  bar_set_interactivity(self, FALSE);
 
   g_debug("modifier state: %x", state);
   return state;

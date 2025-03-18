@@ -82,6 +82,5 @@ void bar_set_icon_theme ( gchar *new_theme );
 GtkWidget *bar_mirror ( GtkWidget *, GdkMonitor * );
 void bar_handle_direction ( GtkWidget *self );
 void bar_sensor_cancel_hide ( GtkWidget *self );
-void bar_set_interactivity ( GtkWidget *self, gboolean interactivity );
 
 #endif
