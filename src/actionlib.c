@@ -676,6 +676,13 @@ static value_t action_dbus_call_session ( vm_t *vm, value_t p[], gint np )
   return action_dbus_call(g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL),
       vm, p, np);
 }
+
+static value_t action_exit ( vm_t *vm, value_t p[], gint np )
+{
+  exit(1);
+}
+
+
 void action_lib_init ( void )
 {
   vm_func_add("exec", action_exec_impl, TRUE);
@@ -718,4 +725,5 @@ void action_lib_init ( void )
   vm_func_add("emittrigger", action_emit_trigger, FALSE);
   vm_func_add("DbusCallSystem", action_dbus_call_system, TRUE);
   vm_func_add("DbusCallSession", action_dbus_call_session, TRUE);
+  vm_func_add("exit", action_exit, TRUE);
 }
