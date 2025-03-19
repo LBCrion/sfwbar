@@ -1,0 +1,117 @@
+Var BacklightSrc, BacklightMax;
+Set BacklightTmpl = '<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 612">
+<path fill="black" d="M256,125.996c-71.801,0-130.008,58.203-130.008,130.004c0,
+  71.797,58.207,130.004,130.008,130.004 c71.683,0,130-58.321,130-130.004C386,
+  184.313,327.683,125.996,256,125.996z M256,337.547V174.45 c44.969,0,81.547,
+  36.582,81.547,81.55S300.969,337.547,256,337.547z"/>
+<path class="st1" d="M255 20 V45 M255 465 V490 M90 90 L110 110
+  M405 400 L425 425 M20 255 H45 M465 255 H490 M90 422 L110 402
+  M425 90 L400 110" stroke-linecap="round" stroke-width="40" stroke="black"/>
+<path d="M20 585 H492" stroke-linecap="round" stroke-width="65"
+  stroke="rgb(0,0,0,0.3)"/>
+<path d="M20 585 H@BRIGHTNESS@" stroke-linecap="round" stroke-width="65"
+  stroke="black"/>
+</svg>'
+
+Function BacklightInit() {
+  Var base = "/sys/class/backlight";
+  Var dirs = ls(base);
+  Var i = 0;
+
+  BacklightSrc=''
+  while i<ArraySize(dirs) & Backlightsrc='' {
+    if testfile(base+"/"+dirs[i]+"/actual_brightness") &
+      testfile(base+"/"+dirs[i]+"/max_brightness")
+      {
+        BacklightSrc = base+"/"+dirs[i]+"/actual_brightness"
+        BacklightMax = Val(Read(base+"/"+dirs[i]+"/max_brightness"))
+        FileTrigger BacklightSrc, "backlight"
+        EmitTrigger "backlight"
+      }
+    i = i + 1
+  }
+}
+
+Function AdjustBacklight ( adjustment )
+{
+  If BacklightMax > 0 {
+    DBusCallSystem "org.freedesktop.login1",
+           "/org/freedesktop/login1/session/auto",
+           "org.freedesktop.login1.Session",
+           "SetBrightness", "(ssu)", "backlight", "intel_backlight",
+          Min(BacklightMax, Max(BacklightMax * 0.3,
+               Val(Read(BacklightSrc)) + BacklightMax * adjustment / 100))
+    EmitTrigger "backlight"
+  }
+}
+
+PopUp("BacklightPopup") {
+  style = "backlight_popup"
+  image {
+    value = "display-brightness"
+  }
+  scale {
+    style = 'volume_scale'
+    value = Val(Read(BacklightSrc))/BacklightMax
+    trigger = "backlight"
+    action[LeftClick] = {
+      If BacklightMax > 0 {
+        DBusCallSystem "org.freedesktop.login1",
+           "/org/freedesktop/login1/session/auto",
+           "org.freedesktop.login1.Session",
+           "SetBrightness", "(ssu)", "backlight", "intel_backlight",
+            BacklightMax * Min(1, Max(0.3, GtkEvent("dir")))
+        EmitTrigger "backlight"
+      }
+    }
+  }
+}
+
+layout {
+  style = "module"
+  button {
+    style = if(ident(DbusCallSystem) & BacklightSrc!='', "module", "hidden")
+    value = Replace($BacklightTmpl, "@BRIGHTNESS@",
+      Str(Val(Read(BacklightSrc))/BacklightMax*492))
+    action[ScrollUp] = AdjustBacklight 5
+    action[ScrollDown] = AdjustBacklight -5
+    action[LeftClick] = PopUp "BacklightPopup"
+    action[0] = BacklightInit
+    trigger = "backlight"
+  }
+}
+
+#CSS
+
+window#BacklightPopup {
+  background: rgba(0,0,0,0);
+}
+
+grid#backlight_popup {
+  border-radius: 10px;
+  border: 1px solid @borders;
+  margin: 5px;
+  padding: 10px;
+  background-color: @theme_bg_color;
+  -GtkWidget-hexpand: true;
+  -GtkWidget-vexpand: false;
+  -GtkWidget-direction: right;
+}
+
+image#backlight_icon {
+  min-height: 12px;
+  min-width: 12px;
+}
+
+#backlight_scale {
+  margin: 5px;
+  -GtkWidget-direction: right;
+  -GtkWidget-valign: center;
+  -GtkWidget-hexpand: true;
+}
+
+#backlight_scale progress,
+#backlight_scale trough {
+  min-height: 10px;
+}
