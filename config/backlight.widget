@@ -1,17 +1,15 @@
 Var BacklightSrc, BacklightMax;
 Set BacklightTmpl = '<?xml version="1.0" encoding="utf-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 612">
-<path fill="black" d="M256,125.996c-71.801,0-130.008,58.203-130.008,130.004c0,
-  71.797,58.207,130.004,130.008,130.004 c71.683,0,130-58.321,130-130.004C386,
-  184.313,327.683,125.996,256,125.996z M256,337.547V174.45 c44.969,0,81.547,
-  36.582,81.547,81.55S300.969,337.547,256,337.547z"/>
+<path d="M256 150 L256 362 A106 106 0 0 1 256 150" fill="black"/>
+<circle cx="256" cy="256" r="106" stroke="black" stroke-width="45" fill="none"/>
 <path class="st1" d="M255 20 V45 M255 465 V490 M90 90 L110 110
   M405 400 L425 425 M20 255 H45 M465 255 H490 M90 422 L110 402
   M425 90 L400 110" stroke-linecap="round" stroke-width="40" stroke="black"/>
 <path d="M20 585 H492" stroke-linecap="round" stroke-width="65"
-  stroke="rgb(0,0,0,0.3)"/>
+  stroke="rgb(0,0,255,0.3)"/>
 <path d="M20 585 H@BRIGHTNESS@" stroke-linecap="round" stroke-width="65"
-  stroke="black"/>
+  stroke="blue"/>
 </svg>'
 
 Function BacklightInit() {
