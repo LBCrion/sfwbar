@@ -103,14 +103,25 @@ gboolean pattern_match ( gchar **dict, gchar *string )
 {
   gint i;
 
-  if(!dict)
-    return FALSE;
-
-  for(i=0; dict[i]; i++)
-    if(g_pattern_match_simple(dict[i], string))
-      return TRUE;
+  if(dict)
+    for(i=0; dict[i]; i++)
+      if(g_pattern_match_simple(dict[i], string))
+        return TRUE;
 
   return FALSE;
+}
+
+void regex_list_add ( GList **list, gchar *pattern )
+{
+  GList *iter;
+  GRegex *regex;
+
+  for(iter=*list; iter; iter=g_list_next(iter))
+    if(!g_strcmp0(pattern, g_regex_get_pattern(iter->data)))
+      return;
+
+  if( (regex = g_regex_new(pattern, 0, 0, NULL)) )
+    *list = g_list_prepend(*list, regex);
 }
 
 gboolean regex_match_list ( GList *dict, gchar *string )

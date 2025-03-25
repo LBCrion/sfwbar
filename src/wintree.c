@@ -295,32 +295,33 @@ GList *wintree_get_list ( void )
 void wintree_appid_map_add ( gchar *pattern, gchar *appid )
 {
   struct appid_mapper *map;
+  GRegex *regex;
   GList *iter;
 
   if(!pattern || !appid)
     return;
 
-  for(iter=appid_map;iter;iter=g_list_next(iter))
+  for(iter=appid_map; iter; iter=g_list_next(iter))
     if(!g_strcmp0(pattern,
           g_regex_get_pattern(((struct appid_mapper *)iter->data)->regex)))
       return;
-  map = g_malloc0(sizeof(struct appid_mapper));
-  map->regex = g_regex_new(pattern,0,0,NULL);
-  if(!map->regex)
+
+  if( (regex = g_regex_new(pattern, 0, 0, NULL)) )
   {
-    g_message("MapAppId: invalid paatern '%s'",pattern);
-    g_free(map);
-    return;
+    map = g_malloc0(sizeof(struct appid_mapper));
+    map->regex = regex;
+    map->app_id = g_strdup(appid);
+    appid_map = g_list_prepend(appid_map, map);
   }
-  map->app_id = g_strdup(appid);
-  appid_map = g_list_prepend(appid_map,map);
+  else
+    g_message("MapAppId: invalid pattern '%s'",pattern);
 }
 
 gchar *wintree_appid_map_lookup ( gchar *title )
 {
   GList *iter;
 
-  for(iter=appid_map;iter;iter=g_list_next(iter))
+  for(iter=appid_map; iter; iter=g_list_next(iter))
     if(g_regex_match (((struct appid_mapper *)iter->data)->regex,
           title, 0, NULL))
       return ((struct appid_mapper *)iter->data)->app_id;
@@ -329,36 +330,12 @@ gchar *wintree_appid_map_lookup ( gchar *title )
 
 void wintree_filter_appid ( gchar *pattern )
 {
-  GList *iter;
-  GRegex *regex;
-
-  for(iter=appid_filter_list;iter;iter=g_list_next(iter))
-    if(!g_strcmp0(pattern,
-          g_regex_get_pattern(((struct appid_mapper *)iter->data)->regex)))
-      return;
-
-  regex = g_regex_new(pattern,0,0,NULL);
-  if(!regex)
-    return;
-
-  appid_filter_list = g_list_prepend(appid_filter_list, regex);
+  regex_list_add(&appid_filter_list, pattern);
 }
 
 void wintree_filter_title ( gchar *pattern )
 {
-  GList *iter;
-  GRegex *regex;
-
-  for(iter=title_filter_list;iter;iter=g_list_next(iter))
-    if(!g_strcmp0(pattern,
-          g_regex_get_pattern(((struct appid_mapper *)iter->data)->regex)))
-      return;
-
-  regex = g_regex_new(pattern,0,0,NULL);
-  if(!regex)
-    return;
-
-  title_filter_list = g_list_prepend(title_filter_list, regex);
+  regex_list_add(&title_filter_list, pattern);
 }
 
 gboolean wintree_is_filtered ( window_t *win )
@@ -373,32 +350,12 @@ static gboolean placer;
 
 void wintree_placer_conf( gint xs, gint ys, gint xo, gint yo, gboolean pid )
 {
-  x_step = MAX(1,xs);
-  y_step = MAX(1,ys);
+  x_step = MAX(1, xs);
+  y_step = MAX(1, ys);
   x_origin = xo;
   y_origin = yo;
   check_pid = !pid;
   placer = TRUE;
-}
-
-gboolean wintree_placer_state ( void )
-{
-  return placer;
-}
-
-gboolean wintree_placer_check ( gint pid )
-{
-  GList *iter;
-  gint count = 0;
-
-  if(!placer)
-    return FALSE;
-
-  for(iter = wt_list; iter; iter = g_list_next(iter) )
-    if ( ((window_t *)(iter->data))->pid == pid )
-      count++;
-
-  return (count<2);
 }
 
 static int comp_int ( const void *x1, const void *x2)
@@ -412,18 +369,18 @@ gboolean wintree_placer_calc ( gpointer wid, GdkRectangle *place )
   GdkRectangle *obs, output;
   GList *iter;
   gint *x, *y;
-  gint i, j, c, nobs, count, focus;
+  gint i, j, c, nobs, focus;
 
   if(!placer || !place || !wid)
     return FALSE;
   if( !(win = wintree_from_id(GINT_TO_POINTER(wid))) || !win->workspace )
     return FALSE;
-  count = 0;
-  for(iter=wt_list; iter; iter=g_list_next(iter) )
-    if ( ((window_t *)(iter->data))->pid == win->pid )
-      count++;
-  if(count>1)
-    return FALSE;
+
+  if(check_pid)
+    for(iter=wt_list; iter; iter=g_list_next(iter))
+      if( ((window_t *)(iter->data))->pid == win->pid &&
+          ((window_t *)(iter->data))->uid != wid )
+        return FALSE;
 
   place->width = place->height = 0;
   nobs = workspace_get_geometry(wid, place, win->workspace->id, &obs, &output,
@@ -436,37 +393,38 @@ gboolean wintree_placer_calc ( gpointer wid, GdkRectangle *place )
     x[c] = obs[c].x + obs[c].width;
     y[c] = obs[c].y + obs[c].height;
   }
-  x[c]=output.x;
-  y[c]=output.y;
+  x[c] = output.x;
+  y[c] = output.y;
   qsort(x, nobs+1, sizeof(int), comp_int);
   qsort(y, nobs+1, sizeof(int), comp_int);
 
-  place->x = output.x + x_origin*output.width/100;
-  place->y = output.y + y_origin*output.height/100;
+  place->x = output.x + x_origin * output.width / 100;
+  place->y = output.y + y_origin * output.height / 100;
   do
   {
     for(c=0; c<nobs; c++)
-      if((place->x==obs[c].x) && (place->y==obs[c].y))
+      if((place->x == obs[c].x) && (place->y == obs[c].y))
         break;
-    if(c==nobs)
+    if(c == nobs)
       break;
-    place->x += output.width*x_step/100;
-    place->y += output.height*y_step/100;;
-  } while((place->x+place->width) < (output.x+output.width) &&
-      (place->y+place->height) < (output.y+output.height));
+    place->x += output.width * x_step / 100;
+    place->y += output.height * y_step / 100;;
+  } while((place->x + place->width) < (output.x + output.width) &&
+      (place->y + place->height) < (output.y + output.height));
 
   for(j=nobs; j>=0; j--)
     for(i=nobs; i>=0; i--)
     {
       for(c=0; c<nobs; c++)
-        if(!(((x[i]+place->width-1) < obs[c].x) ||
-              (x[i] > (obs[c].x+obs[c].width-1)) ||
-              ((y[j]+place->height-1) < obs[c].y) ||
-              (y[j] > (obs[c].y+obs[c].height-1))))
+        if(!(((x[i] + place->width - 1) < obs[c].x) ||
+              (x[i] > (obs[c].x + obs[c].width - 1)) ||
+              ((y[j] + place->height - 1) < obs[c].y) ||
+              (y[j] > (obs[c].y + obs[c].height - 1))))
           break;
 
-      if(c==nobs && !(x[i]<output.x || x[i]+place->width>output.x+output.width ||
-          y[j]<output.y || y[j]+place->height>output.y+output.height))
+      if(c==nobs &&
+          !(x[i] < output.x || x[i] + place->width > output.x + output.width ||
+          y[j] < output.y || y[j] + place->height > output.y + output.height))
       {
         place->x = x[i];
         place->y = y[j];
@@ -475,5 +433,6 @@ gboolean wintree_placer_calc ( gpointer wid, GdkRectangle *place )
   g_free(x);
   g_free(y);
   g_free(obs);
+
   return TRUE;
 }

@@ -12,5 +12,6 @@ int md5_file( gchar *path, guchar output[16] );
 gchar *numeric_to_string ( double num, gint dec );
 gboolean pattern_match ( gchar **dict, gchar *string );
 gboolean regex_match_list ( GList *dict, gchar *string );
+void regex_list_add ( GList **list, gchar *pattern );
 
 #endif
