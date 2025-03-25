@@ -53,14 +53,14 @@ static gboolean hypr_ipc_request ( gchar *addr, gchar *command, json_object **js
   if(!command)
     return FALSE;
 
-  sock = socket_connect(addr,1000);
+  sock = socket_connect(addr, 1000);
   if(sock==-1)
   {
     g_debug("hypr: can't open socket");
     return FALSE;
   }
 
-  if(write(sock,command,strlen(command))==-1)
+  if(write(sock, command, strlen(command))==-1)
   {
     g_debug("hypr: can't write to socket");
     close(sock);
@@ -545,8 +545,9 @@ void hypr_ipc_init ( void )
   if(wintree_api_check())
     return;
 
+
   ipc_sockaddr = g_build_filename(g_get_user_runtime_dir(), "hypr",
-      g_getenv("HYPRLAND_INSTANCE_SIGNATURE"),".socket.sock",NULL);
+      g_getenv("HYPRLAND_INSTANCE_SIGNATURE"), ".socket.sock", NULL);
   if(!hypr_ipc_get_clients(NULL))
   {
     g_free(ipc_sockaddr);
@@ -558,10 +559,10 @@ void hypr_ipc_init ( void )
   hypr_ipc_track_focus();
 
   sockaddr = g_build_filename(g_get_user_runtime_dir(), "hypr",
-      g_getenv("HYPRLAND_INSTANCE_SIGNATURE"),".socket2.sock",NULL);
-  sock = socket_connect(sockaddr,10);
+      g_getenv("HYPRLAND_INSTANCE_SIGNATURE"), ".socket2.sock", NULL);
+  sock = socket_connect(sockaddr, 10);
   if(sock!=-1)
-    g_io_add_watch(g_io_channel_unix_new(sock),G_IO_IN,hypr_ipc_event,NULL);
+    g_io_add_watch(g_io_channel_unix_new(sock), G_IO_IN, hypr_ipc_event, NULL);
   g_free(sockaddr);
   hypr_ipc_pager_populate();
 }
