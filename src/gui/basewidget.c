@@ -504,8 +504,8 @@ void base_widget_set_value ( GtkWidget *self, GBytes *code )
     base_widget_update_value(self);
 
   g_mutex_lock(&widget_mutex);
-  if(!g_list_find(widgets_scan,self))
-    widgets_scan = g_list_append(widgets_scan,self);
+  if(!g_list_find(widgets_scan, self))
+    widgets_scan = g_list_append(widgets_scan, self);
   g_mutex_unlock(&widget_mutex);
 }
 
@@ -916,9 +916,25 @@ GtkWidget *base_widget_get_mirror_parent ( GtkWidget *self )
     return self;
 }
 
-gpointer base_widget_scanner_thread ( GMainContext *gmc )
+gint64 base_widget_update ( GtkWidget *self, gint64 *ctime )
 {
   BaseWidgetPrivate *priv;
+
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+  if(!ctime || base_widget_get_next_poll(self) <= *ctime)
+  {
+    if(expr_cache_eval(priv->value) || priv->always_update)
+      g_main_context_invoke(NULL, (GSourceFunc)base_widget_update_value, self);
+    if(expr_cache_eval(priv->style))
+      g_main_context_invoke(NULL, (GSourceFunc)base_widget_style, self);
+    if(ctime)
+      base_widget_set_next_poll(self, *ctime);
+  }
+  return base_widget_get_next_poll(self);
+}
+
+gpointer base_widget_scanner_thread ( GMainContext *gmc )
+{
   GList *iter;
   gint64 timer, ctime;
 
@@ -931,24 +947,12 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
    
     g_mutex_lock(&widget_mutex);
     for(iter=widgets_scan; iter!=NULL; iter=g_list_next(iter))
-    {
-      priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
-      if(base_widget_get_next_poll(iter->data)<=ctime)
-      {
-        if(expr_cache_eval(priv->value) || priv->always_update)
-          g_main_context_invoke(gmc,(GSourceFunc)base_widget_update_value,
-              iter->data);
-        if(expr_cache_eval(priv->style))
-          g_main_context_invoke(gmc, (GSourceFunc)base_widget_style,
-              iter->data);
-        base_widget_set_next_poll(iter->data,ctime);
-      }
-      timer = MIN(timer, base_widget_get_next_poll(iter->data));
-    }
+      timer = MIN(timer, base_widget_update(iter->data, &ctime));
     g_mutex_unlock(&widget_mutex);
 
     timer -= g_get_monotonic_time();
-    if(timer>0)
+
+    if(timer > 0)
       g_usleep(timer);
   }
 }

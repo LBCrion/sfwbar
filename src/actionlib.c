@@ -682,6 +682,19 @@ static value_t action_exit ( vm_t *vm, value_t p[], gint np )
   exit(1);
 }
 
+static value_t action_update_widget ( vm_t *vm, value_t p[], gint np )
+{
+  GtkWidget *widget;
+
+  vm_param_check_np_range(vm, np, 0, 1, "UpdateWidget");
+  if(np==1)
+    vm_param_check_string(vm, p, 0, "UpdateWidget");
+
+  if( (widget = np? base_widget_from_id(value_get_string(p[0])) : vm->widget) )
+    base_widget_update(widget, NULL);
+
+  return value_na;
+}
 
 void action_lib_init ( void )
 {
@@ -726,4 +739,5 @@ void action_lib_init ( void )
   vm_func_add("DbusCallSystem", action_dbus_call_system, TRUE);
   vm_func_add("DbusCallSession", action_dbus_call_session, TRUE);
   vm_func_add("exit", action_exit, TRUE);
+  vm_func_add("UpdateWidget", action_update_widget, TRUE);
 }
