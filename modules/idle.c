@@ -35,7 +35,7 @@ static void idle_resumed ( void *data, struct ext_idle_notification_v1 *not )
 {
   if(!idled)
     return;
-  trigger_emit("resumed");
+  trigger_emit("idle_resume");
   idled = FALSE;
 }
 
@@ -94,6 +94,6 @@ gboolean sfwbar_module_init ( void )
     return FALSE;
   vm_func_add("IdleTimeout", idle_timeout_action, TRUE);
   idle_timers = g_hash_table_new_full((GHashFunc)str_nhash, (GCompareFunc)str_nequal,
-      (GDestroyNotify)idle_notification_free, NULL);
+      NULL, (GDestroyNotify)idle_notification_free);
   return TRUE;
 }
