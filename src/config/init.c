@@ -280,8 +280,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
   scanner->msg_handler = config_log_error;
   scanner->max_parse_errors = FALSE;
   scanner->user_data = g_malloc0(sizeof(scanner_data_t));
-  SCANNER_DATA(scanner)->heap_global = globals? globals : vm_store_new(NULL);
-//  g_message("store: %p %p", SCANNER_DATA(scanner)->heap, container);
+  SCANNER_STORE(scanner) = globals? globals : vm_store_new(NULL);
 
   scanner->input_name = fname;
   g_scanner_input_text(scanner, data, strlen(data));
@@ -304,42 +303,6 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
   }
 
   return w;
-}
-
-void config_string ( gchar *string )
-{
-  gchar *conf;
-
-  if(!string || !*string)
-    return;
-
-  conf = g_strdup(string);
-  g_debug("parsing config string: %s", conf);
-  config_parse_data("config string", conf, NULL, NULL);
-  g_free(conf);
-}
-
-void config_pipe_read ( gchar *command )
-{
-  FILE *fp;
-  gchar *conf;
-  GIOChannel *chan;
-
-  if(!command)
-    return;
-
-  if( !(fp = popen(command, "r")) )
-    return;
-
-  if( (chan = g_io_channel_unix_new( fileno(fp) )) )
-  {
-    if(g_io_channel_read_to_end(chan, &conf, NULL, NULL)==G_IO_STATUS_NORMAL)
-      config_parse_data(command, conf, NULL, NULL);
-    g_free(conf);
-    g_io_channel_unref(chan);
-  }
-
-  pclose(fp);
 }
 
 GtkWidget *config_parse ( gchar *file, GtkWidget *container,

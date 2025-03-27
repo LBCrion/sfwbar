@@ -4,6 +4,7 @@
  */
 
 #include <glib.h>
+#include "util/string.h"
 #include "vm/vm.h"
 
 vm_var_t *vm_var_new ( gchar *name )
@@ -33,6 +34,8 @@ vm_store_t *vm_store_new ( vm_store_t *parent )
 {
   vm_store_t *store = g_malloc0(sizeof(vm_store_t));
   store->parent = parent;
+  store->widget_map = g_hash_table_new((GHashFunc)str_nhash,
+      (GEqualFunc)str_nequal);
   g_datalist_init(&store->vars);
 
   return store;
@@ -41,6 +44,7 @@ vm_store_t *vm_store_new ( vm_store_t *parent )
 void vm_store_free ( vm_store_t *store )
 {
   g_datalist_clear(&store->vars);
+  g_hash_table_unref(store->widget_map);
   g_free(store);
 }
 

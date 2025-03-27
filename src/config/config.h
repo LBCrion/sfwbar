@@ -7,13 +7,11 @@
 
 typedef struct {
   GHashTable *locals;
-  vm_store_t *heap;
-  vm_store_t *heap_global;
+  vm_store_t *store;
 } scanner_data_t;
 
 #define SCANNER_DATA(x) ((scanner_data_t *)((x)->user_data))
-#define SCANNER_HEAP(x) (SCANNER_DATA(x)->heap? \
-    SCANNER_DATA(x)->heap : SCANNER_DATA(x)->heap_global)
+#define SCANNER_STORE(x) (SCANNER_DATA(x)->store)
 
 #define config_lookup_key(x,y) GPOINTER_TO_INT(config_lookup_ptr(x,y))
 #define config_lookup_next_key(x,y) GPOINTER_TO_INT(config_lookup_next_ptr(x,y))
@@ -46,11 +44,9 @@ gpointer config_lookup_next_ptr ( GScanner *scanner, GHashTable *table );
 gboolean config_check_and_consume ( GScanner *scanner, gint token );
 gchar *config_value_string ( gchar *dest, gchar *string );
 GtkWidget *config_parse ( gchar *, GtkWidget *, vm_store_t * );
-void config_pipe_read ( gchar *command );
-void config_string ( gchar *string );
+GtkWidget *config_parse_data ( gchar *, gchar *, GtkWidget *, vm_store_t *);
 gboolean config_expect_token ( GScanner *scan, gint token, gchar *fmt, ...);
 gboolean config_is_section_end ( GScanner *scanner );
-void config_optional_semicolon ( GScanner *scanner );
 void config_parse_sequence ( GScanner *scanner, ... );
 gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr);
 gchar *config_assign_string ( GScanner *scanner, gchar *expr );

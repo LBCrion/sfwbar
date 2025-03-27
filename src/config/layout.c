@@ -113,7 +113,7 @@ gboolean config_include ( GScanner *scanner, GtkWidget *container )
     return TRUE;
   }
 
-  widget = config_parse(fname, container, SCANNER_HEAP(scanner));
+  widget = config_parse(fname, container, SCANNER_STORE(scanner));
   if(container)
   {
     config_widget(scanner, widget);
@@ -384,7 +384,8 @@ GtkWidget *config_widget_find_existing ( GScanner *scanner,
   if(g_scanner_peek_next_token(scanner)!=G_TOKEN_STRING)
     return NULL;
 
-  if( !(widget = base_widget_from_id(scanner->next_value.v_string)) )
+  if( !(widget = base_widget_from_id(SCANNER_STORE(scanner),
+          scanner->next_value.v_string)) )
     return NULL;
 
   if(!G_TYPE_CHECK_INSTANCE_TYPE((widget), get_type()))
@@ -446,7 +447,7 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
 void config_widget ( GScanner *scanner, GtkWidget *widget )
 {
   if(!base_widget_get_store(widget))
-    base_widget_set_store(widget, SCANNER_HEAP(scanner));
+    base_widget_set_store(widget, SCANNER_STORE(scanner));
   if(!config_check_and_consume(scanner, '{'))
     return;
 

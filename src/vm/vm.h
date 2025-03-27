@@ -29,6 +29,7 @@ enum vm_func_flags_t {
 typedef struct _vm_store_t vm_store_t;
 struct _vm_store_t {
   GData *vars;
+  GHashTable *widget_map;
   vm_store_t *parent;
 };
 

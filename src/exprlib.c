@@ -415,7 +415,8 @@ static value_t expr_lib_widget_state ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 0, "WidgetState");
 
-  widget = np==2?  base_widget_from_id(value_get_string(p[0])) : vm->widget;
+  widget = np==2?  base_widget_from_id(vm->store, value_get_string(p[0])) :
+    vm->widget;
   if(!IS_BASE_WIDGET(widget))
     return value_na;
 
@@ -439,7 +440,8 @@ static value_t expr_lib_window_info ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 1, "WindowInfo");
 
-  widget = np==2?  base_widget_from_id(value_get_string(p[0])) : vm->widget;
+  widget = np==2?  base_widget_from_id(vm->store, value_get_string(p[0])) :
+    vm->widget;
 
   if( (win = flow_item_get_source(widget)) )
   {
@@ -614,7 +616,8 @@ static value_t expr_widget_children ( vm_t *vm, value_t p[], gint np )
 
   vm_param_check_np_range(vm, np, 0, 1, "WidgetChildren");
 
-  widget = np?  base_widget_from_id(value_get_string(p[0])) : vm->widget;
+  widget = np?  base_widget_from_id(vm->store, value_get_string(p[0])) :
+    vm->widget;
 
   array = g_array_new(FALSE, FALSE, sizeof(value_t));
   g_array_set_clear_func(array, (GDestroyNotify)value_free);

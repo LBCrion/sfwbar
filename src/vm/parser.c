@@ -116,9 +116,9 @@ static guint16 parser_local_lookup ( GScanner *scanner )
 
 static vm_var_t *parser_heap_lookup ( GScanner *scanner )
 {
-  if(!SCANNER_HEAP(scanner) || scanner->token!=G_TOKEN_IDENTIFIER)
+  if(!SCANNER_STORE(scanner) || scanner->token!=G_TOKEN_IDENTIFIER)
     return NULL;
-  return vm_store_lookup_string(SCANNER_HEAP(scanner),
+  return vm_store_lookup_string(SCANNER_STORE(scanner),
       scanner->value.v_identifier);
 }
 
@@ -202,7 +202,7 @@ static gboolean parser_function ( GScanner *scanner, GByteArray *code )
     g_scanner_get_next_token(scanner);
 
   if(scanner->token!=')')
-    g_scanner_error(scanner, "Expecting ')' at the enf of a function call");
+    g_scanner_error(scanner, "Expecting ')' at the end of a function call");
 
   parser_emit_function(code, ptr, np);
   scanner->config->identifier_2_string = FALSE;

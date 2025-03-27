@@ -50,7 +50,7 @@ static value_t action_function ( vm_t *vm, value_t p[], gint np )
   if(np==2)
   {
     vm_param_check_string(vm, p, 1, "Function");
-    vm->widget = base_widget_from_id(value_get_string(p[0]));
+    vm->widget = base_widget_from_id(vm->store, value_get_string(p[0]));
     vm->widget = vm->widget? vm->widget : widget;
   }
 
@@ -72,10 +72,21 @@ static value_t action_function ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_piperead ( vm_t *vm, value_t p[], gint np )
 {
+  gchar *conf, **argv;
+  gint argc;
+
   vm_param_check_np(vm, np, 1, "Piperead");
   vm_param_check_string(vm, p, 0, "Piperead");
 
-  config_pipe_read(value_get_string(p[0]));
+  if(!g_shell_parse_argv(value_get_string(p[0]), &argc, &argv, NULL))
+    return value_na;
+
+  if(g_spawn_sync(NULL, argv, NULL, G_SPAWN_SEARCH_PATH |
+        G_SPAWN_STDERR_TO_DEV_NULL, NULL, NULL, &conf, NULL, NULL, NULL))
+    config_parse_data(value_get_string(p[0]), conf, NULL, vm->store);
+
+  g_free(conf);
+  g_strfreev(argv);
   return value_na;
 }
 
@@ -123,7 +134,8 @@ static value_t action_config ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "Config");
   vm_param_check_string(vm, p, 0, "Config");
 
-  config_string(value_get_string(p[0]));
+  g_debug("parsing config string: %s", value_get_string(p[0]));
+  config_parse_data("config string", value_get_string(p[0]), NULL, vm->store);
 
   return value_na;
 }
@@ -313,7 +325,8 @@ static value_t action_setvalue ( vm_t *vm, value_t p[], gint np )
 
   mark = vm->pstack->pdata[vm->pstack->len-1];
 
-  if( (widget = np==2?base_widget_from_id(value_get_string(p[0])):vm->widget) )
+  if( (widget = np==2?base_widget_from_id(vm->store, value_get_string(p[0])) :
+        vm->widget) )
     base_widget_set_value(widget,
         g_bytes_new_take(g_memdup(mark, vm->ip - mark), vm->ip - mark));
 
@@ -333,7 +346,8 @@ static value_t action_setstyle ( vm_t *vm, value_t p[], gint np )
 
   mark = vm->pstack->pdata[vm->pstack->len-1];
 
-  if( (widget = np==2?base_widget_from_id(value_get_string(p[0])):vm->widget) )
+  if( (widget = np==2?base_widget_from_id(vm->store, value_get_string(p[0])) :
+        vm->widget) )
     base_widget_set_style(widget,
         g_bytes_new_take(g_memdup(mark, vm->ip - mark), vm->ip - mark));
 
@@ -353,7 +367,8 @@ static value_t action_settooltip ( vm_t *vm, value_t p[], gint np )
 
   mark = vm->pstack->pdata[vm->pstack->len-1];
 
-  if( (widget = np==2?base_widget_from_id(value_get_string(p[0])):vm->widget) )
+  if( (widget = np==2?base_widget_from_id(vm->store, value_get_string(p[0])) :
+        vm->widget) )
     base_widget_set_tooltip(widget,
         g_bytes_new_take(g_memdup(mark, vm->ip - mark), vm->ip - mark));
 
@@ -371,7 +386,8 @@ static value_t action_userstate ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 1, "UserState");
 
-  widget = np==2? base_widget_from_id(value_get_string(p[0])) : vm->widget;
+  widget = np==2? base_widget_from_id(vm->store, value_get_string(p[0])) :
+    vm->widget;
 
   if(!widget || !(value = value_get_string(p[np-1])) )
     return value_na;
@@ -418,7 +434,7 @@ static window_t *action_window_get ( vm_t *vm, value_t p[], gint np )
   GtkWidget *widget;
 
   if(np==1 && value_is_string(p[0]))
-    widget = base_widget_from_id(value_get_string(p[0]));
+    widget = base_widget_from_id(vm->store, value_get_string(p[0]));
   else
     widget = vm->widget;
 
@@ -534,7 +550,7 @@ static value_t action_clear_widget ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "ClearWidget");
   vm_param_check_string(vm, p, 0, "ClearWidget");
 
-  if( (w = base_widget_from_id(value_get_string(p[0]))) )
+  if( (w = base_widget_from_id(vm->store, value_get_string(p[0]))) )
     gtk_widget_destroy(w);
 
   return value_na;
@@ -557,7 +573,7 @@ static value_t action_workspace_activate ( vm_t *vm, value_t p[], gint np )
   GtkWidget *widget;
 
   if(np==1 && value_is_string(p[0]))
-    widget = base_widget_from_id(value_get_string(p[0]));
+    widget = base_widget_from_id(vm->store, value_get_string(p[0]));
   else
     widget = vm->widget;
 
@@ -690,7 +706,8 @@ static value_t action_update_widget ( vm_t *vm, value_t p[], gint np )
   if(np==1)
     vm_param_check_string(vm, p, 0, "UpdateWidget");
 
-  if( (widget = np? base_widget_from_id(value_get_string(p[0])) : vm->widget) )
+  if( (widget = np? base_widget_from_id(vm->store, value_get_string(p[0])) :
+        vm->widget) )
     base_widget_update(widget, NULL);
 
   return value_na;

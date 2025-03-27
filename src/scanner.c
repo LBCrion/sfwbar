@@ -364,7 +364,7 @@ gboolean scanner_file_glob ( ScanFile *file )
     dnames[1] = NULL;
     gbuf.gl_pathv = dnames;
   }
-  else if(glob(file->fname,GLOB_NOSORT,NULL,&gbuf))
+  else if(glob(file->fname, GLOB_NOSORT, NULL, &gbuf))
   {
     globfree(&gbuf);
     return FALSE;

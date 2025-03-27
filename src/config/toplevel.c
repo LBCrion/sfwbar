@@ -22,6 +22,7 @@ static void config_set ( GScanner *scanner )
   if(ident && config_expr(scanner, &code))
     scanner_var_new(ident, NULL, (gchar *)code, G_TOKEN_SET, VT_FIRST);
 
+  config_check_and_consume(scanner, ';');
   g_free(ident);
 }
 
@@ -57,7 +58,7 @@ static void config_trigger_action ( GScanner *scanner )
 
   if(!scanner->max_parse_errors)
     action_trigger_add(trigger,
-        vm_closure_new(action, SCANNER_HEAP(scanner)));
+        vm_closure_new(action, SCANNER_STORE(scanner)));
 }
 
 static void config_module ( GScanner *scanner )
@@ -77,27 +78,43 @@ static void config_module ( GScanner *scanner )
   g_free(name);
 }
 
-static void config_vars ( GScanner *scanner, gboolean private )
+static GtkWidget *config_private ( GScanner *scanner, GtkWidget *container )
 {
+  GtkWidget *widget;
   vm_store_t *store;
 
-  if(private)
-  {
+  if(!config_expect_token(scanner, '{', "Missing '{' after Private"))
+    return NULL;
 
-    if(!SCANNER_DATA(scanner)->heap)
-      SCANNER_DATA(scanner)->heap = vm_store_new(SCANNER_DATA(scanner)->heap_global);
-    store = SCANNER_DATA(scanner)->heap;
-  }
-  else
-    store = SCANNER_DATA(scanner)->heap_global;
+  store = SCANNER_STORE(scanner);
+  SCANNER_STORE(scanner) = vm_store_new(store);
+  widget = config_parse_toplevel(scanner, container);
+  SCANNER_STORE(scanner) = store;
+  
+  return widget;
+}
+
+static void config_vars ( GScanner *scanner, gboolean private )
+{
+  vm_var_t *var;
+  GBytes *code;
 
   do {
     if(!config_expect_token(scanner, G_TOKEN_IDENTIFIER,
           "expect an identifier in var declaration"))
       return;
 
-    if(!vm_store_lookup_string(store, scanner->value.v_identifier))
-      vm_store_insert(store, vm_var_new(scanner->value.v_identifier));
+    if(!vm_store_lookup_string(SCANNER_STORE(scanner),
+          scanner->value.v_identifier))
+    {
+      var = vm_var_new(scanner->value.v_identifier);
+      vm_store_insert(SCANNER_STORE(scanner), var);
+      if(config_check_and_consume(scanner, '=') && config_expr(scanner, &code))
+      {
+        var->value = vm_code_eval(code, NULL);
+        g_bytes_unref(code);
+      }
+    }
     else
       g_message("duplicate declaration of variable %s",
           scanner->value.v_identifier);
@@ -110,7 +127,7 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
 {
   GtkWidget *layout = NULL;
 
-  while(g_scanner_peek_next_token(scanner) != G_TOKEN_EOF)
+  while(!config_is_section_end(scanner))
   {
     g_scanner_get_next_token(scanner);
     if(config_widget_child(scanner, NULL))
@@ -150,7 +167,7 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
         config_set(scanner);
         break;
       case G_TOKEN_PRIVATE:
-        config_vars(scanner, TRUE);
+        layout = config_private(scanner, container);
         break;
       case G_TOKEN_VAR:
         config_vars(scanner, FALSE);

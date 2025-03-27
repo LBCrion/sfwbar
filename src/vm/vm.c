@@ -377,7 +377,7 @@ value_t vm_code_eval ( GBytes *code, GtkWidget *widget )
   vm->code = (gpointer)g_bytes_get_data(code, &vm->len);
   vm->widget = widget;
   vm->wstate = action_state_build(vm->widget, NULL);
-  vm->store = base_widget_get_store(widget);
+  vm->store = widget? base_widget_get_store(widget) : NULL;
 
   v1 = vm_run(vm);
   vm_free(vm);

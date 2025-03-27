@@ -18,7 +18,6 @@
 G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX,
     G_ADD_PRIVATE (BaseWidget))
 
-static GHashTable *base_widget_id_map;
 static GList *widgets_scan;
 static GMutex widget_mutex;
 static gint64 base_widget_default_id = 0;
@@ -47,7 +46,7 @@ static void base_widget_trigger_cb ( GtkWidget *self )
 
 static void base_widget_destroy ( GtkWidget *self )
 {
-  BaseWidgetPrivate *priv,*ppriv;
+  BaseWidgetPrivate *priv, *ppriv;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
@@ -66,8 +65,8 @@ static void base_widget_destroy ( GtkWidget *self )
     priv->mirror_parent = NULL;
   }
 
-  if(base_widget_id_map && priv->id)
-    g_hash_table_remove(base_widget_id_map, priv->id);
+  if(priv->store && priv->store->widget_map && priv->id)
+    g_hash_table_remove(priv->store->widget_map, priv->id);
 
   g_list_free_full(priv->css, g_free);
   priv->css = NULL;
@@ -579,30 +578,33 @@ void base_widget_set_id ( GtkWidget *self, gchar *id )
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  if(!base_widget_id_map)
-    base_widget_id_map = g_hash_table_new_full((GHashFunc)str_nhash,
-        (GEqualFunc)str_nequal, g_free, NULL);
-
-  if(priv->id)
-    g_hash_table_remove(base_widget_id_map, priv->id);
+  if(priv->store && priv->store->widget_map && priv->id)
+    g_hash_table_remove(priv->store->widget_map, priv->id);
 
   g_free(priv->id);
   priv->id = id? id: g_strdup_printf("_w%lld",
       (long long int)base_widget_default_id++);
 
-  old = g_hash_table_lookup(base_widget_id_map, priv->id);
-  if(!old)
-    g_hash_table_insert(base_widget_id_map, g_strdup(priv->id), self);
-  else if (old != self)
-    g_message("widget id collision: '%s'", priv->id);
+  if(priv->store)
+  {
+    if( !(old = g_hash_table_lookup(priv->store->widget_map, priv->id)) )
+      g_hash_table_insert(priv->store->widget_map, g_strdup(priv->id), self);
+    else if (old != self)
+      g_message("widget id collision: '%s'", priv->id);
+  }
 }
 
-GtkWidget *base_widget_from_id ( gchar *id )
+GtkWidget *base_widget_from_id ( vm_store_t *store, gchar *id )
 {
-  if(!base_widget_id_map || !id)
+  GtkWidget *widget;
+
+  if(!store || !id)
     return NULL;
 
-  return g_hash_table_lookup(base_widget_id_map,id);
+  while(store && !(widget = g_hash_table_lookup(store->widget_map ,id)))
+    store = store->parent;
+
+  return widget;
 }
 
 void base_widget_set_interval ( GtkWidget *self, gint64 interval )
@@ -694,11 +696,22 @@ void base_widget_set_max_height ( GtkWidget *self, guint x )
 void base_widget_set_store ( GtkWidget *self, vm_store_t *store )
 {
   BaseWidgetPrivate *priv;
+  GtkWidget *old;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
+  if(priv->store && priv->id)
+    g_hash_table_remove(priv->store->widget_map, priv->id);
+
   priv->store = store;
+  if(priv->store)
+  {
+    if( !(old = g_hash_table_lookup(priv->store->widget_map, priv->id)) )
+      g_hash_table_insert(priv->store->widget_map, g_strdup(priv->id), self);
+    else if (old != self)
+      g_message("widget id collision: '%s'", priv->id);
+  }
 }
 
 vm_store_t * base_widget_get_store ( GtkWidget *self )
