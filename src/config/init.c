@@ -241,6 +241,7 @@ void config_init ( void )
   config_add_key(config_placer_keys, "XOrigin", G_TOKEN_XORIGIN);
   config_add_key(config_placer_keys, "YOrigin", G_TOKEN_YORIGIN);
   config_add_key(config_placer_keys, "Children", G_TOKEN_CHILDREN);
+  config_add_key(config_placer_keys, "Disable", G_TOKEN_DISABLE);
 
   config_menu_item_keys = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);

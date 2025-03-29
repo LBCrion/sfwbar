@@ -8,6 +8,8 @@
 #include "scanner.h"
 #include "trigger.h"
 #include "gui/bar.h"
+#include "gui/css.h"
+#include "gui/switcher.h"
 
 static void config_set ( GScanner *scanner )
 {
@@ -122,6 +124,82 @@ static void config_vars ( GScanner *scanner, gboolean private )
 
   } while(config_check_and_consume(scanner, ','));
   config_check_and_consume(scanner, ';');
+}
+
+static void config_switcher ( GScanner *scanner )
+{
+  GtkWidget *widget;
+  gboolean disable = FALSE;
+
+  scanner->max_parse_errors = FALSE;
+
+  if(!config_expect_token(scanner, '{', "Missing '{' after 'switcher'"))
+    return;
+
+  widget = switcher_new();
+
+  while(!config_is_section_end(scanner))
+  {
+    g_scanner_get_next_token(scanner);
+    if(!config_flowgrid_property(scanner, widget))
+    {
+      if(!g_ascii_strcasecmp(scanner->value.v_identifier, "css"))
+        css_widget_apply(widget, config_assign_string(scanner, "css"));
+      else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "interval"))
+        switcher_set_interval(config_assign_number(scanner, "interval")/100);
+      else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "disable"))
+        disable = config_assign_boolean(scanner, FALSE, "disable");
+      else
+        g_scanner_error(scanner, "Unexpected token in 'switcher'");
+    }
+  }
+
+  if(disable)
+    gtk_widget_destroy(widget);
+}
+static void config_placer ( GScanner *scanner )
+{
+  gint wp_x = 10;
+  gint wp_y = 10;
+  gint wo_x = 0;
+  gint wo_y = 0;
+  gboolean pid = FALSE, disable = FALSE;
+
+  scanner->max_parse_errors = FALSE;
+  if(!config_expect_token(scanner, '{', "Missing '{' after 'placer'"))
+    return;
+
+  while(!config_is_section_end(scanner))
+  {
+    g_scanner_get_next_token(scanner);
+    switch (config_lookup_key(scanner, config_placer_keys))
+    {
+      case G_TOKEN_XSTEP: 
+        wp_x = config_assign_number (scanner, "xstep");
+        break;
+      case G_TOKEN_YSTEP: 
+        wp_y = config_assign_number (scanner, "ystep");
+        break;
+      case G_TOKEN_XORIGIN: 
+        wo_x = config_assign_number (scanner, "xorigin");
+        break;
+      case G_TOKEN_YORIGIN: 
+        wo_y = config_assign_number (scanner, "yorigin");
+        break;
+      case G_TOKEN_CHILDREN:
+        pid = config_assign_boolean(scanner, FALSE, "children");
+        break;
+      case G_TOKEN_DISABLE:
+        disable = config_assign_boolean(scanner, FALSE, "disable");
+        break;
+      default:
+        g_scanner_error(scanner,"Unexpected token in 'placer'");
+        break;
+    }
+  }
+
+  if(!disable)
+    wintree_placer_conf(wp_x, wp_y, wo_x, wo_y, pid);
 }
 
 GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
