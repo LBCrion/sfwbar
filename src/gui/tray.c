@@ -14,7 +14,11 @@ static void tray_destroy ( GtkWidget *self )
 
   g_return_if_fail(IS_TRAY(self));
   priv = tray_get_instance_private(TRAY(self));
-  g_source_remove(priv->timer_h);
+  if(priv->timer_h)
+  {
+    g_source_remove(priv->timer_h);
+    priv->timer_h = 0;
+  }
   GTK_WIDGET_CLASS(tray_parent_class)->destroy(self);
 }
 

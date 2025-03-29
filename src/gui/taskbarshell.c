@@ -23,7 +23,11 @@ static void taskbar_shell_destroy ( GtkWidget *self )
 
   wintree_listener_remove(self);
   workspace_listener_remove(self);
-  g_source_remove(priv->timer_h);
+  if(priv->timer_h)
+  {
+    g_source_remove(priv->timer_h);
+    priv->timer_h = 0;
+  }
   GTK_WIDGET_CLASS(taskbar_shell_parent_class)->destroy(self);
 }
 

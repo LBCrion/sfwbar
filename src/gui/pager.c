@@ -28,7 +28,11 @@ static void pager_destroy ( GtkWidget *self )
   g_return_if_fail(IS_PAGER(self));
   workspace_listener_remove(self);
   priv = pager_get_instance_private(PAGER(self));
-  g_source_remove(priv->timer_h);
+  if(priv->timer_h)
+  {
+    g_source_remove(priv->timer_h);
+    priv->timer_h = 0;
+  }
   g_list_free_full(g_steal_pointer(&priv->pins), g_free);
   GTK_WIDGET_CLASS(pager_parent_class)->destroy(self);
 }
