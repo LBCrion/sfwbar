@@ -60,18 +60,12 @@ const gchar *trigger_add ( gchar *name, GSourceFunc func, void *data )
 void trigger_remove ( gchar *name, GSourceFunc func, void *data )
 {
   GList *list, *iter;
-  const gchar *iname;
   gpointer ptr;
 
-  if(!name || !func)
+  if(!name || !func || !trigger_list)
     return;
 
-  iname = trigger_name_intern(name);
-
-  if(!trigger_list)
-    trigger_list = g_hash_table_new(g_direct_hash, g_direct_equal);
-
-  list = g_hash_table_lookup(trigger_list, iname);
+  list = g_hash_table_lookup(trigger_list, trigger_name_intern(name));
   for(iter=list; iter; iter=g_list_next(iter))
     if(TRIGGER(iter->data)->func==func && TRIGGER(iter->data)->data==data)
     {

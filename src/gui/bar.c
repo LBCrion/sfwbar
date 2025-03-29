@@ -134,6 +134,11 @@ static void bar_sensor_unref_event ( GtkWidget *self )
 static gboolean bar_leave_notify_event ( GtkWidget *self,
     GdkEventCrossing *event )
 {
+  BarPrivate *priv;
+
+  g_return_val_if_fail(IS_BAR(self), TRUE);
+  priv = bar_get_instance_private(BAR(self));
+
   if(event->detail==GDK_NOTIFY_INFERIOR)
     return TRUE;
 
@@ -143,6 +148,13 @@ static gboolean bar_leave_notify_event ( GtkWidget *self,
 #else
   gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self), FALSE);
 #endif
+
+  if(priv->show_handle)
+  {
+    g_source_remove(priv->show_handle);
+    priv->show_handle = 0;
+  }
+
   bar_sensor_unref_event(self);
   return TRUE;
 }
@@ -154,7 +166,7 @@ static void bar_sensor_show_bar ( GtkWidget *self )
   g_return_if_fail(IS_BAR(self));
   priv = bar_get_instance_private(BAR(self));
 
-  bar_sensor_cancel_hide(self);
+  priv->show_handle = 0;
   priv->sensor_state = TRUE;
   priv->sensor_block = TRUE;
   g_idle_add((GSourceFunc)bar_sensor_unblock_cb, self);
@@ -189,7 +201,10 @@ static gboolean bar_enter_notify_event ( GtkWidget *self,
   if(!priv->sensor_timeout || priv->sensor_block)
     return TRUE;
 
-  bar_sensor_show_bar(self);
+  bar_sensor_cancel_hide(self);
+  if(!priv->show_handle)
+    priv->show_handle = g_timeout_add(priv->show_timeout,
+        (GSourceFunc)bar_sensor_show_bar, self);
   return TRUE;
 }
 
@@ -792,6 +807,18 @@ void bar_set_sensor ( GtkWidget *self, gint64 timeout )
     bar_set_sensor(iter->data, timeout);
 }
 
+void bar_set_show_sensor ( GtkWidget *self, gint64 timeout )
+{
+  BarPrivate *priv;
+  GList *iter;
+
+  g_return_if_fail(IS_BAR(self));
+  priv = bar_get_instance_private(BAR(self));
+  priv->show_timeout = timeout;
+  for(iter = priv->mirror_children; iter; iter=g_list_next(iter))
+    bar_set_transition(iter->data, timeout);
+}
+
 void bar_set_transition ( GtkWidget *self, guint duration )
 {
   BarPrivate *priv;
@@ -913,6 +940,7 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
   dpriv->output = g_strdup(monitor_get_name(monitor));
 
   bar_set_sensor(self, spriv->sensor_timeout);
+  bar_set_show_sensor(self, spriv->show_timeout);
   bar_set_transition(self, spriv->sensor_transition);
 
   gtk_layer_set_monitor(GTK_WINDOW(self), monitor);

@@ -420,7 +420,7 @@ static value_t expr_lib_widget_state ( vm_t *vm, value_t p[], gint np )
   if(!IS_BASE_WIDGET(widget))
     return value_na;
 
-  state = base_widget_get_state(widget);
+  state = base_widget_state_build(widget, NULL);
 
   if(value_as_numeric(p[np-1])==1)
     return value_new_numeric(state & WS_USERSTATE);

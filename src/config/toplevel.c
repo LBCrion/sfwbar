@@ -4,8 +4,9 @@
  */
 
 #include "config.h"
-#include "scanner.h"
 #include "module.h"
+#include "scanner.h"
+#include "trigger.h"
 #include "gui/bar.h"
 
 static void config_set ( GScanner *scanner )
@@ -57,7 +58,7 @@ static void config_trigger_action ( GScanner *scanner )
       SEQ_END);
 
   if(!scanner->max_parse_errors)
-    action_trigger_add(trigger,
+    trigger_add(trigger, (GSourceFunc)action_trigger_cb,
         vm_closure_new(action, SCANNER_STORE(scanner)));
 }
 

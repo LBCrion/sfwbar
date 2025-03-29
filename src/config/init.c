@@ -214,12 +214,14 @@ void config_init ( void )
   config_add_key(config_prop_keys, "Layer", G_TOKEN_LAYER);
   config_add_key(config_prop_keys, "Size", G_TOKEN_SIZE);
   config_add_key(config_prop_keys, "Sensor", G_TOKEN_SENSOR);
+  config_add_key(config_prop_keys, "Sensor_delay", G_TOKEN_SENSORDELAY);
   config_add_key(config_prop_keys, "Transition", G_TOKEN_TRANSITION);
   config_add_key(config_prop_keys, "Bar_id", G_TOKEN_BAR_ID);
   config_add_key(config_prop_keys, "Monitor", G_TOKEN_MONITOR);
   config_add_key(config_prop_keys, "Margin", G_TOKEN_MARGIN);
   config_add_key(config_prop_keys, "Mirror", G_TOKEN_MIRROR);
   config_add_key(config_prop_keys, "Tooltips", G_TOKEN_TOOLTIPS);
+  config_add_key(config_prop_keys, "Disable", G_TOKEN_DISABLE);
 
   config_flowgrid_props = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);

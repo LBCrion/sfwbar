@@ -62,6 +62,7 @@ static void pw_global_handle ( void *d, uint32_t id, uint32_t perms,
     return;
  
   mclass = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
+  g_debug("pipewire: class '%s'", mclass);
   if(!g_strcmp0(mclass, "Stream/Output/Audio"))
     counter = &audio_out;
   else if(!g_strcmp0(mclass, "Stream/Input/Audio"))

@@ -376,7 +376,7 @@ value_t vm_code_eval ( GBytes *code, GtkWidget *widget )
 
   vm->code = (gpointer)g_bytes_get_data(code, &vm->len);
   vm->widget = widget;
-  vm->wstate = action_state_build(vm->widget, NULL);
+  vm->wstate = base_widget_state_build(vm->widget, NULL);
   vm->store = widget? base_widget_get_store(widget) : NULL;
 
   v1 = vm_run(vm);
@@ -396,7 +396,7 @@ value_t vm_expr_eval ( expr_cache_t *expr )
   vm->widget = expr->widget;
   vm->event = expr->event;
   vm->expr = expr;
-  vm->wstate = action_state_build(vm->widget, vm->win);
+  vm->wstate = base_widget_state_build(vm->widget, vm->win);
   if(expr->widget)
     vm->store = base_widget_get_store(expr->widget);
 
@@ -419,7 +419,7 @@ void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
   vm->widget = widget;
   vm->event = event;
   vm->win = win;
-  vm->wstate = state? *state : action_state_build(vm->widget, vm->win);
+  vm->wstate = state? *state : base_widget_state_build(vm->widget, vm->win);
 
   value_free(vm_run(vm));
   vm_free(vm);

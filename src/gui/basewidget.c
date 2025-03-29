@@ -734,16 +734,6 @@ gchar *base_widget_get_id ( GtkWidget *self )
   return priv->id;
 }
 
-guint16 base_widget_get_state ( GtkWidget *self )
-{
-  BaseWidgetPrivate *priv;
-
-  g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
-
-  return priv->user_state;
-}
-
 void base_widget_set_always_update ( GtkWidget *self, gboolean update )
 {
   BaseWidgetPrivate *priv;
@@ -852,6 +842,27 @@ void base_widget_set_css ( GtkWidget *self, gchar *css )
     css_widget_apply(base_widget_get_child(iter->data), css);
 
   priv->css = g_list_append(priv->css, g_strdup(css));
+}
+
+guint16 base_widget_state_build ( GtkWidget *self, window_t *win )
+{
+  BaseWidgetPrivate *priv;
+  guint16 state = 0;
+
+  if(win)
+  {
+    state = win->state;
+    if(wintree_is_focused(win->uid))
+      state |= WS_FOCUSED;
+  }
+
+  if(self && IS_BASE_WIDGET(self))
+  {
+    priv = base_widget_get_instance_private(BASE_WIDGET(self));
+    state |= priv->user_state;
+  }
+
+  return state;
 }
 
 void base_widget_set_action ( GtkWidget *self, gint slot,

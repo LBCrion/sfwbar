@@ -347,7 +347,7 @@ static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
   info->form = g_strdup(pa_proplist_gets(pinfo->proplist,
         PA_PROP_DEVICE_FORM_FACTOR));
   g_free(info->port);
-  info->port = g_strdup(pinfo->active_port?pinfo->active_port->name:NULL);
+  info->port = g_strdup(pinfo->active_port? pinfo->active_port->name : NULL);
   g_free(info->monitor);
   info->monitor = g_strdup(pinfo->monitor_source_name);
   g_free(info->description);

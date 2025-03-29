@@ -206,6 +206,10 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
   if(IS_BASE_WIDGET(widget))
     switch(key)
     {
+      case G_TOKEN_DISABLE:
+        g_object_set_data(G_OBJECT(widget), "disable",
+            GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "disable")));
+        return !scanner->max_parse_errors;
       case G_TOKEN_STYLE:
         base_widget_set_style(widget, config_assign_expr(scanner, "style"));
         return !scanner->max_parse_errors;
@@ -351,9 +355,13 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
         bar_set_sensor(gtk_widget_get_ancestor(widget, BAR_TYPE),
             (gint64)config_assign_number(scanner, "sensor timeout"));
         return TRUE;
+      case G_TOKEN_SENSORDELAY:
+        bar_set_show_sensor(gtk_widget_get_ancestor(widget, BAR_TYPE),
+            (gint64)config_assign_number(scanner, "sensor popup delay"));
+        return TRUE;
       case G_TOKEN_TRANSITION:
         bar_set_transition(gtk_widget_get_ancestor(widget, BAR_TYPE),
-            (gint64)config_assign_number(scanner, "sensor timeout"));
+            (gint64)config_assign_number(scanner, "transition timeout"));
         return TRUE;
       case G_TOKEN_BAR_ID:
         bar_set_id(gtk_widget_get_ancestor(widget, BAR_TYPE),
@@ -433,7 +441,9 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
 
   config_widget(scanner, widget);
 
-  if(!container)
+  if(g_object_get_data(G_OBJECT(widget), "disable"))
+    gtk_widget_destroy(widget);
+  else if(!container)
   {
     g_scanner_error(scanner, "orphan widget without a valid address: %s",
         base_widget_get_id(widget));

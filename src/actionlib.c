@@ -57,7 +57,7 @@ static value_t action_function ( vm_t *vm, value_t p[], gint np )
   win = vm->win;
   state = vm->wstate;
   vm->win = IS_TASKBAR_ITEM(widget)? flow_item_get_source(widget) : vm->win;
-  vm->wstate = action_state_build(vm->widget, vm->win);
+  vm->wstate = base_widget_state_build(vm->widget, vm->win);
 
   if( (func = vm_func_lookup(value_get_string(p[np-1]))) &&
       (func->flags & VM_FUNC_USERDEFINED) )
