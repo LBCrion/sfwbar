@@ -54,13 +54,6 @@ static gboolean switcher_update ( GtkWidget *self )
   return TRUE;
 }
 
-static void switcher_class_init ( SwitcherClass *kclass )
-{
-  g_unix_signal_add(SIGUSR1, (GSourceFunc)switcher_event, NULL);
-  trigger_add("switcher_forward", (GSourceFunc)switcher_event, NULL);
-  trigger_add("switcher_back", (GSourceFunc)switcher_event, (void *)1);
-}
-
 void switcher_init_item (window_t *win, GtkWidget *self )
 {
   flow_grid_add_child(self, switcher_item_new(win, self));
@@ -81,6 +74,24 @@ static window_listener_t switcher_window_listener = {
   .window_invalidate = (void (*)(window_t *, void *))switcher_invalidate_item,
   .window_destroy = (void (*)(window_t *, void *))switcher_destroy_item,
 };
+
+static void switcher_destroy ( GtkWidget *self )
+{
+  if(switcher_grid == self)
+  {
+    switcher_grid = NULL;
+    wintree_listener_remove(self);
+  }
+  GTK_WIDGET_CLASS(switcher_parent_class)->destroy(self);
+}
+
+static void switcher_class_init ( SwitcherClass *kclass )
+{
+  GTK_WIDGET_CLASS(kclass)->destroy = switcher_destroy;
+  g_unix_signal_add(SIGUSR1, (GSourceFunc)switcher_event, NULL);
+  trigger_add("switcher_forward", (GSourceFunc)switcher_event, NULL);
+  trigger_add("switcher_back", (GSourceFunc)switcher_event, (void *)1);
+}
 
 static void switcher_init ( Switcher *self )
 {

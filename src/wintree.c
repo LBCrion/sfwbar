@@ -59,10 +59,8 @@ void wintree_listener_register ( window_listener_t *listener, void *data )
   wintree_listeners = g_list_append(wintree_listeners, copy);
 
   if(copy->window_new)
-  {
     for(iter=wt_list; iter; iter=g_list_next(iter))
       copy->window_new(iter->data, copy->data);
-  }
 }
 
 void wintree_listener_remove ( void *data )
