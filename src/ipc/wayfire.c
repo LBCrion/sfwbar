@@ -8,6 +8,8 @@
 #include "gui/monitor.h"
 #include <sys/socket.h>
 
+extern gchar *sockname;
+
 typedef struct _wayfire_ipc_wset {
   gint id;
   gint index;
@@ -653,7 +655,9 @@ void wayfire_ipc_init ( void )
   const gchar *sock_file;
   gint i;
 
-  if(wintree_api_check() || !(sock_file = g_getenv("WAYFIRE_SOCKET")) )
+  if( !(sock_file = sockname?sockname:g_getenv("WAYFIRE_SOCKET")) )
+    return;
+  if(wintree_api_check())
     return;
 
   g_debug("wayfire-ipc: socket: %s", sock_file);
