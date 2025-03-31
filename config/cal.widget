@@ -1,4 +1,5 @@
 Var YearMonth;
+Var WeekStartsOnSunday;
 
 Set XCalTmpl = "grid 'cal_grid' {
   label 'XCal_label$CAL_NUM$' {
@@ -11,10 +12,18 @@ Set XCalTmpl = "grid 'cal_grid' {
 Set XCalWeekdayTmpl = "grid 'cal_grid' {
     label {
       value = GT('$CAL_WEEKDAY$')
-      style = 'cal_cell_current'
+      style = 'cal_cell_days'
       loc($CAL_COL$, 0)
     }
 }"
+
+Function XCalStartOnMon() {
+  WeekStartsOnSunday = 0;
+}
+
+Function XCalStartOnSun() {
+  WeekStartsOnSunday = 1;
+}
 
 Function XCalIsLeapYear ( year )
 {
@@ -31,13 +40,18 @@ Function XCalDaysInAMonth ( emonth )
 }
 
 Function XCalFDOW ( month, year ) {
-  Var moff, is_leap, moff_table = [0,3,3,6,1,4,6,2,5,0,3,5];
+  Var fdow, moff, moff_table = [0,3,3,6,1,4,6,2,5,0,3,5];
 
   moff = moff_table[month];
   if (month>=2 & XCalIsLeapYear(year)) {
     moff = (moff + 1)%7;}
 
-  return (moff+5*((year-1)%4)+4*((year-1)%100)+6*((year-1)%400))%7;
+  fdow = (moff+5*((year-1)%4)+4*((year-1)%100)+6*((year-1)%400))%7;
+
+  if (WeekStartsOnSunday)
+    fdow = (fdow + 1) % 7;
+
+  return fdow;
 }
 
 Function XCalIsToday ( year, month, day )
@@ -47,16 +61,30 @@ Function XCalIsToday ( year, month, day )
       day = val(time("%d")))
 }
 
-Function XCalBuild(emonth) {
+Function XCalIsWeekend( col ) {
+  if (WeekStartsOnSunday) {
+    Return ((col = 0) | (col = 6))
+  } 
+  else {
+    Return ((col = 5) | (col = 6))
+  }
+}
+
+Function XCalBuild( emonth ) {
   var day, month, year, fdow, ndays, pndays, i, weekdays, months;
 
-  weekdays = ["Mo","Tu","We","Th","Fr","Sa","Su"];
+  /* Use appropriate weekday header order */
+  if (WeekStartsOnSunday)
+    weekdays = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+  else
+    weekdays = ["Mo","Tu","We","Th","Fr","Sa","Su"];
+
   months = ["January", "February", "March", "April", "May", "June",
          "July", "August", "September", "October","November", "December"];
 
-  YearMonth = emonth
-  month = emonth%12;
-  year = (emonth - month)/12;
+  YearMonth = emonth;
+  month = emonth % 12;
+  year = (emonth - month) / 12;
 
   Config "label 'cal_date' { value = '"+GT(months[month])+" "+Str(year)+"' }"
 
@@ -79,17 +107,31 @@ Function XCalBuild(emonth) {
     else if day > ndays
       day = day - ndays;
 
+    /* cal_cell_ style:
+    // - 'other' for days outside the current month
+    // - 'today' if it is today
+    // - 'cur_weekend' for weekend days
+    // - 'cur_weekday' for weekdays
+    */
     Config ReplaceAll($XCalTmpl,
         "$CAL_NUM$", Str(i),
         "$CAL_COL$", Str(i%7),
         "$CAL_ROW$", Str((i-i%7)/7+1),
         "$CAL_DAY$", Str(day),
-        '$CAL_STYLE$', 'cal_cell_' + If(i<fdow | i>=ndays+fdow, 'other',
-          If(XcalIsToday(year, month+1, day), 'today', 'current'))
-
+        '$CAL_STYLE$', 'cal_cell_' +
+          If(i < fdow | i >= ndays+fdow, 'other',
+            If(XCalIsToday(year, month+1, day), 'today',
+              If(XCalIsWeekend(i % 7), 'cur_weekend', 'cur_weekday')
+            )
+          )
       )
     i = i + 1;
   }
+}
+
+Function XCalToday() {
+  YearMonth = val(time("%Y"))*12+val(time("%m"))-1;
+  XCalBuild YearMonth
 }
 
 Function XCalPopUp() {
@@ -100,6 +142,11 @@ Function XCalPopUp() {
 
 Popup("XCal") {
   style = "cal_popup_grid"
+  action[MiddleClick] = XCalToday
+  action[ScrollUp] = XCalBuild YearMonth-1
+  action[ScrollDown] = XCalBuild YearMonth+1
+  action[Ctrl+ScrollUp] = XCalBuild YearMonth-12
+  action[Ctrl+ScrollDown] = XCalBuild YearMonth+12
   label 'cal_clock' {
     value = time("%H:%M:%S")
     style = 'cal_clock'
@@ -194,8 +241,10 @@ label#cal_date {
   padding-bottom: 5px;
 }
 
+label#cal_cell_days,
 label#cal_cell_today,
-label#cal_cell_current,
+label#cal_cell_cur_weekend,
+label#cal_cell_cur_weekday,
 label#cal_cell_other {
   min-width: 30px;
   min-height: 30px;
