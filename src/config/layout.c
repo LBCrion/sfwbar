@@ -98,7 +98,8 @@ gboolean config_include ( GScanner *scanner, GtkWidget *container )
   gchar *fname;
 
   if(scanner->token != G_TOKEN_IDENTIFIER ||
-      g_ascii_strcasecmp(scanner->value.v_identifier, "include"))
+      (g_ascii_strcasecmp(scanner->value.v_identifier, "include") &&
+      (!container || g_ascii_strcasecmp(scanner->value.v_identifier, "widget"))) )
     return FALSE;
 
   config_parse_sequence(scanner,

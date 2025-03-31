@@ -106,6 +106,8 @@ void config_init ( void )
       (GEqualFunc)str_nequal);
   config_add_key(config_toplevel_keys, "Scanner", G_TOKEN_SCANNER);
   config_add_key(config_toplevel_keys, "Layout", G_TOKEN_LAYOUT);
+  config_add_key(config_toplevel_keys, "Bar", G_TOKEN_LAYOUT);
+  config_add_key(config_toplevel_keys, "Widget_grid", G_TOKEN_LAYOUT);
   config_add_key(config_toplevel_keys, "PopUp", G_TOKEN_POPUP);
   config_add_key(config_toplevel_keys, "Placer", G_TOKEN_PLACER);
   config_add_key(config_toplevel_keys, "Switcher", G_TOKEN_SWITCHER);
