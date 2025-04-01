@@ -60,7 +60,7 @@ static void config_trigger_action ( GScanner *scanner )
       SEQ_END);
 
   if(!scanner->max_parse_errors)
-    trigger_add(trigger, (GSourceFunc)action_trigger_cb,
+    trigger_add(trigger, (GSourceFunc)trigger_action_cb,
         vm_closure_new(action, SCANNER_STORE(scanner)));
 }
 

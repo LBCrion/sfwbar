@@ -10,7 +10,6 @@
 #include "taskbaritem.h"
 #include "pager.h"
 #include "scaleimage.h"
-#include "action.h"
 #include "bar.h"
 #include "wintree.h"
 #include "menu.h"

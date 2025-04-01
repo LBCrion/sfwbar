@@ -77,6 +77,11 @@ void trigger_remove ( gchar *name, GSourceFunc func, void *data )
     }
 }
 
+void trigger_action_cb ( vm_closure_t *closure )
+{
+  vm_run_action(closure->code, NULL, NULL, NULL, NULL, closure->store);
+}
+
 gboolean trigger_emit_in_main_context ( const gchar *name )
 {
   GList *iter;

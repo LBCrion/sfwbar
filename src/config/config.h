@@ -3,7 +3,6 @@
 
 #include <gtk/gtk.h>
 #include "vm/vm.h"
-#include "action.h"
 
 typedef struct {
   GHashTable *locals;

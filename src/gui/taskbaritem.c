@@ -9,7 +9,6 @@
 #include "taskbaritem.h"
 #include "taskbarshell.h"
 #include "scaleimage.h"
-#include "action.h"
 #include "pager.h"
 #include "bar.h"
 #include "wintree.h"

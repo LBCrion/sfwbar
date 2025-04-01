@@ -1,8 +1,8 @@
 #ifndef __BASE_WIDGET_H__
 #define __BASE_WIDGET_H__
 
-#include "action.h"
 #include "vm/expr.h"
+#include "vm/vm.h"
 
 #define BASE_WIDGET_MAX_ACTION  8
 

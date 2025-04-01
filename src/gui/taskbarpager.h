@@ -3,7 +3,6 @@
 
 #include "flowitem.h"
 #include "workspace.h"
-#include "action.h"
 #include "taskbar.h"
 
 #define TASKBAR_PAGER_TYPE            (taskbar_pager_get_type())

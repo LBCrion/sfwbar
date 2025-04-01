@@ -2,7 +2,6 @@
 #define __TASKBARPOPUP_H__
 
 #include "flowitem.h"
-#include "action.h"
 #include "taskbar.h"
 
 #define TASKBAR_POPUP_TYPE            (taskbar_popup_get_type())

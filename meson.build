@@ -53,7 +53,6 @@ endforeach
 headers = [ 'src' ]
 
 libsrc = [
-    'src/action.c',
     'src/actionlib.c',
     'src/appinfo.c',
     'src/client.c',

@@ -2,7 +2,6 @@
 #define __MENU_H__
 
 #include <gtk/gtk.h>
-#include "action.h"
 
 GtkWidget *menu_from_name ( gchar *name );
 GtkWidget *menu_new ( gchar *name );

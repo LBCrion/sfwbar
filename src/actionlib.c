@@ -3,7 +3,6 @@
  * Copyright 2023- sfwbar maintainers
  */
 
-#include "action.h"
 #include "module.h"
 #include "client.h"
 #include "trigger.h"

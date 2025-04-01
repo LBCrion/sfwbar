@@ -4,7 +4,6 @@
  */
 
 #include "trigger.h"
-#include "action.h"
 #include "module.h"
 #include "meson.h"
 #include "scanner.h"

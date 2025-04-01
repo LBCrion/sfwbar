@@ -2,7 +2,6 @@
 #define __TASKBARITEM_H__
 
 #include "flowitem.h"
-#include "action.h"
 
 #define TASKBAR_ITEM_TYPE            (taskbar_item_get_type())
 #define TASKBAR_ITEM(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), TASKBAR_ITEM_TYPE, TaskbarItem))
