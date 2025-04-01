@@ -326,6 +326,8 @@ static void hypr_ipc_track_focus ( void )
   if(!hypr_ipc_request(ipc_sockaddr,"j/activewindow",&json) || !json)
     return;
   wintree_set_focus(hypr_ipc_window_id(json));
+  wintree_set_title(hypr_ipc_window_id(json),
+      json_string_by_name(json, "title"));
   json_object_put(json);
 }
 
@@ -501,37 +503,37 @@ static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
 {
   gchar *event,*ptr;
 
-  (void)g_io_channel_read_line(chan,&event,NULL,NULL,NULL);
+  (void)g_io_channel_read_line(chan, &event, NULL, NULL, NULL);
   while(event)
   {
-    if((ptr=strchr(event,'\n')))
+    if((ptr=strchr(event, '\n')))
       *ptr=0;
-    g_debug("hypr event: %s",event);
-    if(!strncmp(event,"activewindow>>",14))
+    g_debug("hypr event: %s", event);
+    if(!strncmp(event, "activewindow>>", 14))
       hypr_ipc_track_focus();
-    else if(!strncmp(event,"openwindow>>",12))
+    else if(!strncmp(event, "openwindow>>", 12))
     {
       hypr_ipc_get_clients(hypr_ipc_parse_id(event+12));
       hypr_ipc_window_place(hypr_ipc_parse_id(event+12));
     }
-    else if(!strncmp(event,"closewindow>>",13))
+    else if(!strncmp(event, "closewindow>>", 13))
       wintree_window_delete(hypr_ipc_parse_id(event+13));
-    else if(!strncmp(event,"fullscreen>>",12))
+    else if(!strncmp(event, "fullscreen>>",12))
       hypr_ipc_set_maximized(g_ascii_digit_value(*(event+12)));
-    else if(!strncmp(event,"movewindow>>",12))
+    else if(!strncmp(event, "movewindow>>", 12))
       hypr_ipc_track_minimized(event+12);
-    else if(!strncmp(event,"workspace>>",11))
+    else if(!strncmp(event, "workspace>>", 11))
       hypr_ipc_pager_populate();
-    else if(!strncmp(event,"focusedmon>>",12))
+    else if(!strncmp(event, "focusedmon>>", 12))
       hypr_ipc_pager_populate();
-    else if(!strncmp(event,"createworkspace>>",17))
+    else if(!strncmp(event, "createworkspace>>", 17))
       hypr_ipc_pager_populate();
-    else if(!strncmp(event,"changefloatingmode>>",20))
+    else if(!strncmp(event, "changefloatingmode>>", 20))
       hypr_ipc_floating_set(event+20);
-    else if(!strncmp(event,"destroyworkspace>>",18))
+    else if(!strncmp(event, "destroyworkspace>>", 18))
       workspace_unref(workspace_id_from_name(event+18));
     g_free(event);
-    (void)g_io_channel_read_line(chan,&event,NULL,NULL,NULL);
+    (void)g_io_channel_read_line(chan, &event, NULL, NULL, NULL);
   }
 
   return TRUE;
