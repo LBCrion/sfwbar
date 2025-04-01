@@ -35,6 +35,10 @@ typedef struct _bz_adapter {
   gchar *iface;
   guint scan_timeout;
   guint timeout_handle;
+  gboolean discoverable;
+  gboolean discovering;
+  gboolean powered;
+  GCancellable *cancel;
 } BzAdapter;
 
 static gchar *bz_major_class[] = {
@@ -163,6 +167,7 @@ static void bz_adapter_free ( gchar *object )
   trigger = !adapters;
   if(trigger)
     trigger_emit("bluez_running");
+  g_cancellable_cancel(adapter->cancel);
   if(adapter->timeout_handle)
     g_source_remove(adapter->timeout_handle);
   g_free(adapter->path);
@@ -311,6 +316,20 @@ static void bz_scan ( GDBusConnection *con, guint timeout )
   g_dbus_connection_call(con, bz_serv, adapter->path,
       adapter->iface, "StartDiscovery", NULL, NULL, G_DBUS_CALL_FLAGS_NONE,
       -1, NULL, (GAsyncReadyCallback)bz_scan_cb, adapter);
+}
+
+static void bz_set_boolean  ( GDBusConnection *con, gchar *prop, gboolean val )
+{
+  BzAdapter *adapter;
+
+  if( !(adapter = bz_adapter_get()) )
+    return;
+
+  g_debug("bluez: set %s to %s", prop, val? "True" : "False");
+  g_dbus_connection_call(con, bz_serv, adapter->path,
+      "org.freedesktop.DBus.Properties", "Set",
+      g_variant_new("(ssv)", adapter->iface, prop, g_variant_new_boolean(val)),
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, adapter);
 }
 
 static void bz_connect_cb ( GDBusConnection *con, GAsyncResult *res,
@@ -558,52 +577,6 @@ static void bz_device_handle ( gchar *path, gchar *iface, GVariantIter *piter )
       device->connected, device->addr, device->name, device->path);
 }
 
-static void bz_adapter_handle ( gchar *object, gchar *iface )
-{
-  BzAdapter *adapter;
-  GList *iter;
-
-
-  for(iter=adapters; iter; iter=g_list_next(iter))
-    if(!g_strcmp0(((BzAdapter *)(iter->data))->path, object))
-      return;
-
-  adapter = g_malloc0(sizeof(BzAdapter));
-  adapter->path = g_strdup(object);
-  adapter->iface = g_strdup(iface);
-
-  adapters = g_list_append(adapters, adapter);
-  if(adapters && !g_list_next(adapters))
-    trigger_emit("bluez_running");
-}
-
-static void bz_object_handle ( gchar *object, GVariantIter *iiter )
-{
-  GVariantIter *dict;
-  gchar *iface;
-
-  while(g_variant_iter_next(iiter, "{&sa{sv}}", &iface, &dict))
-  {
-    if(strstr(iface,"Device"))
-      bz_device_handle(object, iface, dict);
-    else if(strstr(iface,"Adapter"))
-      bz_adapter_handle(object, iface);
-    g_variant_iter_free(dict);
-  }
-  g_variant_iter_free(iiter);
-}
-
-static void bz_device_new ( GDBusConnection *con, const gchar *sender,
-    const gchar *path, const gchar *iface, const gchar *signal,
-    GVariant *params, gpointer data )
-{
-  GVariantIter *iiter;
-  gchar *object;
-
-  g_variant_get(params, "(&oa{sa{sv}})", &object, &iiter);
-  bz_object_handle(object, iiter);
-}
-
 static void bz_device_removed ( GDBusConnection *con, const gchar *sender,
     const gchar *path, const gchar *iface, const gchar *signal,
     GVariant *params, gpointer data )
@@ -649,20 +622,94 @@ static void bz_device_changed ( GDBusConnection *con, const gchar *sender,
   g_variant_iter_free(piter);
 }
 
+static void bz_adapter_update ( const gchar *path, GVariant *dict )
+{
+  BzAdapter *adapter;
+  gboolean state;
+
+  if( !(adapter = bz_adapter_get()) || g_strcmp0(adapter->path, path) )
+    return;
+
+  if(g_variant_lookup(dict, "Discovering", "b", &state))
+    adapter->discovering = state;
+  if(g_variant_lookup(dict, "Discoverable", "b", &state))
+    adapter->discoverable = state;
+  if(g_variant_lookup(dict, "Powered", "b", &state))
+    adapter->powered = state;
+
+  trigger_emit("bluez_adapter");
+}
+
+static void bz_adapter_prop_cb ( GDBusConnection *con, GAsyncResult *res,
+    BzAdapter *adapter )
+{
+  GVariant *result, *dict;
+
+  if( !(result = g_dbus_connection_call_finish(con, res, NULL)) )
+    return;
+  g_variant_get(result,"(@a{sv})", &dict);
+  bz_adapter_update(adapter->path, dict);
+}
+
+static void bz_adapter_handle ( gchar *object, gchar *iface )
+{
+  BzAdapter *adapter;
+  GList *iter;
+
+  for(iter=adapters; iter; iter=g_list_next(iter))
+    if(!g_strcmp0(((BzAdapter *)(iter->data))->path, object))
+      return;
+
+  adapter = g_malloc0(sizeof(BzAdapter));
+  adapter->path = g_strdup(object);
+  adapter->iface = g_strdup(iface);
+  adapter->cancel = g_cancellable_new();
+
+  g_dbus_connection_call(bz_con, bz_serv, object,
+      "org.freedesktop.DBus.Properties", "GetAll", g_variant_new("(s)", iface),
+      G_VARIANT_TYPE("(a{sv})"), G_DBUS_CALL_FLAGS_NONE, -1, adapter->cancel,
+      (GAsyncReadyCallback)bz_adapter_prop_cb, adapter);
+
+  adapters = g_list_append(adapters, adapter);
+  if(adapters && !g_list_next(adapters))
+    trigger_emit("bluez_running");
+}
+
 static void bz_adapter_changed ( GDBusConnection *con, const gchar *sender,
     const gchar *path, const gchar *iface, const gchar *signal,
     GVariant *params, gpointer data )
 {
   GVariant *dict;
-  BzAdapter *adapter;
-  gboolean scanning;
-
-  if( !(adapter = bz_adapter_get()) || g_strcmp0(adapter->path, path) )
-    return;
 
   g_variant_get(params,"(&s@a{sv}@as)", NULL, &dict, NULL);
-  if(g_variant_lookup(dict, "Discovering", "b", &scanning))
-    trigger_emit(scanning? "bluez_scan" : "bluez_scan_complete");
+  bz_adapter_update(path, dict);
+}
+
+static void bz_object_handle ( gchar *object, GVariantIter *iiter )
+{
+  GVariantIter *dict;
+  gchar *iface;
+
+  while(g_variant_iter_next(iiter, "{&sa{sv}}", &iface, &dict))
+  {
+    if(strstr(iface,"Device"))
+      bz_device_handle(object, iface, dict);
+    else if(strstr(iface,"Adapter"))
+      bz_adapter_handle(object, iface);
+    g_variant_iter_free(dict);
+  }
+  g_variant_iter_free(iiter);
+}
+
+static void bz_device_new ( GDBusConnection *con, const gchar *sender,
+    const gchar *path, const gchar *iface, const gchar *signal,
+    GVariant *params, gpointer data )
+{
+  GVariantIter *iiter;
+  gchar *object;
+
+  g_variant_get(params, "(&oa{sa{sv}})", &object, &iiter);
+  bz_object_handle(object, iiter);
 }
 
 static void bz_init_cb ( GDBusConnection *con, GAsyncResult *res, gpointer data )
@@ -780,6 +827,22 @@ static value_t bz_action_scan ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
+static value_t bz_action_power ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np_range(vm, np, 0, 1, "BluezPower");
+  bz_set_boolean(bz_con, "Powered", value_as_numeric(p[0]));
+
+  return value_na;
+}
+
+static value_t bz_action_discoverable ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np_range(vm, np, 0, 1, "BluezDiscoverable");
+  bz_set_boolean(bz_con, "Discoverable", value_as_numeric(p[0]));
+
+  return value_na;
+}
+
 static value_t bz_action_connect ( vm_t *vm, value_t p[], gint np )
 {
   BzDevice *device;
@@ -836,6 +899,27 @@ static value_t bz_action_remove ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
+static value_t bz_action_adapter ( vm_t *vm, value_t p[], gint np )
+{
+  BzAdapter *adapter;
+
+  vm_param_check_np(vm, np, 1, "BluezAdapter");
+  vm_param_check_string(vm, p, 0, "BluezAdapter");
+
+  if( !(adapter = bz_adapter_get()) )
+    return value_na;
+
+  if(!g_ascii_strcasecmp(value_get_string(p[0]), "discovering"))
+    return value_new_numeric(adapter->discovering);
+  if(!g_ascii_strcasecmp(value_get_string(p[0]), "discoverable"))
+    return value_new_numeric(adapter->discoverable);
+  if(!g_ascii_strcasecmp(value_get_string(p[0]), "powered"))
+    return value_new_numeric(adapter->powered);
+
+  return value_na;
+
+}
+
 gboolean sfwbar_module_init ( void )
 {
   if( !(bz_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
@@ -846,10 +930,13 @@ gboolean sfwbar_module_init ( void )
   vm_func_add("bluezack", bz_action_ack, TRUE);
   vm_func_add("bluezackremoved", bz_action_ack_removed, TRUE);
   vm_func_add("bluezscan", bz_action_scan, TRUE);
+  vm_func_add("bluezpower", bz_action_power, TRUE);
+  vm_func_add("bluezdiscoverable", bz_action_discoverable, TRUE);
   vm_func_add("bluezconnect", bz_action_connect, TRUE);
   vm_func_add("bluezpair", bz_action_pair, TRUE);
   vm_func_add("bluezdisconnect", bz_action_disconnect, TRUE);
   vm_func_add("bluezremove", bz_action_remove, TRUE);
+  vm_func_add("bluezadapter", bz_action_adapter, FALSE);
 
   update_q.trigger = g_intern_static_string("bluez_updated");
   remove_q.trigger = g_intern_static_string("bluez_removed");
