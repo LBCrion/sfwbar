@@ -194,4 +194,4 @@ msgid  "On"
 msgstr "开"
 
 msgid  "Off"
-msgstr ""
+msgstr "关"
