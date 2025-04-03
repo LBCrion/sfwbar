@@ -140,7 +140,7 @@ layout {
         if(BluezAdapter("Discovering"), "bluetooth-acquiring", "bluetooth-active"))
     action = Function "XBluezPop"
     action[RightClick] = Menu "XBluezAdapter"
-    tooltip = "Bluetooth"
+    tooltip = GT("Bluetooth")
     interval = 100
   }
 }
