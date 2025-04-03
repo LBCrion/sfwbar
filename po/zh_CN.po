@@ -195,3 +195,6 @@ msgstr "开"
 
 msgid  "Off"
 msgstr "关"
+
+msgid  "Hidden"
+msgstr "隐藏"
