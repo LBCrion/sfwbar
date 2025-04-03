@@ -198,3 +198,6 @@ msgstr ""
 
 msgid  "Hidden"
 msgstr ""
+
+msgid  "Bluetooth"
+msgstr ""
