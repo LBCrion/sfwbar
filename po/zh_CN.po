@@ -198,3 +198,6 @@ msgstr "关"
 
 msgid  "Hidden"
 msgstr "隐藏"
+
+msgid  "Bluetooth"
+msgstr "蓝牙"
