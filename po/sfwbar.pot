@@ -186,3 +186,12 @@ msgstr ""
 
 msgid  "Set As Default Control Interface"
 msgstr ""
+
+msgid  "Power"
+msgstr ""
+
+msgid  "On"
+msgstr ""
+
+msgid  "Off"
+msgstr ""
