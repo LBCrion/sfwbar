@@ -84,7 +84,7 @@ PopUp "XBluezWindow" {
   style = "XBluezPopup"
   grid "XBluezFrame" {
     label {
-      value = "Bluetooth"
+      value = GT("Bluetooth")
       style = "XBluezHeader"
     }
     style = "XBluezFrame"
@@ -125,7 +125,7 @@ menu("XBluezAdapter") {
     index = 2
   }
   Item "bluez_scan" {
-    label = "Scan"
+    label = GT("Scan")
     action = BluezScan
     index = 3
   }
