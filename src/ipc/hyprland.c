@@ -28,22 +28,6 @@ static gpointer hypr_ipc_workspace_id ( json_object *json )
   return NULL;
 }
 
-static gboolean hypr_ipc_window_geom ( json_object *json, GdkRectangle *res )
-{
-  json_object *ptr;
-
-  if(!json_object_object_get_ex(json, "at", &ptr) || !ptr)
-    return FALSE;
-  res->x = json_object_get_int(json_object_array_get_idx(ptr, 0));
-  res->y = json_object_get_int(json_object_array_get_idx(ptr, 1));
-  if(!json_object_object_get_ex(json, "size", &ptr) || !ptr)
-    return FALSE;
-  res->width = json_object_get_int(json_object_array_get_idx(ptr, 0));
-  res->height = json_object_get_int(json_object_array_get_idx(ptr, 1));
-
-  return TRUE;
-}
-
 static gboolean hypr_ipc_request ( gchar *addr, gchar *command, json_object **json )
 {
   gint sock;
@@ -118,8 +102,7 @@ static void hypr_ipc_handle_window ( json_object *obj )
   if(!id)
     return;
 
-  win = wintree_from_id(id);
-  if(!win)
+  if( !(win = wintree_from_id(id)) )
   {
     win = wintree_window_init();
     win->uid = id;
@@ -128,10 +111,13 @@ static void hypr_ipc_handle_window ( json_object *obj )
     wintree_window_append(win);
     wintree_set_app_id(id, json_string_by_name(obj, "class"));
     wintree_set_title(id, json_string_by_name(obj, "title"));
+    if(!json_int_by_name(obj, "focusHistoryID", 1))
+      wintree_set_focus(win->uid);
+
     wintree_log(id);
   }
   else
-    wintree_set_title(id,json_string_by_name(obj, "title"));
+    wintree_set_title(id, json_string_by_name(obj, "title"));
 
   if(hypr_ipc_workspace_id(obj)==GINT_TO_POINTER(-99))
     win->state |= WS_MINIMIZED;
@@ -162,8 +148,7 @@ static gboolean hypr_ipc_get_clients ( gpointer *uid )
     for(i=0; i<json_object_array_length(json); i++)
     {
       ptr = json_object_array_get_idx(json, i);
-      id = hypr_ipc_window_id(ptr);
-      if(id && (!uid || uid == id))
+      if( (id = hypr_ipc_window_id(ptr)) && (!uid || uid == id))
         hypr_ipc_handle_window(ptr);
     }
   json_object_put(json);
@@ -171,18 +156,57 @@ static gboolean hypr_ipc_get_clients ( gpointer *uid )
   return TRUE;
 }
 
+static void hypr_ipc_handle_focus ( gchar *data )
+{
+  gpointer id;
+  window_t *win;
+
+  id = hypr_ipc_parse_id(data, NULL);
+  if( !(win = wintree_from_id(id)) )
+    return;
+
+  wintree_set_focus(id);
+  win->state &= ~WS_URGENT;
+  wintree_commit(win);
+
+  if(win->workspace)
+  {
+    win->workspace->state &= ~WS_STATE_URGENT;
+    workspace_commit(win->workspace);
+  }
+}
+
+static void hypr_ipc_handle_urgent ( gchar *data )
+{
+  gpointer id;
+  window_t *win;
+
+  id = hypr_ipc_parse_id(data, NULL);
+  if( !(win = wintree_from_id(id)) )
+    return;
+
+  win->state |= WS_URGENT;
+  wintree_commit(win);
+
+  if(win->workspace)
+  {
+    win->workspace->state |= WS_STATE_URGENT;
+    workspace_commit(win->workspace);
+  }
+}
+
 static void hypr_ipc_track_workspace ( gchar *event )
 {
   window_t *win;
-  gpointer id, wsid;
+  gpointer id;
+  gint wsid;
   gchar *ws;
 
   id = hypr_ipc_parse_id(event, &ws);
   if(!ws || *ws!=',' || !(win = wintree_from_id(id)))
     return;
 
-  wsid = hypr_ipc_parse_ws(ws+1, NULL);
-  if(GPOINTER_TO_SIZE(wsid)<0)
+  if( (wsid = strtoll(ws+1, NULL, 10))<0 )
     win->state |= WS_MINIMIZED;
   else
   {
@@ -230,6 +254,22 @@ static GdkRectangle hypr_ipc_get_output_geom ( gpointer wsid )
   json_object_put(json);
   g_free(monitor);
   return res;
+}
+
+static gboolean hypr_ipc_window_geom ( json_object *json, GdkRectangle *res )
+{
+  json_object *ptr;
+
+  if(!json_object_object_get_ex(json, "at", &ptr) || !ptr)
+    return FALSE;
+  res->x = json_object_get_int(json_object_array_get_idx(ptr, 0));
+  res->y = json_object_get_int(json_object_array_get_idx(ptr, 1));
+  if(!json_object_object_get_ex(json, "size", &ptr) || !ptr)
+    return FALSE;
+  res->width = json_object_get_int(json_object_array_get_idx(ptr, 0));
+  res->height = json_object_get_int(json_object_array_get_idx(ptr, 1));
+
+  return TRUE;
 }
 
 static guint hypr_ipc_get_geom ( gpointer wid, GdkRectangle *place,
@@ -326,18 +366,6 @@ static void hypr_ipc_title_handle ( gchar *str )
   id = hypr_ipc_parse_id(str, &eptr);
   if(eptr && *eptr)
     wintree_set_title(id, eptr+1);
-}
-
-static void hypr_ipc_track_focus ( void )
-{
-  json_object *json;
-
-  if(!hypr_ipc_request(ipc_sockaddr, "j/activewindow", &json) || !json)
-    return;
-  wintree_set_title(hypr_ipc_window_id(json),
-      json_string_by_name(json, "title"));
-  wintree_set_focus(hypr_ipc_window_id(json));
-  json_object_put(json);
 }
 
 static void hypr_ipc_floating_set ( gchar *data )
@@ -500,7 +528,7 @@ static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
       *ptr=0;
     g_debug("hypr event: %s", event);
     if(!strncmp(event, "activewindowv2>>", 16))
-      wintree_set_focus(hypr_ipc_parse_id(event+16, NULL));
+      hypr_ipc_handle_focus(event+16);
     else if(!strncmp(event, "windowtitlev2>>", 15))
       hypr_ipc_title_handle(event+15);
     else if(!strncmp(event, "openwindow>>", 12))
@@ -527,6 +555,8 @@ static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
       hypr_ipc_floating_set(event+20);
     else if(!strncmp(event, "destroyworkspacev2>>", 20))
       workspace_unref(hypr_ipc_parse_ws(event+20, NULL));
+    else if(!strncmp(event, "urgent>>", 8))
+      hypr_ipc_handle_urgent(event+8);
     g_free(event);
     (void)g_io_channel_read_line(chan, &event, NULL, NULL, NULL);
   }
@@ -553,7 +583,6 @@ void hypr_ipc_init ( void )
 
   workspace_api_register(&hypr_workspace_api);
   wintree_api_register(&hypr_wintree_api);
-  hypr_ipc_track_focus();
 
   sockaddr = g_build_filename(g_get_user_runtime_dir(), "hypr",
       g_getenv("HYPRLAND_INSTANCE_SIGNATURE"), ".socket2.sock", NULL);
