@@ -195,3 +195,6 @@ msgstr ""
 
 msgid  "Off"
 msgstr ""
+
+msgid  "Hidden"
+msgstr ""
