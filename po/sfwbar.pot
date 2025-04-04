@@ -201,3 +201,9 @@ msgstr ""
 
 msgid  "Bluetooth"
 msgstr ""
+
+msgid  "Connected"
+msgstr ""
+
+msgid  "Connecting..."
+msgstr ""
