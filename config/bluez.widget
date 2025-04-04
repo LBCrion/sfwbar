@@ -137,7 +137,7 @@ layout {
   trigger = "bluez_running"
   button "XBluezWidget" {
     style = "module"
-    value = If(!BluezAdapter("Powered"), GT("bluetooth-disabled"),
+    value = If(!BluezAdapter("Powered"), "bluetooth-disabled",
         if(BluezAdapter("Discovering"), "bluetooth-acquiring", "bluetooth-active"))
     action = Function "XBluezPop"
     action[RightClick] = Menu "XBluezAdapter"
