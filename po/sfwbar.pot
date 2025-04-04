@@ -186,3 +186,21 @@ msgstr ""
 
 msgid  "Set As Default Control Interface"
 msgstr ""
+
+msgid  "Power"
+msgstr ""
+
+msgid  "On"
+msgstr ""
+
+msgid  "Off"
+msgstr ""
+
+msgid  "Hidden"
+msgstr ""
+
+msgid  "Bluetooth"
+msgstr ""
+
+msgid  "Connecting ..."
+msgstr ""

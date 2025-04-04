@@ -48,8 +48,8 @@ Function("XBluezUpdate") {
     If(BluezState("Paired"), "avail", "paired")
   Config ReplaceAll( $XBluezTmpl,
     "@BLUEZ_PAIRED@", If(BluezState("Paired"),"Paired","Avail"),
-    "@BLUEZ_CONN@", If(BluezState("Connected"), "Connected",
-      If(BluezState("Connecting")," Connecting ...","")),
+    "@BLUEZ_CONN@", If(BluezState("Connected"), GT("Connected"),
+      If(BluezState("Connecting"),GT("Connecting ..."),"")),
     "@BLUEZ_PATH@", BluezGet("Path"),
     "@BLUEZ_ICON@", BluezGet("Icon"),
     "@BLUEZ_ADDR@", BluezGet("Address"),
@@ -85,7 +85,7 @@ PopUp "XBluezWindow" {
   style = "XBluezPopup"
   grid "XBluezFrame" {
     label {
-      value = "Bluetooth"
+      value = GT("Bluetooth")
       style = "XBluezHeader"
     }
     style = "XBluezFrame"
@@ -126,7 +126,7 @@ menu("XBluezAdapter") {
     index = 2
   }
   Item "bluez_scan" {
-    label = "Scan"
+    label = GT("Scan")
     action = BluezScan
     index = 3
   }
@@ -141,7 +141,7 @@ layout {
         if(BluezAdapter("Discovering"), "bluetooth-acquiring", "bluetooth-active"))
     action = Function "XBluezPop"
     action[RightClick] = Menu "XBluezAdapter"
-    tooltip = "Bluetooth"
+    tooltip = GT("Bluetooth")
     interval = 100
   }
 }
