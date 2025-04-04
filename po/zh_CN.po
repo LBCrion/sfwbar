@@ -201,3 +201,9 @@ msgstr "隐藏"
 
 msgid  "Bluetooth"
 msgstr "蓝牙"
+
+msgid  "Connected"
+msgstr "已连结"
+
+msgid  "Connecting ..."
+msgstr "连结中"
