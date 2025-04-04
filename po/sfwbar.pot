@@ -205,5 +205,5 @@ msgstr ""
 msgid  "Connected"
 msgstr ""
 
-msgid  "Connecting..."
+msgid  "Connecting ..."
 msgstr ""
