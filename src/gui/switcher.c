@@ -89,8 +89,8 @@ static void switcher_class_init ( SwitcherClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = switcher_destroy;
   g_unix_signal_add(SIGUSR1, (GSourceFunc)switcher_event, NULL);
-  trigger_add("switcher_forward", (GSourceFunc)switcher_event, NULL);
-  trigger_add("switcher_back", (GSourceFunc)switcher_event, (void *)1);
+  trigger_add("switcher_forward", (trigger_func_t)switcher_event, NULL);
+  trigger_add("switcher_back", (trigger_func_t)switcher_event, (void *)1);
 }
 
 static void switcher_init ( Switcher *self )

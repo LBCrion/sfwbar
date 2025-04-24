@@ -3,6 +3,7 @@
 
 #include <gtk/gtk.h>
 #include "wintree.h"
+#include "util/datalist.h"
 #include "vm/value.h"
 #include "vm/expr.h"
 
@@ -28,8 +29,9 @@ enum vm_func_flags_t {
 
 typedef struct _vm_store_t vm_store_t;
 struct _vm_store_t {
-  GData *vars;
+  datalist_t *vars;
   GHashTable *widget_map;
+  gboolean transient;
   vm_store_t *parent;
 };
 
@@ -104,11 +106,13 @@ void vm_func_remove ( gchar *name );
 
 vm_var_t *vm_var_new ( gchar *name );
 void vm_var_free ( vm_var_t *var );
-vm_store_t *vm_store_new ( vm_store_t *parent );
+vm_store_t *vm_store_new ( vm_store_t *parent, gboolean transient );
+vm_store_t *vm_store_dup ( vm_store_t *src );
 void vm_store_free ( vm_store_t *store );
 vm_var_t *vm_store_lookup ( vm_store_t *store, GQuark id );
 vm_var_t *vm_store_lookup_string ( vm_store_t *store, gchar *string );
 gboolean vm_store_insert ( vm_store_t *store, vm_var_t *var );
+gboolean vm_store_insert_full ( vm_store_t *store, gchar *name, value_t v );
 vm_closure_t *vm_closure_new ( GBytes *code, vm_store_t *store );
 void vm_closure_free ( vm_closure_t *closure );
 

@@ -60,7 +60,7 @@ static void config_trigger_action ( GScanner *scanner )
       SEQ_END);
 
   if(!scanner->max_parse_errors)
-    trigger_add(trigger, (GSourceFunc)trigger_action_cb,
+    trigger_add(trigger, (trigger_func_t)trigger_action_cb,
         vm_closure_new(action, SCANNER_STORE(scanner)));
 }
 
@@ -90,7 +90,7 @@ static GtkWidget *config_private ( GScanner *scanner, GtkWidget *container )
     return NULL;
 
   store = SCANNER_STORE(scanner);
-  SCANNER_STORE(scanner) = vm_store_new(store);
+  SCANNER_STORE(scanner) = vm_store_new(store, FALSE);
   widget = config_parse_toplevel(scanner, container);
   SCANNER_STORE(scanner) = store;
   

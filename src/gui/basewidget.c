@@ -30,7 +30,7 @@ static void base_widget_attachment_free ( base_widget_attachment_t *attach )
   g_free(attach);
 }
 
-static void base_widget_trigger_cb ( GtkWidget *self )
+static void base_widget_trigger_cb ( GtkWidget *self, vm_store_t *store )
 {
   BaseWidgetPrivate *priv;
 
@@ -51,7 +51,7 @@ static void base_widget_destroy ( GtkWidget *self )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   trigger_remove((gchar *)(priv->trigger),
-      (GSourceFunc)base_widget_trigger_cb, self);
+      (trigger_func_t)base_widget_trigger_cb, self);
   priv->trigger = NULL;
   g_mutex_lock(&widget_mutex);
   widgets_scan = g_list_remove(widgets_scan, self);
@@ -559,13 +559,13 @@ void base_widget_set_trigger ( GtkWidget *self, gchar *trigger )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   trigger_remove((gchar *)(priv->trigger),
-      (GSourceFunc)base_widget_trigger_cb, self);
+      (trigger_func_t)base_widget_trigger_cb, self);
 
   if(trigger)
   {
     base_widget_set_interval(self, 0);
     priv->trigger = trigger_add(trigger,
-        (GSourceFunc)base_widget_trigger_cb, self);
+        (trigger_func_t)base_widget_trigger_cb, self);
   }
 }
 

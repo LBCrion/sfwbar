@@ -116,6 +116,7 @@ libsrc = [
     'src/ipc/hyprland.c',
     'src/ipc/sway.c',
     'src/ipc/wayfire.c',
+    'src/util/datalist.c',
     'src/util/file.c',
     'src/util/json.c',
     'src/util/string.c',

@@ -422,13 +422,11 @@ static void app_info_categories_update ( void )
   app_info_categories_update1(SYSTEM_CONF_DIR);
 }
 
-static gboolean app_info_locale_handle ( gpointer data )
+static void app_info_locale_handle ( gpointer data, vm_store_t *store )
 {
   app_info_categories_update();
   app_info_remove_handlers(app_menu_handle_add, app_menu_handle_delete);
   app_info_add_handlers(app_menu_handle_add, app_menu_handle_delete);
-
-  return TRUE;
 }
 
 static value_t app_menu_func_filter ( vm_t *vm, value_t p[], gint np )

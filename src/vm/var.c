@@ -30,22 +30,45 @@ void vm_var_free ( vm_var_t *var )
   g_free(var);
 }
 
-vm_store_t *vm_store_new ( vm_store_t *parent )
+vm_store_t *vm_store_new ( vm_store_t *parent, gboolean transient )
 {
   vm_store_t *store = g_malloc0(sizeof(vm_store_t));
   store->parent = parent;
+  store->transient = transient;
   store->widget_map = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);
-  g_datalist_init(&store->vars);
+  store->vars = datalist_new();
 
   return store;
 }
 
 void vm_store_free ( vm_store_t *store )
 {
-  g_datalist_clear(&store->vars);
-  g_hash_table_unref(store->widget_map);
+  if(!store)
+    return;
+
+  if(store->vars)
+    datalist_unref(store->vars);
+  if(store->widget_map)
+    g_hash_table_unref(store->widget_map);
   g_free(store);
+}
+
+vm_store_t *vm_store_dup ( vm_store_t *src )
+{
+  vm_store_t *dest;
+
+  if(!src)
+    return NULL;
+
+  dest = g_malloc0(sizeof(vm_store_t));
+  if(src->widget_map)
+    dest->widget_map = g_hash_table_ref(src->widget_map);
+  if(src->vars)
+    dest->vars = datalist_ref(src->vars);
+  dest->transient = src->transient;
+
+  return dest;
 }
 
 vm_var_t *vm_store_lookup ( vm_store_t *store, GQuark id )
@@ -54,7 +77,7 @@ vm_var_t *vm_store_lookup ( vm_store_t *store, GQuark id )
   vm_var_t *var;
 
   for(iter=store; iter; iter=iter->parent)
-    if( (var = g_datalist_id_get_data(&iter->vars, id)) )
+    if( (var = g_datalist_id_get_data(&iter->vars->data, id)) )
       return var;
 
   return NULL;
@@ -79,13 +102,23 @@ gboolean vm_store_insert ( vm_store_t *store, vm_var_t *var )
 
   g_return_val_if_fail(store && var, FALSE);
 
- if( (found = !!g_datalist_id_get_data(&store->vars, var->quark)) )
-   g_datalist_id_remove_data(&store->vars, var->quark);
+ if( (found = !!g_datalist_id_get_data(&store->vars->data, var->quark)) )
+   g_datalist_id_remove_data(&store->vars->data, var->quark);
 
-  g_datalist_id_set_data_full(&(store->vars), var->quark, var,
+  g_datalist_id_set_data_full(&(store->vars->data), var->quark, var,
       (GDestroyNotify)vm_var_free);
 
   return found;
+}
+
+gboolean vm_store_insert_full ( vm_store_t *store, gchar *name, value_t v )
+{
+  vm_var_t *var;
+
+  var = vm_var_new(name);
+  var->value = v;
+
+  return vm_store_insert(store, var);
 }
 
 vm_closure_t *vm_closure_new ( GBytes *code, vm_store_t *store )

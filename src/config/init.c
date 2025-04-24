@@ -281,11 +281,13 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
     return NULL;
 
   scanner = g_scanner_new(&scanner_config);
+  while(globals && globals->transient)
+    globals = globals->parent;
 
   scanner->msg_handler = config_log_error;
   scanner->max_parse_errors = FALSE;
   scanner->user_data = g_malloc0(sizeof(scanner_data_t));
-  SCANNER_STORE(scanner) = globals? globals : vm_store_new(NULL);
+  SCANNER_STORE(scanner) = globals? globals : vm_store_new(NULL, FALSE);
 
   scanner->input_name = fname;
   g_scanner_input_text(scanner, data, strlen(data));

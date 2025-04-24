@@ -4,14 +4,20 @@
  */
 
 #include <glib.h>
+#include "trigger.h"
 #include "vm/vm.h"
 
 static GHashTable *trigger_list;
 
 typedef struct _trigger {
-  GSourceFunc func;
+  trigger_func_t func;
   gpointer data;
 } trigger_t;
+
+typedef struct _trigger_invocation {
+  const gchar *trigger;
+  vm_store_t *store;
+} trigger_invocation_t;
 
 #define TRIGGER(x) ((trigger_t *)(x))
 
@@ -30,7 +36,7 @@ const gchar *trigger_name_intern  ( gchar *name )
   return trigger_name;
 }
 
-const gchar *trigger_add ( gchar *name, GSourceFunc func, void *data )
+const gchar *trigger_add ( gchar *name, trigger_func_t func, void *data )
 {
   trigger_t *trigger;
   GList *list, *iter;
@@ -57,7 +63,7 @@ const gchar *trigger_add ( gchar *name, GSourceFunc func, void *data )
   return trigger_name;
 }
 
-void trigger_remove ( gchar *name, GSourceFunc func, void *data )
+void trigger_remove ( gchar *name, trigger_func_t func, void *data )
 {
   GList *list, *iter;
   gpointer ptr;
@@ -77,25 +83,51 @@ void trigger_remove ( gchar *name, GSourceFunc func, void *data )
     }
 }
 
-void trigger_action_cb ( vm_closure_t *closure )
+void trigger_action_cb ( vm_closure_t *closure, vm_store_t *store )
 {
-  vm_run_action(closure->code, NULL, NULL, NULL, NULL, closure->store);
+  vm_store_t *new_store;
+
+  if(!store)
+  {
+    vm_run_action(closure->code, NULL, NULL, NULL, NULL, closure->store);
+    return;
+  }
+ 
+  new_store = vm_store_dup(store);
+
+  new_store->parent = closure->store;
+  vm_run_action(closure->code, NULL, NULL, NULL, NULL, new_store);
+  vm_store_free(new_store);
 }
 
-gboolean trigger_emit_in_main_context ( const gchar *name )
+static gboolean trigger_emit_in_main_context ( trigger_invocation_t *inv )
 {
   GList *iter;
 
-  g_debug("trigger: '%s'", name);
+  g_debug("trigger: '%s' %p", inv->trigger, inv->store);
   if(trigger_list)
-    for(iter=g_hash_table_lookup(trigger_list, name); iter; iter=iter->next)
-      TRIGGER(iter->data)->func(TRIGGER(iter->data)->data);
+    for(iter=g_hash_table_lookup(trigger_list, inv->trigger); iter;
+        iter=iter->next)
+      TRIGGER(iter->data)->func(TRIGGER(iter->data)->data, inv->store);
+
+  vm_store_free(inv->store);
+  g_free(inv);
 
   return FALSE;
 }
 
+void trigger_emit_with_data ( gchar *name, vm_store_t *store )
+{
+  trigger_invocation_t *inv;
+
+  inv = g_malloc0(sizeof(trigger_invocation_t));
+  inv->trigger = trigger_name_intern(name);
+  inv->store = vm_store_dup(store);
+
+  g_main_context_invoke(NULL, (GSourceFunc)trigger_emit_in_main_context, inv);
+}
+
 void trigger_emit ( gchar *name )
 {
-  g_main_context_invoke(NULL, (GSourceFunc)trigger_emit_in_main_context,
-      (gpointer)trigger_name_intern(name));
+  trigger_emit_with_data(name, NULL);
 }

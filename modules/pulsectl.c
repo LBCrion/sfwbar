@@ -55,56 +55,6 @@ extern ModuleInterfaceV1 sfwbar_interface;
 static pa_context *pctx;
 static pulse_interface_t pulse_interfaces[];
 
-static void pulse_channel_free ( pulse_channel_t *channel )
-{
-  g_free(channel->channel);
-  g_free(channel->device);
-  g_free(channel);
-}
-
-static gboolean pulse_channel_comp ( pulse_channel_t *c1, pulse_channel_t *c2 )
-{
-  return (!g_strcmp0(c1->channel, c2->channel) &&
-      !g_strcmp0(c1->device, c2->device) && c1->iface_idx==c2->iface_idx);
-}
-
-static void *pulse_channel_get_str ( pulse_channel_t *channel, gchar *prop )
-{
-  if(!g_ascii_strcasecmp(prop, "interface"))
-    return g_strdup(channel->iface_idx<3?
-        pulse_interfaces[channel->iface_idx].prefix:"none");
-  if(!g_ascii_strcasecmp(prop, "id"))
-    return g_strdup(channel->channel);
-  if(!g_ascii_strcasecmp(prop, "name"))
-    return g_strdup(channel->channel);
-  if(!g_ascii_strcasecmp(prop, "device"))
-    return g_strdup(channel->device);
-  if(!g_ascii_strcasecmp(prop, "index"))
-    return g_strdup_printf("%d", channel->chan_num);
-  return NULL;
-}
-
-static module_queue_t channel_q = {
-  .free = (void (*)(void *))pulse_channel_free,
-  .duplicate = (void *(*)(void *))ptr_pass,
-  .get_str = (void *(*)(void *, gchar *))pulse_channel_get_str,
-  .compare = (gboolean (*)(const void *, const void *))pulse_channel_comp,
-};
-
-static void *pulse_remove_get_str ( gchar *name, gchar *prop )
-{
-  if(!g_ascii_strcasecmp(prop, "removed-id"))
-    return g_strdup(name);
-  return NULL;
-}
-
-static module_queue_t remove_q = {
-  .free = g_free,
-  .duplicate = (void *(*)(void *))ptr_pass,
-  .get_str = (void *(*)(void *, gchar *))pulse_remove_get_str,
-  .compare = (gboolean (*)(const void *, const void *))g_strcmp0,
-};
-
 static pulse_info *pulse_info_from_idx ( pulse_interface_t *iface, guint32 idx,
     gboolean new )
 {
@@ -275,6 +225,7 @@ static void pulse_remove_device ( pulse_interface_t *iface, guint32 idx )
 {
   GList *iter;
   pulse_info *info;
+  vm_store_t *store;
 
   for(iter=iface->list; iter; iter=g_list_next(iter))
     if(((pulse_info *)iter->data)->idx == idx)
@@ -287,8 +238,11 @@ static void pulse_remove_device ( pulse_interface_t *iface, guint32 idx )
 
     if(info->name)
     {
-      module_queue_append(&remove_q,
-          g_strdup_printf("@pulse-%s-%d", iface->prefix, idx));
+      store = vm_store_new(NULL, TRUE);
+      vm_store_insert_full(store, "device_id",
+        value_new_string(g_strdup_printf("@pulse-%s-%d", iface->prefix, idx)));
+      trigger_emit_with_data("volume-conf-removed", store);
+      vm_store_free(store);
     }
     g_free(info->name);
     g_free(info->icon);
@@ -321,8 +275,22 @@ static void pulse_device_advertise ( gint iface_idx,
     channel->chan_num = i;
     channel->channel = g_strdup(pa_channel_position_to_string(cmap->map[i]));
     channel->device = g_strdup_printf("@pulse-%s-%d",
-        pulse_interfaces[iface_idx].prefix, idx );
-    module_queue_append(&channel_q, channel);
+        pulse_interfaces[iface_idx].prefix, idx);
+
+    vm_store_t *store = vm_store_new(NULL, TRUE);
+    vm_store_insert_full(store, "device_id",
+        value_new_string(g_strdup(channel->device)));
+    vm_store_insert_full(store, "interface", value_new_string(g_strdup(
+            channel->iface_idx<3? pulse_interfaces[channel->iface_idx].prefix :
+            "none")));
+    vm_store_insert_full(store, "channel_id",
+        value_new_string(g_strdup(channel->channel)));
+    vm_store_insert_full(store, "channel_name",
+        value_new_string(g_strdup(channel->channel)));
+    vm_store_insert_full(store, "channel_index",
+        value_new_string(g_strdup_printf("%d", channel->chan_num)));
+    trigger_emit_with_data("volume-conf", store);
+    vm_store_free(store);
   }
 }
 
@@ -680,21 +648,6 @@ static value_t pulse_volume_info_func ( vm_t *vm, value_t p[], gint np )
   return value_new_string(g_strdup_printf("invalid query: %s", cmd));
 }
 
-static value_t pulse_volume_conf_func ( vm_t *vm, value_t p[], gint np )
-{
-  gchar *result;
-
-  vm_param_check_np(vm, np, 1, "VolumeConf");
-  vm_param_check_string(vm, p, 0, "VolumeConf");
-
-  if( (result = module_queue_get_string(&channel_q, value_get_string(p[0]))) )
-    return value_new_string(result);
-  if( (result = module_queue_get_string(&remove_q, value_get_string(p[0]))) )
-    return value_new_string(result);
-
-  return value_na;
-}
-
 static value_t pulse_volume_ctl_action ( vm_t *vm, value_t p[], gint np )
 {
   pulse_info *info;
@@ -728,31 +681,11 @@ static value_t pulse_volume_ctl_action ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
-static value_t pulse_volume_ack_action ( vm_t *vm, value_t p[], gint np )
-{
-  vm_param_check_np(vm, np, 1, "VolumeAck");
-  vm_param_check_string(vm, p, 0, "VolumeAck");
-
-  if(!g_ascii_strcasecmp(value_get_string(p[0]), "volume-conf"))
-    module_queue_remove(&channel_q);
-  if(!g_ascii_strcasecmp(value_get_string(p[0]), "volume-conf-removed"))
-    module_queue_remove(&remove_q);
-  if(!sfwbar_interface.ready)
-  {
-    sfwbar_interface.active = !!channel_q.list | !!remove_q.list;
-    module_interface_select(sfwbar_interface.interface);
-  }
-
-  return value_na;
-}
-
 static void pulse_activate ( void )
 {
   vm_func_add("volume", pulse_volume_func, FALSE);
   vm_func_add("volumeinfo", pulse_volume_info_func, FALSE);
-  vm_func_add("volumeconf", pulse_volume_conf_func, FALSE);
   vm_func_add("volumectl", pulse_volume_ctl_action, TRUE);
-  vm_func_add("volumeack", pulse_volume_ack_action, TRUE);
   pa_context_set_subscribe_callback(pctx, pulse_subscribe_cb, NULL);
   pulse_operation(pa_context_subscribe(pctx, PA_SUBSCRIPTION_MASK_SERVER |
         PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SINK_INPUT |
@@ -774,7 +707,7 @@ static void pulse_deactivate ( void )
         pulse_remove_device(&pulse_interfaces[i],
             ((pulse_info *)pulse_interfaces[i].list->data)->idx);
 
-  sfwbar_interface.active = !!channel_q.list | !!remove_q.list;
+  sfwbar_interface.active = FALSE;
 }
 
 static void pulse_finalize ( void )
@@ -790,8 +723,6 @@ gboolean sfwbar_module_init ( void )
 {
   pa_glib_mainloop *ploop;
 
-  channel_q.trigger = g_intern_static_string("volume-conf");
-  remove_q.trigger = g_intern_static_string("volume-conf-removed");
   ploop = pa_glib_mainloop_new(g_main_context_get_thread_default());
   papi = pa_glib_mainloop_get_api(ploop);
   g_timeout_add (1000,(GSourceFunc )pulse_connect_try, NULL);

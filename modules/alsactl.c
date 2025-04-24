@@ -35,13 +35,6 @@ typedef struct _mixer_api {
   int (*set_switch) ( snd_mixer_elem_t *, int );
 } mixer_api_t;
 
-typedef struct _alsa_channel {
-  gchar *card, *element;
-  snd_mixer_selem_channel_id_t channel;
-  gchar *name;
-  mixer_api_t *api;
-} alsa_channel_t;
-
 static alsa_source_t *main_src;
 GHashTable *alsa_sources;
 
@@ -67,56 +60,6 @@ static mixer_api_t capture_api = {
   .has_switch = snd_mixer_selem_has_capture_switch,
   .get_switch = snd_mixer_selem_get_capture_switch,
   .set_switch = snd_mixer_selem_set_capture_switch_all
-};
-
-static void alsa_channel_free ( alsa_channel_t *channel )
-{
-  g_free(channel->card);
-  g_free(channel->element);
-  g_free(channel->name);
-  g_free(channel);
-}
-
-static gboolean alsa_channel_comp ( alsa_channel_t *c1, alsa_channel_t *c2 )
-{
-  return (c1->channel==c2->channel && c1->api==c2->api &&
-    !g_strcmp0(c1->card, c2->card) && !g_strcmp0(c1->element, c2->element));
-}
-
-static void *alsa_channel_get_str ( alsa_channel_t *channel, gchar *prop )
-{
-  if(!g_ascii_strcasecmp(prop, "interface"))
-    return g_strdup(channel->api->prefix);
-  if(!g_ascii_strcasecmp(prop, "name"))
-    return g_strconcat(channel->element, " ", channel->name, NULL);
-  if(!g_ascii_strcasecmp(prop, "id"))
-    return g_strconcat(channel->element, ":", channel->name, NULL);
-  if(!g_ascii_strcasecmp(prop, "device"))
-    return g_strdup(channel->card);
-  if(!g_ascii_strcasecmp(prop, "index"))
-    return g_strdup_printf("%d", channel->channel);
-  return NULL;
-}
-
-static module_queue_t channel_q = {
-  .free = (void (*)(void *))alsa_channel_free,
-  .duplicate = (void *(*)(void *))ptr_pass,
-  .get_str = (void *(*)(void *, gchar *))alsa_channel_get_str,
-  .compare = (gboolean (*)(const void *, const void *))alsa_channel_comp,
-};
-
-static void *alsa_remove_get_str ( gchar *name, gchar *prop )
-{
-  if(!g_ascii_strcasecmp(prop, "removed-id"))
-    return g_strdup(name);
-  return NULL;
-}
-
-static module_queue_t remove_q = {
-  .free = g_free,
-  .duplicate = (void *(*)(void *))g_strdup,
-  .get_str = (void *(*)(void *, gchar *))alsa_remove_get_str,
-  .compare = (gboolean (*)(const void *, const void *))g_strcmp0,
 };
 
 static snd_mixer_elem_t *alsa_element_get ( snd_mixer_t *mixer, gchar *name )
@@ -200,8 +143,8 @@ static gboolean alsa_addr_parse ( mixer_api_t *api, gchar *address,
 static void alsa_iface_advertise ( mixer_api_t *api, alsa_source_t *src )
 {
   snd_mixer_elem_t *elem;
-  alsa_channel_t *channel;
   gint i, cnum=0;
+  vm_store_t *store;
 
   for(elem=snd_mixer_first_elem(src->mixer); elem;
       elem=snd_mixer_elem_next(elem))
@@ -210,14 +153,23 @@ static void alsa_iface_advertise ( mixer_api_t *api, alsa_source_t *src )
       for(i=0;i<=SND_MIXER_SCHN_LAST;i++)
         if(api->has_channel(elem, i))
         {
-          channel = g_malloc0(sizeof(alsa_channel_t));
-          channel->api = api;
-          channel->channel = cnum++;
-          channel->card = g_strdup(src->name);
-          channel->element = g_strdup(snd_mixer_selem_get_name(elem));
-          channel->name = g_strdup( snd_mixer_selem_is_playback_mono(elem)?
-              "Mono": snd_mixer_selem_channel_name(i));
-          module_queue_append(&channel_q, channel);
+          store = vm_store_new(NULL, TRUE);
+          vm_store_insert_full(store, "interface",
+            value_new_string(g_strdup(api->prefix)));
+          vm_store_insert_full(store, "device_id",
+            value_new_string(g_strdup(src->name)));
+          vm_store_insert_full(store, "channel_id", value_new_string(
+                g_strdup_printf("%s:%s", snd_mixer_selem_get_name(elem),
+                  snd_mixer_selem_is_playback_mono(elem)?  "Mono":
+                  snd_mixer_selem_channel_name(i))));
+          vm_store_insert_full(store, "channel_name", value_new_string(
+                g_strdup_printf("%s:%s", snd_mixer_selem_get_name(elem),
+                  snd_mixer_selem_is_playback_mono(elem)?  "Mono":
+                  snd_mixer_selem_channel_name(i))));
+          vm_store_insert_full(store, "channel_index",
+            value_new_string(g_strdup_printf("%d", cnum++)));
+          trigger_emit_with_data("volume-conf", store);
+          vm_store_free(store);
         }
   }
 }
@@ -253,9 +205,16 @@ gboolean alsa_source_dispatch( GSource *gsrc, GSourceFunc cb, gpointer data)
 static void alsa_source_finalize ( GSource *gsrc )
 {
   alsa_source_t *src = (alsa_source_t *)gsrc;
+  vm_store_t *store;
 
   if(src->name)
-    module_queue_append(&remove_q, src->name);
+  {
+    store = vm_store_new(NULL, TRUE);
+    vm_store_insert_full(store, "device_id",
+      value_new_string(g_strdup(src->name)));
+    trigger_emit_with_data("volume-conf-removed", store);
+    vm_store_free(store);
+  }
 
   g_clear_pointer(&src->mixer, snd_mixer_close);
   g_clear_pointer(&src->pfds, g_free);
@@ -349,7 +308,7 @@ static glong alsa_volume_avg_get ( snd_mixer_elem_t *element, mixer_api_t *api )
   glong vol, tvol = 0;
   gint i, count = 0;
 
-  for(i=0;i<=SND_MIXER_SCHN_LAST;i++)
+  for(i=0; i<=SND_MIXER_SCHN_LAST; i++)
     if(api->has_channel(element, i))
     {
       api->get_channel(element, i, &vol);
@@ -459,21 +418,6 @@ static value_t alsa_func_volume_info ( vm_t *vm, value_t p[], gint np )
 
   if(!g_ascii_strcasecmp(verb, "description"))
     return value_new_string(g_strdup(src->desc));
-
-  return value_na;
-}
-
-static value_t alsa_func_channel ( vm_t *vm, value_t p[], gint np )
-{
-  gchar *result;
-
-  vm_param_check_np(vm, np, 1, "VolumeConf");
-  vm_param_check_string(vm, p, 0, "VolumeConf");
-
-  if( (result = module_queue_get_string(&channel_q, value_get_string(p[0]))) )
-    return value_new_string(result);
-  if( (result = module_queue_get_string(&remove_q, value_get_string(p[0]))) )
-    return value_new_string(result);
 
   return value_na;
 }
@@ -604,33 +548,11 @@ static value_t alsa_action_volumectl ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
-static value_t alsa_action_volumeack ( vm_t *vm, value_t p[], gint np )
-{
-  vm_param_check_np(vm, np, 1, "VolumeAck");
-  vm_param_check_string(vm, p, 0, "VolumeAck");
-
-  if(!g_ascii_strcasecmp(value_get_string(p[0]), "volume-conf"))
-    module_queue_remove(&channel_q);
-  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "volume-conf-removed"))
-    module_queue_remove(&remove_q);
-  if(!sfwbar_interface.ready)
-  {
-    sfwbar_interface.active = !!channel_q.list | !!remove_q.list;
-    module_interface_select(sfwbar_interface.interface);
-    if(!sfwbar_interface.active)
-      sfwbar_interface.ready = TRUE;
-  }
-
-  return value_na;
-}
-
 void alsa_activate ( void )
 {
   vm_func_add("volume", alsa_func_volume, FALSE);
   vm_func_add("volumeinfo", alsa_func_volume_info, FALSE);
-  vm_func_add("volumeconf", alsa_func_channel, FALSE);
   vm_func_add("volumectl", alsa_action_volumectl, TRUE);
-  vm_func_add("volumeack", alsa_action_volumeack, TRUE);
   g_idle_add((GSourceFunc)alsa_source_subscribe_all, NULL);
 }
 
@@ -639,24 +561,20 @@ void alsa_deactivate ( void )
   g_hash_table_remove_all(alsa_sources);
   g_clear_pointer(&playback_api.default_name, g_free);
   g_clear_pointer(&capture_api.default_name, g_free);
-  sfwbar_interface.active = !!channel_q.list | !!remove_q.list;
+  sfwbar_interface.active = FALSE;
 }
 
 void alsa_finalize ( void )
 {
   vm_func_remove("volume");
   vm_func_remove("volumeinfo");
-  vm_func_remove("volumeconf");
   vm_func_remove("volumectl");
-  vm_func_remove("volumeack");
 }
 
 gboolean sfwbar_module_init ( void )
 {
   gint card = -1;
 
-  channel_q.trigger = g_intern_static_string("volume-conf");
-  remove_q.trigger = g_intern_static_string("volume-conf-removed");
   alsa_sources = g_hash_table_new_full( g_str_hash, g_str_equal, NULL,
       (GDestroyNotify)alsa_source_remove );
 

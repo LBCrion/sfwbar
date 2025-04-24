@@ -224,12 +224,9 @@ static gboolean parser_index_parse( GScanner *scanner, GByteArray *code )
 static gboolean parser_variable ( GScanner *scanner, GByteArray *code )
 {
   guint16 pos;
-  vm_var_t *var;
 
   if( (pos = parser_local_lookup(scanner)) )
     parser_emit_local(code, pos, EXPR_OP_LOCAL);
-  else if( (var = parser_heap_lookup(scanner)) )
-    parser_emit_quark_op(code, var->quark, EXPR_OP_HEAP);
   else
   {
     parser_emit_ptr_op(code,

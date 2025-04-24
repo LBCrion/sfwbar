@@ -185,11 +185,21 @@ static gboolean vm_function ( vm_t *vm )
 static void vm_variable ( vm_t *vm )
 {
   value_t value;
+  vm_var_t *var;
   gchar *name;
 
   memcpy(&name, vm->ip+1, sizeof(gpointer));
-  value = scanner_get_value(name, !vm->use_cached, vm->expr);
-  expr_dep_add(name, vm->expr);
+  if( vm->store && (var = vm_store_lookup_string(vm->store, name)) )
+  {
+    value = value_dup(var->value);
+    if(vm->expr)
+      vm->expr->vstate = TRUE;
+  }
+  else
+  {
+    value = scanner_get_value(name, !vm->use_cached, vm->expr);
+    expr_dep_add(name, vm->expr);
+  }
 
   vm_push(vm, value);
   g_ptr_array_add(vm->pstack, vm->ip);
@@ -205,22 +215,6 @@ static void vm_local ( vm_t *vm )
   vm_push(vm, value_dup(((value_t *)(vm->stack->data))[vm->fp+pos-1]));
   g_ptr_array_add(vm->pstack, vm->ip);
   vm->ip += sizeof(guint16);
-  if(vm->expr)
-    vm->expr->vstate = TRUE;
-}
-
-static void vm_heap ( vm_t *vm )
-{
-  GQuark quark;
-  vm_var_t *var;
-
-  memcpy(&quark, vm->ip+1, sizeof(GQuark));
-  if( (var = vm_store_lookup(vm->store, quark)) )
-    vm_push(vm, value_dup(var->value));
-  else
-    vm_push(vm, value_na);
-  g_ptr_array_add(vm->pstack, vm->ip);
-  vm->ip += sizeof(GQuark);
   if(vm->expr)
     vm->expr->vstate = TRUE;
 }
@@ -298,8 +292,8 @@ static value_t vm_run ( vm_t *vm )
       vm_variable(vm);
     else if(*vm->ip == EXPR_OP_LOCAL)
       vm_local(vm);
-    else if(*vm->ip == EXPR_OP_HEAP)
-      vm_heap(vm);
+//    else if(*vm->ip == EXPR_OP_HEAP)
+//      vm_heap(vm);
     else if(*vm->ip == EXPR_OP_LOCAL_ASSIGN)
       vm_local_assign(vm);
     else if(*vm->ip == EXPR_OP_HEAP_ASSIGN)

@@ -1,17 +1,17 @@
 module("pulsectl")
 module("alsactl")
 
-set XVolumeMutedIcon = If(!Ident($VolumeMutedIcon),
+Set XVolumeMutedIcon = If(!Ident($VolumeMutedIcon),
     "audio-volume-muted", $VolumeMutedIcon)
-set XVolumeLowIcon = If(!Ident($VolumeLowIcon),
+Set XVolumeLowIcon = If(!Ident($VolumeLowIcon),
     "audio-volume-low", $VolumeLowIcon)
-set XVolumeMediumIcon = If(!Ident($VolumeMediumIcon),
+Set XVolumeMediumIcon = If(!Ident($VolumeMediumIcon),
     "audio-volume-medium", $VolumeMediumIcon)
-set XVolumeHighIcon = If(!Ident($VolumeHighIcon),
+Set XVolumeHighIcon = If(!Ident($VolumeHighIcon),
     "audio-volume-high", $VolumeHighIcon)
-set XVolumeAction = If(!Ident($VolumeAction),"pavucontrol",$VolumeAction)
+Set XVolumeAction = If(!Ident($VolumeAction), "pavucontrol", $VolumeAction)
 
-set XVolumeIconSpeaker = '<path d="m 7 1.007812 c -0.296875 -0.003906 -0.578125
+set XVolumeIconSpeaker = 'd="m 7 1.007812 c -0.296875 -0.003906 -0.578125
   0.125 -0.769531 0.351563 l -3.230469 3.640625 h -1 c -1.09375 0 -2 0.84375 -2
   2 v 2 c 0 1.089844 0.910156 2 2 2 h 1 l 3.230469 3.640625 c 0.210937 0.253906
   0.492187 0.363281 0.769531 0.359375 z m 6.460938 0.960938 c -0.191407
@@ -28,33 +28,34 @@ set XVolumeIconSpeaker = '<path d="m 7 1.007812 c -0.296875 -0.003906 -0.578125
   0.304688 0.132812 0.605469 0.394531 0.804688 c 0.441407 0.332031 1.066407
   0.242187 1.398438 -0.199219 c 0.804687 -1.066406 1.207031 -2.335937 1.207031
   -3.609375 s -0.402344 -2.542969 -1.207031 -3.613281 c -0.183594 -0.246094
-  -0.464844 -0.382813 -0.753907 -0.398438 z m 0 0" fill="#2e3436"/>'
+  -0.464844 -0.382813 -0.753907 -0.398438 z m 0 0" fill="#2e3436"'
 
-set XVolumeIconHeadphones = '<path d="m 8 0 c -1.230469 0 -2.4375 0.324219 -3.5
+set XVolumeIconHeadphones = 'd="m 8 0 c -1.230469 0 -2.4375 0.324219 -3.5
   0.9375 c -2.164062 1.25 -3.5 3.5625 -3.5 6.0625 v 6 s 0 2 2 2 h 1 c 0.554688
   0 1 -0.445312 1 -1 v -4 c 0 -0.554688 -0.5 -1 -1 -1 c 0 0 -1 0 -1 -1 v -1 c 0
   -1.785156 0.953125 -3.4375 2.5 -4.332031 c 1.546875 -0.890625 3.453125
   -0.890625 5 0 c 1.546875 0.894531 2.5 2.546875 2.5 4.332031 v 1 c 0 1 -1 1 -1
   1 c -0.5 0 -1 0.445312 -1 1 v 4 c 0 0.554688 0.445312 1 1 1 h 1 c 2 0 2 -2 2
   -2 v -6 c 0 -2.5 -1.335938 -4.8125 -3.5 -6.0625 c -1.0625 -0.613281 -2.269531
-  -0.9375 -3.5 -0.9375 z m 0 0" fill="#2e3436"/>'
+  -0.9375 -3.5 -0.9375 z m 0 0" fill="#2e3436"'
 
 set XVolumeIconTmpl = '<?xml version="1.0" encoding="utf-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 <g transform="rotate(-90 256 256)">
 <circle cx="256" cy="256" r="230" stroke="#808080" stroke-width="45"
   fill="transparent"/>
-<circle cx="256" cy="256" r="230" stroke="Rgb(0,@ICON_COLOR@,0)"
+<circle cx="256" cy="256" r="230" stroke="Rgb(0,@ICON_CIRCLE_COLOR@,0)"
   stroke-width="60" fill="transparent" stroke-dashoffset="@ICON_PCT@"
   stroke-dasharray="1444.4"/>
 </g>
-<svg x="8" y="8" width="16" height="16" transform="scale(16)">@ICON_FORM@</svg>
+<svg x="8" y="8" width="16" height="16" transform="scale(16)">
+<path stroke="@ICON_COLOR@" @ICON_FORM@/></svg>
 </svg>'
 
-set XVolumeSinkMenuTmpl = "
-Menu('XVolumeSinkMenu') {
+Var XVolumeSinkMenuTmpl = "Menu('XVolumeSinkMenu') {
   Item('@SINK_DESC@',
-      { VolumeCtl Extract(WidgetId(),'(.*)_menu'), 'client-set-sink @SINK_NAME@' },
+      { VolumeCtl Extract(WidgetId(),'(.*)_menu'),
+        'client-set-sink @SINK_NAME@' },
       '@SINK_NAME@')
 }"
 
@@ -63,7 +64,7 @@ Menu('XVolumeDeviceMenu') {
       { VolumeCtl 'sink-set-default ' + Extract(WidgetId(), '(.*)_name') } )
 }
 
-set XVolumeControlTmpl = "
+Var XVolumeControlTmpl = "
 grid 'volume_section_@DEVICE_IFACE@' {
   grid '@DEVICE_ID@' {
     style = 'volume_grid'
@@ -142,19 +143,19 @@ grid 'volume_section_@DEVICE_IFACE@' {
   }
 }"
 
-Function("XVolumeHideChannels") {
+Function XVolumeHideChannels() {
   SetStyle $XVolumeChannels, "hidden"
   SetStyle $XVolumeSingle, "volume_scale"
   SetValue $XVolumeExpander, "pan-end"
 }
 
-Function("XVolumeShowChannels") {
+Function XVolumeShowChannels() {
   SetStyle $XVolumeChannels, "volume_channel_list"
   SetStyle $XVolumeSingle, "hidden"
   SetValue $XVolumeExpander, "pan-down"
 }
 
-Function("XVolumeToggleChannels") {
+Function XVolumeToggleChannels() {
   Eval "XVolumeChannels", Extract(WidgetId(),"(.*)_expand") + "_channels"
   Eval "XVolumeSingle", Extract(WidgetId(),"(.*)_expand") + "_volume"
   Eval "XVolumeExpander", Extract(WidgetId(),"(.*)_expand") + "_expand"
@@ -164,30 +165,27 @@ Function("XVolumeToggleChannels") {
   [UserState] UserState "off"
 }
 
-Function("XVolumeChannelHandler") {
-  Config If(VolumeConf("Interface")!="sink" &
-      VolumeConf("interface")!="client", "",
-      ReplaceAll($XVolumeControlTmpl,
-      "@DEVICE_ID@", VolumeConf("device"),
-      "@CHANNEL_NAME@", VolumeConf("name"),
-      "@CHANNEL_ID@", VolumeConf("id"),
-      "@CHANNEL_NUM@", VolumeConf("index"),
-      "@DEVICE_IFACE@", VolumeConf("interface")))
-  MenuItemClear VolumeConf("device")
-  Config If(VolumeConf("interface")!="sink", "",
-      ReplaceAll($XVolumeSinkMenuTmpl, "@SINK_NAME@", VolumeConf("device"),
-           "@SINK_DESC@", VolumeInfo("sink-description", VolumeConf("device"))))
-  VolumeAck "volume-conf"
+Function XVolumeChannelHandler() {
+  Config If(interface!="sink" & interface!="client", "",
+      ReplaceAll(XVolumeControlTmpl,
+        "@DEVICE_ID@", device_id,
+        "@CHANNEL_NAME@", channel_name,
+        "@CHANNEL_ID@", channel_id,
+        "@CHANNEL_NUM@", channel_index,
+        "@DEVICE_IFACE@", interface))
+  MenuItemClear device_id
+  Config If(interface!="sink", "",
+      ReplaceAll($XVolumeSinkMenuTmpl, "@SINK_NAME@", device_id,
+           "@SINK_DESC@", VolumeInfo("sink-description", device_id)))
 }
 
-Function("XVolumeChannelRemove") {
-  ClearWidget VolumeConf("removed-id")
-  MenuItemClear VolumeConf("removed-id")
-  VolumeAck "volume-conf-removed"
+Function XVolumeChannelRemove() {
+  ClearWidget device_id
+  MenuItemClear device_id
 }
 
-TriggerAction "volume-conf", Function "XVolumeChannelHandler"
-TriggerAction "volume-conf-removed", Function "XVolumeChannelRemove"
+TriggerAction "volume-conf", XVolumeChannelHandler;
+TriggerAction "volume-conf-removed", XVolumeChannelRemove;
 
 PopUp "XVolumeWindow" {
   style = "volume_popup"
@@ -216,7 +214,8 @@ layout {
         "@ICON_FORM@", If(Mid(VolumeInfo("sink-form"),1,4)="head",
           $XVolumeIconHeadphones, $XVolumeIconSpeaker),
         "@ICON_PCT@", Str(1444.4-Volume("sink-volume")*14.444),
-        "@ICON_COLOR@", Str(2.56*Volume("sink-volume")));
+        "@ICON_COLOR@", If(Volume("sink-mute"),"red","@theme_fg_color"),
+        "@ICON_CIRCLE_COLOR@", Str(2.56*Volume("sink-volume")));
     trigger = "volume"
     tooltip = GT("Volume") + ": " + Str(Volume("sink-volume"),0) + "%" +
       If(Volume("sink-mute")," (muted)","") +
