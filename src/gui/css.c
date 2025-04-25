@@ -286,7 +286,8 @@ gchar *css_legacy_preprocess ( gchar *css_string, gchar *fname )
     g_free(res);
     res = tmp;
   }
-  thickness = scanner_get_value("$ThicknessHint", TRUE, NULL);
+  thickness = scanner_get_value(g_quark_from_static_string("thicknesshint"),
+      SCANNER_TYPE_STR, TRUE, NULL);
   tmp = str_replace(res, "@bar_thickness", value_is_string(thickness)?
       value_get_string(thickness) : "20px");
   g_free(res);

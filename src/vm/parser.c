@@ -3,6 +3,7 @@
  * Copyright 2025- sfwbar maintainers
  */
 
+#include "scanner.h"
 #include "config/config.h"
 #include "util/string.h"
 #include "vm/vm.h"
@@ -29,14 +30,16 @@ static void parser_emit_local ( GByteArray *code, guint16 pos,
   g_byte_array_append(code, data, sizeof(guint16)+1);
 }
 
-static void parser_emit_ptr_op ( GByteArray *code, gconstpointer vptr,
-   guint8 op )
+static void parser_emit_var_id ( GByteArray *code, gchar *id, guint8 op )
 {
-  guint8 data[sizeof(gpointer)+1];
+  GQuark quark;
+  guint8 data[sizeof(gpointer)+sizeof(GQuark)+1], ftype;
 
   data[0] = op;
-  memcpy(data+1, &vptr, sizeof(gpointer));
-  g_byte_array_append(code, data, sizeof(gpointer)+1);
+  quark = scanner_parse_identifier(id, &ftype);
+  memcpy(data+1, &ftype, 1);
+  memcpy(data+2, &quark, sizeof(GQuark));
+  g_byte_array_append(code, data, sizeof(GQuark)+2);
 }
 
 static void parser_emit_quark_op ( GByteArray *code, GQuark quark, guint8 op )
@@ -229,8 +232,7 @@ static gboolean parser_variable ( GScanner *scanner, GByteArray *code )
     parser_emit_local(code, pos, EXPR_OP_LOCAL);
   else
   {
-    parser_emit_ptr_op(code,
-      parser_identifier_lookup(scanner->value.v_identifier), EXPR_OP_VARIABLE);
+    parser_emit_var_id(code, scanner->value.v_identifier, EXPR_OP_VARIABLE);
     return TRUE;
   }
 

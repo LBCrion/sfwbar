@@ -3,19 +3,12 @@
  * Copyright 2020- sfwbar maintainers
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/statvfs.h>
-#include <glib.h>
 #include "expr.h"
 #include "scanner.h"
-#include "wintree.h"
-#include "module.h"
 #include "vm/vm.h"
 #include "util/string.h"
 
-static GHashTable *expr_deps;
+static GData *expr_deps;
 
 gboolean expr_cache_eval ( expr_cache_t *expr )
 {
@@ -80,62 +73,52 @@ void expr_cache_free ( expr_cache_t *expr )
   g_free(expr);
 }
 
-void expr_dep_add ( gchar *ident, expr_cache_t *expr )
+void expr_dep_add ( GQuark quark, expr_cache_t *expr )
 {
-  GList *list;
   expr_cache_t *iter;
-  gchar *vname;
+  GList *list;
 
   if(!expr)
     return;
 
-  if(!expr_deps)
-    expr_deps = g_hash_table_new_full((GHashFunc)str_nhash,
-          (GEqualFunc)str_nequal, g_free, NULL);
-
-  vname = scanner_parse_identifier(ident, NULL);
-  list = g_hash_table_lookup(expr_deps, vname);
+  list = g_datalist_id_get_data(&expr_deps, quark);
   for(iter=expr; iter; iter=iter->parent)
     if(!g_list_find(list, iter))
       list = g_list_prepend(list, iter);
-  g_hash_table_replace(expr_deps, vname, list);
+  g_datalist_id_set_data(&expr_deps, quark, list);
+}
+
+static void expr_dep_remove_func ( GQuark quark, GList *l, expr_cache_t *expr )
+{
+  g_datalist_id_replace_data(&expr_deps, quark, l, g_list_remove(l, expr),
+      NULL, NULL);
 }
 
 void expr_dep_remove ( expr_cache_t *expr )
 {
-  GHashTableIter hiter;
-  void *list, *key;
-
-  if(!expr_deps)
-    return;
-
-  g_hash_table_iter_init(&hiter, expr_deps);
-  while(g_hash_table_iter_next(&hiter, &key, &list))
-    g_hash_table_iter_replace(&hiter, g_list_remove(list, expr));
+  g_datalist_foreach(&expr_deps, (GDataForeachFunc)expr_dep_remove_func, expr);
 }
 
-void expr_dep_trigger ( gchar *ident )
+void expr_dep_trigger ( GQuark quark )
 {
-  GList *iter,*list;
+  GList *iter, *list;
 
-  if(!expr_deps)
-    return;
-
-  list = g_hash_table_lookup(expr_deps, ident);
+  list = g_datalist_id_get_data(&expr_deps, quark);
 
   for(iter=list; iter; iter=g_list_next(iter))
     ((expr_cache_t *)(iter->data))->eval = TRUE;
 }
 
-void expr_dep_dump_each ( void *key, void *value, void *d )
+static void expr_dep_dump_each ( GQuark key, void *value, void *d )
 {
   GList *iter;
 
-  for(iter=value;iter;iter=g_list_next(iter))
-    g_message("%s: %s", (gchar *)key, ((expr_cache_t *)iter->data)->definition);
+  for(iter=value; iter; iter=g_list_next(iter))
+    g_message("%s: %s", g_quark_to_string(key),
+        ((expr_cache_t *)iter->data)->definition);
 }
 
 void expr_dep_dump ( void )
 {
-  g_hash_table_foreach(expr_deps,expr_dep_dump_each,NULL);
+  g_datalist_foreach(&expr_deps, expr_dep_dump_each, NULL);
 }

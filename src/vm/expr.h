@@ -21,9 +21,9 @@ expr_cache_t *expr_cache_new ( void );
 expr_cache_t *expr_cache_new_with_code ( GBytes *code );
 void expr_cache_set ( expr_cache_t *expr, gchar *def );
 void expr_cache_free ( expr_cache_t *expr );
-void expr_dep_add ( gchar *ident, expr_cache_t *expr );
+void expr_dep_add ( GQuark quark, expr_cache_t *expr );
 void expr_dep_remove ( expr_cache_t *expr );
-void expr_dep_trigger ( gchar *ident );
+void expr_dep_trigger ( GQuark quark );
 void expr_dep_dump ( void );
 
 #endif

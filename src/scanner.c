@@ -14,7 +14,7 @@
 #include "vm/expr.h"
 
 static GList *file_list;
-static GHashTable *scan_list;
+static GData *scan_list;
 static GHashTable *trigger_list;
 
 void scanner_file_attach ( const gchar *trigger, ScanFile *file )
@@ -108,13 +108,16 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
     guint type, gint flag )
 {
   ScanVar *var, *old;
+  GQuark quark;
 
   if(!name)
     return;
 
-  old = scan_list? g_hash_table_lookup(scan_list, name): NULL;
+  quark = scanner_parse_identifier(name, NULL);
 
-  if(old && type != G_TOKEN_SET && old->file != file)
+  old = g_datalist_id_get_data(&scan_list, quark);
+  if(old && (type != G_TOKEN_SET || old->type != G_TOKEN_SET) &&
+      (old->file != file))
     return;
 
   var = old? old: g_malloc0(sizeof(ScanVar));
@@ -130,7 +133,7 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
       expr_cache_free(var->expr);
       var->expr = expr_cache_new_with_code((GBytes *)pattern);
       var->vstate = 1;
-      expr_dep_trigger(name);
+      expr_dep_trigger(quark);
       break;
     case G_TOKEN_JSON:
       g_free(var->definition);
@@ -146,18 +149,14 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
   if(file && !old)
     file->vars = g_list_append(file->vars, var);
 
-  if(!scan_list)
-    scan_list = g_hash_table_new_full((GHashFunc)str_nhash,
-        (GEqualFunc)str_nequal, g_free, (GDestroyNotify)scanner_var_free);
-
   if(!old)
   {
-    g_hash_table_insert(scan_list, g_strdup(name), var);
-    expr_dep_trigger(name);
+    g_datalist_id_set_data(&scan_list, quark, var);
+    expr_dep_trigger(quark);
   }
 }
 
-void scanner_var_invalidate ( void *key, ScanVar *var, void *data )
+void scanner_var_invalidate ( GQuark key, ScanVar *var, void *data )
 {
   if( !var->file || var->file->source != SO_CLIENT )
     var->invalid = TRUE;
@@ -166,8 +165,8 @@ void scanner_var_invalidate ( void *key, ScanVar *var, void *data )
 /* expire all variables in the tree */
 void scanner_invalidate ( void )
 {
-  if(scan_list)
-    g_hash_table_foreach(scan_list,(GHFunc)scanner_var_invalidate,NULL);
+  g_datalist_foreach(&scan_list, (GDataForeachFunc)scanner_var_invalidate,
+      NULL);
 }
 
 void scanner_var_values_update ( ScanVar *var, gchar *value)
@@ -398,34 +397,53 @@ gboolean scanner_file_glob ( ScanFile *file )
   return TRUE;
 }
 
-gchar *scanner_parse_identifier ( gchar *id, gchar **fname )
+GQuark scanner_parse_identifier ( const gchar *id, guint8 *dtype )
 {
-  gchar *ptr;
+  gchar *ptr, *lower, type;
+  GQuark quark;
 
   if(!id)
-  {
-    if(fname)
-      *fname = NULL;
-    return NULL;
-  }
+    return (GQuark)0;
+
+  type = (*id=='$')? SCANNER_TYPE_STR : SCANNER_TYPE_NONE;
 
   if(*id=='$')
     id = id + sizeof(gchar);
 
-  ptr=strchr(id,'.');
-  if(fname)
-    *fname = g_strdup(ptr?ptr:".val");
-  if(ptr)
-    return g_strndup(id,ptr-id);
+  if( (ptr = strchr(id, '.')) )
+    lower = g_ascii_strdown(id, ptr-id);
   else
-    return g_strdup(id);
+    lower = g_ascii_strdown(id, -1);
+
+  quark = g_quark_from_string(lower);
+  g_free(lower);
+
+  if(dtype && ptr && (type != SCANNER_TYPE_STR))
+  {
+    if(!g_ascii_strcasecmp(ptr, ".val"))
+      type = SCANNER_TYPE_VAL;
+    else if(!g_ascii_strcasecmp(ptr, ".pval"))
+      type = SCANNER_TYPE_PVAL;
+    else if(!g_ascii_strcasecmp(ptr, ".count"))
+      type = SCANNER_TYPE_COUNT;
+    else if(!g_ascii_strcasecmp(ptr, ".time"))
+      type = SCANNER_TYPE_TIME;
+    else if(!g_ascii_strcasecmp(ptr, ".age"))
+      type = SCANNER_TYPE_AGE;
+  }
+
+  if(dtype)
+    *dtype = type;
+
+  return quark;
 }
 
-ScanVar *scanner_var_update ( gchar *name, gboolean update, expr_cache_t *expr )
+static ScanVar *scanner_var_update ( GQuark id, gboolean update,
+    expr_cache_t *expr )
 {
   ScanVar *var;
 
-  if(!scan_list || !(var = g_hash_table_lookup(scan_list, name)) )
+  if(!(var = g_datalist_id_get_data(&scan_list, id)) )
     return NULL;
 
   if(!update || (!var->invalid && var->type != G_TOKEN_SET))
@@ -465,26 +483,21 @@ ScanVar *scanner_var_update ( gchar *name, gboolean update, expr_cache_t *expr )
 }
 
 /* get value of a variable by name */
-value_t scanner_get_value ( gchar *ident, gboolean update, expr_cache_t *expr )
+value_t scanner_get_value ( GQuark id, gchar ftype, gboolean update,
+    expr_cache_t *expr )
 {
   value_t result;
   ScanVar *var;
-  gchar *fname, *id;
 
-  id = scanner_parse_identifier(ident, &fname);
-  var = scanner_var_update(id, update, expr);
-  g_free(id);
-
-  if(!var)
+  if( !(var = scanner_var_update(id, update, expr)) )
   {
-    g_free(fname);
-    expr_dep_add(ident, expr);
+    expr_dep_add(id, expr);
     return value_na;
   }
   if(var->type == G_TOKEN_SET)
-    expr_dep_add(ident, expr);
+    expr_dep_add(id, expr);
 
-  if(*ident == '$')
+  if(ftype == SCANNER_TYPE_STR)
   {
     result.type = EXPR_TYPE_STRING;
     result.value.string  = g_strdup(var->str);
@@ -492,41 +505,31 @@ value_t scanner_get_value ( gchar *ident, gboolean update, expr_cache_t *expr )
   else
   {
     result.type = EXPR_TYPE_NUMERIC;
-    if(!g_strcmp0(fname, ".val"))
+    if(ftype == SCANNER_TYPE_VAL || ftype == SCANNER_TYPE_NONE)
       result.value.numeric = var->val;
-    else if(!g_strcmp0(fname, ".pval"))
+    else if(ftype == SCANNER_TYPE_PVAL)
       result.value.numeric = var->pval;
-    else if(!g_strcmp0(fname, ".count"))
+    else if(ftype == SCANNER_TYPE_COUNT)
       result.value.numeric = var->count;
-    else if(!g_strcmp0(fname, ".time"))
+    else if(ftype == SCANNER_TYPE_TIME)
       result.value.numeric = var->time;
-    else if(!g_strcmp0(fname, ".age"))
+    else if(ftype == SCANNER_TYPE_AGE)
       result.value.numeric = (g_get_monotonic_time() - var->ptime);
     else
       result = value_na;
   }
 
-  g_free(fname);
   if(result.type == EXPR_TYPE_NUMERIC)
-    g_debug("scanner: %s = %f (vstate: %d)", ident, result.value.numeric,
-        (expr?  expr->vstate: 0));
+    g_debug("scanner: %s = %f (vstate: %d)", g_quark_to_string(id),
+        result.value.numeric, (expr?  expr->vstate: 0));
   else if(result.type == EXPR_TYPE_STRING)
-    g_debug("scanner: %s = %s (vstate: %d)", ident, result.value.string,
-        (expr?  expr->vstate: 0));
+    g_debug("scanner: %s = %s (vstate: %d)", g_quark_to_string(id),
+        result.value.string, (expr?  expr->vstate: 0));
   return result;
 }
 
 gboolean scanner_is_variable ( gchar *identifier )
 {
-  gchar *name;
-  gboolean result;
-
-  if(!scan_list)
-    return FALSE;
-
-  name = scanner_parse_identifier(identifier, NULL);
-  result = (g_hash_table_lookup(scan_list, name)!=NULL);
-  g_free(name);
-
-  return result;
+  return !!g_datalist_id_get_data(&scan_list,
+      scanner_parse_identifier(identifier, NULL));
 }

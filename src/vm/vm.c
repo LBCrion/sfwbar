@@ -167,7 +167,7 @@ static gboolean vm_function ( vm_t *vm )
   else
     result = value_na;
 
-  expr_dep_add(func->name, vm->expr);
+  expr_dep_add(g_quark_from_string(func->name), vm->expr);
   if(np>1 && vm->pstack->len>np-1)
     g_ptr_array_remove_range(vm->pstack, vm->pstack->len-np+1, np-1);
   else if(!np)
@@ -186,10 +186,12 @@ static void vm_variable ( vm_t *vm )
 {
   value_t value;
   vm_var_t *var;
-  gchar *name;
+  GQuark quark;
+  guint8 ftype;
 
-  memcpy(&name, vm->ip+1, sizeof(gpointer));
-  if( vm->store && (var = vm_store_lookup_string(vm->store, name)) )
+  memcpy(&ftype, vm->ip+1, 1);
+  memcpy(&quark, vm->ip+2, sizeof(GQuark));
+  if( (var = vm_store_lookup(vm->store, quark)) )
   {
     value = value_dup(var->value);
     if(vm->expr)
@@ -197,13 +199,13 @@ static void vm_variable ( vm_t *vm )
   }
   else
   {
-    value = scanner_get_value(name, !vm->use_cached, vm->expr);
-    expr_dep_add(name, vm->expr);
+    value = scanner_get_value(quark, ftype, !vm->use_cached, vm->expr);
+    expr_dep_add(quark, vm->expr);
   }
 
   vm_push(vm, value);
   g_ptr_array_add(vm->pstack, vm->ip);
-  vm->ip += sizeof(gpointer);
+  vm->ip += sizeof(GQuark)+1;
 }
 
 static void vm_local ( vm_t *vm )

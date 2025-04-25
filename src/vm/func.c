@@ -38,7 +38,7 @@ void vm_func_add ( gchar *name, vm_func_t function, gboolean deterministic )
 
   func->ptr.function = function;
   func->flags |= (deterministic? VM_FUNC_DETERMINISTIC : 0);
-  expr_dep_trigger(name);
+  expr_dep_trigger(g_quark_from_string(name));
   g_debug("function: registered '%s'", name);
 }
 
@@ -49,7 +49,7 @@ void vm_func_add_user ( gchar *name, GBytes *code )
   func = vm_func_lookup(name);
   func->ptr.code = code;
   func->flags = VM_FUNC_USERDEFINED;
-  expr_dep_trigger(name);
+  expr_dep_trigger(g_quark_from_string(name));
   g_debug("function: registered '%s'", name);
 }
 

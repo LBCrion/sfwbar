@@ -506,13 +506,11 @@ static value_t expr_ident ( vm_t *vm, value_t p[], int np )
     return value_na;
 
   func = vm_func_lookup(value_get_string(p[0]));
-  if(func->ptr.function)
-    result = value_new_numeric(TRUE);
-  else
-    result = value_new_numeric(scanner_is_variable(value_get_string(p[0])));
+  result = value_new_numeric((func && func->ptr.function) ||
+      scanner_is_variable(value_get_string(p[0])));
 
   if(!result.value.numeric)
-    expr_dep_add(value_get_string(p[0]), vm->expr);
+    expr_dep_add(g_quark_from_string(value_get_string(p[0])), vm->expr);
 
   return result;
 }
