@@ -23,13 +23,6 @@ typedef struct _pulse_info {
   pa_channel_map cmap;
 } pulse_info;
 
-typedef struct _pulse_channel {
-  gint iface_idx;
-  gint chan_num;
-  gchar *channel;
-  gchar *device;
-} pulse_channel_t;
-
 typedef struct _pulse_interface {
   const gchar *prefix;
   gchar *default_name;
@@ -265,30 +258,22 @@ static void pulse_operation ( pa_operation *o, gchar *cmd )
 static void pulse_device_advertise ( gint iface_idx,
     const pa_channel_map *cmap, gint idx )
 {
-  pulse_channel_t *channel;
   gint i;
 
   for(i=0; i<cmap->channels; i++)
   {
-    channel = g_malloc0(sizeof(pulse_channel_t));
-    channel->iface_idx = iface_idx;
-    channel->chan_num = i;
-    channel->channel = g_strdup(pa_channel_position_to_string(cmap->map[i]));
-    channel->device = g_strdup_printf("@pulse-%s-%d",
-        pulse_interfaces[iface_idx].prefix, idx);
-
     vm_store_t *store = vm_store_new(NULL, TRUE);
-    vm_store_insert_full(store, "device_id",
-        value_new_string(g_strdup(channel->device)));
+    vm_store_insert_full(store, "device_id", value_new_string(
+          g_strdup_printf("@pulse-%s-%d",
+            pulse_interfaces[iface_idx].prefix, idx)));
     vm_store_insert_full(store, "interface", value_new_string(g_strdup(
-            channel->iface_idx<3? pulse_interfaces[channel->iface_idx].prefix :
-            "none")));
-    vm_store_insert_full(store, "channel_id",
-        value_new_string(g_strdup(channel->channel)));
-    vm_store_insert_full(store, "channel_name",
-        value_new_string(g_strdup(channel->channel)));
+            iface_idx<3? pulse_interfaces[iface_idx].prefix : "none")));
+    vm_store_insert_full(store, "channel_id", value_new_string(
+          g_strdup(pa_channel_position_to_string(cmap->map[i]))));
+    vm_store_insert_full(store, "channel_name", value_new_string(
+          g_strdup(pa_channel_position_to_string(cmap->map[i]))));
     vm_store_insert_full(store, "channel_index",
-        value_new_string(g_strdup_printf("%d", channel->chan_num)));
+        value_new_string(g_strdup_printf("%d", i)));
     trigger_emit_with_data("volume-conf", store);
     vm_store_free(store);
   }
