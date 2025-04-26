@@ -265,7 +265,7 @@ static void pulse_device_advertise ( gint iface_idx,
     vm_store_t *store = vm_store_new(NULL, TRUE);
     vm_store_insert_full(store, "device_id", value_new_string(
           g_strdup_printf("@pulse-%s-%d",
-            pulse_interfaces[iface_idx].prefix, idx)));
+            iface_idx<3? pulse_interfaces[iface_idx].prefix : "none", idx)));
     vm_store_insert_full(store, "interface", value_new_string(g_strdup(
             iface_idx<3? pulse_interfaces[iface_idx].prefix : "none")));
     vm_store_insert_full(store, "channel_id", value_new_string(
