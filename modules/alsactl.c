@@ -196,6 +196,7 @@ gboolean alsa_source_dispatch( GSource *gsrc, GSourceFunc cb, gpointer data)
 {
   alsa_source_t *src = (alsa_source_t *)gsrc;
 
+  g_debug("alsactl: event on a source '%s'", src->name);
   snd_mixer_handle_events(src->mixer);
   trigger_emit("volume");
 
@@ -209,6 +210,7 @@ static void alsa_source_finalize ( GSource *gsrc )
 
   if(src->name)
   {
+    g_debug("alsactl: deactiving source '%s'", src->name);
     store = vm_store_new(NULL, TRUE);
     vm_store_insert_full(store, "device_id",
       value_new_string(g_strdup(src->name)));
@@ -229,15 +231,21 @@ static GSourceFuncs alsa_source_funcs = {
   .finalize = alsa_source_finalize
 };
 
-#define alsa_source_bail(x) { g_source_destroy((GSource *)x); return NULL; }
+#define alsa_source_bail(x) { g_source_unref((GSource *)x); return NULL; }
 
 static alsa_source_t *alsa_source_subscribe ( gchar *name )
 {
   alsa_source_t *src;
+  snd_ctl_t *ctl;
+  snd_ctl_card_info_t *info;
 
+  g_debug("alsactl: new source '%s'", name);
   src = (alsa_source_t *)g_source_new(&alsa_source_funcs,
       sizeof(alsa_source_t));
+  src->name = name;
 
+  if(!sfwbar_interface.active)
+    alsa_source_bail(src);
   if(snd_mixer_open(&src->mixer, 0) < 0)
     alsa_source_bail(src);
   if(snd_mixer_attach(src->mixer, name) < 0)
@@ -253,10 +261,6 @@ static alsa_source_t *alsa_source_subscribe ( gchar *name )
   if(snd_mixer_poll_descriptors(src->mixer, src->pfds, src->pfdcount) < 0)
     alsa_source_bail(src);
 
-  src->name = g_strdup(name);
-
-  snd_ctl_t *ctl;
-  snd_ctl_card_info_t *info;
   snd_ctl_card_info_alloca(&info);
   if(snd_ctl_open(&ctl, name, 0) == 0)
   {
@@ -278,22 +282,18 @@ static alsa_source_t *alsa_source_subscribe ( gchar *name )
   alsa_iface_advertise(&capture_api, src);
 
   g_hash_table_insert(alsa_sources, src->name, src);
+  g_debug("alsactl: activated source '%s'", name);
 
   return src;
 }
 
 void alsa_source_subscribe_all ( void )
 {
-  gchar *id;
   gint i;
 
-  main_src = alsa_source_subscribe("default");
+  main_src = alsa_source_subscribe(g_strdup("default"));
   for(i=-1; snd_card_next(&i)>=0 && i>=0;)
-  {
-    id = g_strdup_printf("hw:%d", i);
-    alsa_source_subscribe(id);
-    g_free(id);
-  }
+    alsa_source_subscribe(g_strdup_printf("hw:%d", i));
   trigger_emit("volume");
 }
 
@@ -550,6 +550,7 @@ static value_t alsa_action_volumectl ( vm_t *vm, value_t p[], gint np )
 
 void alsa_activate ( void )
 {
+  g_debug("alsactl: activating");
   vm_func_add("volume", alsa_func_volume, FALSE);
   vm_func_add("volumeinfo", alsa_func_volume_info, FALSE);
   vm_func_add("volumectl", alsa_action_volumectl, TRUE);
@@ -558,6 +559,7 @@ void alsa_activate ( void )
 
 void alsa_deactivate ( void )
 {
+  g_debug("alsactl: deactivating (%d sources)",g_hash_table_size(alsa_sources));
   g_hash_table_remove_all(alsa_sources);
   g_clear_pointer(&playback_api.default_name, g_free);
   g_clear_pointer(&capture_api.default_name, g_free);
