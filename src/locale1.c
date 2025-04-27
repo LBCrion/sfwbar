@@ -2,6 +2,7 @@
 #include <locale.h>
 #include <gio/gio.h>
 #include "trigger.h"
+#include "vm/expr.h"
 
 static const gchar *locale_iface = "org.freedesktop.locale1";
 static const gchar *locale_path = "/org/freedesktop/locale1";
@@ -30,7 +31,9 @@ static void locale1_handle ( GVariantIter *iter )
   }
   g_clear_pointer(&locale1, g_free);
   locale1 = locale;
+  setlocale(LC_MESSAGES, locale1);
   trigger_emit("locale1");
+  expr_dep_trigger(g_quark_from_static_string(".locale1"));
 }
 
 static void locale1_cb ( GDBusConnection *con, GAsyncResult *res,

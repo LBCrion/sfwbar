@@ -64,8 +64,8 @@ static value_t expr_lib_replace_all( vm_t *vm, value_t p[], gint np )
     if(value_like_string(p[i]) && value_like_string(p[i+1]))
     {
       tmp = result.value.string;
-      result.value.string = str_replace(tmp, p[i].value.string,
-          p[i+1].value.string);
+      result.value.string = str_replace(tmp, value_get_string(p[i]),
+          value_get_string(p[i+1]));
       g_free(tmp);
     }
 
@@ -510,17 +510,18 @@ static value_t expr_ident ( vm_t *vm, value_t p[], int np )
       scanner_is_variable(value_get_string(p[0])));
 
   if(!result.value.numeric)
-    expr_dep_add(g_quark_from_string(value_get_string(p[0])), vm->expr);
+    expr_dep_add(scanner_parse_identifier(value_get_string(p[0]), NULL), vm->expr);
 
   return result;
 }
-
 static value_t expr_gettext ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np_range(vm, np, 1, 2, "GT");
   vm_param_check_string(vm, p, 0, "GT");
   if(np==2)
     vm_param_check_string(vm, p, 1, "GT");
+
+  expr_dep_add(g_quark_from_static_string(".locale1"), vm->expr);
 
   return value_new_string(g_strdup(g_dgettext(
         np==2? value_get_string(p[1]) : "sfwbar", value_get_string(p[0]))));
@@ -692,7 +693,7 @@ void expr_lib_init ( void )
   vm_func_add("windowinfo", expr_lib_window_info, FALSE);
   vm_func_add("read", expr_lib_read, FALSE);
   vm_func_add("interfaceprovider", expr_iface_provider, FALSE);
-  vm_func_add("gt", expr_gettext, FALSE);
+  vm_func_add("gt", expr_gettext, TRUE);
   vm_func_add("arraybuild", expr_array_build, FALSE);
   vm_func_add("arrayindex", expr_array_index, FALSE);
   vm_func_add("arrayassign", expr_array_assign, FALSE);
