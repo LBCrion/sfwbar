@@ -263,14 +263,12 @@ static void pulse_device_advertise ( gint iface_idx,
   for(i=0; i<cmap->channels; i++)
   {
     vm_store_t *store = vm_store_new(NULL, TRUE);
+    vm_store_insert_full(store, "interface", value_new_string(g_strdup(
+            iface_idx<3? pulse_interfaces[iface_idx].prefix : "none")));
     vm_store_insert_full(store, "device_id", value_new_string(
           g_strdup_printf("@pulse-%s-%d",
             iface_idx<3? pulse_interfaces[iface_idx].prefix : "none", idx)));
-    vm_store_insert_full(store, "interface", value_new_string(g_strdup(
-            iface_idx<3? pulse_interfaces[iface_idx].prefix : "none")));
     vm_store_insert_full(store, "channel_id", value_new_string(
-          g_strdup(pa_channel_position_to_string(cmap->map[i]))));
-    vm_store_insert_full(store, "channel_name", value_new_string(
           g_strdup(pa_channel_position_to_string(cmap->map[i]))));
     vm_store_insert_full(store, "channel_index",
         value_new_string(g_strdup_printf("%d", i)));

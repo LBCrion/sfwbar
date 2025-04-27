@@ -162,10 +162,6 @@ static void alsa_iface_advertise ( mixer_api_t *api, alsa_source_t *src )
                 g_strdup_printf("%s:%s", snd_mixer_selem_get_name(elem),
                   snd_mixer_selem_is_playback_mono(elem)?  "Mono":
                   snd_mixer_selem_channel_name(i))));
-          vm_store_insert_full(store, "channel_name", value_new_string(
-                g_strdup_printf("%s:%s", snd_mixer_selem_get_name(elem),
-                  snd_mixer_selem_is_playback_mono(elem)?  "Mono":
-                  snd_mixer_selem_channel_name(i))));
           vm_store_insert_full(store, "channel_index",
             value_new_string(g_strdup_printf("%d", cnum++)));
           trigger_emit_with_data("volume-conf", store);
@@ -287,7 +283,7 @@ static alsa_source_t *alsa_source_subscribe ( gchar *name )
   return src;
 }
 
-void alsa_source_subscribe_all ( void )
+gboolean alsa_source_subscribe_all ( void )
 {
   gint i;
 
@@ -295,6 +291,8 @@ void alsa_source_subscribe_all ( void )
   for(i=-1; snd_card_next(&i)>=0 && i>=0;)
     alsa_source_subscribe(g_strdup_printf("hw:%d", i));
   trigger_emit("volume");
+
+  return G_SOURCE_REMOVE;
 }
 
 void alsa_source_remove ( GSource *src )
