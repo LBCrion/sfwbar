@@ -40,14 +40,12 @@ gboolean config_action ( GScanner *scanner, GBytes **action_dst )
 {
   GByteArray *code;
 
+  *action_dst = NULL;
   code = g_byte_array_new();
   if(parser_block_parse(scanner, code))
     *action_dst = g_byte_array_free_to_bytes(code);
   else
-  {
     g_byte_array_unref(code);
-    *action_dst = NULL;
-  }
 
   return !!*action_dst;
 }

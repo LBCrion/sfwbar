@@ -649,14 +649,14 @@ static gboolean parser_instr_parse ( GScanner *scanner, GByteArray *code )
 
 gboolean parser_block_parse ( GScanner *scanner, GByteArray *code )
 {
-  gboolean result, alloc_hash;
+  gboolean result = TRUE, alloc_hash;
+
+  if(!config_check_and_consume(scanner, '{'))
+    return parser_instr_parse(scanner, code);
 
   if( (alloc_hash = !SCANNER_DATA(scanner)->locals) )
     SCANNER_DATA(scanner)->locals = g_hash_table_new_full((GHashFunc)str_nhash,
         (GEqualFunc)str_nequal, g_free, NULL);
-
-  if(!config_check_and_consume(scanner, '{'))
-    return parser_instr_parse(scanner, code);
 
   while(!config_check_and_consume(scanner, '}'))
     if( !(result = parser_instr_parse(scanner, code)) )

@@ -707,7 +707,7 @@ void base_widget_set_store ( GtkWidget *self, vm_store_t *store )
   if(priv->store)
   {
     if( !(old = g_hash_table_lookup(priv->store->widget_map, priv->id)) )
-      g_hash_table_insert(priv->store->widget_map, g_strdup(priv->id), self);
+      g_hash_table_insert(priv->store->widget_map, priv->id, self);
     else if (old != self)
       g_message("widget id collision: '%s'", priv->id);
   }

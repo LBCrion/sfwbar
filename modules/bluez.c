@@ -681,8 +681,9 @@ static void bz_adapter_changed ( GDBusConnection *con, const gchar *sender,
 {
   GVariant *dict;
 
-  g_variant_get(params,"(&s@a{sv}@as)", NULL, &dict, NULL);
+  g_variant_get(params, "(&s@a{sv}@as)", NULL, &dict, NULL);
   bz_adapter_update(path, dict);
+  g_variant_unref(dict);
 }
 
 static void bz_object_handle ( gchar *object, GVariantIter *iiter )

@@ -296,6 +296,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
   if( (tmp = strstr(data, "\n#CSS")) )
     *tmp = 0;
   w = config_parse_toplevel(scanner, container);
+  g_free(scanner->user_data);
   g_scanner_destroy(scanner);
 
   if(tmp)
