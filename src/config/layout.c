@@ -458,7 +458,7 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
 void config_widget ( GScanner *scanner, GtkWidget *widget )
 {
   if(!base_widget_get_store(widget))
-    base_widget_set_store(widget, SCANNER_STORE(scanner));
+    g_object_set(G_OBJECT(widget), "store", SCANNER_STORE(scanner), NULL);
   if(!config_check_and_consume(scanner, '{'))
     return;
 

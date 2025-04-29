@@ -63,6 +63,8 @@ void flow_item_set_parent ( GtkWidget *self, GtkWidget *parent )
 
   priv = flow_item_get_instance_private(FLOW_ITEM(self));
   priv->parent = parent;
+  g_object_bind_property(G_OBJECT(parent), "store", G_OBJECT(self), "store",
+      G_BINDING_DEFAULT);
 }
 
 GtkWidget *flow_item_get_parent ( GtkWidget *self )

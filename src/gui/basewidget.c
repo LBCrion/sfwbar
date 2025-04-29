@@ -17,6 +17,10 @@
 G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX,
     G_ADD_PRIVATE (BaseWidget))
 
+enum {
+  BASE_WIDGET_STORE = 1,
+};
+
 static GList *widgets_scan;
 static GMutex widget_mutex;
 static gint64 base_widget_default_id = 0;
@@ -299,12 +303,62 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
     css_widget_apply(base_widget_get_child(dest), iter->data);
 }
 
+static void base_widget_get_property ( GObject *self, guint id, GValue *value,
+    GParamSpec *spec )
+{
+  BaseWidgetPrivate *priv;
+
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  switch(id)
+  {
+    case BASE_WIDGET_STORE:
+      g_value_set_pointer(value, priv->store);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
+  }
+}
+
+static void base_widget_set_property ( GObject *self, guint id,
+    const GValue *value, GParamSpec *spec )
+{
+  BaseWidgetPrivate *priv;
+
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+  switch(id)
+  {
+    case BASE_WIDGET_STORE:
+      GObject *old;
+      vm_store_t *store = g_value_get_pointer(value);
+      if(priv->store == store)
+        return;
+
+      if(priv->store && priv->id)
+        g_hash_table_remove(priv->store->widget_map, priv->id);
+
+      priv->store = store;
+      if(priv->store)
+      {
+        if( !(old = g_hash_table_lookup(priv->store->widget_map, priv->id)) )
+          g_hash_table_insert(priv->store->widget_map, priv->id, self);
+        else if (old != self)
+          g_message("widget id collision: '%s'", priv->id);
+      }
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
+  }
+}
+
 static void base_widget_class_init ( BaseWidgetClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = base_widget_destroy;
   kclass->action_exec = base_widget_action_exec_impl;
   kclass->action_configure = base_widget_action_configure_impl;
   kclass->mirror = base_widget_mirror_impl;
+  G_OBJECT_CLASS(kclass)->get_property = base_widget_get_property;
+  G_OBJECT_CLASS(kclass)->set_property = base_widget_set_property;
   GTK_WIDGET_CLASS(kclass)->size_allocate = base_widget_size_allocate;
   GTK_WIDGET_CLASS(kclass)->get_preferred_width = base_widget_get_pref_width;
   GTK_WIDGET_CLASS(kclass)->get_preferred_height = base_widget_get_pref_height;
@@ -313,6 +367,8 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
   GTK_WIDGET_CLASS(kclass)->scroll_event = base_widget_scroll_event;
   GTK_WIDGET_CLASS(kclass)->drag_motion = base_widget_drag_motion;
   GTK_WIDGET_CLASS(kclass)->drag_leave = base_widget_drag_leave;
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_STORE,
+      g_param_spec_pointer("store", "store", "store", G_PARAM_READWRITE));
 }
 
 static void base_widget_init ( BaseWidget *self )
@@ -690,27 +746,6 @@ void base_widget_set_max_height ( GtkWidget *self, guint x )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   priv->maxh = x;
-}
-
-void base_widget_set_store ( GtkWidget *self, vm_store_t *store )
-{
-  BaseWidgetPrivate *priv;
-  GtkWidget *old;
-
-  g_return_if_fail(IS_BASE_WIDGET(self));
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
-
-  if(priv->store && priv->id)
-    g_hash_table_remove(priv->store->widget_map, priv->id);
-
-  priv->store = store;
-  if(priv->store)
-  {
-    if( !(old = g_hash_table_lookup(priv->store->widget_map, priv->id)) )
-      g_hash_table_insert(priv->store->widget_map, priv->id, self);
-    else if (old != self)
-      g_message("widget id collision: '%s'", priv->id);
-  }
 }
 
 vm_store_t * base_widget_get_store ( GtkWidget *self )
