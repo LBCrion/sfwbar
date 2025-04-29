@@ -638,7 +638,8 @@ static value_t action_emit_trigger ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "");
   vm_param_check_string(vm, p, 0, "EmitTrigger");
 
-  trigger_emit(value_get_string(p[0]));
+  g_idle_add((GSourceFunc)trigger_emit,
+      (gchar *)trigger_name_intern(value_get_string(p[0])));
 
   return value_na;
 }

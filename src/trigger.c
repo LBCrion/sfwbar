@@ -127,7 +127,8 @@ void trigger_emit_with_data ( gchar *name, vm_store_t *store )
   g_main_context_invoke(NULL, (GSourceFunc)trigger_emit_in_main_context, inv);
 }
 
-void trigger_emit ( gchar *name )
+gboolean trigger_emit ( gchar *name )
 {
   trigger_emit_with_data(name, NULL);
+  return G_SOURCE_REMOVE;
 }
