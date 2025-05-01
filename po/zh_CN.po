@@ -204,3 +204,9 @@ msgstr "蓝牙"
 
 msgid  "Connecting ..."
 msgstr "连结中"
+
+msgid  "set as default"
+msgstr "设置为默认"
+
+msgid  "route to sink"
+msgstr "路由到接收端(sink)"
