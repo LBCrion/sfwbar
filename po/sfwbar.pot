@@ -204,3 +204,6 @@ msgstr ""
 
 msgid  "Connecting ..."
 msgstr ""
+
+msgid  "set as default"
+msgstr ""
