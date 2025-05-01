@@ -208,5 +208,4 @@ msgstr ""
 msgid  "set as default"
 msgstr ""
 
-msgid  "route to sink"
-msgstr ""
+
