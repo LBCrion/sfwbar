@@ -18,6 +18,7 @@
 G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW, G_ADD_PRIVATE (Bar))
 
 static GHashTable *bar_list;
+static gint bar_count;
 extern GtkApplication *application;
 
 static void bar_revealer_notify ( GtkRevealer *revealer, GParamSpec *spec,
@@ -856,7 +857,7 @@ GtkWidget *bar_new ( gchar *name )
       G_CALLBACK(bar_on_delete), NULL);
   gtk_application_add_window(application, GTK_WINDOW(self));
   priv = bar_get_instance_private(BAR(self));
-  priv->name = g_strdup(name);
+  priv->name = name? g_strdup(name) : g_strdup_printf("_bar-%d", bar_count++);
   priv->visible = TRUE;
   priv->jump = TRUE;
   priv->output = g_strdup(monitor_get_name(monitor_default_get()));
@@ -875,7 +876,7 @@ GtkWidget *bar_new ( gchar *name )
   gtk_container_add(GTK_CONTAINER(priv->ebox), GTK_WIDGET(priv->revealer));
   g_object_set_data(G_OBJECT(priv->box), "parent_window", self);
   gtk_layer_init_for_window(GTK_WINDOW(self));
-  gtk_widget_set_name(self, name);
+  gtk_widget_set_name(self, priv->name);
   gtk_layer_auto_exclusive_zone_enable (GTK_WINDOW(self));
   gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self), FALSE);
   gtk_layer_set_layer(GTK_WINDOW(self), GTK_LAYER_SHELL_LAYER_TOP);
@@ -886,13 +887,13 @@ GtkWidget *bar_new ( gchar *name )
   gtk_widget_show(GTK_WIDGET(priv->revealer));
 
   tmp = g_strdup_printf(
-      "window#%s.sensor { background-color: rgba(0,0,0,0); }", name);
+      "window#%s.sensor { background-color: rgba(0,0,0,0); }", priv->name);
   css_widget_apply(self, tmp);
   g_free(tmp);
   bar_update_monitor(self);
   bar_reveal(self);
 
-  if(priv->name)
+  if(name)
   {
     if(!bar_list)
       bar_list = g_hash_table_new((GHashFunc)str_nhash,(GEqualFunc)str_nequal);
