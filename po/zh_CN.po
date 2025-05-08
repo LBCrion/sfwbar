@@ -130,6 +130,9 @@ msgstr "已连结"
 msgid "Connect"
 msgstr "连结"
 
+msgid  "Connecting ..."
+msgstr "连结中"
+
 msgid "Disconnect"
 msgstr "断开连结"
 
@@ -202,5 +205,4 @@ msgstr "隐藏"
 msgid  "Bluetooth"
 msgstr "蓝牙"
 
-msgid  "Connecting ..."
-msgstr "连结中"
+
