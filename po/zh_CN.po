@@ -34,9 +34,6 @@ msgstr "高"
 msgid "m"
 msgstr "中"
 
-msgid "Connecting"
-msgstr "连结中"
-
 msgid "January"
 msgstr "一月"
 
@@ -106,6 +103,9 @@ msgstr "显示桌面"
 msgid "Set As Default Device"
 msgstr "设为默认设备"
 
+msgid "set as default"
+msgstr "设为默认"
+
 msgid "expand/collapse channels"
 msgstr "折叠/展开"
 
@@ -129,6 +129,9 @@ msgstr "已连结"
 
 msgid "Connect"
 msgstr "连结"
+
+msgid  "Connecting ..."
+msgstr "连结中"
 
 msgid "Disconnect"
 msgstr "断开连结"
@@ -176,10 +179,10 @@ msgid  "Remove"
 msgstr "删除"
 
 msgid  "Available devices"
-msgstr "可能的设备"
+msgstr "可配对设备"
 
 msgid  "Paired devices"
-msgstr "已配对的设备"
+msgstr "已配对设备"
 
 msgid  "Battery"
 msgstr "电池"
@@ -202,5 +205,4 @@ msgstr "隐藏"
 msgid  "Bluetooth"
 msgstr "蓝牙"
 
-msgid  "Connecting ..."
-msgstr "连结中"
+

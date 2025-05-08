@@ -34,9 +34,6 @@ msgstr ""
 msgid "m"
 msgstr ""
 
-msgid "Connecting"
-msgstr ""
-
 msgid "January"
 msgstr ""
 
@@ -106,6 +103,9 @@ msgstr ""
 msgid "Set As Default Device"
 msgstr ""
 
+msgid "set as default"
+msgstr ""
+
 msgid "expand/collapse channels"
 msgstr ""
 
@@ -128,6 +128,9 @@ msgid "Connected"
 msgstr ""
 
 msgid "Connect"
+msgstr ""
+
+msgid "Connecting ..."
 msgstr ""
 
 msgid "Disconnect"
@@ -202,5 +205,4 @@ msgstr ""
 msgid  "Bluetooth"
 msgstr ""
 
-msgid  "Connecting ..."
-msgstr ""
+
