@@ -34,9 +34,6 @@ msgstr ""
 msgid "m"
 msgstr ""
 
-msgid "Connecting"
-msgstr ""
-
 msgid "January"
 msgstr ""
 
