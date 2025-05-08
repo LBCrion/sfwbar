@@ -130,6 +130,9 @@ msgstr ""
 msgid "Connect"
 msgstr ""
 
+msgid "Connecting"
+msgstr ""
+
 msgid "Disconnect"
 msgstr ""
 
