@@ -179,10 +179,10 @@ msgid  "Remove"
 msgstr "删除"
 
 msgid  "Available devices"
-msgstr "可能的设备"
+msgstr "可配对设备"
 
 msgid  "Paired devices"
-msgstr "已配对的设备"
+msgstr "已配对设备"
 
 msgid  "Battery"
 msgstr "电池"
