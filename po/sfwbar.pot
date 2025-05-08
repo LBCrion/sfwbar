@@ -103,6 +103,9 @@ msgstr ""
 msgid "Set As Default Device"
 msgstr ""
 
+msgid "set as default"
+msgstr ""
+
 msgid "expand/collapse channels"
 msgstr ""
 
