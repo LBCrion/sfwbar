@@ -34,9 +34,6 @@ msgstr "高"
 msgid "m"
 msgstr "中"
 
-msgid "Connecting"
-msgstr "连结中"
-
 msgid "January"
 msgstr "一月"
 
@@ -105,6 +102,9 @@ msgstr "显示桌面"
 
 msgid "Set As Default Device"
 msgstr "设为默认设备"
+
+msgid "set as default"
+msgstr "设为默认"
 
 msgid "expand/collapse channels"
 msgstr "折叠/展开"
