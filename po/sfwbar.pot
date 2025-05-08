@@ -127,7 +127,7 @@ msgstr ""
 msgid "Connect"
 msgstr ""
 
-msgid "Connecting"
+msgid "Connecting ..."
 msgstr ""
 
 msgid "Disconnect"
