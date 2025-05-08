@@ -26,6 +26,7 @@ static void cchart_update_value ( GtkWidget *self )
 static void cchart_class_init ( CChartClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->update_value = cchart_update_value;
+  BASE_WIDGET_CLASS(kclass)->always_update = TRUE;
 }
 
 static void cchart_init ( CChart *self )
@@ -34,7 +35,6 @@ static void cchart_init ( CChart *self )
 
   priv = cchart_get_instance_private(CCHART(self));
 
-  base_widget_set_always_update(GTK_WIDGET(self), TRUE);
   priv->chart = chart_new();
   gtk_container_add(GTK_CONTAINER(self),priv->chart);
 }

@@ -127,7 +127,7 @@ grid 'volume_section_@DEVICE_IFACE@' {
       style = 'hidden'
       loc(1,3,4,1)
       label '@DEVICE_ID@-@CHANNEL_ID@_label' {
-        value = '@CHANNEL_NAME@'
+        value = '@CHANNEL_ID@'
         style = 'volume_channel_name'
         loc(1,@CHANNEL_NUM@,1,1)
       }
@@ -169,7 +169,6 @@ Function XVolumeChannelHandler() {
   Config If(interface!="sink" & interface!="client", "",
       ReplaceAll(XVolumeControlTmpl,
         "@DEVICE_ID@", device_id,
-        "@CHANNEL_NAME@", channel_name,
         "@CHANNEL_ID@", channel_id,
         "@CHANNEL_NUM@", channel_index,
         "@DEVICE_IFACE@", interface))

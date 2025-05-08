@@ -311,67 +311,45 @@ static value_t action_setbarvisibility ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
-static value_t action_setvalue ( vm_t *vm, value_t p[], gint np )
+static value_t action_setcode ( vm_t *vm, value_t p[], gint np, gchar *func,
+    gchar *prop )
 {
   GtkWidget *widget;
+  GBytes *code;
   guint8 *mark;
 
-  vm_param_check_np_range(vm, np, 1, 2, "SetValue");
-  vm_param_check_string(vm, p, 0, "SetValue");
+  vm_param_check_np_range(vm, np, 1, 2, func);
+  vm_param_check_string(vm, p, 0, func);
 
   if(!vm->pstack->len)
     return value_na;
 
   mark = vm->pstack->pdata[vm->pstack->len-1];
+  widget = np==2? base_widget_from_id(vm->store, value_get_string(p[0])) :
+        vm->widget;
+  if(!widget)
+    return value_na;
 
-  if( (widget = np==2?base_widget_from_id(vm->store, value_get_string(p[0])) :
-        vm->widget) )
-    base_widget_set_value(widget,
-        g_bytes_new_take(g_memdup(mark, vm->ip - mark), vm->ip - mark));
+  code = g_bytes_new_take(g_memdup(mark, vm->ip - mark), vm->ip - mark);
+  g_object_set(G_OBJECT(widget), prop, code, NULL);
+  g_bytes_unref(code);
 
   return value_na;
+}
+
+static value_t action_setvalue ( vm_t *vm, value_t p[], gint np )
+{
+  return action_setcode(vm, p, np, "SetValue", "value");
 }
 
 static value_t action_setstyle ( vm_t *vm, value_t p[], gint np )
 {
-  GtkWidget *widget;
-  guint8 *mark;
-
-  vm_param_check_np_range(vm, np, 1, 2, "SetValue");
-  vm_param_check_string(vm, p, 0, "SetValue");
-
-  if(!vm->pstack->len)
-    return value_na;
-
-  mark = vm->pstack->pdata[vm->pstack->len-1];
-
-  if( (widget = np==2?base_widget_from_id(vm->store, value_get_string(p[0])) :
-        vm->widget) )
-    base_widget_set_style(widget,
-        g_bytes_new_take(g_memdup(mark, vm->ip - mark), vm->ip - mark));
-
-  return value_na;
+  return action_setcode(vm, p, np, "SetStyle", "style");
 }
 
 static value_t action_settooltip ( vm_t *vm, value_t p[], gint np )
 {
-  GtkWidget *widget;
-  guint8 *mark;
-
-  vm_param_check_np_range(vm, np, 1, 2, "SetValue");
-  vm_param_check_string(vm, p, 0, "SetValue");
-
-  if(!vm->pstack->len)
-    return value_na;
-
-  mark = vm->pstack->pdata[vm->pstack->len-1];
-
-  if( (widget = np==2?base_widget_from_id(vm->store, value_get_string(p[0])) :
-        vm->widget) )
-    base_widget_set_tooltip(widget,
-        g_bytes_new_take(g_memdup(mark, vm->ip - mark), vm->ip - mark));
-
-  return value_na;
+  return action_setcode(vm, p, np, "SetTooltip", "tooltip");
 }
 
 static value_t action_userstate ( vm_t *vm, value_t p[], gint np )

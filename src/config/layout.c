@@ -194,6 +194,8 @@ static gboolean config_widget_variable ( GScanner *scanner, GtkWidget *widget )
 gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
 {
   GtkWindow *win;
+  GdkRectangle rect;
+  GBytes *code;
   gint key;
 
   if(config_widget_variable(scanner, widget))
@@ -212,25 +214,28 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
             GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "disable")));
         return !scanner->max_parse_errors;
       case G_TOKEN_STYLE:
-        base_widget_set_style(widget, config_assign_expr(scanner, "style"));
+        code = config_assign_expr(scanner, "style");
+        g_object_set(G_OBJECT(widget), "style", code, NULL);
+        g_bytes_unref(code);
         return !scanner->max_parse_errors;
       case G_TOKEN_CSS:
         base_widget_set_css(widget, config_assign_string(scanner, "css"));
         return TRUE;
       case G_TOKEN_INTERVAL:
-        base_widget_set_interval(widget,
-            1000*config_assign_number(scanner, "interval"));
+        g_object_set(G_OBJECT(widget), "interval",
+            (gint64)(config_assign_number(scanner, "interval")*1000), NULL);
         return TRUE;
       case G_TOKEN_LOCAL:
-        base_widget_set_local_state(widget,
-            config_assign_boolean(scanner, FALSE, "local"));
+        g_object_set(G_OBJECT(widget), "local-state",
+            config_assign_boolean(scanner, FALSE, "local"), NULL);
         return TRUE;
       case G_TOKEN_TRIGGER:
-        base_widget_set_trigger(widget,
-            config_assign_string(scanner, "trigger"));
+        g_object_set(G_OBJECT(widget), "trigger",
+            config_assign_string(scanner, "trigger"), NULL);
         return TRUE;
       case G_TOKEN_LOC:
-        base_widget_set_rect(widget, config_get_loc(scanner));
+        rect = config_get_loc(scanner);
+        g_object_set(G_OBJECT(widget), "rectangle", &rect, NULL);
         return TRUE;
       case G_TOKEN_ACTION:
         config_widget_action(scanner, widget);
@@ -241,10 +246,14 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
     switch(key)
     {
       case G_TOKEN_VALUE:
-        base_widget_set_value(widget, config_assign_expr(scanner, "value"));
+        code = config_assign_expr(scanner, "value");
+        g_object_set(G_OBJECT(widget), "value", code, NULL);
+        g_bytes_unref(code);
         return !scanner->max_parse_errors;
       case G_TOKEN_TOOLTIP:
-        base_widget_set_tooltip(widget, config_assign_expr(scanner, "tooltip"));
+        code = config_assign_expr(scanner, "tooltip");
+        g_object_set(G_OBJECT(widget), "tooltip", code, NULL);
+        g_bytes_unref(code);
         return !scanner->max_parse_errors;
     }
 

@@ -29,6 +29,8 @@ struct _BaseWidgetClass
   void (*mirror)(GtkWidget *self, GtkWidget *src);
   gboolean (*action_exec)( GtkWidget *self, gint slot, GdkEvent *ev );
   void (*action_configure)( GtkWidget *self, gint slot );
+
+  gboolean always_update;
 };
 
 typedef struct _BaseWidgetPrivate BaseWidgetPrivate;
@@ -36,30 +38,22 @@ typedef struct _BaseWidgetPrivate BaseWidgetPrivate;
 struct _BaseWidgetPrivate
 {
   gchar *id;
-  GQuark quark;
   GList *css;
   expr_cache_t *style;
   expr_cache_t *value;
   expr_cache_t *tooltip;
-  gulong tooltip_h;
   GList *actions;
-  gulong button_h;
-  gulong buttonp_h;
-  gulong click_h;
-  gulong scroll_h;
   gint64 interval;
+  gint64 next_poll;
   guint maxw, maxh;
   const gchar *trigger;
-  gint64 next_poll;
   gint dir;
-  gboolean always_update;
   gboolean local_state;
   gboolean is_drag_dest;
-  guint16 user_state;
+  guint user_state;
   GdkRectangle rect;
   GList *mirror_children;
   GtkWidget *mirror_parent;
-  GdkModifierType saved_modifiers;
   vm_store_t *store;
 };
 
@@ -71,14 +65,8 @@ typedef struct _base_widget_attachment {
 
 GType base_widget_get_type ( void );
 
-void base_widget_set_tooltip ( GtkWidget *self, GBytes *code );
-void base_widget_set_value ( GtkWidget *self, GBytes *code );
-void base_widget_set_style ( GtkWidget *self, GBytes *code );
 void base_widget_set_style_static ( GtkWidget *self, gchar *style );
-void base_widget_set_local_state ( GtkWidget *self, gboolean state );
-void base_widget_set_trigger ( GtkWidget *self, gchar *trigger );
 void base_widget_set_id ( GtkWidget *self, gchar *id );
-void base_widget_set_interval ( GtkWidget *self, gint64 interval );
 void base_widget_set_state ( GtkWidget *self, guint16 mask, gboolean state );
 void base_widget_set_action ( GtkWidget *, gint, GdkModifierType, GBytes *);
 void base_widget_set_max_width ( GtkWidget *self, guint x );
@@ -86,7 +74,6 @@ void base_widget_set_max_height ( GtkWidget *self, guint x );
 vm_store_t * base_widget_get_store ( GtkWidget *self );
 gboolean base_widget_update_value ( GtkWidget *self );
 gboolean base_widget_style ( GtkWidget *self );
-void base_widget_set_rect ( GtkWidget *self, GdkRectangle rect );
 void base_widget_attach ( GtkWidget *, GtkWidget *, GtkWidget *);
 GList *base_widget_get_mirror_children ( GtkWidget *self );
 GtkWidget *base_widget_get_mirror_parent ( GtkWidget *self );

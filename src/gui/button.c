@@ -16,7 +16,8 @@ static void button_update_value ( GtkWidget *self )
   g_return_if_fail(IS_BUTTON(self));
   priv = button_get_instance_private(BUTTON(self));
 
-  scale_image_set_image(GTK_WIDGET(priv->image),base_widget_get_value(self),NULL);
+  scale_image_set_image(GTK_WIDGET(priv->image), base_widget_get_value(self),
+      NULL);
 }
 
 static void button_class_init ( ButtonClass *kclass )
@@ -32,6 +33,6 @@ static void button_init ( Button *self )
 
   priv->button = gtk_button_new();
   priv->image = scale_image_new();
-  gtk_container_add(GTK_CONTAINER(priv->button),priv->image);
-  gtk_container_add(GTK_CONTAINER(self),priv->button);
+  gtk_container_add(GTK_CONTAINER(priv->button), priv->image);
+  gtk_container_add(GTK_CONTAINER(self), priv->button);
 }
