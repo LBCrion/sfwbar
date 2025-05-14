@@ -217,7 +217,7 @@ layout {
         "@ICON_CIRCLE_COLOR@", Str(2.56*Volume("sink-volume")));
     trigger = "volume"
     tooltip = GT("Volume") + ": " + Str(Volume("sink-volume"),0) + "%" +
-      If(Volume("sink-mute")," (muted)","") +
+      If(Volume("sink-mute"),"(" + GT("muted") + ")","" +
       "\n" + GT("Form") + ": " + VolumeInfo("sink-form") +
       "\n" + GT("Port") + ": " + VolumeInfo("sink-port") +
       "\n" + GT("Monitor") + ": " + VolumeInfo("sink-monitor")
