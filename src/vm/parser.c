@@ -738,6 +738,17 @@ GBytes *parser_exec_build ( gchar *cmd )
   return g_byte_array_free_to_bytes(code);
 }
 
+GBytes *parser_string_build ( gchar *str )
+{
+  GByteArray *code;
+
+  if(!str)
+    return NULL;
+  code = g_byte_array_new();
+  parser_emit_string(code, str);
+  return g_byte_array_free_to_bytes(code);
+}
+
 void parser_init ( void )
 {
   parser_instructions = g_hash_table_new((GHashFunc)str_nhash,

@@ -156,6 +156,7 @@ static void taskbar_item_set_title_width ( GtkWidget *self, gint title_width )
 static void taskbar_item_update ( GtkWidget *self )
 {
   TaskbarItemPrivate *priv;
+  gboolean tooltips;
   gchar *appid;
 
   g_return_if_fail(IS_TASKBAR_ITEM(self));
@@ -187,8 +188,10 @@ static void taskbar_item_update ( GtkWidget *self )
     taskbar_item_set_image(priv->icon, appid);
   }
 
-  gtk_widget_set_tooltip_text(self,
-      taskbar_shell_get_tooltips(priv->taskbar)? priv->win->title : NULL);
+  g_object_get(G_OBJECT(priv->taskbar), "tooltips", &tooltips, NULL);
+  gtk_widget_set_has_tooltip(base_widget_get_child(self), tooltips);
+  if(tooltips)
+    gtk_widget_set_tooltip_text(base_widget_get_child(self), priv->win->title);
 
   gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
       GTK_STATE_FLAG_PRELIGHT);

@@ -28,10 +28,10 @@ struct _TaskbarShellPrivate
 {
   GtkWidget *(*get_taskbar)(GtkWidget *, window_t *, gboolean);
   gboolean icons, labels, sort, floating_filter;
-  gint rows, cols, filter, title_width;
+  gint rows, cols, filter, title_width, primary_axis;
   gboolean tooltips;
   guint timer_h;
-  gchar *style;
+  GBytes *style;
   GList *css;
 };
 
@@ -45,18 +45,6 @@ void taskbar_shell_item_init_for_all ( window_t *win );
 void taskbar_shell_item_destroy_for_all ( window_t *win );
 void taskbar_shell_set_filter ( GtkWidget *self, gint filter );
 gint taskbar_shell_get_filter ( GtkWidget *self, gboolean * );
-void taskbar_shell_set_api ( GtkWidget *self,
-   GtkWidget *(*)(GtkWidget *, window_t*, gboolean) );
-void taskbar_shell_set_group_labels ( GtkWidget *self, gboolean labels );
-void taskbar_shell_set_group_icons ( GtkWidget *self, gboolean icons );
-void taskbar_shell_set_group_labels ( GtkWidget *self, gboolean labels );
-void taskbar_shell_set_group_cols ( GtkWidget *self, gint );
-void taskbar_shell_set_group_rows ( GtkWidget *self, gint );
-void taskbar_shell_set_group_sort ( GtkWidget *self, gboolean );
-void taskbar_shell_set_group_title_width ( GtkWidget *self, gint );
-void taskbar_shell_set_group_style ( GtkWidget *self, gchar * );
 void taskbar_shell_set_group_css ( GtkWidget *self, gchar * );
-void taskbar_shell_set_tooltips ( GtkWidget *self, gboolean tooltips );
-gboolean taskbar_shell_get_tooltips ( GtkWidget *self );
 
 #endif

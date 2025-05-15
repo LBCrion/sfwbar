@@ -139,31 +139,33 @@ gboolean config_flowgrid_property ( GScanner *scanner, GtkWidget *widget )
   switch(key)
   {
     case G_TOKEN_COLS:
-      flow_grid_set_cols(widget, config_assign_number(scanner, "cols"));
+      g_object_set(G_OBJECT(widget), "cols",
+          (gint)config_assign_number(scanner, "cols"), NULL);
       return TRUE;
     case G_TOKEN_ROWS:
-      flow_grid_set_rows(widget, config_assign_number(scanner, "rows"));
+      g_object_set(G_OBJECT(widget), "rows",
+          (gint)config_assign_number(scanner, "rows"), NULL);
       return TRUE;
     case G_TOKEN_PRIMARY:
-      flow_grid_set_primary(widget, GPOINTER_TO_INT(config_assign_tokens(
-              scanner, config_axis_keys,
-              "Invalid value in 'primary = rows|cols'")));
+      g_object_set(G_OBJECT(widget), "primary_axis",
+          GPOINTER_TO_INT(config_assign_tokens(scanner, config_axis_keys,
+              "Invalid value in 'primary = rows|cols'")), NULL);
       return TRUE;
     case G_TOKEN_ICONS:
-      flow_grid_set_icons(widget,
-          config_assign_boolean(scanner, FALSE, "icons"));
+      g_object_set(G_OBJECT(widget), "icons",
+          config_assign_boolean(scanner, FALSE, "icons"), NULL);
       return TRUE;
     case G_TOKEN_LABELS:
-      flow_grid_set_labels(widget,
-          config_assign_boolean(scanner, FALSE, "labels"));
+      g_object_set(G_OBJECT(widget), "labels",
+          config_assign_boolean(scanner, FALSE, "labels"), NULL);
       return TRUE;
     case G_TOKEN_TITLEWIDTH:
-      flow_grid_set_title_width(widget,
-          config_assign_number(scanner, "title_width"));
+      g_object_set(G_OBJECT(widget), "title_width",
+          (gint)config_assign_number(scanner, "title_width"), NULL);
       return TRUE;
     case G_TOKEN_SORT:
-      flow_grid_set_sort(widget,
-          config_assign_boolean(scanner, TRUE, "sort"));
+      g_object_set(G_OBJECT(widget), "sort",
+          config_assign_boolean(scanner, TRUE, "sort"), NULL);
       return TRUE;
     case G_TOKEN_NUMERIC:
       g_message("property 'numeric' has been deprecated");
@@ -273,8 +275,8 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
     switch(key)
     {
       case G_TOKEN_TOOLTIPS:
-        taskbar_shell_set_tooltips(widget,
-            config_assign_boolean(scanner, FALSE, "tooltips"));
+        g_object_set(G_OBJECT(widget), "tooltips",
+            config_assign_boolean(scanner, FALSE, "tooltips"), NULL);
         return TRUE;
       case G_TOKEN_PEROUTPUT:
         if(config_assign_boolean(scanner,FALSE,"filter_output"))
@@ -289,37 +291,37 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
       case G_TOKEN_GROUP:
         if(g_scanner_peek_next_token(scanner) == '=')
         {
-          taskbar_shell_set_api(widget, config_assign_tokens(scanner,
+          g_object_set(G_OBJECT(widget), "api", config_assign_tokens(scanner,
                 config_taskbar_types,
-                "Invalid value in taskbar = false|popup|pager"));
+                "Invalid value in taskbar = false|popup|pager"), NULL);
           return TRUE;
         }
         g_scanner_get_next_token(scanner);
         switch(config_lookup_key(scanner, config_flowgrid_props))
         {
           case G_TOKEN_COLS:
-            taskbar_shell_set_group_cols(widget,
-                (gint)config_assign_number(scanner, "group cols"));
+            g_object_set(G_OBJECT(widget), "group_cols",
+                (gint)config_assign_number(scanner, "group cols"), NULL);
             return TRUE;
           case G_TOKEN_ROWS:
-            taskbar_shell_set_group_rows(widget,
-                (gint)config_assign_number(scanner, "group rows"));
+            g_object_set(G_OBJECT(widget), "group_rows",
+                (gint)config_assign_number(scanner, "group rows"), NULL);
             return TRUE;
           case G_TOKEN_ICONS:
-            taskbar_shell_set_group_icons(widget,
-                config_assign_boolean(scanner, FALSE, "group icons"));
+            g_object_set(G_OBJECT(widget), "group_icons",
+                config_assign_boolean(scanner, FALSE, "group icons"), NULL);
             return TRUE;
           case G_TOKEN_LABELS:
-            taskbar_shell_set_group_labels(widget,
-                config_assign_boolean(scanner, FALSE, "group labels"));
+            g_object_set(G_OBJECT(widget), "group_labels",
+                config_assign_boolean(scanner, FALSE, "group labels"), NULL);
             return TRUE;
           case G_TOKEN_SORT:
-            taskbar_shell_set_group_sort(widget,
-                config_assign_boolean(scanner, TRUE, "group sort"));
+            g_object_set(G_OBJECT(widget), "group_sort",
+                config_assign_boolean(scanner, TRUE, "group sort"), NULL);
             return TRUE;
           case G_TOKEN_TITLEWIDTH:
-            taskbar_shell_set_group_title_width(widget,
-                (gint)config_assign_number(scanner, "group title_width"));
+            g_object_set(G_OBJECT(widget), "group_title_width",
+                (gint)config_assign_number(scanner, "group title_width"), NULL);
             return TRUE;
         }
         switch(config_lookup_key(scanner, config_prop_keys))
@@ -329,8 +331,9 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
                 config_assign_string(scanner, "group css"));
             return TRUE;
           case G_TOKEN_STYLE:
-            taskbar_shell_set_group_style(widget,
-                config_assign_string(scanner, "group style"));
+            code = config_assign_expr(scanner, "style");
+            g_object_set(G_OBJECT(widget), "group_style", code, NULL);
+            g_bytes_unref(code);
             return TRUE;
         }
     }
@@ -440,7 +443,7 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
   {
     widget = GTK_WIDGET(g_object_new(type_get(), NULL));
     if(config_check_and_consume(scanner, G_TOKEN_STRING))
-      base_widget_set_id(widget, g_strdup(scanner->value.v_string));
+      g_object_set(G_OBJECT(widget), "id", scanner->value.v_string, NULL);
     if(container)
     {
       grid_attach(container, widget);

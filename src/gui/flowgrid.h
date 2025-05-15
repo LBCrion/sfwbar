@@ -9,6 +9,7 @@
 #define FLOW_GRID_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), FLOW_GRID_TYPE, FlowGridClass))
 #define IS_FLOW_GRID(obj)         (G_TYPE_CHECK_INSTANCE_TYPE((obj), FLOW_GRID_TYPE))
 #define IS_FLOW_GRIDCLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE((klass), FLOW_GRID_TYPE))
+#define FLOW_GRID_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj), FLOW_GRID_TYPE, FlowGridClass))
 
 enum {
   /* drag_dest_add_(image|text|uri)_targets sets info to 0 */
@@ -27,6 +28,8 @@ struct _FlowGrid
 struct _FlowGridClass
 {
   BaseWidgetClass parent_class;
+
+  gboolean limit;
 };
 
 typedef struct _FlowGridPrivate FlowGridPrivate;
@@ -35,9 +38,8 @@ struct _FlowGridPrivate
 {
   gint cols,rows;
   gint primary_axis;
-  gboolean icons, labels;
+  gboolean icons, labels, tooltips;
   gint title_width;
-  gboolean limit;
   gboolean invalid;
   gboolean sort;
   GList *children;
@@ -49,12 +51,6 @@ struct _FlowGridPrivate
 
 GType flow_grid_get_type ( void );
 
-void flow_grid_set_rows ( GtkWidget *cgrid, gint rows );
-void flow_grid_set_cols ( GtkWidget *cgrid, gint cols );
-gint flow_grid_get_rows ( GtkWidget *self );
-gint flow_grid_get_cols ( GtkWidget *self );
-void flow_grid_set_primary ( GtkWidget *self, gint primary );
-void flow_grid_set_limit ( GtkWidget *self, gboolean limit );
 void flow_grid_add_child ( GtkWidget *self, GtkWidget *child );
 gboolean flow_grid_update ( GtkWidget *self );
 void flow_grid_invalidate ( GtkWidget *self );
@@ -63,15 +59,11 @@ GList *flow_grid_get_children ( GtkWidget *self );
 guint flow_grid_n_children ( GtkWidget *self );
 gpointer flow_grid_find_child ( GtkWidget *, gconstpointer parent );
 void flow_grid_child_dnd_enable ( GtkWidget *, GtkWidget *, GtkWidget *);
-void flow_grid_set_sort ( GtkWidget *cgrid, gboolean sort );
 GtkWidget *flow_grid_get_parent ( GtkWidget *self );
 void flow_grid_set_parent ( GtkWidget *self, GtkWidget *parent );
 void flow_grid_set_dnd_target ( GtkWidget *self, GtkTargetEntry *target );
 GtkTargetEntry  *flow_grid_get_dnd_target ( GtkWidget *self );
 void flow_grid_children_order ( GtkWidget *self, GtkWidget *ref,
     GtkWidget *child, gboolean after );
-void flow_grid_set_icons ( GtkWidget *self, gboolean icons );
-void flow_grid_set_labels ( GtkWidget *self, gboolean labels );
-void flow_grid_set_title_width ( GtkWidget *self, gint width );
 
 #endif

@@ -384,7 +384,7 @@ GtkWidget *bar_grid_from_name ( gchar *addr )
 
   widget = grid_new();
 
-  base_widget_set_style_static(widget, g_strdup("layout"));
+  g_object_set(G_OBJECT(widget), "style", parser_string_build("layout"), NULL);
 
   if(grid && !g_ascii_strcasecmp(grid, "center"))
   {

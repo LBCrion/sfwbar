@@ -89,6 +89,7 @@ gboolean parser_macro_add ( GScanner *scanner );
 gboolean parser_function_parse( GScanner *scanner );
 const gchar *parser_identifier_lookup ( gchar *identifier );
 GBytes *parser_exec_build ( gchar *cmd );
+GBytes *parser_string_build ( gchar *str );
 
 value_t vm_code_eval ( GBytes *code, GtkWidget *widget );
 value_t vm_expr_eval ( expr_cache_t *expr );

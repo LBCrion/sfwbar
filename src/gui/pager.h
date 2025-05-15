@@ -16,12 +16,12 @@ typedef struct _PagerPrivate PagerPrivate;
 
 struct _Pager
 {
-  BaseWidget item;
+  FlowGrid item;
 };
 
 struct _PagerClass
 {
-  BaseWidgetClass parent_class;
+  FlowGridClass parent_class;
 };
 
 struct _PagerPrivate

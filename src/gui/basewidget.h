@@ -31,6 +31,7 @@ struct _BaseWidgetClass
   void (*action_configure)( GtkWidget *self, gint slot );
 
   gboolean always_update;
+  gboolean custom_tooltip;
 };
 
 typedef struct _BaseWidgetPrivate BaseWidgetPrivate;
@@ -65,15 +66,11 @@ typedef struct _base_widget_attachment {
 
 GType base_widget_get_type ( void );
 
-void base_widget_set_style_static ( GtkWidget *self, gchar *style );
-void base_widget_set_id ( GtkWidget *self, gchar *id );
 void base_widget_set_state ( GtkWidget *self, guint16 mask, gboolean state );
 void base_widget_set_action ( GtkWidget *, gint, GdkModifierType, GBytes *);
 void base_widget_set_max_width ( GtkWidget *self, guint x );
 void base_widget_set_max_height ( GtkWidget *self, guint x );
 vm_store_t * base_widget_get_store ( GtkWidget *self );
-gboolean base_widget_update_value ( GtkWidget *self );
-gboolean base_widget_style ( GtkWidget *self );
 void base_widget_attach ( GtkWidget *, GtkWidget *, GtkWidget *);
 GList *base_widget_get_mirror_children ( GtkWidget *self );
 GtkWidget *base_widget_get_mirror_parent ( GtkWidget *self );

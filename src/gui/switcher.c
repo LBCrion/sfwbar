@@ -91,11 +91,11 @@ static void switcher_class_init ( SwitcherClass *kclass )
   g_unix_signal_add(SIGUSR1, (GSourceFunc)switcher_event, NULL);
   trigger_add("switcher_forward", (trigger_func_t)switcher_event, NULL);
   trigger_add("switcher_back", (trigger_func_t)switcher_event, (void *)1);
+  FLOW_GRID_CLASS(kclass)->limit = FALSE;
 }
 
 static void switcher_init ( Switcher *self )
 {
-  flow_grid_set_limit(GTK_WIDGET(self), FALSE);
   gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "switcher");
   wintree_listener_register(&switcher_window_listener, GTK_WIDGET(self));
 

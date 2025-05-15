@@ -14,6 +14,17 @@
 G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, BASE_WIDGET_TYPE,
     G_ADD_PRIVATE(FlowGrid))
 
+enum {
+  FLOW_GRID_LABELS = 1,
+  FLOW_GRID_ICONS,
+  FLOW_GRID_TOOLTIPS,
+  FLOW_GRID_TITLE_WIDTH,
+  FLOW_GRID_SORT,
+  FLOW_GRID_COLS,
+  FLOW_GRID_ROWS,
+  FLOW_GRID_PRIMARY_AXIS,
+};
+
 static void flow_grid_get_preferred_width (GtkWidget *self, gint *minimal,
     gint *natural)
 {
@@ -25,7 +36,7 @@ static void flow_grid_get_preferred_width (GtkWidget *self, gint *minimal,
   GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_width(
       self, minimal, natural);
 
-  if(priv->rows>0 && priv->limit)
+  if(priv->rows>0 && FLOW_GRID_GET_CLASS(self)->limit)
     *minimal = MIN(*natural, 1);
 }
 
@@ -40,7 +51,7 @@ static void flow_grid_get_preferred_height (GtkWidget *self, gint *minimal,
   GTK_WIDGET_CLASS(flow_grid_parent_class)->get_preferred_height(
       self, minimal, natural);
 
-  if(priv->cols>0 && priv->limit)
+  if(priv->cols>0 && FLOW_GRID_GET_CLASS(self)->limit)
     *minimal = MIN(*natural, 1);
 }
 
@@ -73,17 +84,107 @@ static void flow_grid_style_updated ( GtkWidget *self )
   GTK_WIDGET_CLASS(flow_grid_parent_class)->style_updated(self);
 }
 
-static void flow_grid_action_configure ( GtkWidget *self, gint slot )
+static void flow_grid_get_property ( GObject *self, guint id, GValue *value,
+    GParamSpec *spec )
 {
   FlowGridPrivate *priv;
-  GList *iter;
 
-  g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
-  for(iter=priv->children; iter; iter=g_list_next(iter))
-    base_widget_action_configure(iter->data, slot);
+  switch(id)
+  {
+    case FLOW_GRID_LABELS:
+      g_value_set_boolean(value, priv->labels);
+      break;
+    case FLOW_GRID_ICONS:
+      g_value_set_boolean(value, priv->icons);
+      break;
+    case FLOW_GRID_TOOLTIPS:
+      g_value_set_boolean(value, priv->tooltips);
+      break;
+    case FLOW_GRID_TITLE_WIDTH:
+      g_value_set_int(value, priv->title_width);
+      break;
+    case FLOW_GRID_SORT:
+      g_value_set_boolean(value, priv->sort);
+      break;
+    case FLOW_GRID_COLS:
+      g_value_set_int(value, priv->cols);
+      break;
+    case FLOW_GRID_ROWS:
+      g_value_set_int(value, priv->rows);
+      break;
+    case FLOW_GRID_PRIMARY_AXIS:
+      g_value_set_int(value, priv->primary_axis);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
+  }
 }
+
+static void flow_grid_set_property ( GObject *self, guint id,
+    const GValue *value, GParamSpec *spec )
+{
+  FlowGridPrivate *priv;
+
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+  switch(id)
+  {
+    case FLOW_GRID_LABELS:
+      priv->labels = g_value_get_boolean(value);
+      break;
+    case FLOW_GRID_ICONS:
+      priv->icons = g_value_get_boolean(value);
+      break;
+    case FLOW_GRID_TOOLTIPS:
+      priv->tooltips = g_value_get_boolean(value);
+      break;
+    case FLOW_GRID_TITLE_WIDTH:
+      priv->title_width = g_value_get_int(value);
+      break;
+    case FLOW_GRID_SORT:
+      priv->sort = g_value_get_boolean(value);
+      flow_grid_invalidate(GTK_WIDGET(self));
+      break;
+    case FLOW_GRID_COLS:
+      priv->cols = g_value_get_int(value);
+      flow_grid_invalidate(GTK_WIDGET(self));
+      break;
+    case FLOW_GRID_ROWS:
+      priv->rows = g_value_get_int(value);
+      flow_grid_invalidate(GTK_WIDGET(self));
+      break;
+    case FLOW_GRID_PRIMARY_AXIS:
+      priv->primary_axis = g_value_get_int(value);
+      flow_grid_invalidate(GTK_WIDGET(self));
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
+  }
+}
+
+static void flow_grid_mirror ( GtkWidget *dest, GtkWidget *src )
+{
+  BASE_WIDGET_CLASS(flow_grid_parent_class)->mirror(dest, src);
+
+  g_object_bind_property(G_OBJECT(src), "labels",
+      G_OBJECT(dest), "labels", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "icons",
+      G_OBJECT(dest), "icons", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "tooltips",
+      G_OBJECT(dest), "tooltips", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "title_width",
+      G_OBJECT(dest), "title_width", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "sort",
+      G_OBJECT(dest), "sort", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "cols",
+      G_OBJECT(dest), "cols", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "rows",
+      G_OBJECT(dest), "rows", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "primary_axis",
+      G_OBJECT(dest), "primary_axis", G_BINDING_SYNC_CREATE);
+}
+
 
 static void flow_grid_class_init ( FlowGridClass *kclass )
 {
@@ -92,7 +193,36 @@ static void flow_grid_class_init ( FlowGridClass *kclass )
   widget_class->get_preferred_height = flow_grid_get_preferred_height;
   widget_class->destroy = flow_grid_destroy;
   widget_class->style_updated = flow_grid_style_updated;
-  BASE_WIDGET_CLASS(kclass)->action_configure = flow_grid_action_configure;
+
+  kclass->limit = TRUE;
+
+  G_OBJECT_CLASS(kclass)->get_property = flow_grid_get_property;
+  G_OBJECT_CLASS(kclass)->set_property = flow_grid_set_property;
+  BASE_WIDGET_CLASS(kclass)->mirror = flow_grid_mirror;
+
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_LABELS,
+      g_param_spec_boolean("labels", "labels", "labels", FALSE,
+        G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_ICONS,
+      g_param_spec_boolean("icons", "icons", "icons", FALSE,
+        G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_TOOLTIPS,
+      g_param_spec_boolean("tooltips", "tooltips", "tooltips", FALSE,
+        G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass),
+      FLOW_GRID_TITLE_WIDTH, g_param_spec_int("title_width", "title_width",
+        "title_width", -1, INT_MAX, -1, G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_SORT,
+      g_param_spec_boolean("sort", "sort", "sort", FALSE, G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_COLS,
+    g_param_spec_int("cols", "cols", "cols", -1, INT_MAX, 1,
+      G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_ROWS,
+    g_param_spec_int("rows", "rows", "rows", -1, INT_MAX, -1,
+      G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass),
+      FLOW_GRID_PRIMARY_AXIS, g_param_spec_int("primary_axis", "primary_axis",
+        "primary_axis", 0, INT_MAX, 0, G_PARAM_READWRITE));
 }
 
 static void flow_grid_init ( FlowGrid *self )
@@ -105,27 +235,16 @@ static void flow_grid_init ( FlowGrid *self )
 
   priv->grid = GTK_GRID(gtk_grid_new());
   gtk_container_add(GTK_CONTAINER(self), GTK_WIDGET(priv->grid));
-  flow_grid_set_sort(GTK_WIDGET(self), TRUE);
 
+  priv->sort = TRUE;
   priv->rows = 1;
   priv->cols = 0;
-  priv->limit = TRUE;
   priv->labels = TRUE;
   priv->icons = FALSE;
   priv->title_width = -1;
   sig = g_strdup_printf("flow-item-%p", (void *)self);
   priv->dnd_target = gtk_target_entry_new(sig, 0, SFWB_DND_TARGET_FLOW_ITEM);
   g_free(sig);
-}
-
-void flow_grid_set_limit ( GtkWidget *self, gboolean limit )
-{
-  FlowGridPrivate *priv;
-
-  g_return_if_fail(IS_FLOW_GRID(self));
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
-
-  priv->limit = limit;
 }
 
 void flow_grid_set_dnd_target ( GtkWidget *self, GtkTargetEntry *target )
@@ -148,79 +267,6 @@ GtkTargetEntry *flow_grid_get_dnd_target ( GtkWidget *self )
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   return priv->dnd_target;
-}
-
-void flow_grid_set_cols ( GtkWidget *self, gint cols )
-{
-  FlowGridPrivate *priv;
-
-  g_return_if_fail(IS_FLOW_GRID(self));
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
-
-  priv->cols = cols;
-  priv->rows = 0;
-  if((priv->rows<1)&&(priv->cols<1))
-    priv->rows = 1;
-
-  flow_grid_invalidate(self);
-}
-
-void flow_grid_set_rows ( GtkWidget *self, gint rows )
-{
-  FlowGridPrivate *priv;
-
-  g_return_if_fail(IS_FLOW_GRID(self));
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
-
-  priv->rows = rows;
-  priv->cols = 0;
-
-  if((priv->rows<1)&&(priv->cols<1))
-    priv->rows = 1;
-
-  flow_grid_invalidate(self);
-}
-
-gint flow_grid_get_cols ( GtkWidget *self )
-{
-  FlowGridPrivate *priv;
-
-  g_return_val_if_fail(IS_FLOW_GRID(self), -1);
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
-
-  return priv->cols;
-}
-
-gint flow_grid_get_rows ( GtkWidget *self )
-{
-  FlowGridPrivate *priv;
-
-  g_return_val_if_fail(IS_FLOW_GRID(self), -1);
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
-
-  return priv->rows;
-}
-
-void flow_grid_set_primary ( GtkWidget *self, gint primary )
-{
-  FlowGridPrivate *priv;
-
-  g_return_if_fail(IS_FLOW_GRID(self));
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
-
-  priv->primary_axis = primary;
-  flow_grid_invalidate(self);
-}
-
-void flow_grid_set_sort ( GtkWidget *self, gboolean sort )
-{
-  FlowGridPrivate *priv;
-
-  g_return_if_fail(IS_FLOW_GRID(self));
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
-
-  priv->sort = sort;
-  flow_grid_invalidate(self);
 }
 
 static void flow_grid_remove_widget_maybe (GtkWidget *widget, GtkWidget *self)
@@ -250,20 +296,13 @@ void flow_grid_invalidate ( GtkWidget *self )
 
 void flow_grid_add_child ( GtkWidget *self, GtkWidget *child )
 {
-  FlowGridPrivate *priv, *ppriv;
-  gint i;
+  FlowGridPrivate *priv;
 
   g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
-  ppriv = flow_grid_get_instance_private(
-      FLOW_GRID(base_widget_get_mirror_parent(self)));
 
-  for(i=0; i<=BASE_WIDGET_MAX_ACTION; i++)
-    base_widget_action_configure(child, i);
   priv->children = g_list_append(priv->children, child);
   flow_item_set_parent(child, self);
-  flow_item_decorate(child, ppriv->labels, ppriv->icons);
-  flow_item_set_title_width(child, ppriv->title_width);
   priv->invalid = TRUE;
 }
 
@@ -288,7 +327,8 @@ void flow_grid_delete_child ( GtkWidget *self, void *source )
   priv->invalid = TRUE;
 }
 
-void flow_grid_child_position ( GtkGrid *grid, GtkWidget *child, gint x, gint y )
+static void flow_grid_child_position ( GtkGrid *grid, GtkWidget *child,
+    gint x, gint y )
 {
   if(!gtk_widget_get_parent(child))
     gtk_grid_attach(GTK_GRID(grid), child, x, y, 1, 1);
@@ -303,31 +343,32 @@ void flow_grid_child_position ( GtkGrid *grid, GtkWidget *child, gint x, gint y 
 
 gboolean flow_grid_update ( GtkWidget *self )
 {
-  FlowGridPrivate *priv, *ppriv;
+  FlowGridPrivate *priv;
   GList *iter;
   gint count, i, cols, rows;
 
   g_return_val_if_fail(IS_FLOW_GRID(self), FALSE);
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
-  ppriv = flow_grid_get_instance_private(
-      FLOW_GRID(base_widget_get_mirror_parent(self)));
 
   if(!priv->invalid)
     return TRUE;
   priv->invalid = FALSE;
 
-  if(!ppriv->primary_axis)
+  if(priv->rows<1 && priv->cols<1)
+    priv->rows = 1;
+
+  if(!priv->primary_axis)
   {
-    if(ppriv->rows>0)
-      ppriv->primary_axis = G_TOKEN_COLS;
+    if(priv->rows>0)
+      priv->primary_axis = G_TOKEN_COLS;
     else
-      ppriv->primary_axis = G_TOKEN_ROWS;
+      priv->primary_axis = G_TOKEN_ROWS;
   }
 
   gtk_container_foreach(GTK_CONTAINER(priv->grid),
       (GtkCallback)flow_grid_remove_widget_maybe, self);
 
-  if(ppriv->sort)
+  if(priv->sort)
     priv->children = g_list_sort_with_data(priv->children,
         (GCompareDataFunc)flow_item_compare, self);
 
@@ -341,19 +382,19 @@ gboolean flow_grid_update ( GtkWidget *self )
 
   rows = 0;
   cols = 0;
-  if(ppriv->rows>0)
+  if(priv->rows>0)
   {
-    if(ppriv->primary_axis == G_TOKEN_COLS)
-      rows = ppriv->rows;
+    if(priv->primary_axis == G_TOKEN_COLS)
+      rows = priv->rows;
     else
-      cols = (count/ppriv->rows) + ((count%ppriv->rows)?1:0);
+      cols = (count/priv->rows) + ((count%priv->rows)?1:0);
   }
   else
   {
-    if(ppriv->primary_axis == G_TOKEN_ROWS)
-      cols = ppriv->cols;
+    if(priv->primary_axis == G_TOKEN_ROWS)
+      cols = priv->cols;
     else
-      rows = (count/ppriv->cols) + ((count%ppriv->cols)?1:0);
+      rows = (count/priv->cols) + ((count%priv->cols)?1:0);
   }
 
   i = 0;
@@ -378,6 +419,7 @@ gboolean flow_grid_update ( GtkWidget *self )
     for(;i<cols;i++)
       gtk_grid_attach(priv->grid, gtk_label_new(""), i, 0, 1, 1);
   css_widget_cascade(self, NULL);
+
   return TRUE;
 }
 
@@ -444,74 +486,6 @@ void flow_grid_children_order ( GtkWidget *self, GtkWidget *ref,
 
   flow_item_invalidate(child);
   flow_item_invalidate(ref);
-}
-
-void flow_grid_set_labels ( GtkWidget *self, gboolean labels )
-{
-  FlowGridPrivate *priv, *ppriv;
-  GList *iter;
-
-  g_return_if_fail(IS_FLOW_GRID(self));
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
-  ppriv = flow_grid_get_instance_private(
-      FLOW_GRID(base_widget_get_mirror_parent(self)));
-
-  if(ppriv->labels == labels)
-    return;
-
-  ppriv->labels = labels;
-  for(iter=priv->children; iter; iter=g_list_next(iter))
-    flow_item_decorate(iter->data, ppriv->labels, ppriv->icons);
-
-  if(labels)
-    for(iter=priv->children; iter; iter=g_list_next(iter))
-      flow_item_set_title_width(iter->data, ppriv->title_width);
-
-  for(iter=base_widget_get_mirror_children(self); iter; iter=g_list_next(iter))
-    flow_grid_set_labels(iter->data, labels);
-}
-
-void flow_grid_set_icons ( GtkWidget *self, gboolean icons )
-{
-  FlowGridPrivate *priv, *ppriv;
-  GList *iter;
-
-  g_return_if_fail(IS_FLOW_GRID(self));
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
-  ppriv = flow_grid_get_instance_private(
-      FLOW_GRID(base_widget_get_mirror_parent(self)));
-
-  if(ppriv->icons == icons)
-    return;
-
-  if(!icons && !ppriv->labels)
-    ppriv->labels = TRUE;
-
-  ppriv->icons = icons;
-  for(iter=priv->children; iter; iter=g_list_next(iter))
-    flow_item_decorate(iter->data, ppriv->labels, ppriv->icons);
-
-  for(iter=base_widget_get_mirror_children(self); iter; iter=g_list_next(iter))
-    flow_grid_set_icons(iter->data, icons);
-}
-
-void flow_grid_set_title_width ( GtkWidget *self, gint width )
-{
-  FlowGridPrivate *priv;
-  GList *iter;
-
-  g_return_if_fail(IS_FLOW_GRID(self));
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
-
-  if(priv->title_width == width)
-    return;
-
-  priv->title_width = width;
-  for(iter=priv->children; iter; iter=g_list_next(iter))
-    flow_item_set_title_width(iter->data, priv->title_width);
-
-  for(iter=base_widget_get_mirror_children(self); iter; iter=g_list_next(iter))
-    flow_grid_set_title_width(iter->data, width);
 }
 
 static void flow_grid_dnd_data_rec_cb ( GtkWidget *dest, GdkDragContext *ctx,
@@ -591,7 +565,7 @@ void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
         G_CALLBACK(flow_grid_dnd_end_cb), self);
     g_signal_connect(G_OBJECT(src), "enter-notify-event",
         G_CALLBACK(flow_grid_dnd_enter_cb), NULL);
-    g_signal_handlers_block_matched(src, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,
+    g_signal_handlers_block_matched(src, G_SIGNAL_MATCH_FUNC, 0, 0 ,NULL,
         (GFunc)flow_grid_dnd_enter_cb,NULL);
   }
 }

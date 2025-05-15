@@ -171,6 +171,7 @@ static void taskbar_popup_set_title_width ( GtkWidget *self, gint title_width )
 static void taskbar_popup_update ( GtkWidget *self )
 {
   TaskbarPopupPrivate *priv;
+  gboolean tooltips;
 
   g_return_if_fail(IS_TASKBAR_POPUP(self));
   priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
@@ -194,6 +195,14 @@ static void taskbar_popup_update ( GtkWidget *self )
   priv->single = (flow_grid_n_children(priv->tgroup)==1);
   window_collapse_popups(priv->popover);
   gtk_widget_hide(priv->popover);
+
+  if(flow_grid_n_children(priv->tgroup)<2)
+  {
+    g_object_get(G_OBJECT(priv->shell), "tooltips", &tooltips, NULL);
+    gtk_widget_set_has_tooltip(self, tooltips);
+    if(tooltips)
+      gtk_widget_set_tooltip_text(self, priv->appid);
+  }
 
   priv->invalid = FALSE;
 }
@@ -299,10 +308,6 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *shell )
       (void(*)(gpointer))taskbar_popup_timeout_set);
   g_object_ref(G_OBJECT(priv->popover));
   gtk_container_add(GTK_CONTAINER(priv->popover), priv->tgroup);
-  css_widget_apply(priv->tgroup, 
-        g_object_get_data(G_OBJECT(shell), "g_css"));
-  base_widget_set_style_static(priv->tgroup,g_strdup(
-        g_object_get_data(G_OBJECT(shell), "g_style")));
   gtk_widget_show(priv->tgroup);
 
   gtk_widget_add_events(GTK_WIDGET(self),GDK_ENTER_NOTIFY_MASK |

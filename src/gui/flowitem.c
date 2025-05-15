@@ -12,7 +12,13 @@ G_DEFINE_TYPE_WITH_CODE(FlowItem, flow_item, BASE_WIDGET_TYPE,
 
 static void flow_item_destroy ( GtkWidget *self )
 {
+  FlowItemPrivate *priv;
+
   g_return_if_fail(IS_FLOW_ITEM(self));
+  priv = flow_item_get_instance_private(FLOW_ITEM(self));
+
+  if(priv->parent)  
+    g_signal_handlers_disconnect_by_data(G_OBJECT(priv->parent), self);
 
   GTK_WIDGET_CLASS(flow_item_parent_class)->destroy(self);
 }
@@ -23,7 +29,7 @@ static void flow_item_dnd_dest_impl ( GtkWidget *dest, GtkWidget *src,
   FlowItemPrivate *priv, *spriv;
   window_t *swin, *dwin;
   GtkAllocation alloc;
-  gboolean after;
+  gint prows, pcols;
 
   if(src==dest)
     return;
@@ -33,12 +39,13 @@ static void flow_item_dnd_dest_impl ( GtkWidget *dest, GtkWidget *src,
   priv = flow_item_get_instance_private(FLOW_ITEM(dest));
   spriv = flow_item_get_instance_private(FLOW_ITEM(src));
 
+  g_object_get(G_OBJECT(priv->parent), "cols", &pcols, "rows", &prows, NULL);
+
   if(priv->parent == spriv->parent)
   {
     gtk_widget_get_allocation( dest, &alloc );
-    after = ((flow_grid_get_cols(priv->parent)>0 && y>alloc.height/2) ||
-        (flow_grid_get_rows(priv->parent)>0 && x>alloc.width/2));
-    flow_grid_children_order(priv->parent, dest, src, after);
+    flow_grid_children_order(priv->parent, dest, src,
+        (pcols>0 && y>alloc.height/2) || (prows>0 && x>alloc.width/2));
   }
   else
   {
@@ -55,16 +62,49 @@ static void flow_item_class_init ( FlowItemClass *kclass )
   FLOW_ITEM_CLASS(kclass)->dnd_dest = flow_item_dnd_dest_impl;
 }
 
+static void flow_item_decorate_cb ( GtkWidget *parent, GParamSpec *spec,
+    GtkWidget *self )
+{
+  gboolean icons, labels;
+
+  g_return_if_fail(IS_FLOW_GRID(parent));
+  g_return_if_fail(IS_FLOW_ITEM(self));
+  g_object_get(G_OBJECT(parent), "labels", &labels, "icons", &icons, NULL);
+  if(FLOW_ITEM_GET_CLASS(self)->decorate)
+    FLOW_ITEM_GET_CLASS(self)->decorate(self, labels, icons);
+}
+
+static void flow_item_title_width_cb ( GtkWidget *parent, GParamSpec *spec,
+    GtkWidget *self )
+{
+  gint title_width;
+
+  g_object_get(G_OBJECT(parent), "title_width", &title_width, NULL);
+  if(FLOW_ITEM_GET_CLASS(self)->set_title_width)
+    FLOW_ITEM_GET_CLASS(self)->set_title_width(self, title_width);
+}
+
 void flow_item_set_parent ( GtkWidget *self, GtkWidget *parent )
 {
   FlowItemPrivate *priv;
 
   g_return_if_fail(IS_FLOW_ITEM(self));
-
   priv = flow_item_get_instance_private(FLOW_ITEM(self));
+
+  if(priv->parent)  
+    g_signal_handlers_disconnect_by_data(G_OBJECT(priv->parent), self);
   priv->parent = parent;
+
   g_object_bind_property(G_OBJECT(parent), "store", G_OBJECT(self), "store",
       G_BINDING_DEFAULT);
+  g_signal_connect(G_OBJECT(parent), "notify::labels",
+      G_CALLBACK(flow_item_decorate_cb), self);
+  g_signal_connect(G_OBJECT(parent), "notify::icons",
+      G_CALLBACK(flow_item_decorate_cb), self);
+  g_signal_connect(G_OBJECT(parent), "notify::title_width",
+      G_CALLBACK(flow_item_title_width_cb), self);
+  flow_item_decorate_cb(parent, NULL, self);
+  flow_item_title_width_cb(parent, NULL, self);
 }
 
 GtkWidget *flow_item_get_parent ( GtkWidget *self )
@@ -129,20 +169,6 @@ void *flow_item_get_source ( GtkWidget *self )
     return FLOW_ITEM_GET_CLASS(self)->get_source(self);
   else
     return NULL;
-}
-
-void flow_item_decorate ( GtkWidget *self, gboolean labels, gboolean icons )
-{
-  g_return_if_fail(IS_FLOW_ITEM(self));
-  if(FLOW_ITEM_GET_CLASS(self)->decorate)
-    FLOW_ITEM_GET_CLASS(self)->decorate(self, labels, icons);
-}
-
-void flow_item_set_title_width ( GtkWidget *self, gint title_width )
-{
-  g_return_if_fail(IS_FLOW_ITEM(self));
-  if(FLOW_ITEM_GET_CLASS(self)->set_title_width)
-    FLOW_ITEM_GET_CLASS(self)->set_title_width(self, title_width);
 }
 
 gint flow_item_check_source ( GtkWidget *self, gconstpointer source )

@@ -1,7 +1,7 @@
 #ifndef __TASKBAR_H__
 #define __TASKBAR_H__
 
-#include "basewidget.h"
+#include "flowgrid.h"
 
 #define TASKBAR_TYPE            (taskbar_get_type())
 #define TASKBAR(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), TASKBAR_TYPE, Taskbar))
@@ -15,12 +15,12 @@ typedef struct _TaskbarClass TaskbarClass;
 
 struct _Taskbar
 {
-  BaseWidget item;
+  FlowGrid item;
 };
 
 struct _TaskbarClass
 {
-  BaseWidgetClass parent_class;
+  FlowGridClass parent_class;
 };
 
 typedef struct _TaskbarPrivate TaskbarPrivate;
