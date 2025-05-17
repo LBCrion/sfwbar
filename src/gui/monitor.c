@@ -123,14 +123,14 @@ void monitor_default_probe ( void )
   memset(shm_data, 0, size);
 
   surface = wl_compositor_create_surface(compositor);
-  wl_surface_add_listener(surface, &monitor_surface_listener, &configured);
+  wl_surface_add_listener(surface, &monitor_surface_listener, NULL);
   layer_surface = zwlr_layer_shell_v1_get_layer_surface(layer_shell,
       surface, NULL, ZWLR_LAYER_SHELL_V1_LAYER_TOP, "sfwbar-test");
   zwlr_layer_surface_v1_set_anchor(layer_surface,
       ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
   zwlr_layer_surface_v1_set_size(layer_surface, 1, 1);
   zwlr_layer_surface_v1_add_listener(layer_surface,
-      &monitor_layer_surface_listener, NULL);
+      &monitor_layer_surface_listener, &configured);
 
   wl_surface_commit(surface);
   for(i=0; i<1000 && !configured; i++)
