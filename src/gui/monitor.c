@@ -60,6 +60,7 @@ void monitor_layer_surface_configure ( void *data,
 
 {
   zwlr_layer_surface_v1_ack_configure(surface,s);
+  *((gint *)data) = TRUE;
 }
 
 struct zwlr_layer_surface_v1_listener monitor_layer_surface_listener = {
@@ -79,7 +80,7 @@ void monitor_default_probe ( void )
   struct wl_shm_pool *pool;
   void *shm_data = NULL;
   gchar *name;
-  gint fd, retries = 100, size = 4;
+  gint fd, retries = 100, size = 4, configured = 0, i;
 
   display = gdk_wayland_display_get_wl_display(gdk_display_get_default());
   compositor = gdk_wayland_display_get_wl_compositor(gdk_display_get_default());
@@ -122,7 +123,7 @@ void monitor_default_probe ( void )
   memset(shm_data, 0, size);
 
   surface = wl_compositor_create_surface(compositor);
-  wl_surface_add_listener(surface, &monitor_surface_listener, NULL);
+  wl_surface_add_listener(surface, &monitor_surface_listener, &configured);
   layer_surface = zwlr_layer_shell_v1_get_layer_surface(layer_shell,
       surface, NULL, ZWLR_LAYER_SHELL_V1_LAYER_TOP, "sfwbar-test");
   zwlr_layer_surface_v1_set_anchor(layer_surface,
@@ -132,7 +133,8 @@ void monitor_default_probe ( void )
       &monitor_layer_surface_listener, NULL);
 
   wl_surface_commit(surface);
-  wl_display_roundtrip(display);
+  for(i=0; i<1000 && !configured; i++)
+    wl_display_roundtrip(display);
 
   wl_surface_attach(surface, buffer, 0, 0);
   wl_surface_commit(surface);
