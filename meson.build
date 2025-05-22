@@ -35,6 +35,7 @@ wayland_scanner = find_program('wayland-scanner')
 wayland_protodir = wayp.get_variable(pkgconfig: 'pkgdatadir')
 wayland_protos = ['wlr-foreign-toplevel-management-unstable-v1',
                   'xdg-output-unstable-v1',
+                  'xdg-shell-unstable-v5',
                   'wlr-layer-shell-unstable-v1',
                   'cosmic-workspace-unstable-v1',
                   'ext-workspace-v1',
