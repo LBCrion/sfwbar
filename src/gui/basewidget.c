@@ -20,21 +20,21 @@ G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX,
 enum {
   BASE_WIDGET_STORE = 1,
   BASE_WIDGET_ID,
-  BASE_WIDGET_LOCAL_STATE,
+  BASE_WIDGET_LOCAL,
   BASE_WIDGET_USER_STATE,
   BASE_WIDGET_TOOLTIP,
   BASE_WIDGET_VALUE,
   BASE_WIDGET_STYLE,
-  BASE_WIDGET_RECTANGLE,
+  BASE_WIDGET_CSS,
+  BASE_WIDGET_LOC,
   BASE_WIDGET_TRIGGER,
   BASE_WIDGET_INTERVAL,
+  BASE_WIDGET_DISABLE,
 };
 
 static GList *widgets_scan;
 static GMutex widget_mutex;
 static gint64 base_widget_default_id = 0;
-
-static guint new_css_signal;
 
 static void base_widget_attachment_free ( base_widget_attachment_t *attach )
 {
@@ -117,7 +117,7 @@ static void base_widget_destroy ( GtkWidget *self )
   if(priv->store && priv->store->widget_map && priv->id)
     g_hash_table_remove(priv->store->widget_map, priv->id);
 
-  g_list_free_full(priv->css, g_free);
+  g_clear_pointer(&priv->css, g_free);
   priv->css = NULL;
   g_clear_pointer(&priv->id, g_free);
   g_clear_pointer(&priv->value, expr_cache_free);
@@ -353,7 +353,6 @@ static void base_widget_set_local_state ( GtkWidget *self, gboolean state )
 static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
 {
   BaseWidgetPrivate *spriv, *dpriv;
-  GList *iter;
 
   spriv = base_widget_get_instance_private(BASE_WIDGET(src));
   dpriv = base_widget_get_instance_private(BASE_WIDGET(dest));
@@ -374,19 +373,18 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
       G_OBJECT(dest), "value", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "style",
       G_OBJECT(dest), "style", G_BINDING_SYNC_CREATE);
-  g_object_bind_property(G_OBJECT(src), "rectangle",
-      G_OBJECT(dest), "rectangle", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "css",
+      G_OBJECT(dest), "css", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "loc",
+      G_OBJECT(dest), "loc", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "store",
       G_OBJECT(dest), "store", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "trigger",
       G_OBJECT(dest), "trigger", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "has-tooltip",
       G_OBJECT(dest), "has-tooltip", G_BINDING_SYNC_CREATE);
-  g_object_bind_property(G_OBJECT(src), "local-state",
-      G_OBJECT(dest), "local-state", G_BINDING_SYNC_CREATE);
-
-  for(iter=spriv->css; iter; iter=g_list_next(iter))
-    css_widget_apply(base_widget_get_child(dest), iter->data);
+  g_object_bind_property(G_OBJECT(src), "local",
+      G_OBJECT(dest), "local", G_BINDING_SYNC_CREATE);
 }
 
 static gboolean base_widget_query_tooltip ( GtkWidget *self, gint x, gint y,
@@ -511,31 +509,37 @@ static void base_widget_get_property ( GObject *self, guint id, GValue *value,
       g_value_set_pointer(value, priv->store);
       break;
     case BASE_WIDGET_ID:
-      g_value_set_pointer(value, priv->id);
+      g_value_set_string(value, priv->id);
       break;
-    case BASE_WIDGET_LOCAL_STATE:
+    case BASE_WIDGET_LOCAL:
       g_value_set_boolean(value, priv->local_state);
       break;
     case BASE_WIDGET_USER_STATE:
       g_value_set_uint(value, priv->user_state);
       break;
     case BASE_WIDGET_TOOLTIP:
-      g_value_set_pointer(value, priv->tooltip->code);
+      g_value_set_boxed(value, priv->tooltip->code);
       break;
     case BASE_WIDGET_VALUE:
-      g_value_set_pointer(value, priv->value->code);
+      g_value_set_boxed(value, priv->value->code);
       break;
     case BASE_WIDGET_STYLE:
-      g_value_set_pointer(value, priv->style->code);
+      g_value_set_boxed(value, priv->style->code);
       break;
-    case BASE_WIDGET_RECTANGLE:
-      g_value_set_pointer(value, &priv->rect);
+    case BASE_WIDGET_LOC:
+      g_value_set_boxed(value, &priv->rect);
       break;
     case BASE_WIDGET_TRIGGER:
       g_value_set_string(value, priv->trigger);
       break;
     case BASE_WIDGET_INTERVAL:
-      g_value_set_int64(value, priv->interval);
+      g_value_set_int64(value, priv->interval/1000);
+      break;
+    case BASE_WIDGET_CSS:
+      g_value_set_string(value, priv->css);
+      break;
+    case BASE_WIDGET_DISABLE:
+      g_value_set_boolean(value, priv->disabled);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
@@ -603,29 +607,44 @@ static void base_widget_set_property ( GObject *self, guint id,
     case BASE_WIDGET_ID:
       base_widget_set_id(GTK_WIDGET(self), g_value_get_string(value));
       break;
-    case BASE_WIDGET_LOCAL_STATE:
+    case BASE_WIDGET_LOCAL:
       base_widget_set_local_state(GTK_WIDGET(self), g_value_get_boolean(value));
       break;
     case BASE_WIDGET_USER_STATE:
       priv->user_state = g_value_get_uint(value);
       break;
     case BASE_WIDGET_TOOLTIP:
-      base_widget_set_tooltip(GTK_WIDGET(self), g_value_get_pointer(value));
+      base_widget_set_tooltip(GTK_WIDGET(self), g_value_get_boxed(value));
       break;
     case BASE_WIDGET_VALUE:
-      base_widget_set_value(GTK_WIDGET(self), g_value_get_pointer(value));
+      base_widget_set_value(GTK_WIDGET(self), g_value_get_boxed(value));
       break;
     case BASE_WIDGET_STYLE:
-      base_widget_set_style(GTK_WIDGET(self), g_value_get_pointer(value));
+      base_widget_set_style(GTK_WIDGET(self), g_value_get_boxed(value));
       break;
-    case BASE_WIDGET_RECTANGLE:
-      base_widget_set_rect(GTK_WIDGET(self), g_value_get_pointer(value));
+    case BASE_WIDGET_LOC:
+      base_widget_set_rect(GTK_WIDGET(self), g_value_get_boxed(value));
       break;
     case BASE_WIDGET_TRIGGER:
       base_widget_set_trigger(GTK_WIDGET(self), (gchar *)g_value_get_string(value));
       break;
     case BASE_WIDGET_INTERVAL:
-      priv->interval = g_value_get_int64(value);
+      priv->interval = g_value_get_int64(value)*1000;
+      break;
+    case BASE_WIDGET_CSS:
+      if(g_strcmp0(priv->css, g_value_get_string(value)))
+      {
+        g_clear_pointer(&priv->css, g_free);
+        priv->css = g_strdup(g_value_get_string(value));
+        if(priv->provider)
+          gtk_style_context_remove_provider(gtk_widget_get_style_context(
+                GTK_WIDGET(self)), GTK_STYLE_PROVIDER(priv->provider));
+        priv->provider = css_widget_apply(
+            base_widget_get_child(GTK_WIDGET(self)), priv->css);
+      }
+      break;
+    case BASE_WIDGET_DISABLE:
+      priv->disabled = g_value_get_boolean(value);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
@@ -634,11 +653,13 @@ static void base_widget_set_property ( GObject *self, guint id,
 
 static void base_widget_class_init ( BaseWidgetClass *kclass )
 {
-  GTK_WIDGET_CLASS(kclass)->destroy = base_widget_destroy;
   kclass->action_exec = base_widget_action_exec_impl;
   kclass->mirror = base_widget_mirror_impl;
+
   G_OBJECT_CLASS(kclass)->get_property = base_widget_get_property;
   G_OBJECT_CLASS(kclass)->set_property = base_widget_set_property;
+
+  GTK_WIDGET_CLASS(kclass)->destroy = base_widget_destroy;
   GTK_WIDGET_CLASS(kclass)->size_allocate = base_widget_size_allocate;
   GTK_WIDGET_CLASS(kclass)->get_preferred_width = base_widget_get_pref_width;
   GTK_WIDGET_CLASS(kclass)->get_preferred_height = base_widget_get_pref_height;
@@ -648,37 +669,41 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
   GTK_WIDGET_CLASS(kclass)->drag_motion = base_widget_drag_motion;
   GTK_WIDGET_CLASS(kclass)->drag_leave = base_widget_drag_leave;
   GTK_WIDGET_CLASS(kclass)->query_tooltip = base_widget_query_tooltip;
+
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_STORE,
-      g_param_spec_pointer("store", "store", "store", G_PARAM_READWRITE));
+      g_param_spec_pointer("store", "store", "no_config", G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_ID,
-      g_param_spec_string("id", "id", "id", NULL, G_PARAM_READWRITE));
+      g_param_spec_string("id", "id", "no_config", NULL, G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_TOOLTIP,
-      g_param_spec_pointer("tooltip", "tooltip", "tooltip", G_PARAM_READWRITE));
+      g_param_spec_boxed("tooltip", "tooltip", "sfwbar_config", G_TYPE_BYTES,
+        G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_VALUE,
-      g_param_spec_pointer("value", "value", "value", G_PARAM_READWRITE));
+      g_param_spec_boxed("value", "value", "sfwbar_config", G_TYPE_BYTES,
+        G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_STYLE,
-      g_param_spec_pointer("style", "style", "style", G_PARAM_READWRITE));
-  g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_RECTANGLE,
-      g_param_spec_pointer("rectangle", "rectangle", "rectangle",
+      g_param_spec_boxed("style", "style", "sfwbar_config", G_TYPE_BYTES,
+        G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_CSS,
+      g_param_spec_string("css", "css", "sfwbar_config", NULL,
+        G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_LOC,
+      g_param_spec_boxed("loc", "loc", "sfwbar_config", GDK_TYPE_RECTANGLE,
         G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_TRIGGER,
-      g_param_spec_string("trigger", "trigger", "trigger", NULL,
+      g_param_spec_string("trigger", "trigger", "sfwbar_config", NULL,
         G_PARAM_READWRITE));
-  g_object_class_install_property(G_OBJECT_CLASS(kclass),
-      BASE_WIDGET_LOCAL_STATE, g_param_spec_boolean("local-state",
-        "local-state", "local-state", FALSE, G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_LOCAL,
+      g_param_spec_boolean("local", "local", "sfwbar_config", FALSE,
+        G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_DISABLE,
+      g_param_spec_boolean("disable", "disable", "sfwbar_config", FALSE,
+        G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_INTERVAL,
+      g_param_spec_int64("interval", "interval", "sfwbar_config",
+        0, INT64_MAX, 0, G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass),
       BASE_WIDGET_USER_STATE, g_param_spec_uint("user-state",
-        "user-state", "user-state", 0, UINT_MAX, 0, G_PARAM_READWRITE));
-  g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_INTERVAL,
-      g_param_spec_int64("interval", "interval", "interval", 0, INT64_MAX, 0,
-        G_PARAM_READWRITE));
-  g_object_class_install_property(G_OBJECT_CLASS(kclass),
-      BASE_WIDGET_RECTANGLE, g_param_spec_boxed("rect", "rect", "rect",
-        GDK_TYPE_RECTANGLE,G_PARAM_READABLE));
-  new_css_signal = g_signal_new("css-new", G_TYPE_FROM_CLASS(kclass),
-      G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
-      0, NULL, NULL, NULL, G_TYPE_NONE, 1, G_TYPE_STRING);
+        "user-state", "no_config", 0, UINT_MAX, 0, G_PARAM_READWRITE));
 }
 
 static void base_widget_init ( BaseWidget *self )
@@ -877,24 +902,6 @@ gchar *base_widget_get_value ( GtkWidget *self )
         BASE_WIDGET(base_widget_get_mirror_parent(self)));
 
   return priv->value->cache;
-}
-
-void base_widget_set_css ( GtkWidget *self, gchar *css )
-{
-  BaseWidgetPrivate *priv;
-  GList *iter;
-
-  g_return_if_fail(IS_BASE_WIDGET(self));
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
-
-  if(!css || g_list_find_custom(priv->css, css, (GCompareFunc)g_strcmp0))
-    return;
-
-  css_widget_apply(base_widget_get_child(self), css);
-  priv->css = g_list_append(priv->css, g_strdup(css));
-
-  for(iter=priv->mirror_children; iter; iter=g_list_next(iter))
-    css_widget_apply(base_widget_get_child(iter->data), css);
 }
 
 guint16 base_widget_state_build ( GtkWidget *self, window_t *win )

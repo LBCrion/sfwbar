@@ -141,19 +141,11 @@ static void config_switcher ( GScanner *scanner )
   while(!config_is_section_end(scanner))
   {
     g_scanner_get_next_token(scanner);
-    if(!config_flowgrid_property(scanner, widget))
-    {
-      if(!g_ascii_strcasecmp(scanner->value.v_identifier, "css"))
-        css_widget_apply(widget, config_assign_string(scanner, "css"));
-      else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "interval"))
-        switcher_set_interval(config_assign_number(scanner, "interval")/100);
-      else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "disable"))
-        disable = config_assign_boolean(scanner, FALSE, "disable");
-      else
+    if(!config_widget_set_property(scanner, NULL, widget))
         g_scanner_error(scanner, "Unexpected token in 'switcher'");
-    }
   }
 
+  g_object_get(G_OBJECT(widget), "disable", &disable, NULL);
   if(disable)
     gtk_widget_destroy(widget);
 }

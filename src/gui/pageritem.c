@@ -45,7 +45,7 @@ static gboolean pager_item_action_exec ( GtkWidget *self, gint slot,
 void pager_item_update ( GtkWidget *self )
 {
   PagerItemPrivate *priv;
-  gboolean monitor_match, show_pin;
+  gboolean monitor_match, show_pin, preview;
   gchar *monitor;
 
   g_return_if_fail(IS_PAGER_ITEM(self));
@@ -56,8 +56,10 @@ void pager_item_update ( GtkWidget *self )
 
   if(g_strcmp0(gtk_label_get_label(GTK_LABEL(priv->label)), priv->ws->name))
     gtk_label_set_markup(GTK_LABEL(priv->label), priv->ws->name);
-  gtk_widget_set_has_tooltip(priv->button,
-      GPOINTER_TO_INT(g_object_get_data(G_OBJECT(priv->pager),"preview")));
+
+  g_object_get(G_OBJECT(priv->pager), "preview", &preview, NULL);
+  gtk_widget_set_has_tooltip(priv->button, preview);
+
   css_set_class(priv->button, "focused", workspace_is_focused(priv->ws));
   css_set_class(priv->button, "visible", priv->ws->state & WS_STATE_VISIBLE);
   css_set_class(priv->button, "urgent", priv->ws->state & WS_STATE_URGENT);

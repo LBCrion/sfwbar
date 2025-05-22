@@ -24,20 +24,20 @@ void popup_get_gravity ( GtkWidget *widget, GdkGravity *wanchor,
   switch(bar_get_toplevel_dir(widget))
   {
     case GTK_POS_TOP:
-      *wanchor = *wanchor?*wanchor:GDK_GRAVITY_SOUTH_WEST;
-      *manchor = *manchor?*manchor:GDK_GRAVITY_NORTH_WEST;
+      *wanchor = *wanchor? *wanchor: GDK_GRAVITY_SOUTH_WEST;
+      *manchor = *manchor? *manchor: GDK_GRAVITY_NORTH_WEST;
       break;
     case GTK_POS_LEFT:
-      *wanchor = *wanchor?*wanchor:GDK_GRAVITY_NORTH_EAST;
-      *manchor = *manchor?*manchor:GDK_GRAVITY_NORTH_WEST;
+      *wanchor = *wanchor? *wanchor: GDK_GRAVITY_NORTH_EAST;
+      *manchor = *manchor? *manchor: GDK_GRAVITY_NORTH_WEST;
       break;
     case GTK_POS_RIGHT:
-      *wanchor = *wanchor?*wanchor:GDK_GRAVITY_NORTH_WEST;
-      *manchor = *manchor?*manchor:GDK_GRAVITY_NORTH_EAST;
+      *wanchor = *wanchor? *wanchor : GDK_GRAVITY_NORTH_WEST;
+      *manchor = *manchor? *manchor : GDK_GRAVITY_NORTH_EAST;
       break;
     default:
-      *wanchor = *wanchor?*wanchor:GDK_GRAVITY_NORTH_WEST;
-      *manchor = *manchor?*manchor:GDK_GRAVITY_SOUTH_WEST;
+      *wanchor = *wanchor? *wanchor : GDK_GRAVITY_NORTH_WEST;
+      *manchor = *manchor? *manchor : GDK_GRAVITY_SOUTH_WEST;
       break;
   }
 }
@@ -155,14 +155,14 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkSeat *seat )
   gtk_widget_realize(popup);
   gparent = gtk_widget_get_window(parent);
   gpopup = gtk_widget_get_window(
-      gtk_widget_get_ancestor(popup,GTK_TYPE_WINDOW));
+      gtk_widget_get_ancestor(popup, GTK_TYPE_WINDOW));
 
   rect.x = 0;
   rect.y = 0;
   rect.width = gdk_window_get_width(gparent);
   rect.height = gdk_window_get_height(gparent);
   popup_get_gravity(parent,&wanchor,&panchor);
-  window_ref(gtk_widget_get_ancestor(parent,GTK_TYPE_WINDOW),popup);
+  window_ref(gtk_widget_get_ancestor(parent, GTK_TYPE_WINDOW), popup);
 
   if(!seat)
     seat = gdk_display_get_default_seat(gdk_display_get_default());
@@ -178,7 +178,7 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkSeat *seat )
 
   gdk_window_set_transient_for(gpopup, gparent);
   gdk_window_move_to_rect(gpopup, &rect, wanchor, panchor,
-      GDK_ANCHOR_FLIP_X | GDK_ANCHOR_FLIP_Y,0,0);
+      GDK_ANCHOR_FLIP_X | GDK_ANCHOR_FLIP_Y, 0, 0);
   css_widget_cascade(popup,NULL);
 
   transfer = g_object_get_data(G_OBJECT(gpopup), "gdk-attached-grab-window");
@@ -272,7 +272,7 @@ GtkWidget *popup_new ( gchar *name )
   g_signal_connect(win,"window-state-event", G_CALLBACK(popup_state_cb),NULL);
   g_signal_connect(grid, "size-allocate", G_CALLBACK(popup_size_allocate_cb), win);
 
-  g_hash_table_insert(popup_list,g_strdup(name),win);
+  g_hash_table_insert(popup_list, g_strdup(name),win);
   return win;
 }
 
@@ -280,5 +280,5 @@ GtkWidget *popup_from_name ( gchar *name )
 {
   if(!popup_list || !name)
     return NULL;
-  return g_hash_table_lookup(popup_list,name);
+  return g_hash_table_lookup(popup_list, name);
 }

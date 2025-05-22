@@ -141,7 +141,7 @@ void config_parse_sequence ( GScanner *scanner, ... )
   va_end(args);
 }
 
-gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr)
+gboolean config_assign_boolean (GScanner *scanner, gboolean def, const gchar *expr)
 {
   gboolean result = def;
 
@@ -163,7 +163,23 @@ gboolean config_assign_boolean (GScanner *scanner, gboolean def, gchar *expr)
   return result;
 }
 
-gchar *config_assign_string ( GScanner *scanner, gchar *expr )
+gchar *config_assign_enum ( GScanner *scanner, const gchar *expr )
+{
+  scanner->max_parse_errors = FALSE;
+
+  if(!config_expect_token(scanner, '=', "Missing '=' in %s = <enum>", expr))
+    return NULL;
+
+  if(config_check_and_consume(scanner, G_TOKEN_STRING))
+    return scanner->value.v_string;
+  if(config_check_and_consume(scanner, G_TOKEN_IDENTIFIER))
+    return scanner->value.v_identifier;
+
+  g_scanner_error(scanner, "Missing <string> in %s = <string>", expr);
+  return NULL;
+}
+
+gchar *config_assign_string ( GScanner *scanner, const gchar *expr )
 {
   scanner->max_parse_errors = FALSE;
 
@@ -177,7 +193,7 @@ gchar *config_assign_string ( GScanner *scanner, gchar *expr )
   return scanner->value.v_string;
 }
 
-gdouble config_assign_number ( GScanner *scanner, gchar *expr )
+gdouble config_assign_number ( GScanner *scanner, const gchar *expr )
 {
   gdouble result;
 
@@ -214,25 +230,26 @@ void *config_assign_tokens ( GScanner *scanner, GHashTable *keys, gchar *err )
   return res;
 }
 
-GList *config_assign_string_list ( GScanner *scanner )
+GPtrArray *config_assign_string_list ( GScanner *scanner )
 {
-  GList *list = NULL;
+  GPtrArray *array;
 
   scanner->max_parse_errors = FALSE;
   if(!config_expect_token(scanner, '=', "Missing '=' after '%s'",
         scanner->value.v_identifier ))
     return NULL;
 
+  array = g_ptr_array_new_full(1, g_free);
   do
   {
     if(!config_expect_token(scanner, G_TOKEN_STRING,
           "invalid token in string list"))
       break;
-    list = g_list_prepend(list, g_strdup(scanner->value.v_string));
+    g_ptr_array_add(array, g_strdup(scanner->value.v_string));
   } while (config_check_and_consume(scanner, ','));
   config_check_and_consume(scanner, ';');
 
-  return g_list_reverse(list);
+  return array;
 }
 
 GBytes *config_assign_action ( GScanner *scanner, gchar *err )

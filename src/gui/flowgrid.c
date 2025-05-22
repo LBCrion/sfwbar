@@ -5,8 +5,6 @@
 
 #include "css.h"
 #include "gui/flowgrid.h"
-#include "gui/basewidget.h"
-#include "gui/taskbarpopup.h"
 #include "config/config.h"
 #include "window.h"
 #include "gui/bar.h"
@@ -23,6 +21,13 @@ enum {
   FLOW_GRID_COLS,
   FLOW_GRID_ROWS,
   FLOW_GRID_PRIMARY_AXIS,
+  FLOW_GRID_VALUE_OVERRIDE,
+  FLOW_GRID_TOOLTIP_OVERRIDE,
+};
+
+GEnumValue flow_grid_axis[] = {
+  { FLOW_GRID_AXIS_ROWS, "rows", "rows" },
+  { FLOW_GRID_AXIS_COLS, "cols", "cols" },
 };
 
 static void flow_grid_get_preferred_width (GtkWidget *self, gint *minimal,
@@ -115,7 +120,11 @@ static void flow_grid_get_property ( GObject *self, guint id, GValue *value,
       g_value_set_int(value, priv->rows);
       break;
     case FLOW_GRID_PRIMARY_AXIS:
-      g_value_set_int(value, priv->primary_axis);
+      g_value_set_enum(value, priv->primary_axis);
+      break;
+    case FLOW_GRID_VALUE_OVERRIDE:
+    case FLOW_GRID_TOOLTIP_OVERRIDE:
+      g_value_set_boxed(value, NULL);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
@@ -148,15 +157,20 @@ static void flow_grid_set_property ( GObject *self, guint id,
       break;
     case FLOW_GRID_COLS:
       priv->cols = g_value_get_int(value);
+      priv->rows = -1;
       flow_grid_invalidate(GTK_WIDGET(self));
       break;
     case FLOW_GRID_ROWS:
       priv->rows = g_value_get_int(value);
+      priv->cols = -1;
       flow_grid_invalidate(GTK_WIDGET(self));
       break;
     case FLOW_GRID_PRIMARY_AXIS:
-      priv->primary_axis = g_value_get_int(value);
+      priv->primary_axis = g_value_get_enum(value);
       flow_grid_invalidate(GTK_WIDGET(self));
+      break;
+    case FLOW_GRID_VALUE_OVERRIDE:
+    case FLOW_GRID_TOOLTIP_OVERRIDE:
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
@@ -201,28 +215,35 @@ static void flow_grid_class_init ( FlowGridClass *kclass )
   BASE_WIDGET_CLASS(kclass)->mirror = flow_grid_mirror;
 
   g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_LABELS,
-      g_param_spec_boolean("labels", "labels", "labels", FALSE,
+      g_param_spec_boolean("labels", "labels", "sfwbar_config", FALSE,
         G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_ICONS,
-      g_param_spec_boolean("icons", "icons", "icons", FALSE,
+      g_param_spec_boolean("icons", "icons", "sfwbar_config", FALSE,
         G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_TOOLTIPS,
-      g_param_spec_boolean("tooltips", "tooltips", "tooltips", FALSE,
+      g_param_spec_boolean("tooltips", "tooltips", "sfwbar_config", FALSE,
         G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass),
       FLOW_GRID_TITLE_WIDTH, g_param_spec_int("title_width", "title_width",
-        "title_width", -1, INT_MAX, -1, G_PARAM_READWRITE));
+        "sfwbar_config", -1, INT_MAX, -1, G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_SORT,
-      g_param_spec_boolean("sort", "sort", "sort", FALSE, G_PARAM_READWRITE));
+      g_param_spec_boolean("sort", "sort", "sfwbar_config", FALSE,
+        G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_COLS,
-    g_param_spec_int("cols", "cols", "cols", -1, INT_MAX, 1,
+    g_param_spec_int("cols", "cols", "sfwbar_config", -1, INT_MAX, 1,
       G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_ROWS,
-    g_param_spec_int("rows", "rows", "rows", -1, INT_MAX, -1,
+    g_param_spec_int("rows", "rows", "sfwbar_config", -1, INT_MAX, -1,
       G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass),
-      FLOW_GRID_PRIMARY_AXIS, g_param_spec_int("primary_axis", "primary_axis",
-        "primary_axis", 0, INT_MAX, 0, G_PARAM_READWRITE));
+      FLOW_GRID_PRIMARY_AXIS,
+      g_param_spec_enum("primary_axis", "primary_axis", "sfwbar_config",
+        g_enum_register_static("flow_grid_axis", flow_grid_axis),
+        FLOW_GRID_AXIS_ROWS, G_PARAM_READWRITE));
+  g_object_class_override_property(G_OBJECT_CLASS(kclass),
+      FLOW_GRID_VALUE_OVERRIDE, "value");
+  g_object_class_override_property(G_OBJECT_CLASS(kclass),
+      FLOW_GRID_TOOLTIP_OVERRIDE, "tooltip");
 }
 
 static void flow_grid_init ( FlowGrid *self )
@@ -360,9 +381,9 @@ gboolean flow_grid_update ( GtkWidget *self )
   if(!priv->primary_axis)
   {
     if(priv->rows>0)
-      priv->primary_axis = G_TOKEN_COLS;
+      priv->primary_axis = FLOW_GRID_AXIS_COLS;
     else
-      priv->primary_axis = G_TOKEN_ROWS;
+      priv->primary_axis = FLOW_GRID_AXIS_ROWS;
   }
 
   gtk_container_foreach(GTK_CONTAINER(priv->grid),
@@ -384,14 +405,14 @@ gboolean flow_grid_update ( GtkWidget *self )
   cols = 0;
   if(priv->rows>0)
   {
-    if(priv->primary_axis == G_TOKEN_COLS)
+    if(priv->primary_axis == FLOW_GRID_AXIS_COLS)
       rows = priv->rows;
     else
       cols = (count/priv->rows) + ((count%priv->rows)?1:0);
   }
   else
   {
-    if(priv->primary_axis == G_TOKEN_ROWS)
+    if(priv->primary_axis == FLOW_GRID_AXIS_COLS)
       cols = priv->cols;
     else
       rows = (count/priv->cols) + ((count%priv->cols)?1:0);

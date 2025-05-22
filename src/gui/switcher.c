@@ -20,7 +20,6 @@ G_DEFINE_TYPE_WITH_CODE (Switcher, switcher, FLOW_GRID_TYPE,
 static GtkWidget *switcher_win;
 static GtkWidget *switcher_grid;
 static guint timer_handle;
-static gint interval;
 static gchar hstate;
 static gint counter;
 static window_t *focus;
@@ -143,13 +142,15 @@ gboolean switcher_check ( GtkWidget *switcher, window_t *win )
 gboolean switcher_event ( gpointer dir )
 {
   GList *iter, *list = NULL, *flink = NULL;
+  gint64 interval;
 
   if(!switcher_grid)
     return TRUE;
 
   if(counter<1 || !focus)
     focus = wintree_from_id(wintree_get_focus());
-  counter = interval + 1;
+  g_object_get(G_OBJECT(switcher_grid), "interval", &interval, NULL);
+  counter = interval/100 + 1;
 
   for (iter = wintree_get_list(); iter; iter = g_list_next(iter) )
     if(switcher_check(switcher_grid, iter->data))
@@ -188,9 +189,4 @@ gint switcher_get_filter ( GtkWidget *self )
   priv = switcher_get_instance_private(SWITCHER(self));
 
   return priv->filter;
-}
-
-void switcher_set_interval ( gint new_interval )
-{
-  interval = new_interval;
 }

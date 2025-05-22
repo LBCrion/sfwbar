@@ -74,7 +74,7 @@ static gboolean taskbar_item_check ( GtkWidget *self )
 {
   TaskbarItemPrivate *priv;
   GtkWidget *taskbar, *holder;
-  gboolean floating, result;
+//  gboolean floating, result;
 
   g_return_val_if_fail(IS_TASKBAR_ITEM(self), FALSE);
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
@@ -83,8 +83,10 @@ static gboolean taskbar_item_check ( GtkWidget *self )
     taskbar = flow_item_get_parent(holder);
   else
     taskbar = priv->taskbar;
+  return taskbar_shell_check_filter(taskbar, priv->win) &&
+    !wintree_is_filtered(priv->win);
 
-  switch(taskbar_shell_get_filter(taskbar, &floating))
+/*  switch(taskbar_shell_get_filter(taskbar, &floating))
   {
     case G_TOKEN_OUTPUT:
       result = (!priv->win->outputs || g_list_find_custom(priv->win->outputs,
@@ -104,7 +106,7 @@ static gboolean taskbar_item_check ( GtkWidget *self )
   if(result)
     result = !wintree_is_filtered(priv->win);
 
-  return result;
+  return result;*/
 }
 
 static void taskbar_item_decorate ( GtkWidget *self, gboolean labels,

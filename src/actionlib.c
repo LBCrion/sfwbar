@@ -229,12 +229,14 @@ static value_t action_setbarmargin ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, np-1, "SetBarMargin");
 
   if( np==2 && (bar = bar_from_name(value_get_string(p[0]))) )
-    bar_set_margin(bar, g_ascii_strtoll(value_get_string(p[1]), NULL, 10));
+    g_object_set(G_OBJECT(bar), "margin",
+        (gint)g_ascii_strtoll(value_get_string(p[1]), NULL, 10), NULL);
   else if( (list = bar_get_list()) )
   {
     g_hash_table_iter_init(&iter, list);
     while(g_hash_table_iter_next(&iter, NULL, (gpointer *)&bar))
-      bar_set_margin(bar, g_ascii_strtoll(value_get_string(p[np-1]), NULL,10));
+      g_object_set(G_OBJECT(bar), "margin",
+          (gint)g_ascii_strtoll(value_get_string(p[1]), NULL, 10), NULL);
   }
 
   return value_na;
@@ -291,7 +293,7 @@ static value_t action_setexclusivezone ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, np-1, "SetExclusiveZone");
 
   if( np==2 && (bar = bar_from_name(value_get_string(p[0]))) )
-    bar_set_exclusive_zone(bar, value_get_string(p[1]));
+    g_object_set(G_OBJECT(bar), "exclusive_zone", value_get_string(p[1]),NULL);
   else
     bar_address_all(NULL, value_get_string(p[np-1]), bar_set_exclusive_zone);
 

@@ -26,14 +26,15 @@ struct _PagerClass
 
 struct _PagerPrivate
 {
-  GList *pins;
+  GPtrArray *pins;
   guint timer_h;
+  gboolean preview;
 };
 
 GType pager_get_type ( void );
 
 void pager_invalidate_all ( workspace_t *ws );
-void pager_add_pins ( GtkWidget *self, GList *pins );
+void pager_add_pins ( GtkWidget *self, GPtrArray *pins );
 gboolean pager_check_pins ( GtkWidget *self, gchar *pin );
 void pager_item_add ( workspace_t *ws );
 void pager_item_delete ( workspace_t *ws );

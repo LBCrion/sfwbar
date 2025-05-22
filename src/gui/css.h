@@ -5,7 +5,7 @@
 
 void css_init ( gchar * );
 void css_file_load ( gchar * );
-void css_widget_apply ( GtkWidget *widget, gchar *css );
+GtkCssProvider *css_widget_apply ( GtkWidget *widget, gchar *css );
 void css_widget_cascade ( GtkWidget *widget, gpointer data );
 void css_add_class ( GtkWidget *widget, gchar *css_class );
 void css_remove_class ( GtkWidget *widget, gchar *css_class );

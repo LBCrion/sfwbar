@@ -6,22 +6,13 @@
 #include "config.h"
 #include "gui/css.h"
 #include "gui/bar.h"
-#include "gui/button.h"
-#include "gui/scale.h"
-#include "gui/image.h"
-#include "gui/label.h"
-#include "gui/cchart.h"
 #include "gui/grid.h"
-#include "gui/taskbarshell.h"
-#include "gui/taskbar.h"
-#include "gui/pager.h"
 #include "gui/popup.h"
-#include "gui/tray.h"
 #include "vm/vm.h"
 
 void config_widget (GScanner *scanner, GtkWidget *widget);
 
-GdkRectangle config_get_loc ( GScanner *scanner )
+GdkRectangle *config_get_loc ( GScanner *scanner )
 {
   GdkRectangle rect = { .x=0, .y=0, .width=1, .height=1 };
 
@@ -38,7 +29,7 @@ GdkRectangle config_get_loc ( GScanner *scanner )
       SEQ_OPT, ';', NULL, NULL, NULL,
       SEQ_END );
 
-  return rect;
+  return g_memdup2(&rect, sizeof(rect));
 }
 
 gboolean config_action_mods ( GScanner *scanner, gint *mods )
@@ -72,7 +63,7 @@ gboolean config_action_slot ( GScanner *scanner, gint *slot )
   return !(*slot<0 || *slot>BASE_WIDGET_MAX_ACTION );
 }
 
-void config_widget_action ( GScanner *scanner, GtkWidget *widget )
+static void config_widget_action ( GScanner *scanner, GtkWidget *widget )
 {
   gint slot = 1, mod = 0;
   GBytes *action = NULL;
@@ -127,52 +118,58 @@ gboolean config_include ( GScanner *scanner, GtkWidget *container )
   return TRUE;
 }
 
-gboolean config_flowgrid_property ( GScanner *scanner, GtkWidget *widget )
+gboolean config_widget_set_property ( GScanner *scanner, gchar *prefix,
+    GtkWidget *widget )
 {
-  gint key;
+  GParamSpec *spec;
+  GEnumValue *eval;
+  GValue value = G_VALUE_INIT;
+  GString *prop_name;
+  const gchar *name;
 
-  if(!IS_FLOW_GRID(widget))
+  if(!widget || scanner->token != G_TOKEN_IDENTIFIER ||
+      g_scanner_peek_next_token(scanner) == G_TOKEN_IDENTIFIER)
+   return FALSE; 
+
+  prop_name = g_string_ascii_down(g_string_append(g_string_new(prefix),
+        scanner->value.v_identifier));
+  spec = g_object_class_find_property(G_OBJECT_GET_CLASS(widget),
+      prop_name->str);
+  g_string_free(prop_name, TRUE);
+
+  if(!spec)
     return FALSE;
-  if( !(key = config_lookup_key(scanner, config_flowgrid_props)) )
+
+  if(g_strcmp0(g_param_spec_get_blurb(spec), "sfwbar_config"))
     return FALSE;
 
-  switch(key)
-  {
-    case G_TOKEN_COLS:
-      g_object_set(G_OBJECT(widget), "cols",
-          (gint)config_assign_number(scanner, "cols"), NULL);
-      return TRUE;
-    case G_TOKEN_ROWS:
-      g_object_set(G_OBJECT(widget), "rows",
-          (gint)config_assign_number(scanner, "rows"), NULL);
-      return TRUE;
-    case G_TOKEN_PRIMARY:
-      g_object_set(G_OBJECT(widget), "primary_axis",
-          GPOINTER_TO_INT(config_assign_tokens(scanner, config_axis_keys,
-              "Invalid value in 'primary = rows|cols'")), NULL);
-      return TRUE;
-    case G_TOKEN_ICONS:
-      g_object_set(G_OBJECT(widget), "icons",
-          config_assign_boolean(scanner, FALSE, "icons"), NULL);
-      return TRUE;
-    case G_TOKEN_LABELS:
-      g_object_set(G_OBJECT(widget), "labels",
-          config_assign_boolean(scanner, FALSE, "labels"), NULL);
-      return TRUE;
-    case G_TOKEN_TITLEWIDTH:
-      g_object_set(G_OBJECT(widget), "title_width",
-          (gint)config_assign_number(scanner, "title_width"), NULL);
-      return TRUE;
-    case G_TOKEN_SORT:
-      g_object_set(G_OBJECT(widget), "sort",
-          config_assign_boolean(scanner, TRUE, "sort"), NULL);
-      return TRUE;
-    case G_TOKEN_NUMERIC:
-      g_message("property 'numeric' has been deprecated");
-      return TRUE;
-  }
+  name = g_param_spec_get_name(spec);
+  g_value_init(&value, G_PARAM_SPEC_VALUE_TYPE(spec));
 
-  return FALSE;
+  if(G_IS_PARAM_SPEC_ENUM(spec) && (eval = g_enum_get_value_by_name(
+          G_PARAM_SPEC_ENUM(spec)->enum_class,
+          config_assign_enum(scanner, name))))
+    g_value_set_enum(&value, eval->value);
+  else if(G_IS_PARAM_SPEC_INT(spec))
+    g_value_set_int(&value, config_assign_number(scanner, name));
+  else if(G_IS_PARAM_SPEC_INT64(spec))
+    g_value_set_int64(&value, config_assign_number(scanner, name));
+  else if(G_IS_PARAM_SPEC_BOOLEAN(spec))
+    g_value_set_boolean(&value, config_assign_boolean(scanner, FALSE, name));
+  else if(G_IS_PARAM_SPEC_STRING(spec))
+    g_value_set_string(&value, config_assign_string(scanner, name));
+  else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_PTR_ARRAY)
+    g_value_set_boxed(&value, config_assign_string_list(scanner));
+  else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_BYTES)
+    g_value_take_boxed(&value, config_assign_expr(scanner, name));
+  else if(G_PARAM_SPEC_VALUE_TYPE(spec) == GDK_TYPE_RECTANGLE)
+    g_value_take_boxed(&value, config_get_loc(scanner));
+  else
+    return FALSE;
+
+  g_object_set_property(G_OBJECT(widget), g_param_spec_get_name(spec), &value);
+  g_value_unset(&value);
+  return TRUE;
 }
 
 static gboolean config_widget_variable ( GScanner *scanner, GtkWidget *widget )
@@ -196,203 +193,43 @@ static gboolean config_widget_variable ( GScanner *scanner, GtkWidget *widget )
 gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
 {
   GtkWindow *win;
-  GdkRectangle rect;
-  GBytes *code;
   gint key;
 
   if(config_widget_variable(scanner, widget))
     return TRUE;
 
-  if(config_flowgrid_property(scanner, widget))
-    return TRUE;
-
   key = config_lookup_key(scanner, config_prop_keys);
 
-  if(IS_BASE_WIDGET(widget))
-    switch(key)
-    {
-      case G_TOKEN_DISABLE:
-        g_object_set_data(G_OBJECT(widget), "disable",
-            GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "disable")));
-        return !scanner->max_parse_errors;
-      case G_TOKEN_STYLE:
-        code = config_assign_expr(scanner, "style");
-        g_object_set(G_OBJECT(widget), "style", code, NULL);
-        g_bytes_unref(code);
-        return !scanner->max_parse_errors;
-      case G_TOKEN_CSS:
-        base_widget_set_css(widget, config_assign_string(scanner, "css"));
-        return TRUE;
-      case G_TOKEN_INTERVAL:
-        g_object_set(G_OBJECT(widget), "interval",
-            (gint64)(config_assign_number(scanner, "interval")*1000), NULL);
-        return TRUE;
-      case G_TOKEN_LOCAL:
-        g_object_set(G_OBJECT(widget), "local-state",
-            config_assign_boolean(scanner, FALSE, "local"), NULL);
-        return TRUE;
-      case G_TOKEN_TRIGGER:
-        g_object_set(G_OBJECT(widget), "trigger",
-            config_assign_string(scanner, "trigger"), NULL);
-        return TRUE;
-      case G_TOKEN_LOC:
-        rect = config_get_loc(scanner);
-        g_object_set(G_OBJECT(widget), "rectangle", &rect, NULL);
-        return TRUE;
-      case G_TOKEN_ACTION:
-        config_widget_action(scanner, widget);
-        return TRUE;
-    }
-
-  if(IS_BASE_WIDGET(widget) && !IS_FLOW_GRID(widget))
-    switch(key)
-    {
-      case G_TOKEN_VALUE:
-        code = config_assign_expr(scanner, "value");
-        g_object_set(G_OBJECT(widget), "value", code, NULL);
-        g_bytes_unref(code);
-        return !scanner->max_parse_errors;
-      case G_TOKEN_TOOLTIP:
-        code = config_assign_expr(scanner, "tooltip");
-        g_object_set(G_OBJECT(widget), "tooltip", code, NULL);
-        g_bytes_unref(code);
-        return !scanner->max_parse_errors;
-    }
-
-  if(IS_PAGER(widget))
-    switch(key)
-    {
-      case G_TOKEN_PINS:
-        pager_add_pins(widget, config_assign_string_list(scanner));
-        return TRUE;
-      case G_TOKEN_PREVIEW:
-        g_object_set_data(G_OBJECT(widget), "preview",
-            GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "preview")));
-        return TRUE;
-    }
-
-  if(IS_TASKBAR_SHELL(widget))
-    switch(key)
-    {
-      case G_TOKEN_TOOLTIPS:
-        g_object_set(G_OBJECT(widget), "tooltips",
-            config_assign_boolean(scanner, FALSE, "tooltips"), NULL);
-        return TRUE;
-      case G_TOKEN_PEROUTPUT:
-        if(config_assign_boolean(scanner,FALSE,"filter_output"))
-          taskbar_shell_set_filter(widget, G_TOKEN_OUTPUT);
-        g_message("'filter_output' is deprecated, please use 'filter = output' instead");
-        return TRUE;
-      case G_TOKEN_FILTER:
-        taskbar_shell_set_filter(widget, GPOINTER_TO_INT(config_assign_tokens(
-                scanner, config_filter_keys,
-              "Invalid value in 'filter = output|workspace|floating'")));
-        return TRUE;
-      case G_TOKEN_GROUP:
-        if(g_scanner_peek_next_token(scanner) == '=')
-        {
-          g_object_set(G_OBJECT(widget), "api", config_assign_tokens(scanner,
-                config_taskbar_types,
-                "Invalid value in taskbar = false|popup|pager"), NULL);
-          return TRUE;
-        }
-        g_scanner_get_next_token(scanner);
-        switch(config_lookup_key(scanner, config_flowgrid_props))
-        {
-          case G_TOKEN_COLS:
-            g_object_set(G_OBJECT(widget), "group_cols",
-                (gint)config_assign_number(scanner, "group cols"), NULL);
-            return TRUE;
-          case G_TOKEN_ROWS:
-            g_object_set(G_OBJECT(widget), "group_rows",
-                (gint)config_assign_number(scanner, "group rows"), NULL);
-            return TRUE;
-          case G_TOKEN_ICONS:
-            g_object_set(G_OBJECT(widget), "group_icons",
-                config_assign_boolean(scanner, FALSE, "group icons"), NULL);
-            return TRUE;
-          case G_TOKEN_LABELS:
-            g_object_set(G_OBJECT(widget), "group_labels",
-                config_assign_boolean(scanner, FALSE, "group labels"), NULL);
-            return TRUE;
-          case G_TOKEN_SORT:
-            g_object_set(G_OBJECT(widget), "group_sort",
-                config_assign_boolean(scanner, TRUE, "group sort"), NULL);
-            return TRUE;
-          case G_TOKEN_TITLEWIDTH:
-            g_object_set(G_OBJECT(widget), "group_title_width",
-                (gint)config_assign_number(scanner, "group title_width"), NULL);
-            return TRUE;
-        }
-        switch(config_lookup_key(scanner, config_prop_keys))
-        {
-          case G_TOKEN_CSS:
-            taskbar_shell_set_group_css(widget,
-                config_assign_string(scanner, "group css"));
-            return TRUE;
-          case G_TOKEN_STYLE:
-            code = config_assign_expr(scanner, "style");
-            g_object_set(G_OBJECT(widget), "group_style", code, NULL);
-            g_bytes_unref(code);
-            return TRUE;
-        }
-    }
+  if(IS_BASE_WIDGET(widget) && key == G_TOKEN_ACTION)
+  {
+    config_widget_action(scanner, widget);
+    return TRUE;
+  }
 
   win = GTK_WINDOW(gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW));
   if(win && gtk_bin_get_child(GTK_BIN(win)) == widget &&
-      gtk_window_get_window_type(win) == GTK_WINDOW_POPUP)
-    switch(key)
-    {
-      case G_TOKEN_AUTOCLOSE:
-        popup_set_autoclose(GTK_WIDGET(win),
-            config_assign_boolean(scanner, FALSE, "autoclose"));
-        return TRUE;
-    }
+      gtk_window_get_window_type(win) == GTK_WINDOW_POPUP &&
+      key == G_TOKEN_AUTOCLOSE)
+  {
+      popup_set_autoclose(GTK_WIDGET(win),
+          config_assign_boolean(scanner, FALSE, "autoclose"));
+      return TRUE;
+  }
+
+  if(config_widget_set_property(scanner, NULL, widget))
+    return TRUE;
+
+  if(key == G_TOKEN_GROUP)
+  {
+    g_scanner_get_next_token(scanner);
+    if(config_widget_set_property(scanner, "group_" , widget))
+      return TRUE;
+  }
 
   if(GTK_IS_BOX(gtk_widget_get_parent(widget)))
-    switch(key)
-    {
-      case G_TOKEN_LAYER:
-        bar_set_layer(gtk_widget_get_ancestor(widget, BAR_TYPE),
-            config_assign_string(scanner, "layer"));
-        return TRUE;
-      case G_TOKEN_SIZE:
-        bar_set_size(gtk_widget_get_ancestor(widget, BAR_TYPE),
-            config_assign_string(scanner, "size"));
-        return TRUE;
-      case G_TOKEN_EXCLUSIVEZONE:
-        bar_set_exclusive_zone(gtk_widget_get_ancestor(widget, BAR_TYPE),
-            config_assign_string(scanner, "exclusive zone"));
-        return TRUE;
-      case G_TOKEN_SENSOR:
-        bar_set_sensor(gtk_widget_get_ancestor(widget, BAR_TYPE),
-            (gint64)config_assign_number(scanner, "sensor timeout"));
-        return TRUE;
-      case G_TOKEN_SENSORDELAY:
-        bar_set_show_sensor(gtk_widget_get_ancestor(widget, BAR_TYPE),
-            (gint64)config_assign_number(scanner, "sensor popup delay"));
-        return TRUE;
-      case G_TOKEN_TRANSITION:
-        bar_set_transition(gtk_widget_get_ancestor(widget, BAR_TYPE),
-            (gint64)config_assign_number(scanner, "transition timeout"));
-        return TRUE;
-      case G_TOKEN_BAR_ID:
-        bar_set_id(gtk_widget_get_ancestor(widget, BAR_TYPE),
-            config_assign_string(scanner, "bar id"));
-        return TRUE;
-      case G_TOKEN_MONITOR:
-        bar_set_monitor(gtk_widget_get_ancestor(widget, BAR_TYPE),
-            config_assign_string(scanner, "monitor"));
-        return TRUE;
-      case G_TOKEN_MARGIN:
-        bar_set_margin(gtk_widget_get_ancestor(widget, BAR_TYPE),
-            config_assign_number(scanner, "bar margin"));
-        return TRUE;
-      case G_TOKEN_MIRROR:
-        bar_set_mirrors(gtk_widget_get_ancestor(widget, BAR_TYPE),
-            config_assign_string_list(scanner));
-        return TRUE;
-    }
+    if(config_widget_set_property(scanner, NULL,
+              gtk_widget_get_ancestor(widget, BAR_TYPE)))
+      return TRUE;
 
   return FALSE;
 }
@@ -426,6 +263,7 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
 {
   GtkWidget *widget;
   GType (*type_get)(void);
+  gboolean disabled;
 
   if(container && !IS_GRID(container))
     return FALSE;
@@ -454,14 +292,15 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
 
   config_widget(scanner, widget);
 
-  if(g_object_get_data(G_OBJECT(widget), "disable"))
+  g_object_get(G_OBJECT(widget), "disable", &disabled, NULL);
+  if(disabled)
     gtk_widget_destroy(widget);
   else if(!container)
   {
     g_scanner_error(scanner, "orphan widget without a valid address: %s",
         base_widget_get_id(widget));
     gtk_widget_destroy(widget);
-    return TRUE; /* we parsed successfully, but address was wrong */
+    return TRUE; /* we parsed successfully, but the address was wrong */
   }
 
   return TRUE;

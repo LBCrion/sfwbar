@@ -202,13 +202,13 @@ void css_init ( gchar *cssname )
   css_file_load(cssname);
 }
 
-void css_widget_apply ( GtkWidget *widget, gchar *css )
+GtkCssProvider *css_widget_apply ( GtkWidget *widget, gchar *css )
 {
   GtkStyleContext *cont;
   GtkCssProvider *provider;
 
   if(!css)
-    return;
+    return NULL;
 
   cont = gtk_widget_get_style_context (widget);
   provider = gtk_css_provider_new();
@@ -218,6 +218,8 @@ void css_widget_apply ( GtkWidget *widget, gchar *css )
     GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
   g_object_unref(provider);
   g_free(css);
+
+  return provider;
 }
 
 void css_widget_cascade ( GtkWidget *widget, gpointer data )

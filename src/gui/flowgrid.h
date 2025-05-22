@@ -17,6 +17,11 @@ enum {
   SFWB_DND_TARGET_FLOW_ITEM
 };
 
+enum {
+  FLOW_GRID_AXIS_ROWS = 1,
+  FLOW_GRID_AXIS_COLS,
+};
+
 typedef struct _FlowGrid FlowGrid;
 typedef struct _FlowGridClass FlowGridClass;
 

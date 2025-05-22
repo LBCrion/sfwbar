@@ -39,7 +39,7 @@ typedef struct _BaseWidgetPrivate BaseWidgetPrivate;
 struct _BaseWidgetPrivate
 {
   gchar *id;
-  GList *css;
+  gchar *css;
   expr_cache_t *style;
   expr_cache_t *value;
   expr_cache_t *tooltip;
@@ -51,8 +51,10 @@ struct _BaseWidgetPrivate
   gint dir;
   gboolean local_state;
   gboolean is_drag_dest;
+  gboolean disabled;
   guint user_state;
   GdkRectangle rect;
+  GtkCssProvider *provider;
   GList *mirror_children;
   GtkWidget *mirror_parent;
   vm_store_t *store;
@@ -83,7 +85,7 @@ gchar *base_widget_get_value ( GtkWidget *self );
 GBytes *base_widget_get_action ( GtkWidget *self, gint, GdkModifierType );
 gpointer base_widget_scanner_thread ( GMainContext *gmc );
 guint16 base_widget_state_build ( GtkWidget *self, window_t *win );
-void base_widget_set_css ( GtkWidget *widget, gchar *css );
+//void base_widget_set_css ( GtkWidget *widget, gchar *css );
 void base_widget_autoexec ( GtkWidget *self, gpointer data );
 void base_widget_set_always_update ( GtkWidget *self, gboolean update );
 void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src );
