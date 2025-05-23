@@ -101,7 +101,7 @@ void flow_item_set_parent ( GtkWidget *self, GtkWidget *parent )
       G_CALLBACK(flow_item_decorate_cb), self);
   g_signal_connect(G_OBJECT(parent), "notify::icons",
       G_CALLBACK(flow_item_decorate_cb), self);
-  g_signal_connect(G_OBJECT(parent), "notify::title_width",
+  g_signal_connect(G_OBJECT(parent), "notify::title-width",
       G_CALLBACK(flow_item_title_width_cb), self);
   flow_item_decorate_cb(parent, NULL, self);
   flow_item_title_width_cb(parent, NULL, self);
