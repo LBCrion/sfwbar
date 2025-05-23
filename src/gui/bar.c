@@ -1046,6 +1046,8 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
     gtk_box_pack_end(GTK_BOX(dpriv->box),
         (dpriv->end = base_widget_mirror(spriv->end)), TRUE, TRUE, 0);
 
+  g_debug("bar: mirror '%s' from output '%s' to '%s'", spriv->name,
+      spriv->output, dpriv->output);
   gtk_layer_set_monitor(GTK_WINDOW(src), monitor);
   gtk_widget_show(self);
   css_widget_cascade(self, NULL);
