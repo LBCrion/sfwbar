@@ -174,6 +174,8 @@ static void taskbar_shell_set_api ( GtkWidget *self, gint id)
     get_taskbar = taskbar_popup_get_taskbar;
   else if(id == API_PAGER)
     get_taskbar = taskbar_pager_get_taskbar;
+  else
+    return;
 
   if(priv->get_taskbar == get_taskbar)
     return;
@@ -325,10 +327,6 @@ static void taskbar_shell_class_init ( TaskbarShellClass *kclass )
       TASKBAR_SHELL_PRIMARY_AXIS, g_param_spec_enum("group_primary_axis",
         "primary_axis", "sfwbar_config", g_type_from_name("flow_grid_axis"),
         FLOW_GRID_AXIS_ROWS, G_PARAM_READWRITE));
-/*  g_object_class_install_property(G_OBJECT_CLASS(kclass),
-      TASKBAR_SHELL_PRIMARY_AXIS,
-      g_param_spec_int("group_primary_axis", "primary_axis", "primary_axis", 0,
-        INT_MAX, 0, G_PARAM_READWRITE));*/
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_FILTER,
       g_param_spec_enum("filter", "filter", "sfwbar_config",
         g_enum_register_static("taskbar_shell_filter", taskbar_shell_filter),
