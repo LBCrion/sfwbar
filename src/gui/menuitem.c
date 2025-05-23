@@ -343,6 +343,8 @@ void menu_item_label_update ( GtkWidget *self )
 {
   MenuItemPrivate *priv;
 
+  if(GTK_IS_SEPARATOR_MENU_ITEM(self))
+    return;
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv);
 
