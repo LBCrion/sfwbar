@@ -206,7 +206,7 @@ static void alsa_source_finalize ( GSource *gsrc )
 
   if(src->name)
   {
-    g_debug("alsactl: deactiving source '%s'", src->name);
+    g_debug("alsactl: deactivating source '%s'", src->name);
     store = vm_store_new(NULL, TRUE);
     vm_store_insert_full(store, "device_id",
       value_new_string(g_strdup(src->name)));
