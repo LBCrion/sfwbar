@@ -398,7 +398,7 @@ static gboolean base_widget_query_tooltip ( GtkWidget *self, gint x, gint y,
   priv = base_widget_get_instance_private(
       BASE_WIDGET(base_widget_get_mirror_parent(self)));
 
-  expr_cache_eval(priv->tooltip);
+  (void)expr_cache_eval(priv->tooltip);
   gtk_tooltip_set_markup(tooltip, priv->tooltip->cache);
 
   return priv->tooltip->cache && *(priv->tooltip->cache);
