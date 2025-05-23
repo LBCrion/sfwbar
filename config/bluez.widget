@@ -3,38 +3,40 @@ module("bluez")
 TriggerAction "bluez_updated", Function "XBluezUpdate"
 TriggerAction "bluez_removed", Function "XBluezRemove"
 
-set XBluezTmpl = "
-grid 'XBluezGrid@BLUEZ_PAIRED@' {
-  grid '@BLUEZ_PATH@_grid_@BLUEZ_PAIRED@' {
-    style = 'XBluezGrid'
-    action = BluezPair Extract(WidgetId(),'(.*)_grid')
-    action[RIghtClick] = Menu 'XBluezItemMenu'
-    image '@BLUEZ_PATH@_icon' {
-      value = '@BLUEZ_ICON@'
-      style = 'XBluezIcon'
+Var XBluezTmpl = "
+  grid 'XBluezGrid@BLUEZ_PAIRED@' {
+    grid '@BLUEZ_PATH@_grid_@BLUEZ_PAIRED@' {
+      style = if(BluezDevice('@BLUEZ_PATH@','Visible'),'XBluezGrid','hidden')
+      action = BluezPair '@BLUEZ_PATH@'
+      action[RIghtClick] = Menu 'XBluezItemMenu'
       interval = 0
-      loc(0,0,1,2)
-    } 
-    label '@BLUEZ_PATH@_label' {
-      value = \"@BLUEZ_NAME@\"
-      style = 'XBluezName'
-      interval = 0
-      loc(1,0,2,1)
+      image '@BLUEZ_PATH@_icon' {
+        value = BluezDevice('@BLUEZ_PATH@', 'Icon')
+        style = 'XBluezIcon'
+        interval = 0
+        loc(0,0,1,2)
+      }
+      label '@BLUEZ_PATH@_label' {
+        value = BluezDevice('@BLUEZ_PATH@', 'Name')
+        style = 'XBluezName'
+        interval = 0
+        loc(1,0,2,1)
+      }
+      label '@BLUEZ_PATH@_status' {
+        value = If(BluezDevice('@BLUEZ_PATH@', 'Connected'), GT('Connected'),
+          If(BluezDevice('@BLUEZ_PATH@','Connecting'), GT('Connecting')+'...', ''))
+        style = 'XBluezStatus'
+        interval = 0
+        loc(2,1,1,1)
+      }
+      label '@BLUEZ_PATH@_class' {
+        value = BluezDevice('@BLUEZ_PATH@', 'Minor Class')
+        style = 'XBluezClass'
+        interval = 0
+        loc(1,1,1,1)
+      }
     }
-    label '@BLUEZ_PATH@_status' {
-      value = '@BLUEZ_CONN@'
-      style = 'XBluezStatus'
-      interval = 0
-      loc(2,1,1,1)
-    }
-    label '@BLUEZ_PATH@_class' {
-      value = '@BLUEZ_CLASS@'
-      style = 'XBluezClass'
-      interval = 0
-      loc(1,1,1,1)
-    }
-  }
-}"
+  }"
 
 Menu("XBluezItemMenu") {
   item(GT("Connect"), BluezConnect Extract(WidgetId(),"(.*)_grid") );
@@ -43,38 +45,28 @@ Menu("XBluezItemMenu") {
   item(GT("Remove"), BluezRemove Extract(WidgetId(),"(.*)_grid") );
 }
 
-Function("XBluezUpdate") {
-  ClearWidget BluezGet("Path") + "_grid_" +
-    If(BluezState("Paired"), "avail", "paired")
+Function XBluezUpdate() {
+  ClearWidget Path + "_grid_" + If(Paired, "Avail", "Paired")
   Config ReplaceAll( $XBluezTmpl,
-    "@BLUEZ_PAIRED@", If(BluezState("Paired"),"Paired","Avail"),
-    "@BLUEZ_CONN@", If(BluezState("Connected"), GT("Connected"),
-      If(BluezState("Connecting"),GT("Connecting ..."),"")),
-    "@BLUEZ_PATH@", BluezGet("Path"),
-    "@BLUEZ_ICON@", BluezGet("Icon"),
-    "@BLUEZ_ADDR@", BluezGet("Address"),
-    "@BLUEZ_CLASS@", BluezGet("MinorClass"),
-    "@BLUEZ_NAME@", BluezGet("Name"),
-    "@BLUEZ_ID@", BluezGet("Id"))
-  BluezAck
+    "@BLUEZ_PAIRED@", If(BluezDevice(Path, "Paired"),"Paired","Avail"),
+    "@BLUEZ_PATH@", path)
 }
 
-Function("XBluezRemove") {
-  ClearWidget BluezGet("RemovedPath") + "_grid_avail"
-  ClearWidget BluezGet("RemovedPath") + "_grid_paired"
-  BluezAckRemoved
+Function XBluezRemove() {
+  ClearWidget Path + "_grid_avail"
+  ClearWidget Path + "_grid_paired"
 }
 
-Function("XBluezPopUp") {
+Function XBluezPopUp() {
   BluezScan;
   PopUp "XBluezWindow"
 }
 
-Function("XBluezPopDown") {
+Function XBluezPopDown() {
   PopUp "XBluezWindow"
 }
 
-Function("XBluezPop") {
+Function XBluezPop() {
   [!UserState] Function "XBluezPopUp"
   [UserState] Function "XBluezPopDown"
   [!UserState] UserState "on"
@@ -133,8 +125,8 @@ menu("XBluezAdapter") {
 }
 
 layout {
-  style = If(BluezState("Running"),"module","hidden")
-  trigger = "bluez_running"
+  style = If(BluezAdapter("Count"), "module", "hidden")
+  trigger = "bluez_adapter"
   button "XBluezWidget" {
     style = "module"
     value = If(!BluezAdapter("Powered"), "bluetooth-disabled",
@@ -142,7 +134,7 @@ layout {
     action = Function "XBluezPop"
     action[RightClick] = Menu "XBluezAdapter"
     tooltip = GT("Bluetooth")
-    interval = 100
+    trigger = "bluez_adapter"
   }
 }
 
