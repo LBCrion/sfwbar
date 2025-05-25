@@ -223,7 +223,7 @@ layout {
       "\n" + GT("Monitor") + ": " + VolumeInfo("sink-monitor")
     style = If(Ident(volume),"module","hidden")
     action[RightClick] = VolumeCtl "sink-mute toggle"
-    action[MiddleClick] = Exec $XPulseAction
+    action[MiddleClick] = Exec $XVolumeAction
     action[LeftClick] = PopUp "XVolumeWindow"
     action[ScrollUp] = VolumeCtl "sink-volume +1"
     action[ScrollDown] = VolumeCtl "sink-volume -1"
