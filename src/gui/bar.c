@@ -240,7 +240,11 @@ static void bar_destroy ( GtkWidget *self )
     ppriv = bar_get_instance_private(BAR(priv->mirror_parent));
     ppriv->mirror_children = g_list_remove(ppriv->mirror_children, self);
     priv->mirror_parent = NULL;
+    if(ppriv->name)
+      g_debug("bar: delete '%s' from output '%s'", ppriv->name, priv->output);
   }
+  else if(priv->name)
+    g_debug("bar: delete '%s' from output '%s'", priv->name, priv->output);
   g_clear_pointer(&priv->name, g_free);
   g_clear_pointer(&priv->output, g_free);
   g_clear_pointer(&priv->bar_id, g_free);
@@ -434,7 +438,8 @@ static void bar_set_property ( GObject *self, guint id,
     case BAR_MIRROR:
       g_clear_pointer(&priv->mirror_targets, g_ptr_array_unref);
       priv->mirror_targets = g_ptr_array_ref(g_value_get_boxed(value));
-      bar_update_monitor(GTK_WIDGET(self));
+      if(!priv->mirror_parent)
+        bar_update_monitor(GTK_WIDGET(self));
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
@@ -810,6 +815,8 @@ gboolean bar_update_monitor ( GtkWidget *self )
     priv->current_monitor = match;
     if(priv->visible)
       gtk_widget_hide(self);
+    g_debug("bar: move '%s' to output '%s' (%p)", priv->name,
+        monitor_get_name(match), match);
     gtk_layer_set_monitor(GTK_WINDOW(self), match);
     if(priv->visible)
       gtk_widget_show(self);
@@ -864,7 +871,6 @@ void bar_set_monitor ( GtkWidget *self, const gchar *monitor )
     g_free(priv->output);
     priv->output =  g_strdup(mon_name);
     bar_update_monitor(self);
-    bar_mirror(self, priv->current_monitor);
   }
 }
 
@@ -1046,9 +1052,9 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
     gtk_box_pack_end(GTK_BOX(dpriv->box),
         (dpriv->end = base_widget_mirror(spriv->end)), TRUE, TRUE, 0);
 
-  g_debug("bar: mirror '%s' from output '%s' to '%s'", spriv->name,
-      spriv->output, dpriv->output);
-  gtk_layer_set_monitor(GTK_WINDOW(src), monitor);
+  g_debug("bar: mirror '%s' from output '%s' to '%s' (%p)", spriv->name,
+      spriv->output, dpriv->output, monitor);
+  gtk_layer_set_monitor(GTK_WINDOW(self), monitor);
   gtk_widget_show(self);
   css_widget_cascade(self, NULL);
 
