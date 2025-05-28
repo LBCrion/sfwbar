@@ -49,6 +49,7 @@ static gboolean bar_sensor_hide ( GtkWidget *self )
   css_add_class(self, "sensor");
   gtk_container_remove(GTK_CONTAINER(self), gtk_bin_get_child(GTK_BIN(self)));
   gtk_container_add(GTK_CONTAINER(self), priv->sensor);
+  css_widget_cascade(self, NULL);
   priv->sensor_state = FALSE;
   priv->sensor_handle = 0;
 
