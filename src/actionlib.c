@@ -588,7 +588,17 @@ static value_t action_check_state ( vm_t *vm, value_t p[], gint np )
 static void action_file_trigger_cb ( GFileMonitor *m, GFile *f1, GFile *f2,
     GFileMonitorEvent ev, gchar *trigger )
 {
+  g_source_remove_by_user_data(trigger);
+  g_debug("FileTrigger: emit '%s'", trigger);
   trigger_emit(trigger);
+}
+
+static gboolean action_file_timeout_cb ( gchar *trigger )
+{
+  g_debug("FileTrigger: timeout emit '%s'", trigger);
+  trigger_emit(trigger);
+
+  return TRUE;
 }
 
 static value_t action_file_trigger ( vm_t *vm, value_t p[], gint np )
@@ -596,9 +606,11 @@ static value_t action_file_trigger ( vm_t *vm, value_t p[], gint np )
   GFile *f;
   GFileMonitor *m;
 
-  vm_param_check_np(vm, np, 2, "");
+  vm_param_check_np_range(vm, np, 2, 3, "FileTrigger");
   vm_param_check_string(vm, p, 0, "FileTrigger");
   vm_param_check_string(vm, p, 1, "FileTrigger");
+  if(np==3)
+    vm_param_check_numeric(vm, p, 2, "FileTrigger");
 
   f = g_file_new_for_path(value_get_string(p[0]));
   if( !(m = g_file_monitor_file(f, 0, NULL, NULL)) )
@@ -608,8 +620,13 @@ static value_t action_file_trigger ( vm_t *vm, value_t p[], gint np )
     g_object_unref(f);
     return value_na;
   }
+  if(np==3)
+    g_timeout_add(value_get_numeric(p[2]), (GSourceFunc)action_file_timeout_cb,
+        (gpointer)trigger_name_intern(value_get_string(p[1])));
   g_signal_connect(G_OBJECT(m), "changed", G_CALLBACK(action_file_trigger_cb),
       (gpointer)trigger_name_intern(value_get_string(p[1])));
+  g_debug("FileTrigger: subscribe to '%s', trigger '%s'",
+      value_get_string(p[0]), value_get_string(p[1]));
   return value_na;
 }
 
