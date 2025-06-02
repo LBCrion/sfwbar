@@ -11,7 +11,7 @@ Var XBluezTmpl = "
       action[RIghtClick] = Menu 'XBluezItemMenu'
       interval = 0
       image '@BLUEZ_PATH@_icon' {
-        value = BluezDevice('@BLUEZ_PATH@', 'Icon')
+        value = If(BluezDevice('@BLUEZ_PATH@', 'Icon') = '', 'bluetooth', BluezDevice('@BLUEZ_PATH@', 'Icon'))
         style = 'XBluezIcon'
         interval = 0
         loc(0,0,1,2)
