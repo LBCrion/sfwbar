@@ -118,7 +118,10 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
   old = g_datalist_id_get_data(&scan_list, quark);
   if(old && (type != G_TOKEN_SET || old->type != G_TOKEN_SET) &&
       (old->file != file))
+  {
+    g_debug("scanner: variable '%s' redeclared in a different file", name);
     return;
+  }
 
   var = old? old: g_malloc0(sizeof(ScanVar));
 
