@@ -106,7 +106,7 @@ gboolean config_include ( GScanner *scanner, GtkWidget *container )
   }
 
   widget = config_parse(fname, container, SCANNER_STORE(scanner));
-  if(container)
+  if(container && widget)
   {
     config_widget(scanner, widget);
     grid_attach(container, widget);
