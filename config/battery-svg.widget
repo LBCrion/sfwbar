@@ -24,8 +24,13 @@ set XBatterySvg = '<?xml version="1.0" encoding="UTF-8"?>
   '+$XBatterySvgSign+'
 </svg>'
 
+Var BatteryConf = "file('%file_full%') { XBatteryTotal = Grab(First) };
+  file('%file_charge%') { XBatteryLeft = Grab(First) };
+  file ('%file_status%') { XBatteryState = RegEx('^(.*)$',First) };"
+
 Function XBatteryInit() {
   Var base, dir, sub, file, i, j;
+  Var file_full, file_status, file_charge, file_current, file_uevent;
 
   If(Ident("BSDCtl"))
     return;
@@ -38,17 +43,39 @@ Function XBatteryInit() {
     If Mid(dir[i], 1, 3)="BAT" {
       sub = ls(base + "/" + dir[i]);
       j = 0;
+      file_full = ""
+      file_charge = ""
+      file_current = ""
+      file_status = ""
+      file_uevent = ""
       while j<ArraySize(sub) {
         file = base + "/" + dir[i] + "/" + sub[j];
         If mid(sub[j], -5, -1) = "_full"
-          Config "file('" + file + "') { XBatteryTotal = Grab(First) }"
+          file_full = file;
         If sub[j] = "charge_now" | sub[j] = "energy_now"
-          Config "file('" + file + "') { XBatteryLeft = Grab(First) }"
+          file_charge = file;
         If sub[j] = "current_now"
-          Config "file('" + file + "') { XBatteryCurrent = Grab(First) }"
+          file_current = file;
         If sub[j] = "status"
-          Config "File ('" + file + "') { XBatteryState = RegEx(\"^(.*)$\",First) }";
+          file_status = file;
+        If sub[j] = "uevent"
+          file_uevent = file;
         j = j + 1;
+      }
+      if file_full != "" & file_charge != "" & file_status != ""
+      {
+        Config ReplaceAll(BatteryConf,
+            "%file_full%", file_full,
+            "%file_charge%", file_charge,
+            "%file_status%", file_status);
+        if file_current != ""
+          Config "file('" + file_current + "') { XBatteryCurrent = Grab(First) };"
+        if file_uevent != ""
+        {
+          FileTrigger file, "battery-event", 1000
+          button "'XBatteryModule' { trigger = 'battery-event' }"
+          EmitTrigger "battery-event"
+        }
       }
     }
     i = i + 1;
