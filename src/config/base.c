@@ -312,3 +312,19 @@ gpointer config_lookup_next_ptr ( GScanner *scanner, GHashTable *table )
 
   return g_hash_table_lookup(table, scanner->next_value.v_identifier);
 }
+
+void config_skip_statement ( GScanner *scanner )
+{
+  gint c = 0;
+
+  while(g_scanner_get_next_token(scanner) != ';' || c)
+  {
+    if(scanner->token == '{')
+      c++;
+    else if(scanner->token == '}')
+      c--;
+    if(c < 0)
+      return;
+  }
+  scanner->max_parse_errors = FALSE;
+}
