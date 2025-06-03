@@ -122,7 +122,11 @@ static void activate (GtkApplication* app, gpointer data )
   if(bar_id)
     bar_address_all(NULL, bar_id, bar_set_id);
 
-  panel = config_parse(confname?confname:"sfwbar.config", NULL, NULL);
+  if( !(panel = config_parse(confname?confname:"sfwbar.config", NULL, NULL)) )
+  {
+    g_warning("No panel defined");
+    exit(1);
+  }
 
   clist = gtk_window_list_toplevels();
   for(iter = clist; iter; iter = g_list_next(iter) )

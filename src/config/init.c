@@ -320,14 +320,16 @@ GtkWidget *config_parse ( gchar *file, GtkWidget *container,
   gchar *fname, *dir, *base, *cssfile, *csspath, *tmp;
   gchar *conf = NULL;
 
-  if( !(fname = get_xdg_config_file(file, NULL)) )
-    g_error("Error reading config file %s", file);
+  if( !(fname = get_xdg_config_file(file, NULL)) ||
+      !g_file_get_contents(fname, &conf, NULL, NULL))
+  {
+    g_warning("Error reading config file %s", file);
+    g_warning("Please note that relative paths are disabled.");
+    g_free(fname);
+    return NULL;
+  }
 
   g_debug("include: %s -> %s", file, fname);
- 
-  if(!g_file_get_contents(fname, &conf, NULL, NULL))
-    g_error("Error reading config file %s", file);
-
   w = config_parse_data (fname, conf, container, globals);
 
   g_free(conf);
