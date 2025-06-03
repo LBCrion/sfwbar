@@ -106,6 +106,9 @@ msgstr "显示桌面"
 msgid "Set As Default Device"
 msgstr "设为默认设备"
 
+msgid "set as default"
+msgstr "设为默认"
+
 msgid "expand/collapse channels"
 msgstr "折叠/展开"
 
@@ -176,10 +179,10 @@ msgid  "Remove"
 msgstr "删除"
 
 msgid  "Available devices"
-msgstr "可能的设备"
+msgstr "可配对设备"
 
 msgid  "Paired devices"
-msgstr "已配对的设备"
+msgstr "已配对设备"
 
 msgid  "Battery"
 msgstr "电池"
