@@ -46,10 +46,10 @@ Menu("XBluezItemMenu") {
 }
 
 Function XBluezUpdate() {
-  ClearWidget Path + "_grid_" + If(Paired, "Avail", "Paired")
+  ClearWidget Path + "_grid_" + If(BluezDevice(Path,"Paired"),"Avail","Paired")
   Config ReplaceAll( $XBluezTmpl,
     "@BLUEZ_PAIRED@", If(BluezDevice(Path, "Paired"),"Paired","Avail"),
-    "@BLUEZ_PATH@", path)
+    "@BLUEZ_PATH@", Path)
 }
 
 Function XBluezRemove() {
