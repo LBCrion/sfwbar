@@ -496,7 +496,7 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
   else
   {
     g_scanner_error(scanner, "action name missing. Got %x", scanner->next_token);
-    g_scanner_get_next_token(scanner);
+    config_skip_statement(scanner);
     return FALSE;
   }
 
