@@ -54,24 +54,45 @@ void parse_command_line ( gint argc, gchar **argv)
   g_option_context_free(optc);
 }
 
+static const gchar *log_colors[] = {
+  [G_LOG_LEVEL_ERROR] = "\x1B[1;31m",
+  [G_LOG_LEVEL_CRITICAL] = "\x1B[1;31m",
+  [G_LOG_LEVEL_WARNING] = "\x1B[1;31m",
+  [G_LOG_LEVEL_INFO] = "\x1B[1;34m",
+  [G_LOG_LEVEL_MESSAGE] = "\x1B[1;34m",
+  [G_LOG_LEVEL_DEBUG] = "\x1B[1;90m",
+};
+
+static const gchar *log_labels[] = {
+  [G_LOG_LEVEL_ERROR] = "ERROR",
+  [G_LOG_LEVEL_CRITICAL] = "CRIT ",
+  [G_LOG_LEVEL_WARNING] = "WARN ",
+  [G_LOG_LEVEL_INFO] = "INFO ",
+  [G_LOG_LEVEL_DEBUG] = "DEBUG",
+  [G_LOG_LEVEL_MESSAGE] = "MSG  ",
+};
+
 void log_print ( const gchar *log_domain, GLogLevelFlags log_level, 
     const gchar *message, gpointer data )
 {
   GDateTime *now;
+  FILE *log_fd = stderr;
 
   if(!debug && (log_level==G_LOG_LEVEL_DEBUG || log_level==G_LOG_LEVEL_INFO) )
     return;
 
-  if(rfilter)
-    if(!g_regex_match(rfilter,message,0,NULL))
+  if(rfilter && !g_regex_match(rfilter, message, 0, NULL))
       return;
 
   now = g_date_time_new_now_local();
 
-  fprintf(stderr,"%02d:%02d:%05.2f %s\n",
+  fprintf(log_fd ,"%02d:%02d:%05.02f [%s%s%s] %s\n",
       g_date_time_get_hour(now),
       g_date_time_get_minute(now),
       g_date_time_get_seconds(now),
+      g_log_writer_supports_color(fileno(log_fd))? log_colors[log_level] : "",
+      log_labels[log_level],
+      g_log_writer_supports_color(fileno(log_fd))? "\x1B[0m" : "",
       message);
 
   g_date_time_unref(now);
