@@ -83,39 +83,27 @@ static void config_widget_action ( GScanner *scanner, GtkWidget *widget )
     g_bytes_unref(action);
 }
 
-gboolean config_include ( GScanner *scanner, GtkWidget *container )
+GtkWidget *config_include ( GScanner *scanner, GtkWidget *container )
 {
   GtkWidget *widget;
   gchar *fname;
 
-  if(scanner->token != G_TOKEN_IDENTIFIER ||
-      (g_ascii_strcasecmp(scanner->value.v_identifier, "include") &&
-      (!container || g_ascii_strcasecmp(scanner->value.v_identifier, "widget"))) )
-    return FALSE;
-
   config_parse_sequence(scanner,
       SEQ_REQ, '(', NULL, NULL, "Missing '(' after include",
       SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing filename in include",
-      SEQ_REQ, ')', NULL, NULL, "Missing ')',after include",
+      SEQ_REQ, ')', NULL, NULL, "Missing ')' after include",
       SEQ_END);
 
   if(scanner->max_parse_errors)
   {
     g_free(fname);
-    return TRUE;
+    return NULL;
   }
 
   widget = config_parse(fname, container, SCANNER_STORE(scanner));
-  if(container && widget)
-  {
-    config_widget(scanner, widget);
-    grid_attach(container, widget);
-    grid_mirror_child(container, widget);
-    css_widget_cascade(widget, NULL);
-  }
   g_free(fname);
 
-  return TRUE;
+  return widget;
 }
 
 gboolean config_widget_set_property ( GScanner *scanner, gchar *prefix,
@@ -206,7 +194,7 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
     return TRUE;
   }
 
-  win = GTK_WINDOW(gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW));
+  win = GTK_WINDOW(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW));
   if(win && gtk_bin_get_child(GTK_BIN(win)) == widget &&
       gtk_window_get_window_type(win) == GTK_WINDOW_POPUP &&
       key == G_TOKEN_AUTOCLOSE)
@@ -234,74 +222,83 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
   return FALSE;
 }
 
-GtkWidget *config_widget_find_existing ( GScanner *scanner,
-    GtkWidget *container, GType (*get_type)(void) )
+static GtkWidget *config_widget_get ( GScanner *scanner,
+    GtkWidget *container, GType (*type_get)(void) )
 {
   GtkWidget *widget, *parent;
+  gchar *name;
 
-  if(g_scanner_peek_next_token(scanner)!=G_TOKEN_STRING)
+  name = config_check_and_consume(scanner, G_TOKEN_STRING)?
+    scanner->value.v_string : NULL;
+  widget = name? base_widget_from_id(SCANNER_STORE(scanner), name) : NULL;
+
+  if(widget && !G_TYPE_CHECK_INSTANCE_TYPE((widget), type_get()))
+  {
+    g_scanner_error(scanner, "Widget id collision: type mismatch.");
+    g_scanner_error(scanner, "Widget '%s' has been previously defined as '%s'",
+        name, G_OBJECT_CLASS_NAME(G_OBJECT_GET_CLASS(widget)));
     return NULL;
+  }
+  else if(widget)
+  {
+    parent = gtk_widget_get_parent(widget);
+    parent = parent? gtk_widget_get_parent(parent) : NULL;
+    if(container && parent != container)
+    {
+      g_scanner_error(scanner,
+          "Widget id collision: parent container mismatch.");
+      g_scanner_error(scanner, "Widget '%s' already exists in container '%s'",
+          name, base_widget_get_id(parent));
+      return NULL;
+    }
+  }
+  else
+  {
+    widget = GTK_WIDGET(g_object_new(type_get(), NULL));
+    if(name)
+      g_object_set(G_OBJECT(widget), "id", name, NULL);
+  }
 
-  if( !(widget = base_widget_from_id(SCANNER_STORE(scanner),
-          scanner->next_value.v_string)) )
-    return NULL;
-
-  if(!G_TYPE_CHECK_INSTANCE_TYPE((widget), get_type()))
-    return NULL;
-
-  parent = gtk_widget_get_parent(widget);
-  parent = parent? gtk_widget_get_parent(parent) : NULL;
-
-  if(container && parent != container)
-    return NULL;
-
-  g_scanner_get_next_token(scanner);
   return widget;
 }
 
 gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
 {
   GtkWidget *widget;
-  GType (*type_get)(void);
   gboolean disabled;
+  GType (*type_get)(void);
 
   if(container && !IS_GRID(container))
     return FALSE;
 
-  if(config_include(scanner, container))
-    return TRUE;
-
-  if( !(type_get = config_lookup_ptr(scanner, config_widget_keys)) )
+  if(scanner->token != G_TOKEN_IDENTIFIER)
+    return FALSE;
+  if(!g_ascii_strcasecmp(scanner->value.v_identifier, "include") ||
+     !g_ascii_strcasecmp(scanner->value.v_identifier, "widget") )
+    widget = config_include(scanner, container);
+  else if( (type_get = config_lookup_ptr(scanner, config_widget_keys)) )
+    widget = config_widget_get(scanner, container, type_get);
+  else
     return FALSE;
 
-  scanner->max_parse_errors = FALSE;
-  if( (widget = config_widget_find_existing(scanner, container, type_get)) )
-    container = gtk_widget_get_ancestor(widget, GRID_TYPE);
-  else
+  if(!widget)
   {
-    widget = GTK_WIDGET(g_object_new(type_get(), NULL));
-    if(config_check_and_consume(scanner, G_TOKEN_STRING))
-      g_object_set(G_OBJECT(widget), "id", scanner->value.v_string, NULL);
-    if(container)
-    {
-      grid_attach(container, widget);
-      grid_mirror_child(container, widget);
-    }
-    css_widget_cascade(widget, NULL);
+    if(g_scanner_peek_next_token(scanner)=='{')
+      config_skip_statement(scanner);
+    return TRUE;
   }
 
+  if(container && !gtk_widget_get_parent(widget))
+  {
+    grid_attach(container, widget);
+    grid_mirror_child(container, widget);
+  }
   config_widget(scanner, widget);
+  css_widget_cascade(widget, NULL);
 
   g_object_get(G_OBJECT(widget), "disable", &disabled, NULL);
-  if(disabled)
+  if(disabled || !container)
     gtk_widget_destroy(widget);
-  else if(!container)
-  {
-    g_scanner_error(scanner, "orphan widget without a valid address: %s",
-        base_widget_get_id(widget));
-    gtk_widget_destroy(widget);
-    return TRUE; /* we parsed successfully, but the address was wrong */
-  }
 
   return TRUE;
 }
@@ -324,7 +321,9 @@ void config_widget ( GScanner *scanner, GtkWidget *widget )
       continue;
 
     g_scanner_error(scanner, "Invalid property in a widget declaration");
+    config_skip_statement(scanner);
   }
+  scanner->max_parse_errors = FALSE;
 }
 
 GtkWidget *config_layout ( GScanner *scanner, GtkWidget *container )

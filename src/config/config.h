@@ -68,7 +68,7 @@ void config_scanner ( GScanner *scanner );
 gboolean config_scanner_source ( GScanner *scanner );
 GtkWidget *config_layout ( GScanner *, GtkWidget * );
 gboolean config_widget_child ( GScanner *scanner, GtkWidget *container );
-gboolean config_include ( GScanner *scanner, GtkWidget *container );
+GtkWidget *config_include ( GScanner *scanner, GtkWidget *container );
 void config_popup ( GScanner *scanner );
 GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container );
 void config_menu_clear ( GScanner *scanner );

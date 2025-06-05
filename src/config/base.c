@@ -317,14 +317,16 @@ void config_skip_statement ( GScanner *scanner )
 {
   gint c = 0;
 
+  scanner->max_parse_errors = FALSE;
   while(g_scanner_get_next_token(scanner) != ';' || c)
   {
     if(scanner->token == '{')
       c++;
     else if(scanner->token == '}')
+    {
       c--;
-    if(c < 0)
-      return;
+      if(c<1)
+        return;
+    }
   }
-  scanner->max_parse_errors = FALSE;
 }

@@ -119,7 +119,7 @@ static void config_vars ( GScanner *scanner, gboolean private )
       }
     }
     else
-      g_message("duplicate declaration of variable %s",
+      g_scanner_error(scanner, "duplicate declaration of variable '%s'",
           scanner->value.v_identifier);
 
   } while(config_check_and_consume(scanner, ','));
@@ -149,6 +149,7 @@ static void config_switcher ( GScanner *scanner )
   if(disable)
     gtk_widget_destroy(widget);
 }
+
 static void config_placer ( GScanner *scanner )
 {
   gint wp_x = 10;
@@ -201,8 +202,6 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
   while(!config_is_section_end(scanner))
   {
     g_scanner_get_next_token(scanner);
-    if(config_widget_child(scanner, NULL))
-      continue;
     if(config_scanner_source(scanner))
       continue;
     switch(config_lookup_key(scanner, config_toplevel_keys))
@@ -278,6 +277,8 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
               "DisownMinimized"));
         break;
       default:
+        if(config_widget_child(scanner, NULL))
+          break;
         g_scanner_error(scanner,"Unexpected toplevel token");
         break;
     }
