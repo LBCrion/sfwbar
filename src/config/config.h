@@ -51,7 +51,6 @@ gboolean config_assign_boolean (GScanner *scanner, gboolean def, const gchar *ex
 gchar *config_assign_enum ( GScanner *scanner, const gchar *expr );
 gchar *config_assign_string ( GScanner *scanner, const gchar *expr );
 gdouble config_assign_number ( GScanner *scanner, const gchar *expr );
-void *config_assign_tokens ( GScanner *scanner, GHashTable *keys, gchar *err );
 GPtrArray *config_assign_string_list ( GScanner *scanner );
 GBytes *config_assign_action ( GScanner *scanner, gchar *err );
 GBytes *config_assign_expr ( GScanner *scanner, const gchar *err );

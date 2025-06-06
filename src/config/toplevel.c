@@ -22,10 +22,9 @@ static void config_set ( GScanner *scanner )
       SEQ_REQ, '=', NULL, NULL, "Missing '=' after 'set'",
       SEQ_END);
 
-  if(ident && config_expr(scanner, &code))
+  if(!scanner->max_parse_errors && ident && config_expr(scanner, &code))
     scanner_var_new(ident, NULL, (gchar *)code, G_TOKEN_SET, VT_FIRST);
 
-  config_check_and_consume(scanner, ';');
   g_free(ident);
 }
 
@@ -37,10 +36,9 @@ static void config_mappid_map ( GScanner *scanner )
       SEQ_REQ, G_TOKEN_STRING, NULL, &pattern, "missing pattern in MapAppId",
       SEQ_REQ, ',', NULL, NULL, "missing comma after pattern in MapAppId",
       SEQ_REQ, G_TOKEN_STRING, NULL, &appid, "missing app_id in MapAppId",
-      SEQ_OPT, ';', NULL, NULL, NULL,
       SEQ_END);
 
-  if(!scanner->max_parse_errors)
+  if(!scanner->max_parse_errors && pattern && appid)
     wintree_appid_map_add(pattern, appid);
 
   g_free(pattern);
@@ -72,11 +70,10 @@ static void config_module ( GScanner *scanner )
       SEQ_REQ, '(', NULL, NULL, "missing '(' after 'module'",
       SEQ_REQ, G_TOKEN_STRING, NULL, &name, "missing module name",
       SEQ_REQ, ')', NULL, NULL, "missing ')' after 'module'",
-      SEQ_OPT, ';', NULL, NULL, NULL,
       SEQ_END);
 
   if(!scanner->max_parse_errors && name)
-    module_load ( name );
+    module_load(name);
 
   g_free(name);
 }
@@ -123,7 +120,6 @@ static void config_vars ( GScanner *scanner, gboolean private )
           scanner->value.v_identifier);
 
   } while(config_check_and_consume(scanner, ','));
-  config_check_and_consume(scanner, ';');
 }
 
 static void config_switcher ( GScanner *scanner )
@@ -202,8 +198,6 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
   while(!config_is_section_end(scanner))
   {
     g_scanner_get_next_token(scanner);
-    if(config_scanner_source(scanner))
-      continue;
     switch(config_lookup_key(scanner, config_toplevel_keys))
     {
       case G_TOKEN_SCANNER:
@@ -278,6 +272,8 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
         break;
       default:
         if(config_widget_child(scanner, NULL))
+          break;
+        if(config_scanner_source(scanner))
           break;
         g_scanner_error(scanner,"Unexpected toplevel token");
         break;
