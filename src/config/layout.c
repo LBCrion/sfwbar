@@ -297,7 +297,7 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
   css_widget_cascade(widget, NULL);
 
   g_object_get(G_OBJECT(widget), "disable", &disabled, NULL);
-  if(disabled || !container)
+  if(disabled || !gtk_widget_get_parent(widget))
     gtk_widget_destroy(widget);
 
   return TRUE;
@@ -309,12 +309,9 @@ void config_widget ( GScanner *scanner, GtkWidget *widget )
     g_object_set(G_OBJECT(widget), "store", SCANNER_STORE(scanner), NULL);
   if(!config_check_and_consume(scanner, '{'))
     return;
-
   while(!config_is_section_end(scanner))
   {
     g_scanner_get_next_token(scanner);
-    if(scanner->token == ';')
-      continue;
     if(config_widget_property(scanner, widget))
       continue;
     if(config_widget_child(scanner, widget))
