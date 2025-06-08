@@ -168,6 +168,7 @@ static void taskbar_popup_set_title_width ( GtkWidget *self, gint title_width )
   if(priv->label)
     gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
 }
+
 static void taskbar_popup_update ( GtkWidget *self )
 {
   TaskbarPopupPrivate *priv;

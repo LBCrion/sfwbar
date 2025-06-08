@@ -18,7 +18,8 @@ enum {
 };
 
 enum {
-  FLOW_GRID_AXIS_ROWS = 1,
+  FLOW_GRID_AXIS_DEFAULT = 0,
+  FLOW_GRID_AXIS_ROWS,
   FLOW_GRID_AXIS_COLS,
 };
 
@@ -60,7 +61,6 @@ void flow_grid_add_child ( GtkWidget *self, GtkWidget *child );
 gboolean flow_grid_update ( GtkWidget *self );
 void flow_grid_invalidate ( GtkWidget *self );
 void flow_grid_delete_child ( GtkWidget *, void *parent );
-GList *flow_grid_get_children ( GtkWidget *self );
 guint flow_grid_n_children ( GtkWidget *self );
 gpointer flow_grid_find_child ( GtkWidget *, gconstpointer parent );
 void flow_grid_child_dnd_enable ( GtkWidget *, GtkWidget *, GtkWidget *);

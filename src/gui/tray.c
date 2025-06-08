@@ -62,32 +62,3 @@ GtkWidget *tray_new ( void )
 {
   return GTK_WIDGET(g_object_new(tray_get_type(), NULL));
 }
-
-/*void tray_invalidate_all ( sni_item_t *sni )
-{
-  GList *iter;
-
-  for(iter=trays; iter; iter=g_list_next(iter))
-    flow_item_invalidate(flow_grid_find_child(iter->data,sni));
-}
-
-void tray_item_init_for_all ( sni_item_t *sni )
-{
-  GList *iter;
-
-  for(iter=trays; iter; iter=g_list_next(iter))
-    tray_item_new(sni, iter->data);
-}
-
-void tray_item_destroy ( sni_item_t *sni )
-{
-  g_list_foreach(trays, (GFunc)flow_grid_delete_child, sni);
-}
-
-void tray_update ( void )
-{
-  GList *iter;
-
-  for(iter=trays; iter; iter=g_list_next(iter))
-    flow_grid_update(iter->data);
-}*/
