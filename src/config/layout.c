@@ -89,9 +89,9 @@ GtkWidget *config_include ( GScanner *scanner, GtkWidget *container )
   gchar *fname;
 
   config_parse_sequence(scanner,
-      SEQ_REQ, '(', NULL, NULL, "Missing '(' after include",
+      SEQ_OPT, '(', NULL, NULL, NULL,
       SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing filename in include",
-      SEQ_REQ, ')', NULL, NULL, "Missing ')' after include",
+      SEQ_OPT, ')', NULL, NULL, NULL,
       SEQ_END);
 
   if(scanner->max_parse_errors)
