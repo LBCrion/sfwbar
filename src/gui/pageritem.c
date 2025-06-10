@@ -64,7 +64,7 @@ void pager_item_update ( GtkWidget *self )
   css_set_class(priv->button, "visible", priv->ws->state & WS_STATE_VISIBLE);
   css_set_class(priv->button, "urgent", priv->ws->state & WS_STATE_URGENT);
 
-  gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
+  gtk_widget_unset_state_flags(base_widget_get_child(self),
       GTK_STATE_FLAG_PRELIGHT);
 
   monitor = workspace_get_monitor(priv->ws->id);

@@ -31,7 +31,6 @@ struct _TaskbarItemPrivate
   GtkWidget *box;
   GtkWidget *taskbar;
   window_t *win;
-  GBytes **actions;
   gboolean invalid;
   GdkModifierType saved_modifiers;
 };

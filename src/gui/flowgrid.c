@@ -200,7 +200,6 @@ static void flow_grid_mirror ( GtkWidget *dest, GtkWidget *src )
       G_OBJECT(dest), "primary_axis", G_BINDING_SYNC_CREATE);
 }
 
-
 static void flow_grid_class_init ( FlowGridClass *kclass )
 {
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(kclass);

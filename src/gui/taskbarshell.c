@@ -298,39 +298,40 @@ static void taskbar_shell_class_init ( TaskbarShellClass *kclass )
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_API,
       g_param_spec_enum("group", "group", "sfwbar_config",
         g_enum_register_static("taskbar_shell_api", taskbar_shell_api),
-        API_NONE, G_PARAM_READWRITE));
+        API_NONE, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_LABELS,
       g_param_spec_boolean("group_labels", "labels", "sfwbar_config", FALSE,
-        G_PARAM_READWRITE));
+        G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_ICONS,
+      g_param_spec_boolean("group_icons", "icons", "sfwbar_config", FALSE,
+        G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass),
+      TASKBAR_SHELL_TITLE_WIDTH, g_param_spec_int("group_title_width",
+        "title_width", "sfwbar_config", -1, INT_MAX, -1,
+        G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_STYLE,
       g_param_spec_boxed("group_style", "style", "sfwbar_config", G_TYPE_BYTES,
         G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_CSS,
       g_param_spec_string("group_css", "css", "sfwbar_config", NULL,
         G_PARAM_READWRITE));
-  g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_ICONS,
-      g_param_spec_boolean("group_icons", "icons", "sfwbar_config", FALSE,
-        G_PARAM_READWRITE));
-  g_object_class_install_property(G_OBJECT_CLASS(kclass),
-      TASKBAR_SHELL_TITLE_WIDTH, g_param_spec_int("group_title_width",
-        "title_width", "sfwbar_config", -1, INT_MAX, -1, G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_SORT,
       g_param_spec_boolean("group_sort", "sort", "sfwbar_config", FALSE,
-        G_PARAM_READWRITE));
+        G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_COLS,
     g_param_spec_int("group_cols", "cols", "sfwbar_config", 0, INT_MAX, 0,
-      G_PARAM_READWRITE));
+      G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_ROWS,
-    g_param_spec_int("group_rows", "rows", "sfwbar_config", 0, INT_MAX, 0,
-      G_PARAM_READWRITE));
+    g_param_spec_int("group_rows", "rows", "sfwbar_config", 0, INT_MAX, 1,
+      G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass),
       TASKBAR_SHELL_PRIMARY_AXIS, g_param_spec_enum("group_primary_axis",
         "primary_axis", "sfwbar_config", g_type_from_name("flow_grid_axis"),
-        FLOW_GRID_AXIS_DEFAULT, G_PARAM_READWRITE));
+        FLOW_GRID_AXIS_DEFAULT, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_FILTER,
       g_param_spec_enum("filter", "filter", "sfwbar_config",
         g_enum_register_static("taskbar_shell_filter", taskbar_shell_filter),
-        0, G_PARAM_READWRITE));
+        0, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 }
 
 static void taskbar_shell_init ( TaskbarShell *self )

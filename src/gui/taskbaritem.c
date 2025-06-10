@@ -86,48 +86,42 @@ static gboolean taskbar_item_check ( GtkWidget *self )
     !wintree_is_filtered(priv->win);
 }
 
-static void taskbar_item_decorate ( GtkWidget *self, gboolean labels,
-    gboolean icons )
+static void taskbar_item_decorate ( GtkWidget *parent, GParamSpec *spec,
+    GtkWidget *self )
 {
   TaskbarItemPrivate *priv;
-  gint dir;
+  gboolean icons, labels;
+  gint dir, title_width;
 
   g_return_if_fail(IS_TASKBAR_ITEM(self));
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
+
+  g_object_get(G_OBJECT(parent), "labels", &labels, "icons", &icons,
+      "title-width", &title_width, NULL);
 
   if(!labels && !icons)
     labels = TRUE;
 
-  if(!!priv->icon == icons && !!priv->label == labels)
-    return;
-
-  g_clear_pointer(&priv->label, gtk_widget_destroy);
-  g_clear_pointer(&priv->icon, gtk_widget_destroy);
-  gtk_widget_style_get(gtk_bin_get_child(GTK_BIN(self)), "direction", &dir,
-      NULL);
-
-  if(icons)
+  if(!!priv->icon != icons || !!priv->label != labels)
   {
-    priv->icon = scale_image_new();
-    gtk_grid_attach_next_to(GTK_GRID(priv->box), priv->icon, NULL, dir, 1,1 );
-    if(priv->win)
-      taskbar_item_set_image(priv->icon, priv->win->appid);
+    g_clear_pointer(&priv->label, gtk_widget_destroy);
+    g_clear_pointer(&priv->icon, gtk_widget_destroy);
+    gtk_widget_style_get(base_widget_get_child(self), "direction", &dir, NULL);
+
+    if(icons)
+    {
+      priv->icon = scale_image_new();
+      gtk_grid_attach_next_to(GTK_GRID(priv->box), priv->icon, NULL, dir, 1,1);
+      if(priv->win)
+        taskbar_item_set_image(priv->icon, priv->win->appid);
+    }
+    if(labels)
+    {
+      priv->label = gtk_label_new(priv->win? priv->win->title : "");
+      gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
+      gtk_grid_attach_next_to(GTK_GRID(priv->box), priv->label, priv->icon, dir, 1,1);
+    }
   }
-  if(labels)
-  {
-    priv->label = gtk_label_new(priv->win?priv->win->title:"");
-    gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
-    gtk_grid_attach_next_to(GTK_GRID(priv->box), priv->label, priv->icon, dir, 1,1 );
-  }
-}
-
-static void taskbar_item_set_title_width ( GtkWidget *self, gint title_width )
-{
-  TaskbarItemPrivate *priv;
-
-  g_return_if_fail(IS_TASKBAR_ITEM(self));
-  priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
-
   if(priv->label)
     gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
 }
@@ -143,20 +137,20 @@ static void taskbar_item_update ( GtkWidget *self )
   if(!priv->invalid)
     return;
 
-  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "minimized",
+  css_set_class(base_widget_get_child(self), "minimized",
       priv->win->state & WS_MINIMIZED);
-  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "maximized",
+  css_set_class(base_widget_get_child(self), "maximized",
       priv->win->state & WS_MAXIMIZED);
-  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "fullscreen",
+  css_set_class(base_widget_get_child(self), "fullscreen",
       priv->win->state & WS_FULLSCREEN);
-  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "urgent",
+  css_set_class(base_widget_get_child(self), "urgent",
       priv->win->state & WS_URGENT);
-  css_set_class(gtk_bin_get_child(GTK_BIN(self)), "focused",
+  css_set_class(base_widget_get_child(self), "focused",
       wintree_is_focused(priv->win->uid));
 
-  if(priv->label)
-    if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)), priv->win->title))
-      gtk_label_set_text(GTK_LABEL(priv->label), priv->win->title);
+  if(priv->label && g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)),
+        priv->win->title))
+    gtk_label_set_text(GTK_LABEL(priv->label), priv->win->title);
 
   if(priv->icon)
   {
@@ -172,7 +166,7 @@ static void taskbar_item_update ( GtkWidget *self )
   if(tooltips)
     gtk_widget_set_tooltip_text(base_widget_get_child(self), priv->win->title);
 
-  gtk_widget_unset_state_flags(gtk_bin_get_child(GTK_BIN(self)),
+  gtk_widget_unset_state_flags(base_widget_get_child(self),
       GTK_STATE_FLAG_PRELIGHT);
 
   flow_item_set_active(self, taskbar_item_check(self));
@@ -213,8 +207,6 @@ static void taskbar_item_class_init ( TaskbarItemClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->action_exec = taskbar_item_action_exec;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_item_update;
-  FLOW_ITEM_CLASS(kclass)->decorate = taskbar_item_decorate;
-  FLOW_ITEM_CLASS(kclass)->set_title_width = taskbar_item_set_title_width;
   FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_item_invalidate;
   FLOW_ITEM_CLASS(kclass)->get_source =
     (void * (*)(GtkWidget *))taskbar_item_get_window;
@@ -231,7 +223,6 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   TaskbarItemPrivate *priv;
   GtkWidget *button;
   gint dir;
-  gint title_width;
 
   g_return_val_if_fail(IS_TASKBAR(taskbar),NULL);
 
@@ -244,22 +235,23 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   priv->win = win;
   priv->taskbar = taskbar;
 
-  title_width = GPOINTER_TO_INT(
-      g_object_get_data(G_OBJECT(taskbar), "title_width"));
-  if(!title_width)
-    title_width = -1;
-
   button = gtk_button_new();
   gtk_container_add(GTK_CONTAINER(self), button);
   gtk_widget_set_name(button, "taskbar_item");
-  gtk_widget_style_get(button,"direction", &dir, NULL);
+  gtk_widget_style_get(button, "direction", &dir, NULL);
   priv->box = gtk_grid_new();
   gtk_container_add(GTK_CONTAINER(button), priv->box);
   flow_grid_child_dnd_enable(taskbar, self, button);
 
-  priv->actions = g_object_get_data(G_OBJECT(taskbar), "actions");
   g_object_ref_sink(G_OBJECT(self));
   flow_grid_add_child(taskbar, self);
+  g_signal_connect(G_OBJECT(taskbar), "notify::labels",
+      G_CALLBACK(taskbar_item_decorate), self);
+  g_signal_connect(G_OBJECT(taskbar), "notify::icons",
+      G_CALLBACK(taskbar_item_decorate), self);
+  g_signal_connect(G_OBJECT(taskbar), "notify::title-width",
+      G_CALLBACK(taskbar_item_decorate), self);
+  taskbar_item_decorate(taskbar, NULL, self);
 
   gtk_widget_add_events(self, GDK_BUTTON_RELEASE_MASK | GDK_SCROLL_MASK);
   taskbar_item_invalidate(self);

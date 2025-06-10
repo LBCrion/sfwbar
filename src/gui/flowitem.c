@@ -62,28 +62,6 @@ static void flow_item_class_init ( FlowItemClass *kclass )
   FLOW_ITEM_CLASS(kclass)->dnd_dest = flow_item_dnd_dest_impl;
 }
 
-static void flow_item_decorate_cb ( GtkWidget *parent, GParamSpec *spec,
-    GtkWidget *self )
-{
-  gboolean icons, labels;
-
-  g_return_if_fail(IS_FLOW_GRID(parent));
-  g_return_if_fail(IS_FLOW_ITEM(self));
-  g_object_get(G_OBJECT(parent), "labels", &labels, "icons", &icons, NULL);
-  if(FLOW_ITEM_GET_CLASS(self)->decorate)
-    FLOW_ITEM_GET_CLASS(self)->decorate(self, labels, icons);
-}
-
-static void flow_item_title_width_cb ( GtkWidget *parent, GParamSpec *spec,
-    GtkWidget *self )
-{
-  gint title_width;
-
-  g_object_get(G_OBJECT(parent), "title_width", &title_width, NULL);
-  if(FLOW_ITEM_GET_CLASS(self)->set_title_width)
-    FLOW_ITEM_GET_CLASS(self)->set_title_width(self, title_width);
-}
-
 void flow_item_set_parent ( GtkWidget *self, GtkWidget *parent )
 {
   FlowItemPrivate *priv;
@@ -97,14 +75,6 @@ void flow_item_set_parent ( GtkWidget *self, GtkWidget *parent )
 
   g_object_bind_property(G_OBJECT(parent), "store", G_OBJECT(self), "store",
       G_BINDING_DEFAULT);
-  g_signal_connect(G_OBJECT(parent), "notify::labels",
-      G_CALLBACK(flow_item_decorate_cb), self);
-  g_signal_connect(G_OBJECT(parent), "notify::icons",
-      G_CALLBACK(flow_item_decorate_cb), self);
-  g_signal_connect(G_OBJECT(parent), "notify::title-width",
-      G_CALLBACK(flow_item_title_width_cb), self);
-  flow_item_decorate_cb(parent, NULL, self);
-  flow_item_title_width_cb(parent, NULL, self);
 }
 
 GtkWidget *flow_item_get_parent ( GtkWidget *self )

@@ -24,8 +24,6 @@ struct _FlowItemClass
   BaseWidgetClass parent_class;
 
   void (*update) ( GtkWidget *self );
-  void (*decorate) (GtkWidget *, gboolean, gboolean);
-  void (*set_title_width) (GtkWidget *, gint);
   void (*invalidate) ( GtkWidget *self );
   void* (*get_source) ( GtkWidget *self );
   gint (*compare) (GtkWidget *, GtkWidget *, GtkWidget *);

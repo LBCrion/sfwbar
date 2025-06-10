@@ -123,48 +123,43 @@ static gchar *taskbar_popup_get_appid ( GtkWidget *self )
   return priv->appid;
 }
 
-static void taskbar_popup_decorate ( GtkWidget *self, gboolean labels,
-    gboolean icons )
+static void taskbar_popup_decorate ( GtkWidget *parent, GParamSpec *spec,
+    GtkWidget *self )
 {
   TaskbarPopupPrivate *priv;
   GtkWidget *box;
-  gint dir;
+  gboolean labels, icons;
+  gint dir, title_width;
 
   g_return_if_fail(IS_TASKBAR_POPUP(self));
   priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
+
+  g_object_get(G_OBJECT(parent), "labels", &labels, "icons", &icons,
+      "title-width", &title_width, NULL);
 
   if(!labels && !icons)
     labels = TRUE;
 
-  if(!!priv->icon == icons && !!priv->label == labels)
-    return;
-
-  g_clear_pointer(&priv->label, gtk_widget_destroy);
-  g_clear_pointer(&priv->icon, gtk_widget_destroy);
-  gtk_widget_style_get(priv->button, "direction", &dir, NULL);
-  if(icons && !priv->icon)
+  if(!!priv->icon != icons || !!priv->label != labels)
   {
-    box = gtk_bin_get_child(GTK_BIN(priv->button));
-    priv->icon = scale_image_new();
-    gtk_grid_attach_next_to(GTK_GRID(box), priv->icon, NULL, dir, 1, 1);
-    taskbar_item_set_image(priv->icon, priv->appid);
+    g_clear_pointer(&priv->label, gtk_widget_destroy);
+    g_clear_pointer(&priv->icon, gtk_widget_destroy);
+    gtk_widget_style_get(priv->button, "direction", &dir, NULL);
+    if(icons)
+    {
+      box = gtk_bin_get_child(GTK_BIN(priv->button));
+      priv->icon = scale_image_new();
+      gtk_grid_attach_next_to(GTK_GRID(box), priv->icon, NULL, dir, 1, 1);
+      taskbar_item_set_image(priv->icon, priv->appid);
+    }
+    if(labels)
+    {
+      box = gtk_bin_get_child(GTK_BIN(priv->button));
+      priv->label = gtk_label_new(priv->appid);
+      gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
+      gtk_grid_attach_next_to(GTK_GRID(box), priv->label, priv->icon, dir, 1, 1);
+    }
   }
-  if(labels && !priv->label)
-  {
-    box = gtk_bin_get_child(GTK_BIN(priv->button));
-    priv->label = gtk_label_new(priv->appid);
-    gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
-    gtk_grid_attach_next_to(GTK_GRID(box), priv->label, priv->icon, dir, 1, 1);
-  }
-}
-
-static void taskbar_popup_set_title_width ( GtkWidget *self, gint title_width )
-{
-  TaskbarPopupPrivate *priv;
-
-  g_return_if_fail(IS_TASKBAR_POPUP(self));
-  priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
-
   if(priv->label)
     gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
 }
@@ -269,8 +264,6 @@ static void taskbar_popup_class_init ( TaskbarPopupClass *kclass )
   GTK_WIDGET_CLASS(kclass)->destroy = taskbar_popup_destroy;
   BASE_WIDGET_CLASS(kclass)->action_exec = taskbar_popup_action_exec;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_popup_update;
-  FLOW_ITEM_CLASS(kclass)->set_title_width = taskbar_popup_set_title_width;
-  FLOW_ITEM_CLASS(kclass)->decorate = taskbar_popup_decorate;
   FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_popup_invalidate;
   FLOW_ITEM_CLASS(kclass)->comp_source = (GCompareFunc)g_strcmp0;
   FLOW_ITEM_CLASS(kclass)->compare = taskbar_popup_compare;
@@ -284,9 +277,8 @@ static void taskbar_popup_init ( TaskbarPopup *self )
 
 GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *shell )
 {
-  GtkWidget *self;
   TaskbarPopupPrivate *priv;
-  GtkWidget *box;
+  GtkWidget *self, *box;
 
   g_return_val_if_fail(IS_TASKBAR_SHELL(shell), NULL);
 
@@ -327,6 +319,14 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *shell )
       G_CALLBACK(taskbar_popup_leave_cb), self);
   g_signal_connect(priv->popover, "grab-notify",
       G_CALLBACK(taskbar_popup_grab_cb), self);
+
+  g_signal_connect(G_OBJECT(shell), "notify::labels",
+      G_CALLBACK(taskbar_popup_decorate), self);
+  g_signal_connect(G_OBJECT(shell), "notify::icons",
+      G_CALLBACK(taskbar_popup_decorate), self);
+  g_signal_connect(G_OBJECT(shell), "notify::title-width",
+      G_CALLBACK(taskbar_popup_decorate), self);
+  taskbar_popup_decorate(shell, NULL, self);
 
   g_object_ref_sink(G_OBJECT(self));
   flow_grid_add_child(shell, self);

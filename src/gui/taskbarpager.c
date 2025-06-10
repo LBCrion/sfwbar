@@ -46,20 +46,22 @@ static gpointer taskbar_pager_get_ws ( GtkWidget *self )
   return priv->ws;
 }
 
-static void taskbar_pager_decorate ( GtkWidget *self, gboolean labels,
-    gboolean icons )
+static void taskbar_pager_decorate ( GtkWidget *parent, GParamSpec *spec,
+    GtkWidget *self )
 {
   TaskbarPagerPrivate *priv;
+  gboolean labels;
+  gint title_width;
 
   g_return_if_fail(IS_TASKBAR_PAGER(self));
   priv = taskbar_pager_get_instance_private(TASKBAR_PAGER(self));
 
-  if(labels == !!priv->button)
-    return;
+  g_object_get(G_OBJECT(parent), "labels", &labels,
+      "title-width", &title_width, NULL);
 
   if(!labels && priv->button)
     gtk_widget_destroy(priv->button);
-  else
+  else if(labels && !priv->button)
   {
     g_object_ref(priv->taskbar);
     gtk_container_remove(GTK_CONTAINER(priv->grid), priv->taskbar);
@@ -68,6 +70,9 @@ static void taskbar_pager_decorate ( GtkWidget *self, gboolean labels,
     gtk_container_add(GTK_CONTAINER(priv->grid), priv->taskbar);
     g_object_unref(priv->taskbar);
   }
+  if(priv->button)
+    gtk_label_set_max_width_chars(
+        GTK_LABEL(gtk_bin_get_child(GTK_BIN(priv->button))), title_width);
 }
 
 static void taskbar_pager_update ( GtkWidget *self )
@@ -171,7 +176,6 @@ static void taskbar_pager_dnd_dest ( GtkWidget *dest, GtkWidget *src,
 static void taskbar_pager_class_init ( TaskbarPagerClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->action_exec = taskbar_pager_action_exec;
-  FLOW_ITEM_CLASS(kclass)->decorate = taskbar_pager_decorate;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_pager_update;
   FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_pager_invalidate;
   FLOW_ITEM_CLASS(kclass)->get_source = taskbar_pager_get_ws;
@@ -207,6 +211,13 @@ GtkWidget *taskbar_pager_new( workspace_t *ws, GtkWidget *shell )
 
   g_object_ref_sink(G_OBJECT(self));
   flow_grid_add_child(shell, self);
+
+  g_signal_connect(G_OBJECT(shell), "notify::labels",
+      G_CALLBACK(taskbar_pager_decorate), self);
+  g_signal_connect(G_OBJECT(shell), "notify::title-width",
+      G_CALLBACK(taskbar_pager_decorate), self);
+  taskbar_pager_decorate(shell, NULL, self);
+
   flow_item_invalidate(self);
   return self;
 }
