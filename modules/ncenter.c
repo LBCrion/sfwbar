@@ -85,37 +85,7 @@ static const gchar dn_iface_xml[] =
   " </interface>"
   "</node>";
 
-static dn_notification *dn_notification_dup ( dn_notification *src )
-{
-  dn_notification *dest;
-
-  dest = g_malloc0(sizeof(dn_notification));
-  dest->app_name = g_strdup(src->app_name);
-  dest->app_icon = g_strdup(src->app_icon);
-  dest->summary = g_strdup(src->summary);
-  dest->body = g_strdup(src->body);
-  dest->category = g_strdup(src->category);
-  dest->desktop = g_strdup(src->desktop);
-  dest->image = g_strdup(src->image);
-  dest->sound_file = g_strdup(src->sound_file);
-  dest->sound_name = g_strdup(src->sound_name);
-  dest->action_id = g_strdup(src->action_id);
-  dest->action_title = g_strdup(src->action_title);
-  dest->timeout = src->timeout;
-  dest->id = src->id;
-  dest->x = src->x;
-  dest->y = src->y;
-  dest->action_icons = src->action_icons;
-  dest->resident = src->resident;
-  dest->transient = src->transient;
-  dest->silent = src->silent;
-  dest->urgency = src->urgency;
-  dest->time = g_date_time_add_seconds(src->time, 0);
-
-  return dest;
-}
-
-static void dn_notification_free_dup ( dn_notification *notif )
+static void dn_notification_free ( dn_notification *notif )
 {
   if(notif->timeout_handle)
     g_source_remove(notif->timeout_handle);
@@ -127,6 +97,7 @@ static void dn_notification_free_dup ( dn_notification *notif )
   g_free(notif->body);
   g_free(notif->category);
   g_free(notif->desktop);
+  scale_image_cache_remove(notif->image);
   g_free(notif->image);
   g_free(notif->sound_file);
   g_free(notif->sound_name);
@@ -134,62 +105,6 @@ static void dn_notification_free_dup ( dn_notification *notif )
   g_free(notif->action_title);
   g_free(notif);
 }
-
-static void dn_notification_free ( dn_notification *notif )
-{
-  scale_image_cache_remove(notif->image);
-  dn_notification_free_dup(notif);
-}
-static gint dn_notification_comp ( dn_notification *n1, dn_notification *n2 )
-{
-  if(n1->id != n2->id)
-    return n1->id - n2->id;
-  return g_strcmp0(n1->action_id, n2->action_id);
-}
-
-static gchar *dn_notification_get_str ( dn_notification *notif, gchar *prop )
-{
-  if(!g_ascii_strcasecmp(prop, "id"))
-    return g_strdup_printf("%d", notif->id);
-  if(!g_ascii_strcasecmp(prop, "icon"))
-    return g_strdup(notif->image?notif->image:notif->app_icon);
-  if(!g_ascii_strcasecmp(prop, "app"))
-    return g_strdup(notif->app_name);
-  if(!g_ascii_strcasecmp(prop, "summary"))
-    return g_strdup(notif->summary);
-  if(!g_ascii_strcasecmp(prop, "body"))
-    return g_strdup(notif->body);
-  if(!g_ascii_strcasecmp(prop, "time"))
-    return g_date_time_format(notif->time,"%s");
-  if(!g_ascii_strcasecmp(prop, "category"))
-    return g_strdup(notif->category);
-  if(!g_ascii_strcasecmp(prop, "action_id"))
-    return g_strdup(notif->action_id);
-  if(!g_ascii_strcasecmp(prop, "action_title"))
-    return g_strdup(notif->action_title);
-  return NULL;
-}
-
-static module_queue_t update_q = {
-  .free = (void (*)(void *))dn_notification_free_dup,
-  .duplicate = (void *(*)(void *))dn_notification_dup,
-  .get_str = (void *(*)(void *, gchar *))dn_notification_get_str,
-  .compare = (gboolean (*)(const void *, const void *))dn_notification_comp,
-};
-
-static void *dn_remove_get_str ( gchar *name, gchar *prop )
-{
-  if(!g_ascii_strcasecmp(prop, "removed-id"))
-    return g_strdup(name);
-  return NULL;
-}
-
-static module_queue_t remove_q = {
-  .free = g_free,
-  .duplicate = (void *(*)(void *))ptr_pass,
-  .get_str = (void *(*)(void *, gchar *))dn_remove_get_str,
-  .compare = (gboolean (*)(const void *, const void *))g_strcmp0,
-};
 
 static dn_notification *dn_notification_lookup ( guint32 id )
 {
@@ -225,7 +140,11 @@ static void dn_notification_close ( guint32 id, guchar reason )
 
   dn_notification_free(notif);
 
-  module_queue_append(&remove_q, g_strdup_printf("%d", id));
+  vm_store_t *store = vm_store_new(NULL, TRUE);
+  vm_store_insert_full(store, "id",
+      value_new_string(g_strdup_printf("%d", id)));
+  trigger_emit_with_data("notification-removed", store);
+  vm_store_free(store);
   trigger_emit("notification-group");
   g_dbus_connection_emit_signal(dn_con, NULL, dn_path, dn_bus,
       "NotificationClosed", g_variant_new("(uu)", id, reason), NULL);
@@ -313,7 +232,10 @@ guint32 dn_notification_parse ( GVariant *params )
   dn_notification *notif;
   GVariantIter *aiter;
   GVariant *hints;
+  GArray *action_ids, *action_titles;
   GList *iter;
+  vm_store_t *store;
+  value_t v1;
   gchar *action_title, *action_id;
   guint32 id;
 
@@ -373,21 +295,31 @@ guint32 dn_notification_parse ( GVariant *params )
     notif->timeout_handle =
       g_timeout_add(notif->timeout, (GSourceFunc)dn_timeout, notif);
 
-  module_queue_append(&update_q, notif);
-  trigger_emit("notification-group");
-
+  action_ids = g_array_new(FALSE, FALSE, sizeof(value_t));
+  action_titles = g_array_new(FALSE, FALSE, sizeof(value_t));
   while(g_variant_iter_next(aiter, "&s", &action_id) &&
     g_variant_iter_next(aiter, "&s", &action_title))
   {
-    g_free(notif->action_id);
-    notif->action_id = g_strdup(action_id);
-    g_free(notif->action_title);
-    notif->action_title = g_strdup(action_title);
-    module_queue_append(&update_q, notif);
+    v1 = value_new_string(action_id);
+    g_array_append_val(action_ids, v1);
+    v1 = value_new_string(action_title);
+    g_array_append_val(action_titles, v1);
     g_debug("ncenter: app: %u, action: %s: '%s'", notif->id, action_id,
         action_title);
   }
   g_variant_iter_free(aiter);
+
+  store = vm_store_new(NULL, TRUE);
+  vm_store_insert_full(store, "id",
+      value_new_string(g_strdup_printf("%d", notif->id)));
+  vm_store_insert_full(store, "action_ids",
+      value_new_array(action_ids));
+  vm_store_insert_full(store, "action_titles",
+      value_new_array(action_titles));
+
+  trigger_emit_with_data("notification-updated", store);
+  vm_store_free(store);
+  trigger_emit("notification-group");
 
   g_debug("ncenter: app: '%s', id: %u, icon: '%s', summary '%s', body '%s', timeout: %d",
       notif->app_name, notif->id, notif->app_icon, notif->summary,
@@ -466,15 +398,36 @@ static void dn_name_lost_cb (GDBusConnection *con, const gchar *name,
 
 static value_t dn_get_func ( vm_t *vm, value_t p[], gint np )
 {
-  gchar *result;
+  dn_notification *notif;
+  gchar *prop;
 
-  if(np!=1 || !value_is_string(p[0]) || !p[0].value.string)
+  if(np!=2)
     return value_na;
 
-  if( (result = module_queue_get_string(&update_q, p[0].value.string)) )
-    return value_new_string(result);
-  if( (result = module_queue_get_string(&remove_q, p[0].value.string)) )
-    return value_new_string(result);
+  if( !(notif = dn_notification_lookup(value_as_numeric(p[0]))) )
+    return value_na;
+  if( !(prop = value_get_string(p[1])) )
+    return value_na;
+
+  if(!g_ascii_strcasecmp(prop, "id"))
+    return value_new_string(g_strdup_printf("%d", notif->id));
+  if(!g_ascii_strcasecmp(prop, "icon"))
+    return value_new_string(
+      g_strdup(notif->image? notif->image : notif->app_icon));
+  if(!g_ascii_strcasecmp(prop, "app"))
+    return value_new_string(g_strdup(notif->app_name));
+  if(!g_ascii_strcasecmp(prop, "summary"))
+    return value_new_string(g_strdup(notif->summary));
+  if(!g_ascii_strcasecmp(prop, "body"))
+    return value_new_string(g_strdup(notif->body));
+  if(!g_ascii_strcasecmp(prop, "time"))
+    return value_new_string(g_date_time_format(notif->time,"%s"));
+  if(!g_ascii_strcasecmp(prop, "category"))
+    return value_new_string(g_strdup(notif->category));
+  if(!g_ascii_strcasecmp(prop, "action_id"))
+    return value_new_string(g_strdup(notif->action_id));
+  if(!g_ascii_strcasecmp(prop, "action_title"))
+    return value_new_string(g_strdup(notif->action_title));
 
   return value_na;
 }
@@ -604,20 +557,6 @@ static value_t dn_action_action ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
-static value_t dn_ack_action ( vm_t *vm, value_t p[], gint np )
-{
-  vm_param_check_np(vm, np, 1, "NotificationAck");
-  vm_param_check_string(vm, p, 0, "NotificationAck");
-
-  if(!g_ascii_strcasecmp(value_get_string(p[0]), "updated"))
-    module_queue_remove(&update_q);
-  if(!g_ascii_strcasecmp(value_get_string(p[0]), "removed"))
-    module_queue_remove(&remove_q);
-  trigger_emit("notification-group");
-
-  return value_na;
-}
-
 gboolean sfwbar_module_init ( void )
 {
   vm_func_add("notificationget", dn_get_func, FALSE);
@@ -626,11 +565,8 @@ gboolean sfwbar_module_init ( void )
   vm_func_add("notificationcount", dn_count_func, FALSE);
   vm_func_add("notificationclose", dn_close_action, TRUE);
   vm_func_add("notificationaction", dn_action_action, TRUE);
-  vm_func_add("notificationack", dn_ack_action, TRUE);
   vm_func_add("notificationexpand", dn_expand_action, TRUE);
   vm_func_add("notificationcollapse", dn_collapse_action, TRUE);
-  update_q.trigger = g_intern_static_string("notification-updated");
-  remove_q.trigger = g_intern_static_string("notification-removed");
 
   dn_con = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
   g_bus_own_name(G_BUS_TYPE_SESSION, dn_bus, G_BUS_NAME_OWNER_FLAGS_NONE,

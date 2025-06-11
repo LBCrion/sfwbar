@@ -1,9 +1,6 @@
 module("ncenter")
 
-TriggerAction "notification-updated", Function
-  If(NotificationGet("action_id")="",
-      "XNotificationUpdate",
-      "XNotificationActionUpdate")
+TriggerAction "notification-updated", Function "XNotificationUpdate"
 TriggerAction "notification-removed", Function "XNotificationRemove"
 
 Set XNotificationIcon = '<?xml version="1.0" encoding="utf-8"?>
@@ -24,7 +21,7 @@ If(!NotificationCount(),'','<circle cx="18" cy="6" r="6" fill="red"/>
     stroke="white" text-anchor="middle">' +
   If(NotificationCount()>9,'9+',Str(NotificationCount()))+'</text>') + '</svg>'
 
-set XNotificationTmpl = "
+Var XNotificationTmpl = "
 grid 'notification_frame' {
   grid '@NOTIF_ID@_grid' {
     style = If(NotificationGroup('@NOTIF_ID@')='','hidden',
@@ -98,41 +95,39 @@ grid 'notification_frame' {
 }"
 
 set XNotificationActionTmpl = "
-grid '@NOTIF_ID@_grid' {
-  grid '@NOTIF_ID@_actions' {
-    style = 'notification_action_grid'
-    loc(0,3,3,1)
-    label '@NOTIF_ID@_@ACTION_ID@_action' {
-      value = '@ACTION_TITLE@'
-      style = 'notification_action'
-      action = NotificationAction '@NOTIF_ID@', '@ACTION_ID@'
+  grid '@NOTIF_ID@_grid' {
+    grid '@NOTIF_ID@_actions' {
+      style = 'notification_action_grid'
+      loc(0,3,3,1)
+      label '@NOTIF_ID@_@ACTION_ID@_action' {
+        value = '@ACTION_TITLE@'
+        style = 'notification_action'
+        action = NotificationAction '@NOTIF_ID@', '@ACTION_ID@'
+      }
     }
+  }"
+
+Function XNotificationUpdate() {
+  Var i = 0;
+  ClearWidget id + "_grid"
+  Config ReplaceAll( XNotificationTmpl,
+    "@NOTIF_ID@", id,
+    "@NOTIF_SUMMARY@", Escape(NotificationGet(id, "summary")),
+    "@NOTIF_BODY@", Escape(NotificationGet(id, "body")),
+    "@NOTIF_ICON@", NotificationGet(id, "icon"),
+    "@NOTIF_APP@", NotificationGet(id, "app"),
+    "@NOTIF_TIME@", NotificationGet(id, "time"))
+  While i<arraysize(action_ids) {
+    Config ReplaceAll($XNotificationActionTmpl,
+      "@NOTIF_ID@", id,
+      "@ACTION_ID@", action_ids[i],
+      "@ACTION_TITLE@", action_titles[i])
+    i = i + 1
   }
-}"
-
-Function("XNotificationUpdate") {
-  ClearWidget NotificationGet("id") + "_grid"
-  Config ReplaceAll( $XNotificationTmpl,
-    "@NOTIF_ID@", NotificationGet("id"),
-    "@NOTIF_SUMMARY@", Escape(NotificationGet("summary")),
-    "@NOTIF_BODY@", Escape(NotificationGet("body")),
-    "@NOTIF_ICON@", NotificationGet("icon"),
-    "@NOTIF_APP@", NotificationGet("app"),
-    "@NOTIF_TIME@", NotificationGet("time"))
-  NotificationAck "updated"
 }
 
-Function("XNotificationActionUpdate") {
-  Config ReplaceAll( $XNotificationActionTmpl,
-    "@NOTIF_ID@", NotificationGet("id"),
-    "@ACTION_ID@", NotificationGet("action_id"),
-    "@ACTION_TITLE@", NotificationGet("action_title"))
-  NotificationAck "updated"
-}
-
-Function("XNotificationRemove") {
+Function XNotificationRemove() {
   ClearWidget NotificationGet("removed-id") + "_grid"
-  NotificationAck "removed"
 }
 
 PopUp "XNotificationWindow" {
