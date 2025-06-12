@@ -30,7 +30,6 @@ typedef struct _pulse_interface {
   gchar *default_control;
   gboolean fixed;
   GList *list;
-  module_queue_t queue;
   pa_operation *(*set_volume)(pa_context *, uint32_t, const pa_cvolume *,
       pa_context_success_cb_t, void *);
   pa_operation *(*set_mute)(pa_context *, uint32_t, int,
@@ -218,7 +217,6 @@ static void pulse_remove_device ( pulse_interface_t *iface, guint32 idx )
 {
   GList *iter;
   pulse_info *info;
-  vm_store_t *store;
 
   for(iter=iface->list; iter; iter=g_list_next(iter))
     if(((pulse_info *)iter->data)->idx == idx)
@@ -230,13 +228,8 @@ static void pulse_remove_device ( pulse_interface_t *iface, guint32 idx )
     iface->list = g_list_delete_link(iface->list, iter);
 
     if(info->name)
-    {
-      store = vm_store_new(NULL, TRUE);
-      vm_store_insert_full(store, "device_id",
-        value_new_string(g_strdup_printf("@pulse-%s-%d", iface->prefix, idx)));
-      trigger_emit_with_data("volume-conf-removed", store);
-      vm_store_free(store);
-    }
+      trigger_emit_with_string("volume-conf-removed", "device_id",
+          g_strdup_printf("@pulse-%s-%d", iface->prefix, idx));
     g_free(info->name);
     g_free(info->icon);
     g_free(info->form);
@@ -258,16 +251,20 @@ static void pulse_operation ( pa_operation *o, gchar *cmd )
 static void pulse_device_advertise ( gint iface_idx,
     const pa_channel_map *cmap, gint idx )
 {
+  vm_store_t *store;
   gint i;
+
+  if(iface_idx<0 || iface_idx>2)
+    return;
 
   for(i=0; i<cmap->channels; i++)
   {
-    vm_store_t *store = vm_store_new(NULL, TRUE);
+    store = vm_store_new(NULL, TRUE);
     vm_store_insert_full(store, "interface", value_new_string(g_strdup(
-            iface_idx<3? pulse_interfaces[iface_idx].prefix : "none")));
+            pulse_interfaces[iface_idx].prefix)));
     vm_store_insert_full(store, "device_id", value_new_string(
           g_strdup_printf("@pulse-%s-%d",
-            iface_idx<3? pulse_interfaces[iface_idx].prefix : "none", idx)));
+            pulse_interfaces[iface_idx].prefix, idx)));
     vm_store_insert_full(store, "channel_id", value_new_string(
           g_strdup(pa_channel_position_to_string(cmap->map[i]))));
     vm_store_insert_full(store, "channel_index",

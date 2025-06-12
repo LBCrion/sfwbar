@@ -245,22 +245,13 @@ static void bz_set_boolean  ( GDBusConnection *con, gchar *prop, gboolean val )
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, adapter);
 }
 
-static void bz_device_advertise ( BzDevice *device, gchar *trigger )
-{
-  vm_store_t *store = vm_store_new(NULL, TRUE);
-  vm_store_insert_full(store, "path",
-      value_new_string(g_strdup(device->path)));
-  trigger_emit_with_data(trigger, store);
-  vm_store_free(store);
-}
-
 static void bz_connect_cb ( GDBusConnection *con, GAsyncResult *res,
     BzDevice *device)
 {
   GVariant *result;
 
   device->connecting =  FALSE;
-  bz_device_advertise(device, "bluez_updated");
+  trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
   if( !(result = g_dbus_connection_call_finish(con, res, NULL)) )
     return;
 
@@ -273,7 +264,7 @@ static void bz_connect ( BzDevice *device )
   if(!device->connecting)
   {
     device->connecting = TRUE;
-    bz_device_advertise(device, "bluez_updated");
+    trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
   }
   g_debug("bluez: attempting to connect %s (%s)", device->addr, device->name);
   g_dbus_connection_call(bz_con, bz_serv, device->path,
@@ -313,7 +304,7 @@ static void bz_trust_cb ( GDBusConnection *con, GAsyncResult *res,
   if( !(result = g_dbus_connection_call_finish(con, res, NULL)) )
   {
     device->connecting =  FALSE;
-    bz_device_advertise(device, "bluez_updated");
+    trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
     return;
   }
 
@@ -346,7 +337,7 @@ static void bz_pair_cb ( GDBusConnection *con, GAsyncResult *res,
   if( !(result = g_dbus_connection_call_finish(con, res, NULL)) )
   {
     device->connecting =  FALSE;
-    bz_device_advertise(device, "bluez_updated");
+    trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
     return;
   }
 
@@ -358,7 +349,7 @@ static void bz_pair_cb ( GDBusConnection *con, GAsyncResult *res,
 static void bz_pair ( BzDevice *device )
 {
   device->connecting =  TRUE;
-  bz_device_advertise(device, "bluez_updated");
+  trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
 
   if(device->paired)
   {
@@ -479,7 +470,7 @@ static void bz_device_handle ( gchar *path, gchar *iface, GVariantIter *piter )
   }
 
   bz_device_properties (device, piter);
-  bz_device_advertise(device, "bluez_updated");
+  trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
 
   g_debug("bluez: device added: %d %d %s %s on %s",device->paired,
       device->connected, device->addr, device->name, device->path);
@@ -500,7 +491,7 @@ static void bz_device_removed ( GDBusConnection *con, const gchar *sender,
 
   g_debug("bluez: device removed: %d %d %s %s on %s",device->paired,
       device->connected, device->addr, device->name, device->path);
-  bz_device_advertise(device, "bluez_removed");
+  trigger_emit_with_string("bluez_removed", "path", g_strdup(device->path));
 }
 
 static void bz_device_changed ( GDBusConnection *con, const gchar *sender,
@@ -518,7 +509,7 @@ static void bz_device_changed ( GDBusConnection *con, const gchar *sender,
   {
     g_debug("bluez: device changed: %d %d %s %s on %s",device->paired,
         device->connected, device->addr, device->name, device->path);
-    bz_device_advertise(device, "bluez_updated");
+    trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
   }
   g_variant_iter_free(piter);
 }

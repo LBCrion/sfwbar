@@ -202,16 +202,13 @@ gboolean alsa_source_dispatch( GSource *gsrc, GSourceFunc cb, gpointer data)
 static void alsa_source_finalize ( GSource *gsrc )
 {
   alsa_source_t *src = (alsa_source_t *)gsrc;
-  vm_store_t *store;
 
   if(src->name)
   {
     g_debug("alsactl: deactivating source '%s'", src->name);
-    store = vm_store_new(NULL, TRUE);
-    vm_store_insert_full(store, "device_id",
-      value_new_string(g_strdup(src->name)));
-    trigger_emit_with_data("volume-conf-removed", store);
-    vm_store_free(store);
+
+    trigger_emit_with_string("volume-conf-removed", "device_id",
+        g_strdup(src->name));
   }
 
   g_clear_pointer(&src->mixer, snd_mixer_close);

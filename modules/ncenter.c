@@ -127,6 +127,11 @@ static void dn_notification_close ( guint32 id, guchar reason )
 
   if( !(notif = dn_notification_lookup(id)) )
     return;
+
+  trigger_emit_with_string("notification-removed", "id",
+      g_strdup_printf("%d", id));
+  trigger_emit("notification-group");
+
   notif_list = g_list_remove(notif_list, notif);
 
   if(!g_strcmp0(notif->app_name, expanded_group))
@@ -139,13 +144,6 @@ static void dn_notification_close ( guint32 id, guchar reason )
   }
 
   dn_notification_free(notif);
-
-  vm_store_t *store = vm_store_new(NULL, TRUE);
-  vm_store_insert_full(store, "id",
-      value_new_string(g_strdup_printf("%d", id)));
-  trigger_emit_with_data("notification-removed", store);
-  vm_store_free(store);
-  trigger_emit("notification-group");
   g_dbus_connection_emit_signal(dn_con, NULL, dn_path, dn_bus,
       "NotificationClosed", g_variant_new("(uu)", id, reason), NULL);
 }
