@@ -1,8 +1,8 @@
 module("wifi-nm")
 module("wifi-iwd")
 
-TriggerAction "wifi_updated", Function "XWifiUpdate"
-TriggerAction "wifi_removed", Function "XWifiRemove"
+TriggerAction "wifi_updated", XWifiUpdate
+TriggerAction "wifi_removed", XWifiRemove
 TriggerAction "wifi_scan", SetValue "XWifiScanButton", GT("Scanning") + " ..."
 TriggerAction "wifi_scan_complete", SetValue "XWifiScanButton", GT("Scan")
 
@@ -35,26 +35,24 @@ Set XWifiNetTmpl = "
     }
   }"
 
-Function("XWifiUpdate") {
-  ClearWidget WifiGet("Path") + "_grid" +
-    If(WifiGet("known")="", "Known", "Other")
+Function XWifiUpdate() {
+  ClearWidget id + "_grid" +
+    If(WifiGet(id, "known")="", "Known", "Other")
   Config ReplaceAll( $XWifiNetTmpl,
-      "@WIFI_PATH@", Escape(WifiGet("Path")),
-      "@WIFI_TYPE@", WifiGet("Type"),
-      "@WIFI_SSID@", Replace(WifiGet("SSID"),"'","\""),
+      "@WIFI_PATH@", Escape(WifiGet(id, "Path")),
+      "@WIFI_TYPE@", WifiGet(id, "Type"),
+      "@WIFI_SSID@", Replace(WifiGet(id, "SSID"),"'","\""),
       "@WIFI_ICON@", XWifiIcon,
-      "@WIFI_KNOWN@",If(WifiGet("Known")="","Other","Known"),
-      "@WIFI_CONNECTED@", If(WifiGet("Connected")="1","Connected",""))
-  WifiAck
+      "@WIFI_KNOWN@",If(WifiGet(id, "Known")="","Other","Known"),
+      "@WIFI_CONNECTED@", If(WifiGet(id, "Connected")="1","Connected",""))
 }
 
-Function("XWifiRemove") {
-  ClearWidget WifiGet("RemovedPath") + "_gridKnown"
-  ClearWidget WifiGet("RemovedPath") + "_gridOther"
-  WifiAckRemoved
+Function XWifiRemove() {
+  ClearWidget id + "_gridKnown"
+  ClearWidget id + "_gridOther"
 }
 
-Function("XWifiConnect") {
+Function XWifiConnect() {
   Eval "Addr", Extract(WidgetId(),'(.*)_grid') + "_type"
   SetValue $Addr, "Connecting"
   WifiConnect Extract(WidgetId(),'(.*)_grid')
