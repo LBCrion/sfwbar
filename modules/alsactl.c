@@ -143,30 +143,40 @@ static gboolean alsa_addr_parse ( mixer_api_t *api, gchar *address,
 static void alsa_iface_advertise ( mixer_api_t *api, alsa_source_t *src )
 {
   snd_mixer_elem_t *elem;
-  gint i, cnum=0;
   vm_store_t *store;
+  value_t v1;
+  GArray *channel_ids, *channel_indices;
+  gint i, cnum=0;
 
   for(elem=snd_mixer_first_elem(src->mixer); elem;
       elem=snd_mixer_elem_next(elem))
   {
     if(api->has_volume(elem) && !snd_mixer_selem_has_common_volume(elem))
+    {
+      channel_ids = g_array_new(FALSE, FALSE, sizeof(value_t));
+      channel_indices = g_array_new(FALSE, FALSE, sizeof(value_t));
       for(i=0;i<=SND_MIXER_SCHN_LAST;i++)
         if(api->has_channel(elem, i))
         {
-          store = vm_store_new(NULL, TRUE);
-          vm_store_insert_full(store, "interface",
-            value_new_string(g_strdup(api->prefix)));
-          vm_store_insert_full(store, "device_id",
-            value_new_string(g_strdup(src->name)));
-          vm_store_insert_full(store, "channel_id", value_new_string(
-                g_strdup_printf("%s:%s", snd_mixer_selem_get_name(elem),
-                  snd_mixer_selem_is_playback_mono(elem)?  "Mono":
-                  snd_mixer_selem_channel_name(i))));
-          vm_store_insert_full(store, "channel_index",
-            value_new_string(g_strdup_printf("%d", cnum++)));
-          trigger_emit_with_data("volume-conf", store);
-          vm_store_free(store);
+          v1 = value_new_string(g_strdup_printf("%s:%s",
+                snd_mixer_selem_get_name(elem),
+                snd_mixer_selem_is_playback_mono(elem)?  "Mono":
+                snd_mixer_selem_channel_name(i)));
+          g_array_append_val(channel_ids, v1);
+          v1 = value_new_string(g_strdup_printf("%d", cnum++));
+          g_array_append_val(channel_indices, v1);
         }
+      store = vm_store_new(NULL, TRUE);
+      vm_store_insert_full(store, "interface",
+          value_new_string(g_strdup(api->prefix)));
+      vm_store_insert_full(store, "device_id",
+          value_new_string(g_strdup(src->name)));
+      vm_store_insert_full(store, "channel_ids", value_new_array(channel_ids));
+      vm_store_insert_full(store, "channel_indices",
+          value_new_array(channel_indices));
+      trigger_emit_with_data("volume-conf", store);
+      vm_store_free(store);
+    }
   }
 }
 

@@ -126,22 +126,26 @@ grid 'volume_section_@DEVICE_IFACE@' {
     grid '@DEVICE_ID@_channels' {
       style = 'hidden'
       loc(1,3,4,1)
-      label '@DEVICE_ID@-@CHANNEL_ID@_label' {
-        value = '@CHANNEL_ID@'
-        style = 'volume_channel_name'
-        loc(1,@CHANNEL_NUM@,1,1)
-      }
-      scale '@DEVICE_ID@-@CHANNEL_ID@_scale' {
-        style = 'volume_scale'
-        value = Volume('@DEVICE_IFACE@-volume','@DEVICE_ID@:@CHANNEL_ID@')/100
-        action[1] = VolumeCtl '@DEVICE_ID@:@CHANNEL_ID@',
-          '@DEVICE_IFACE@-volume ' + Str(GtkEvent('dir') * 100)
-        trigger = 'volume'
-        loc(2,@CHANNEL_NUM@,1,1)
-      }
     }
   }
 }"
+
+Var XVolumeChannelTmpl = "
+  grid '@DEVICE_ID@_channels' {
+    label '@DEVICE_ID@-@CHANNEL_ID@_label' {
+      value = '@CHANNEL_ID@'
+      style = 'volume_channel_name'
+      loc(1,@CHANNEL_NUM@,1,1)
+    }
+    scale '@DEVICE_ID@-@CHANNEL_ID@_scale' {
+      style = 'volume_scale'
+      value = Volume('@DEVICE_IFACE@-volume','@DEVICE_ID@:@CHANNEL_ID@')/100
+      action[1] = VolumeCtl '@DEVICE_ID@:@CHANNEL_ID@',
+        '@DEVICE_IFACE@-volume ' + Str(GtkEvent('dir') * 100)
+      trigger = 'volume'
+      loc(2,@CHANNEL_NUM@,1,1)
+    }
+  }"
 
 Function XVolumeHideChannels() {
   SetStyle $XVolumeChannels, "hidden"
@@ -166,16 +170,26 @@ Function XVolumeToggleChannels() {
 }
 
 Function XVolumeChannelHandler() {
-  Config If(interface!="sink" & interface!="client", "",
-      ReplaceAll(XVolumeControlTmpl,
+  Var i;
+
+  If interface = "sink" | interface = "client" {
+    Config ReplaceAll(XVolumeControlTmpl,
         "@DEVICE_ID@", device_id,
-        "@CHANNEL_ID@", channel_id,
-        "@CHANNEL_NUM@", channel_index,
-        "@DEVICE_IFACE@", interface))
+        "@DEVICE_IFACE@", interface)
+    i = 0;
+    While i < arraysize(channel_indices) {
+      Config ReplaceAll(XVolumeChannelTmpl,
+        "@DEVICE_ID@", device_id,
+        "@CHANNEL_ID@", channel_ids[i],
+        "@CHANNEL_NUM@", channel_indices[i],
+        "@DEVICE_IFACE@", interface)
+      i = i + 1;
+    }
+  }
   MenuItemClear device_id
-  Config If(interface!="sink", "",
-      ReplaceAll($XVolumeSinkMenuTmpl, "@SINK_NAME@", device_id,
-           "@SINK_DESC@", VolumeInfo("sink-description", device_id)))
+  If interface = "sink"
+    Config ReplaceAll($XVolumeSinkMenuTmpl, "@SINK_NAME@", device_id,
+        "@SINK_DESC@", VolumeInfo("sink-description", device_id))
 }
 
 Function XVolumeChannelRemove() {
