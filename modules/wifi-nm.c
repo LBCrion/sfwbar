@@ -151,41 +151,11 @@ static const gchar *nm_apoint_get_type ( nm_apoint_t *ap )
   return "psk";
 }
 
-static nm_apoint_t *nm_apoint_dup ( nm_apoint_t *src )
-{
-  nm_apoint_t *dest;
-
-  if(!src)
-    return NULL;
-
-  dest = g_malloc0(sizeof(nm_apoint_t));
-  dest->ssid = g_strdup(src->ssid);
-  dest->hash = g_strdup(src->hash);
-  dest->flags = src->flags;
-  dest->wpa = src->wpa;
-  dest->rsn = src->rsn;
-  dest->mode = src->mode;
-  dest->strength = src->strength;
-  dest->conn = src->conn;
-  dest->active = src->active;
-
-  return dest;
-}
-
 static void nm_apoint_free ( nm_apoint_t *apoint )
 {
   g_free(apoint->ssid);
   g_free(apoint->hash);
   g_free(apoint);
-}
-
-static gint nm_apoint_comp ( nm_apoint_t *ap1, nm_apoint_t *ap2 )
-{
-  return (g_strcmp0(ap1->ssid, ap2->ssid) ||
-      ap1->flags != ap2->flags ||
-      ap1->wpa != ap2->wpa ||
-      ap1->rsn != ap2->rsn ||
-      ap1->mode != ap2->mode);
 }
 
 static nm_conn_t *nm_apoint_get_conn( nm_apoint_t *ap )
@@ -201,53 +171,12 @@ static nm_conn_t *nm_apoint_get_conn( nm_apoint_t *ap )
   return result;
 }
 
-static void *nm_apoint_get_str ( nm_apoint_t *ap, gchar *prop )
-{
-  if(!g_ascii_strcasecmp(prop, "ssid"))
-    return g_strdup(ap->ssid?ap->ssid:"");
-  if(!g_ascii_strcasecmp(prop, "path"))
-    return g_strdup(ap->hash?ap->hash:"");
-  if(!g_ascii_strcasecmp(prop, "type"))
-    return g_strdup(nm_apoint_get_type(ap));
-  if(!g_ascii_strcasecmp(prop, "known"))
-    return g_strdup(ap->conn?ap->ssid:"");
-  if(!g_ascii_strcasecmp(prop, "strength"))
-    return g_strdup_printf("%d", ap->strength);
-  if(!g_ascii_strcasecmp(prop, "connected"))
-    return g_strdup_printf("%d", !!ap->active);
-
-  return NULL;
-}
-
-static module_queue_t update_q = {
-  .free = (void (*)(void *))nm_apoint_free,
-  .duplicate = (void *(*)(void *))nm_apoint_dup,
-  .get_str = (void *(*)(void *, gchar *))nm_apoint_get_str,
-  .get_num = (void *(*)(void *, gchar *))NULL,
-  .compare = (gboolean (*)(const void *, const void *))nm_apoint_comp,
-};
-
-static void *nm_remove_get_str ( gchar *name, gchar *prop )
-{
-  if(!g_ascii_strcasecmp(prop, "RemovedPath"))
-    return g_strdup(name);
-  else
-    return NULL;
-}
-
-static module_queue_t remove_q = {
-  .free = g_free,
-  .duplicate = (void *(*)(void *))g_strdup,
-  .get_str = (void *(*)(void *, gchar *))nm_remove_get_str,
-  .compare = (gboolean (*)(const void *, const void *))g_strcmp0,
-};
-
 static void nm_apoint_update ( nm_apoint_t *ap )
 {
   if(ap->visible)
-    module_queue_append(&update_q, ap);
+    trigger_emit_with_string("wifi_updated", "id", g_strdup(ap->hash));
   else
-    module_queue_append(&remove_q, ap->hash);
+    trigger_emit_with_string("wifi_removed", "id", g_strdup(ap->hash));
 
   g_debug("nm: ap: %s, %s, known: %d, conn: %d, strength: %d", ap->ssid,
       nm_apoint_get_type(ap), !!ap->conn, !!ap->active, ap->strength);
@@ -564,7 +493,7 @@ static void nm_ap_node_free ( nm_ap_node_t *node )
     if( !(apoint->nodes = g_list_remove(apoint->nodes, node)) )
     {
       g_debug("nm: ap removed: %s", apoint->ssid);
-      module_queue_append(&remove_q, apoint->hash);
+      trigger_emit_with_string("wifi_removed", "id", g_strdup(apoint->hash));
       if(apoint->active)
         apoint->active->ap = NULL;
       g_hash_table_remove(apoint_list, apoint->hash);
@@ -941,19 +870,31 @@ static void nm_secret_agent_method(GDBusConnection *con,
 static value_t nm_expr_get ( vm_t *vm, value_t p[], gint np )
 {
   nm_device_t *device;
+  nm_apoint_t *ap;
   GList *iter;
-  gchar *result;
+  gchar *prop;
 
   vm_param_check_np_range(vm, np, 1, 2, "WifiGet");
   vm_param_check_string(vm, p, 0, "WifiGet");
   if(np==2)
     vm_param_check_string(vm, p, 1, "WifiGet");
+  if(np==2 && (ap = g_hash_table_lookup(apoint_list, value_get_string(p[0]))) )
+  {
+    prop = value_get_string(p[1]);
 
-  if( (result = module_queue_get_string(&update_q, value_get_string(p[0]))) )
-    return value_new_string(result);
-
-  if( (result = module_queue_get_string(&remove_q, value_get_string(p[0]))) )
-    return value_new_string(result);
+    if(!g_ascii_strcasecmp(prop, "ssid"))
+      return value_new_string(g_strdup(ap->ssid?ap->ssid:""));
+    if(!g_ascii_strcasecmp(prop, "path"))
+      return value_new_string(g_strdup(ap->hash?ap->hash:""));
+    if(!g_ascii_strcasecmp(prop, "type"))
+      return value_new_string(g_strdup(nm_apoint_get_type(ap)));
+    if(!g_ascii_strcasecmp(prop, "known"))
+      return value_new_string(g_strdup(ap->conn?ap->ssid:""));
+    if(!g_ascii_strcasecmp(prop, "strength"))
+      return value_new_string(g_strdup_printf("%d", ap->strength));
+    if(!g_ascii_strcasecmp(prop, "connected"))
+      return value_new_string(g_strdup_printf("%d", !!ap->active));
+  }
 
   if(default_dev && !g_ascii_strcasecmp(value_get_string(p[0]),
         "DeviceStrength"))
@@ -969,34 +910,6 @@ static value_t nm_expr_get ( vm_t *vm, value_t p[], gint np )
         (device && device->active && device->active->ap)?
         device->active->ap->strength : 0));
   }
-  return value_na;
-}
-
-static value_t nm_action_ack ( vm_t *vm, value_t p[], gint np )
-{
-  vm_param_check_np(vm, np, 0, "WifiAck");
-
-  module_queue_remove(&update_q);
-  if(!sfwbar_interface.ready)
-  {
-    sfwbar_interface.active = !!update_q.list | !!remove_q.list;
-    module_interface_select(sfwbar_interface.interface);
-  }
-
-  return value_na;
-}
-
-static value_t nm_action_ack_removed  ( vm_t *vm, value_t p[], gint np )
-{
-  vm_param_check_np(vm, np, 0, "WifiAckRemoved");
-
-  module_queue_remove(&remove_q);
-  if(!sfwbar_interface.ready)
-  {
-    sfwbar_interface.active = !!update_q.list | !!remove_q.list;
-    module_interface_select(sfwbar_interface.interface);
-  }
-
   return value_na;
 }
 
@@ -1059,8 +972,6 @@ static value_t nm_action_forget ( vm_t *vm, value_t p[], gint np )
 static void nm_activate ( void )
 {
   vm_func_add("wifiget", nm_expr_get, FALSE);
-  vm_func_add("wifiack", nm_action_ack, FALSE);
-  vm_func_add("wifiackremoved", nm_action_ack_removed, FALSE);
   vm_func_add("wifiscan", nm_action_scan, FALSE);
   vm_func_add("wificonnect", nm_action_connect, FALSE);
   vm_func_add("wifidisconnect", nm_action_disconnect, FALSE);
@@ -1094,7 +1005,7 @@ static void nm_deactivate ( void )
   g_hash_table_remove_all(conn_list);
   g_hash_table_remove_all(ap_nodes);
 
-  sfwbar_interface.active = !!update_q.list | !!remove_q.list;
+  sfwbar_interface.active = FALSE;
 }
 
 static void nm_finalize ( void )
@@ -1114,8 +1025,6 @@ gboolean sfwbar_module_init ( void )
   static GDBusInterfaceVTable nm_secret_agent_vtable = {
     (GDBusInterfaceMethodCallFunc)nm_secret_agent_method, NULL, NULL };
 
-  update_q.trigger = g_intern_static_string("wifi_updated");
-  remove_q.trigger = g_intern_static_string("wifi_removed");
   ap_nodes = g_hash_table_new_full(g_str_hash, g_str_equal,
       NULL, (GDestroyNotify)nm_ap_node_free);
   dialog_list = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
