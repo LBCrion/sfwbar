@@ -127,6 +127,16 @@ void trigger_emit_with_data ( gchar *name, vm_store_t *store )
   g_main_context_invoke(NULL, (GSourceFunc)trigger_emit_in_main_context, inv);
 }
 
+void trigger_emit_with_string ( gchar *name, gchar *var, gchar *val )
+{
+  vm_store_t *store;
+ 
+  store = vm_store_new(NULL, TRUE);
+  vm_store_insert_full(store, var, value_new_string(val));
+  trigger_emit_with_data(name, store);
+  vm_store_free(store);
+}
+
 gboolean trigger_emit ( gchar *name )
 {
   trigger_emit_with_data(name, NULL);
