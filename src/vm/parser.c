@@ -231,10 +231,7 @@ static gboolean parser_variable ( GScanner *scanner, GByteArray *code )
   if( (pos = parser_local_lookup(scanner)) )
     parser_emit_local(code, pos, EXPR_OP_LOCAL);
   else
-  {
     parser_emit_var_id(code, scanner->value.v_identifier, EXPR_OP_VARIABLE);
-    return TRUE;
-  }
 
   if(config_check_and_consume(scanner, '['))
     return parser_index_parse(scanner, code);
