@@ -1,96 +1,120 @@
-module("bsdctl")
+module("bsdctl");
 
-set XBatteryLevel = If(!Ident(BSDCtl),XBatteryLeft / XBatteryTotal * 100,BSDCtl("hw.acpi.battery.life"))
-set XBatterySvgPlus = '<path style="fill:#FFF152;stroke:#000" d="m 27 23 25 0 -13 35 11 -4 -25 38 7 -38 -11 6 z"/>'
-set XBatterySvgMinus = '<path style="fill:#BB0000;stroke:none" d="m 19 50 28 0 0 8 -28 0 z"/>'
-set XBatteryDischarging = If(!Ident(BSDCtl),$XBatteryState="Discharging",BSDCtl("hw.acpi.battery.state")="1")
-set XBatteryTime = If(!Ident(BSDCtl),
-    If(XBatteryCurrent,XBatteryLeft/XBatteryCurrent*60,0),
-    Val(BSDCtl("hw.acpi.battery.time")))
-set XBatterySvgSign = If( XBatteryDischarging, $XBatterySvgMinus, $XBatterySvgPlus )
+Private {
+  Var device = '';
 
-set XBatterySvg = '<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 66 108">
-  <defs>
-    <linearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="' + Str(Max(0, 90 - XBatteryLevel)) +
-      '%" style="stop-color:rgb(0,0,0);stop-opacity:0" />
-      <stop offset="' + Str(100 - XBatteryLevel) + 
-      '%" style="stop-color:Rgb('+Str(Min(256,512-5.12*XBatteryLevel))+','+Str(Min(256,5.12*XBatteryLevel))+',0);stop-opacity:0.7" />
-    </linearGradient>
-  </defs>
-  <path style="fill:@theme_fg_color" d="m 19 6 a 6 6 0 0 0 6 -6 l 16 0 a 6 6 0 0 0 6 6 z"/>
-  <path style="fill:url(#grad2);stroke:@theme_fg_color;stroke-width:10" d="m 11 12 44 0 a 10 10 0 0 1 10 10 l 0 72 a 10 10 0 0 1 -10 10 l -44 0  a 10 10 0 0 1 -10 -10 l 0 -72  a 10 10 0 0 1 10 -10 z"/>
-  '+$XBatterySvgSign+'
-</svg>'
+  Var Minus = '<path style="fill:#BB0000;stroke:none"
+    d="m 19 50 28 0 0 8 -28 0 z"/>';
+  Var Plus = '<path style="fill:#FFF152;stroke:#000"
+    d="m 27 23 25 0 -13 35 11 -4 -25 38 7 -38 -11 6 z"/>'
+  Var BatterySvg = '<?xml version="1.0" encoding="UTF-8"?>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 66 108">
+        <defs>
+          <linearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="@GRADIENT_START@%" style="stop-color:Rgba(0,0,0,0)"/>
+            <stop offset="@GRADIENT_END@%"
+              style="stop-color:Rgba(@RED_LEVEL@, @BLUE_LEVEL@,0, 0.7)"/>
+          </linearGradient>
+        </defs>
+        <path style="fill:@theme_fg_color" d="m 19 6 a 6 6 0 0 0 6 -6
+          l 16 0 a 6 6 0 0 0 6 6 z"/>
+        <path style="fill:url(#grad2);stroke:@theme_fg_color;stroke-width:10"
+          d="m 11 12 44 0 a 10 10 0 0 1 10 10 l 0 72 a 10 10 0 0 1 -10 10
+          l -44 0 a 10 10 0 0 1 -10 -10 l 0 -72  a 10 10 0 0 1 10 -10 z"/>
+      @SIGN@
+      </svg>'
 
-Var BatteryConf = "file('%file_full%') { XBatteryTotal = Grab(First) };
-  file('%file_charge%') { XBatteryLeft = Grab(First) };
-  file ('%file_status%') { XBatteryState = RegEx('^(.*)$',First) };"
+  set Level = If(!Ident(BSDCtl),
+      XBatteryLeft/XBatteryTotal*100,
+      BSDCtl("hw.acpi.battery.life"))
+  set Time = If(!Ident(BSDCtl),
+      If(XBatteryCurrent, XBatteryLeft/XBatteryCurrent*60, 0),
+      Val(BSDCtl("hw.acpi.battery.time")))
 
-Function XBatteryInit() {
-  Var base, dir, sub, file, i, j;
-  Var file_full, file_status, file_charge, file_current, file_uevent;
+  Function Svg() {
+    Var Discharging = If(!Ident(BSDCtl),
+        $XBatteryState="Discharging",
+        BSDCtl("hw.acpi.battery.state")="1")
 
-  If(Ident("BSDCtl"))
-    return;
+    Return ReplaceAll(BatterySvg,
+        '@GRADIENT_START@', Str(Max(0, 100 - Level)),
+        '@GRADIENT_END@', Str(100 - Level),
+        '@RED_LEVEL@', Str(Min(256, 512-5.12*Level)),
+        '@BLUE_LEVEL@', Str(Min(256, 5.12*Level)),
+        '@SIGN@', If(Discharging, Minus, Plus))
+  }
 
-  base = "/sys/class/power_supply";
-  dir = ls(base);
-  i = 0;
+  Function XBatteryInit() {
+    Var base, dir, sub, file, i, j;
+    Var file_full, file_status, file_charge, file_current, file_uevent;
+    Var BatteryConf = "file('%file_full%') { XBatteryTotal = Grab(First) };
+      file('%file_charge%') { XBatteryLeft = Grab(First) };
+      file ('%file_status%') { XBatteryState = RegEx('^(.*)$',First) };"
 
-  while i<ArraySize(dir) {
-    If Mid(dir[i], 1, 3)="BAT" {
-      sub = ls(base + "/" + dir[i]);
-      j = 0;
-      file_full = ""
-      file_charge = ""
-      file_current = ""
-      file_status = ""
-      file_uevent = ""
-      while j<ArraySize(sub) {
-        file = base + "/" + dir[i] + "/" + sub[j];
-        If mid(sub[j], -5, -1) = "_full"
-          file_full = file;
-        If sub[j] = "charge_now" | sub[j] = "energy_now"
-          file_charge = file;
-        If sub[j] = "current_now"
-          file_current = file;
-        If sub[j] = "status"
-          file_status = file;
-        If sub[j] = "uevent"
-          file_uevent = file;
-        j = j + 1;
-      }
-      if file_full != "" & file_charge != "" & file_status != ""
-      {
-        Config ReplaceAll(BatteryConf,
-            "%file_full%", file_full,
-            "%file_charge%", file_charge,
-            "%file_status%", file_status);
-        if file_current != ""
-          Config "file('" + file_current + "') { XBatteryCurrent = Grab(First) };"
-        if file_uevent != ""
+    If(Ident("BSDCtl"))
+      return;
+
+    base = "/sys/class/power_supply";
+    if device != ''
+      dir = [ device ];
+    else
+      dir = ls(base);
+    i = 0;
+
+    while i<ArraySize(dir) {
+      If Mid(dir[i], 1, 3)="BAT" {
+        sub = ls(base + "/" + dir[i]);
+        j = 0;
+        file_full = ""
+        file_charge = ""
+        file_current = ""
+        file_status = ""
+        file_uevent = ""
+        while j<ArraySize(sub) {
+          file = base + "/" + dir[i] + "/" + sub[j];
+          If mid(sub[j], -5, -1) = "_full"
+            file_full = file;
+          If sub[j] = "charge_now" | sub[j] = "energy_now"
+            file_charge = file;
+          If sub[j] = "current_now"
+            file_current = file;
+          If sub[j] = "status"
+            file_status = file;
+          If sub[j] = "uevent"
+            file_uevent = file;
+          j = j + 1;
+        }
+        if file_full != "" & file_charge != "" & file_status != ""
         {
-          FileTrigger file, "battery-event", 1000
-          button "'XBatteryModule' { trigger = 'battery-event' }"
-          EmitTrigger "battery-event"
+          Config ReplaceAll(BatteryConf,
+              "%file_full%", file_full,
+              "%file_charge%", file_charge,
+              "%file_status%", file_status);
+          if file_current != ""
+            Config "file('" + file_current + "')
+              { XBatteryCurrent = Grab(First) };"
+          if file_uevent != ""
+          {
+            FileTrigger file, "battery-event", 1000
+            button "'XBatteryModule' { trigger = 'battery-event' }"
+            EmitTrigger "battery-event"
+          }
         }
       }
+      i = i + 1;
     }
-    i = i + 1;
   }
-}
 
-layout {
-  style = "module"
-  button "XBatteryModule" {
-    action[0] = XBatteryInit
-    value = $XBatterySvg
-    style = If(!Ident($XBatteryState) & !Ident(BSDCtl),"hidden","module")
-    tooltip = GT("Battery") + ": " + Str(XBatteryLevel) + "%" + If(XBatteryTime, " " +
-          Str(XBatteryTime/60 - XBatteryTime%60/60) + GT("h") +
-          Str(XBatteryTime%60) + GT("m"), "")
-    interval = 1000
+  layout {
+    style = "module"
+    button "XBatteryModule" {
+      action[0] = XBatteryInit
+      value = Svg()
+      style = If(!Ident($XBatteryState) & !Ident(BSDCtl),"hidden","module")
+      tooltip = GT("Battery") + ": " + Str(Level) + "%" + If(Time, " " +
+            Str(Time/60 - Time%60/60) + GT("h") +
+            Str(Time%60) + GT("m"), "")
+      interval = 1000
+    }
   }
 }
