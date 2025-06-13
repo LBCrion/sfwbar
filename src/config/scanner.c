@@ -72,7 +72,7 @@ static void config_var ( GScanner *scanner, ScanFile *file )
   }
 
   if(!scanner->max_parse_errors)
-    scanner_var_new(vname, file, pattern, type, flag);
+    scanner_var_new(vname, file, pattern, type, flag, SCANNER_STORE(scanner));
 
   g_free(vname);
   g_free(pattern);

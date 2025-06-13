@@ -45,6 +45,7 @@ typedef struct scan_file {
 
 typedef struct scan_var {
   expr_cache_t *expr;
+  vm_store_t *store;
   void *definition;
   gchar *str;
   guint vstate;
@@ -67,7 +68,8 @@ GIOStatus scanner_file_update ( GIOChannel *, ScanFile *, gsize * );
 int scanner_glob_file ( ScanFile * );
 value_t scanner_get_value ( GQuark id, gchar ftype, gboolean update,
     expr_cache_t *expr );
-void scanner_var_new ( gchar *, ScanFile *, gchar *, guint, gint );
+void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
+    guint type, gint flag, vm_store_t *store );
 void scanner_file_merge ( ScanFile *keep, ScanFile *temp );
 GQuark scanner_parse_identifier ( const gchar *id, guint8 *dtype );
 ScanFile *scanner_file_get ( gchar *trigger );

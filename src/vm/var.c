@@ -107,6 +107,7 @@ gboolean vm_store_insert ( vm_store_t *store, vm_var_t *var )
 
   g_datalist_id_set_data_full(&(store->vars->data), var->quark, var,
       (GDestroyNotify)vm_var_free);
+  g_debug("var: new: '%s' in store %p", g_quark_to_string(var->quark), store);
 
   return found;
 }

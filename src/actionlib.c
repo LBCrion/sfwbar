@@ -505,7 +505,7 @@ static value_t action_eval ( vm_t *vm, value_t p[], gint np )
   memcpy(data+2, ptr, strlen(ptr)+1);
 
   scanner_var_new(value_get_string(p[0]), NULL,
-      (gchar *)g_bytes_new_take(data, strlen(ptr)+3), G_TOKEN_SET, VT_FIRST);
+      (gchar *)g_bytes_new_take(data, strlen(ptr)+3), G_TOKEN_SET, VT_FIRST, vm->store);
 
   return value_na;
 }

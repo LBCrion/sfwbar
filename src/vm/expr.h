@@ -13,6 +13,7 @@ typedef struct expr_cache {
   gint stack_depth;
   guint vstate;
   struct expr_cache *parent;
+  void *store;
 } expr_cache_t;
 
 gboolean expr_cache_eval ( expr_cache_t *expr );

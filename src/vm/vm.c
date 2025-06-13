@@ -147,13 +147,13 @@ static gboolean vm_function ( vm_t *vm )
   guint8 np = *(vm->ip+1);
   gint i;
 
+  memcpy(&func, vm->ip+2, sizeof(gpointer));
   if(np>vm->stack->len)
   {
-    g_message("vm: not enough parameters");
+    g_warning("vm: not enough parameters in call to '%s'", func->name);
     return FALSE;
   }
 
-  memcpy(&func, vm->ip+2, sizeof(gpointer));
   result = value_na;
   if(!(func->flags & VM_FUNC_USERDEFINED) && func->ptr.function)
   {
@@ -191,6 +191,7 @@ static void vm_variable ( vm_t *vm )
 
   memcpy(&ftype, vm->ip+1, 1);
   memcpy(&quark, vm->ip+2, sizeof(GQuark));
+  g_debug("vm: heap lookup '%s' in %p", g_quark_to_string(quark), vm->store);
   if( (var = vm_store_lookup(vm->store, quark)) )
   {
     value = value_dup(var->value);
@@ -334,7 +335,7 @@ static value_t vm_run ( vm_t *vm )
     }
     else if(!vm_op_binary(vm))
     {
-      g_message("invalid op %d", *vm->ip);
+      g_warning("invalid op %d", *vm->ip);
       break;
     }
   }
@@ -347,7 +348,7 @@ static void vm_free ( vm_t *vm )
   if(vm->stack)
   {
     if(vm->stack->len)
-      g_message("stack too long");
+      g_warning("stack too long");
 
     vm_stack_unwind(vm, 0);
 
@@ -393,7 +394,9 @@ value_t vm_expr_eval ( expr_cache_t *expr )
   vm->event = expr->event;
   vm->expr = expr;
   vm->wstate = base_widget_state_build(vm->widget, vm->win);
-  if(expr->widget)
+  if(expr->store)
+    vm->store = expr->store;
+  else if(expr->widget)
     vm->store = base_widget_get_store(expr->widget);
 
   v1 = vm_run(vm);

@@ -105,7 +105,7 @@ void scanner_var_free ( ScanVar *var )
 }
 
 void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
-    guint type, gint flag )
+    guint type, gint flag, vm_store_t *store )
 {
   ScanVar *var, *old;
   GQuark quark;
@@ -129,12 +129,17 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
   var->type = type;
   var->multi = flag;
   var->invalid = TRUE;
+  var->store = store;
 
   switch(var->type)
   {
     case G_TOKEN_SET:
       expr_cache_free(var->expr);
       var->expr = expr_cache_new_with_code((GBytes *)pattern);
+      if(var->expr)
+        var->expr->store = store;
+      g_debug("scanner: new set: '%s' in %p", g_quark_to_string(quark),
+          var->expr? var->expr->store : NULL);
       var->vstate = 1;
       expr_dep_trigger(quark);
       break;
