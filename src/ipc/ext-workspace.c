@@ -120,9 +120,16 @@ static void ew_workspace_handle_remove(void *data,
   workspace_unref(ws->id);
 }
 
+static void ew_workspace_handle_id ( void *data,
+    struct ext_workspace_handle_v1 *workspace,
+    const char *id )
+{
+}
+
 static const struct ext_workspace_handle_v1_listener
     ew_workspace_impl =
 {
+  .id = ew_workspace_handle_id,
   .name = ew_workspace_handle_name,
   .coordinates = ew_workspace_handle_coordinates,
   .state = ew_workspace_handle_state,
