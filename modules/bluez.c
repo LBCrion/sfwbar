@@ -177,6 +177,9 @@ static void bz_adapter_free ( gchar *object )
 
 static void bz_device_free ( BzDevice *device )
 {
+  g_debug("bluez: device removed: %d %d %s %s on %s",device->paired,
+      device->connected, device->addr, device->name, device->path);
+  trigger_emit_with_string("bluez_removed", "path", g_strdup(device->path));
   g_free(device->path);
   g_free(device->addr);
   g_free(device->name);
@@ -481,17 +484,11 @@ static void bz_device_removed ( GDBusConnection *con, const gchar *sender,
     GVariant *params, gpointer data )
 {
   gchar *object;
-  BzDevice *device;
 
   g_variant_get(params, "(&o@as)", &object, NULL);
   bz_adapter_free(object);
-
-  if( !(device = g_hash_table_lookup(devices, object)) )
-    return;
-
-  g_debug("bluez: device removed: %d %d %s %s on %s",device->paired,
-      device->connected, device->addr, device->name, device->path);
-  trigger_emit_with_string("bluez_removed", "path", g_strdup(device->path));
+  if(devices)
+    g_hash_table_remove(devices, object);
 }
 
 static void bz_device_changed ( GDBusConnection *con, const gchar *sender,
@@ -651,14 +648,14 @@ static void bz_name_appeared_cb (GDBusConnection *con, const gchar *name,
 static void bz_name_disappeared_cb (GDBusConnection *con, const gchar *name,
     gpointer d)
 {
-  while(adapters)
-    bz_adapter_free(adapters->data);
-  if(devices)
-    g_hash_table_remove_all(devices);
   g_dbus_connection_signal_unsubscribe(bz_con, sub_add);
   g_dbus_connection_signal_unsubscribe(bz_con, sub_del);
   g_dbus_connection_signal_unsubscribe(bz_con, sub_chg);
   g_dbus_connection_signal_unsubscribe(bz_con, sub_adapter_chg);
+  if(devices)
+    g_hash_table_remove_all(devices);
+  g_list_free_full(adapters,(GDestroyNotify)bz_adapter_free);
+  adapters = NULL;
 }
 
 static value_t bz_action_scan ( vm_t *vm, value_t p[], gint np )
