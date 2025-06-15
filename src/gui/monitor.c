@@ -4,11 +4,11 @@
  */
 
 #include <gtk/gtk.h>
-#include <gdk/gdkwayland.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include "wayland.h"
 #include "gui/bar.h"
+#include "gui/monitor.h"
 #include "trigger.h"
 #include "wlr-layer-shell-unstable-v1.h"
 #include "xdg-output-unstable-v1.h"
@@ -189,7 +189,7 @@ static void xdg_output_new ( GdkMonitor *monitor )
 
 gchar *monitor_get_name ( GdkMonitor *monitor )
 {
-  return monitor?g_object_get_data(G_OBJECT(monitor), "xdg_name"):NULL;
+  return monitor? g_object_get_data(G_OBJECT(monitor), "xdg_name") : NULL;
 }
 
 gboolean xdg_output_check ( void )
@@ -276,6 +276,20 @@ static void monitor_list_print ( void )
         gdk_monitor_get_manufacturer(gmon), gdk_monitor_get_model(gmon));
   }
   exit(0);
+}
+
+GdkMonitor *monitor_from_wl_output ( struct wl_output *output )
+{
+  GdkDisplay *disp;
+  gint i;
+
+  disp = gdk_display_get_default();
+
+  for(i=0; i<gdk_display_get_n_monitors(disp); i++)
+    if(output ==
+        gdk_wayland_monitor_get_wl_output(gdk_display_get_monitor(disp, i)))
+      return gdk_display_get_monitor(disp,i);
+  return NULL;
 }
 
 void monitor_init ( gchar *monitor )

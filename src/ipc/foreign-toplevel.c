@@ -91,20 +91,6 @@ static void toplevel_handle_parent(void *data, wlr_fth *tl, wlr_fth *pt)
 {
 }
 
-static gchar *toplevel_output_name_get ( struct wl_output *output )
-{
-  GdkDisplay *disp;
-  gint i;
-
-  disp = gdk_display_get_default();
-
-  for(i=0; i<gdk_display_get_n_monitors(disp); i++)
-    if(output == gdk_wayland_monitor_get_wl_output(
-          gdk_display_get_monitor(disp, i)))
-      return monitor_get_name(gdk_display_get_monitor(disp,i));
-  return NULL;
-}
-
 static void toplevel_handle_output_leave(void *data, wlr_fth *tl,
     struct wl_output *output)
 {
@@ -112,7 +98,7 @@ static void toplevel_handle_output_leave(void *data, wlr_fth *tl,
   window_t *win;
   GList *link;
 
-  name = toplevel_output_name_get(output);
+  name = monitor_get_name(monitor_from_wl_output(output));
   if(!name)
     return;
   win = wintree_from_id(tl);
@@ -132,7 +118,7 @@ static void toplevel_handle_output_enter(void *data, wlr_fth *tl,
   char *name;
   window_t *win;
 
-  name = toplevel_output_name_get(output);
+  name = monitor_get_name(monitor_from_wl_output(output));
   if(!name)
     return;
   win = wintree_from_id(tl);
