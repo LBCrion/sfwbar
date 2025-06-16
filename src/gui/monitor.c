@@ -278,6 +278,19 @@ static void monitor_list_print ( void )
   exit(0);
 }
 
+GdkMonitor *monitor_from_name ( gchar *name )
+{
+  GdkDisplay *disp;
+  gint i;
+
+  disp = gdk_display_get_default();
+
+  for(i=0; i<gdk_display_get_n_monitors(disp); i++)
+    if(!g_strcmp0(monitor_get_name(gdk_get_monitor(disp, i)), name))
+      return gdk_get_monitor(disp, i);
+  return NULL;
+}
+
 GdkMonitor *monitor_from_wl_output ( struct wl_output *output )
 {
   GdkDisplay *disp;
