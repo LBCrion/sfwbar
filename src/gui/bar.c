@@ -783,7 +783,7 @@ gboolean bar_update_monitor ( GtkWidget *self )
 {
   BarPrivate *priv;
   GdkDisplay *gdisp;
-  GdkMonitor *gmon,*match;
+  GdkMonitor *gmon, *match;
   GList *iter;
   gint nmon, i;
   gchar *output;
@@ -796,19 +796,12 @@ gboolean bar_update_monitor ( GtkWidget *self )
     return TRUE;
 
   gdisp = gdk_display_get_default();
-  if(!priv->jump)
-    match = NULL;
-  else if( !(match = gdk_display_get_primary_monitor(gdisp)) )
-    match = gdk_display_get_monitor(gdisp, 0);
-
   nmon = gdk_display_get_n_monitors(gdisp);
-  if(priv->output)
-    for(i=0; i<nmon; i++)
-    {
-      gmon = gdk_display_get_monitor(gdisp, i);
-      if((output = monitor_get_name(gmon)) && !g_strcmp0(output, priv->output))
-        match = gmon;
-    }
+
+  match = monitor_from_name(priv->output);
+  if(!match && priv->jump)
+    if( !(match = gdk_display_get_primary_monitor(gdisp)) )
+      match = gdk_display_get_monitor(gdisp, 0);
 
   if(priv->current_monitor != match)
   {

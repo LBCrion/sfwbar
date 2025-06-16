@@ -286,8 +286,8 @@ GdkMonitor *monitor_from_name ( gchar *name )
   disp = gdk_display_get_default();
 
   for(i=0; i<gdk_display_get_n_monitors(disp); i++)
-    if(!g_strcmp0(monitor_get_name(gdk_get_monitor(disp, i)), name))
-      return gdk_get_monitor(disp, i);
+    if(!g_strcmp0(monitor_get_name(gdk_display_get_monitor(disp, i)), name))
+      return gdk_display_get_monitor(disp, i);
   return NULL;
 }
 
