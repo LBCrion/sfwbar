@@ -19,7 +19,7 @@ typedef struct workspace_s {
   gchar *name;
   guint32 state;
   gint refcount;
-  GList *outputs;
+  void *data;
 } workspace_t;
 
 struct workspace_api {
