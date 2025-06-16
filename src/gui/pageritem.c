@@ -45,8 +45,7 @@ static gboolean pager_item_action_exec ( GtkWidget *self, gint slot,
 void pager_item_update ( GtkWidget *self )
 {
   PagerItemPrivate *priv;
-  gboolean monitor_match, show_pin, preview;
-  gchar *monitor;
+  gboolean show_pin, preview;
 
   g_return_if_fail(IS_PAGER_ITEM(self));
   priv = pager_item_get_instance_private(PAGER_ITEM(self));
@@ -67,11 +66,10 @@ void pager_item_update ( GtkWidget *self )
   gtk_widget_unset_state_flags(base_widget_get_child(self),
       GTK_STATE_FLAG_PRELIGHT);
 
-  monitor = workspace_get_monitor(priv->ws->id);
-  monitor_match = !monitor || !g_strcmp0(monitor, bar_get_output(priv->pager));
   show_pin = priv->ws->id != PAGER_PIN_ID || (workspace_get_can_create() &&
         pager_check_pins(priv->pager, priv->ws->name));
-  flow_item_set_active(self, monitor_match && show_pin);
+  flow_item_set_active(self, workspace_check_monitor(priv->ws->id,
+      bar_get_output(priv->pager)) && show_pin);
 
   priv->invalid = FALSE;
 }

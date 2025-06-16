@@ -145,11 +145,9 @@ guint workspace_get_geometry ( gpointer wid, GdkRectangle *wloc, gpointer wsid,
   return 0;
 }
 
-gchar *workspace_get_monitor ( gpointer wsid )
+gboolean workspace_check_monitor ( gpointer wsid, gchar *output )
 {
-  if(api->get_monitor && wsid)
-    return api->get_monitor(wsid);
-  return NULL;
+  return api->check_monitor? api->check_monitor(wsid, output) : TRUE;
 }
 
 gboolean workspace_get_can_create ( void )

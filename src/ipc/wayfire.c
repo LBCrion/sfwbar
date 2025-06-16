@@ -225,17 +225,17 @@ static gboolean wayfire_ipc_get_can_create ( void )
   return FALSE;
 }
 
-static gchar *wayfire_ipc_workspace_get_monitor ( gpointer wsid )
+static gboolean wayfire_ipc_workspace_check_monitor ( void *wsid, gchar *name )
 {
   wayfire_ipc_wset_t *wset;
   wayfire_ipc_output_t *output;
 
   if( !(wset = wayfire_ipc_wset_get(GPOINTER_TO_INT(wsid)>>16)) )
-    return NULL;
+    return FALSE;
   if( !(output = wayfire_ipc_output_get(wset->output)) )
-    return NULL;
+    return FALSE;
 
-  return output->name;
+  return !g_strcmp0(output->name, name);
 }
 
 static guint wayfire_ipc_get_geom ( gpointer wid, GdkRectangle *place,
@@ -302,7 +302,7 @@ static struct workspace_api wayfire_workspace_api = {
   .set_workspace = wayfire_ipc_set_workspace,
   .get_geom = wayfire_ipc_get_geom,
   .get_can_create = wayfire_ipc_get_can_create,
-  .get_monitor = wayfire_ipc_workspace_get_monitor,
+  .check_monitor = wayfire_ipc_workspace_check_monitor,
 };
 
 static void wayfire_ipc_window_workspace_track ( struct json_object *json )
