@@ -3,14 +3,21 @@
  * Copyright 2024- sfwbar maintainers
  */
 
+#include <gdk/gdkwayland.h>
 #include "workspace.h"
 #include "wayland.h"
 #include "ext-workspace-v1.h"
+#include "gui/monitor.h"
 
 #define EXT_WORKSPACE_VERSION 1
 
 static struct ext_workspace_manager_v1 *workspace_manager;
 static GList *workspace_groups, *workspaces_to_focus;
+
+typedef struct _ew_group {
+  GList *outputs;
+  GList *workspaces;
+} ew_group_t;
 
 /* API */
 static void ew_set_workspace(workspace_t *ws)
@@ -48,10 +55,23 @@ static gboolean ew_get_can_create ( void )
   return !!workspace_groups;
 }
 
+static gboolean ew_check_monitor ( void *wsid, gchar *name )
+{
+  workspace_t *ws;
+  ew_group_t *group;
+
+  if( !(ws = workspace_from_id(wsid)) )
+    return FALSE;
+
+  group = ws->data;
+  return !!g_list_find_custom(group->outputs, name, (GCompareFunc)g_strcmp0);
+}
+
 static struct workspace_api ew_api_impl = {
   .set_workspace = ew_set_workspace,
   .get_geom = NULL,
   .get_can_create = ew_get_can_create,
+  .check_monitor = ew_check_monitor,
 };
 
 /* Workspace */
@@ -152,34 +172,74 @@ static void ew_workspace_group_handle_output_enter(void *data,
     struct ext_workspace_group_handle_v1 *workspace_group,
     struct wl_output *output)
 {
-  /* TODO: maybe implement */
+  ew_group_t *group = data;
+  gchar *name;
+
+  if( !(name = monitor_get_name(monitor_from_wl_output(output))) )
+    return;
+
+  group->outputs = g_list_prepend(group->outputs, g_strdup(name));
+  g_list_foreach(group->workspaces, (GFunc)workspace_commit, NULL);
 }
 
 static void ew_workspace_group_handle_output_leave(void *data,
     struct ext_workspace_group_handle_v1 *workspace_group,
     struct wl_output *output)
 {
-  /* TODO: maybe implement */
+  ew_group_t *group = data;
+  GList *iter;
+  gchar *name;
+
+  if( !(name = monitor_get_name(monitor_from_wl_output(output))) )
+    return;
+
+  for(iter=group->outputs; iter; iter=g_list_next(iter))
+    if(!g_strcmp0(iter->data, name) || !monitor_from_name(iter->data))
+      break;
+
+  if(!iter)
+    return;
+
+  g_free(iter->data);
+  group->outputs = g_list_delete_link(group->outputs, iter);
+  g_list_foreach(group->workspaces, (GFunc)workspace_commit, NULL);
 }
 
 static void ew_workspace_group_handle_workspace_enter(void *data,
     struct ext_workspace_group_handle_v1 *workspace_group,
     struct ext_workspace_handle_v1 *workspace)
 {
+  ew_group_t *group = data;
+  workspace_t *ws;
+
+  if( !(ws = workspace_from_id(workspace)) )
+    return;
+
+  ws->data = group;
+  group->workspaces = g_list_prepend(group->workspaces, workspace);
 }
 
 static void ew_workspace_group_handle_workspace_leave(void *data,
     struct ext_workspace_group_handle_v1 *workspace_group,
     struct ext_workspace_handle_v1 *workspace)
 {
-  /* implement if we need to track group membership */
+  ew_group_t *group = data;
+  workspace_t *ws;
+
+  group->workspaces = g_list_remove(group->workspaces, workspace);
+  if( (ws = workspace_from_id(workspace)) && ws->data == group )
+    ws->data = NULL;
 }
 
 static void ew_workspace_group_handle_remove(void *data,
     struct ext_workspace_group_handle_v1 *workspace_group)
 {
+  ew_group_t *group = data;
   workspace_groups = g_list_remove(workspace_groups, workspace_group);
   ext_workspace_group_handle_v1_destroy(workspace_group);
+
+  g_list_free_full(group->outputs, g_free);
+  g_free(group);
 }
 
 static const struct ext_workspace_group_handle_v1_listener
@@ -198,8 +258,9 @@ static void ew_workspace_manager_handle_workspace_group ( void *data,
     struct ext_workspace_manager_v1 *workspace_manager,
     struct ext_workspace_group_handle_v1 *workspace_group)
 {
+  ew_group_t *group = g_malloc0(sizeof(ew_group_t));
   ext_workspace_group_handle_v1_add_listener(
-    workspace_group, &ew_workspace_group_impl, NULL);
+    workspace_group, &ew_workspace_group_impl, group);
 }
 
 static void ew_workspace_manager_handle_workspace ( void *data,
@@ -245,12 +306,14 @@ void ew_init( void )
     return;
   }
 
+  g_message("ew check");
   if( !(workspace_manager = wayland_iface_register(
           ext_workspace_manager_v1_interface.name,
           EXT_WORKSPACE_VERSION,
           EXT_WORKSPACE_VERSION,
           &ext_workspace_manager_v1_interface)) )
     return;
+  g_message("ew pass");
 
   workspace_api_register(&ew_api_impl);
 
