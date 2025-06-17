@@ -67,6 +67,8 @@ void workspace_ref ( gpointer id )
 
   ws = workspace_from_id(id);
   if(ws)
+    g_message("ref: %p", ws->id);
+  if(ws)
     ws->refcount++;
 }
 
@@ -77,9 +79,11 @@ void workspace_unref ( gpointer id )
   if( !(ws = workspace_from_id(id)) )
     return;
 
+  g_message("unref: %p", ws->id);
   ws->refcount--;
   if(ws->refcount)
     return;
+  g_message("destroy: %p", ws->id);
 
   g_debug("Workspace: destroying workspace: '%s'", ws->name);
 
@@ -160,10 +164,17 @@ gboolean workspace_get_can_create ( void )
 static void workspace_pin_remove ( const gchar *pin )
 {
   workspace_t *ws;
+  GList *iter;
 
-  if( !(ws=workspace_from_name(pin)) || ws->id != PAGER_PIN_ID)
+  for(iter=workspaces; iter; iter=g_list_next(iter))
+    if(!g_strcmp0(WORKSPACE(iter->data)->name, pin) &&
+        WORKSPACE(iter->data)->id == PAGER_PIN_ID)
+      break;
+
+  if(!iter)
     return;
 
+  ws = iter->data;
   g_free(ws->name);
   ws->name = "";
   LISTENER_CALL(workspace_destroy, ws);
@@ -175,10 +186,10 @@ static void workspace_pin_restore ( const gchar *pin )
 {
   workspace_t *ws;
 
-  if(!g_list_find_custom(global_pins, pin, (GCompareFunc)g_strcmp0))
+  if(workspace_from_name(pin))
     return;
 
-  if(workspace_from_name(pin))
+  if(!g_list_find_custom(global_pins, pin, (GCompareFunc)g_strcmp0))
     return;
 
   ws = g_malloc0(sizeof(workspace_t));
@@ -286,15 +297,8 @@ void workspace_set_name ( workspace_t *ws, const gchar *name )
   if(!g_strcmp0(ws->name, name))
     return;
 
-  if( (pin = workspace_from_name(name)) && pin->id != PAGER_PIN_ID)
-  {
-    g_message("Workspace: duplicate names with differing ids ('%s'/%p/%p)",
-        name, pin->id, ws->id);
-    return;
-  }
-
-  if(pin)
-    workspace_pin_remove(name);
+  pin = workspace_from_name(name);
+  workspace_pin_remove(name);
 
   oldp = g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0);
 

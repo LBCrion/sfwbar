@@ -63,7 +63,8 @@ static gboolean ew_check_monitor ( void *wsid, gchar *name )
   if( !(ws = workspace_from_id(wsid)) )
     return FALSE;
 
-  group = ws->data;
+  if( !(group = ws->data) )
+    return TRUE;  // in case the compositor doesn't support groups
   return !!g_list_find_custom(group->outputs, name, (GCompareFunc)g_strcmp0);
 }
 
@@ -178,6 +179,8 @@ static void ew_workspace_group_handle_output_enter(void *data,
   if( !(name = monitor_get_name(monitor_from_wl_output(output))) )
     return;
 
+  if(!g_list_find_custom(group->outputs, name, (GCompareFunc)g_strcmp0))
+    return;
   group->outputs = g_list_prepend(group->outputs, g_strdup(name));
   g_list_foreach(group->workspaces, (GFunc)workspace_commit, NULL);
 }
@@ -187,22 +190,18 @@ static void ew_workspace_group_handle_output_leave(void *data,
     struct wl_output *output)
 {
   ew_group_t *group = data;
-  GList *iter;
+  GList *l;
   gchar *name;
 
   if( !(name = monitor_get_name(monitor_from_wl_output(output))) )
-    return;
+    g_warning("Workspace: output destroyed before group_output_leave event");
 
-  for(iter=group->outputs; iter; iter=g_list_next(iter))
-    if(!g_strcmp0(iter->data, name) || !monitor_from_name(iter->data))
-      break;
-
-  if(!iter)
-    return;
-
-  g_free(iter->data);
-  group->outputs = g_list_delete_link(group->outputs, iter);
-  g_list_foreach(group->workspaces, (GFunc)workspace_commit, NULL);
+  if( (l = g_list_find_custom(group->outputs, name, (GCompareFunc)g_strcmp0)) )
+  {
+    g_free(l->data);
+    group->outputs = g_list_delete_link(group->outputs, l);
+    g_list_foreach(group->workspaces, (GFunc)workspace_commit, NULL);
+  }
 }
 
 static void ew_workspace_group_handle_workspace_enter(void *data,
@@ -217,6 +216,7 @@ static void ew_workspace_group_handle_workspace_enter(void *data,
 
   ws->data = group;
   group->workspaces = g_list_prepend(group->workspaces, workspace);
+  workspace_commit(ws);
 }
 
 static void ew_workspace_group_handle_workspace_leave(void *data,
@@ -227,8 +227,11 @@ static void ew_workspace_group_handle_workspace_leave(void *data,
   workspace_t *ws;
 
   group->workspaces = g_list_remove(group->workspaces, workspace);
-  if( (ws = workspace_from_id(workspace)) && ws->data == group )
-    ws->data = NULL;
+  if( !(ws = workspace_from_id(workspace)) || ws->data != group )
+    return;
+
+  ws->data = NULL;
+  workspace_commit(ws);
 }
 
 static void ew_workspace_group_handle_remove(void *data,
