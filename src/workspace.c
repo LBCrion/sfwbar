@@ -67,8 +67,6 @@ void workspace_ref ( gpointer id )
 
   ws = workspace_from_id(id);
   if(ws)
-    g_message("ref: %p", ws->id);
-  if(ws)
     ws->refcount++;
 }
 
@@ -79,11 +77,9 @@ void workspace_unref ( gpointer id )
   if( !(ws = workspace_from_id(id)) )
     return;
 
-  g_message("unref: %p", ws->id);
   ws->refcount--;
   if(ws->refcount)
     return;
-  g_message("destroy: %p", ws->id);
 
   g_debug("Workspace: destroying workspace: '%s'", ws->name);
 
@@ -291,25 +287,25 @@ void workspace_set_focus ( gpointer id )
 
 void workspace_set_name ( workspace_t *ws, const gchar *name )
 {
-  workspace_t *pin;
-  GList *oldp;
+  workspace_t *old;
+  GList *old_pin;
 
   if(!g_strcmp0(ws->name, name))
     return;
 
-  pin = workspace_from_name(name);
+  old = workspace_from_name(name);
   workspace_pin_remove(name);
 
-  oldp = g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0);
+  old_pin = g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0);
 
-  g_debug("Workspace: '%s' (pin: %s)  name change to: '%s' (pin: %s)",
-      ws->name, oldp?"yes":"no", name, pin?"yes":"no");
+  g_debug("Workspace: '%s' (pin: %s)  name change to: '%s' (duplicate: %s)",
+      ws->name, old_pin?"yes":"no", name, old?"yes":"no");
   g_free(ws->name);
   ws->name = g_strdup(name);
   ws->state |= WS_STATE_INVALID;
 
-  if(oldp && !workspace_from_name(oldp->data))
-    workspace_pin_restore(oldp->data);
+  if(old_pin && !workspace_from_name(old_pin->data))
+    workspace_pin_restore(old_pin->data);
 }
 
 void workspace_set_state ( workspace_t *ws, guint32 state )
