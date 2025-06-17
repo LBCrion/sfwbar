@@ -65,6 +65,7 @@ static gboolean ew_check_monitor ( void *wsid, gchar *name )
 
   if( !(group = ws->data) )
     return TRUE;  // in case the compositor doesn't support groups
+  g_message("Workspace: check workspace '%s' vs output '%s'", ws->name, name);
   return !!g_list_find_custom(group->outputs, name, (GCompareFunc)g_strcmp0);
 }
 
