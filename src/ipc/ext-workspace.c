@@ -179,8 +179,9 @@ static void ew_workspace_group_handle_output_enter(void *data,
   if( !(name = monitor_get_name(monitor_from_wl_output(output))) )
     return;
 
-  if(!g_list_find_custom(group->outputs, name, (GCompareFunc)g_strcmp0))
+  if(g_list_find_custom(group->outputs, name, (GCompareFunc)g_strcmp0))
     return;
+  g_debug("Workspace: group %p, add output: %s", group, name);
   group->outputs = g_list_prepend(group->outputs, g_strdup(name));
   g_list_foreach(group->workspaces, (GFunc)workspace_commit, NULL);
 }
@@ -196,12 +197,12 @@ static void ew_workspace_group_handle_output_leave(void *data,
   if( !(name = monitor_get_name(monitor_from_wl_output(output))) )
     g_warning("Workspace: output destroyed before group_output_leave event");
 
-  if( (l = g_list_find_custom(group->outputs, name, (GCompareFunc)g_strcmp0)) )
-  {
-    g_free(l->data);
-    group->outputs = g_list_delete_link(group->outputs, l);
-    g_list_foreach(group->workspaces, (GFunc)workspace_commit, NULL);
-  }
+  if(!(l = g_list_find_custom(group->outputs, name, (GCompareFunc)g_strcmp0)) )
+    return;
+  g_debug("Workspace: group %p, remove output: %s", group, name);
+  g_free(l->data);
+  group->outputs = g_list_delete_link(group->outputs, l);
+  g_list_foreach(group->workspaces, (GFunc)workspace_commit, NULL);
 }
 
 static void ew_workspace_group_handle_workspace_enter(void *data,
@@ -214,6 +215,7 @@ static void ew_workspace_group_handle_workspace_enter(void *data,
   if( !(ws = workspace_from_id(workspace)) )
     return;
 
+  g_debug("Workspace: group %p, add workspace: %s", group, ws->name);
   ws->data = group;
   group->workspaces = g_list_prepend(group->workspaces, workspace);
   workspace_commit(ws);
@@ -230,6 +232,7 @@ static void ew_workspace_group_handle_workspace_leave(void *data,
   if( !(ws = workspace_from_id(workspace)) || ws->data != group )
     return;
 
+  g_debug("Workspace: group %p, remove workspace: %s", group, ws->name);
   ws->data = NULL;
   workspace_commit(ws);
 }
@@ -309,14 +312,12 @@ void ew_init( void )
     return;
   }
 
-  g_message("ew check");
   if( !(workspace_manager = wayland_iface_register(
           ext_workspace_manager_v1_interface.name,
           EXT_WORKSPACE_VERSION,
           EXT_WORKSPACE_VERSION,
           &ext_workspace_manager_v1_interface)) )
     return;
-  g_message("ew pass");
 
   workspace_api_register(&ew_api_impl);
 
