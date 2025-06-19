@@ -242,17 +242,9 @@ void workspace_set_active ( workspace_t *ws, const gchar *output )
   }
 }
 
-gboolean workspace_is_focused ( workspace_t *ws )
-{
-  return (ws == focus);
-}
-
 gpointer workspace_get_focused ( void )
 {
-  if(!focus)
-    return NULL;
-  else
-    return focus->id;
+  return focus? focus->id : NULL;
 }
 
 void workspace_commit ( workspace_t *ws )

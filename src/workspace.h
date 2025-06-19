@@ -53,7 +53,6 @@ void workspace_set_caps ( workspace_t *ws, guint32 caps );
 void workspace_set_name ( workspace_t *ws, const gchar *name );
 void workspace_set_active ( workspace_t *ws, const gchar *output );
 gpointer workspace_get_active ( GtkWidget *widget );
-gboolean workspace_is_focused ( workspace_t *ws );
 gpointer workspace_id_from_name ( const gchar *name );
 workspace_t *workspace_from_id ( gpointer id );
 gpointer workspace_get_focused ( void );

@@ -59,7 +59,7 @@ void pager_item_update ( GtkWidget *self )
   g_object_get(G_OBJECT(priv->pager), "preview", &preview, NULL);
   gtk_widget_set_has_tooltip(priv->button, preview);
 
-  css_set_class(priv->button, "focused", workspace_is_focused(priv->ws));
+  css_set_class(priv->button, "focused", priv->ws->state & WS_STATE_FOCUSED);
   css_set_class(priv->button, "visible", priv->ws->state & WS_STATE_VISIBLE);
   css_set_class(priv->button, "urgent", priv->ws->state & WS_STATE_URGENT);
 
