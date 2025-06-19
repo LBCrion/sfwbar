@@ -139,7 +139,8 @@ static void config_switcher ( GScanner *scanner )
   {
     g_scanner_get_next_token(scanner);
     if(!config_widget_set_property(scanner, NULL, widget))
-        g_scanner_error(scanner, "Unexpected token in 'switcher'");
+        g_scanner_error(scanner, "Unexpected token '%s' in 'switcher'",
+            scanner->value.v_identifier);
   }
 
   g_object_get(G_OBJECT(widget), "disable", &disable, NULL);
