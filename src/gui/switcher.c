@@ -5,17 +5,23 @@
 
 #include <glib-unix.h>
 #include <gtk-layer-shell.h>
-#include "css.h"
 #include "trigger.h"
-#include "switcheritem.h"
-#include "switcher.h"
 #include "wintree.h"
-#include "pager.h"
-#include "bar.h"
 #include "config/config.h"
+#include "gui/bar.h"
+#include "gui/css.h"
+#include "gui/filter.h"
+#include "gui/pager.h"
+#include "gui/switcher.h"
+#include "gui/switcheritem.h"
+#include "gui/taskbarshell.h"
 
 G_DEFINE_TYPE_WITH_CODE (Switcher, switcher, FLOW_GRID_TYPE,
     G_ADD_PRIVATE (Switcher))
+
+enum {
+  SWITCHER_FILTER = 1,
+};
 
 static GtkWidget *switcher_win;
 static GtkWidget *switcher_grid;
@@ -53,7 +59,7 @@ static gboolean switcher_update ( GtkWidget *self )
   return TRUE;
 }
 
-void switcher_init_item (window_t *win, GtkWidget *self )
+static void switcher_init_item (window_t *win, GtkWidget *self )
 {
   flow_grid_add_child(self, switcher_item_new(win, self));
 }
@@ -84,62 +90,31 @@ static void switcher_destroy ( GtkWidget *self )
   GTK_WIDGET_CLASS(switcher_parent_class)->destroy(self);
 }
 
-static void switcher_class_init ( SwitcherClass *kclass )
+static void switcher_get_property ( GObject *self, guint id,
+    GValue *value, GParamSpec *spec )
 {
-  GTK_WIDGET_CLASS(kclass)->destroy = switcher_destroy;
-  g_unix_signal_add(SIGUSR1, (GSourceFunc)switcher_event, NULL);
-  trigger_add("switcher_forward", (trigger_func_t)switcher_event, NULL);
-  trigger_add("switcher_back", (trigger_func_t)switcher_event, (void *)1);
-  FLOW_GRID_CLASS(kclass)->limit = FALSE;
+  SwitcherPrivate *priv;
+
+  priv = switcher_get_instance_private(SWITCHER(self));
+  if(id == SWITCHER_FILTER)
+    g_value_set_enum(value, priv->filter);
+  else
+    G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
 }
 
-static void switcher_init ( Switcher *self )
+static void switcher_set_property ( GObject *self, guint id,
+    const GValue *value, GParamSpec *spec )
 {
-  gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "switcher");
-  wintree_listener_register(&switcher_window_listener, GTK_WIDGET(self));
+  SwitcherPrivate *priv;
 
-  switcher_win = gtk_application_window_new(application);
-  gtk_layer_init_for_window (GTK_WINDOW(switcher_win));
-  gtk_layer_set_layer(GTK_WINDOW(switcher_win), GTK_LAYER_SHELL_LAYER_OVERLAY);
-  gtk_widget_set_name(switcher_win, "switcher");
-  gtk_container_add(GTK_CONTAINER(switcher_win), GTK_WIDGET(self));
-  timer_handle = g_timeout_add(100, (GSourceFunc)switcher_update, self);
-
-  hstate = 's';
+  priv = switcher_get_instance_private(SWITCHER(self));
+  if(id == SWITCHER_FILTER)
+    priv->filter |= g_value_get_enum(value);
+  else
+    G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
 }
 
-gboolean switcher_state ( void )
-{
-  return !!switcher_grid;
-}
-
-GtkWidget *switcher_new ( void )
-{
-  return switcher_grid?switcher_grid:
-    (switcher_grid = GTK_WIDGET(g_object_new(switcher_get_type(), NULL)));
-}
-
-gboolean switcher_is_focused ( gpointer uid )
-{
-  return focus?uid==focus->uid:FALSE;
-}
-
-gboolean switcher_check ( GtkWidget *switcher, window_t *win )
-{
-  switch(switcher_get_filter(switcher))
-  {
-    case G_TOKEN_OUTPUT:
-      return (!win->outputs || g_list_find_custom(win->outputs,
-          bar_get_output(base_widget_get_child(switcher)),
-          (GCompareFunc)g_strcmp0));
-    case G_TOKEN_WORKSPACE:
-      return (!win->workspace || win->workspace->id==workspace_get_focused());
-  }
-
-  return !wintree_is_filtered(win);
-}
-
-gboolean switcher_event ( gpointer dir )
+static gboolean switcher_event ( gpointer dir )
 {
   GList *iter, *list = NULL, *flink = NULL;
   gint64 interval;
@@ -153,7 +128,7 @@ gboolean switcher_event ( gpointer dir )
   counter = interval/100 + 1;
 
   for (iter = wintree_get_list(); iter; iter = g_list_next(iter) )
-    if(switcher_check(switcher_grid, iter->data))
+    if(filter_window_check(switcher_grid, iter->data))
       list = g_list_prepend(list, iter->data);
   list = g_list_reverse(list);
 
@@ -171,22 +146,43 @@ gboolean switcher_event ( gpointer dir )
   return TRUE;
 }
 
-void switcher_set_filter ( GtkWidget *self, gint filter )
+static void switcher_class_init ( SwitcherClass *kclass )
 {
-  SwitcherPrivate *priv;
+  GTK_WIDGET_CLASS(kclass)->destroy = switcher_destroy;
+  G_OBJECT_CLASS(kclass)->get_property = switcher_get_property;
+  G_OBJECT_CLASS(kclass)->set_property = switcher_set_property;
 
-  g_return_if_fail(IS_SWITCHER(self));
-  priv = switcher_get_instance_private(SWITCHER(self));
-
-  priv->filter = filter;
+  g_unix_signal_add(SIGUSR1, (GSourceFunc)switcher_event, NULL);
+  trigger_add("switcher_forward", (trigger_func_t)switcher_event, NULL);
+  trigger_add("switcher_back", (trigger_func_t)switcher_event, (void *)1);
+  FLOW_GRID_CLASS(kclass)->limit = FALSE;
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), SWITCHER_FILTER,
+      g_param_spec_enum("filter", "filter", "sfwbar_config", filter_type_get(),
+        0, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 }
 
-gint switcher_get_filter ( GtkWidget *self )
+static void switcher_init ( Switcher *self )
 {
-  SwitcherPrivate *priv;
+  gtk_widget_set_name(gtk_bin_get_child(GTK_BIN(self)), "switcher");
+  wintree_listener_register(&switcher_window_listener, GTK_WIDGET(self));
 
-  g_return_val_if_fail(IS_SWITCHER(self),0);
-  priv = switcher_get_instance_private(SWITCHER(self));
+  switcher_win = gtk_application_window_new(application);
+  gtk_layer_init_for_window (GTK_WINDOW(switcher_win));
+  gtk_layer_set_layer(GTK_WINDOW(switcher_win), GTK_LAYER_SHELL_LAYER_OVERLAY);
+  gtk_widget_set_name(switcher_win, "switcher");
+  gtk_container_add(GTK_CONTAINER(switcher_win), GTK_WIDGET(self));
+  timer_handle = g_timeout_add(100, (GSourceFunc)switcher_update, self);
 
-  return priv->filter;
+  hstate = 's';
+}
+
+GtkWidget *switcher_new ( void )
+{
+  return switcher_grid?switcher_grid:
+    (switcher_grid = GTK_WIDGET(g_object_new(switcher_get_type(), NULL)));
+}
+
+gboolean switcher_is_focused ( gpointer uid )
+{
+  return focus?uid==focus->uid:FALSE;
 }

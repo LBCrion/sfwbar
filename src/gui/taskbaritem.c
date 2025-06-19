@@ -3,16 +3,17 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "css.h"
-#include "grid.h"
-#include "flowgrid.h"
-#include "taskbaritem.h"
-#include "taskbarshell.h"
-#include "scaleimage.h"
-#include "pager.h"
-#include "bar.h"
 #include "wintree.h"
 #include "config/config.h"
+#include "gui/bar.h"
+#include "gui/css.h"
+#include "gui/filter.h"
+#include "gui/flowgrid.h"
+#include "gui/grid.h"
+#include "gui/pager.h"
+#include "gui/scaleimage.h"
+#include "gui/taskbaritem.h"
+#include "gui/taskbarshell.h"
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarItem, taskbar_item, FLOW_ITEM_TYPE,
     G_ADD_PRIVATE (TaskbarItem))
@@ -82,8 +83,7 @@ static gboolean taskbar_item_check ( GtkWidget *self )
     taskbar = flow_item_get_parent(holder);
   else
     taskbar = priv->taskbar;
-  return taskbar_shell_check_filter(taskbar, priv->win) &&
-    !wintree_is_filtered(priv->win);
+  return filter_window_check(taskbar, priv->win);
 }
 
 static void taskbar_item_decorate ( GtkWidget *parent, GParamSpec *spec,

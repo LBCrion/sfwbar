@@ -12,6 +12,8 @@
 typedef struct _TaskbarShell TaskbarShell;
 typedef struct _TaskbarShellClass TaskbarShellClass;
 
+extern GEnumValue taskbar_shell_filter[];
+
 struct _TaskbarShell
 {
   Taskbar item;

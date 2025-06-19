@@ -3,25 +3,16 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "css.h"
-#include "switcheritem.h"
-#include "flowgrid.h"
-#include "scaleimage.h"
-#include "pager.h"
-#include "switcher.h"
+#include "gui/css.h"
+#include "gui/filter.h"
+#include "gui/flowgrid.h"
+#include "gui/pager.h"
+#include "gui/scaleimage.h"
+#include "gui/switcher.h"
+#include "gui/switcheritem.h"
 
 G_DEFINE_TYPE_WITH_CODE (SwitcherItem, switcher_item, FLOW_ITEM_TYPE,
     G_ADD_PRIVATE (SwitcherItem))
-
-static gboolean switcher_item_check ( GtkWidget *self )
-{
-  SwitcherItemPrivate *priv;
-
-  g_return_val_if_fail(IS_SWITCHER_ITEM(self),FALSE);
-  priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
-
-  return switcher_check(priv->switcher, priv->win);
-}
 
 static void switcher_item_decorate ( GtkWidget *parent, GParamSpec *spec,
     GtkWidget *self )
@@ -94,7 +85,7 @@ void switcher_item_update ( GtkWidget *self )
   gtk_widget_unset_state_flags(base_widget_get_child(self),
       GTK_STATE_FLAG_PRELIGHT);
 
-  flow_item_set_active(self, switcher_item_check(self));
+  flow_item_set_active(self, filter_window_check(priv->switcher, priv->win));
 
   priv->invalid = FALSE;
 }

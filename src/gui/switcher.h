@@ -1,7 +1,6 @@
 #ifndef __SWITCHER_H__
 #define __SWITCHER_H__
 
-#include "basewidget.h"
 #include "flowgrid.h"
 
 #define SWITCHER_TYPE            (switcher_get_type())
@@ -32,18 +31,8 @@ struct _SwitcherPrivate
 };
 
 GType switcher_get_type ( void );
-void switcher_window_delete ( window_t *win );
 
 GtkWidget *switcher_new();
-gboolean switcher_state ( void );
-gboolean switcher_event ( gpointer );
-void switcher_invalidate ( window_t *win );
-void switcher_window_init ( window_t *win);
-void switcher_populate ( void );
-void switcher_set_filter ( GtkWidget *self, gint filter );
-gint switcher_get_filter ( GtkWidget *self );
-gboolean switcher_check ( GtkWidget *switcher, window_t *win );
 gboolean switcher_is_focused ( gpointer uid );
-void switcher_set_interval ( gint new_interval );
 
 #endif

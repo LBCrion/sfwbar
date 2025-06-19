@@ -12,6 +12,7 @@
 #include "taskbar.h"
 #include "wintree.h"
 #include "config/config.h"
+#include "gui/filter.h"
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarShell, taskbar_shell, TASKBAR_TYPE,
     G_ADD_PRIVATE (TaskbarShell))
@@ -42,20 +43,6 @@ GEnumValue taskbar_shell_api[] = {
   { API_DEFAULT, "true", "default" },
   { API_POPUP, "popup", "popup" },
   { API_PAGER, "pager", "pager" },
-};
-
-enum TaskbarShellFilter {
-  FILTER_FLOATING = 1,
-  FILTER_OUTPUT = 2,
-  FILTER_WORKSPACE = 4,
-};
-
-GEnumValue taskbar_shell_filter[] = {
-  { 0, "none", "none" },
-  { FILTER_FLOATING, "floating", "floating" },
-  { FILTER_OUTPUT, "output", "output" },
-  { FILTER_WORKSPACE, "workspace", "workspace" },
-  { 0, NULL, NULL },
 };
 
 static void taskbar_shell_destroy ( GtkWidget *self )
@@ -329,8 +316,7 @@ static void taskbar_shell_class_init ( TaskbarShellClass *kclass )
         "primary_axis", "sfwbar_config", g_type_from_name("flow_grid_axis"),
         FLOW_GRID_AXIS_DEFAULT, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_FILTER,
-      g_param_spec_enum("filter", "filter", "sfwbar_config",
-        g_enum_register_static("taskbar_shell_filter", taskbar_shell_filter),
+      g_param_spec_enum("filter", "filter", "sfwbar_config", filter_type_get(),
         0, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 }
 
@@ -377,23 +363,4 @@ void taskbar_shell_invalidate ( GtkWidget *self )
 
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
     taskbar_shell_item_invalidate(iter->data, self);
-}
-
-gboolean taskbar_shell_check_filter ( GtkWidget *self, window_t *win )
-{
-  TaskbarShellPrivate *priv;
-
-  g_return_val_if_fail(IS_TASKBAR_SHELL(self), FALSE);
-  g_return_val_if_fail(win, FALSE);
-  priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
-
-  if(priv->filter & FILTER_FLOATING && !win->floating)
-    return FALSE;
-  if(priv->filter & FILTER_OUTPUT && win->outputs && !g_list_find_custom(
-        win->outputs, bar_get_output(self), (GCompareFunc)g_strcmp0))
-    return FALSE;
-  if(priv->filter & FILTER_WORKSPACE && win->workspace &&
-      win->workspace->id != workspace_get_active(self))
-    return FALSE;
-  return TRUE;
 }
