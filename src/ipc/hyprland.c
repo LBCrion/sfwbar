@@ -347,11 +347,9 @@ static void hypr_ipc_pager_populate( void )
         wid = json_int_by_name(ptr, "id", -99);
         if(wid!=-99 && (ws = workspace_from_id(GINT_TO_POINTER(wid))) )
         {
-          if(json_bool_by_name(iter, "focused", FALSE))
-            ws->state |= WS_STATE_FOCUSED | WS_STATE_INVALID;
-          ws->state |= WS_STATE_VISIBLE | WS_STATE_INVALID;
           workspace_set_active(ws, json_string_by_name(iter, "name"));
-          workspace_set_focus(ws->id);
+          if(json_bool_by_name(iter, "focused", FALSE))
+            workspace_change_focus(GINT_TO_POINTER(wid));
         }
       }
     }
@@ -543,11 +541,11 @@ static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
     else if(!strncmp(event, "movewindowv2>>", 14))
       hypr_ipc_track_workspace(event+14);
     else if(!strncmp(event, "workspacev2>>", 13))
-      workspace_set_focus(hypr_ipc_parse_ws(event+13, NULL));
+      workspace_change_focus(hypr_ipc_parse_ws(event+13, NULL));
     else if(!strncmp(event, "focusedmonv2>>", 14))
     {
       if( (ptr = strchr(event+14, ',')) )
-        workspace_set_focus(hypr_ipc_parse_ws(ptr+1, NULL));
+        workspace_change_focus(hypr_ipc_parse_ws(ptr+1, NULL));
     }
     else if(!strncmp(event, "createworkspacev2>>", 19))
       hypr_ipc_workspace_new(event+19);

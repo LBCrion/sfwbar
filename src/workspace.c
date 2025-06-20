@@ -253,28 +253,39 @@ void workspace_commit ( workspace_t *ws )
     return;
 
   ws->state &= ~WS_STATE_INVALID;
-
-  if(ws->state & WS_STATE_FOCUSED && ws != focus)
-  {
-    if(focus)
-      focus->state &= ~WS_STATE_FOCUSED;
-    LISTENER_CALL(workspace_invalidate, focus);
+  if(ws->state & WS_STATE_FOCUSED)
     focus = ws;
-    LISTENER_CALL(workspace_invalidate, focus);
-  }
-  else
-    LISTENER_CALL(workspace_invalidate, ws);
+
+  LISTENER_CALL(workspace_invalidate, ws);
 }
 
-void workspace_set_focus ( gpointer id )
+void workspace_mod_state ( gpointer id, gint32 mask, gboolean state )
 {
   workspace_t *ws;
 
   if( !(ws = workspace_from_id(id)) )
     return;
+  if((ws->state & WS_STATE_ALL) == state)
+    return;
 
-  ws->state |= WS_STATE_FOCUSED | WS_STATE_INVALID;
-  workspace_commit(ws);
+  if(state)
+    ws->state |= (mask & WS_STATE_ALL);
+  else
+    ws->state &= ~mask;
+  ws->state |= WS_STATE_INVALID;
+}
+
+void workspace_change_focus ( gpointer id )
+{
+  if( focus && (id == focus->id) )
+    return;
+
+  if(focus)
+  {
+    workspace_mod_state(focus->id, WS_STATE_FOCUSED, FALSE);
+    workspace_commit(focus);
+  }
+  workspace_mod_state(id, WS_STATE_FOCUSED, TRUE);
 }
 
 void workspace_set_name ( workspace_t *ws, const gchar *name )
@@ -298,24 +309,6 @@ void workspace_set_name ( workspace_t *ws, const gchar *name )
 
   if(old_pin && !workspace_from_name(old_pin->data))
     workspace_pin_restore(old_pin->data);
-}
-
-void workspace_set_state ( workspace_t *ws, guint32 state )
-{
-  if(!ws)
-    return;
-
-  if((state & ~WS_STATE_INVALID) ==
-      ((ws->state & WS_STATE_ALL) & ~WS_STATE_INVALID) )
-    return;
-
-  ws->state = (ws->state & WS_CAP_ALL) | state | WS_STATE_INVALID;
-  workspace_commit(ws);
-
-  g_debug("Workspace: '%s' state change: focused: %s, visible: %s, urgent: %s",
-      ws->name, ws->state & WS_STATE_FOCUSED ? "yes" : "no",
-      ws->state & WS_STATE_VISIBLE ? "yes" : "no",
-      ws->state & WS_STATE_URGENT ? "yes" : "no");
 }
 
 void workspace_set_caps ( workspace_t *ws, guint32 caps )

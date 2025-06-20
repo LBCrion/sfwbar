@@ -100,7 +100,9 @@ static void cw_workspace_handle_state(void *data,
         g_info("Workspace: Unsupported cosmic-workspace state: %u", *entry);
     }
   }
-  workspace_set_state(data, wsstate);
+  workspace_mod_state(workspace, WS_STATE_FOCUSED, wsstate & WS_STATE_FOCUSED);
+  workspace_mod_state(workspace, WS_STATE_URGENT, wsstate & WS_STATE_URGENT);
+  workspace_mod_state(workspace, WS_STATE_VISIBLE, wsstate & WS_STATE_VISIBLE);
 }
 
 static void cw_workspace_handle_capabilities(void *data,
@@ -178,7 +180,7 @@ static void cw_workspace_group_handle_workspace(void *data,
   workspace_t *ws;
 
   ws = workspace_new(workspace);
-  workspace_set_state(ws, WS_STATE_VISIBLE);
+  workspace_mod_state(workspace, WS_STATE_VISIBLE, TRUE);
 
   zcosmic_workspace_handle_v1_add_listener(workspace, &cw_workspace_impl, ws);
 }

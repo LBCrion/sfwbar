@@ -481,7 +481,7 @@ static wayfire_ipc_wset_t *wayfire_ipc_wset_new ( struct json_object *json )
       if(x==wset->x && y==wset->y)
       {
         if(wset->output == focused_output)
-          workspace_set_focus(id);
+          workspace_change_focus(id);
         workspace_set_active(ws, output_name);
         wayfire_ipc_workspace_set_visible(id);
       }
@@ -514,7 +514,7 @@ static void wayfire_ipc_workspace_changed ( struct json_object *json )
     wayfire_ipc_output_new(ptr, wsetid);
 
   if(wset->output == focused_output)
-    workspace_set_focus(WAYFIRE_WORKSPACE_ID(wset, x, y));
+    workspace_change_focus(WAYFIRE_WORKSPACE_ID(wset, x, y));
   wayfire_ipc_workspace_set_visible(WAYFIRE_WORKSPACE_ID(wset, x, y));
 
   GList *iter;
@@ -538,7 +538,7 @@ static void wayfire_ipc_set_focused_output ( struct json_object *json )
           wayfire_ipc_wset_by_output)) )
     return;
   wset = link->data;
-  workspace_set_focus(WAYFIRE_WORKSPACE_ID(wset, wset->x, wset->y));
+  workspace_change_focus(WAYFIRE_WORKSPACE_ID(wset, wset->x, wset->y));
 }
 
 static void wayfire_ipc_output_set_wset ( struct json_object *json )

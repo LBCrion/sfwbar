@@ -65,7 +65,6 @@ static gboolean ew_check_monitor ( void *wsid, gchar *name )
 
   if( !(group = ws->data) )
     return TRUE;  // in case the compositor doesn't support groups
-  g_message("Workspace: check workspace '%s' vs output '%s'", ws->name, name);
   return !!g_list_find_custom(group->outputs, name, (GCompareFunc)g_strcmp0);
 }
 
@@ -103,16 +102,12 @@ static void ew_workspace_handle_coordinates(void *data,
 static void ew_workspace_handle_state(void *data,
     struct ext_workspace_handle_v1 *workspace, uint32_t state)
 {
-  uint32_t wsstate = WS_STATE_VISIBLE;
-
-  if(state & EXT_WORKSPACE_HANDLE_V1_STATE_ACTIVE)
-    wsstate |= WS_STATE_FOCUSED;
-  if(state & EXT_WORKSPACE_HANDLE_V1_STATE_URGENT)
-    wsstate |= WS_STATE_URGENT;
-  if(state & EXT_WORKSPACE_HANDLE_V1_STATE_HIDDEN)
-    wsstate &= ~WS_STATE_VISIBLE;
-
-  workspace_set_state(data, wsstate);
+  workspace_mod_state(workspace, WS_STATE_FOCUSED,
+      !!(state & EXT_WORKSPACE_HANDLE_V1_STATE_ACTIVE));
+  workspace_mod_state(workspace, WS_STATE_URGENT,
+      !!(state & EXT_WORKSPACE_HANDLE_V1_STATE_URGENT));
+  workspace_mod_state(workspace, WS_STATE_VISIBLE,
+      !(state & EXT_WORKSPACE_HANDLE_V1_STATE_HIDDEN));
 }
 
 static void ew_workspace_handle_capabilities(void *data,
@@ -277,7 +272,7 @@ static void ew_workspace_manager_handle_workspace ( void *data,
   workspace_t *ws;
 
   ws = workspace_new(workspace);
-  workspace_set_state(ws, WS_STATE_VISIBLE);
+  workspace_mod_state(workspace, WS_STATE_VISIBLE, TRUE);
 
   ext_workspace_handle_v1_add_listener(workspace, &ew_workspace_impl, ws);
 }
