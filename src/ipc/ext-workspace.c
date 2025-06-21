@@ -15,8 +15,8 @@ static struct ext_workspace_manager_v1 *workspace_manager;
 static GList *workspace_groups, *workspaces_to_focus;
 
 typedef struct _ew_group {
-  GList *outputs;
-  GList *workspaces;
+  GPtrArray *outputs;
+  GPtrArray *workspaces;
 } ew_group_t;
 
 /* API */
@@ -58,14 +58,20 @@ static gboolean ew_get_can_create ( void )
 static gboolean ew_check_monitor ( void *wsid, gchar *name )
 {
   workspace_t *ws;
+  GdkMonitor *monitor;
   ew_group_t *group;
+
+  if( !(monitor = monitor_from_name(name)) )
+    return TRUE;
 
   if( !(ws = workspace_from_id(wsid)) )
     return FALSE;
 
   if( !(group = ws->data) )
     return TRUE;  // in case the compositor doesn't support groups
-  return !!g_list_find_custom(group->outputs, name, (GCompareFunc)g_strcmp0);
+
+  return g_ptr_array_find(group->outputs,
+      gdk_wayland_monitor_get_wl_output(monitor), NULL);
 }
 
 static struct workspace_api ew_api_impl = {
@@ -170,16 +176,12 @@ static void ew_workspace_group_handle_output_enter(void *data,
     struct wl_output *output)
 {
   ew_group_t *group = data;
-  gchar *name;
 
-  if( !(name = monitor_get_name(monitor_from_wl_output(output))) )
+  if(g_ptr_array_find(group->outputs, output, NULL))
     return;
-
-  if(g_list_find_custom(group->outputs, name, (GCompareFunc)g_strcmp0))
-    return;
-  g_debug("Workspace: group %p, add output: %s", group, name);
-  group->outputs = g_list_prepend(group->outputs, g_strdup(name));
-  g_list_foreach(group->workspaces, (GFunc)workspace_commit, NULL);
+  g_debug("Workspace: group %p, add output: %p", group, output);
+  g_ptr_array_add(group->outputs, output);
+  g_ptr_array_foreach(group->workspaces, (GFunc)workspace_commit, NULL);
 }
 
 static void ew_workspace_group_handle_output_leave(void *data,
@@ -187,18 +189,10 @@ static void ew_workspace_group_handle_output_leave(void *data,
     struct wl_output *output)
 {
   ew_group_t *group = data;
-  GList *l;
-  gchar *name;
 
-  if( !(name = monitor_get_name(monitor_from_wl_output(output))) )
-    g_warning("Workspace: output destroyed before group_output_leave event");
-
-  if(!(l = g_list_find_custom(group->outputs, name, (GCompareFunc)g_strcmp0)) )
-    return;
-  g_debug("Workspace: group %p, remove output: %s", group, name);
-  g_free(l->data);
-  group->outputs = g_list_delete_link(group->outputs, l);
-  g_list_foreach(group->workspaces, (GFunc)workspace_commit, NULL);
+  g_debug("Workspace: group %p, remove output: %p", group, output);
+  g_ptr_array_remove(group->outputs, output);
+  g_ptr_array_foreach(group->workspaces, (GFunc)workspace_commit, NULL);
 }
 
 static void ew_workspace_group_handle_workspace_enter(void *data,
@@ -213,7 +207,7 @@ static void ew_workspace_group_handle_workspace_enter(void *data,
 
   g_debug("Workspace: group %p, add workspace: %s", group, ws->name);
   ws->data = group;
-  group->workspaces = g_list_prepend(group->workspaces, workspace);
+  g_ptr_array_add(group->workspaces, workspace);
   workspace_commit(ws);
 }
 
@@ -224,7 +218,7 @@ static void ew_workspace_group_handle_workspace_leave(void *data,
   ew_group_t *group = data;
   workspace_t *ws;
 
-  group->workspaces = g_list_remove(group->workspaces, workspace);
+  g_ptr_array_remove(group->workspaces, workspace);
   if( !(ws = workspace_from_id(workspace)) || ws->data != group )
     return;
 
@@ -240,8 +234,8 @@ static void ew_workspace_group_handle_remove(void *data,
   workspace_groups = g_list_remove(workspace_groups, workspace_group);
   ext_workspace_group_handle_v1_destroy(workspace_group);
 
-  g_list_free_full(group->outputs, g_free);
-  g_free(group);
+  g_ptr_array_unref(group->outputs);
+  g_ptr_array_unref(group->workspaces);
 }
 
 static const struct ext_workspace_group_handle_v1_listener
@@ -261,6 +255,8 @@ static void ew_workspace_manager_handle_workspace_group ( void *data,
     struct ext_workspace_group_handle_v1 *workspace_group)
 {
   ew_group_t *group = g_malloc0(sizeof(ew_group_t));
+  group->outputs = g_ptr_array_new();
+  group->workspaces = g_ptr_array_new();
   ext_workspace_group_handle_v1_add_listener(
     workspace_group, &ew_workspace_group_impl, group);
 }
