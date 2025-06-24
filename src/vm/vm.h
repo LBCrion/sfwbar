@@ -17,9 +17,9 @@ enum expr_instruction_t {
   EXPR_OP_DISCARD,
   EXPR_OP_LOCAL,
   EXPR_OP_LOCAL_ASSIGN,
-  EXPR_OP_HEAP,
   EXPR_OP_HEAP_ASSIGN,
-  EXPR_OP_RETURN
+  EXPR_OP_RETURN,
+  EXPR_OP_LAST
 };
 
 enum vm_func_flags_t {
@@ -44,6 +44,7 @@ typedef struct _vm_var {
 typedef struct {
   guint8 *ip;
   guint8 *code;
+  GBytes *bytes;
   gsize len;
   gsize fp;
   GArray *stack;

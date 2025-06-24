@@ -11,6 +11,21 @@
 const value_t value_na = { .type = EXPR_TYPE_NA };
 static value_t vm_run ( vm_t *vm );
 
+static gint vm_op_length[] = {
+  [EXPR_OP_IMMEDIATE] = 2,
+  [EXPR_OP_JZ] = 1 + sizeof(gint),
+  [EXPR_OP_JMP] = 1 + sizeof(gint),
+  [EXPR_OP_CACHED] = 2,
+  [EXPR_OP_VARIABLE] = 2 + sizeof(GQuark),
+  [EXPR_OP_FUNCTION] = 2 + sizeof(gpointer),
+  [EXPR_OP_DISCARD] =  1,
+  [EXPR_OP_LOCAL] = 1 + sizeof(guint16),
+  [EXPR_OP_LOCAL_ASSIGN] = 1 + sizeof(guint16),
+  [EXPR_OP_HEAP_ASSIGN] = 1 + sizeof(GQuark),
+  [EXPR_OP_RETURN] = 1,
+};
+
+
 static void vm_push ( vm_t *vm, value_t val )
 {
   g_array_append_val(vm->stack, val);
@@ -114,6 +129,7 @@ value_t vm_function_call ( vm_t *vm, GBytes *code, guint8 np )
   value_t v1;
   guint8 *saved_code, *saved_ip;
   gsize saved_len, saved_stack, saved_fp;
+  GBytes *saved_bytes;
 
   if(!code)
     return value_na;
@@ -123,7 +139,9 @@ value_t vm_function_call ( vm_t *vm, GBytes *code, guint8 np )
   saved_len = vm->len;
   saved_stack = vm->stack->len;
   saved_fp = vm->fp;
+  saved_bytes = vm->bytes;
 
+  vm->bytes = g_bytes_ref(code);
   vm->code = (guint8 *)g_bytes_get_data(code, &vm->len);
   vm->fp = vm->stack->len - np;
   v1 = vm_run(vm);
@@ -131,10 +149,12 @@ value_t vm_function_call ( vm_t *vm, GBytes *code, guint8 np )
   if(vm->expr)
     vm->expr->vstate = TRUE;
 
+  g_bytes_unref(vm->bytes);
   vm->code = saved_code;
   vm->ip = saved_ip;
   vm->len = saved_len;
   vm->fp = saved_fp;
+  vm->bytes = saved_bytes;
   vm_stack_unwind(vm, saved_stack);
 
   return v1;
@@ -144,9 +164,10 @@ static gboolean vm_function ( vm_t *vm )
 {
   vm_function_t *func;
   value_t result;
-  guint8 np = *(vm->ip+1);
+  guint8 np;
   gint i;
 
+  np = *(vm->ip+1);
   memcpy(&func, vm->ip+2, sizeof(gpointer));
   if(np>vm->stack->len)
   {
@@ -287,6 +308,12 @@ static value_t vm_run ( vm_t *vm )
   for(vm->ip = vm->code; (vm->ip-vm->code)<vm->len; vm->ip++)
   {
     //g_message("stack %d, op %d", vm->stack->len, *vm->ip);
+    if(*vm->ip < EXPR_OP_LAST &&
+        (vm->code+vm->len-vm->ip < vm_op_length[*vm->ip]))
+    {
+      g_warning("vm: truncated operator %d", *vm->ip);
+      return value_na;
+    }
     if(*vm->ip == EXPR_OP_IMMEDIATE)
       vm_immediate(vm);
     else if(*vm->ip == EXPR_OP_CACHED)
@@ -295,8 +322,6 @@ static value_t vm_run ( vm_t *vm )
       vm_variable(vm);
     else if(*vm->ip == EXPR_OP_LOCAL)
       vm_local(vm);
-//    else if(*vm->ip == EXPR_OP_HEAP)
-//      vm_heap(vm);
     else if(*vm->ip == EXPR_OP_LOCAL_ASSIGN)
       vm_local_assign(vm);
     else if(*vm->ip == EXPR_OP_HEAP_ASSIGN)
@@ -335,12 +360,26 @@ static value_t vm_run ( vm_t *vm )
     }
     else if(!vm_op_binary(vm))
     {
-      g_warning("invalid op %d", *vm->ip);
+      g_warning("invalid op %d at %ld (stack %u)", *vm->ip, vm->ip - vm->code, vm->stack->len);
+      for(gint i=0;i<vm->len;i++)
+        g_warning("%d: %d", i, vm->code[i]);
       break;
     }
   }
 
   return vm_pop(vm);
+}
+
+static vm_t *vm_new ( GBytes *code )
+{
+  vm_t *vm;
+
+  vm = g_malloc0(sizeof(vm_t));
+
+  vm->bytes = g_bytes_ref(code);
+  vm->code = (gpointer)g_bytes_get_data(code, &vm->len);
+
+  return vm;
 }
 
 static void vm_free ( vm_t *vm )
@@ -361,6 +400,7 @@ static void vm_free ( vm_t *vm )
   if(vm->pstack)
     g_ptr_array_free(vm->pstack, TRUE);
 
+  g_bytes_unref(vm->bytes);
   g_free(vm);
 }
 
@@ -369,9 +409,7 @@ value_t vm_code_eval ( GBytes *code, GtkWidget *widget )
   value_t v1;
   vm_t *vm;
 
-  vm = g_malloc0(sizeof(vm_t));
-
-  vm->code = (gpointer)g_bytes_get_data(code, &vm->len);
+  vm = vm_new(code);
   vm->widget = widget;
   vm->wstate = base_widget_state_build(vm->widget, NULL);
   vm->store = widget? base_widget_get_store(widget) : NULL;
@@ -387,9 +425,8 @@ value_t vm_expr_eval ( expr_cache_t *expr )
   value_t v1;
   vm_t *vm;
 
-  vm = g_malloc0(sizeof(vm_t));
+  vm = vm_new(expr->code);
 
-  vm->code = (gpointer)g_bytes_get_data(expr->code, &vm->len);
   vm->widget = expr->widget;
   vm->event = expr->event;
   vm->expr = expr;
@@ -412,13 +449,13 @@ void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
 
   g_return_if_fail(code);
 
-  vm = g_malloc0(sizeof(vm_t));
-  vm->code = (gpointer)g_bytes_get_data(code, &vm->len);
+  vm = vm_new(code);
   vm->store = store;
   vm->widget = widget;
   vm->event = event;
   vm->win = win;
   vm->wstate = state? *state : base_widget_state_build(vm->widget, vm->win);
+  vm->store = widget? base_widget_get_store(widget) : NULL;
 
   value_free(vm_run(vm));
   vm_free(vm);
@@ -432,4 +469,6 @@ void vm_run_user_defined ( gchar *name, GtkWidget *widget, GdkEvent *event,
   func = vm_func_lookup(name);
   if(func->flags & VM_FUNC_USERDEFINED)
     vm_run_action(func->ptr.code, widget, event, win, state, store);
+  else
+    g_warning("vm: invalid user defined function: %s", name);
 }
