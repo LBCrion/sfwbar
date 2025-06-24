@@ -426,7 +426,8 @@ static gboolean parser_assign_parse ( GScanner *scanner, GByteArray *code,
     if(pos)
       parser_emit_local(code, pos, EXPR_OP_LOCAL);
     else
-      parser_emit_quark_op(code, var->quark, EXPR_OP_HEAP);
+      parser_emit_var_id(code, (gchar *)g_quark_to_string(var->quark),
+          EXPR_OP_VARIABLE);
     config_parse_sequence(scanner,
         SEQ_REQ, -2 , parser_expr_parse, code, "Expect index in []",
         SEQ_REQ, ']', NULL, NULL, "Expect ']' after array index",
