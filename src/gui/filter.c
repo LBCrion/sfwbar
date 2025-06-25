@@ -10,6 +10,7 @@
 static GEnumValue filter_enum[] = {
   { 0, "none", "none" },
   { FILTER_FLOATING, "floating", "floating" },
+  { FILTER_MINIMIZED, "minimized", "minimized" },
   { FILTER_OUTPUT, "output", "output" },
   { FILTER_WORKSPACE, "workspace", "workspace" },
   { 0, NULL, NULL },
@@ -35,6 +36,8 @@ gboolean filter_window_check ( GtkWidget *parent, window_t *win )
   g_object_get(G_OBJECT(parent), "filter", &filter, NULL);
 
   if(filter & FILTER_FLOATING && !win->floating)
+    return FALSE;
+  if(filter & FILTER_MINIMIZED && !(win->state & WS_MINIMIZED))
     return FALSE;
   if(filter & FILTER_OUTPUT && win->outputs && !g_list_find_custom(
         win->outputs, bar_get_output(parent), (GCompareFunc)g_strcmp0))

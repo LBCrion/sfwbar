@@ -6,8 +6,9 @@
 
 enum WindowFilter {
   FILTER_FLOATING = 1,
-  FILTER_OUTPUT = 2,
-  FILTER_WORKSPACE = 4,
+  FILTER_MINIMIZED = 2,
+  FILTER_OUTPUT = 4,
+  FILTER_WORKSPACE = 8,
 };
 
 GType filter_type_get ( void );
