@@ -56,7 +56,7 @@ expr_cache_t *expr_cache_new_with_code ( GBytes *code )
   expr_cache_t *expr;
 
   expr = expr_cache_new();
-  expr->code = code;
+  expr->code = g_bytes_ref(code);
   expr->eval = TRUE;
 
   return expr;
