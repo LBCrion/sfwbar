@@ -228,7 +228,7 @@ GPtrArray *config_assign_string_list ( GScanner *scanner )
   return array;
 }
 
-GBytes *config_assign_action ( GScanner *scanner, gchar *err )
+GBytes *config_assign_action ( GScanner *scanner, const gchar *err )
 {
   GBytes *code;
   scanner->max_parse_errors = FALSE;

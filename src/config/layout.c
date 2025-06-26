@@ -113,7 +113,7 @@ gboolean config_widget_set_property ( GScanner *scanner, gchar *prefix,
   GEnumValue *eval;
   GValue value = G_VALUE_INIT;
   GString *prop_name;
-  const gchar *name;
+  const gchar *name, *blurb;
 
   if(!widget || scanner->token != G_TOKEN_IDENTIFIER ||
       g_scanner_peek_next_token(scanner) == G_TOKEN_IDENTIFIER)
@@ -128,8 +128,10 @@ gboolean config_widget_set_property ( GScanner *scanner, gchar *prefix,
   if(!spec)
     return FALSE;
 
-  if(g_strcmp0(g_param_spec_get_blurb(spec), "sfwbar_config"))
+  blurb = g_param_spec_get_blurb(spec);
+  if(g_ascii_strncasecmp(blurb, "sfwbar_config", 13))
     return FALSE;
+  blurb = blurb[13]==':'? blurb+14 : blurb+13;
 
   name = g_param_spec_get_name(spec);
   g_value_init(&value, G_PARAM_SPEC_VALUE_TYPE(spec));
@@ -148,8 +150,12 @@ gboolean config_widget_set_property ( GScanner *scanner, gchar *prefix,
     g_value_set_string(&value, config_assign_string(scanner, name));
   else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_PTR_ARRAY)
     g_value_set_boxed(&value, config_assign_string_list(scanner));
-  else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_BYTES)
+  else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_BYTES && *blurb!='a')
     g_value_take_boxed(&value, config_assign_expr(scanner, name));
+  else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_BYTES && *blurb=='a')
+    g_value_take_boxed(&value, config_assign_action(scanner, name));
+  else if(G_IS_PARAM_SPEC_OBJECT(spec) && *blurb == 's')
+    g_value_take_object(&value, G_OBJECT(config_menu(scanner)));
   else if(G_PARAM_SPEC_VALUE_TYPE(spec) == GDK_TYPE_RECTANGLE)
     g_value_take_boxed(&value, config_get_loc(scanner));
   else

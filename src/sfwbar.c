@@ -11,10 +11,11 @@
 #include "wayland.h"
 #include "config/config.h"
 #include "ipc/sway.h"
-#include "gui/basewidget.h"
-#include "gui/monitor.h"
 #include "gui/bar.h"
+#include "gui/basewidget.h"
 #include "gui/css.h"
+#include "gui/menuitem.h"
+#include "gui/monitor.h"
 #include "vm/vm.h"
 
 extern gchar *confname;
@@ -131,6 +132,7 @@ static void activate (GtkApplication* app, gpointer data )
   action_lib_init();
   wayland_init();
   css_init(cssname);
+  menu_item_class_init();
   monitor_init( monitor );
   sway_ipc_init();
   hypr_ipc_init();

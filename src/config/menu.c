@@ -9,41 +9,11 @@
 
 static gboolean config_menu_item_props ( GScanner *scanner, GtkWidget *item )
 {
-  GtkWidget *submenu;
-
   while(!config_is_section_end(scanner))
   {
     g_scanner_get_next_token(scanner);
-    switch(config_lookup_key(scanner, config_menu_item_keys))
-    {
-      case G_TOKEN_LABEL:
-        menu_item_set_label_expr(item, config_assign_expr(scanner, "label"));
-        break;
-      case G_TOKEN_ACTION:
-        menu_item_set_action(item, config_assign_action(scanner, "action"));
-        break;
-      case G_TOKEN_TOOLTIP:
-        menu_item_set_tooltip(item, config_assign_expr(scanner, "tooltip"));
-        break;
-      case G_TOKEN_INDEX:
-        menu_item_set_sort_index(item, config_assign_number(scanner, "index"));
-        break;
-      case G_TOKEN_DESKTOPID:
-        menu_item_update_from_desktop(item,
-            config_assign_string(scanner, "DesktopId"));
-        gtk_widget_show_all(item);
-        break;
-      case G_TOKEN_SUBMENU:
-        submenu = menu_new(config_check_and_consume(scanner, G_TOKEN_STRING)?
-              scanner->value.v_string : NULL);
-        gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), submenu);
-        if(config_check_and_consume(scanner, '{'))
-          config_menu_items(scanner, submenu);
-        break;
-      default:
-        g_scanner_error(scanner, "unsupported property in menu item declaration");
-        return FALSE;
-    }
+    if(!config_widget_set_property(scanner, NULL, item))
+      g_scanner_error(scanner, "unsupported property in menu item declaration");
     config_check_and_consume(scanner, ';');
   }
   return !scanner->max_parse_errors;
@@ -171,22 +141,25 @@ void config_menu_items ( GScanner *scanner, GtkWidget *menu )
   }
 }
 
-void config_menu ( GScanner *scanner )
+GtkWidget *config_menu ( GScanner *scanner )
 {
+  GtkWidget *menu = NULL;
   gchar *name = NULL;
 
   config_parse_sequence(scanner,
-      SEQ_REQ, '(', NULL, NULL, "missing '(' after 'menu'",
-      SEQ_REQ, G_TOKEN_STRING, NULL, &name, "missing menu name",
-      SEQ_REQ, ')', NULL, NULL, "missing ')' after 'menu'",
-      SEQ_REQ, '{', NULL, NULL, "missing '{' after 'menu'",
+      SEQ_OPT, '(', NULL, NULL, "missing '(' after 'menu'",
+      SEQ_OPT, G_TOKEN_STRING, NULL, &name, "missing menu name",
+      SEQ_OPT, ')', NULL, NULL, "missing ')' after 'menu'",
+      SEQ_OPT, '{', NULL, NULL, "missing '{' after 'menu'",
       SEQ_END);
 
-  if(!scanner->max_parse_errors && name)
-    config_menu_items(scanner, menu_new(name));
-
+  if(scanner->max_parse_errors)
+    return NULL;
+  menu = menu_new(name);
   g_free(name);
+  config_menu_items(scanner, menu);
   config_check_and_consume(scanner, ';');
+  return menu;
 }
 
 void config_menu_clear ( GScanner *scanner )

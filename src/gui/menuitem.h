@@ -26,6 +26,7 @@ enum {
   MI_ACTION   = 8
 };
 
+void menu_item_class_init ( void );
 void menu_item_init( GtkWidget *self );
 GtkWidget *menu_item_get ( gchar *id, gboolean create );
 void menu_item_update_from_desktop ( GtkWidget *self, const gchar *desktop_id);
