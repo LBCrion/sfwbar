@@ -157,14 +157,20 @@ static void flow_grid_set_property ( GObject *self, guint id,
       flow_grid_invalidate(GTK_WIDGET(self));
       break;
     case FLOW_GRID_COLS:
-      priv->cols = g_value_get_int(value);
-      priv->rows = (priv->cols<1);
-      flow_grid_invalidate(GTK_WIDGET(self));
+      if(g_value_get_int(value)>=0)
+      {
+        priv->cols = g_value_get_int(value);
+        priv->rows = (priv->cols<1);
+        flow_grid_invalidate(GTK_WIDGET(self));
+      }
       break;
     case FLOW_GRID_ROWS:
-      priv->rows = g_value_get_int(value);
-      priv->cols = (priv->rows<1);
-      flow_grid_invalidate(GTK_WIDGET(self));
+      if(g_value_get_int(value)>=0)
+      {
+        priv->rows = g_value_get_int(value);
+        priv->cols = (priv->rows<1);
+        flow_grid_invalidate(GTK_WIDGET(self));
+      }
       break;
     case FLOW_GRID_PRIMARY_AXIS:
       priv->primary_axis = g_value_get_enum(value);

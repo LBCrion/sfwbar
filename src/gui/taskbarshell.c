@@ -306,10 +306,10 @@ static void taskbar_shell_class_init ( TaskbarShellClass *kclass )
       g_param_spec_boolean("group_sort", "sort", "sfwbar_config", FALSE,
         G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_COLS,
-    g_param_spec_int("group_cols", "cols", "sfwbar_config", 0, INT_MAX, 0,
+    g_param_spec_int("group_cols", "cols", "sfwbar_config", -1, INT_MAX, -1,
       G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_ROWS,
-    g_param_spec_int("group_rows", "rows", "sfwbar_config", 0, INT_MAX, 1,
+    g_param_spec_int("group_rows", "rows", "sfwbar_config", -1, INT_MAX, -1,
       G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass),
       TASKBAR_SHELL_PRIMARY_AXIS, g_param_spec_enum("group_primary_axis",
