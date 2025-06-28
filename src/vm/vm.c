@@ -450,12 +450,14 @@ void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
   g_return_if_fail(code);
 
   vm = vm_new(code);
-  vm->store = store;
   vm->widget = widget;
   vm->event = event;
   vm->win = win;
   vm->wstate = state? *state : base_widget_state_build(vm->widget, vm->win);
-  vm->store = widget? base_widget_get_store(widget) : NULL;
+  if(store)
+    vm->store = store;
+  else
+    vm->store = widget? base_widget_get_store(widget) : NULL;
 
   value_free(vm_run(vm));
   vm_free(vm);
