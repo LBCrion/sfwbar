@@ -186,7 +186,6 @@ static gboolean config_widget_variable ( GScanner *scanner, GtkWidget *widget )
 
 gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
 {
-  GtkWindow *win;
   gint key;
 
   if(config_widget_variable(scanner, widget))
@@ -200,16 +199,6 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
     return TRUE;
   }
 
-  win = GTK_WINDOW(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW));
-  if(win && gtk_bin_get_child(GTK_BIN(win)) == widget &&
-      gtk_window_get_window_type(win) == GTK_WINDOW_POPUP &&
-      key == G_TOKEN_AUTOCLOSE)
-  {
-      popup_set_autoclose(GTK_WIDGET(win),
-          config_assign_boolean(scanner, FALSE, "autoclose"));
-      return TRUE;
-  }
-
   if(config_widget_set_property(scanner, NULL, widget))
     return TRUE;
 
@@ -220,10 +209,11 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
       return TRUE;
   }
 
-  if(GTK_IS_BOX(gtk_widget_get_parent(widget)))
+  if(GTK_IS_BOX(gtk_widget_get_parent(widget)) ||
+      GTK_IS_WINDOW(gtk_widget_get_parent(widget)))
     if(config_widget_set_property(scanner, NULL,
-              gtk_widget_get_ancestor(widget, BAR_TYPE)))
-      return TRUE;
+          gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW)))
+        return TRUE;
 
   return FALSE;
 }
@@ -275,7 +265,10 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
   GType (*type_get)(void);
 
   if(container && !IS_GRID(container))
+  {
+    g_scanner_error(scanner, "invalid container in widget declaration");
     return FALSE;
+  }
 
   if(scanner->token != G_TOKEN_IDENTIFIER)
     return FALSE;

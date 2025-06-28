@@ -16,6 +16,7 @@
 #include "gui/css.h"
 #include "gui/menuitem.h"
 #include "gui/monitor.h"
+#include "gui/popup.h"
 #include "vm/vm.h"
 
 extern gchar *confname;
@@ -133,6 +134,7 @@ static void activate (GtkApplication* app, gpointer data )
   wayland_init();
   css_init(cssname);
   menu_item_class_init();
+  popup_class_init();
   monitor_init( monitor );
   sway_ipc_init();
   hypr_ipc_init();

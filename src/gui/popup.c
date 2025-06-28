@@ -13,6 +13,38 @@
 #include <gtk-layer-shell.h>
 
 static GHashTable *popup_list;
+static guint nprops;
+
+#define POPUP_AUTOCLOSE (nprops+1)
+
+static void (*popup_set_property_old)( GObject *, guint, const GValue *,
+    GParamSpec *);
+
+static void popup_set_property ( GObject *self, guint prop,
+    const GValue *value, GParamSpec *param )
+{
+  if(prop == POPUP_AUTOCLOSE && GTK_IS_WINDOW(self) &&
+      gtk_window_get_window_type(GTK_WINDOW(self)) == GTK_WINDOW_POPUP)
+    gtk_window_set_type_hint(GTK_WINDOW(self), g_value_get_boolean(value)?
+        GDK_WINDOW_TYPE_HINT_POPUP_MENU : GDK_WINDOW_TYPE_HINT_NORMAL);
+  else
+    popup_set_property_old(self, prop, value, param);
+}
+
+void popup_class_init ( void )
+{
+  GObjectClass *class;
+
+  class = g_type_class_ref(GTK_TYPE_WINDOW);
+  popup_set_property_old = class->set_property;
+  class->set_property = popup_set_property;
+
+  g_free(g_object_class_list_properties(class, &nprops));
+
+  g_object_class_install_property(class, POPUP_AUTOCLOSE,
+      g_param_spec_boolean("autoclose", "autoclose", "sfwbar_config",
+        FALSE, G_PARAM_WRITABLE));
+}
 
 void popup_get_gravity ( GtkWidget *widget, GdkGravity *wanchor,
     GdkGravity *manchor )
@@ -239,14 +271,6 @@ void popup_resize_maybe ( GtkWidget *self )
 void popup_size_allocate_cb ( GtkWidget *grid, gpointer dummy, GtkWidget *win )
 {
   popup_resize_maybe(win);
-}
-
-void popup_set_autoclose ( GtkWidget *win, gboolean autoclose )
-{
-  if(autoclose)
-    gtk_window_set_type_hint(GTK_WINDOW(win), GDK_WINDOW_TYPE_HINT_POPUP_MENU);
-  else
-    gtk_window_set_type_hint(GTK_WINDOW(win), GDK_WINDOW_TYPE_HINT_NORMAL);
 }
 
 GtkWidget *popup_new ( gchar *name )

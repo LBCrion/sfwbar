@@ -130,7 +130,7 @@ void trigger_emit_with_data ( gchar *name, vm_store_t *store )
 void trigger_emit_with_string ( gchar *name, gchar *var, gchar *val )
 {
   vm_store_t *store;
- 
+
   store = vm_store_new(NULL, TRUE);
   vm_store_insert_full(store, var, value_new_string(val));
   trigger_emit_with_data(name, store);

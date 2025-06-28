@@ -23,14 +23,6 @@ static guint nprops;
 
 static void (*menu_item_set_property_old)( GObject *, guint, const GValue *,
     GParamSpec *);
-static void (*menu_item_get_property_old)( GObject *, guint, GValue *,
-    GParamSpec *);
-
-static void menu_item_get_property ( GObject *self, guint id,
-    GValue *value, GParamSpec *spec )
-{
-  menu_item_get_property_old(self, id, value, spec);
-}
 
 static void menu_item_set_property ( GObject *self, guint id,
     const GValue *value, GParamSpec *spec )
@@ -62,30 +54,28 @@ void menu_item_class_init ( void )
 
   class = g_type_class_ref(GTK_TYPE_MENU_ITEM);
   menu_item_set_property_old = class->set_property;
-  menu_item_get_property_old = class->get_property;
   class->set_property = menu_item_set_property;
-  class->get_property = menu_item_get_property;
 
   g_free(g_object_class_list_properties(class, &nprops));
 
   g_object_class_install_property(class, MENU_ITEM_DESKTOPID,
       g_param_spec_string("desktopid", "desktopid", "sfwbar_config", NULL,
-        G_PARAM_READWRITE));
+        G_PARAM_WRITABLE));
   g_object_class_install_property(class, MENU_ITEM_VALUE,
       g_param_spec_boxed("value", "value", "sfwbar_config", G_TYPE_BYTES,
-        G_PARAM_READWRITE));
+        G_PARAM_WRITABLE));
   g_object_class_install_property(class, MENU_ITEM_TOOLTIP,
       g_param_spec_boxed("tooltip", "tooltip", "sfwbar_config", G_TYPE_BYTES,
-        G_PARAM_READWRITE));
+        G_PARAM_WRITABLE));
   g_object_class_install_property(class, MENU_ITEM_ACTION,
       g_param_spec_boxed("action", "action", "sfwbar_config:a", G_TYPE_BYTES,
-        G_PARAM_READWRITE));
+        G_PARAM_WRITABLE));
   g_object_class_install_property(class, MENU_ITEM_MENU,
       g_param_spec_object("menu", "menu", "sfwbar_config:s",
-        GTK_TYPE_WIDGET, G_PARAM_READWRITE));
+        GTK_TYPE_WIDGET, G_PARAM_WRITABLE));
   g_object_class_install_property(class, MENU_ITEM_INDEX,
       g_param_spec_int("index", "index", "sfwbar_config",
-        0, INT_MAX, 0, G_PARAM_READWRITE));
+        0, INT_MAX, 0, G_PARAM_WRITABLE));
 }
 
 static void menu_item_activate ( GtkMenuItem *self, gpointer d )

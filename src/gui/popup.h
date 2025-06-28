@@ -1,6 +1,7 @@
 #ifndef __POPUP_H__
 #define __POPUP_H__
 
+void popup_class_init ( void );
 GtkWidget *popup_new ( gchar *name );
 GtkWidget *popup_from_name ( gchar *name );
 void popup_trigger ( GtkWidget *parent, gchar *name, GdkEvent *ev );
