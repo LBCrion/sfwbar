@@ -1,3 +1,5 @@
+#Api2
+
 Var BacklightSrc, BacklightMax;
 Var BacklightTmpl = '<?xml version="1.0" encoding="utf-8"?>
   <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 612">
@@ -25,9 +27,9 @@ Function BacklightInit() {
       {
         BacklightSrc = base+"/"+dirs[i]+"/actual_brightness"
         BacklightMax = Val(Read(base+"/"+dirs[i]+"/max_brightness"))
-        FileTrigger BacklightSrc, "backlight", 1000
-        SetBacklight Val(Read(BacklightSrc))/BacklightMax
-        EmitTrigger "backlight"
+        FileTrigger(BacklightSrc, "backlight", 1000)
+        SetBacklight(Val(Read(BacklightSrc))/BacklightMax)
+        EmitTriggerr( "backlight")
       }
     i = i + 1
   }
@@ -36,12 +38,12 @@ Function BacklightInit() {
 Function SetBacklight ( pct )
 {
   If BacklightMax > 0 {
-    DBusCallSystem "org.freedesktop.login1",
+    DBusCallSystem("org.freedesktop.login1",
            "/org/freedesktop/login1/session/auto",
            "org.freedesktop.login1.Session",
            "SetBrightness", "(ssu)", "backlight", "intel_backlight",
-           BacklightMax * Min(1, Max(0.3, pct ))
-    EmitTrigger "backlight"
+           BacklightMax * Min(1, Max(0.3, pct )))
+    EmitTrigger("backlight")
   }
 }
 
@@ -54,7 +56,7 @@ PopUp("BacklightPopup") {
     style = 'volume_scale'
     value = Val(Read(BacklightSrc))/BacklightMax
     trigger = "backlight"
-    action[LeftClick] = SetBacklight GtkEvent("dir")
+    action[LeftClick] = SetBacklight(GtkEvent("dir"))
   }
 }
 
@@ -64,10 +66,10 @@ widget_grid {
     style = if(ident(DbusCallSystem) & BacklightSrc!='', "module", "hidden")
     value = Replace(BacklightTmpl, "@BRIGHTNESS@",
       Str(Val(Read(BacklightSrc))/BacklightMax*492))
-    action[ScrollUp] = SetBacklight Val(Read(BacklightSrc))/BacklightMax+0.05
-    action[ScrollDown] = SetBacklight Val(Read(BacklightSrc))/BacklightMax-0.05
-    action[LeftClick] = PopUp "BacklightPopup"
-    action[0] = BacklightInit
+    action[ScrollUp] = SetBacklight(Val(Read(BacklightSrc))/BacklightMax+0.05)
+    action[ScrollDown] = SetBacklight(Val(Read(BacklightSrc))/BacklightMax-0.05)
+    action[LeftClick] = PopUp("BacklightPopup")
+    action[0] = BacklightInit()
     trigger = "backlight"
   }
 }
