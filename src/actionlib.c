@@ -720,6 +720,17 @@ static value_t action_print ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
+static value_t action_usleep ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "uSleep");
+  vm_param_check_numeric(vm, p, 0, "uSleep");
+
+  g_usleep(value_get_numeric(p[0]));
+
+  return value_na;
+}
+
+
 void action_lib_init ( void )
 {
   vm_func_add("exec", action_exec_impl, TRUE);
@@ -765,4 +776,5 @@ void action_lib_init ( void )
   vm_func_add("exit", action_exit, TRUE);
   vm_func_add("UpdateWidget", action_update_widget, TRUE);
   vm_func_add("Print", action_print, TRUE);
+  vm_func_add("uSleep", action_usleep, TRUE);
 }
