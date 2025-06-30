@@ -288,6 +288,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
   scanner->max_parse_errors = FALSE;
   scanner->user_data = g_malloc0(sizeof(scanner_data_t));
   SCANNER_STORE(scanner) = globals? globals : vm_store_new(NULL, FALSE);
+  SCANNER_DATA(scanner)->api2 = !g_ascii_strncasecmp(data, "#api2", 5);
 
   scanner->input_name = fname;
   g_scanner_input_text(scanner, data, strlen(data));

@@ -7,6 +7,7 @@
 typedef struct {
   GHashTable *locals;
   vm_store_t *store;
+  gboolean api2;
 } scanner_data_t;
 
 #define SCANNER_DATA(x) ((scanner_data_t *)((x)->user_data))
