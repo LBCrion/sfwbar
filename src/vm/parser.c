@@ -504,6 +504,12 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
   if(!cond && parser_heap_lookup(scanner))
     return parser_assign_parse(scanner, code, 0, parser_heap_lookup(scanner));
 
+  if(SCANNER_DATA(scanner)->api2)
+    if(!config_check_and_consume(scanner, '('))
+    {
+      g_scanner_error(scanner, "Missing '(' in function invocation");
+      return FALSE;
+    }
   if( !config_lookup_next_key(scanner, config_toplevel_keys) &&
       !config_lookup_next_key(scanner, config_prop_keys) &&
       !config_lookup_next_key(scanner, config_flowgrid_props) &&
@@ -518,6 +524,12 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
         np++;
     } while(config_check_and_consume(scanner, ','));
   }
+  if(SCANNER_DATA(scanner)->api2)
+    if(!config_check_and_consume(scanner, ')'))
+    {
+      g_scanner_error(scanner, "Missing ')' in function invocation");
+      return FALSE;
+    }
 
   config_check_and_consume(scanner, ';');
   parser_emit_function(code, ptr, np);
