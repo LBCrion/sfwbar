@@ -278,7 +278,7 @@ void menu_item_set_action ( GtkWidget *self, GBytes *action )
   g_return_if_fail(priv);
 
   g_bytes_unref(priv->action);
-  priv->action = action;
+  priv->action = g_bytes_ref(action);
 }
 
 void menu_item_set_sort_index ( GtkWidget *self, gint index )

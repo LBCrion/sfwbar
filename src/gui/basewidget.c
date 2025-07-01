@@ -938,6 +938,9 @@ void base_widget_set_action ( GtkWidget *self, gint slot,
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
+  if(IS_FLOW_GRID(base_widget_get_child(self)))
+    return;
+
   if(slot<0 || slot>BASE_WIDGET_MAX_ACTION)
     return;
 
@@ -962,9 +965,6 @@ void base_widget_set_action ( GtkWidget *self, gint slot,
 
   }
   attach->action = action;
-
-  if(IS_FLOW_GRID(base_widget_get_child(self)))
-    return;
 }
 
 GtkWidget *base_widget_mirror ( GtkWidget *src )

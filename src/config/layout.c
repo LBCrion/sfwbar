@@ -77,7 +77,7 @@ static void config_widget_action ( GScanner *scanner, GtkWidget *widget )
       SEQ_REQ, -2, config_action, &action, "missing action",
       SEQ_END);
 
-  if(!scanner->max_parse_errors)
+  if(!scanner->max_parse_errors && action)
     base_widget_set_action(widget, slot, mod, action);
   else if(action)
     g_bytes_unref(action);

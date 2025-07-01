@@ -41,6 +41,8 @@ static GtkWidget *config_menu_item ( GScanner *scanner )
       item = menu_item_get(id, TRUE);
       menu_item_set_label_expr(item, label);
       menu_item_set_action(item, action);
+      g_bytes_unref(label);
+      g_bytes_unref(action);
     }
     else
     {
