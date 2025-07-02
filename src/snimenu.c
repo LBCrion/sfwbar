@@ -207,7 +207,7 @@ static GtkWidget *sni_menu_item_new ( guint32 id, GVariant *dict,
       gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), state);
   }
   else if(!g_strcmp0(toggle, "radio"))
-    item = gtk_radio_menu_item_new_from_widget(GTK_RADIO_MENU_ITEM(prev));
+    item = gtk_radio_menu_item_new_from_widget(GTK_IS_RADIO_MENU_ITEM(prev) ? GTK_RADIO_MENU_ITEM(prev) : NULL);
   else
     item = gtk_menu_item_new();
 
