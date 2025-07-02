@@ -224,7 +224,7 @@ layout {
   style = "module"
   button {
     value = ReplaceAll($XVolumeIconTmpl,
-        "@ICON_FORM@", If(Mid(VolumeInfo("sink-form"),1,4)="head",
+        "@ICON_FORM@", If(Mid(VolumeInfo("sink-form"),1,4)="head" | Extract(VolumeInfo("sink-port"),"(Head)")="Head",
           $XVolumeIconHeadphones, $XVolumeIconSpeaker),
         "@ICON_PCT@", Str(1444.4-Volume("sink-volume")*14.444),
         "@ICON_COLOR@", If(Volume("sink-mute"),"red","@theme_fg_color"),
