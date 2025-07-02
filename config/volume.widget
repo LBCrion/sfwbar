@@ -42,14 +42,12 @@ set XVolumeIconHeadphones = 'd="m 8 0 c -1.230469 0 -2.4375 0.324219 -3.5
 set XVolumeIconTmpl = '<?xml version="1.0" encoding="utf-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 <g transform="rotate(-90 256 256)">
-<circle cx="256" cy="256" r="230" stroke="#808080" stroke-width="45"
-  fill="transparent"/>
-<circle cx="256" cy="256" r="230" stroke="Rgb(0,@ICON_CIRCLE_COLOR@,0)"
-  stroke-width="60" fill="transparent" stroke-dashoffset="@ICON_PCT@"
+<circle cx="256" cy="256" r="230" stroke="@ICON_CIRCLE_COLOR@"
+  stroke-width="40" fill="transparent" stroke-dashoffset="@ICON_PCT@"
   stroke-dasharray="1444.4"/>
 </g>
 <svg x="8" y="8" width="16" height="16" transform="scale(16)">
-<path stroke="@ICON_COLOR@" @ICON_FORM@/></svg>
+<path stroke="@ICON_COLOR@" opacity="@ICON_ALPHA@" @ICON_FORM@/></svg>
 </svg>'
 
 Var XVolumeSinkMenuTmpl = "Menu('XVolumeSinkMenu') {
@@ -227,8 +225,9 @@ layout {
         "@ICON_FORM@", If(Mid(VolumeInfo("sink-form"),1,4)="head",
           $XVolumeIconHeadphones, $XVolumeIconSpeaker),
         "@ICON_PCT@", Str(1444.4-Volume("sink-volume")*14.444),
-        "@ICON_COLOR@", If(Volume("sink-mute"),"red","@theme_fg_color"),
-        "@ICON_CIRCLE_COLOR@", Str(2.56*Volume("sink-volume")));
+        "@ICON_COLOR@", "@theme_fg_color",
+        "@ICON_ALPHA@", If(Volume("sink-mute"),"0.6","1.0"),
+        "@ICON_CIRCLE_COLOR@", "@theme_fg_color");
     trigger = "volume"
     tooltip = GT("Volume") + ": " + Str(Volume("sink-volume"),0) + "%" +
       If(Volume("sink-mute"),"(" + GT("muted") + ")","") +
