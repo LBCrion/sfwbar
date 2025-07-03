@@ -641,55 +641,6 @@ static value_t action_emit_trigger ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
-static value_t action_dbus_call (GDBusConnection *con, vm_t *vm, value_t p[],
-    gint np)
-{
-  GVariantBuilder builder;
-  gchar *format;
-  gsize i,j;
-
-  if(np<4)
-    return value_na;
-
-  if(np>4 && value_is_string(p[4]))
-  {
-    g_variant_builder_init(&builder, G_VARIANT_TYPE(value_get_string(p[4])));
-    format = value_get_string(p[4]);
-    j = 5;
-    for(i=0; format[i] && j<=np; i++)
-      if(g_ascii_isalpha(format[i]))
-      {
-        if(format[i]=='s' && value_is_string(p[j]))
-          g_variant_builder_add_value(&builder, g_variant_new_string(
-                value_get_string(p[j])));
-        else if(format[i]=='u' && value_is_numeric(p[j]))
-          g_variant_builder_add_value(&builder, g_variant_new_uint32(
-                (guint32)value_get_numeric(p[j])));
-        else
-          j--;
-        j++;
-      }
-  }
-
-  g_dbus_connection_call(con, value_get_string(p[0]), value_get_string(p[1]),
-      value_get_string(p[2]), value_get_string(p[3]),
-      g_variant_builder_end(&builder),
-      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
-  return value_na;
-}
-
-static value_t action_dbus_call_system ( vm_t *vm, value_t p[], gint np )
-{
-  return action_dbus_call(g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL),
-      vm, p, np);
-}
-
-static value_t action_dbus_call_session ( vm_t *vm, value_t p[], gint np )
-{
-  return action_dbus_call(g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL),
-      vm, p, np);
-}
-
 static value_t action_exit ( vm_t *vm, value_t p[], gint np )
 {
   exit(1);
@@ -725,6 +676,7 @@ static value_t action_usleep ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "uSleep");
   vm_param_check_numeric(vm, p, 0, "uSleep");
 
+  g_message("%lf", value_get_numeric(p[0]));
   g_usleep(value_get_numeric(p[0]));
 
   return value_na;
@@ -771,8 +723,6 @@ void action_lib_init ( void )
   vm_func_add("checkstate", action_check_state, FALSE);
   vm_func_add("filetrigger", action_file_trigger, FALSE);
   vm_func_add("emittrigger", action_emit_trigger, FALSE);
-  vm_func_add("DbusCallSystem", action_dbus_call_system, TRUE);
-  vm_func_add("DbusCallSession", action_dbus_call_session, TRUE);
   vm_func_add("exit", action_exit, TRUE);
   vm_func_add("UpdateWidget", action_update_widget, TRUE);
   vm_func_add("Print", action_print, TRUE);

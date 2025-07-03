@@ -156,6 +156,14 @@ if get_option('bluez').enabled() or get_option('bluez').auto()
   doc_list += 'sfwbar-bluez'
 endif
 
+if get_option('dbus').enabled() or get_option('dbus').auto()
+  library('dbus', sources: 'modules/dbus.c',
+      include_directories: headers,
+      dependencies: deps, name_prefix: '', install: true,
+      install_dir: get_option('libdir') / 'sfwbar' )
+#  doc_list += 'sfwbar-bluez'
+endif
+
 if get_option('iwd').enabled() or get_option('iwd').auto()
   library('wifi-iwd', sources: 'modules/wifi-iwd.c',
       include_directories: headers,

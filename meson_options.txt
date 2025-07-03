@@ -1,6 +1,7 @@
 option('alsa',type:'feature',value:'auto',description:'ALSA module')
 option('appmenu',type:'feature',value:'enabled',description:'Application menu generator')
 option('bluez',type:'feature',value:'auto',description:'Bluez module')
+option('dbus',type:'feature',value:'auto',description:'DBus interface module')
 option('iwd',type:'feature',value:'auto',description:'IWD wifi module')
 option('nm',type:'feature',value:'auto',description:'Network Manager wifi module')
 option('ncenter',type:'feature',value:'auto',description:'Notification Center module')

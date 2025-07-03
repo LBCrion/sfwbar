@@ -1,5 +1,7 @@
 #Api2
 
+module("dbus")
+
 Var BacklightSrc, BacklightMax;
 Var BacklightTmpl = '<?xml version="1.0" encoding="utf-8"?>
   <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 612">
@@ -37,12 +39,14 @@ Function BacklightInit() {
 
 Function SetBacklight ( pct )
 {
+  Var SessionInterface = ["system",
+      "org.freedesktop.login1",
+      "/org/freedesktop/login1/session/auto",
+      "org.freedesktop.login1.Session"];
   If BacklightMax > 0 {
-    DBusCallSystem("org.freedesktop.login1",
-           "/org/freedesktop/login1/session/auto",
-           "org.freedesktop.login1.Session",
-           "SetBrightness", "(ssu)", "backlight", "intel_backlight",
-           BacklightMax * Min(1, Max(0.3, pct )))
+    DBusCall(SessionInterface, "SetBrightness", "(ssu)",
+           ["backlight", "intel_backlight",
+           BacklightMax * Min(1, Max(0.3, pct ))])
     EmitTrigger("backlight")
   }
 }
@@ -63,7 +67,7 @@ PopUp("BacklightPopup") {
 widget_grid {
   style = "module"
   button {
-    style = if(ident(DbusCallSystem) & BacklightSrc!='', "module", "hidden")
+    style = if(ident(DbusCall) & BacklightSrc!='', "module", "hidden")
     value = Replace(BacklightTmpl, "@BRIGHTNESS@",
       Str(Val(Read(BacklightSrc))/BacklightMax*492))
     action[ScrollUp] = SetBacklight(Val(Read(BacklightSrc))/BacklightMax+0.05)
