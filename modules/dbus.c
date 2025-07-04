@@ -170,8 +170,10 @@ static value_t dbus_variant2value ( GVariant *variant )
   value_t v;
 
   if(!variant)
-    g_message("Oops");
+    return value_na;
 
+  if(g_variant_is_of_type(variant, G_VARIANT_TYPE_VARIANT))
+    return dbus_variant2value(g_variant_get_variant(variant));
   if(!g_variant_is_container(variant))
     return dbus_variant2value_basic(variant);
 
@@ -188,45 +190,24 @@ static value_t dbus_variant2value ( GVariant *variant )
   return value_new_array(array);
 }
 
-static void dbus_action_call_cb ( GObject *object, GAsyncResult *res,
-    gpointer func_name )
+static GDBusConnection *dbus_conn_get ( value_t v )
 {
-  GVariant *result;
-  vm_function_t *func;
-  vm_store_t *store;
-
-  result = g_dbus_connection_call_finish(G_DBUS_CONNECTION(object), res, NULL);
-  if(result && (func = vm_func_lookup(func_name)) &&
-      (func->flags & VM_FUNC_USERDEFINED))
-  {
-    store = vm_store_new(NULL, FALSE);
-    vm_store_insert_full(store, "DbusResponse", dbus_variant2value(result));
-    vm_run_action(func->ptr.code, NULL, NULL, NULL, NULL, store);
-    vm_store_free(store);
-  }
-  if(result)
-    g_variant_unref(result);
-  g_free(func_name);
+  return g_bus_get_sync(g_ascii_strcasecmp(value_get_string(v), "system")?
+      G_BUS_TYPE_SESSION : G_BUS_TYPE_SYSTEM, NULL, NULL);
 }
 
 static value_t dbus_action_call (vm_t *vm, value_t p[], gint np)
 {
-  GDBusConnection *con;
   GVariant *variant;
   GError *err = NULL;
   GArray *array;
 
-  if(np<1)
-    return value_na;
-
+  vm_param_check_np_range(vm, np, 2, 4, "DbusCall");
   if( !(array = value_get_array(p[0])) )
     return value_na;
 
-  con = g_bus_get_sync(g_ascii_strcasecmp(
-        value_get_string(g_array_index(array, value_t, 0)), "system")?
-      G_BUS_TYPE_SESSION : G_BUS_TYPE_SYSTEM, NULL, NULL);
-
-  variant = g_dbus_connection_call_sync(con,
+  variant = g_dbus_connection_call_sync(
+      dbus_conn_get(g_array_index(array, value_t, 0)),
       value_get_string(g_array_index(array, value_t, 1)),
       value_get_string(g_array_index(array, value_t, 2)),
       value_get_string(g_array_index(array, value_t, 3)),
@@ -240,9 +221,47 @@ static value_t dbus_action_call (vm_t *vm, value_t p[], gint np)
   return dbus_variant2value(variant);
 }
 
+static void dbus_signal_cb ( GDBusConnection *con, const gchar *sender,
+    const gchar *obj, const gchar *iface, const gchar *signal,
+    GVariant *params, gpointer data )
+{
+  vm_store_t *store;
+
+  if(!params)
+    return;
+
+  store = vm_store_new(NULL, FALSE);
+  vm_store_insert_full(store, "DbusSignal", dbus_variant2value(params));
+  trigger_emit_with_data((gchar *)data, store);
+  vm_store_free(store);
+}
+
+static value_t dbus_action_subscribe (vm_t *vm, value_t p[], gint np)
+{
+  GArray *array;
+
+  vm_param_check_np_range(vm, np, 3, 4, "DbusSubscribe");
+  if( !(array = value_get_array(p[0])) )
+    return value_na;
+
+  g_message("%s", value_get_string(p[1]));
+  g_dbus_connection_signal_subscribe(
+      dbus_conn_get(g_array_index(array, value_t, 0)),
+      value_get_string(g_array_index(array, value_t, 1)),
+      value_get_string(g_array_index(array, value_t, 3)),
+      value_get_string(p[1]),
+      value_get_string(g_array_index(array, value_t, 2)),
+      np==4? value_get_string(p[3]) : NULL,
+      G_DBUS_SIGNAL_FLAGS_NONE, dbus_signal_cb,
+      g_strdup(value_get_string(p[2])), g_free);
+
+  return value_na;
+}
+
 gboolean sfwbar_module_init ( void )
 {
   vm_func_add("DbusCall", dbus_action_call, TRUE);
+  vm_func_add("DbusSubscribe", dbus_action_subscribe, TRUE);
 
   return TRUE;
 }
