@@ -133,31 +133,31 @@ static value_t dbus_variant2value_basic ( GVariant *variant )
   if(!g_variant_type_is_basic(type))
     return value_na;
 
-  if(type ==G_VARIANT_TYPE_BOOLEAN)
+  if(g_variant_type_equal(type, G_VARIANT_TYPE_BOOLEAN))
     return value_new_numeric(g_variant_get_boolean(variant));
-  if(type == G_VARIANT_TYPE_BYTE)
+  if(g_variant_type_equal(type, G_VARIANT_TYPE_BYTE))
     return value_new_numeric(g_variant_get_byte(variant));
-  if(type == G_VARIANT_TYPE_INT16)
+  if(g_variant_type_equal(type, G_VARIANT_TYPE_INT16))
     return value_new_numeric(g_variant_get_int16(variant));
-  if(type == G_VARIANT_TYPE_UINT16)
+  if(g_variant_type_equal(type, G_VARIANT_TYPE_UINT16))
     return value_new_numeric(g_variant_get_uint16(variant));
-  if(type == G_VARIANT_TYPE_INT32)
+  if(g_variant_type_equal(type, G_VARIANT_TYPE_INT32))
     return value_new_numeric(g_variant_get_int32(variant));
-  if(type == G_VARIANT_TYPE_UINT32)
+  if(g_variant_type_equal(type, G_VARIANT_TYPE_UINT32))
     return value_new_numeric(g_variant_get_uint32(variant));
-  if(type == G_VARIANT_TYPE_INT64)
+  if(g_variant_type_equal(type, G_VARIANT_TYPE_INT64))
     return value_new_numeric(g_variant_get_int64(variant));
-  if(type == G_VARIANT_TYPE_UINT64)
+  if(g_variant_type_equal(type, G_VARIANT_TYPE_UINT64))
     return value_new_numeric(g_variant_get_uint64(variant));
-  if(type == G_VARIANT_TYPE_HANDLE)
+  if(g_variant_type_equal(type, G_VARIANT_TYPE_HANDLE))
     return value_new_numeric(g_variant_get_handle(variant));
-  if(type == G_VARIANT_TYPE_DOUBLE)
+  if(g_variant_type_equal(type, G_VARIANT_TYPE_DOUBLE))
     return value_new_numeric(g_variant_get_double(variant));
-  if(type == G_VARIANT_TYPE_STRING)
+  if(g_variant_type_equal(type, G_VARIANT_TYPE_STRING))
     return value_new_string(g_strdup(g_variant_get_string(variant, NULL)));
-  if(type == G_VARIANT_TYPE_OBJECT_PATH)
+  if(g_variant_type_equal(type, G_VARIANT_TYPE_OBJECT_PATH))
     return value_new_string(g_strdup(g_variant_get_string(variant, NULL)));
-  if(type == G_VARIANT_TYPE_SIGNATURE)
+  if(g_variant_type_equal(type, G_VARIANT_TYPE_SIGNATURE))
     return value_new_string(g_strdup(g_variant_get_string(variant, NULL)));
   return value_na;
 }
@@ -168,6 +168,9 @@ static value_t dbus_variant2value ( GVariant *variant )
   GVariant *var;
   GArray *array;
   value_t v;
+
+  if(!variant)
+    g_message("Oops");
 
   if(!g_variant_is_container(variant))
     return dbus_variant2value_basic(variant);
@@ -209,6 +212,8 @@ static void dbus_action_call_cb ( GObject *object, GAsyncResult *res,
 static value_t dbus_action_call (vm_t *vm, value_t p[], gint np)
 {
   GDBusConnection *con;
+  GVariant *variant;
+  GError *err = NULL;
   GArray *array;
 
   if(np<1)
@@ -221,15 +226,18 @@ static value_t dbus_action_call (vm_t *vm, value_t p[], gint np)
         value_get_string(g_array_index(array, value_t, 0)), "system")?
       G_BUS_TYPE_SESSION : G_BUS_TYPE_SYSTEM, NULL, NULL);
 
-  g_dbus_connection_call(con,
+  variant = g_dbus_connection_call_sync(con,
       value_get_string(g_array_index(array, value_t, 1)),
       value_get_string(g_array_index(array, value_t, 2)),
       value_get_string(g_array_index(array, value_t, 3)),
       value_get_string(p[1]),
-      np>3? dbus_value2variant(p[3], value_get_string(p[2])) : NULL,
-      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, dbus_action_call_cb,
-      g_strdup(value_get_string(p[4])));
-  return value_na;
+      np==4? dbus_value2variant(p[3], value_get_string(p[2])) : NULL,
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+
+  if(err)
+    g_message("err: %s", err->message);
+
+  return dbus_variant2value(variant);
 }
 
 gboolean sfwbar_module_init ( void )
