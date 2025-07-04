@@ -55,7 +55,7 @@ static GVariant *dbus_value2variant_array ( value_t v, const GVariantType *t )
   if(!value_is_array(v))
     return NULL;
   s = g_variant_type_element(t);
-  builder = g_variant_builder_new(s);
+  builder = g_variant_builder_new(G_VARIANT_TYPE_ARRAY);
 
   for(i=0; i<v.value.array->len; i++)
     if( (var = dbus_value2variant_handle(
@@ -199,11 +199,12 @@ static GDBusConnection *dbus_conn_get ( value_t v )
 static value_t dbus_action_call (vm_t *vm, value_t p[], gint np)
 {
   GVariant *variant;
+  value_t result;
   GError *err = NULL;
   GArray *array;
 
   vm_param_check_np_range(vm, np, 2, 4, "DbusCall");
-  if( !(array = value_get_array(p[0])) )
+  if( !(array = value_get_array(p[0])) || array->len != 4 )
     return value_na;
 
   variant = g_dbus_connection_call_sync(
@@ -216,9 +217,16 @@ static value_t dbus_action_call (vm_t *vm, value_t p[], gint np)
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 
   if(err)
+  {
     g_message("err: %s", err->message);
+    g_error_free(err);
+    return value_na;
+  }
 
-  return dbus_variant2value(variant);
+  result = dbus_variant2value(variant);
+  g_variant_unref(variant);
+
+  return result;
 }
 
 static void dbus_signal_cb ( GDBusConnection *con, const gchar *sender,
@@ -241,10 +249,9 @@ static value_t dbus_action_subscribe (vm_t *vm, value_t p[], gint np)
   GArray *array;
 
   vm_param_check_np_range(vm, np, 3, 4, "DbusSubscribe");
-  if( !(array = value_get_array(p[0])) )
+  if( !(array = value_get_array(p[0])) || array->len != 4 )
     return value_na;
 
-  g_message("%s", value_get_string(p[1]));
   g_dbus_connection_signal_subscribe(
       dbus_conn_get(g_array_index(array, value_t, 0)),
       value_get_string(g_array_index(array, value_t, 1)),
@@ -258,10 +265,36 @@ static value_t dbus_action_subscribe (vm_t *vm, value_t p[], gint np)
   return value_na;
 }
 
+static void dbus_watch_appeared ( GDBusConnection *con, const gchar *name,
+    const gchar *owner, gpointer trigger )
+{
+  trigger_emit_with_string((gchar *)trigger, "DbusStatus", g_strdup("appeared"));
+
+}
+
+static void dbus_watch_vanished ( GDBusConnection *con, const gchar *name,
+    gpointer trigger )
+{
+  trigger_emit_with_string((gchar *)trigger, "DbusStatus", g_strdup("vanished"));
+}
+
+static value_t dbus_action_watch (vm_t *vm, value_t p[], gint np)
+{
+  vm_param_check_np(vm, np, 3, "DbusWatch");
+
+  g_bus_watch_name(g_ascii_strcasecmp(value_get_string(p[0]), "system")?
+      G_BUS_TYPE_SESSION : G_BUS_TYPE_SYSTEM, value_get_string(p[1]), 0,
+      dbus_watch_appeared, dbus_watch_vanished,
+      g_strdup(value_get_string(p[2])), g_free);
+
+  return value_na;
+}
+
 gboolean sfwbar_module_init ( void )
 {
   vm_func_add("DbusCall", dbus_action_call, TRUE);
   vm_func_add("DbusSubscribe", dbus_action_subscribe, TRUE);
+  vm_func_add("DbusWatch", dbus_action_watch, TRUE);
 
   return TRUE;
 }
