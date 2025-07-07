@@ -11,7 +11,7 @@
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = MODULE_API_VERSION;
 
-static GVariant *dbus_value2variant_handle ( value_t, const GVariantType * );
+static GVariant *dbus_value2variant_handle ( value_t, const GVariantType ** );
 
 static GVariant *dbus_value2variant_basic ( value_t v, const GVariantType *t )
 {
@@ -59,7 +59,7 @@ static GVariant *dbus_value2variant_array ( value_t v, const GVariantType *t )
 
   for(i=0; i<v.value.array->len; i++)
     if( (var = dbus_value2variant_handle(
-            g_array_index(v.value.array, value_t, i), s)) )
+            g_array_index(v.value.array, value_t, i), &s)) )
       g_variant_builder_add_value(builder, var);
     else
     {
@@ -77,35 +77,51 @@ static GVariant *dbus_value2variant_tuple ( value_t v, const GVariantType *t )
   GVariant *var;
   gsize i = 0;
 
-  if(!value_is_array(v) || g_variant_type_n_items(t) != v.value.array->len)
+  if(!value_is_array(v))
     return NULL;
 
-  builder = g_variant_builder_new(t);
+  builder = g_variant_builder_new(G_VARIANT_TYPE_TUPLE);
   for(s = g_variant_type_first(t); s; s = g_variant_type_next(s))
+  {
+    if(i>=v.value.array->len)
+    {
+      g_warning("dbus: variant string is longer than value array");
+      return NULL;
+    }
     if( (var = dbus_value2variant_handle(
-            g_array_index(v.value.array, value_t, i++), s)) )
+            g_array_index(v.value.array, value_t, i++), &s)) )
       g_variant_builder_add_value(builder, var);
     else
     {
-      g_info("dbus: unable to convert value to gvalue");
+      g_warning("dbus: unable to convert value to gvalue");
       g_variant_builder_unref(builder);
       return NULL;
     }
+  }
 
   return g_variant_builder_end(builder);
 
 }
 
-static GVariant *dbus_value2variant_handle ( value_t v, const GVariantType *t )
+static GVariant *dbus_value2variant_handle ( value_t v, const GVariantType **t )
 {
-  if(g_variant_type_is_basic(t))
-    return dbus_value2variant_basic(v, t);
-  if(g_variant_type_is_tuple(t))
-    return dbus_value2variant_tuple(v, t);
-  if(g_variant_type_is_dict_entry(t))
-    return dbus_value2variant_tuple(v, t);
-  if(g_variant_type_is_array(t))
-    return dbus_value2variant_array(v, t);
+  if(g_variant_type_is_basic(*t))
+    return dbus_value2variant_basic(v, *t);
+  if(g_variant_type_is_tuple(*t))
+    return dbus_value2variant_tuple(v, *t);
+  if(g_variant_type_is_dict_entry(*t))
+    return dbus_value2variant_tuple(v, *t);
+  if(g_variant_type_is_array(*t))
+    return dbus_value2variant_array(v, *t);
+  if(g_variant_type_is_variant(*t))
+  {
+    if( !(*t = (GVariantType *)g_variant_type_next(*t)) )
+    {
+      g_warning("dbus: variant underlying type is missing");
+      return NULL;
+    }
+    return g_variant_new_variant(dbus_value2variant_handle(v, t));
+  }
 
   return NULL;
 }
@@ -116,11 +132,11 @@ static GVariant *dbus_value2variant ( value_t v, gchar *type_str )
   GVariant *var;
 
   if( !(type = g_variant_type_new(type_str)) )
-    g_info("dbus: Invalid format string '%s'", type_str);
+    g_warning("dbus: Invalid format string '%s'", type_str);
 
-  var = dbus_value2variant_handle(v, type);
+  var = dbus_value2variant_handle(v, (const GVariantType **)&type);
   if(!var)
-    g_info("dbus: gvalue construction failed");
+    g_warning("dbus: gvalue construction failed");
   g_variant_type_free(type);
 
   return var;
