@@ -77,7 +77,7 @@ static GVariant *dbus_value2variant_tuple ( value_t v, const GVariantType *t )
   GVariant *var;
   gsize i = 0;
 
-  if(!value_is_array(v))
+  if(!value_is_array(v) || g_variant_type_n_items(t) != v.value.array->len)
     return NULL;
 
   builder = g_variant_builder_new(t);
