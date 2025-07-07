@@ -51,5 +51,6 @@ extern const value_t value_na;
 void value_free ( value_t );
 value_t value_dup ( value_t );
 value_t value_array_concat ( value_t v1, value_t v2 );
+gchar *value_array_to_string ( value_t value );
 
 #endif

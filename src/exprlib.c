@@ -289,12 +289,17 @@ static value_t expr_lib_val ( vm_t *vm, value_t p[], gint np )
 static value_t expr_lib_str ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np_range(vm, np, 1, 2, "str");
-  vm_param_check_numeric(vm, p, 0, "str");
   if(np==2)
     vm_param_check_numeric(vm, p, 1, "str");
 
-  return value_new_string(numeric_to_string(value_get_numeric(p[0]),
-      (np==2)? value_get_numeric(p[1]) : 0));
+  if(value_is_numeric(p[0]))
+    return value_new_string(numeric_to_string(value_get_numeric(p[0]),
+          (np==2)? value_get_numeric(p[1]) : 0));
+  if(value_is_array(p[0]))
+    return value_new_string(value_array_to_string(p[0]));
+  if(value_is_string(p[0]))
+    return value_new_string(g_strdup(value_get_string(p[0])));
+  return value_new_string(g_strdup("n/a"));
 }
 
 static value_t expr_lib_upper ( vm_t *vm, value_t p[], gint np )

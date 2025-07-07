@@ -63,3 +63,37 @@ value_t value_dup ( value_t v1 )
     return value_dup_array(v1);
   return v1;
 }
+
+gchar *value_array_to_string ( value_t value )
+{
+  GString *result;
+  GArray *array;
+  value_t element;
+  gchar *tmp;
+  gsize i;
+
+  if(!value_is_array(value))
+    return NULL;
+
+  array = value.value.array;
+  result = g_string_new("[");
+  for(i=0; i<array->len; i++)
+  {
+    element = g_array_index(array, value_t, i);
+    if(value_is_string(element))
+      g_string_append(result, value_get_string(element));
+    if(value_is_array(element))
+    {
+      tmp = value_array_to_string(element);
+      g_string_append(result, tmp);
+      g_free(tmp);
+    }
+    if(value_is_numeric(element))
+      g_string_append_printf(result, "%lf", value_get_numeric(element));
+    if(i != array->len-1)
+      g_string_append(result, ", ");
+  }
+  g_string_append(result, "]");
+
+  return g_string_free(result, FALSE);
+}
