@@ -10,6 +10,34 @@
 
 static GHashTable *macros, *parser_instructions;
 
+static GByteArray *parser_new ( void )
+{
+  GByteArray *code = g_byte_array_sized_new(1);
+  static guint8 count = 0;
+
+  g_byte_array_append(code, &count, 1);
+
+  return code;
+}
+
+static GBytes *parser_free ( GByteArray *code )
+{
+  guint8 count, i, data[sizeof(value_t)+1];
+
+  g_return_val_if_fail(code && code->len>0, NULL);
+
+  data[0] = EXPR_OP_IMMEDIATE;
+  memcpy(data+1, &value_na, sizeof(value_t));
+
+  count = code->data[0];
+  g_byte_array_remove_index(code, 0);
+
+  for(i=0; i<count; i++)
+    g_byte_array_prepend(code, data, sizeof(value_t)+1);
+
+  return g_byte_array_free_to_bytes(code);
+}
+
 static gint parser_emit_jump ( GByteArray *code, guint8 op )
 {
   guint8 data[1+sizeof(gint)];
@@ -399,7 +427,7 @@ gboolean parser_macro_add ( GScanner *scanner )
     return FALSE;
   }
 
-  code = g_byte_array_new();
+  code = parser_new();
 
   if(!parser_expr_parse(scanner, code))
   {
@@ -412,7 +440,7 @@ gboolean parser_macro_add ( GScanner *scanner )
     macros = g_hash_table_new_full( (GHashFunc)str_nhash,
         (GEqualFunc)str_nequal, g_free, (GDestroyNotify)g_bytes_unref);
 
-  g_hash_table_insert(macros, name, g_byte_array_free_to_bytes(code));
+  g_hash_table_insert(macros, name, parser_free(code));
 
   return TRUE;
 }
@@ -550,25 +578,31 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
 static gboolean parser_var_declare ( GScanner *scanner, GByteArray *code,
     gboolean param )
 {
-  guchar data[sizeof(value_t)+1];
-
   if(!config_check_and_consume(scanner, G_TOKEN_IDENTIFIER))
     return FALSE;
 
-  g_hash_table_insert(SCANNER_DATA(scanner)->locals,
-      g_strdup(scanner->value.v_identifier), GUINT_TO_POINTER(
-        g_hash_table_size(SCANNER_DATA(scanner)->locals)+1));
-
-  if(!param)
+  if(!parser_local_lookup(scanner))
   {
-    data[0] = EXPR_OP_IMMEDIATE;
-    memcpy(data+1, &value_na, sizeof(value_t));
-    g_byte_array_prepend(code, data, sizeof(value_t)+1);
+    if(param && code->data[0]==G_MAXUINT8)
+    {
+      g_scanner_error(scanner, "too many local variables");
+      return FALSE;
+    }
+
+    g_hash_table_insert(SCANNER_DATA(scanner)->locals,
+        g_strdup(scanner->value.v_identifier), GUINT_TO_POINTER(
+          g_hash_table_size(SCANNER_DATA(scanner)->locals)+1));
+
+    if(!param)
+      code->data[0]++;
   }
+  else
+    g_scanner_error(scanner,
+        "parser: duplicate declaration of a local variable '%s'",
+        scanner->value.v_identifier);
 
   if(g_scanner_peek_next_token(scanner) == '=')
-    parser_assign_parse(scanner, code,
-        g_hash_table_size(SCANNER_DATA(scanner)->locals), NULL);
+    parser_assign_parse(scanner, code, parser_local_lookup(scanner), NULL);
 
   return TRUE;
 }
@@ -714,7 +748,7 @@ gboolean parser_function_parse( GScanner *scanner )
     return !scanner->max_parse_errors;
   }
 
-  acode = g_byte_array_new();
+  acode = parser_new();
   SCANNER_DATA(scanner)->locals = g_hash_table_new_full((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal, g_free, NULL);
 
@@ -728,7 +762,7 @@ gboolean parser_function_parse( GScanner *scanner )
 
   if(!scanner->max_parse_errors && name &&
       parser_block_parse(scanner, acode))
-    vm_func_add_user(name, g_byte_array_free_to_bytes(acode));
+    vm_func_add_user(name, parser_free(acode));
   else
     g_byte_array_unref(acode);
   g_free(name);
@@ -743,10 +777,10 @@ GBytes *parser_exec_build ( gchar *cmd )
 
   if(!cmd)
     return NULL;
-  code = g_byte_array_new();
+  code = parser_new();
   parser_emit_string(code, cmd);
   parser_emit_function(code, vm_func_lookup("exec"), 1);
-  return g_byte_array_free_to_bytes(code);
+  return parser_free(code);
 }
 
 GBytes *parser_string_build ( gchar *str )
@@ -755,9 +789,9 @@ GBytes *parser_string_build ( gchar *str )
 
   if(!str)
     return NULL;
-  code = g_byte_array_new();
+  code = parser_new();
   parser_emit_string(code, str);
-  return g_byte_array_free_to_bytes(code);
+  return parser_free(code);
 }
 
 void parser_init ( void )
