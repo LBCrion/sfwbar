@@ -42,6 +42,10 @@ static GVariant *dbus_value2variant_basic ( value_t v, const GVariantType *t )
   if(g_variant_type_equal(t, G_VARIANT_TYPE_DOUBLE))
     return g_variant_new_double(value_get_numeric(v));
 
+  g_warning("dbus: invalid variant type '%.*s'",
+      (gint)g_variant_type_get_string_length(t),
+      g_variant_type_peek_string(t));
+
   return NULL;
 }
 
@@ -93,14 +97,13 @@ static GVariant *dbus_value2variant_tuple ( value_t v, const GVariantType *t )
       g_variant_builder_add_value(builder, var);
     else
     {
-      g_warning("dbus: unable to convert value to gvalue");
+      g_warning("dbus: unable to convert value to variant");
       g_variant_builder_unref(builder);
       return NULL;
     }
   }
 
   return g_variant_builder_end(builder);
-
 }
 
 static GVariant *dbus_value2variant_handle ( value_t v, const GVariantType **t )
@@ -132,11 +135,13 @@ static GVariant *dbus_value2variant ( value_t v, gchar *type_str )
   GVariant *var;
 
   if( !(type = g_variant_type_new(type_str)) )
+  {
     g_warning("dbus: Invalid format string '%s'", type_str);
+    return NULL;
+  }
 
-  var = dbus_value2variant_handle(v, (const GVariantType **)&type);
-  if(!var)
-    g_warning("dbus: gvalue construction failed");
+  if( !(var = dbus_value2variant_handle(v, (const GVariantType **)&type)) )
+    g_warning("dbus: variant construction failed");
   g_variant_type_free(type);
 
   return var;
