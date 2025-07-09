@@ -37,7 +37,8 @@ static void taskbar_init ( Taskbar *self )
   memcpy(data+2, &fptr, sizeof(gpointer));
 
   action = g_bytes_new_static(data, sizeof(gpointer)+2);
-  base_widget_set_action(GTK_WIDGET(self), 1, 0, action);
+  g_object_set(G_OBJECT(self), "action",
+      base_widget_attachment_new_array(action, 1, 0), NULL);
   flow_grid_invalidate(GTK_WIDGET(self));
 }
 

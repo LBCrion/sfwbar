@@ -63,7 +63,7 @@ gboolean config_action_slot ( GScanner *scanner, gint *slot )
   return !(*slot<0 || *slot>BASE_WIDGET_MAX_ACTION );
 }
 
-static void config_widget_action ( GScanner *scanner, GtkWidget *widget )
+static GPtrArray *config_action_attachment ( GScanner *scanner )
 {
   gint slot = 1, mod = 0;
   GBytes *action = NULL;
@@ -78,9 +78,12 @@ static void config_widget_action ( GScanner *scanner, GtkWidget *widget )
       SEQ_END);
 
   if(!scanner->max_parse_errors && action)
-    base_widget_set_action(widget, slot, mod, action);
-  else if(action)
+    return base_widget_attachment_new_array(action, slot, mod);
+
+  if(action)
     g_bytes_unref(action);
+
+  return NULL;
 }
 
 GtkWidget *config_include ( GScanner *scanner, GtkWidget *container )
@@ -148,12 +151,14 @@ gboolean config_widget_set_property ( GScanner *scanner, gchar *prefix,
     g_value_set_boolean(&value, config_assign_boolean(scanner, FALSE, name));
   else if(G_IS_PARAM_SPEC_STRING(spec))
     g_value_set_string(&value, config_assign_string(scanner, name));
+  else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_PTR_ARRAY && *blurb=='b')
+    g_value_set_boxed(&value, config_action_attachment(scanner));
   else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_PTR_ARRAY)
     g_value_set_boxed(&value, config_assign_string_list(scanner));
-  else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_BYTES && *blurb!='a')
-    g_value_take_boxed(&value, config_assign_expr(scanner, name));
   else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_BYTES && *blurb=='a')
     g_value_take_boxed(&value, config_assign_action(scanner, name));
+  else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_BYTES)
+    g_value_take_boxed(&value, config_assign_expr(scanner, name));
   else if(G_IS_PARAM_SPEC_OBJECT(spec) && *blurb == 's')
     g_value_take_object(&value, G_OBJECT(config_menu(scanner)));
   else if(G_PARAM_SPEC_VALUE_TYPE(spec) == GDK_TYPE_RECTANGLE)
@@ -193,11 +198,11 @@ gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
 
   key = config_lookup_key(scanner, config_prop_keys);
 
-  if(IS_BASE_WIDGET(widget) && key == G_TOKEN_ACTION)
+/*  if(IS_BASE_WIDGET(widget) && key == G_TOKEN_ACTION)
   {
     config_widget_action(scanner, widget);
     return TRUE;
-  }
+  }*/
 
   if(config_widget_set_property(scanner, NULL, widget))
     return TRUE;

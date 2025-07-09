@@ -43,7 +43,6 @@ struct _BaseWidgetPrivate
   expr_cache_t *style;
   expr_cache_t *value;
   expr_cache_t *tooltip;
-  GList *actions;
   gint64 interval;
   gint64 next_poll;
   guint maxw, maxh;
@@ -55,8 +54,10 @@ struct _BaseWidgetPrivate
   guint user_state;
   GdkRectangle rect;
   GtkCssProvider *provider;
+  GPtrArray *actions;
   GList *mirror_children;
   GtkWidget *mirror_parent;
+  GMutex mutex;
   vm_store_t *store;
 };
 
@@ -76,8 +77,6 @@ vm_store_t * base_widget_get_store ( GtkWidget *self );
 void base_widget_attach ( GtkWidget *, GtkWidget *, GtkWidget *);
 GList *base_widget_get_mirror_children ( GtkWidget *self );
 GtkWidget *base_widget_get_mirror_parent ( GtkWidget *self );
-gint64 base_widget_get_next_poll ( GtkWidget *self );
-void base_widget_set_next_poll ( GtkWidget *self, gint64 ctime );
 gchar *base_widget_get_id ( GtkWidget *self );
 GtkWidget *base_widget_get_child ( GtkWidget *self );
 GtkWidget *base_widget_from_id ( vm_store_t *store, gchar *id );
@@ -85,15 +84,14 @@ gchar *base_widget_get_value ( GtkWidget *self );
 GBytes *base_widget_get_action ( GtkWidget *self, gint, GdkModifierType );
 gpointer base_widget_scanner_thread ( GMainContext *gmc );
 guint16 base_widget_state_build ( GtkWidget *self, window_t *win );
-//void base_widget_set_css ( GtkWidget *widget, gchar *css );
 void base_widget_autoexec ( GtkWidget *self, gpointer data );
-void base_widget_set_always_update ( GtkWidget *self, gboolean update );
-void base_widget_copy_actions ( GtkWidget *dest, GtkWidget *src );
 GtkWidget *base_widget_mirror ( GtkWidget *src );
 GdkModifierType base_widget_get_modifiers ( GtkWidget *self );
 gboolean base_widget_action_exec ( GtkWidget *, gint, GdkEvent *);
 gboolean base_widget_check_action_slot ( GtkWidget *self, gint slot );
 void base_widget_action_configure ( GtkWidget *self, gint slot );
 gint64 base_widget_update ( GtkWidget *self, gint64 *ctime );
+GPtrArray *base_widget_attachment_new_array ( GBytes *code, gint ev,
+    GdkModifierType mods );
 
 #endif

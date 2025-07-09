@@ -29,12 +29,26 @@ enum {
   BASE_WIDGET_LOC,
   BASE_WIDGET_TRIGGER,
   BASE_WIDGET_INTERVAL,
+  BASE_WIDGET_ACTION,
   BASE_WIDGET_DISABLE,
 };
 
 static GList *widgets_scan;
 static GMutex widget_mutex;
 static gint64 base_widget_default_id = 0;
+
+static base_widget_attachment_t *base_widget_attachment_new ( GBytes *code, gint ev,
+    GdkModifierType mods )
+{
+  base_widget_attachment_t *attach;
+
+  attach = g_malloc0(sizeof(base_widget_attachment_t));
+  attach->event = ev;
+  attach->mods = mods;
+  attach->action = g_bytes_ref(code);
+
+  return attach;
+}
 
 static void base_widget_attachment_free ( base_widget_attachment_t *attach )
 {
@@ -43,6 +57,18 @@ static void base_widget_attachment_free ( base_widget_attachment_t *attach )
 
   g_bytes_unref(attach->action);
   g_free(attach);
+}
+
+GPtrArray *base_widget_attachment_new_array ( GBytes *code, gint ev,
+    GdkModifierType mods )
+{
+  GPtrArray *array;
+
+  array = g_ptr_array_new_with_free_func(
+      (GDestroyNotify)base_widget_attachment_free);
+  g_ptr_array_add(array, base_widget_attachment_new(code, ev, mods));
+
+  return array;
 }
 
 static gboolean base_widget_update_value ( GtkWidget *self )
@@ -123,8 +149,7 @@ static void base_widget_destroy ( GtkWidget *self )
   g_clear_pointer(&priv->value, expr_cache_free);
   g_clear_pointer(&priv->style, expr_cache_free);
   g_clear_pointer(&priv->tooltip, expr_cache_free);
-  g_list_free_full(g_steal_pointer(&priv->actions),
-      (GDestroyNotify)base_widget_attachment_free);
+  g_clear_pointer(&priv->actions, g_ptr_array_unref);
   priv->trigger = NULL;
 
   GTK_WIDGET_CLASS(base_widget_parent_class)->destroy(self);
@@ -200,19 +225,29 @@ GdkModifierType base_widget_get_modifiers ( GtkWidget *self )
   return state;
 }
 
-gboolean base_widget_check_action_slot ( GtkWidget *self, gint slot )
+gboolean base_widget_attachment_event ( gconstpointer p1, gconstpointer p2 )
+{
+  const base_widget_attachment_t *a1 = p1;
+
+  return (a1->event == GPOINTER_TO_INT(p2));
+}
+
+gboolean base_widget_attachment_comp ( gconstpointer p1, gconstpointer p2 )
+{
+  const base_widget_attachment_t *a1 = p1, *a2 = p2;
+
+  return (a1->mods == a2->mods) && (a1->event == a2->event);
+}
+
+gboolean base_widget_check_action_slot ( GtkWidget *self, gint event )
 {
   BaseWidgetPrivate *priv;
-  GList *iter;
 
   priv = base_widget_get_instance_private(
       BASE_WIDGET(base_widget_get_mirror_parent(self)));
 
-  for(iter=priv->actions; iter; iter=g_list_next(iter))
-    if(((base_widget_attachment_t *)(iter->data))->event == slot)
-      break;
-
-  return !!iter;
+  return g_ptr_array_find_with_equal_func(priv->actions,
+        GINT_TO_POINTER(event), base_widget_attachment_event, NULL);
 }
 
 static gboolean base_widget_button_release_event ( GtkWidget *self,
@@ -373,6 +408,8 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
       G_OBJECT(dest), "value", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "style",
       G_OBJECT(dest), "style", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "action",
+      G_OBJECT(dest), "action", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "css",
       G_OBJECT(dest), "css", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "loc",
@@ -496,6 +533,27 @@ static void base_widget_set_rect ( GtkWidget *self, GdkRectangle *rect )
     g_object_unref(self);
 }
 
+static void base_widget_attachments_merge ( GtkWidget *self, GPtrArray *new )
+{
+  BaseWidgetPrivate *priv;
+  base_widget_attachment_t *item;
+  guint i, index;
+
+  g_return_if_fail(IS_BASE_WIDGET(self));
+  g_return_if_fail(new);
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  for(i=0; i < new->len; i++)
+  {
+    item = g_ptr_array_index(new, i);
+    if(g_ptr_array_find_with_equal_func(priv->actions,
+          g_ptr_array_index(new, i), base_widget_attachment_comp, &index))
+      g_ptr_array_remove_index_fast(priv->actions, index);
+    g_ptr_array_add(priv->actions,
+        base_widget_attachment_new(item->action, item->event, item->mods));
+  }
+}
+
 static void base_widget_get_property ( GObject *self, guint id, GValue *value,
     GParamSpec *spec )
 {
@@ -525,6 +583,9 @@ static void base_widget_get_property ( GObject *self, guint id, GValue *value,
       break;
     case BASE_WIDGET_STYLE:
       g_value_set_boxed(value, priv->style->code);
+      break;
+    case BASE_WIDGET_ACTION:
+      g_value_set_boxed(value, priv->actions);
       break;
     case BASE_WIDGET_LOC:
       g_value_set_boxed(value, &priv->rect);
@@ -622,6 +683,9 @@ static void base_widget_set_property ( GObject *self, guint id,
     case BASE_WIDGET_STYLE:
       base_widget_set_style(GTK_WIDGET(self), g_value_get_boxed(value));
       break;
+    case BASE_WIDGET_ACTION:
+      base_widget_attachments_merge(GTK_WIDGET(self), g_value_get_boxed(value));
+      break;
     case BASE_WIDGET_LOC:
       base_widget_set_rect(GTK_WIDGET(self), g_value_get_boxed(value));
       break;
@@ -683,6 +747,9 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_STYLE,
       g_param_spec_boxed("style", "style", "sfwbar_config", G_TYPE_BYTES,
         G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_ACTION,
+      g_param_spec_boxed("action", "action", "sfwbar_config:b",
+        G_TYPE_PTR_ARRAY, G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_CSS,
       g_param_spec_string("css", "css", "sfwbar_config", NULL,
         G_PARAM_READWRITE));
@@ -716,6 +783,8 @@ static void base_widget_init ( BaseWidget *self )
   priv->value = expr_cache_new();
   priv->style = expr_cache_new();
   priv->tooltip = expr_cache_new();
+  priv->actions = g_ptr_array_new_with_free_func(
+      (GDestroyNotify)base_widget_attachment_free);
   priv->interval = 1000000;
   priv->dir = GTK_POS_RIGHT;
   priv->rect.x = -1;
@@ -723,6 +792,7 @@ static void base_widget_init ( BaseWidget *self )
   priv->rect.width = 1;
   priv->rect.height = 1;
   base_widget_set_id(GTK_WIDGET(self), NULL);
+  g_mutex_init(&priv->mutex);
 
   gtk_widget_add_events(GTK_WIDGET(self),
       GDK_BUTTON_RELEASE_MASK | GDK_SCROLL_MASK);
@@ -864,18 +934,20 @@ GBytes *base_widget_get_action ( GtkWidget *self, gint n,
     GdkModifierType mods )
 {
   BaseWidgetPrivate *priv;
-  base_widget_attachment_t *attach;
-  GList *iter;
+  base_widget_attachment_t target, *match;
+  guint index;
 
-  g_return_val_if_fail(IS_BASE_WIDGET(self),NULL);
+  g_return_val_if_fail(IS_BASE_WIDGET(self), NULL);
   priv = base_widget_get_instance_private(
       BASE_WIDGET(base_widget_get_mirror_parent(self)));
 
-  for(iter=priv->actions; iter; iter=g_list_next(iter))
+  target.event = n;
+  target.mods = mods;
+  if(g_ptr_array_find_with_equal_func(priv->actions, &target, 
+        base_widget_attachment_comp, &index))
   {
-    attach = iter->data;
-    if(attach->event == n && attach->mods == mods)
-      return attach->action;
+    if( (match = g_ptr_array_index(priv->actions, index)) )
+    return match->action;
   }
 
   return NULL;
@@ -926,45 +998,6 @@ guint16 base_widget_state_build ( GtkWidget *self, window_t *win )
   }
 
   return state;
-}
-
-void base_widget_set_action ( GtkWidget *self, gint slot,
-    GdkModifierType mods, GBytes *action )
-{
-  BaseWidgetPrivate *priv;
-  base_widget_attachment_t *attach;
-  GList *iter;
-
-  g_return_if_fail(IS_BASE_WIDGET(self));
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
-
-  if(IS_FLOW_GRID(base_widget_get_child(self)))
-    return;
-
-  if(slot<0 || slot>BASE_WIDGET_MAX_ACTION)
-    return;
-
-  for(iter=priv->actions; iter; iter=g_list_next(iter))
-  {
-    attach = iter->data;
-    if(attach->event == slot && attach->mods == mods)
-      break;
-  }
-
-  if(iter)
-  {
-    attach = iter->data;
-    g_bytes_unref(attach->action);
-  }
-  else
-  {
-    attach = g_malloc0(sizeof(base_widget_attachment_t));
-    attach->event = slot;
-    attach->mods = mods;
-    priv->actions = g_list_prepend(priv->actions, attach);
-
-  }
-  attach->action = action;
 }
 
 GtkWidget *base_widget_mirror ( GtkWidget *src )
@@ -1050,6 +1083,9 @@ void base_widget_autoexec ( GtkWidget *self, gpointer data )
 
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
   if( (action = base_widget_get_action(self, 0, 0)) )
+  {
+    g_bytes_ref(action);
     vm_run_action(action, self, NULL, wintree_from_id(wintree_get_focus()),
         NULL, priv->store);
+  }
 }
