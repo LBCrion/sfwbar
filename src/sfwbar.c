@@ -133,7 +133,6 @@ static void activate (GtkApplication* app, gpointer data )
   action_lib_init();
   wayland_init();
   css_init(cssname);
-  popup_class_init();
   monitor_init( monitor );
   sway_ipc_init();
   hypr_ipc_init();

@@ -15,20 +15,29 @@
 static GHashTable *popup_list;
 static guint nprops;
 
-#define POPUP_AUTOCLOSE (nprops+1)
+G_DEFINE_FINAL_TYPE(PopupWindow, popup_window, GTK_TYPE_WINDOW)
 
-static void (*popup_set_property_old)( GObject *, guint, const GValue *,
-    GParamSpec *);
+#define POPUP_AUTOCLOSE 1
+
+static void popup_window_init ( PopupWindow *self )
+{
+}
 
 static void popup_set_property ( GObject *self, guint prop,
     const GValue *value, GParamSpec *param )
 {
-  if(prop == POPUP_AUTOCLOSE && GTK_IS_WINDOW(self) &&
-      gtk_window_get_window_type(GTK_WINDOW(self)) == GTK_WINDOW_POPUP)
+  if(prop == POPUP_AUTOCLOSE)
     gtk_window_set_type_hint(GTK_WINDOW(self), g_value_get_boolean(value)?
         GDK_WINDOW_TYPE_HINT_POPUP_MENU : GDK_WINDOW_TYPE_HINT_NORMAL);
-  else
-    popup_set_property_old(self, prop, value, param);
+}
+
+static void popup_window_class_init ( PopupWindowClass *class )
+{
+  G_OBJECT_CLASS(class)->set_property = popup_set_property;
+
+  g_object_class_install_property(G_OBJECT_CLASS(class), POPUP_AUTOCLOSE,
+      g_param_spec_boolean("autoclose", "autoclose", "sfwbar_config",
+        FALSE, G_PARAM_WRITABLE));
 }
 
 void popup_class_init ( void )
@@ -36,7 +45,7 @@ void popup_class_init ( void )
   GObjectClass *class;
 
   class = g_type_class_ref(GTK_TYPE_WINDOW);
-  popup_set_property_old = class->set_property;
+//  popup_set_property_old = class->set_property;
   class->set_property = popup_set_property;
 
   g_free(g_object_class_list_properties(class, &nprops));
@@ -283,20 +292,22 @@ GtkWidget *popup_new ( gchar *name )
   win = popup_from_name(name);
   if(win)
     return win;
-
-  win = gtk_window_new(GTK_WINDOW_POPUP);
+  
+  win = g_object_new(POPUP_TYPE_WINDOW, "type", GTK_WINDOW_POPUP, NULL);
   window_set_unref_func(win, (void(*)(gpointer))popup_resize_maybe);
   grid = grid_new();
-  gtk_container_add(GTK_CONTAINER(win),grid);
-  gtk_widget_set_name(win,name);
-  gtk_widget_set_name(grid,name);
+  gtk_container_add(GTK_CONTAINER(win), grid);
+  gtk_widget_set_name(win, name);
+  gtk_widget_set_name(grid, name);
   gtk_window_set_accept_focus(GTK_WINDOW(win), TRUE);
   g_signal_connect(grid, "button-release-event", G_CALLBACK(popup_button_cb),
       win);
-  g_signal_connect(win,"window-state-event", G_CALLBACK(popup_state_cb),NULL);
-  g_signal_connect(grid, "size-allocate", G_CALLBACK(popup_size_allocate_cb), win);
+  g_signal_connect(win, "window-state-event", G_CALLBACK(popup_state_cb),
+      NULL);
+  g_signal_connect(grid, "size-allocate", G_CALLBACK(popup_size_allocate_cb),
+      win);
 
-  g_hash_table_insert(popup_list, g_strdup(name),win);
+  g_hash_table_insert(popup_list, g_strdup(name), win);
   return win;
 }
 
