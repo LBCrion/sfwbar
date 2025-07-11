@@ -117,7 +117,7 @@ void config_menu_items ( GScanner *scanner, GtkWidget *menu )
         item = config_menu_item(scanner);
         break;
       case G_TOKEN_SEPARATOR:
-        item = gtk_separator_menu_item_new();
+        item = menu_item_separator_new();
         break;
       case G_TOKEN_SUBMENU:
         item = config_submenu(scanner);

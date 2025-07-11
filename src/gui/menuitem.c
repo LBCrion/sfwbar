@@ -12,17 +12,17 @@
 #include "vm/vm.h"
 
 static GHashTable *menu_items;
-static guint nprops;
 
-#define MENU_ITEM_DESKTOPID (nprops+1)
-#define MENU_ITEM_VALUE (nprops+2)
-#define MENU_ITEM_TOOLTIP (nprops+3)
-#define MENU_ITEM_ACTION (nprops+4)
-#define MENU_ITEM_MENU (nprops+5)
-#define MENU_ITEM_INDEX (nprops+6)
+enum {
+  MENU_ITEM_DESKTOPID = 1,
+  MENU_ITEM_VALUE,
+  MENU_ITEM_TOOLTIP,
+  MENU_ITEM_ACTION,
+  MENU_ITEM_MENU,
+  MENU_ITEM_INDEX,
+};
 
-static void (*menu_item_set_property_old)( GObject *, guint, const GValue *,
-    GParamSpec *);
+G_DEFINE_INTERFACE(MenuIface, menu_iface, G_TYPE_OBJECT)
 
 static void menu_item_set_property ( GObject *self, guint id,
     const GValue *value, GParamSpec *spec )
@@ -44,20 +44,11 @@ static void menu_item_set_property ( GObject *self, guint id,
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(self), g_object_ref(g_value_get_object(value)));
   else if(id == MENU_ITEM_INDEX)
     menu_item_set_sort_index(GTK_WIDGET(self), g_value_get_int(value));
-  else
-    menu_item_set_property_old(self, id, value, spec);
 }
 
-void menu_item_class_init ( void )
+static void menu_iface_class_init ( GObjectClass *class )
 {
-  GObjectClass *class;
-
-  class = g_type_class_ref(GTK_TYPE_MENU_ITEM);
-  menu_item_set_property_old = class->set_property;
   class->set_property = menu_item_set_property;
-
-  g_free(g_object_class_list_properties(class, &nprops));
-
   g_object_class_install_property(class, MENU_ITEM_DESKTOPID,
       g_param_spec_string("desktopid", "desktopid", "sfwbar_config", NULL,
         G_PARAM_WRITABLE));
@@ -76,6 +67,19 @@ void menu_item_class_init ( void )
   g_object_class_install_property(class, MENU_ITEM_INDEX,
       g_param_spec_int("index", "index", "sfwbar_config",
         0, INT_MAX, 0, G_PARAM_WRITABLE));
+}
+
+static void menu_item_priv_free( MenuItemPrivate *priv )
+{
+  if(!priv)
+    return;
+
+  if(priv->id)
+    g_hash_table_remove(menu_items, priv->id);
+  g_clear_pointer(&priv->label_expr, expr_cache_free);
+  g_clear_pointer(&priv->desktop_file, g_free);
+  g_clear_pointer(&priv->action, g_bytes_unref);
+  g_free(priv);
 }
 
 static void menu_item_activate ( GtkMenuItem *self, gpointer d )
@@ -115,6 +119,39 @@ static void menu_item_activate ( GtkMenuItem *self, gpointer d )
     wid = wintree_get_focus();
 
   vm_run_action(priv->action, widget, NULL, wintree_from_id(wid), &state, NULL);
+}
+
+static void menu_item_init_common( GtkWidget *self )
+{
+  MenuItemPrivate *priv;
+
+  priv = g_malloc0(sizeof(MenuItemPrivate));
+  g_object_set_data_full(G_OBJECT(self), "menu_item_private", priv,
+      (GDestroyNotify)menu_item_priv_free);
+  g_signal_connect(G_OBJECT(self), "activate", G_CALLBACK(menu_item_activate),
+      NULL);
+  gtk_widget_set_name(GTK_WIDGET(self), "menu_item");
+  if(!GTK_IS_SEPARATOR_MENU_ITEM(self))
+  {
+    priv->box = gtk_grid_new();
+    priv->icon = scale_image_new();
+    gtk_grid_attach(GTK_GRID(priv->box), priv->icon, 1, 1, 1, 1);
+    priv->label = gtk_label_new_with_mnemonic("");
+    gtk_grid_attach(GTK_GRID(priv->box), priv->label, 2, 1, 1, 1);
+    gtk_container_add(GTK_CONTAINER(self), priv->box);
+  }
+  if(priv->icon)
+    css_set_class(priv->icon, "hidden", TRUE);
+  gtk_widget_show_all(GTK_WIDGET(self));
+}
+
+DEFINE_MENU_ITEM(MenuItem, menu_item, MENU, ITEM, GTK_TYPE_MENU_ITEM)
+DEFINE_MENU_ITEM(MenuItemCheck, menu_item_check, MENU, ITEM_CHECK, GTK_TYPE_CHECK_MENU_ITEM)
+DEFINE_MENU_ITEM(MenuItemRadio, menu_item_radio, MENU, ITEM_RADIO, GTK_TYPE_RADIO_MENU_ITEM)
+DEFINE_MENU_ITEM(MenuItemSeparator, menu_item_separator, MENU, ITEM_SEPARATOR, GTK_TYPE_SEPARATOR_MENU_ITEM)
+
+static void menu_iface_default_init ( MenuIfaceInterface *a )
+{
 }
 
 void menu_item_update_from_app ( GtkWidget *self, GDesktopAppInfo *app )
@@ -286,6 +323,8 @@ void menu_item_set_sort_index ( GtkWidget *self, gint index )
   MenuItemPrivate *priv;
 
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
+  if(!priv)
+    g_message("%d", GTK_IS_SEPARATOR_MENU_ITEM(self));
   g_return_if_fail(priv);
 
   priv->sort_index = index;
@@ -337,43 +376,6 @@ void menu_item_set_submenu ( GtkWidget *self, gchar *subname )
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(self), submenu);
 }
 
-static void menu_item_priv_free( MenuItemPrivate *priv )
-{
-  if(!priv)
-    return;
-
-  if(priv->id)
-    g_hash_table_remove(menu_items, priv->id);
-  g_clear_pointer(&priv->label_expr, expr_cache_free);
-  g_clear_pointer(&priv->desktop_file, g_free);
-  g_clear_pointer(&priv->action, g_bytes_unref);
-  g_free(priv);
-}
-
-void menu_item_init( GtkWidget *self )
-{
-  MenuItemPrivate *priv;
-
-  priv = g_malloc0(sizeof(MenuItemPrivate));
-  g_object_set_data_full(G_OBJECT(self), "menu_item_private", priv,
-      (GDestroyNotify)menu_item_priv_free);
-  g_signal_connect(G_OBJECT(self), "activate", G_CALLBACK(menu_item_activate),
-      NULL);
-  gtk_widget_set_name(GTK_WIDGET(self), "menu_item");
-  if(!GTK_IS_SEPARATOR_MENU_ITEM(self))
-  {
-    priv->box = gtk_grid_new();
-    priv->icon = scale_image_new();
-    gtk_grid_attach(GTK_GRID(priv->box), priv->icon, 1, 1, 1, 1);
-    priv->label = gtk_label_new_with_mnemonic("");
-    gtk_grid_attach(GTK_GRID(priv->box), priv->label, 2, 1, 1, 1);
-    gtk_container_add(GTK_CONTAINER(self), priv->box);
-  }
-  if(priv->icon)
-    css_set_class(priv->icon, "hidden", TRUE);
-  gtk_widget_show_all(GTK_WIDGET(self));
-}
-
 GtkWidget *menu_item_get ( gchar *id, gboolean create )
 {
   GtkWidget *self;
@@ -386,8 +388,7 @@ GtkWidget *menu_item_get ( gchar *id, gboolean create )
   if(!create)
     return NULL;
 
-  self = gtk_menu_item_new();
-  menu_item_init(self);
+  self = menu_item_new();
   menu_item_set_id(self, id);
 
   return self;

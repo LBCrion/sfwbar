@@ -199,19 +199,23 @@ static GtkWidget *sni_menu_item_new ( guint32 id, GVariant *dict,
     toggle = NULL;
   if(g_variant_lookup(dict, "type", "&s", &type) &&
       !g_strcmp0(type, "separator"))
-    item = gtk_separator_menu_item_new();
+    item = menu_item_separator_new();
   else if(!g_strcmp0(toggle, "checkmark"))
   {
-    item = gtk_check_menu_item_new();
+    item = menu_item_check_new();
     if(g_variant_lookup(dict, "toggle-state", "i", &state))
       gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), state);
   }
   else if(!g_strcmp0(toggle, "radio"))
-    item = gtk_radio_menu_item_new_from_widget(GTK_IS_RADIO_MENU_ITEM(prev) ? GTK_RADIO_MENU_ITEM(prev) : NULL);
+  {
+    item = menu_item_radio_new();
+    gtk_radio_menu_item_set_group(GTK_RADIO_MENU_ITEM(item),
+        GTK_IS_RADIO_MENU_ITEM(prev)?
+        gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(prev)) : NULL);
+  }
   else
-    item = gtk_menu_item_new();
+    item = menu_item_new();
 
-  menu_item_init(item);
   menu_item_set_sort_index(item, id);
 
   g_signal_connect(G_OBJECT(item), "activate",
