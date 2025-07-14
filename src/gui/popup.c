@@ -3,17 +3,16 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "css.h"
-#include "window.h"
-#include "grid.h"
-#include "basewidget.h"
-#include "popup.h"
-#include "bar.h"
 #include "util/string.h"
 #include <gtk-layer-shell.h>
+#include "window.h"
+#include "gui/bar.h"
+#include "gui/basewidget.h"
+#include "gui/css.h"
+#include "gui/grid.h"
+#include "gui/popup.h"
 
 static GHashTable *popup_list;
-static guint nprops;
 
 G_DEFINE_FINAL_TYPE(PopupWindow, popup_window, GTK_TYPE_WINDOW)
 
@@ -36,21 +35,6 @@ static void popup_window_class_init ( PopupWindowClass *class )
   G_OBJECT_CLASS(class)->set_property = popup_set_property;
 
   g_object_class_install_property(G_OBJECT_CLASS(class), POPUP_AUTOCLOSE,
-      g_param_spec_boolean("autoclose", "autoclose", "sfwbar_config",
-        FALSE, G_PARAM_WRITABLE));
-}
-
-void popup_class_init ( void )
-{
-  GObjectClass *class;
-
-  class = g_type_class_ref(GTK_TYPE_WINDOW);
-//  popup_set_property_old = class->set_property;
-  class->set_property = popup_set_property;
-
-  g_free(g_object_class_list_properties(class, &nprops));
-
-  g_object_class_install_property(class, POPUP_AUTOCLOSE,
       g_param_spec_boolean("autoclose", "autoclose", "sfwbar_config",
         FALSE, G_PARAM_WRITABLE));
 }
@@ -247,7 +231,7 @@ void popup_trigger ( GtkWidget *parent, gchar *name, GdkEvent *ev )
     popup_show(parent, popup, gdk_device_get_seat(gdk_event_get_device(ev)));
 }
 
-void popup_resize_maybe ( GtkWidget *self )
+static void popup_resize_maybe ( GtkWidget *self )
 {
   GtkWidget *grab;
   GtkRequisition req;
@@ -277,7 +261,7 @@ void popup_resize_maybe ( GtkWidget *self )
       g_object_get_data(G_OBJECT(self), "seat"));
 }
 
-void popup_size_allocate_cb ( GtkWidget *grid, gpointer dummy, GtkWidget *win )
+static void popup_size_allocate_cb ( GtkWidget *g, gpointer d, GtkWidget *win )
 {
   popup_resize_maybe(win);
 }
