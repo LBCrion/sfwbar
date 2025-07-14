@@ -90,7 +90,7 @@ GdkModifierType base_widget_get_modifiers ( GtkWidget *self );
 gboolean base_widget_action_exec ( GtkWidget *, gint, GdkEvent *);
 gboolean base_widget_check_action_slot ( GtkWidget *self, gint slot );
 void base_widget_action_configure ( GtkWidget *self, gint slot );
-gint64 base_widget_update ( GtkWidget *self, gint64 *ctime );
+gboolean base_widget_update_expressions ( GtkWidget *self );
 GPtrArray *base_widget_attachment_new_array ( GBytes *code, gint ev,
     GdkModifierType mods );
 

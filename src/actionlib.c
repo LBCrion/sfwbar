@@ -11,6 +11,7 @@
 #include "gui/bar.h"
 #include "gui/basewidget.h"
 #include "gui/menu.h"
+#include "gui/menuitem.h"
 #include "gui/pageritem.h"
 #include "gui/popup.h"
 #include "gui/taskbaritem.h"
@@ -656,7 +657,7 @@ static value_t action_update_widget ( vm_t *vm, value_t p[], gint np )
 
   if( (widget = np? base_widget_from_id(vm->store, value_get_string(p[0])) :
         vm->widget) )
-    base_widget_update(widget, NULL);
+    base_widget_update_expressions(widget);
 
   return value_na;
 }

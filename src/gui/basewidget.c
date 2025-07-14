@@ -103,11 +103,11 @@ static gboolean base_widget_style ( GtkWidget *self )
   return FALSE;
 }
 
-static void base_widget_update_expressions ( GtkWidget *self )
+gboolean base_widget_update_expressions ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
 
-  g_return_if_fail(IS_BASE_WIDGET(self));
+  g_return_val_if_fail(IS_BASE_WIDGET(self), FALSE);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(expr_cache_eval(priv->value) || BASE_WIDGET_GET_CLASS(self)->always_update)
@@ -117,6 +117,7 @@ static void base_widget_update_expressions ( GtkWidget *self )
   if(priv->local_state)
     g_list_foreach(priv->mirror_children,
         (GFunc)base_widget_update_expressions, NULL);
+  return FALSE;
 }
 
 static void base_widget_destroy ( GtkWidget *self )

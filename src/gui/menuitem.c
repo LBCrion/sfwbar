@@ -394,17 +394,18 @@ GtkWidget *menu_item_get ( gchar *id, gboolean create )
   return self;
 }
 
-void menu_item_remove ( gchar *id )
+gboolean menu_item_remove ( gchar *id )
 {
   GtkWidget *item;
 
   if(!menu_items || !(item = g_hash_table_lookup(menu_items, id)) )
-    return;
+    return FALSE;
 
   if(gtk_menu_item_get_submenu(GTK_MENU_ITEM(item)))
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), NULL);
 
   gtk_widget_destroy(item);
+  return FALSE;
 }
 
 void menu_item_label_update ( GtkWidget *self )

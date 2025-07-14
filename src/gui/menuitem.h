@@ -64,6 +64,7 @@ GtkWidget *menu_item_check_new();
 GtkWidget *menu_item_radio_new();
 GtkWidget *menu_item_separator_new();
 GtkWidget *menu_item_get ( gchar *id, gboolean create );
+gboolean menu_item_remove ( gchar *id );
 void menu_item_update_from_desktop ( GtkWidget *self, const gchar *desktop_id);
 void menu_item_update_from_app ( GtkWidget *self, GDesktopAppInfo *app);
 void menu_item_set_id ( GtkWidget *self, gchar *id );
