@@ -38,13 +38,27 @@ vm_store_t *vm_store_new ( vm_store_t *parent, gboolean transient )
   store->widget_map = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);
   store->vars = datalist_new();
+  store->refcount = 1;
 
   return store;
 }
 
-void vm_store_free ( vm_store_t *store )
+vm_store_t *vm_store_ref ( vm_store_t *store )
 {
   if(!store)
+    return NULL;
+
+  store->refcount++;
+  return store;
+}
+
+void vm_store_unref ( vm_store_t *store )
+{
+  if(!store)
+    return;
+
+  store->refcount--;
+  if(store->refcount>0)
     return;
 
   if(store->vars)
@@ -62,11 +76,14 @@ vm_store_t *vm_store_dup ( vm_store_t *src )
     return NULL;
 
   dest = g_malloc0(sizeof(vm_store_t));
+  dest->refcount = 1;
+  g_mutex_lock(&src->mutex);
   if(src->widget_map)
     dest->widget_map = g_hash_table_ref(src->widget_map);
   if(src->vars)
     dest->vars = datalist_ref(src->vars);
   dest->transient = src->transient;
+  g_mutex_unlock(&src->mutex);
 
   return dest;
 }
@@ -74,13 +91,18 @@ vm_store_t *vm_store_dup ( vm_store_t *src )
 vm_var_t *vm_store_lookup ( vm_store_t *store, GQuark id )
 {
   vm_store_t *iter;
-  vm_var_t *var;
+  vm_var_t *var = NULL;
 
+  if(!store)
+    return NULL;
+
+  g_mutex_lock(&store->mutex);
   for(iter=store; iter; iter=iter->parent)
     if( (var = g_datalist_id_get_data(&iter->vars->data, id)) )
-      return var;
+      break;
+  g_mutex_unlock(&store->mutex);
 
-  return NULL;
+  return var;
 }
 
 vm_var_t *vm_store_lookup_string ( vm_store_t *store, gchar *string )
@@ -102,11 +124,13 @@ gboolean vm_store_insert ( vm_store_t *store, vm_var_t *var )
 
   g_return_val_if_fail(store && var, FALSE);
 
- if( (found = !!g_datalist_id_get_data(&store->vars->data, var->quark)) )
-   g_datalist_id_remove_data(&store->vars->data, var->quark);
+  g_mutex_lock(&store->mutex);
+  if( (found = !!g_datalist_id_get_data(&store->vars->data, var->quark)) )
+    g_datalist_id_remove_data(&store->vars->data, var->quark);
 
   g_datalist_id_set_data_full(&(store->vars->data), var->quark, var,
       (GDestroyNotify)vm_var_free);
+  g_mutex_unlock(&store->mutex);
   g_debug("var: new: '%s' in store %p", g_quark_to_string(var->quark), store);
 
   return found;
@@ -138,6 +162,6 @@ vm_closure_t *vm_closure_new ( GBytes *code, vm_store_t *store )
 void vm_closure_free ( vm_closure_t *closure )
 {
   g_bytes_unref(closure->code);
-  vm_store_free(closure->store);
+  vm_store_unref(closure->store);
   g_free(closure);
 }

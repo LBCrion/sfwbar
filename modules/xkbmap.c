@@ -49,7 +49,7 @@ gboolean sfwbar_module_init ( void )
 {
   if( !(ctx = rxkb_context_new (RXKB_CONTEXT_NO_DEFAULT_INCLUDES)) )
     return FALSE;
-  vm_func_add("xkbmap", xkb_map_expr_func, TRUE);
+  vm_func_add("xkbmap", xkb_map_expr_func, TRUE, TRUE);
   rxkb_context_include_path_append_default(ctx);
   rxkb_context_parse_default_ruleset(ctx);
   return TRUE;

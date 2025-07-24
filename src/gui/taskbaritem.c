@@ -104,8 +104,16 @@ static void taskbar_item_decorate ( GtkWidget *parent, GParamSpec *spec,
 
   if(!!priv->icon != icons || !!priv->label != labels)
   {
-    g_clear_pointer(&priv->label, gtk_widget_destroy);
-    g_clear_pointer(&priv->icon, gtk_widget_destroy);
+    if(priv->label)
+    {
+      gtk_container_remove(GTK_CONTAINER(priv->box), priv->label);
+      priv->label = NULL;
+    }
+    if(priv->icon)
+    {
+      gtk_container_remove(GTK_CONTAINER(priv->box), priv->icon);
+      priv->icon = NULL;
+    }
     gtk_widget_style_get(base_widget_get_child(self), "direction", &dir, NULL);
 
     if(icons)

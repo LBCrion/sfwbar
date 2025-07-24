@@ -142,19 +142,26 @@ static void taskbar_popup_decorate ( GtkWidget *parent, GParamSpec *spec,
 
   if(!!priv->icon != icons || !!priv->label != labels)
   {
-    g_clear_pointer(&priv->label, gtk_widget_destroy);
-    g_clear_pointer(&priv->icon, gtk_widget_destroy);
+    box = gtk_bin_get_child(GTK_BIN(priv->button));
+    if(priv->label)
+    {
+      gtk_container_remove(GTK_CONTAINER(box), priv->label);
+      priv->label = NULL;
+    }
+    if(priv->icon)
+    {
+      gtk_container_remove(GTK_CONTAINER(box), priv->icon);
+      priv->icon = NULL;
+    }
     gtk_widget_style_get(priv->button, "direction", &dir, NULL);
     if(icons)
     {
-      box = gtk_bin_get_child(GTK_BIN(priv->button));
       priv->icon = scale_image_new();
       gtk_grid_attach_next_to(GTK_GRID(box), priv->icon, NULL, dir, 1, 1);
       taskbar_item_set_image(priv->icon, priv->appid);
     }
     if(labels)
     {
-      box = gtk_bin_get_child(GTK_BIN(priv->button));
       priv->label = gtk_label_new(priv->appid);
       gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
       gtk_grid_attach_next_to(GTK_GRID(box), priv->label, priv->icon, dir, 1, 1);

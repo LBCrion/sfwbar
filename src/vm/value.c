@@ -9,6 +9,12 @@ void value_free ( value_t v1 )
     g_array_unref(v1.value.array);
 }
 
+void value_free_ptr ( value_t *v1 )
+{
+  if(v1)
+    value_free(*v1);
+}
+
 value_t value_array_concat ( value_t v1, value_t v2 )
 {
   GArray *result;

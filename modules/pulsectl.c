@@ -260,7 +260,9 @@ static void pulse_device_advertise ( gint iface_idx,
     return;
 
   channel_ids = g_array_new(FALSE, FALSE, sizeof(value_t));
+  g_array_set_clear_func(channel_ids, (GDestroyNotify)value_free_ptr);
   channel_indices = g_array_new(FALSE, FALSE, sizeof(value_t));
+  g_array_set_clear_func(channel_indices, (GDestroyNotify)value_free_ptr);
   for(i=0; i<cmap->channels; i++)
   {
     v1 = value_new_string(g_strdup(
@@ -279,7 +281,7 @@ static void pulse_device_advertise ( gint iface_idx,
   vm_store_insert_full(store, "channel_indices",
     value_new_array(channel_indices));
   trigger_emit_with_data("volume-conf", store);
-  vm_store_free(store);
+  vm_store_unref(store);
 }
 
 static void pulse_sink_cb ( pa_context *ctx, const pa_sink_info *pinfo,
@@ -671,9 +673,9 @@ static value_t pulse_volume_ctl_action ( vm_t *vm, value_t p[], gint np )
 
 static void pulse_activate ( void )
 {
-  vm_func_add("volume", pulse_volume_func, FALSE);
-  vm_func_add("volumeinfo", pulse_volume_info_func, FALSE);
-  vm_func_add("volumectl", pulse_volume_ctl_action, TRUE);
+  vm_func_add("volume", pulse_volume_func, FALSE, TRUE);
+  vm_func_add("volumeinfo", pulse_volume_info_func, FALSE, TRUE);
+  vm_func_add("volumectl", pulse_volume_ctl_action, TRUE, TRUE);
   pa_context_set_subscribe_callback(pctx, pulse_subscribe_cb, NULL);
   pulse_operation(pa_context_subscribe(pctx, PA_SUBSCRIPTION_MASK_SERVER |
         PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SINK_INPUT |

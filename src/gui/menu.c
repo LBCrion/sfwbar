@@ -121,9 +121,9 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
   menu_set_names(menu);
 
   if(state)
-    g_object_set_data( G_OBJECT(menu), "state", GUINT_TO_POINTER(*state) );
-  g_object_set_data( G_OBJECT(menu), "wid", wid );
-  g_object_set_data( G_OBJECT(menu), "caller", widget );
+    g_object_set_data(G_OBJECT(menu), "state", GUINT_TO_POINTER(*state));
+  g_object_set_data(G_OBJECT(menu), "wid", wid);
+  g_object_set_data(G_OBJECT(menu), "caller", widget);
 
   window = gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
   g_signal_handlers_disconnect_matched(G_OBJECT(menu), G_SIGNAL_MATCH_FUNC,

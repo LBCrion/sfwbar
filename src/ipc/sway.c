@@ -591,8 +591,8 @@ void sway_ipc_init ( void )
 
   if((main_ipc = sway_ipc_open(10))<0)
     return;
-  vm_func_add("swaycmd", sway_ipc_cmd_action, TRUE);
-  vm_func_add("swaywincmd", sway_ipc_wincmd_action, TRUE);
+  vm_func_add("swaycmd", sway_ipc_cmd_action, TRUE, FALSE);
+  vm_func_add("swaywincmd", sway_ipc_wincmd_action, TRUE, FALSE);
   sway_ipc_send(main_ipc, 2, "['workspace','mode','window','barconfig_update',\
       'binding','shutdown','tick','bar_state_update','input']");
   g_io_add_watch(g_io_channel_unix_new(main_ipc), G_IO_IN, sway_ipc_event,

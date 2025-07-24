@@ -66,6 +66,7 @@ gboolean config_action_slot ( GScanner *scanner, gint *slot )
 static GPtrArray *config_action_attachment ( GScanner *scanner )
 {
   gint slot = 1, mod = 0;
+  GPtrArray *attach;
   GBytes *action = NULL;
 
   config_parse_sequence(scanner,
@@ -78,7 +79,11 @@ static GPtrArray *config_action_attachment ( GScanner *scanner )
       SEQ_END);
 
   if(!scanner->max_parse_errors && action)
-    return base_widget_attachment_new_array(action, slot, mod);
+  {
+    attach = base_widget_attachment_new_array(action, slot, mod);
+    g_bytes_unref(action);
+    return attach;
+  }
 
   if(action)
     g_bytes_unref(action);
@@ -152,7 +157,7 @@ gboolean config_widget_set_property ( GScanner *scanner, gchar *prefix,
   else if(G_IS_PARAM_SPEC_STRING(spec))
     g_value_set_string(&value, config_assign_string(scanner, name));
   else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_PTR_ARRAY && *blurb=='b')
-    g_value_set_boxed(&value, config_action_attachment(scanner));
+    g_value_take_boxed(&value, config_action_attachment(scanner));
   else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_PTR_ARRAY)
     g_value_set_boxed(&value, config_assign_string_list(scanner));
   else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_BYTES && *blurb=='a')

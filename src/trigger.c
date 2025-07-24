@@ -94,10 +94,9 @@ void trigger_action_cb ( vm_closure_t *closure, vm_store_t *store )
   }
  
   new_store = vm_store_dup(store);
-
   new_store->parent = closure->store;
   vm_run_action(closure->code, NULL, NULL, NULL, NULL, new_store);
-  vm_store_free(new_store);
+  vm_store_unref(new_store);
 }
 
 static gboolean trigger_emit_in_main_context ( trigger_invocation_t *inv )
@@ -110,7 +109,7 @@ static gboolean trigger_emit_in_main_context ( trigger_invocation_t *inv )
         iter=iter->next)
       TRIGGER(iter->data)->func(TRIGGER(iter->data)->data, inv->store);
 
-  vm_store_free(inv->store);
+  vm_store_unref(inv->store);
   g_free(inv);
 
   return FALSE;
@@ -134,7 +133,7 @@ void trigger_emit_with_string ( gchar *name, gchar *var, gchar *val )
   store = vm_store_new(NULL, TRUE);
   vm_store_insert_full(store, var, value_new_string(val));
   trigger_emit_with_data(name, store);
-  vm_store_free(store);
+  vm_store_unref(store);
 }
 
 gboolean trigger_emit ( gchar *name )

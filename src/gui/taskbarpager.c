@@ -60,7 +60,7 @@ static void taskbar_pager_decorate ( GtkWidget *parent, GParamSpec *spec,
       "title-width", &title_width, NULL);
 
   if(!labels && priv->button)
-    gtk_widget_destroy(priv->button);
+    gtk_container_remove(GTK_CONTAINER(priv->grid), priv->button);
   else if(labels && !priv->button)
   {
     g_object_ref(priv->taskbar);

@@ -428,7 +428,14 @@ void menu_item_insert ( GtkWidget *menu, GtkWidget *item )
   GList *list, *iter;
   gint count = 0;
 
-  if(!GTK_IS_MENU_ITEM(item))
+  if(gtk_widget_get_parent(item))
+  {
+    if(gtk_widget_get_parent(item) != menu)
+      g_warning("menu item added to multiple menues");
+    return;
+  }
+
+  if(!GTK_IS_MENU_ITEM(item) || !menu_item_get_sort_index(item))
   {
     gtk_container_add(GTK_CONTAINER(menu), item);
     return;

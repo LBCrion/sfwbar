@@ -47,11 +47,13 @@ static value_t action_function ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, 0, "Function");
 
   widget = vm->widget;
+  vm_widget_unset(vm);
   if(np==2)
   {
     vm_param_check_string(vm, p, 1, "Function");
     vm->widget = base_widget_from_id(vm->store, value_get_string(p[0]));
     vm->widget = vm->widget? vm->widget : widget;
+    vm_widget_set(vm, vm->widget);
   }
 
   win = vm->win;
@@ -61,9 +63,10 @@ static value_t action_function ( vm_t *vm, value_t p[], gint np )
 
   if( (func = vm_func_lookup(value_get_string(p[np-1]))) &&
       (func->flags & VM_FUNC_USERDEFINED) )
-    value_free(vm_function_call(vm, func->ptr.code, 0));
+    value_free(vm_function_user(vm, func->ptr.code, 0));
 
-  vm->widget = widget;
+  vm_widget_unset(vm);
+  vm_widget_set(vm, widget);
   vm->win = win;
   vm->wstate = state;
 
@@ -303,7 +306,7 @@ static value_t action_setexclusivezone ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_setbarvisibility ( vm_t *vm, value_t p[], gint np )
 {
-  g_message("SetExclusiveSone is deprecated, please use"
+  g_message("SetBarVisibility is deprecated, please use"
      " exclusive_zone property instead");
   vm_param_check_np_range(vm, np, 1, 2, "SetBarVisibility");
   vm_param_check_string(vm, p, np-1, "SetBarVisibility");
@@ -624,6 +627,7 @@ static value_t action_file_trigger ( vm_t *vm, value_t p[], gint np )
   if(np==3)
     g_timeout_add(value_get_numeric(p[2]), (GSourceFunc)action_file_timeout_cb,
         (gpointer)trigger_name_intern(value_get_string(p[1])));
+  g_object_weak_ref(G_OBJECT(m), (GWeakNotify)g_object_unref, f);
   g_signal_connect(G_OBJECT(m), "changed", G_CALLBACK(action_file_trigger_cb),
       (gpointer)trigger_name_intern(value_get_string(p[1])));
   g_debug("FileTrigger: subscribe to '%s', trigger '%s'",
@@ -636,7 +640,7 @@ static value_t action_emit_trigger ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "");
   vm_param_check_string(vm, p, 0, "EmitTrigger");
 
-  g_idle_add((GSourceFunc)trigger_emit,
+  g_main_context_invoke(NULL, (GSourceFunc)trigger_emit,
       (gchar *)trigger_name_intern(value_get_string(p[0])));
 
   return value_na;
@@ -677,7 +681,6 @@ static value_t action_usleep ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "uSleep");
   vm_param_check_numeric(vm, p, 0, "uSleep");
 
-  g_message("%lf", value_get_numeric(p[0]));
   g_usleep(value_get_numeric(p[0]));
 
   return value_na;
@@ -686,46 +689,46 @@ static value_t action_usleep ( vm_t *vm, value_t p[], gint np )
 
 void action_lib_init ( void )
 {
-  vm_func_add("exec", action_exec_impl, TRUE);
-  vm_func_add("function", action_function, TRUE);
-  vm_func_add("piperead", action_piperead, TRUE);
-  vm_func_add("menuclear", action_menuclear, TRUE);
-  vm_func_add("menuitemclear", action_menuitemclear, TRUE);
-  vm_func_add("menu", action_menu, TRUE);
-  vm_func_add("mpdcmd", action_mpd, TRUE);
-  vm_func_add("config", action_config, TRUE);
-  vm_func_add("mapicon", action_map_icon, TRUE);
-  vm_func_add("popup", action_popup, TRUE);
-  vm_func_add("setmonitor", action_setmonitor, TRUE);
-  vm_func_add("setlayer", action_setlayer, TRUE);
-  vm_func_add("setmirror", action_setmirror, TRUE);
-  vm_func_add("setbarsize", action_setbarsize, TRUE);
-  vm_func_add("setbarmargin", action_setbarmargin, TRUE);
-  vm_func_add("setbarid", action_setbarid, TRUE);
-  vm_func_add("setbarsensor", action_setbarsensor, TRUE);
-  vm_func_add("setbarvisibility", action_setbarvisibility, TRUE);
-  vm_func_add("setexclusivezone", action_setexclusivezone, TRUE);
-  vm_func_add("userstate", action_userstate, TRUE);
-  vm_func_add("setvalue", action_setvalue, TRUE);
-  vm_func_add("setstyle", action_setstyle, TRUE);
-  vm_func_add("settooltip", action_settooltip, TRUE);
-  vm_func_add("focus", action_focus, TRUE);
-  vm_func_add("close", action_close, TRUE);
-  vm_func_add("minimize", action_minimize, TRUE);
-  vm_func_add("maximize", action_maximize, TRUE);
-  vm_func_add("unminimize", action_unminimize, TRUE);
-  vm_func_add("unmaximize", action_unmaximize, TRUE);
-  vm_func_add("clientsend", action_client_send, TRUE);
-  vm_func_add("eval", action_eval, TRUE);
-  vm_func_add("switcherevent", action_switcher, TRUE);
-  vm_func_add("workspaceactivate", action_workspace_activate, TRUE);
-  vm_func_add("taskbaritemdefault", action_taskbar_item, TRUE);
-  vm_func_add("clearwidget", action_clear_widget, TRUE);
-  vm_func_add("checkstate", action_check_state, FALSE);
-  vm_func_add("filetrigger", action_file_trigger, FALSE);
-  vm_func_add("emittrigger", action_emit_trigger, FALSE);
-  vm_func_add("exit", action_exit, TRUE);
-  vm_func_add("UpdateWidget", action_update_widget, TRUE);
-  vm_func_add("Print", action_print, TRUE);
-  vm_func_add("uSleep", action_usleep, TRUE);
+  vm_func_add("exec", action_exec_impl, TRUE, TRUE);
+  vm_func_add("function", action_function, TRUE, FALSE);
+  vm_func_add("piperead", action_piperead, TRUE, FALSE);
+  vm_func_add("menuclear", action_menuclear, TRUE, FALSE);
+  vm_func_add("menuitemclear", action_menuitemclear, TRUE, FALSE);
+  vm_func_add("menu", action_menu, TRUE, FALSE);
+  vm_func_add("mpdcmd", action_mpd, TRUE, TRUE);
+  vm_func_add("config", action_config, TRUE, FALSE);
+  vm_func_add("mapicon", action_map_icon, TRUE, TRUE);
+  vm_func_add("popup", action_popup, TRUE, FALSE);
+  vm_func_add("setmonitor", action_setmonitor, TRUE, FALSE);
+  vm_func_add("setlayer", action_setlayer, TRUE, FALSE);
+  vm_func_add("setmirror", action_setmirror, TRUE, FALSE);
+  vm_func_add("setbarsize", action_setbarsize, TRUE, FALSE);
+  vm_func_add("setbarmargin", action_setbarmargin, TRUE, FALSE);
+  vm_func_add("setbarid", action_setbarid, TRUE, FALSE);
+  vm_func_add("setbarsensor", action_setbarsensor, TRUE, FALSE);
+  vm_func_add("setbarvisibility", action_setbarvisibility, TRUE, FALSE);
+  vm_func_add("setexclusivezone", action_setexclusivezone, TRUE, FALSE);
+  vm_func_add("userstate", action_userstate, TRUE, FALSE);
+  vm_func_add("setvalue", action_setvalue, TRUE, FALSE);
+  vm_func_add("setstyle", action_setstyle, TRUE, FALSE);
+  vm_func_add("settooltip", action_settooltip, TRUE, FALSE);
+  vm_func_add("focus", action_focus, TRUE, TRUE);
+  vm_func_add("close", action_close, TRUE, TRUE);
+  vm_func_add("minimize", action_minimize, TRUE, TRUE);
+  vm_func_add("maximize", action_maximize, TRUE, TRUE);
+  vm_func_add("unminimize", action_unminimize, TRUE, TRUE);
+  vm_func_add("unmaximize", action_unmaximize, TRUE, TRUE);
+  vm_func_add("clientsend", action_client_send, TRUE, TRUE);
+  vm_func_add("eval", action_eval, TRUE, FALSE);
+  vm_func_add("switcherevent", action_switcher, TRUE, TRUE);
+  vm_func_add("workspaceactivate", action_workspace_activate, TRUE, FALSE);
+  vm_func_add("taskbaritemdefault", action_taskbar_item, TRUE, FALSE);
+  vm_func_add("clearwidget", action_clear_widget, TRUE, FALSE);
+  vm_func_add("checkstate", action_check_state, FALSE, FALSE);
+  vm_func_add("filetrigger", action_file_trigger, FALSE, FALSE);
+  vm_func_add("emittrigger", action_emit_trigger, FALSE, TRUE);
+  vm_func_add("exit", action_exit, TRUE, TRUE);
+  vm_func_add("UpdateWidget", action_update_widget, TRUE, FALSE);
+  vm_func_add("Print", action_print, TRUE, TRUE);
+  vm_func_add("uSleep", action_usleep, TRUE, TRUE);
 }

@@ -32,8 +32,16 @@ static void switcher_item_decorate ( GtkWidget *parent, GParamSpec *spec,
 
   if(!!priv->icon != icons || !!priv->label != labels)
   {
-    g_clear_pointer(&priv->label, gtk_widget_destroy);
-    g_clear_pointer(&priv->icon, gtk_widget_destroy);
+    if(priv->label)
+    {
+      gtk_container_remove(GTK_CONTAINER(priv->grid), priv->label);
+      priv->label = NULL;
+    }
+    if(priv->icon)
+    {
+      gtk_container_remove(GTK_CONTAINER(priv->grid), priv->icon);
+      priv->icon = NULL;
+    }
     gtk_widget_style_get(base_widget_get_child(self), "direction", &dir, NULL);
 
     if(icons)
@@ -53,6 +61,16 @@ static void switcher_item_decorate ( GtkWidget *parent, GParamSpec *spec,
   }
   if(priv->label)
     gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
+}
+
+void switcher_item_destroy ( GtkWidget *self )
+{
+  SwitcherItemPrivate *priv;
+
+  g_return_if_fail(IS_SWITCHER_ITEM(self));
+  priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
+  g_signal_handlers_disconnect_by_data(priv->switcher, self);
+  GTK_WIDGET_CLASS(switcher_item_parent_class)->destroy(self);
 }
 
 void switcher_item_update ( GtkWidget *self )
@@ -135,6 +153,7 @@ static void switcher_item_class_init ( SwitcherItemClass *kclass )
   FLOW_ITEM_CLASS(kclass)->invalidate = switcher_item_invalidate;
   FLOW_ITEM_CLASS(kclass)->get_source =
     (void * (*)(GtkWidget *))switcher_item_get_window;
+  GTK_WIDGET_CLASS(kclass)->destroy = switcher_item_destroy;
 }
 
 static void switcher_item_init ( SwitcherItem *cgrid )

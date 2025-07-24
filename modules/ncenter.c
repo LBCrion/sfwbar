@@ -316,7 +316,7 @@ guint32 dn_notification_parse ( GVariant *params )
       value_new_array(action_titles));
 
   trigger_emit_with_data("notification-updated", store);
-  vm_store_free(store);
+  vm_store_unref(store);
   trigger_emit("notification-group");
 
   g_debug("ncenter: app: '%s', id: %u, icon: '%s', summary '%s', body '%s', timeout: %d",
@@ -557,14 +557,14 @@ static value_t dn_action_action ( vm_t *vm, value_t p[], gint np )
 
 gboolean sfwbar_module_init ( void )
 {
-  vm_func_add("notificationget", dn_get_func, FALSE);
-  vm_func_add("notificationgroup", dn_group_func, FALSE);
-  vm_func_add("notificationactivegroup", dn_active_group_func, FALSE);
-  vm_func_add("notificationcount", dn_count_func, FALSE);
-  vm_func_add("notificationclose", dn_close_action, TRUE);
-  vm_func_add("notificationaction", dn_action_action, TRUE);
-  vm_func_add("notificationexpand", dn_expand_action, TRUE);
-  vm_func_add("notificationcollapse", dn_collapse_action, TRUE);
+  vm_func_add("notificationget", dn_get_func, FALSE, TRUE);
+  vm_func_add("notificationgroup", dn_group_func, FALSE, TRUE);
+  vm_func_add("notificationactivegroup", dn_active_group_func, FALSE, TRUE);
+  vm_func_add("notificationcount", dn_count_func, FALSE, TRUE);
+  vm_func_add("notificationclose", dn_close_action, TRUE, TRUE);
+  vm_func_add("notificationaction", dn_action_action, TRUE, TRUE);
+  vm_func_add("notificationexpand", dn_expand_action, TRUE, TRUE);
+  vm_func_add("notificationcollapse", dn_collapse_action, TRUE, TRUE);
 
   dn_con = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
   g_bus_own_name(G_BUS_TYPE_SESSION, dn_bus, G_BUS_NAME_OWNER_FLAGS_NONE,

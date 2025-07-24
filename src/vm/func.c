@@ -30,14 +30,15 @@ vm_function_t *vm_func_lookup ( gchar *name )
   return func;
 }
 
-void vm_func_add ( gchar *name, vm_func_t function, gboolean deterministic )
+void vm_func_add ( gchar *name, vm_func_t func, gboolean det, gboolean safe )
 {
-  vm_function_t *func;
+  vm_function_t *func_o;
 
-  func = vm_func_lookup(name);
+  func_o = vm_func_lookup(name);
 
-  func->ptr.function = function;
-  func->flags |= (deterministic? VM_FUNC_DETERMINISTIC : 0);
+  func_o->ptr.function = func;
+  func_o->flags |= (det? VM_FUNC_DETERMINISTIC : 0);
+  func_o->flags |= (safe? VM_FUNC_THREADSAFE : 0);
   expr_dep_trigger(g_quark_from_string(name));
   g_debug("function: registered '%s'", name);
 }

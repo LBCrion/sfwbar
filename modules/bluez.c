@@ -803,15 +803,15 @@ gboolean sfwbar_module_init ( void )
   if( !(bz_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
     return FALSE;
 
-  vm_func_add("bluezscan", bz_action_scan, TRUE);
-  vm_func_add("bluezpower", bz_action_power, TRUE);
-  vm_func_add("bluezdiscoverable", bz_action_discoverable, TRUE);
-  vm_func_add("bluezconnect", bz_action_connect, TRUE);
-  vm_func_add("bluezpair", bz_action_pair, TRUE);
-  vm_func_add("bluezdisconnect", bz_action_disconnect, TRUE);
-  vm_func_add("bluezremove", bz_action_remove, TRUE);
-  vm_func_add("bluezadapter", bz_expr_adapter, FALSE);
-  vm_func_add("bluezdevice", bz_expr_device, FALSE);
+  vm_func_add("bluezscan", bz_action_scan, TRUE, TRUE);
+  vm_func_add("bluezpower", bz_action_power, TRUE, TRUE);
+  vm_func_add("bluezdiscoverable", bz_action_discoverable, TRUE, TRUE);
+  vm_func_add("bluezconnect", bz_action_connect, TRUE, TRUE);
+  vm_func_add("bluezpair", bz_action_pair, TRUE, TRUE);
+  vm_func_add("bluezdisconnect", bz_action_disconnect, TRUE, TRUE);
+  vm_func_add("bluezremove", bz_action_remove, TRUE, TRUE);
+  vm_func_add("bluezadapter", bz_expr_adapter, FALSE, TRUE);
+  vm_func_add("bluezdevice", bz_expr_device, FALSE, TRUE);
 
   g_bus_watch_name(G_BUS_TYPE_SYSTEM, bz_serv, G_BUS_NAME_WATCHER_FLAGS_NONE,
       bz_name_appeared_cb, bz_name_disappeared_cb, NULL, NULL);

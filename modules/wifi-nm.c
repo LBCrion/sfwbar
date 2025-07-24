@@ -971,11 +971,11 @@ static value_t nm_action_forget ( vm_t *vm, value_t p[], gint np )
 
 static void nm_activate ( void )
 {
-  vm_func_add("wifiget", nm_expr_get, FALSE);
-  vm_func_add("wifiscan", nm_action_scan, FALSE);
-  vm_func_add("wificonnect", nm_action_connect, FALSE);
-  vm_func_add("wifidisconnect", nm_action_disconnect, FALSE);
-  vm_func_add("wififorget", nm_action_forget, FALSE);
+  vm_func_add("wifiget", nm_expr_get, FALSE, TRUE);
+  vm_func_add("wifiscan", nm_action_scan, FALSE, TRUE);
+  vm_func_add("wificonnect", nm_action_connect, FALSE, TRUE);
+  vm_func_add("wifidisconnect", nm_action_disconnect, FALSE, TRUE);
+  vm_func_add("wififorget", nm_action_forget, FALSE, TRUE);
   sub_add = g_dbus_connection_signal_subscribe(nm_con, nm_owner,
       nm_iface_objmgr, "InterfacesAdded", NULL, NULL,
       G_DBUS_SIGNAL_FLAGS_NONE, nm_object_new, NULL, NULL);

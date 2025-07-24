@@ -124,7 +124,48 @@ static gboolean vm_op_binary ( vm_t *vm )
   return TRUE;
 }
 
-value_t vm_function_call ( vm_t *vm, GBytes *code, guint8 np )
+static gboolean vm_exec_sync_thread ( vm_call_t *call )
+{
+  value_t v1;
+
+  v1 = call->func(call->vm, call->p, call->np);
+  g_mutex_lock(&call->mutex);
+  call->result = v1;
+  call->ready = TRUE;
+  g_cond_signal(&call->cond);
+  g_mutex_unlock(&call->mutex);
+
+  return FALSE;
+}
+
+value_t vm_function_native ( vm_t *vm, vm_function_t *func, gint np )
+{
+  value_t v1;
+  vm_call_t *call;
+
+  if(func->flags & VM_FUNC_THREADSAFE ||
+        g_main_context_is_owner(g_main_context_default()))
+      return func->ptr.function(vm,
+          (value_t *)vm->stack->data + vm->stack->len - np, np);
+  call = g_malloc0(sizeof(vm_call_t));
+  call->func = func->ptr.function;
+  call->vm = vm;
+  call->p = (value_t *)vm->stack->data + vm->stack->len - np;
+  call->np = np;
+
+  g_mutex_lock(&call->mutex);
+  g_main_context_invoke(NULL, (GSourceFunc)vm_exec_sync_thread, call);
+  while(!call->ready)
+    g_cond_wait(&call->cond, &call->mutex);
+  g_mutex_unlock(&call->mutex);
+
+  v1 = call->result;
+  g_free(call);
+
+  return v1;
+}
+
+value_t vm_function_user ( vm_t *vm, GBytes *code, guint8 np )
 {
   value_t v1;
   guint8 *saved_code, *saved_ip;
@@ -178,13 +219,12 @@ static gboolean vm_function ( vm_t *vm )
   result = value_na;
   if(!(func->flags & VM_FUNC_USERDEFINED) && func->ptr.function)
   {
-    result = func->ptr.function(vm,
-        (value_t *)vm->stack->data + vm->stack->len - np, np);
+    result = vm_function_native(vm, func, np);
     if(vm->expr)
       vm->expr->vstate |= !(func->flags & VM_FUNC_DETERMINISTIC);
   }
   else if(func->flags & VM_FUNC_USERDEFINED)
-    result = vm_function_call(vm, func->ptr.code, np);
+    result = vm_function_user(vm, func->ptr.code, np);
   else
     result = value_na;
 
@@ -374,12 +414,29 @@ static vm_t *vm_new ( GBytes *code )
 {
   vm_t *vm;
 
+  if(!code)
+    return NULL;
   vm = g_malloc0(sizeof(vm_t));
 
   vm->bytes = g_bytes_ref(code);
   vm->code = (gpointer)g_bytes_get_data(code, &vm->len);
 
   return vm;
+}
+
+void vm_widget_set ( vm_t *vm, GtkWidget *widget )
+{
+  if( (vm->widget = widget) )
+    g_object_weak_ref(G_OBJECT(vm->widget), (GWeakNotify)g_nullify_pointer,
+        &vm->widget);
+}
+
+void vm_widget_unset ( vm_t *vm )
+{
+  if(vm->widget)
+    g_object_weak_unref(G_OBJECT(vm->widget), (GWeakNotify)g_nullify_pointer,
+        &vm->widget);
+  vm->widget = NULL;
 }
 
 static void vm_free ( vm_t *vm )
@@ -400,6 +457,8 @@ static void vm_free ( vm_t *vm )
   if(vm->pstack)
     g_ptr_array_free(vm->pstack, TRUE);
 
+  vm_store_unref(vm->store);
+  vm_widget_unset(vm);
   g_bytes_unref(vm->bytes);
   g_free(vm);
 }
@@ -410,9 +469,9 @@ value_t vm_code_eval ( GBytes *code, GtkWidget *widget )
   vm_t *vm;
 
   vm = vm_new(code);
-  vm->widget = widget;
+  vm_widget_set(vm, widget);
   vm->wstate = base_widget_state_build(vm->widget, NULL);
-  vm->store = widget? base_widget_get_store(widget) : NULL;
+  vm->store = vm_store_ref(widget? base_widget_get_store(widget) : NULL);
 
   v1 = vm_run(vm);
   vm_free(vm);
@@ -425,16 +484,17 @@ value_t vm_expr_eval ( expr_cache_t *expr )
   value_t v1;
   vm_t *vm;
 
+  if(!expr || !expr->code)
+    return value_na;
   vm = vm_new(expr->code);
 
-  vm->widget = expr->widget;
+  vm_widget_set(vm, expr->widget);
   vm->event = expr->event;
   vm->expr = expr;
   vm->wstate = base_widget_state_build(vm->widget, vm->win);
-  if(expr->store)
-    vm->store = expr->store;
-  else if(expr->widget)
-    vm->store = base_widget_get_store(expr->widget);
+  vm->store = expr->store? expr->store :
+    (expr->widget? base_widget_get_store(expr->widget) : NULL);
+  vm_store_ref(vm->store);
 
   v1 = vm_run(vm);
   vm_free(vm);
@@ -442,25 +502,56 @@ value_t vm_expr_eval ( expr_cache_t *expr )
   return v1;
 }
 
+static gboolean vm_run_action_thread ( vm_t *vm )
+{
+  value_free(vm_run(vm));
+  if(vm->event)
+    gdk_event_free(vm->event);
+  vm_free(vm);
+
+  return FALSE;
+}
+
+static gpointer vm_action_thread ( GMainContext *context )
+{
+  GMainLoop *loop;
+
+  g_main_context_push_thread_default(context);
+  loop = g_main_loop_new(context, FALSE);
+  g_main_loop_run(loop);
+  g_main_loop_unref(loop);
+
+  g_main_context_pop_thread_default(context);
+  g_main_context_unref(context);
+
+  return NULL;
+}
+
 void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
     window_t *win, guint16 *state, vm_store_t *store )
 {
+  static GMainContext *action_context;
   vm_t *vm;
 
   g_return_if_fail(code);
 
   vm = vm_new(code);
-  vm->widget = widget;
-  vm->event = event;
+  vm_widget_set(vm, widget);
+  if(event)
+    vm->event = gdk_event_copy(event);
   vm->win = win;
   vm->wstate = state? *state : base_widget_state_build(vm->widget, vm->win);
-  if(store)
-    vm->store = store;
-  else
-    vm->store = widget? base_widget_get_store(widget) : NULL;
+  vm->store = store? store : (widget? base_widget_get_store(widget) : NULL);
+  vm_store_ref(vm->store);
 
-  value_free(vm_run(vm));
-  vm_free(vm);
+  if(!action_context)
+  {
+    action_context = g_main_context_new();
+    g_thread_new("action", (GThreadFunc)vm_action_thread,
+        g_main_context_ref(action_context));
+  }
+
+  g_main_context_invoke(action_context, (GSourceFunc)vm_run_action_thread, vm);
 }
 
 void vm_run_user_defined ( gchar *name, GtkWidget *widget, GdkEvent *event,

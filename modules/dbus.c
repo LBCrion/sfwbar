@@ -262,7 +262,7 @@ static void dbus_signal_cb ( GDBusConnection *con, const gchar *sender,
   store = vm_store_new(NULL, FALSE);
   vm_store_insert_full(store, "DbusSignal", dbus_variant2value(params));
   trigger_emit_with_data((gchar *)data, store);
-  vm_store_free(store);
+  vm_store_unref(store);
 }
 
 static value_t dbus_action_subscribe (vm_t *vm, value_t p[], gint np)
@@ -313,9 +313,9 @@ static value_t dbus_action_watch (vm_t *vm, value_t p[], gint np)
 
 gboolean sfwbar_module_init ( void )
 {
-  vm_func_add("DbusCall", dbus_action_call, TRUE);
-  vm_func_add("DbusSubscribe", dbus_action_subscribe, TRUE);
-  vm_func_add("DbusWatch", dbus_action_watch, TRUE);
+  vm_func_add("DbusCall", dbus_action_call, TRUE, TRUE);
+  vm_func_add("DbusSubscribe", dbus_action_subscribe, TRUE, TRUE);
+  vm_func_add("DbusWatch", dbus_action_watch, TRUE, TRUE);
 
   return TRUE;
 }

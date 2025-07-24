@@ -843,11 +843,11 @@ static value_t iw_action_forget ( vm_t *vm, value_t p[], gint np )
 
 static void iw_activate ( void )
 {
-  vm_func_add("wifiget", iw_expr_get, FALSE);
-  vm_func_add("wifiscan", iw_action_scan, TRUE);
-  vm_func_add("wificonnect", iw_action_connect, TRUE);
-  vm_func_add("wifidisconnect", iw_action_disconnect, TRUE);
-  vm_func_add("wififorget", iw_action_forget, TRUE);
+  vm_func_add("wifiget", iw_expr_get, FALSE, TRUE);
+  vm_func_add("wifiscan", iw_action_scan, TRUE, TRUE);
+  vm_func_add("wificonnect", iw_action_connect, TRUE, TRUE);
+  vm_func_add("wifidisconnect", iw_action_disconnect, TRUE, TRUE);
+  vm_func_add("wififorget", iw_action_forget, TRUE, TRUE);
   sub_add = g_dbus_connection_signal_subscribe(iw_con, iw_owner,
       "org.freedesktop.DBus.ObjectManager", "InterfacesAdded", NULL, NULL,
       G_DBUS_SIGNAL_FLAGS_NONE, iw_object_new_cb, NULL, NULL);

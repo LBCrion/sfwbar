@@ -134,12 +134,7 @@ void config_menu_items ( GScanner *scanner, GtkWidget *menu )
     }
     config_check_and_consume(scanner, ';');
     if(item)
-    {
-      if(g_object_get_data(G_OBJECT(menu), "sort"))
         menu_item_insert(menu, item);
-      else
-        gtk_container_add(GTK_CONTAINER(menu), item);
-    }
   }
 }
 

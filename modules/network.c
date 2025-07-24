@@ -750,8 +750,8 @@ gboolean sfwbar_module_init ( void )
   g_debug("netstat: socket: %d", sock);
   if( (chan = g_io_channel_unix_new(sock)) )
   {
-    vm_func_add("netstat", network_func_netstat, FALSE);
-    vm_func_add("netinfo", network_func_netinfo, FALSE);
+    vm_func_add("netstat", network_func_netstat, FALSE, TRUE);
+    vm_func_add("netinfo", network_func_netinfo, FALSE, TRUE);
     g_io_add_watch(chan,G_IO_IN | G_IO_PRI |G_IO_ERR | G_IO_HUP,
         net_rt_parse, NULL);
     net_rt_request(sock);

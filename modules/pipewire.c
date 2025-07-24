@@ -149,7 +149,7 @@ gboolean sfwbar_module_init ( void )
   }
 
   g_datalist_init(&proxy_map);
-  vm_func_add("PipewireCount", pw_count_func, FALSE);
+  vm_func_add("PipewireCount", pw_count_func, FALSE, TRUE);
   pw_thread_loop_unlock(loop);
   pw_thread_loop_start(loop);
 

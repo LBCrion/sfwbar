@@ -296,6 +296,6 @@ static value_t bsdctl_func ( vm_t *vm, value_t p[], gint np )
 
 gboolean sfwbar_module_init ( void )
 {
-  vm_func_add("BSDCtl", bsdctl_func, FALSE);
+  vm_func_add("BSDCtl", bsdctl_func, FALSE, TRUE);
   return TRUE;
 }

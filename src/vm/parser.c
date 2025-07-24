@@ -794,6 +794,15 @@ GBytes *parser_string_build ( gchar *str )
   return parser_free(code);
 }
 
+GBytes *parser_action_build ( GScanner *scanner )
+{
+  GByteArray *code;
+
+  code = parser_new();
+  parser_block_parse(scanner, code);
+  return parser_free(code);
+}
+
 void parser_init ( void )
 {
   parser_instructions = g_hash_table_new((GHashFunc)str_nhash,

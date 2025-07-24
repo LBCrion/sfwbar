@@ -247,9 +247,9 @@ static value_t mpd_set_passwd ( vm_t *vm, value_t p[], gint np )
 
 gboolean sfwbar_module_init ( void )
 {
-  vm_func_add("mpd", mpd_expr_func, FALSE);
-  vm_func_add("mpdcommand", mpd_command, TRUE);
-  vm_func_add("mpdsetpassword", mpd_set_passwd, TRUE);
+  vm_func_add("mpd", mpd_expr_func, FALSE, TRUE);
+  vm_func_add("mpdcommand", mpd_command, TRUE, TRUE);
+  vm_func_add("mpdsetpassword", mpd_set_passwd, TRUE, TRUE);
   if(mpd_connect(NULL))
     g_timeout_add (1000,(GSourceFunc )mpd_connect,NULL);
   return TRUE;

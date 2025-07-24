@@ -112,6 +112,7 @@ gboolean base_widget_update_expressions ( GtkWidget *self )
 
   if(expr_cache_eval(priv->value) || BASE_WIDGET_GET_CLASS(self)->always_update)
     g_main_context_invoke(NULL, (GSourceFunc)base_widget_update_value, self);
+  priv->value->eval = TRUE;
   if(expr_cache_eval(priv->style))
     g_main_context_invoke(NULL, (GSourceFunc)base_widget_style, self);
   if(priv->local_state)
@@ -133,6 +134,7 @@ static void base_widget_destroy ( GtkWidget *self )
   g_mutex_lock(&widget_mutex);
   widgets_scan = g_list_remove(widgets_scan, self);
   g_mutex_unlock(&widget_mutex);
+  g_source_remove_by_user_data(self);
 
   if(priv->mirror_parent)
   {
@@ -793,7 +795,6 @@ static void base_widget_init ( BaseWidget *self )
   priv->rect.width = 1;
   priv->rect.height = 1;
   base_widget_set_id(GTK_WIDGET(self), NULL);
-  g_mutex_init(&priv->mutex);
 
   gtk_widget_add_events(GTK_WIDGET(self),
       GDK_BUTTON_RELEASE_MASK | GDK_SCROLL_MASK);
@@ -911,15 +912,14 @@ void base_widget_set_next_poll ( GtkWidget *self, gint64 ctime )
   if(priv->trigger)
     return;
 
-  while(priv->next_poll <= ctime)
-    priv->next_poll += priv->interval;
+  priv->next_poll = ctime + priv->interval;
 }
 
 gint64 base_widget_get_next_poll ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
 
-  g_return_val_if_fail(IS_BASE_WIDGET(self),G_MAXINT64);
+  g_return_val_if_fail(IS_BASE_WIDGET(self), G_MAXINT64);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(priv->trigger || !priv->interval)
@@ -1035,18 +1035,6 @@ GtkWidget *base_widget_get_mirror_parent ( GtkWidget *self )
     return self;
 }
 
-gint64 base_widget_update ( GtkWidget *self, gint64 *ctime )
-{
-  if(!ctime || base_widget_get_next_poll(self) <= *ctime)
-  {
-    base_widget_update_expressions(self);
-    if(ctime)
-      base_widget_set_next_poll(self, *ctime);
-  }
-
-  return base_widget_get_next_poll(self);
-}
-
 gpointer base_widget_scanner_thread ( GMainContext *gmc )
 {
   GList *iter;
@@ -1061,7 +1049,16 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
    
     g_mutex_lock(&widget_mutex);
     for(iter=widgets_scan; iter!=NULL; iter=g_list_next(iter))
-      timer = MIN(timer, base_widget_update(iter->data, &ctime));
+    {
+      if(base_widget_get_next_poll(iter->data) <= ctime)
+      {
+        g_mutex_unlock(&widget_mutex);
+        base_widget_update_expressions(iter->data);
+        base_widget_set_next_poll(iter->data, ctime);
+        g_mutex_lock(&widget_mutex);
+      }
+      timer = MIN(timer, base_widget_get_next_poll(iter->data));
+    }
     g_mutex_unlock(&widget_mutex);
 
     timer -= g_get_monotonic_time();
