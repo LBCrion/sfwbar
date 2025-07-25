@@ -417,9 +417,9 @@ void menu_item_label_update ( GtkWidget *self )
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv);
 
-  if(expr_cache_eval(priv->label_expr))
+  if(vm_expr_eval(priv->label_expr))
     menu_item_set_label(self, priv->label_expr->cache);
-  if(expr_cache_eval(priv->tooltip_expr))
+  if(vm_expr_eval(priv->tooltip_expr))
     gtk_widget_set_tooltip_text(self, priv->tooltip_expr->cache);
 }
 

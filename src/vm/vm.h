@@ -53,8 +53,9 @@ typedef struct {
   GArray *stack;
   GPtrArray *pstack;
   gint max_stack;
-  gboolean use_cached;
   guint16 wstate;
+  gboolean use_cached;
+  gboolean vstate;
   GtkWidget *widget;
   GdkEvent *event;
   window_t *win;
@@ -96,9 +97,6 @@ typedef struct {
 #define vm_param_check_numeric(vm, p, n, fname) { if(!value_like_numeric(p[n])) { return value_na; } }
 #define vm_param_check_array(vm, p, n, fname) { if(!value_is_array(p[n])) { return value_na; } }
 
-/* #define VM_EXEC_IN_MAIN_THREAD(f) if(!g_main_context_is_owner(g_main_context_default())) \
-  return vm_exec_sync(f, vm, p, np); */
-
 void parser_init ( void );
 GBytes *parser_expr_compile ( gchar *expr );
 gboolean parser_block_parse ( GScanner *scanner, GByteArray * );
@@ -111,7 +109,7 @@ GBytes *parser_string_build ( gchar *str );
 GBytes *parser_action_build ( GScanner *scanner );
 
 value_t vm_code_eval ( GBytes *code, GtkWidget *widget );
-value_t vm_expr_eval ( expr_cache_t *expr );
+gboolean vm_expr_eval ( expr_cache_t *expr );
 value_t vm_function_user ( vm_t *vm, GBytes *code, guint8 np );
 void vm_run_action ( GBytes *code, GtkWidget *w, GdkEvent *e, window_t *win,
     guint16 *s, vm_store_t *store);
@@ -119,7 +117,6 @@ void vm_run_user_defined ( gchar *action, GtkWidget *widget, GdkEvent *event,
     window_t *win, guint16 *state, vm_store_t *store );
 value_t vm_exec_sync ( vm_func_t, vm_t *, value_t [], gint );
 void vm_widget_set ( vm_t *vm, GtkWidget *widget );
-void vm_widget_unset ( vm_t *vm );
 
 void vm_func_init ( void );
 void vm_func_add ( gchar *name, vm_func_t func, gboolean det, gboolean safe);

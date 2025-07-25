@@ -110,10 +110,10 @@ gboolean base_widget_update_expressions ( GtkWidget *self )
   g_return_val_if_fail(IS_BASE_WIDGET(self), FALSE);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  if(expr_cache_eval(priv->value) || BASE_WIDGET_GET_CLASS(self)->always_update)
+  if(vm_expr_eval(priv->value) || BASE_WIDGET_GET_CLASS(self)->always_update)
     g_main_context_invoke(NULL, (GSourceFunc)base_widget_update_value, self);
   priv->value->eval = TRUE;
-  if(expr_cache_eval(priv->style))
+  if(vm_expr_eval(priv->style))
     g_main_context_invoke(NULL, (GSourceFunc)base_widget_style, self);
   if(priv->local_state)
     g_list_foreach(priv->mirror_children,
@@ -438,7 +438,7 @@ static gboolean base_widget_query_tooltip ( GtkWidget *self, gint x, gint y,
   priv = base_widget_get_instance_private(
       BASE_WIDGET(base_widget_get_mirror_parent(self)));
 
-  (void)expr_cache_eval(priv->tooltip);
+  (void)vm_expr_eval(priv->tooltip);
   gtk_tooltip_set_markup(tooltip, priv->tooltip->cache);
 
   return priv->tooltip->cache && *(priv->tooltip->cache);
@@ -477,7 +477,7 @@ static void base_widget_set_value ( GtkWidget *self, GBytes *code )
   priv->value->widget = self;
   priv->value->eval = !!code;
 
-  if(expr_cache_eval(priv->value) || BASE_WIDGET_GET_CLASS(self)->always_update)
+  if(vm_expr_eval(priv->value) || BASE_WIDGET_GET_CLASS(self)->always_update)
     base_widget_update_value(self);
 
   g_mutex_lock(&widget_mutex);
@@ -502,7 +502,7 @@ static void base_widget_set_style ( GtkWidget *self, GBytes *code )
   priv->style->eval = !!code;
 
   if((priv->mirror_parent && !priv->local_state) ||
-      expr_cache_eval(priv->style))
+      vm_expr_eval(priv->style))
     base_widget_style(self);
 
   g_mutex_lock(&widget_mutex);

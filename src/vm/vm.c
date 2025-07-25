@@ -138,7 +138,7 @@ static gboolean vm_exec_sync_thread ( vm_call_t *call )
   return FALSE;
 }
 
-value_t vm_function_native ( vm_t *vm, vm_function_t *func, gint np )
+static value_t vm_function_native ( vm_t *vm, vm_function_t *func, gint np )
 {
   value_t v1;
   vm_call_t *call;
@@ -426,17 +426,12 @@ static vm_t *vm_new ( GBytes *code )
 
 void vm_widget_set ( vm_t *vm, GtkWidget *widget )
 {
-  if( (vm->widget = widget) )
-    g_object_weak_ref(G_OBJECT(vm->widget), (GWeakNotify)g_nullify_pointer,
-        &vm->widget);
-}
-
-void vm_widget_unset ( vm_t *vm )
-{
   if(vm->widget)
     g_object_weak_unref(G_OBJECT(vm->widget), (GWeakNotify)g_nullify_pointer,
         &vm->widget);
-  vm->widget = NULL;
+  if( (vm->widget = widget) )
+    g_object_weak_ref(G_OBJECT(vm->widget), (GWeakNotify)g_nullify_pointer,
+        &vm->widget);
 }
 
 static void vm_free ( vm_t *vm )
@@ -458,7 +453,7 @@ static void vm_free ( vm_t *vm )
     g_ptr_array_free(vm->pstack, TRUE);
 
   vm_store_unref(vm->store);
-  vm_widget_unset(vm);
+  vm_widget_set(vm, NULL);
   g_bytes_unref(vm->bytes);
   g_free(vm);
 }
@@ -479,13 +474,14 @@ value_t vm_code_eval ( GBytes *code, GtkWidget *widget )
   return v1;
 }
 
-value_t vm_expr_eval ( expr_cache_t *expr )
+gboolean vm_expr_eval ( expr_cache_t *expr )
 {
   value_t v1;
   vm_t *vm;
+  gchar *eval;
 
-  if(!expr || !expr->code)
-    return value_na;
+  if(!expr || !expr->eval || !expr->code)
+    return FALSE;
   vm = vm_new(expr->code);
 
   vm_widget_set(vm, expr->widget);
@@ -496,10 +492,27 @@ value_t vm_expr_eval ( expr_cache_t *expr )
     (expr->widget? base_widget_get_store(expr->widget) : NULL);
   vm_store_ref(vm->store);
 
+  expr->vstate = FALSE;
   v1 = vm_run(vm);
+  expr->eval &= expr->vstate;
+  eval = value_to_string(v1, -1);
   vm_free(vm);
+  value_free(v1);
 
-  return v1;
+  g_debug("expr: '%s' = '%s', vstate: %d", expr->definition, eval,
+      expr->vstate);
+
+  if(g_strcmp0(eval, expr->cache))
+  {
+    g_free(expr->cache);
+    expr->cache = eval;
+    return TRUE;
+  }
+  else
+  {
+    g_free(eval);
+    return FALSE;
+  }
 }
 
 static gboolean vm_run_action_thread ( vm_t *vm )
@@ -547,8 +560,8 @@ void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
   if(!action_context)
   {
     action_context = g_main_context_new();
-    g_thread_new("action", (GThreadFunc)vm_action_thread,
-        g_main_context_ref(action_context));
+    g_thread_unref(g_thread_new("action", (GThreadFunc)vm_action_thread,
+        g_main_context_ref(action_context)));
   }
 
   g_main_context_invoke(action_context, (GSourceFunc)vm_run_action_thread, vm);
@@ -559,8 +572,7 @@ void vm_run_user_defined ( gchar *name, GtkWidget *widget, GdkEvent *event,
 {
   vm_function_t *func;
 
-  func = vm_func_lookup(name);
-  if(func->flags & VM_FUNC_USERDEFINED)
+  if( (func = vm_func_lookup(name)) && (func->flags & VM_FUNC_USERDEFINED))
     vm_run_action(func->ptr.code, widget, event, win, state, store);
   else
     g_warning("vm: invalid user defined function: %s", name);

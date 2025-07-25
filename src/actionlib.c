@@ -47,7 +47,6 @@ static value_t action_function ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, 0, "Function");
 
   widget = vm->widget;
-  vm_widget_unset(vm);
   if(np==2)
   {
     vm_param_check_string(vm, p, 1, "Function");
@@ -65,7 +64,6 @@ static value_t action_function ( vm_t *vm, value_t p[], gint np )
       (func->flags & VM_FUNC_USERDEFINED) )
     value_free(vm_function_user(vm, func->ptr.code, 0));
 
-  vm_widget_unset(vm);
   vm_widget_set(vm, widget);
   vm->win = win;
   vm->wstate = state;
@@ -668,10 +666,13 @@ static value_t action_update_widget ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_print ( vm_t *vm, value_t p[], gint np )
 {
-  vm_param_check_np(vm, np, 1, "Print");
-  vm_param_check_string(vm, p, 0, "Print");
+  gchar *str;
 
-  g_message("%s", value_get_string(p[0]));
+  vm_param_check_np(vm, np, 1, "Print");
+
+  str = value_to_string(p[0], -1);
+  g_message("%s", str);
+  g_free(str);
 
   return value_na;
 }
@@ -679,9 +680,8 @@ static value_t action_print ( vm_t *vm, value_t p[], gint np )
 static value_t action_usleep ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np(vm, np, 1, "uSleep");
-  vm_param_check_numeric(vm, p, 0, "uSleep");
 
-  g_usleep(value_get_numeric(p[0]));
+  g_usleep(value_as_numeric(p[0]));
 
   return value_na;
 }

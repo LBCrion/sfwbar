@@ -1,5 +1,6 @@
 
 #include "vm/value.h"
+#include "util/string.h"
 
 void value_free ( value_t v1 )
 {
@@ -102,4 +103,15 @@ gchar *value_array_to_string ( value_t value )
   g_string_append(result, "]");
 
   return g_string_free(result, FALSE);
+}
+
+gchar *value_to_string ( value_t v1, gint prec )
+{
+  if(value_is_array(v1))
+    return value_array_to_string(v1);
+  if(value_is_numeric(v1))
+    return numeric_to_string(value_get_numeric(v1), prec);
+  if(value_is_string(v1))
+    return g_strdup(value_get_string(v1));
+  return g_strdup("n/a");
 }

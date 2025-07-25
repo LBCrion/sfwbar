@@ -10,7 +10,7 @@
 
 static GData *expr_deps;
 
-gboolean expr_cache_eval ( expr_cache_t *expr )
+/*gboolean expr_cache_eval ( expr_cache_t *expr )
 {
   value_t v1;
   gchar *eval;
@@ -44,7 +44,7 @@ gboolean expr_cache_eval ( expr_cache_t *expr )
     g_free(eval);
     return FALSE;
   }
-}
+}*/
 
 expr_cache_t *expr_cache_new ( void )
 {

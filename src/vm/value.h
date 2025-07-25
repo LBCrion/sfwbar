@@ -53,5 +53,6 @@ void value_free_ptr ( value_t *v1 );
 value_t value_dup ( value_t );
 value_t value_array_concat ( value_t v1, value_t v2 );
 gchar *value_array_to_string ( value_t value );
+gchar *value_to_string ( value_t v1, gint prec );
 
 #endif

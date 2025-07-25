@@ -467,7 +467,7 @@ static ScanVar *scanner_var_update ( GQuark id, gboolean update,
     {
       var->inuse = TRUE;
       var->expr->parent = expr;
-      (void)expr_cache_eval(var->expr);
+      (void)vm_expr_eval(var->expr);
       var->expr->parent = NULL;
       var->inuse = FALSE;
       var->vstate = var->expr->vstate;

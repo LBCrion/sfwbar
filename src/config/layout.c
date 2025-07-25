@@ -253,6 +253,7 @@ static GtkWidget *config_widget_get ( GScanner *scanner,
     {
       g_scanner_error(scanner,
           "Widget id collision: parent container mismatch.");
+      scanner->max_parse_errors = FALSE;
       g_scanner_error(scanner, "Widget '%s' already exists in container '%s'",
           name, base_widget_get_id(parent));
       return NULL;
