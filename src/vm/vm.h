@@ -46,9 +46,7 @@ typedef struct _vm_var {
 
 typedef struct {
   guint8 *ip;
-  guint8 *code;
   GBytes *bytes;
-  gsize len;
   gsize fp;
   GArray *stack;
   GPtrArray *pstack;
@@ -99,14 +97,13 @@ typedef struct {
 
 void parser_init ( void );
 GBytes *parser_expr_compile ( gchar *expr );
-gboolean parser_block_parse ( GScanner *scanner, GByteArray * );
-gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code );
 gboolean parser_macro_add ( GScanner *scanner );
 gboolean parser_function_parse( GScanner *scanner );
 const gchar *parser_identifier_lookup ( gchar *identifier );
 GBytes *parser_exec_build ( gchar *cmd );
 GBytes *parser_string_build ( gchar *str );
 GBytes *parser_action_build ( GScanner *scanner );
+GBytes *parser_expr_build ( GScanner *scanner );
 
 value_t vm_code_eval ( GBytes *code, GtkWidget *widget );
 gboolean vm_expr_eval ( expr_cache_t *expr );

@@ -270,7 +270,7 @@ void config_log_error ( GScanner *scanner, gchar *message, gboolean error )
 }
 
 GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
-   vm_store_t *globals )
+   vm_store_t *globals, gboolean api2 )
 {
   GScanner *scanner;
   GtkWidget *w;
@@ -288,7 +288,7 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
   scanner->max_parse_errors = FALSE;
   scanner->user_data = g_malloc0(sizeof(scanner_data_t));
   SCANNER_STORE(scanner) = globals? globals : vm_store_new(NULL, FALSE);
-  SCANNER_DATA(scanner)->api2 = !g_ascii_strncasecmp(data, "#api2", 5);
+  SCANNER_DATA(scanner)->api2 = api2 | !g_ascii_strncasecmp(data, "#api2", 5);
 
   scanner->input_name = fname;
   g_scanner_input_text(scanner, data, strlen(data));
@@ -331,7 +331,7 @@ GtkWidget *config_parse ( gchar *file, GtkWidget *container,
   }
 
   g_debug("include: %s -> %s", file, fname);
-  w = config_parse_data (fname, conf, container, globals);
+  w = config_parse_data (fname, conf, container, globals, FALSE);
 
   g_free(conf);
 

@@ -44,11 +44,13 @@ gpointer config_lookup_next_ptr ( GScanner *scanner, GHashTable *table );
 gboolean config_check_and_consume ( GScanner *scanner, gint token );
 gchar *config_value_string ( gchar *dest, gchar *string );
 GtkWidget *config_parse ( gchar *, GtkWidget *, vm_store_t * );
-GtkWidget *config_parse_data ( gchar *, gchar *, GtkWidget *, vm_store_t *);
+GtkWidget *config_parse_data ( gchar *, gchar *, GtkWidget *, vm_store_t *,
+    gboolean);
 gboolean config_expect_token ( GScanner *scan, gint token, gchar *fmt, ...);
 gboolean config_is_section_end ( GScanner *scanner );
 void config_parse_sequence ( GScanner *scanner, ... );
-gboolean config_assign_boolean (GScanner *scanner, gboolean def, const gchar *expr);
+gboolean config_assign_boolean (GScanner *scanner, gboolean def,
+    const gchar *expr);
 gchar *config_assign_enum ( GScanner *scanner, const gchar *expr );
 gchar *config_assign_string ( GScanner *scanner, const gchar *expr );
 gdouble config_assign_number ( GScanner *scanner, const gchar *expr );

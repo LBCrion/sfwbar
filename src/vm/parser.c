@@ -10,19 +10,23 @@
 
 static GHashTable *macros, *parser_instructions;
 
-static GByteArray *parser_new ( void )
+static gboolean parser_block_parse ( GScanner *scanner, GByteArray * );
+static gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code );
+
+static GByteArray *parser_new ( guint8 api2 )
 {
-  GByteArray *code = g_byte_array_sized_new(1);
+  GByteArray *code = g_byte_array_sized_new(2);
   static guint8 count = 0;
 
   g_byte_array_append(code, &count, 1);
+  g_byte_array_append(code, &api2, 1);
 
   return code;
 }
 
 static GBytes *parser_free ( GByteArray *code )
 {
-  guint8 count, i, data[sizeof(value_t)+1];
+  guint8 count, api2, i, data[sizeof(value_t)+1];
 
   g_return_val_if_fail(code && code->len>0, NULL);
 
@@ -30,10 +34,13 @@ static GBytes *parser_free ( GByteArray *code )
   memcpy(data+1, &value_na, sizeof(value_t));
 
   count = code->data[0];
-  g_byte_array_remove_index(code, 0);
+  api2 = code->data[1];
+
+  g_byte_array_remove_range(code, 0, 2);
 
   for(i=0; i<count; i++)
     g_byte_array_prepend(code, data, sizeof(value_t)+1);
+  g_byte_array_prepend(code, &api2, 1);
 
   return g_byte_array_free_to_bytes(code);
 }
@@ -278,7 +285,7 @@ static gboolean parser_macro_handle ( GScanner *scanner, GByteArray *code )
     return FALSE;
 
   data = g_bytes_get_data(bytes, &len);
-  g_byte_array_append(code, data, len);
+  g_byte_array_append(code, data+1, len-1);
   return TRUE;
 }
 
@@ -408,7 +415,7 @@ static gboolean parser_ops ( GScanner *scanner, GByteArray *code, gint l )
   return TRUE;
 }
 
-gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code )
+static gboolean parser_expr_parse ( GScanner *scanner, GByteArray *code )
 {
   return parser_ops(scanner, code, 0);
 }
@@ -418,29 +425,21 @@ gboolean parser_macro_add ( GScanner *scanner )
   GByteArray *code;
   gchar *name;
 
-  if(g_scanner_get_next_token(scanner) != G_TOKEN_IDENTIFIER)
+  config_parse_sequence(scanner,
+      SEQ_REQ, G_TOKEN_IDENTIFIER, NULL, &name,
+        "Expected and identifier after define",
+      SEQ_REQ, '=', NULL, NULL, "Expected '=' after define",
+      SEQ_REQ, -2, config_expr, &code, NULL,
+      SEQ_OPT, ';', NULL, NULL, NULL,
+      SEQ_END);
+  if(scanner->max_parse_errors)
     return FALSE;
-  name = g_strdup(scanner->value.v_identifier);
-  if(!config_expect_token(scanner, '=', "Exepcted = after `define`"))
-  {
-    g_free(name);
-    return FALSE;
-  }
-
-  code = parser_new();
-
-  if(!parser_expr_parse(scanner, code))
-  {
-    g_byte_array_free(code, TRUE);
-    g_free(name);
-    return FALSE;
-  }
 
   if(!macros)
     macros = g_hash_table_new_full( (GHashFunc)str_nhash,
         (GEqualFunc)str_nequal, g_free, (GDestroyNotify)g_bytes_unref);
 
-  g_hash_table_insert(macros, name, parser_free(code));
+  g_hash_table_insert(macros, name, code);
 
   return TRUE;
 }
@@ -522,7 +521,7 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
     ptr = vm_func_lookup(scanner->value.v_identifier);
   else
   {
-    g_scanner_error(scanner, "action name missing. Got %x", scanner->next_token);
+    g_scanner_error(scanner, "action name missing. Got 0x%x", scanner->next_token);
     config_skip_statement(scanner);
     return FALSE;
   }
@@ -533,12 +532,11 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
   if(!cond && parser_heap_lookup(scanner))
     return parser_assign_parse(scanner, code, 0, parser_heap_lookup(scanner));
 
-  if(SCANNER_DATA(scanner)->api2)
-    if(!config_check_and_consume(scanner, '('))
-    {
-      g_scanner_error(scanner, "Missing '(' in function invocation");
-      return FALSE;
-    }
+  if(SCANNER_DATA(scanner)->api2 && !config_check_and_consume(scanner, '('))
+  {
+    g_scanner_error(scanner, "Missing '(' in function invocation");
+    return FALSE;
+  }
   if( !config_lookup_next_key(scanner, config_toplevel_keys) &&
       !config_lookup_next_key(scanner, config_prop_keys) &&
       !config_lookup_next_key(scanner, config_flowgrid_props) &&
@@ -553,12 +551,11 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
         np++;
     } while(config_check_and_consume(scanner, ','));
   }
-  if(SCANNER_DATA(scanner)->api2)
-    if(!config_check_and_consume(scanner, ')'))
-    {
-      g_scanner_error(scanner, "Missing ')' in function invocation");
-      return FALSE;
-    }
+  if(SCANNER_DATA(scanner)->api2 && !config_check_and_consume(scanner, ')'))
+  {
+    g_scanner_error(scanner, "Missing ')' in function invocation");
+    return FALSE;
+  }
 
   config_check_and_consume(scanner, ';');
   parser_emit_function(code, ptr, np);
@@ -692,7 +689,7 @@ static gboolean parser_instr_parse ( GScanner *scanner, GByteArray *code )
   return TRUE;
 }
 
-gboolean parser_block_parse ( GScanner *scanner, GByteArray *code )
+static gboolean parser_block_parse ( GScanner *scanner, GByteArray *code )
 {
   gboolean result = TRUE, alloc_hash;
 
@@ -730,8 +727,7 @@ static gboolean parser_params_parse ( GScanner *scanner, GByteArray *code )
 
 gboolean parser_function_parse( GScanner *scanner )
 {
-  GByteArray *acode;
-  GBytes *code;
+  GByteArray *code;
   gchar *name;
 
   if(config_check_and_consume(scanner, '('))
@@ -741,14 +737,14 @@ gboolean parser_function_parse( GScanner *scanner )
         SEQ_REQ, ')', NULL, NULL, "missing ')' after 'function'",
         SEQ_END);
 
-    if(!scanner->max_parse_errors && name && config_action(scanner, &code))
-      vm_func_add_user(name, code);
+    if(!scanner->max_parse_errors && name)
+      vm_func_add_user(name, parser_action_build(scanner));
     g_free(name);
 
     return !scanner->max_parse_errors;
   }
 
-  acode = parser_new();
+  code = parser_new(SCANNER_DATA(scanner)->api2);
   SCANNER_DATA(scanner)->locals = g_hash_table_new_full((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal, g_free, NULL);
 
@@ -756,15 +752,14 @@ gboolean parser_function_parse( GScanner *scanner )
       SEQ_REQ, G_TOKEN_IDENTIFIER, NULL, &name,
         "Missing identifier in a function declration",
       SEQ_REQ, '(', NULL, NULL, "Missing '(' in a function declaration",
-      SEQ_OPT, -2, parser_params_parse, acode, NULL,
+      SEQ_OPT, -2, parser_params_parse, code, NULL,
       SEQ_REQ, ')', NULL, NULL, "Missing ')' in function declaration",
       SEQ_END);
 
-  if(!scanner->max_parse_errors && name &&
-      parser_block_parse(scanner, acode))
-    vm_func_add_user(name, parser_free(acode));
+  if(!scanner->max_parse_errors && name && parser_block_parse(scanner, code))
+    vm_func_add_user(name, parser_free(code));
   else
-    g_byte_array_unref(acode);
+    g_byte_array_free(code, TRUE);
   g_free(name);
   g_clear_pointer(&SCANNER_DATA(scanner)->locals, g_hash_table_destroy);
 
@@ -777,7 +772,7 @@ GBytes *parser_exec_build ( gchar *cmd )
 
   if(!cmd)
     return NULL;
-  code = parser_new();
+  code = parser_new(TRUE);
   parser_emit_string(code, cmd);
   parser_emit_function(code, vm_func_lookup("exec"), 1);
   return parser_free(code);
@@ -789,7 +784,7 @@ GBytes *parser_string_build ( gchar *str )
 
   if(!str)
     return NULL;
-  code = parser_new();
+  code = parser_new(TRUE);
   parser_emit_string(code, str);
   return parser_free(code);
 }
@@ -798,8 +793,17 @@ GBytes *parser_action_build ( GScanner *scanner )
 {
   GByteArray *code;
 
-  code = parser_new();
+  code = parser_new(SCANNER_DATA(scanner)->api2);
   parser_block_parse(scanner, code);
+  return parser_free(code);
+}
+
+GBytes *parser_expr_build ( GScanner *scanner )
+{
+  GByteArray *code;
+
+  code = parser_new(SCANNER_DATA(scanner)->api2);
+  parser_expr_parse(scanner, code);
   return parser_free(code);
 }
 

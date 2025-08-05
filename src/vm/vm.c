@@ -168,22 +168,19 @@ static value_t vm_function_native ( vm_t *vm, vm_function_t *func, gint np )
 value_t vm_function_user ( vm_t *vm, GBytes *code, guint8 np )
 {
   value_t v1;
-  guint8 *saved_code, *saved_ip;
-  gsize saved_len, saved_stack, saved_fp;
+  guint8 *saved_ip;
+  gsize saved_stack, saved_fp;
   GBytes *saved_bytes;
 
   if(!code)
     return value_na;
 
-  saved_code = vm->code;
   saved_ip = vm->ip;
-  saved_len = vm->len;
   saved_stack = vm->stack->len;
   saved_fp = vm->fp;
   saved_bytes = vm->bytes;
 
   vm->bytes = g_bytes_ref(code);
-  vm->code = (guint8 *)g_bytes_get_data(code, &vm->len);
   vm->fp = vm->stack->len - np;
   v1 = vm_run(vm);
 
@@ -191,11 +188,9 @@ value_t vm_function_user ( vm_t *vm, GBytes *code, guint8 np )
     vm->expr->vstate = TRUE;
 
   g_bytes_unref(vm->bytes);
-  vm->code = saved_code;
-  vm->ip = saved_ip;
-  vm->len = saved_len;
-  vm->fp = saved_fp;
   vm->bytes = saved_bytes;
+  vm->ip = saved_ip;
+  vm->fp = saved_fp;
   vm_stack_unwind(vm, saved_stack);
 
   return v1;
@@ -331,10 +326,13 @@ static void vm_immediate ( vm_t *vm )
 static value_t vm_run ( vm_t *vm )
 {
   value_t v1;
+  guint8 *code;
+  gsize len;
   gint jmp;
 
-  if(!vm->code)
+  if(!vm->bytes)
     return value_na;
+  code = (guint8 *)g_bytes_get_data(vm->bytes, &len);
   if(IS_TASKBAR_ITEM(vm->widget))
     vm->win = flow_item_get_source(vm->widget);
 
@@ -345,11 +343,11 @@ static value_t vm_run ( vm_t *vm )
     vm->pstack = g_ptr_array_sized_new(
         MAX(1, vm->expr? vm->expr->stack_depth : 1));
 
-  for(vm->ip = vm->code; (vm->ip-vm->code)<vm->len; vm->ip++)
+  for(vm->ip = code+1; (vm->ip-code)<len; vm->ip++)
   {
     //g_message("stack %d, op %d", vm->stack->len, *vm->ip);
     if(*vm->ip < EXPR_OP_LAST &&
-        (vm->code+vm->len-vm->ip < vm_op_length[*vm->ip]))
+        (code+len-vm->ip < vm_op_length[*vm->ip]))
     {
       g_warning("vm: truncated operator %d", *vm->ip);
       return value_na;
@@ -400,9 +398,9 @@ static value_t vm_run ( vm_t *vm )
     }
     else if(!vm_op_binary(vm))
     {
-      g_warning("invalid op %d at %ld (stack %u)", *vm->ip, vm->ip - vm->code, vm->stack->len);
-      for(gint i=0;i<vm->len;i++)
-        g_warning("%d: %d", i, vm->code[i]);
+      g_warning("invalid op %d at %ld (stack %u)", *vm->ip, vm->ip - code, vm->stack->len);
+      for(gint i=0; i<len; i++)
+        g_warning("%d: %d", i, code[i]);
       break;
     }
   }
@@ -416,10 +414,9 @@ static vm_t *vm_new ( GBytes *code )
 
   if(!code)
     return NULL;
-  vm = g_malloc0(sizeof(vm_t));
 
+  vm = g_malloc0(sizeof(vm_t));
   vm->bytes = g_bytes_ref(code);
-  vm->code = (gpointer)g_bytes_get_data(code, &vm->len);
 
   return vm;
 }

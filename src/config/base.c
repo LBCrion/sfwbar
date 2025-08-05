@@ -44,14 +44,7 @@ gboolean config_action ( GScanner *scanner, GBytes **action_dst )
 
 gboolean config_expr ( GScanner *scanner, GBytes **expr_dst )
 {
-  GByteArray *code;
-
-  *expr_dst = NULL;
-  code = g_byte_array_new();
-  if(parser_expr_parse(scanner, code))
-    *expr_dst = g_byte_array_free_to_bytes(code);
-  else
-    g_byte_array_unref(code);
+  *expr_dst = parser_expr_build(scanner);
   return !!*expr_dst;
 }
 

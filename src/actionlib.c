@@ -84,7 +84,7 @@ static value_t action_piperead ( vm_t *vm, value_t p[], gint np )
 
   if(g_spawn_sync(NULL, argv, NULL, G_SPAWN_SEARCH_PATH |
         G_SPAWN_STDERR_TO_DEV_NULL, NULL, NULL, &conf, NULL, NULL, NULL))
-    config_parse_data(value_get_string(p[0]), conf, NULL, vm->store);
+    config_parse_data(value_get_string(p[0]), conf, NULL, vm->store, FALSE);
 
   g_free(conf);
   g_strfreev(argv);
@@ -136,7 +136,8 @@ static value_t action_config ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, 0, "Config");
 
   g_debug("parsing config string: %s", value_get_string(p[0]));
-  config_parse_data("config string", value_get_string(p[0]), NULL, vm->store);
+  config_parse_data("config string", value_get_string(p[0]), NULL, vm->store,
+      ((guint8 *)g_bytes_get_data(vm->bytes, NULL))[0]);
 
   return value_na;
 }
@@ -320,7 +321,7 @@ static value_t action_setcode ( vm_t *vm, value_t p[], gint np, gchar *func,
 {
   GtkWidget *widget;
   GBytes *code;
-  guint8 *mark;
+  guint8 *mark, api2 = TRUE;
 
   vm_param_check_np_range(vm, np, 1, 2, func);
   vm_param_check_string(vm, p, 0, func);
@@ -334,7 +335,10 @@ static value_t action_setcode ( vm_t *vm, value_t p[], gint np, gchar *func,
   if(!widget)
     return value_na;
 
-  code = g_bytes_new_take(g_memdup(mark, vm->ip - mark), vm->ip - mark);
+  GByteArray *bytes = g_byte_array_sized_new(vm->ip-mark+1);
+  g_byte_array_append(bytes, &api2, 1);
+  g_byte_array_append(bytes, mark, vm->ip - mark);
+  code = g_byte_array_free_to_bytes(bytes);
   g_object_set(G_OBJECT(widget), prop, code, NULL);
   g_bytes_unref(code);
 
@@ -488,7 +492,6 @@ static value_t action_unmaximize ( vm_t *vm, value_t p[], gint np )
 static value_t action_eval ( vm_t *vm, value_t p[], gint np )
 {
   gchar buf[G_ASCII_DTOSTR_BUF_SIZE], *ptr;
-  guint8 *data;
 
   vm_param_check_np(vm, np, 2, "Eval");
   vm_param_check_string(vm, p, 0, "Eval");
@@ -501,13 +504,8 @@ static value_t action_eval ( vm_t *vm, value_t p[], gint np )
   if(!ptr)
     return value_na;
 
-  data = g_malloc(strlen(ptr) + 3);
-  data[0] = EXPR_OP_IMMEDIATE;
-  data[1] = EXPR_TYPE_STRING;
-  memcpy(data+2, ptr, strlen(ptr)+1);
-
   scanner_var_new(value_get_string(p[0]), NULL,
-      (gchar *)g_bytes_new_take(data, strlen(ptr)+3), G_TOKEN_SET, VT_FIRST, vm->store);
+      (gchar *)parser_string_build(ptr), G_TOKEN_SET, VT_FIRST, vm->store);
 
   return value_na;
 }
