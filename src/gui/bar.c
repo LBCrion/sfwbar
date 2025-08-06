@@ -811,7 +811,7 @@ gboolean bar_update_monitor ( GtkWidget *self )
     g_debug("bar: move '%s' to output '%s' (%p)", priv->name,
         monitor_get_name(match), match);
     gtk_layer_set_monitor(GTK_WINDOW(self), match);
-    if(priv->visible)
+    if(priv->visible && priv->current_monitor)
       gtk_widget_show(self);
   }
 
