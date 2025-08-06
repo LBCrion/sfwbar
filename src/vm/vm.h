@@ -104,6 +104,7 @@ GBytes *parser_exec_build ( gchar *cmd );
 GBytes *parser_string_build ( gchar *str );
 GBytes *parser_action_build ( GScanner *scanner );
 GBytes *parser_expr_build ( GScanner *scanner );
+GBytes *parser_function_build ( gchar *name );
 
 value_t vm_code_eval ( GBytes *code, GtkWidget *widget );
 gboolean vm_expr_eval ( expr_cache_t *expr );

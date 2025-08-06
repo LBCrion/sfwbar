@@ -29,17 +29,8 @@ static void taskbar_class_init ( TaskbarClass *kclass )
 
 static void taskbar_init ( Taskbar *self )
 {
-  GBytes *action;
-  static guint8 data[sizeof(gpointer)+3];
-  gpointer fptr = vm_func_lookup("taskbaritemdefault");
-
-  data[0] = 1;
-  data[1] = EXPR_OP_FUNCTION;
-  memcpy(data+3, &fptr, sizeof(gpointer));
-
-  action = g_bytes_new_static(data, sizeof(gpointer)+3);
-  g_object_set(G_OBJECT(self), "action",
-      base_widget_attachment_new_array(action, 1, 0), NULL);
+  g_object_set(G_OBJECT(self), "action", base_widget_attachment_new_array(
+        parser_function_build("taskbaritemdefault"), 1, 0), NULL);
   flow_grid_invalidate(GTK_WIDGET(self));
 }
 

@@ -789,6 +789,19 @@ GBytes *parser_string_build ( gchar *str )
   return parser_free(code);
 }
 
+GBytes *parser_function_build ( gchar *name )
+{
+  GByteArray *code;
+  vm_function_t *func;
+
+  if( !(func = vm_func_lookup(name)) )
+    return NULL;
+
+  code = parser_new(TRUE);
+  parser_emit_function(code, func, 0);
+  return parser_free(code);
+}
+
 GBytes *parser_action_build ( GScanner *scanner )
 {
   GByteArray *code;
