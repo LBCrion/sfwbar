@@ -58,7 +58,7 @@ void config_parse_sequence ( GScanner *scanner, ... )
   gboolean matched = TRUE;
 
   scanner->max_parse_errors = FALSE;
-  va_start(args,scanner);
+  va_start(args, scanner);
   req = va_arg(args, gint);
   while(req!=SEQ_END)
   {

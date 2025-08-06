@@ -98,13 +98,13 @@ typedef struct {
 void parser_init ( void );
 GBytes *parser_expr_compile ( gchar *expr );
 gboolean parser_macro_add ( GScanner *scanner );
-gboolean parser_function_parse( GScanner *scanner );
+gboolean parser_function_build( GScanner *scanner );
 const gchar *parser_identifier_lookup ( gchar *identifier );
 GBytes *parser_exec_build ( gchar *cmd );
 GBytes *parser_string_build ( gchar *str );
 GBytes *parser_action_build ( GScanner *scanner );
 GBytes *parser_expr_build ( GScanner *scanner );
-GBytes *parser_function_build ( gchar *name );
+GBytes *parser_function_call_build ( gchar *name );
 
 value_t vm_code_eval ( GBytes *code, GtkWidget *widget );
 gboolean vm_expr_eval ( expr_cache_t *expr );

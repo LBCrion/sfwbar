@@ -725,9 +725,9 @@ static gboolean parser_params_parse ( GScanner *scanner, GByteArray *code )
   return TRUE;
 }
 
-gboolean parser_function_parse( GScanner *scanner )
+gboolean parser_function_build ( GScanner *scanner )
 {
-  GByteArray *code;
+  GByteArray *code = code;
   gchar *name;
 
   if(config_check_and_consume(scanner, '('))
@@ -750,16 +750,19 @@ gboolean parser_function_parse( GScanner *scanner )
 
   config_parse_sequence(scanner,
       SEQ_REQ, G_TOKEN_IDENTIFIER, NULL, &name,
-        "Missing identifier in a function declration",
+        "Missing identifier in a function declaration",
       SEQ_REQ, '(', NULL, NULL, "Missing '(' in a function declaration",
       SEQ_OPT, -2, parser_params_parse, code, NULL,
       SEQ_REQ, ')', NULL, NULL, "Missing ')' in function declaration",
       SEQ_END);
 
-  if(!scanner->max_parse_errors && name && parser_block_parse(scanner, code))
-    vm_func_add_user(name, parser_free(code));
-  else
-    g_byte_array_free(code, TRUE);
+  if(!scanner->max_parse_errors && name)
+  {
+    if(parser_block_parse(scanner, code))
+      vm_func_add_user(name, parser_free(code));
+    else
+      g_byte_array_free(code, TRUE);
+  }
   g_free(name);
   g_clear_pointer(&SCANNER_DATA(scanner)->locals, g_hash_table_destroy);
 
@@ -789,7 +792,7 @@ GBytes *parser_string_build ( gchar *str )
   return parser_free(code);
 }
 
-GBytes *parser_function_build ( gchar *name )
+GBytes *parser_function_call_build ( gchar *name )
 {
   GByteArray *code;
   vm_function_t *func;
@@ -807,8 +810,10 @@ GBytes *parser_action_build ( GScanner *scanner )
   GByteArray *code;
 
   code = parser_new(SCANNER_DATA(scanner)->api2);
-  parser_block_parse(scanner, code);
-  return parser_free(code);
+  if(parser_block_parse(scanner, code))
+    return parser_free(code);
+  g_byte_array_unref(code);
+  return NULL;
 }
 
 GBytes *parser_expr_build ( GScanner *scanner )
@@ -816,8 +821,10 @@ GBytes *parser_expr_build ( GScanner *scanner )
   GByteArray *code;
 
   code = parser_new(SCANNER_DATA(scanner)->api2);
-  parser_expr_parse(scanner, code);
-  return parser_free(code);
+  if(parser_expr_parse(scanner, code))
+    return parser_free(code);
+  g_byte_array_unref(code);
+  return NULL;
 }
 
 void parser_init ( void )

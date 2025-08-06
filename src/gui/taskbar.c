@@ -30,7 +30,7 @@ static void taskbar_class_init ( TaskbarClass *kclass )
 static void taskbar_init ( Taskbar *self )
 {
   g_object_set(G_OBJECT(self), "action", base_widget_attachment_new_array(
-        parser_function_build("taskbaritemdefault"), 1, 0), NULL);
+        parser_function_call_build("taskbaritemdefault"), 1, 0), NULL);
   flow_grid_invalidate(GTK_WIDGET(self));
 }
 

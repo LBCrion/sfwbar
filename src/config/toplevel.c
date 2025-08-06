@@ -263,7 +263,7 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
         wintree_filter_title(scanner->value.v_string);
         break;
       case G_TOKEN_FUNCTION:
-        parser_function_parse(scanner);
+        parser_function_build(scanner);
         break;
       case G_TOKEN_MODULE:
         config_module(scanner);
