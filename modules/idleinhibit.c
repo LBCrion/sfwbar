@@ -11,6 +11,7 @@
 #include "wayland.h"
 #include "idle-inhibit-unstable-v1.h"
 #include "vm/vm.h"
+#include "gui/basewidget.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = MODULE_API_VERSION;
@@ -18,12 +19,14 @@ static struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
 
 static value_t idle_inhibit_state ( vm_t *vm, value_t p[], gint np )
 {
-  return value_new_string(g_strdup((vm->widget && g_object_get_data(
-            G_OBJECT(vm->widget), "inhibitor"))? "on" : "off"));
+  GtkWidget *widget = base_widget_from_id(vm->store, VM_WIDGET(vm));
+  return value_new_string(g_strdup((widget && g_object_get_data(
+            G_OBJECT(widget), "inhibitor"))? "on" : "off"));
 }
 
 static value_t idle_inhibitor_action ( vm_t *vm, value_t p[], gint np )
 {
+  GtkWidget *widget = base_widget_from_id(vm->store, VM_WIDGET(vm));
   struct wl_surface *surface;
   struct zwp_idle_inhibitor_v1 *inhibitor;
   gboolean inhibit;
@@ -31,7 +34,7 @@ static value_t idle_inhibitor_action ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "SetIdleInhibitor");
   vm_param_check_string(vm, p, 0, "SetIdleInhibitor");
 
-  inhibitor = g_object_get_data(G_OBJECT(vm->widget), "inhibitor");
+  inhibitor = g_object_get_data(G_OBJECT(widget), "inhibitor");
 
   if(!g_ascii_strcasecmp(value_get_string(p[0]), "on"))
     inhibit = TRUE;
@@ -45,17 +48,17 @@ static value_t idle_inhibitor_action ( vm_t *vm, value_t p[], gint np )
   if(inhibit && !inhibitor)
   {
     if( !(surface = gdk_wayland_window_get_wl_surface(
-        gtk_widget_get_window(vm->widget))) )
+        gtk_widget_get_window(widget))) )
       return value_na;
 
     inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(
         idle_inhibit_manager, surface );
-    g_object_set_data(G_OBJECT(vm->widget), "inhibitor", inhibitor);
+    g_object_set_data(G_OBJECT(widget), "inhibitor", inhibitor);
     trigger_emit("idleinhibitor");
   }
   else if( !inhibit && inhibitor )
   {
-    g_object_set_data(G_OBJECT(vm->widget), "inhibitor", NULL);
+    g_object_set_data(G_OBJECT(widget), "inhibitor", NULL);
     zwp_idle_inhibitor_v1_destroy(inhibitor);
     trigger_emit("idleinhibitor");
   }

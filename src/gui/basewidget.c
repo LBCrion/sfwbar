@@ -896,7 +896,10 @@ gchar *base_widget_get_id ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
 
-  g_return_val_if_fail(IS_BASE_WIDGET(self),NULL);
+  if(!self)
+    return NULL;
+
+  g_return_val_if_fail(IS_BASE_WIDGET(self), NULL);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   return priv->id;

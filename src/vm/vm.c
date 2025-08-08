@@ -45,6 +45,37 @@ static value_t vm_pop ( vm_t *vm )
   return val;
 }
 
+void vm_target_push ( vm_t *vm, gchar *widget, gpointer wid, guint16 *state )
+{
+  vm_target_t *target, *current;
+
+  target = g_malloc0(sizeof(vm_target_t));
+  current = vm->tstack? vm->tstack->data : NULL;
+
+  target->widget = g_strdup(widget? widget : (current? current->widget:NULL));
+  target->wid = wid? wid : (current? current->wid : NULL);
+  target->state = state? *state : base_widget_state_build(
+      base_widget_from_id(vm->store, widget), wintree_from_id(wid));
+
+  vm->tstack = g_list_prepend(vm->tstack, target);
+}
+
+void vm_target_pop ( vm_t *vm )
+{
+  vm_target_t *target;
+
+  if(!vm->tstack)
+    return;
+
+  target = vm->tstack->data;
+  vm->tstack = g_list_remove_link(vm->tstack, vm->tstack);
+  if(target)
+  {
+    g_free(target->widget);
+    g_free(target);
+  }
+}
+
 static void vm_stack_unwind ( vm_t *vm, gsize target )
 {
   while(vm->stack->len>target)
@@ -325,6 +356,8 @@ static void vm_immediate ( vm_t *vm )
 
 static value_t vm_run ( vm_t *vm )
 {
+  GtkWidget *widget;
+  window_t *win;
   value_t v1;
   guint8 *code;
   gsize len;
@@ -333,8 +366,9 @@ static value_t vm_run ( vm_t *vm )
   if(!vm->bytes)
     return value_na;
   code = (guint8 *)g_bytes_get_data(vm->bytes, &len);
-  if(IS_TASKBAR_ITEM(vm->widget))
-    vm->win = flow_item_get_source(vm->widget);
+  if( (widget = base_widget_from_id(vm->store, VM_WIDGET(vm))) )
+    if(IS_TASKBAR_ITEM(widget) && (win = flow_item_get_source(widget)))
+      ((vm_target_t *)(vm->tstack->data))->wid = win->uid;
 
   if(!vm->stack)
     vm->stack = g_array_sized_new(FALSE, FALSE, sizeof(value_t),
@@ -421,16 +455,6 @@ static vm_t *vm_new ( GBytes *code )
   return vm;
 }
 
-void vm_widget_set ( vm_t *vm, GtkWidget *widget )
-{
-  if(vm->widget)
-    g_object_weak_unref(G_OBJECT(vm->widget), (GWeakNotify)g_nullify_pointer,
-        &vm->widget);
-  if( (vm->widget = widget) )
-    g_object_weak_ref(G_OBJECT(vm->widget), (GWeakNotify)g_nullify_pointer,
-        &vm->widget);
-}
-
 static void vm_free ( vm_t *vm )
 {
   if(vm->stack)
@@ -449,8 +473,10 @@ static void vm_free ( vm_t *vm )
   if(vm->pstack)
     g_ptr_array_free(vm->pstack, TRUE);
 
+  while(vm->tstack)
+    vm_target_pop(vm);
+
   vm_store_unref(vm->store);
-  vm_widget_set(vm, NULL);
   g_bytes_unref(vm->bytes);
   g_free(vm);
 }
@@ -461,8 +487,7 @@ value_t vm_code_eval ( GBytes *code, GtkWidget *widget )
   vm_t *vm;
 
   vm = vm_new(code);
-  vm_widget_set(vm, widget);
-  vm->wstate = base_widget_state_build(vm->widget, NULL);
+  vm_target_push(vm, widget? base_widget_get_id(widget) : NULL, NULL, NULL);
   vm->store = vm_store_ref(widget? base_widget_get_store(widget) : NULL);
 
   v1 = vm_run(vm);
@@ -481,10 +506,10 @@ gboolean vm_expr_eval ( expr_cache_t *expr )
     return FALSE;
   vm = vm_new(expr->code);
 
-  vm_widget_set(vm, expr->widget);
+  vm_target_push(vm, expr->widget? base_widget_get_id(expr->widget) : NULL,
+      NULL, NULL);
   vm->event = expr->event;
   vm->expr = expr;
-  vm->wstate = base_widget_state_build(vm->widget, vm->win);
   vm->store = expr->store? expr->store :
     (expr->widget? base_widget_get_store(expr->widget) : NULL);
   vm_store_ref(vm->store);
@@ -546,12 +571,10 @@ void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
   g_return_if_fail(code);
 
   vm = vm_new(code);
-  vm_widget_set(vm, widget);
   if(event)
     vm->event = gdk_event_copy(event);
-  vm->win = win;
-  vm->wstate = state? *state : base_widget_state_build(vm->widget, vm->win);
   vm->store = store? store : (widget? base_widget_get_store(widget) : NULL);
+  vm_target_push(vm, widget? base_widget_get_id(widget) : NULL, win? win->uid : NULL, state);
   vm_store_ref(vm->store);
 
   if(!action_context)

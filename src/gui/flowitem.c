@@ -133,7 +133,7 @@ void flow_item_invalidate ( GtkWidget *self )
 
 void *flow_item_get_source ( GtkWidget *self )
 {
-  g_return_val_if_fail(IS_FLOW_ITEM(self),NULL);
+  g_return_val_if_fail(IS_FLOW_ITEM(self), NULL);
 
   if(FLOW_ITEM_GET_CLASS(self)->get_source)
     return FLOW_ITEM_GET_CLASS(self)->get_source(self);

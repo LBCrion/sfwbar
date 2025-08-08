@@ -427,7 +427,7 @@ gboolean parser_macro_add ( GScanner *scanner )
 
   config_parse_sequence(scanner,
       SEQ_REQ, G_TOKEN_IDENTIFIER, NULL, &name,
-        "Expected and identifier after define",
+        "Expected an identifier after define",
       SEQ_REQ, '=', NULL, NULL, "Expected '=' after define",
       SEQ_REQ, -2, config_expr, &code, NULL,
       SEQ_OPT, ';', NULL, NULL, NULL,

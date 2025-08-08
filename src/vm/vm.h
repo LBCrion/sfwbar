@@ -44,6 +44,13 @@ typedef struct _vm_var {
   GQuark quark;
 } vm_var_t;
 
+typedef struct _vm_target {
+  gchar *widget;
+  gpointer wid;
+  guint16 state;
+  GdkEvent *event;
+} vm_target_t;
+
 typedef struct {
   guint8 *ip;
   GBytes *bytes;
@@ -51,15 +58,13 @@ typedef struct {
   GArray *stack;
   GPtrArray *pstack;
   gint max_stack;
-  guint16 wstate;
   gboolean use_cached;
   gboolean vstate;
-  GtkWidget *widget;
   GdkEvent *event;
-  window_t *win;
   expr_cache_t *expr;
   vm_store_t *store;
   vm_store_t *globals;
+  GList *tstack;
 } vm_t;
 
 typedef value_t (*vm_func_t)(vm_t *vm, value_t params[], gint np);
@@ -95,6 +100,10 @@ typedef struct {
 #define vm_param_check_numeric(vm, p, n, fname) { if(!value_like_numeric(p[n])) { return value_na; } }
 #define vm_param_check_array(vm, p, n, fname) { if(!value_is_array(p[n])) { return value_na; } }
 
+#define VM_WIDGET(vm) (vm->tstack? ((vm_target_t *)(vm->tstack->data))->widget : NULL)
+#define VM_WINDOW(vm) (vm->tstack? ((vm_target_t *)(vm->tstack->data))->wid : NULL)
+#define VM_WSTATE(vm) (vm->tstack? ((vm_target_t *)(vm->tstack->data))->state : 0)
+
 void parser_init ( void );
 GBytes *parser_expr_compile ( gchar *expr );
 gboolean parser_macro_add ( GScanner *scanner );
@@ -115,6 +124,8 @@ void vm_run_user_defined ( gchar *action, GtkWidget *widget, GdkEvent *event,
     window_t *win, guint16 *state, vm_store_t *store );
 value_t vm_exec_sync ( vm_func_t, vm_t *, value_t [], gint );
 void vm_widget_set ( vm_t *vm, GtkWidget *widget );
+void vm_target_push ( vm_t *vm, gchar *widget, gpointer wid, guint16 *state );
+void vm_target_pop ( vm_t *vm );
 
 void vm_func_init ( void );
 void vm_func_add ( gchar *name, vm_func_t func, gboolean det, gboolean safe);

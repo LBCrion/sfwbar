@@ -560,8 +560,8 @@ static value_t sway_ipc_wincmd_action ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "SwayWinCmd");
   vm_param_check_string(vm, p, 0, "SwayWinCmd");
 
-  if(vm->win)
-    sway_ipc_command("[con_id=%ld] %s", GPOINTER_TO_INT(vm->win->uid),
+  if(VM_WINDOW(vm))
+    sway_ipc_command("[con_id=%ld] %s", GPOINTER_TO_INT(VM_WINDOW(vm)),
         value_get_string(p[0]));
 
   return value_na;

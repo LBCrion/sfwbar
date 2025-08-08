@@ -321,7 +321,7 @@ static value_t expr_lib_escape ( vm_t *vm, value_t p[], gint np )
 
 static value_t expr_lib_bardir ( vm_t *vm, value_t p[], gint np )
 {
-  switch(bar_get_toplevel_dir(vm->widget))
+  switch(bar_get_toplevel_dir(base_widget_from_id(vm->store, VM_WIDGET(vm))))
   {
     case GTK_POS_RIGHT:
       return value_new_string(g_strdup("right"));
@@ -338,7 +338,7 @@ static value_t expr_lib_bardir ( vm_t *vm, value_t p[], gint np )
 
 static value_t expr_lib_gtkevent ( vm_t *vm, value_t p[], gint np )
 {
-  GtkWidget *widget;
+  GtkWidget *base, *widget;
   GdkEventButton  *ev = (GdkEventButton *)vm->event;
   GtkAllocation alloc;
   GtkStyleContext *style;
@@ -349,15 +349,18 @@ static value_t expr_lib_gtkevent ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "GtkEvent");
   vm_param_check_string(vm, p, 0, "GtkEvent");
 
-  if(GTK_IS_BIN(vm->widget))
+  if( !(base = base_widget_from_id(vm->store, VM_WIDGET(vm))) )
+    return value_na;
+
+  if(GTK_IS_BIN(base))
   {
-    widget = gtk_bin_get_child(GTK_BIN(vm->widget));
-    gtk_widget_translate_coordinates(vm->widget, widget,
+    widget = gtk_bin_get_child(GTK_BIN(base));
+    gtk_widget_translate_coordinates(widget, widget,
         ev->x, ev->y, &x, &y);
   }
   else
   {
-    widget = vm->widget;
+    widget = base;
     x = ev->x;
     y = ev->y;
   }
@@ -399,9 +402,7 @@ static value_t expr_lib_gtkevent ( vm_t *vm, value_t p[], gint np )
 
 static value_t expr_lib_widget_id ( vm_t *vm, value_t p[], gint np )
 {
-  gchar *id = base_widget_get_id(vm->widget);
-
-  return value_new_string(g_strdup(id?id:""));
+  return value_new_string(g_strdup(VM_WIDGET(vm)));
 }
 
 static value_t expr_lib_widget_state ( vm_t *vm, value_t p[], gint np )
@@ -413,8 +414,8 @@ static value_t expr_lib_widget_state ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 0, "WidgetState");
 
-  widget = np==2?  base_widget_from_id(vm->store, value_get_string(p[0])) :
-    vm->widget;
+  widget = base_widget_from_id(vm->store,
+      np==2? value_get_string(p[0]) : VM_WIDGET(vm));
   if(!IS_BASE_WIDGET(widget))
     return value_na;
 
@@ -438,8 +439,8 @@ static value_t expr_lib_window_info ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 1, "WindowInfo");
 
-  widget = np==2?  base_widget_from_id(vm->store, value_get_string(p[0])) :
-    vm->widget;
+  widget = base_widget_from_id(vm->store,
+      np==2? value_get_string(p[0]) : VM_WIDGET(vm));
 
   if( (win = flow_item_get_source(widget)) )
   {
@@ -615,8 +616,8 @@ static value_t expr_widget_children ( vm_t *vm, value_t p[], gint np )
 
   vm_param_check_np_range(vm, np, 0, 1, "WidgetChildren");
 
-  widget = np?  base_widget_from_id(vm->store, value_get_string(p[0])) :
-    vm->widget;
+  widget = base_widget_from_id(vm->store,
+      np? value_get_string(p[0]) : VM_WIDGET(vm));
 
   array = g_array_new(FALSE, FALSE, sizeof(value_t));
   g_array_set_clear_func(array, (GDestroyNotify)value_free);

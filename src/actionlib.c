@@ -39,34 +39,22 @@ static value_t action_exec_impl ( vm_t *vm, value_t p[], gint np )
 static value_t action_function ( vm_t *vm, value_t p[], gint np )
 {
   vm_function_t *func;
-  GtkWidget *widget;
-  window_t *win;
-  guint16 state;
 
   vm_param_check_np_range(vm, np, 1, 2, "Function");
   vm_param_check_string(vm, p, 0, "Function");
 
-  widget = vm->widget;
   if(np==2)
   {
     vm_param_check_string(vm, p, 1, "Function");
-    vm->widget = base_widget_from_id(vm->store, value_get_string(p[0]));
-    vm->widget = vm->widget? vm->widget : widget;
-    vm_widget_set(vm, vm->widget);
+    vm_target_push(vm, value_get_string(p[0]), NULL, NULL);
   }
-
-  win = vm->win;
-  state = vm->wstate;
-  vm->win = IS_TASKBAR_ITEM(widget)? flow_item_get_source(widget) : vm->win;
-  vm->wstate = base_widget_state_build(vm->widget, vm->win);
 
   if( (func = vm_func_lookup(value_get_string(p[np-1]))) &&
       (func->flags & VM_FUNC_USERDEFINED) )
     value_free(vm_function_user(vm, func->ptr.code, 0));
 
-  vm_widget_set(vm, widget);
-  vm->win = win;
-  vm->wstate = state;
+  if(np==2)
+    vm_target_pop(vm);
 
   return value_na;
 }
@@ -111,11 +99,15 @@ static value_t action_menuitemclear ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_menu ( vm_t *vm, value_t p[], gint np )
 {
+  guint16 state;
+
   vm_param_check_np(vm, np, 1, "Menu");
   vm_param_check_string(vm, p, 0, "Menu");
 
-  menu_popup(vm->widget, menu_from_name(value_get_string(p[0])), vm->event,
-      vm->win?vm->win->uid:NULL, &vm->wstate);
+  state = VM_WSTATE(vm);
+  menu_popup(base_widget_from_id(vm->store, VM_WIDGET(vm)),
+      menu_from_name(value_get_string(p[0])), vm->event,
+      VM_WINDOW(vm), &state);
 
   return value_na;
 }
@@ -330,8 +322,8 @@ static value_t action_setcode ( vm_t *vm, value_t p[], gint np, gchar *func,
     return value_na;
 
   mark = vm->pstack->pdata[vm->pstack->len-1];
-  widget = np==2? base_widget_from_id(vm->store, value_get_string(p[0])) :
-        vm->widget;
+  widget = base_widget_from_id(vm->store, np==2? value_get_string(p[0]) :
+      VM_WIDGET(vm));
   if(!widget)
     return value_na;
 
@@ -371,8 +363,8 @@ static value_t action_userstate ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 1, "UserState");
 
-  widget = np==2? base_widget_from_id(vm->store, value_get_string(p[0])) :
-    vm->widget;
+  widget = base_widget_from_id(vm->store, np==2? value_get_string(p[0]) :
+      VM_WIDGET(vm));
 
   if(!widget || !(value = value_get_string(p[np-1])) )
     return value_na;
@@ -398,7 +390,8 @@ static value_t action_popup ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "Popup");
   vm_param_check_string(vm, p, 0, "Popup");
 
-  popup_trigger(vm->widget, value_get_string(p[0]), vm->event);
+  popup_trigger(base_widget_from_id(vm->store, VM_WIDGET(vm)),
+        value_get_string(p[0]), vm->event);
 
   return value_na;
 }
@@ -418,15 +411,13 @@ static window_t *action_window_get ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *widget;
 
-  if(np==1 && value_is_string(p[0]))
-    widget = base_widget_from_id(vm->store, value_get_string(p[0]));
-  else
-    widget = vm->widget;
+  widget = base_widget_from_id(vm->store,
+      np==1? value_get_string(p[0]) : VM_WIDGET(vm));
 
-  if(IS_TASKBAR_ITEM(widget))
+  if(widget && IS_TASKBAR_ITEM(widget))
     return flow_item_get_source(widget);
   else
-    return vm->win;
+    return wintree_from_id(VM_WINDOW(vm));
 }
 
 static value_t action_focus ( vm_t *vm, value_t p[], gint np )
@@ -537,12 +528,13 @@ static value_t action_clear_widget ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_taskbar_item ( vm_t *vm, value_t p[], gint np )
 {
-  if(!vm->win)
+  window_t *win;
+  if( !(win = wintree_from_id(VM_WINDOW(vm))) )
     return value_na;
-  if (wintree_is_focused(vm->win->uid) && !(vm->win->state & WS_MINIMIZED))
-    wintree_minimize(vm->win->uid);
+  if (wintree_is_focused(win->uid) && !(win->state & WS_MINIMIZED))
+    wintree_minimize(win->uid);
   else
-    wintree_focus(vm->win->uid);
+    wintree_focus(win->uid);
 
   return value_na;
 }
@@ -551,10 +543,8 @@ static value_t action_workspace_activate ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *widget;
 
-  if(np==1 && value_is_string(p[0]))
-    widget = base_widget_from_id(vm->store, value_get_string(p[0]));
-  else
-    widget = vm->widget;
+  widget = base_widget_from_id(vm->store,
+      np==1? value_get_string(p[0]) : VM_WIDGET(vm));
 
   if(widget && IS_PAGER_ITEM(widget))
     workspace_activate(flow_item_get_source(widget));
@@ -564,22 +554,27 @@ static value_t action_workspace_activate ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_check_state ( vm_t *vm, value_t p[], gint np )
 {
+  GtkWidget *widget;
+  window_t *win;
   guint16 cond, ncond;
 
   vm_param_check_np(vm, np, 2, "");
   vm_param_check_numeric(vm, p, 0, "CheckState");
   vm_param_check_numeric(vm, p, 1, "CheckState");
 
+  widget = base_widget_from_id(vm->store, VM_WIDGET(vm));
+  win = wintree_from_id(VM_WINDOW(vm));
+
   cond = (guint16)value_get_numeric(p[0]) & ~WS_CHILDREN;
   ncond = (guint16)value_get_numeric(p[1]) & ~WS_CHILDREN;
 
-  if(((cond & 0x0f) || (ncond & 0x0f)) && !vm->win)
+  if(((cond & 0x0f) || (ncond & 0x0f)) && !win)
     return value_new_numeric(FALSE);
-  if(((cond & 0xf0) || (ncond & 0xf0)) && !vm->widget )
+  if(((cond & 0xf0) || (ncond & 0xf0)) && !widget )
     return value_new_numeric(FALSE);
-  if((vm->wstate & cond) != cond)
+  if((VM_WSTATE(vm) & cond) != cond)
     return value_new_numeric(FALSE);
-  if((~vm->wstate & ncond) != ncond)
+  if((~VM_WSTATE(vm) & ncond) != ncond)
     return value_new_numeric(FALSE);
 
   return value_new_numeric(TRUE);
@@ -655,8 +650,8 @@ static value_t action_update_widget ( vm_t *vm, value_t p[], gint np )
   if(np==1)
     vm_param_check_string(vm, p, 0, "UpdateWidget");
 
-  if( (widget = np? base_widget_from_id(vm->store, value_get_string(p[0])) :
-        vm->widget) )
+  if( (widget = base_widget_from_id(vm->store,
+          np? value_get_string(p[0]) : VM_WIDGET(vm))) )
     base_widget_update_expressions(widget);
 
   return value_na;
