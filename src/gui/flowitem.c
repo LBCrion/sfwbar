@@ -69,12 +69,13 @@ void flow_item_set_parent ( GtkWidget *self, GtkWidget *parent )
   g_return_if_fail(IS_FLOW_ITEM(self));
   priv = flow_item_get_instance_private(FLOW_ITEM(self));
 
-  if(priv->parent)  
+  if(priv->parent)
     g_signal_handlers_disconnect_by_data(G_OBJECT(priv->parent), self);
   priv->parent = parent;
 
-  g_object_bind_property(G_OBJECT(parent), "store", G_OBJECT(self), "store",
-      G_BINDING_DEFAULT);
+  g_clear_pointer(&priv->store_binding, g_binding_unbind);
+  priv->store_binding = g_object_bind_property(G_OBJECT(parent), "store",
+      G_OBJECT(self), "store", G_BINDING_SYNC_CREATE);
 }
 
 GtkWidget *flow_item_get_parent ( GtkWidget *self )
