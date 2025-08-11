@@ -36,6 +36,7 @@ typedef struct _FlowItemPrivate FlowItemPrivate;
 struct _FlowItemPrivate
 {
   gboolean active;
+  GBinding *store_binding;
   GtkWidget *parent;
 };
 
