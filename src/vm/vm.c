@@ -45,17 +45,18 @@ static value_t vm_pop ( vm_t *vm )
   return val;
 }
 
-void vm_target_push ( vm_t *vm, gchar *widget, gpointer wid, guint16 *state )
+void vm_target_push ( vm_t *vm, gchar *widget, gpointer wid, guint16 *state,
+    vm_store_t *store )
 {
-  vm_target_t *target, *current;
+  vm_target_t *target;
 
   target = g_malloc0(sizeof(vm_target_t));
-  current = vm->tstack? vm->tstack->data : NULL;
 
-  target->widget = g_strdup(widget? widget : (current? current->widget:NULL));
-  target->wid = wid? wid : (current? current->wid : NULL);
+  target->store = vm_store_ref(store? store : VM_STORE(vm));
+  target->widget = g_strdup(widget? widget : VM_WIDGET(vm));
+  target->wid = wid? wid : VM_WINDOW(vm);
   target->state = state? *state : base_widget_state_build(
-      base_widget_from_id(vm->store, widget), wintree_from_id(wid));
+      vm_widget_get(vm, widget), wintree_from_id(wid));
 
   vm->tstack = g_list_prepend(vm->tstack, target);
 }
@@ -69,11 +70,18 @@ void vm_target_pop ( vm_t *vm )
 
   target = vm->tstack->data;
   vm->tstack = g_list_remove_link(vm->tstack, vm->tstack);
-  if(target)
-  {
-    g_free(target->widget);
-    g_free(target);
-  }
+  if(!target)
+    return;
+
+  vm_store_unref(target->store);
+  g_free(target->widget);
+  g_free(target);
+}
+
+GtkWidget *vm_widget_get ( vm_t *vm, gchar *override )
+{
+  return base_widget_from_id(VM_STORE(vm),
+      override? override : VM_WIDGET(vm));
 }
 
 static void vm_stack_unwind ( vm_t *vm, gsize target )
@@ -278,8 +286,8 @@ static void vm_variable ( vm_t *vm )
 
   memcpy(&ftype, vm->ip+1, 1);
   memcpy(&quark, vm->ip+2, sizeof(GQuark));
-  g_debug("vm: heap lookup '%s' in %p", g_quark_to_string(quark), vm->store);
-  if( (var = vm_store_lookup(vm->store, quark)) )
+  g_debug("vm: heap lookup '%s' in %p", g_quark_to_string(quark), VM_STORE(vm));
+  if( (var = vm_store_lookup(VM_STORE(vm), quark)) )
   {
     value = value_dup(var->value);
     if(vm->expr)
@@ -326,7 +334,7 @@ static void vm_heap_assign ( vm_t *vm )
   vm_var_t *var;
 
   memcpy(&quark, vm->ip+1, sizeof(GQuark));
-  if( (var = vm_store_lookup(vm->store, quark)) )
+  if( (var = vm_store_lookup(VM_STORE(vm), quark)) )
   {
     value_free(var->value);
     var->value = vm_pop(vm);
@@ -366,7 +374,7 @@ static value_t vm_run ( vm_t *vm )
   if(!vm->bytes)
     return value_na;
   code = (guint8 *)g_bytes_get_data(vm->bytes, &len);
-  if( (widget = base_widget_from_id(vm->store, VM_WIDGET(vm))) )
+  if( (widget = vm_widget_get(vm, NULL)) )
     if(IS_TASKBAR_ITEM(widget) && (win = flow_item_get_source(widget)))
       ((vm_target_t *)(vm->tstack->data))->wid = win->uid;
 
@@ -476,7 +484,6 @@ static void vm_free ( vm_t *vm )
   while(vm->tstack)
     vm_target_pop(vm);
 
-  vm_store_unref(vm->store);
   g_bytes_unref(vm->bytes);
   g_free(vm);
 }
@@ -487,8 +494,8 @@ value_t vm_code_eval ( GBytes *code, GtkWidget *widget )
   vm_t *vm;
 
   vm = vm_new(code);
-  vm_target_push(vm, widget? base_widget_get_id(widget) : NULL, NULL, NULL);
-  vm->store = vm_store_ref(widget? base_widget_get_store(widget) : NULL);
+  vm_target_push(vm, widget? base_widget_get_id(widget) : NULL, NULL, NULL,
+      base_widget_get_store(widget));
 
   v1 = vm_run(vm);
   vm_free(vm);
@@ -506,13 +513,10 @@ gboolean vm_expr_eval ( expr_cache_t *expr )
     return FALSE;
   vm = vm_new(expr->code);
 
-  vm_target_push(vm, expr->widget? base_widget_get_id(expr->widget) : NULL,
-      NULL, NULL);
+  vm_target_push(vm, base_widget_get_id(expr->widget), NULL, NULL,
+      expr->store? expr->store : base_widget_get_store(expr->widget));
   vm->event = expr->event;
   vm->expr = expr;
-  vm->store = expr->store? expr->store :
-    (expr->widget? base_widget_get_store(expr->widget) : NULL);
-  vm_store_ref(vm->store);
 
   expr->vstate = FALSE;
   v1 = vm_run(vm);
@@ -573,9 +577,9 @@ void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
   vm = vm_new(code);
   if(event)
     vm->event = gdk_event_copy(event);
-  vm->store = store? store : (widget? base_widget_get_store(widget) : NULL);
-  vm_target_push(vm, widget? base_widget_get_id(widget) : NULL, win? win->uid : NULL, state);
-  vm_store_ref(vm->store);
+  vm_target_push(vm, widget? base_widget_get_id(widget) : NULL,
+      win? win->uid : NULL, state,
+      store? store : base_widget_get_store(widget));
 
   if(!action_context)
   {

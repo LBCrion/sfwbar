@@ -46,7 +46,7 @@ static value_t action_function ( vm_t *vm, value_t p[], gint np )
   if(np==2)
   {
     vm_param_check_string(vm, p, 1, "Function");
-    vm_target_push(vm, value_get_string(p[0]), NULL, NULL);
+    vm_target_push(vm, value_get_string(p[0]), NULL, NULL, NULL);
   }
 
   if( (func = vm_func_lookup(value_get_string(p[np-1]))) &&
@@ -72,7 +72,7 @@ static value_t action_piperead ( vm_t *vm, value_t p[], gint np )
 
   if(g_spawn_sync(NULL, argv, NULL, G_SPAWN_SEARCH_PATH |
         G_SPAWN_STDERR_TO_DEV_NULL, NULL, NULL, &conf, NULL, NULL, NULL))
-    config_parse_data(value_get_string(p[0]), conf, NULL, vm->store, FALSE);
+    config_parse_data(value_get_string(p[0]), conf, NULL, VM_STORE(vm), FALSE);
 
   g_free(conf);
   g_strfreev(argv);
@@ -104,10 +104,11 @@ static value_t action_menu ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "Menu");
   vm_param_check_string(vm, p, 0, "Menu");
 
+  g_debug("menu: popup '%s' at '%s' (%p)", value_get_string(p[0]),
+      VM_WIDGET(vm), vm_widget_get(vm, NULL));
   state = VM_WSTATE(vm);
-  menu_popup(base_widget_from_id(vm->store, VM_WIDGET(vm)),
-      menu_from_name(value_get_string(p[0])), vm->event,
-      VM_WINDOW(vm), &state);
+  menu_popup(vm_widget_get(vm, NULL), menu_from_name(value_get_string(p[0])),
+      vm->event, VM_WINDOW(vm), &state);
 
   return value_na;
 }
@@ -128,8 +129,8 @@ static value_t action_config ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, 0, "Config");
 
   g_debug("parsing config string: %s", value_get_string(p[0]));
-  config_parse_data("config string", value_get_string(p[0]), NULL, vm->store,
-      ((guint8 *)g_bytes_get_data(vm->bytes, NULL))[0]);
+  config_parse_data("config string", value_get_string(p[0]), NULL,
+      VM_STORE(vm), ((guint8 *)g_bytes_get_data(vm->bytes, NULL))[0]);
 
   return value_na;
 }
@@ -322,9 +323,7 @@ static value_t action_setcode ( vm_t *vm, value_t p[], gint np, gchar *func,
     return value_na;
 
   mark = vm->pstack->pdata[vm->pstack->len-1];
-  widget = base_widget_from_id(vm->store, np==2? value_get_string(p[0]) :
-      VM_WIDGET(vm));
-  if(!widget)
+  if( !(widget = vm_widget_get(vm, np==2? value_get_string(p[0]) : NULL)) )
     return value_na;
 
   GByteArray *bytes = g_byte_array_sized_new(vm->ip-mark+1);
@@ -363,10 +362,10 @@ static value_t action_userstate ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 1, "UserState");
 
-  widget = base_widget_from_id(vm->store, np==2? value_get_string(p[0]) :
-      VM_WIDGET(vm));
+  if( !(widget = vm_widget_get(vm, np==2? value_get_string(p[0]) : NULL)) )
+    return value_na;
 
-  if(!widget || !(value = value_get_string(p[np-1])) )
+  if(!(value = value_get_string(p[np-1])) )
     return value_na;
 
   if( !(state = strchr(value , ':')) )
@@ -390,8 +389,7 @@ static value_t action_popup ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "Popup");
   vm_param_check_string(vm, p, 0, "Popup");
 
-  popup_trigger(base_widget_from_id(vm->store, VM_WIDGET(vm)),
-        value_get_string(p[0]), vm->event);
+  popup_trigger(vm_widget_get(vm, NULL), value_get_string(p[0]), vm->event);
 
   return value_na;
 }
@@ -409,10 +407,7 @@ static value_t action_client_send ( vm_t *vm, value_t p[], gint np )
 
 static window_t *action_window_get ( vm_t *vm, value_t p[], gint np )
 {
-  GtkWidget *widget;
-
-  widget = base_widget_from_id(vm->store,
-      np==1? value_get_string(p[0]) : VM_WIDGET(vm));
+  GtkWidget *widget = vm_widget_get(vm, np==1? value_get_string(p[0]) : NULL);
 
   if(widget && IS_TASKBAR_ITEM(widget))
     return flow_item_get_source(widget);
@@ -496,7 +491,7 @@ static value_t action_eval ( vm_t *vm, value_t p[], gint np )
     return value_na;
 
   scanner_var_new(value_get_string(p[0]), NULL,
-      (gchar *)parser_string_build(ptr), G_TOKEN_SET, VT_FIRST, vm->store);
+      (gchar *)parser_string_build(ptr), G_TOKEN_SET, VT_FIRST, VM_STORE(vm));
 
   return value_na;
 }
@@ -520,7 +515,7 @@ static value_t action_clear_widget ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "ClearWidget");
   vm_param_check_string(vm, p, 0, "ClearWidget");
 
-  if( (w = base_widget_from_id(vm->store, value_get_string(p[0]))) )
+  if( (w = base_widget_from_id(VM_STORE(vm), value_get_string(p[0]))) )
     gtk_widget_destroy(w);
 
   return value_na;
@@ -543,8 +538,7 @@ static value_t action_workspace_activate ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *widget;
 
-  widget = base_widget_from_id(vm->store,
-      np==1? value_get_string(p[0]) : VM_WIDGET(vm));
+  widget = vm_widget_get(vm, np==1? value_get_string(p[0]) : NULL);
 
   if(widget && IS_PAGER_ITEM(widget))
     workspace_activate(flow_item_get_source(widget));
@@ -562,7 +556,7 @@ static value_t action_check_state ( vm_t *vm, value_t p[], gint np )
   vm_param_check_numeric(vm, p, 0, "CheckState");
   vm_param_check_numeric(vm, p, 1, "CheckState");
 
-  widget = base_widget_from_id(vm->store, VM_WIDGET(vm));
+  widget = vm_widget_get(vm, NULL);
   win = wintree_from_id(VM_WINDOW(vm));
 
   cond = (guint16)value_get_numeric(p[0]) & ~WS_CHILDREN;
@@ -650,8 +644,7 @@ static value_t action_update_widget ( vm_t *vm, value_t p[], gint np )
   if(np==1)
     vm_param_check_string(vm, p, 0, "UpdateWidget");
 
-  if( (widget = base_widget_from_id(vm->store,
-          np? value_get_string(p[0]) : VM_WIDGET(vm))) )
+  if( (widget = vm_widget_get(vm, np? value_get_string(p[0]) : NULL)) )
     base_widget_update_expressions(widget);
 
   return value_na;

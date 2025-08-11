@@ -19,14 +19,14 @@ static struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
 
 static value_t idle_inhibit_state ( vm_t *vm, value_t p[], gint np )
 {
-  GtkWidget *widget = base_widget_from_id(vm->store, VM_WIDGET(vm));
+  GtkWidget *widget = vm_widget_get(vm, NULL);
   return value_new_string(g_strdup((widget && g_object_get_data(
             G_OBJECT(widget), "inhibitor"))? "on" : "off"));
 }
 
 static value_t idle_inhibitor_action ( vm_t *vm, value_t p[], gint np )
 {
-  GtkWidget *widget = base_widget_from_id(vm->store, VM_WIDGET(vm));
+  GtkWidget *widget = vm_widget_get(vm, NULL);
   struct wl_surface *surface;
   struct zwp_idle_inhibitor_v1 *inhibitor;
   gboolean inhibit;

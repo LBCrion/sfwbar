@@ -321,7 +321,7 @@ static value_t expr_lib_escape ( vm_t *vm, value_t p[], gint np )
 
 static value_t expr_lib_bardir ( vm_t *vm, value_t p[], gint np )
 {
-  switch(bar_get_toplevel_dir(base_widget_from_id(vm->store, VM_WIDGET(vm))))
+  switch(bar_get_toplevel_dir(vm_widget_get(vm, NULL)))
   {
     case GTK_POS_RIGHT:
       return value_new_string(g_strdup("right"));
@@ -349,7 +349,7 @@ static value_t expr_lib_gtkevent ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "GtkEvent");
   vm_param_check_string(vm, p, 0, "GtkEvent");
 
-  if( !(base = base_widget_from_id(vm->store, VM_WIDGET(vm))) )
+  if( !(base = vm_widget_get(vm, NULL)) )
     return value_na;
 
   if(GTK_IS_BIN(base))
@@ -414,8 +414,7 @@ static value_t expr_lib_widget_state ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 0, "WidgetState");
 
-  widget = base_widget_from_id(vm->store,
-      np==2? value_get_string(p[0]) : VM_WIDGET(vm));
+  widget = vm_widget_get(vm, np==2? value_get_string(p[0]) : NULL);
   if(!IS_BASE_WIDGET(widget))
     return value_na;
 
@@ -439,8 +438,7 @@ static value_t expr_lib_window_info ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 1, "WindowInfo");
 
-  widget = base_widget_from_id(vm->store,
-      np==2? value_get_string(p[0]) : VM_WIDGET(vm));
+  widget = vm_widget_get(vm, np==2? value_get_string(p[0]) : NULL);
 
   if( (win = flow_item_get_source(widget)) )
   {
@@ -616,8 +614,7 @@ static value_t expr_widget_children ( vm_t *vm, value_t p[], gint np )
 
   vm_param_check_np_range(vm, np, 0, 1, "WidgetChildren");
 
-  widget = base_widget_from_id(vm->store,
-      np? value_get_string(p[0]) : VM_WIDGET(vm));
+  widget = vm_widget_get(vm, np? value_get_string(p[0]) : NULL);
 
   array = g_array_new(FALSE, FALSE, sizeof(value_t));
   g_array_set_clear_func(array, (GDestroyNotify)value_free);

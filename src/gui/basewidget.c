@@ -886,6 +886,9 @@ vm_store_t * base_widget_get_store ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
 
+  if(!self)
+    return NULL;
+
   g_return_val_if_fail(IS_BASE_WIDGET(self), NULL);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 

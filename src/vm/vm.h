@@ -45,6 +45,7 @@ typedef struct _vm_var {
 } vm_var_t;
 
 typedef struct _vm_target {
+  vm_store_t *store;
   gchar *widget;
   gpointer wid;
   guint16 state;
@@ -62,8 +63,6 @@ typedef struct {
   gboolean vstate;
   GdkEvent *event;
   expr_cache_t *expr;
-  vm_store_t *store;
-  vm_store_t *globals;
   GList *tstack;
 } vm_t;
 
@@ -103,6 +102,7 @@ typedef struct {
 #define VM_WIDGET(vm) (vm->tstack? ((vm_target_t *)(vm->tstack->data))->widget : NULL)
 #define VM_WINDOW(vm) (vm->tstack? ((vm_target_t *)(vm->tstack->data))->wid : NULL)
 #define VM_WSTATE(vm) (vm->tstack? ((vm_target_t *)(vm->tstack->data))->state : 0)
+#define VM_STORE(vm) (vm->tstack? ((vm_target_t *)(vm->tstack->data))->store : NULL)
 
 void parser_init ( void );
 GBytes *parser_expr_compile ( gchar *expr );
@@ -124,8 +124,10 @@ void vm_run_user_defined ( gchar *action, GtkWidget *widget, GdkEvent *event,
     window_t *win, guint16 *state, vm_store_t *store );
 value_t vm_exec_sync ( vm_func_t, vm_t *, value_t [], gint );
 void vm_widget_set ( vm_t *vm, GtkWidget *widget );
-void vm_target_push ( vm_t *vm, gchar *widget, gpointer wid, guint16 *state );
+void vm_target_push ( vm_t *vm, gchar *widget, gpointer wid, guint16 *state,
+    vm_store_t *store );
 void vm_target_pop ( vm_t *vm );
+GtkWidget *vm_widget_get ( vm_t *vm, gchar *override );
 
 void vm_func_init ( void );
 void vm_func_add ( gchar *name, vm_func_t func, gboolean det, gboolean safe);
