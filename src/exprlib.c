@@ -60,7 +60,7 @@ static value_t expr_lib_replace_all( vm_t *vm, value_t p[], gint np )
     return value_na;
 
   result = value_new_string(g_strdup(value_get_string(p[0])));
-  for(i=1; i<np; i+=2)
+  for(i=1; i<np-1; i+=2)
     if(value_like_string(p[i]) && value_like_string(p[i+1]))
     {
       tmp = result.value.string;
