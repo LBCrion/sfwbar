@@ -69,7 +69,7 @@ void vm_target_pop ( vm_t *vm )
     return;
 
   target = vm->tstack->data;
-  vm->tstack = g_list_remove_link(vm->tstack, vm->tstack);
+  vm->tstack = g_list_delete_link(vm->tstack, vm->tstack);
   if(!target)
     return;
 
@@ -541,35 +541,23 @@ gboolean vm_expr_eval ( expr_cache_t *expr )
   }
 }
 
-static gboolean vm_run_action_thread ( vm_t *vm )
+static void vm_run_action_thread ( vm_t *vm, gpointer d )
 {
   value_free(vm_run(vm));
   if(vm->event)
     gdk_event_free(vm->event);
   vm_free(vm);
-
-  return FALSE;
 }
 
-static gpointer vm_action_thread ( GMainContext *context )
+GThreadPool *vm_pool_new ( gint num )
 {
-  GMainLoop *loop;
-
-  g_main_context_push_thread_default(context);
-  loop = g_main_loop_new(context, FALSE);
-  g_main_loop_run(loop);
-  g_main_loop_unref(loop);
-
-  g_main_context_pop_thread_default(context);
-  g_main_context_unref(context);
-
-  return NULL;
+  return g_thread_pool_new((GFunc)vm_run_action_thread, NULL, num, TRUE, NULL);
 }
 
-void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
-    window_t *win, guint16 *state, vm_store_t *store )
+void vm_run_action_in_pool ( GBytes *code, GtkWidget *widget, GdkEvent *event,
+    window_t *win, guint16 *state, vm_store_t *store, GThreadPool *pool )
 {
-  static GMainContext *action_context;
+  static GThreadPool *default_pool;
   vm_t *vm;
 
   g_return_if_fail(code);
@@ -581,14 +569,9 @@ void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
       win? win->uid : NULL, state,
       store? store : base_widget_get_store(widget));
 
-  if(!action_context)
-  {
-    action_context = g_main_context_new();
-    g_thread_unref(g_thread_new("action", (GThreadFunc)vm_action_thread,
-        g_main_context_ref(action_context)));
-  }
-
-  g_main_context_invoke(action_context, (GSourceFunc)vm_run_action_thread, vm);
+  if(!default_pool)
+    default_pool = vm_pool_new(8);
+  g_thread_pool_push(pool? pool : default_pool, vm, NULL);
 }
 
 void vm_run_user_defined ( gchar *name, GtkWidget *widget, GdkEvent *event,

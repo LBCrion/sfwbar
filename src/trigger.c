@@ -86,16 +86,21 @@ void trigger_remove ( gchar *name, trigger_func_t func, void *data )
 void trigger_action_cb ( vm_closure_t *closure, vm_store_t *store )
 {
   vm_store_t *new_store;
+  static GThreadPool *pool;
+
+  if(!pool)
+    pool = vm_pool_new(1);
 
   if(!store)
   {
-    vm_run_action(closure->code, NULL, NULL, NULL, NULL, closure->store);
+    vm_run_action_in_pool(closure->code, NULL, NULL, NULL, NULL,
+        closure->store, pool);
     return;
   }
  
   new_store = vm_store_dup(store);
   new_store->parent = closure->store;
-  vm_run_action(closure->code, NULL, NULL, NULL, NULL, new_store);
+  vm_run_action_in_pool(closure->code, NULL, NULL, NULL, NULL, new_store, pool);
   vm_store_unref(new_store);
 }
 

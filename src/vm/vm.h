@@ -104,6 +104,8 @@ typedef struct {
 #define VM_WSTATE(vm) (vm->tstack? ((vm_target_t *)(vm->tstack->data))->state : 0)
 #define VM_STORE(vm) (vm->tstack? ((vm_target_t *)(vm->tstack->data))->store : NULL)
 
+#define vm_run_action(a,b,c,d,e,f) vm_run_action_in_pool(a,b,c,d,e,f,NULL)
+
 void parser_init ( void );
 GBytes *parser_expr_compile ( gchar *expr );
 gboolean parser_macro_add ( GScanner *scanner );
@@ -118,8 +120,9 @@ GBytes *parser_function_call_build ( gchar *name );
 value_t vm_code_eval ( GBytes *code, GtkWidget *widget );
 gboolean vm_expr_eval ( expr_cache_t *expr );
 value_t vm_function_user ( vm_t *vm, GBytes *code, guint8 np );
-void vm_run_action ( GBytes *code, GtkWidget *w, GdkEvent *e, window_t *win,
-    guint16 *s, vm_store_t *store);
+GThreadPool *vm_pool_new ( gint num );
+void vm_run_action_in_pool ( GBytes *code, GtkWidget *w, GdkEvent *e,
+    window_t *win, guint16 *s, vm_store_t *store, GThreadPool *pool);
 void vm_run_user_defined ( gchar *action, GtkWidget *widget, GdkEvent *event,
     window_t *win, guint16 *state, vm_store_t *store );
 value_t vm_exec_sync ( vm_func_t, vm_t *, value_t [], gint );
