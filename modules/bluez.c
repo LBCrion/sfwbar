@@ -24,6 +24,7 @@ typedef struct _bz_device {
   gchar *name;
   gchar *icon;
   guint32 class;
+  gint refcount;
   gboolean paired;
   gboolean trusted;
   gboolean connected;
@@ -175,8 +176,17 @@ static void bz_adapter_free ( gchar *object )
   g_free(adapter);
 }
 
-static void bz_device_free ( BzDevice *device )
+static BzDevice *bz_device_ref ( BzDevice *device )
 {
+  device->refcount++;
+  return device;
+}
+
+static void bz_device_unref ( BzDevice *device )
+{
+  device->refcount--;
+  if(device->refcount)
+    return;
   g_debug("bluez: device removed: %d %d %s %s on %s",device->paired,
       device->connected, device->addr, device->name, device->path);
   trigger_emit_with_string("bluez_removed", "path", g_strdup(device->path));
@@ -255,11 +265,12 @@ static void bz_connect_cb ( GDBusConnection *con, GAsyncResult *res,
 
   device->connecting =  FALSE;
   trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
-  if( !(result = g_dbus_connection_call_finish(con, res, NULL)) )
-    return;
-
-  g_debug("bluez: connected %s (%s)", device->addr, device->name);
-  g_variant_unref(result);
+  if( (result = g_dbus_connection_call_finish(con, res, NULL)) )
+  {
+    g_debug("bluez: connected %s (%s)", device->addr, device->name);
+    g_variant_unref(result);
+  }
+  bz_device_unref(device);
 }
 
 static void bz_connect ( BzDevice *device )
@@ -273,7 +284,7 @@ static void bz_connect ( BzDevice *device )
   g_dbus_connection_call(bz_con, bz_serv, device->path,
       "org.bluez.Device1", "Connect", NULL,
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
-      (GAsyncReadyCallback)bz_connect_cb, device);
+      (GAsyncReadyCallback)bz_connect_cb, bz_device_ref(device));
 }
 
 static void bz_disconnect_cb ( GDBusConnection *con, GAsyncResult *res,
@@ -281,11 +292,12 @@ static void bz_disconnect_cb ( GDBusConnection *con, GAsyncResult *res,
 {
   GVariant *result;
 
-  if( !(result = g_dbus_connection_call_finish(con, res, NULL)) )
-    return;
-
-  g_debug("bluez: disconnected %s (%s)", device->addr, device->name);
-  g_variant_unref(result);
+  if( (result = g_dbus_connection_call_finish(con, res, NULL)) )
+  {
+    g_debug("bluez: disconnected %s (%s)", device->addr, device->name);
+    g_variant_unref(result);
+  }
+  bz_device_unref(device);
 }
 
 static void bz_disconnect ( BzDevice *device )
@@ -296,7 +308,7 @@ static void bz_disconnect ( BzDevice *device )
   g_dbus_connection_call(bz_con, bz_serv, device->path,
       "org.bluez.Device1", "Disconnect", NULL,
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
-      (GAsyncReadyCallback)bz_disconnect_cb, device);
+      (GAsyncReadyCallback)bz_disconnect_cb, bz_device_ref(device));
 }
 
 static void bz_trust_cb ( GDBusConnection *con, GAsyncResult *res,
@@ -308,12 +320,14 @@ static void bz_trust_cb ( GDBusConnection *con, GAsyncResult *res,
   {
     device->connecting =  FALSE;
     trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
-    return;
   }
-
-  g_debug("bluez: trusted %s (%s)", device->addr, device->name);
-  bz_connect(device);
-  g_variant_unref(result);
+  else
+  {
+    g_debug("bluez: trusted %s (%s)", device->addr, device->name);
+    bz_connect(device);
+    g_variant_unref(result);
+  }
+  bz_device_unref(device);
 }
 
 static void bz_trust ( BzDevice *device )
@@ -329,7 +343,7 @@ static void bz_trust ( BzDevice *device )
       "org.freedesktop.DBus.Properties", "Set", g_variant_new("(ssv)",
         "org.bluez.Device1","Trusted",g_variant_new_boolean(TRUE)),
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
-      (GAsyncReadyCallback)bz_trust_cb, device);
+      (GAsyncReadyCallback)bz_trust_cb, bz_device_ref(device));
 }
 
 static void bz_pair_cb ( GDBusConnection *con, GAsyncResult *res,
@@ -341,12 +355,14 @@ static void bz_pair_cb ( GDBusConnection *con, GAsyncResult *res,
   {
     device->connecting =  FALSE;
     trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
-    return;
   }
-
-  g_debug("bluez: paired %s (%s)", device->addr, device->name);
-  bz_trust(device);
-  g_variant_unref(result);
+  else
+  {
+    g_debug("bluez: paired %s (%s)", device->addr, device->name);
+    bz_trust(device);
+    g_variant_unref(result);
+  }
+  bz_device_unref(device);
 }
 
 static void bz_pair ( BzDevice *device )
@@ -364,7 +380,7 @@ static void bz_pair ( BzDevice *device )
   g_dbus_connection_call(bz_con, bz_serv, device->path,
       "org.bluez.Device1", "Pair", NULL,
       NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
-      (GAsyncReadyCallback)bz_pair_cb, device);
+      (GAsyncReadyCallback)bz_pair_cb, bz_device_ref(device));
 }
 
 static void bz_remove_cb ( GDBusConnection *con, GAsyncResult *res,
@@ -467,9 +483,9 @@ static void bz_device_handle ( gchar *path, gchar *iface, GVariantIter *piter )
     device->path = g_strdup(path);
     if(!devices)
       devices = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
-          (GDestroyNotify)bz_device_free);
+          (GDestroyNotify)bz_device_unref);
 
-    g_hash_table_insert(devices, device->path, device);
+    g_hash_table_insert(devices, device->path, bz_device_ref(device));
   }
 
   bz_device_properties (device, piter);
