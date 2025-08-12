@@ -103,14 +103,15 @@ GtkWidget *config_include ( GScanner *scanner, GtkWidget *container )
       SEQ_END);
 
   if(scanner->max_parse_errors)
+    widget = NULL;
+  else
   {
-    g_free(fname);
-    return NULL;
+    widget = config_parse(fname, container, SCANNER_STORE(scanner));
+    if(container && widget && !gtk_widget_get_parent(widget))
+      g_object_ref_sink(widget);
   }
 
-  widget = config_parse(fname, container, SCANNER_STORE(scanner));
   g_free(fname);
-
   return widget;
 }
 
@@ -196,23 +197,14 @@ static gboolean config_widget_variable ( GScanner *scanner, GtkWidget *widget )
 
 gboolean config_widget_property ( GScanner *scanner, GtkWidget *widget )
 {
-  gint key;
-
   if(config_widget_variable(scanner, widget))
     return TRUE;
-
-  key = config_lookup_key(scanner, config_prop_keys);
-
-/*  if(IS_BASE_WIDGET(widget) && key == G_TOKEN_ACTION)
-  {
-    config_widget_action(scanner, widget);
-    return TRUE;
-  }*/
 
   if(config_widget_set_property(scanner, NULL, widget))
     return TRUE;
 
-  if(key == G_TOKEN_GROUP)
+  if(scanner->token == G_TOKEN_IDENTIFIER &&
+      !g_ascii_strcasecmp(scanner->value.v_identifier, "group"))
   {
     g_scanner_get_next_token(scanner);
     if(config_widget_set_property(scanner, "group_" , widget))
@@ -248,20 +240,14 @@ static GtkWidget *config_widget_get ( GScanner *scanner,
   else if(widget)
   {
     parent = gtk_widget_get_parent(widget);
-    parent = parent? gtk_widget_get_parent(parent) : NULL;
-    if(container && parent != container)
-    {
-      g_scanner_error(scanner,
-          "Widget id collision: parent container mismatch.");
-      scanner->max_parse_errors = FALSE;
-      g_scanner_error(scanner, "Widget '%s' already exists in container '%s'",
-          name, base_widget_get_id(parent));
-      return NULL;
-    }
+    if(container && parent && gtk_widget_get_parent(parent) != container)
+      gtk_container_remove(GTK_CONTAINER(parent), g_object_ref(widget));
+
   }
   else
   {
     widget = GTK_WIDGET(g_object_new(type_get(), NULL));
+    g_object_ref_sink(widget);
     if(name)
       g_object_set(G_OBJECT(widget), "id", name, NULL);
   }
@@ -301,6 +287,7 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
   if(container && !gtk_widget_get_parent(widget))
   {
     grid_attach(container, widget);
+    g_object_unref(widget);
     grid_mirror_child(container, widget);
   }
   config_widget(scanner, widget);
