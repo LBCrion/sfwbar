@@ -824,10 +824,11 @@ GtkWidget *base_widget_from_id ( vm_store_t *store, gchar *id )
 {
   GtkWidget *widget;
 
-  if(!store || !id)
+  if(!store || !store->widget_map || !id)
     return NULL;
 
-  while(store && !(widget = g_hash_table_lookup(store->widget_map ,id)))
+  while(store && store->widget_map &&
+      !(widget = g_hash_table_lookup(store->widget_map, id)))
     store = store->parent;
 
   return widget;
