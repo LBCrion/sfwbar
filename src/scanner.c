@@ -177,14 +177,14 @@ void scanner_invalidate ( void )
       NULL);
 }
 
-void scanner_var_values_update ( ScanVar *var, gchar *value)
+static void scanner_var_values_update ( ScanVar *var, gchar *value)
 {
   if(!value)
     return;
 
   if(var->multi!=VT_FIRST || !var->count || var->type==G_TOKEN_SET)
   {
-    g_free(var->str);
+    g_clear_pointer(&var->str, g_free);
     var->str = value;
     switch(var->multi)
     {
@@ -463,21 +463,24 @@ static ScanVar *scanner_var_update ( GQuark id, gboolean update,
 
   if(var->type == G_TOKEN_SET)
   {
-    if(!var->inuse)
+    if(!g_mutex_trylock(&var->mutex))
+      g_mutex_lock(&var->mutex);
+    else
     {
-      var->inuse = TRUE;
       var->expr->parent = expr;
       (void)vm_expr_eval(var->expr);
       var->expr->parent = NULL;
-      var->inuse = FALSE;
       var->vstate = var->expr->vstate;
       if(expr)
         expr->vstate = expr->vstate || var->expr->vstate;
       if(var->invalid)
         scanner_var_reset(var, NULL);
-      scanner_var_values_update(var,g_strdup(var->expr->cache));
+      scanner_var_values_update(var, g_strdup(var->expr->cache));
       var->invalid = FALSE;
     }
+    if(expr)
+      expr->vstate = expr->vstate || var->expr->vstate;
+    g_mutex_unlock(&var->mutex);
   }
   else
   {
@@ -506,23 +509,19 @@ value_t scanner_get_value ( GQuark id, gchar ftype, gboolean update,
     expr_dep_add(id, expr);
 
   if(ftype == SCANNER_TYPE_STR)
-  {
-    result.type = EXPR_TYPE_STRING;
-    result.value.string  = g_strdup(var->str);
-  }
+    result = value_new_string(g_strdup(var->str));
   else
   {
-    result.type = EXPR_TYPE_NUMERIC;
     if(ftype == SCANNER_TYPE_VAL || ftype == SCANNER_TYPE_NONE)
-      result.value.numeric = var->val;
+      result = value_new_numeric(var->val);
     else if(ftype == SCANNER_TYPE_PVAL)
-      result.value.numeric = var->pval;
+      result = value_new_numeric(var->pval);
     else if(ftype == SCANNER_TYPE_COUNT)
-      result.value.numeric = var->count;
+      result = value_new_numeric(var->count);
     else if(ftype == SCANNER_TYPE_TIME)
-      result.value.numeric = var->time;
+      result = value_new_numeric(var->time);
     else if(ftype == SCANNER_TYPE_AGE)
-      result.value.numeric = (g_get_monotonic_time() - var->ptime);
+      result = value_new_numeric(g_get_monotonic_time() - var->ptime);
     else
       result = value_na;
   }
