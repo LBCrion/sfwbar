@@ -14,7 +14,8 @@ static void grid_destroy ( GtkWidget *self )
   GridPrivate *priv;
 
   priv = grid_get_instance_private(GRID(self));
-  g_list_free(g_steal_pointer(&priv->children));
+  while(priv->children)
+    grid_detach(priv->children->data, self);
   g_list_free(g_steal_pointer(&priv->last));
   GTK_WIDGET_CLASS(grid_parent_class)->destroy(self);
 }
