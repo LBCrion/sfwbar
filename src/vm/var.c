@@ -48,7 +48,9 @@ vm_store_t *vm_store_ref ( vm_store_t *store )
   if(!store)
     return NULL;
 
+  g_mutex_lock(&store->mutex);
   store->refcount++;
+  g_mutex_unlock(&store->mutex);
   return store;
 }
 
@@ -57,14 +59,19 @@ void vm_store_unref ( vm_store_t *store )
   if(!store)
     return;
 
+  g_mutex_lock(&store->mutex);
   store->refcount--;
   if(store->refcount>0)
+  {
+    g_mutex_unlock(&store->mutex);
     return;
+  }
 
   if(store->vars)
     datalist_unref(store->vars);
   if(store->widget_map)
     g_hash_table_unref(store->widget_map);
+  g_mutex_unlock(&store->mutex);
   g_free(store);
 }
 
@@ -82,8 +89,8 @@ vm_store_t *vm_store_dup ( vm_store_t *src )
     dest->widget_map = g_hash_table_ref(src->widget_map);
   if(src->vars)
     dest->vars = datalist_ref(src->vars);
-  dest->transient = src->transient;
   g_mutex_unlock(&src->mutex);
+  dest->transient = src->transient;
 
   return dest;
 }
@@ -98,8 +105,16 @@ vm_var_t *vm_store_lookup ( vm_store_t *store, GQuark id )
 
   g_mutex_lock(&store->mutex);
   for(iter=store; iter; iter=iter->parent)
+  {
+    if(iter!=store)
+      g_mutex_lock(&iter->mutex);
     if( (var = g_datalist_id_get_data(&iter->vars->data, id)) )
       break;
+    if(iter!=store)
+      g_mutex_unlock(&iter->mutex);
+  }
+  if(var && iter!=store)
+    g_mutex_unlock(&iter->mutex);
   g_mutex_unlock(&store->mutex);
 
   return var;
@@ -144,6 +159,52 @@ gboolean vm_store_insert_full ( vm_store_t *store, gchar *name, value_t v )
   var->value = v;
 
   return vm_store_insert(store, var);
+}
+
+GtkWidget *vm_store_widget_lookup ( vm_store_t *store, gchar *id )
+{
+  GtkWidget *widget;
+  vm_store_t *iter;
+
+  if(!store || !store->widget_map || !id)
+    return NULL;
+
+  g_mutex_lock(&store->mutex);
+
+  for(iter=store; iter; iter=iter->parent)
+    if( (widget = g_hash_table_lookup(iter->widget_map, id)) )
+      break;
+
+  g_mutex_unlock(&store->mutex);
+
+  return widget;
+}
+
+gboolean vm_store_widget_insert ( vm_store_t *store, gchar *id, GtkWidget *w )
+{
+  GtkWidget *old;
+
+  if(!store || !id)
+    return TRUE;
+  g_return_val_if_fail(store->widget_map, TRUE);
+
+  g_mutex_lock(&store->mutex);
+  if( !(old = g_hash_table_lookup(store->widget_map, id)) )
+    g_hash_table_insert(store->widget_map, id, w);
+  g_mutex_unlock(&store->mutex);
+
+  return !(old && old!=w);
+}
+
+void vm_store_widget_remove ( vm_store_t *store, gchar *id )
+{
+  if(!store || !id)
+    return;
+  g_return_if_fail(store->widget_map);
+
+  g_mutex_lock(&store->mutex);
+  g_hash_table_remove(store->widget_map, id);
+  g_mutex_unlock(&store->mutex);
 }
 
 vm_closure_t *vm_closure_new ( GBytes *code, vm_store_t *store )

@@ -92,15 +92,14 @@ void trigger_action_cb ( vm_closure_t *closure, vm_store_t *store )
     pool = vm_pool_new(1);
 
   if(!store)
+    new_store = vm_store_ref(closure->store);
+  else
   {
-    vm_run_action_in_pool(closure->code, NULL, NULL, NULL, NULL,
-        closure->store, pool);
-    return;
+    new_store = vm_store_dup(store);
+    new_store->parent = closure->store;
   }
  
-  new_store = vm_store_dup(store);
-  new_store->parent = closure->store;
-  vm_run_action_in_pool(closure->code, NULL, NULL, NULL, NULL, new_store, pool);
+  vm_run_action(closure->code, NULL, NULL, NULL, NULL, new_store, pool);
   vm_store_unref(new_store);
 }
 
@@ -126,7 +125,7 @@ void trigger_emit_with_data ( gchar *name, vm_store_t *store )
 
   inv = g_malloc0(sizeof(trigger_invocation_t));
   inv->trigger = trigger_name_intern(name);
-  inv->store = vm_store_dup(store);
+  inv->store = vm_store_ref(store);
 
   g_main_context_invoke(NULL, (GSourceFunc)trigger_emit_in_main_context, inv);
 }

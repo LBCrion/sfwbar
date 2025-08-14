@@ -513,6 +513,7 @@ static value_t expr_ident ( vm_t *vm, value_t p[], int np )
 
   return result;
 }
+
 static value_t expr_gettext ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np_range(vm, np, 1, 2, "GT");

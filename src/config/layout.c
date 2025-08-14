@@ -228,7 +228,7 @@ static GtkWidget *config_widget_get ( GScanner *scanner,
 
   name = config_check_and_consume(scanner, G_TOKEN_STRING)?
     scanner->value.v_string : NULL;
-  widget = name? base_widget_from_id(SCANNER_STORE(scanner), name) : NULL;
+  widget = name? vm_store_widget_lookup(SCANNER_STORE(scanner), name) : NULL;
 
   if(widget && !G_TYPE_CHECK_INSTANCE_TYPE((widget), type_get()))
   {

@@ -37,7 +37,7 @@ static gboolean pager_item_action_exec ( GtkWidget *self, gint slot,
     return FALSE;
   else
     vm_run_action(action, self, ev, wintree_from_id(wintree_get_focus()),
-        NULL, base_widget_get_store(priv->pager));
+        NULL, base_widget_get_store(priv->pager), NULL);
 
   return TRUE;
 }

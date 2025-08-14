@@ -80,7 +80,7 @@ void vm_target_pop ( vm_t *vm )
 
 GtkWidget *vm_widget_get ( vm_t *vm, gchar *override )
 {
-  return base_widget_from_id(VM_STORE(vm),
+  return vm_store_widget_lookup(VM_STORE(vm),
       override? override : VM_WIDGET(vm));
 }
 
@@ -554,7 +554,7 @@ GThreadPool *vm_pool_new ( gint num )
   return g_thread_pool_new((GFunc)vm_run_action_thread, NULL, num, TRUE, NULL);
 }
 
-void vm_run_action_in_pool ( GBytes *code, GtkWidget *widget, GdkEvent *event,
+void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
     window_t *win, guint16 *state, vm_store_t *store, GThreadPool *pool )
 {
   static GThreadPool *default_pool;
@@ -580,7 +580,7 @@ void vm_run_user_defined ( gchar *name, GtkWidget *widget, GdkEvent *event,
   vm_function_t *func;
 
   if( (func = vm_func_lookup(name)) && (func->flags & VM_FUNC_USERDEFINED))
-    vm_run_action(func->ptr.code, widget, event, win, state, store);
+    vm_run_action(func->ptr.code, widget, event, win, state, store, NULL);
   else
     g_warning("vm: invalid user defined function: %s", name);
 }

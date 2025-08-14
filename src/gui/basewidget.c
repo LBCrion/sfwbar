@@ -143,9 +143,7 @@ static void base_widget_destroy ( GtkWidget *self )
     priv->mirror_parent = NULL;
   }
 
-  if(priv->store && priv->store->widget_map && priv->id)
-    g_hash_table_remove(priv->store->widget_map, priv->id);
-
+  vm_store_widget_remove(priv->store, priv->id);
   g_clear_pointer(&priv->css, g_free);
   priv->css = NULL;
   g_clear_pointer(&priv->id, g_free);
@@ -305,7 +303,7 @@ static gboolean base_widget_action_exec_impl ( GtkWidget *self, gint slot,
   if( (action = base_widget_get_action(base_widget_get_mirror_parent(self),
           slot, base_widget_get_modifiers(self))) )
     vm_run_action(action, self, (GdkEvent *)ev,
-        wintree_from_id(wintree_get_focus()), NULL, priv->store);
+        wintree_from_id(wintree_get_focus()), NULL, priv->store, NULL);
 
   return !!action;
 }
@@ -613,48 +611,33 @@ static void base_widget_get_property ( GObject *self, guint id, GValue *value,
 static void base_widget_set_store ( GtkWidget *self, vm_store_t *store )
 {
   BaseWidgetPrivate *priv;
-  GtkWidget *old;
 
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(priv->store == store)
     return;
 
-  if(priv->store && priv->id)
-    g_hash_table_remove(priv->store->widget_map, priv->id);
-
-  priv->store = store;
-  if(priv->store)
-  {
-    if( !(old = g_hash_table_lookup(priv->store->widget_map, priv->id)) )
-      g_hash_table_insert(priv->store->widget_map, priv->id, self);
-    else if (old != self)
-      g_message("widget id collision: '%s'", priv->id);
-  }
+  vm_store_widget_remove(priv->store, priv->id);
+  vm_store_unref(priv->store);
+  priv->store = vm_store_ref(store);
+  if(!vm_store_widget_insert(priv->store, priv->id, self))
+    g_message("widget id collision: '%s'", priv->id);
 }
 
 static void base_widget_set_id ( GtkWidget *self, const gchar *id )
 {
   BaseWidgetPrivate *priv;
-  GtkWidget *old;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  if(priv->store && priv->store->widget_map && priv->id)
-    g_hash_table_remove(priv->store->widget_map, priv->id);
-
+  vm_store_widget_remove(priv->store, priv->id);
   g_free(priv->id);
   priv->id = id? g_strdup(id): g_strdup_printf("_w%lld",
       (long long int)base_widget_default_id++);
 
-  if(priv->store)
-  {
-    if( !(old = g_hash_table_lookup(priv->store->widget_map, priv->id)) )
-      g_hash_table_insert(priv->store->widget_map, g_strdup(priv->id), self);
-    else if (old != self)
-      g_message("widget id collision: '%s'", priv->id);
-  }
+  if(!vm_store_widget_insert(priv->store, priv->id, self))
+    g_message("widget id collision: '%s'", priv->id);
 }
 
 static void base_widget_set_property ( GObject *self, guint id,
@@ -818,20 +801,6 @@ gboolean base_widget_get_local_state ( GtkWidget *self )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   return priv->local_state;
-}
-
-GtkWidget *base_widget_from_id ( vm_store_t *store, gchar *id )
-{
-  GtkWidget *widget;
-
-  if(!store || !store->widget_map || !id)
-    return NULL;
-
-  while(store && store->widget_map &&
-      !(widget = g_hash_table_lookup(store->widget_map, id)))
-    store = store->parent;
-
-  return widget;
 }
 
 void base_widget_set_state ( GtkWidget *self, guint16 mask, gboolean state )
@@ -1091,6 +1060,6 @@ void base_widget_autoexec ( GtkWidget *self, gpointer data )
   {
     g_bytes_ref(action);
     vm_run_action(action, self, NULL, wintree_from_id(wintree_get_focus()),
-        NULL, priv->store);
+        NULL, priv->store, NULL);
   }
 }

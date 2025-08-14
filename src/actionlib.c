@@ -515,7 +515,7 @@ static value_t action_clear_widget ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "ClearWidget");
   vm_param_check_string(vm, p, 0, "ClearWidget");
 
-  if( (w = base_widget_from_id(VM_STORE(vm), value_get_string(p[0]))) )
+  if( (w = vm_store_widget_lookup(VM_STORE(vm), value_get_string(p[0]))) )
     gtk_widget_destroy(w);
 
   return value_na;

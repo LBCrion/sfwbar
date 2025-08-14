@@ -32,8 +32,8 @@ typedef struct _vm_store_t vm_store_t;
 struct _vm_store_t {
   datalist_t *vars;
   GHashTable *widget_map;
-  gboolean transient;
   vm_store_t *parent;
+  gboolean transient;
   GMutex mutex;
   gint refcount;
 };
@@ -104,8 +104,6 @@ typedef struct {
 #define VM_WSTATE(vm) (vm->tstack? ((vm_target_t *)(vm->tstack->data))->state : 0)
 #define VM_STORE(vm) (vm->tstack? ((vm_target_t *)(vm->tstack->data))->store : NULL)
 
-#define vm_run_action(a,b,c,d,e,f) vm_run_action_in_pool(a,b,c,d,e,f,NULL)
-
 void parser_init ( void );
 GBytes *parser_expr_compile ( gchar *expr );
 gboolean parser_macro_add ( GScanner *scanner );
@@ -121,7 +119,7 @@ value_t vm_code_eval ( GBytes *code, GtkWidget *widget );
 gboolean vm_expr_eval ( expr_cache_t *expr );
 value_t vm_function_user ( vm_t *vm, GBytes *code, guint8 np );
 GThreadPool *vm_pool_new ( gint num );
-void vm_run_action_in_pool ( GBytes *code, GtkWidget *w, GdkEvent *e,
+void vm_run_action ( GBytes *code, GtkWidget *w, GdkEvent *e,
     window_t *win, guint16 *s, vm_store_t *store, GThreadPool *pool);
 void vm_run_user_defined ( gchar *action, GtkWidget *widget, GdkEvent *event,
     window_t *win, guint16 *state, vm_store_t *store );
@@ -148,6 +146,9 @@ vm_var_t *vm_store_lookup ( vm_store_t *store, GQuark id );
 vm_var_t *vm_store_lookup_string ( vm_store_t *store, gchar *string );
 gboolean vm_store_insert ( vm_store_t *store, vm_var_t *var );
 gboolean vm_store_insert_full ( vm_store_t *store, gchar *name, value_t v );
+GtkWidget *vm_store_widget_lookup ( vm_store_t *store, gchar *name );
+gboolean vm_store_widget_insert ( vm_store_t *store, gchar *id, GtkWidget *w );
+void vm_store_widget_remove ( vm_store_t *store, gchar *id );
 vm_closure_t *vm_closure_new ( GBytes *code, vm_store_t *store );
 void vm_closure_free ( vm_closure_t *closure );
 

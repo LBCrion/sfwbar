@@ -245,7 +245,7 @@ static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
         base_widget_get_modifiers(self))) )
       vm_run_action(action, self, (GdkEvent *)ev,
           win?win:wintree_from_id(wintree_get_focus()), NULL,
-          base_widget_get_store(priv->shell));
+          base_widget_get_store(priv->shell), NULL);
   }
   g_list_free(children);
 

@@ -39,7 +39,7 @@ static gboolean taskbar_item_action_exec ( GtkWidget *self, gint slot,
   action = base_widget_get_action(shell, slot, mods);
 
   vm_run_action(action, self, ev, priv->win, NULL,
-      base_widget_get_store(priv->taskbar));
+      base_widget_get_store(priv->taskbar), NULL);
 
   return TRUE;
 }

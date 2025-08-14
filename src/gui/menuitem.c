@@ -118,7 +118,8 @@ static void menu_item_activate ( GtkMenuItem *self, gpointer d )
   if(!wid)
     wid = wintree_get_focus();
 
-  vm_run_action(priv->action, widget, NULL, wintree_from_id(wid), &state, NULL);
+  vm_run_action(priv->action, widget, NULL, wintree_from_id(wid), &state, NULL,
+      NULL);
 }
 
 static void menu_item_init_common( GtkWidget *self )
