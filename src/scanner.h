@@ -44,7 +44,7 @@ typedef struct scan_file {
 } ScanFile;
 
 typedef struct scan_var {
-  GMutex mutex;
+  GRecMutex mutex;
   expr_cache_t *expr;
   vm_store_t *store;
   void *definition;
@@ -57,6 +57,7 @@ typedef struct scan_var {
   gint count;
   gint multi;
   guint type;
+  gboolean updating;
   gboolean invalid;
   ScanFile *file;
 } ScanVar;

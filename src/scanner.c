@@ -463,24 +463,29 @@ static ScanVar *scanner_var_update ( GQuark id, gboolean update,
 
   if(var->type == G_TOKEN_SET)
   {
-    if(!g_mutex_trylock(&var->mutex))
-      g_mutex_lock(&var->mutex);
+    if(!g_rec_mutex_trylock(&var->mutex))
+      g_rec_mutex_lock(&var->mutex);
     else
     {
-      var->expr->parent = expr;
-      (void)vm_expr_eval(var->expr);
-      var->expr->parent = NULL;
-      var->vstate = var->expr->vstate;
-      if(expr)
-        expr->vstate = expr->vstate || var->expr->vstate;
-      if(var->invalid)
-        scanner_var_reset(var, NULL);
-      scanner_var_values_update(var, g_strdup(var->expr->cache));
-      var->invalid = FALSE;
+      if(!var->updating)
+      {
+        var->updating = TRUE;
+        var->expr->parent = expr;
+        (void)vm_expr_eval(var->expr);
+        var->expr->parent = NULL;
+        var->vstate = var->expr->vstate;
+        if(expr)
+          expr->vstate = expr->vstate || var->expr->vstate;
+        if(var->invalid)
+          scanner_var_reset(var, NULL);
+        scanner_var_values_update(var, g_strdup(var->expr->cache));
+        var->invalid = FALSE;
+        var->updating = FALSE;
+      }
     }
     if(expr)
       expr->vstate = expr->vstate || var->expr->vstate;
-    g_mutex_unlock(&var->mutex);
+    g_rec_mutex_unlock(&var->mutex);
   }
   else
   {
