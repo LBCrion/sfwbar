@@ -71,6 +71,7 @@ typedef value_t (*vm_func_t)(vm_t *vm, value_t params[], gint np);
 typedef struct {
   gchar *name;
   guint8 flags;
+  guint8 arity;
   union {
     vm_func_t function;
     GBytes *code;
@@ -132,7 +133,7 @@ GtkWidget *vm_widget_get ( vm_t *vm, gchar *override );
 
 void vm_func_init ( void );
 void vm_func_add ( gchar *name, vm_func_t func, gboolean det, gboolean safe);
-void vm_func_add_user ( gchar *name, GBytes *code );
+void vm_func_add_user ( gchar *name, GBytes *code, guint8 arity );
 vm_function_t *vm_func_lookup ( gchar *name );
 void vm_func_remove ( gchar *name );
 

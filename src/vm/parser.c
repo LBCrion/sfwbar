@@ -229,15 +229,13 @@ static gboolean parser_function ( GScanner *scanner, GByteArray *code )
   g_scanner_get_next_token(scanner); // consume '('
 
   np = 0;
-  if(g_scanner_peek_next_token(scanner)!=')')
+  if(!config_check_and_consume(scanner, ')'))
     do
     {
       if(!parser_expr_parse(scanner, code))
         return FALSE;
       np++;
     } while(g_scanner_get_next_token(scanner)==',' && np<255);
-  else
-    g_scanner_get_next_token(scanner);
 
   if(scanner->token!=')')
     g_scanner_error(scanner, "Expecting ')' at the end of a function call");
@@ -730,6 +728,7 @@ static gboolean parser_params_parse ( GScanner *scanner, GByteArray *code )
 gboolean parser_function_build ( GScanner *scanner )
 {
   GByteArray *code = code;
+  guint8 data[sizeof(value_t)+1];
   gchar *name;
 
   if(config_check_and_consume(scanner, '('))
@@ -740,7 +739,7 @@ gboolean parser_function_build ( GScanner *scanner )
         SEQ_END);
 
     if(!scanner->max_parse_errors && name)
-      vm_func_add_user(name, parser_action_build(scanner));
+      vm_func_add_user(name, parser_action_build(scanner), 0);
     g_free(name);
 
     return !scanner->max_parse_errors;
@@ -760,8 +759,14 @@ gboolean parser_function_build ( GScanner *scanner )
 
   if(!scanner->max_parse_errors && name)
   {
+    guint8 np = g_hash_table_size(SCANNER_DATA(scanner)->locals);
     if(parser_block_parse(scanner, code))
-      vm_func_add_user(name, parser_free(code));
+    {
+      data[0] = EXPR_OP_IMMEDIATE;
+      memcpy(data+1, &value_na, sizeof(value_t));
+      g_byte_array_append(code, data, sizeof(value_t)+1);
+      vm_func_add_user(name, parser_free(code), np);
+    }
     else
       g_byte_array_free(code, TRUE);
   }

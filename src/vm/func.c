@@ -43,13 +43,14 @@ void vm_func_add ( gchar *name, vm_func_t func, gboolean det, gboolean safe )
   g_debug("function: registered '%s'", name);
 }
 
-void vm_func_add_user ( gchar *name, GBytes *code )
+void vm_func_add_user ( gchar *name, GBytes *code, guint8 arity )
 {
   vm_function_t *func;
 
   func = vm_func_lookup(name);
   func->ptr.code = code;
   func->flags = VM_FUNC_USERDEFINED;
+  func->arity = arity;
   expr_dep_trigger(g_quark_from_string(name));
   g_debug("function: registered '%s'", name);
 }

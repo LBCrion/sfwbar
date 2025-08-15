@@ -258,7 +258,16 @@ static gboolean vm_function ( vm_t *vm )
       vm->expr->vstate |= !(func->flags & VM_FUNC_DETERMINISTIC);
   }
   else if(func->flags & VM_FUNC_USERDEFINED)
-    result = vm_function_user(vm, func->ptr.code, np);
+  {
+    if(func->arity != np)
+    {
+      g_message("invalid number of parameters in function '%s', expected %d",
+          func->name, func->arity);
+      result = value_na;
+    }
+    else
+      result = vm_function_user(vm, func->ptr.code, np);
+  }
   else
     result = value_na;
 
@@ -581,6 +590,4 @@ void vm_run_user_defined ( gchar *name, GtkWidget *widget, GdkEvent *event,
 
   if( (func = vm_func_lookup(name)) && (func->flags & VM_FUNC_USERDEFINED))
     vm_run_action(func->ptr.code, widget, event, win, state, store, NULL);
-  else
-    g_warning("vm: invalid user defined function: %s", name);
 }
