@@ -36,25 +36,31 @@ static value_t action_exec_impl ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
-static value_t action_function ( vm_t *vm, value_t p[], gint np )
+static value_t action_widget_push ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "WidgetPush");
+  vm_param_check_string(vm, p, 0, "WidgetPush");
+
+  vm_target_push(vm, value_get_string(p[0]), NULL, NULL, NULL);
+  return value_na;
+}
+
+static value_t action_widget_pop ( vm_t *vm, value_t p[], gint np )
+{
+  vm_target_pop(vm);
+  return value_na;
+}
+
+static value_t action_call ( vm_t *vm, value_t p[], gint np )
 {
   vm_function_t *func;
 
-  vm_param_check_np_range(vm, np, 1, 2, "Function");
-  vm_param_check_string(vm, p, 0, "Function");
+  vm_param_check_np(vm, np, 1, "Call");
+  vm_param_check_string(vm, p, 0, "Call");
 
-  if(np==2)
-  {
-    vm_param_check_string(vm, p, 1, "Function");
-    vm_target_push(vm, value_get_string(p[0]), NULL, NULL, NULL);
-  }
-
-  if( (func = vm_func_lookup(value_get_string(p[np-1]))) &&
+  if( (func = vm_func_lookup(value_get_string(p[0]))) &&
       (func->flags & VM_FUNC_USERDEFINED) )
     value_free(vm_function_user(vm, func->ptr.code, 0));
-
-  if(np==2)
-    vm_target_pop(vm);
 
   return value_na;
 }
@@ -676,7 +682,10 @@ static value_t action_usleep ( vm_t *vm, value_t p[], gint np )
 void action_lib_init ( void )
 {
   vm_func_add("exec", action_exec_impl, TRUE, TRUE);
-  vm_func_add("function", action_function, TRUE, FALSE);
+//  vm_func_add("function", action_function, TRUE, FALSE);
+  vm_func_add("WidgetPush", action_widget_push, TRUE, FALSE);
+  vm_func_add("WidgetPop", action_widget_pop, TRUE, FALSE);
+  vm_func_add("Call", action_call, TRUE, TRUE);
   vm_func_add("piperead", action_piperead, TRUE, FALSE);
   vm_func_add("menuclear", action_menuclear, TRUE, FALSE);
   vm_func_add("menuitemclear", action_menuitemclear, TRUE, FALSE);
@@ -717,4 +726,7 @@ void action_lib_init ( void )
   vm_func_add("UpdateWidget", action_update_widget, TRUE, FALSE);
   vm_func_add("Print", action_print, TRUE, TRUE);
   vm_func_add("uSleep", action_usleep, TRUE, TRUE);
+  config_parse_data("config string",
+      "#Api2\n function function(x,y) { WidgetPush(x); Call(y); WidgetPop();}",
+      NULL, NULL, 0);
 }

@@ -219,7 +219,7 @@ static gboolean parser_if ( GScanner *scanner, GByteArray *code )
 
 static gboolean parser_function ( GScanner *scanner, GByteArray *code )
 {
-  gconstpointer ptr;
+  vm_function_t *ptr;
   guint8 np;
 
   if(!g_ascii_strcasecmp(scanner->value.v_identifier, "ident"))
@@ -482,7 +482,7 @@ static gboolean parser_assign_parse ( GScanner *scanner, GByteArray *code,
 
 static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
 {
-  gconstpointer ptr;
+  vm_function_t *ptr;
   gboolean neg;
   static guint8 discard = EXPR_OP_DISCARD;
   gint alen, flag, cond = 0, np = 0;
@@ -558,6 +558,8 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
   }
 
   config_check_and_consume(scanner, ';');
+  if(!g_strcmp0(ptr->name, "function") && np==1)
+    ptr = vm_func_lookup("call");
   parser_emit_function(code, ptr, np);
 
   if(cond)
