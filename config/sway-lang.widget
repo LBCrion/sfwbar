@@ -1,26 +1,29 @@
+#Api2
+
 module("xkbmap")
 
-scanner {
+Private {
+
   SwayClient("") {
     SwayXkbLayout = Json(".input.input.xkb_active_layout_name")
   }
-}
 
-Set XSwayLangCommand = If(Ident($SwayLangCommand),$SwayLangCommand,
-    "input type:keyboard xkb_switch_layout next")
+  Set XSwayLangCommand = If(Ident($SwayLangCommand),$SwayLangCommand,
+      "input type:keyboard xkb_switch_layout next")
 
-Function("XSwayLangInit") {
-  SwayCmd "input type:keyboard xkb_switch_layout next"
-  SwayCmd "input type:keyboard xkb_switch_layout prev"
-}
+  Function("XSwayLangInit") {
+    SwayCmd("input type:keyboard xkb_switch_layout next")
+    SwayCmd("input type:keyboard xkb_switch_layout prev")
+  }
 
-layout {
-  label {
-    action[0] = Function "XSwayLangInit"
-    action[1] = SwayCmd $XSwayLangCommand 
-    style = If(Ident(SwayXkbLayout) & $SwayXkbLayout!="","sway_lang","hidden")
-    value = Upper(XkbMap($SwayXkbLayout,"description","name"))
-    trigger = "sway"
+  layout {
+    label {
+      action[0] = XSwayLangInit()
+      action[1] = SwayCmd($XSwayLangCommand)
+      style = If(Ident(SwayXkbLayout) & $SwayXkbLayout!="","sway_lang","hidden")
+      value = Upper(XkbMap($SwayXkbLayout,"description","name"))
+      trigger = "sway"
+    }
   }
 }
 

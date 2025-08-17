@@ -1,49 +1,59 @@
-Function ShowWindows() {
-  Var i, wins;
+#Api2
 
-  wins = WidgetChildren("target");
-  i = 0;
-  While i <ArraySize(wins) {
-    If WidgetState(wins[i], 1) {
-      UserState wins[i], "off";
-      UnMinimize wins[i];
+Private {
+
+  Var FocusedWindow;
+  Function ShowWindows() {
+    Var i, wins;
+
+    wins = WidgetChildren("target");
+    i = 0;
+    While i <ArraySize(wins) {
+      If WidgetState(wins[i], 1) {
+        UserState(wins[i], "off");
+        UnMinimize(wins[i]);
+      }
+      i = i + 1;
     }
-    i = i + 1;
-  }
-  Focus $XShowDesktopFocus
-  UserState "off"
-}
-
-Function HideWindows() {
-  Var i, wins;
-
-  wins = WidgetChildren("target");
-  i = 0;
-  While i <ArraySize(wins) {
-    If WindowInfo(wins[i], "focused")
-      Eval "XShowDesktopFocus", wins[i]
-    If !WindowInfo(wins[i], "minimized") {
-      UserState wins[i], "on";
-      Minimize wins[i];
+    If FocusedWindow!='' {
+      Focus(FocusEdWindow);
+      FocusedWindow = '';
     }
-    i = i + 1;
-  }
-  UserState "on"
-}
 
-layout {
-  button {
-    value = "user-desktop"
-    style = "showdesktop"
-    tooltip = GT("Show Desktop")
-    action = {
-      if WidgetState(1)
-        ShowWindows;
-      else
-        HideWindows;
-    }
+    UserState("off")
   }
-  taskbar "target" {
-    css = "* { -GtkWidget-visible: false; }"
+
+  Function HideWindows() {
+    Var i, wins;
+
+    wins = WidgetChildren("target");
+    i = 0;
+    While i <ArraySize(wins) {
+      If WindowInfo(wins[i], "focused") & FocusedWindow=''
+        FocusedWindow = wins[i];
+      If !WindowInfo(wins[i], "minimized") {
+        UserState(wins[i], "on");
+        Minimize(wins[i]);
+      }
+      i = i + 1;
+    }
+    UserState("on")
+  }
+
+  layout {
+    button "showdesktop" {
+      value = "user-desktop"
+      style = "module"
+      tooltip = GT("Show Desktop")
+      action = {
+        if WidgetState(1)
+          ShowWindows();
+        else
+          HideWindows();
+      }
+    }
+    taskbar "target" {
+      css = "* { -GtkWidget-visible: false; }"
+    }
   }
 }

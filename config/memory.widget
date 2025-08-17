@@ -1,3 +1,5 @@
+#Api2
+
 include("memory.source")
 
 layout {
@@ -6,6 +8,6 @@ layout {
     style = If(XMemPresent,"memory","hidden")
     value = XMemUtilization
     tooltip = GT("Memory") + ": " + Str(XMemUtilization*100) + "%"
-    action = Exec $Term + " -e top -o %MEM"
+    action = Exec($Term + " -e top -o %MEM")
   }
 }

@@ -1,83 +1,126 @@
+#Api2
+
 include("mpd.source")
 
-PopUp "XMpdWindow" {
-  autoclose = false
-  trigger = "mpd"
-  style = If($MpdState="","hidden","XMpdPopup")
-  css = "* { -GtkWidget-direction: bottom; }"
-  label {
-    value = "<b>"+$MpdTitle+"</b>";
-    trigger = "mpd"
-    style = "mpd_title"
-  }
-  label {
-    value = $MpdAlbum;
-    trigger = "mpd"
-    style = "mpd_album"
-  }
-  label {
-    value = $MpdArtist;
-    trigger = "mpd"
-    style = "mpd_artist"
-  }
-  scale {
-    value = (MpdElapsed+If($MpdState="play",MpdElapsed.age/1000000,0))/MpdDuration
-    style = "mpd_progress"
-    action = MpdCmd "seekcur " + Str(gtkevent("x") * MpdDuration)
-    interval = 1000
-  }
-  grid "XMpdPlayer" {
-    css = "* { -GtkWidget-direction: right; -GtkWidget-halign: center; -GtkWidget-hexpand: true; }"
-    image {
-      value = "media-playlist-repeat"
-      action = MpdCmd "repeat " + If(MpdRepeat,"0","1")
-      style = If(MpdRepeat,"mpd_icon_red","mpd_icon")
-      trigger = "mpd"
-    }
-    image {
-      value = "media-playlist-shuffle"
-      action = MpdCmd "random " + If(MpdRandom,"0","1")
-      style = If(MpdRandom,"mpd_icon_red","mpd_icon")
-      trigger = "mpd"
-    }
-    image {
-      value = "media-seek-backward"
-      action = MpdCmd "previous"
-      style = "mpd_icon"
-    }
-    image {
-      value = "media-playback-start"
-      action = MpdCmd "play"
-      style = If($MpdState="play","mpd_icon_red","mpd_icon")
-      trigger = "mpd"
-    }
-    image {
-      value = "media-playback-pause"
-      action = MpdCmd "pause"
-      style = If($MpdState="pause","mpd_icon_red","mpd_icon")
-      trigger = "mpd"
-    }
-    image {
-      value = "media-playback-stop"
-      action = MpdCmd "stop"
-      style = If($MpdState="stop","mpd_icon_red","mpd_icon")
-      trigger = "mpd"
-    }
-    image {
-      value = "media-seek-forward"
-      action = MpdCmd "next"
-      style = "mpd_icon"
-    }
-  }
-}
+Private {
+  Var MpdIconStop = "<path d='m 3.5 2 h 9 c 0.828125 0 1.5 0.671875 1.5 1.5 v 9
+    c 0 0.828125 -0.671875 1.5 -1.5 1.5 h -9 c -0.828125 0 -1.5 -0.671875 -1.5
+    -1.5 v -9 c 0 -0.828125 0.671875 -1.5 1.5 -1.5 z m 0 0' fill='black'/>";
+  Var MpdIconPlay = "<path d='m 2 2.5 v 11 c 0 1.5 1.269531 1.492188 1.269531
+    1.492188 h 0.128907 c 0.246093 0.003906 0.488281 -0.050782 0.699218
+    -0.171876 l 9.796875 -5.597656 c 0.433594 -0.242187 0.65625 -0.734375
+    0.65625 -1.226562 c 0 -0.492188 -0.222656 -0.984375 -0.65625 -1.222656 l
+    -9.796875 -5.597657 c -0.210937 -0.121093 -0.453125 -0.175781 -0.699218
+    -0.175781 h -0.128907 s -1.269531 0 -1.269531 1.5 z m 0 0' fill='black'/>";
+  Var MpdIconPause = "<path d='m 3 1 h 3 c 0.550781 0 1 0.449219 1 1 v 12 c 0
+    0.550781 -0.449219 1 -1 1 h -3 c -0.550781 0 -1 -0.449219 -1 -1 v -12 c 0
+    -0.550781 0.449219 -1 1 -1 z m 0 0' fill='black'/>
+    <path d='m 10 1 h 3 c 0.550781 0 1 0.449219 1 1 v 12 c 0 0.550781 -0.449219
+    1 -1 1 h -3 c -0.550781 0 -1 -0.449219 -1 -1 v -12 c 0 -0.550781 0.449219
+    -1 1 -1 z m 0 0' fill='black'/>";
 
-layout {
-  style = "module"
-  button {
-    value = "icons/misc/music-player"
-    action = PopUp "XMpdWindow"
-    style = If($MpdState="","hidden","module")
+  Var MpdIconTmpl='<?xml version="1.0" encoding="UTF-8"?>
+    <svg viewBox="0 0 16 20" xmlns="http://www.w3.org/2000/svg">
+    @MPD_ICON@
+    <path d="M1 19 H20 0" stroke-linecap="round" stroke-width="2"
+      stroke="rgb(0,0,255,0.3)"/>
+    <path d="M1 19 H@MPD_PROGRESS@ 0" stroke-linecap="round" stroke-width="2"
+      stroke="red"/>
+    </svg>'
+
+  Set MpdProgress = (MpdElapsed +
+      If($MpdState="play", MpdElapsed.age/1000000, 0))/MpdDuration;
+
+  PopUp "XMpdWindow" {
+    autoclose = true
     trigger = "mpd"
+    style = If($MpdState="","hidden","XMpdPopup")
+    css = "* { -GtkWidget-direction: bottom; }"
+    label {
+      value = "<b>"+$MpdTitle+"</b>";
+      trigger = "mpd"
+      style = "mpd_title"
+    }
+    label {
+      value = $MpdAlbum;
+      trigger = "mpd"
+      style = "mpd_album"
+    }
+    label {
+      value = $MpdArtist;
+      trigger = "mpd"
+      style = "mpd_artist"
+    }
+    scale {
+      value = (MpdElapsed + If($MpdState="play", MpdElapsed.age/1000000, 0))/
+        MpdDuration
+      style = "mpd_progress"
+      action = MpdCmd("seekcur " + Str(gtkevent("x") * MpdDuration))
+      interval = 1000
+    }
+    grid "XMpdPlayer" {
+      css = "* { -GtkWidget-direction: right; -GtkWidget-halign: center; -GtkWidget-hexpand: true; }"
+      image {
+        value = "media-playlist-repeat"
+        action = MpdCmd("repeat " + If(MpdRepeat,"0","1"))
+        style = If(MpdRepeat,"mpd_icon_red","mpd_icon")
+        trigger = "mpd"
+      }
+      image {
+        value = "media-playlist-shuffle"
+        action = MpdCmd("random " + If(MpdRandom,"0","1"))
+        style = If(MpdRandom,"mpd_icon_red","mpd_icon")
+        trigger = "mpd"
+      }
+      image {
+        value = "media-seek-backward"
+        action = MpdCmd("previous")
+        style = "mpd_icon"
+      }
+      image {
+        value = "media-playback-start"
+        action = MpdCmd("play")
+        style = If($MpdState="play","mpd_icon_red","mpd_icon")
+        trigger = "mpd"
+      }
+      image {
+        value = "media-playback-pause"
+        action = MpdCmd("pause")
+        style = If($MpdState="pause","mpd_icon_red","mpd_icon")
+        trigger = "mpd"
+      }
+      image {
+        value = "media-playback-stop"
+        action = MpdCmd("stop")
+        style = If($MpdState="stop","mpd_icon_red","mpd_icon")
+        trigger = "mpd"
+      }
+      image {
+        value = "media-seek-forward"
+        action = MpdCmd("next")
+        style = "mpd_icon"
+      }
+    }
+  }
+
+  TriggerAction "mpd", UpdateWidget("mpd_icon")
+
+  layout {
+    style = "module"
+    button "mpd_icon" {
+      style = If($MpdState="", "hidden", "module")
+      value = ReplaceAll(MpdIconTmpl,
+          "@MPD_ICON@", Map($MpdState,
+            "play", MpdIconPlay,
+            "pause", MpdIconPause,
+            MpdIconStop),
+          "@MPD_PROGRESS@", Str(MpdProgress*20))
+      action = MpdCmd("pause");
+      action[RightClick] = PopUp("XMpdWindow");
+      action[ScrollUp] = MpdCmd("seekcur +5");
+      action[ScrollDown] = MpdCmd("seekcur -5");
+      interval = 1000
+    }
   }
 }
 

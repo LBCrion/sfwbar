@@ -1,3 +1,5 @@
+#Api2
+
 include("cpu.source")
 
 layout {
@@ -6,6 +8,6 @@ layout {
     style = If(XCpuPresent,"cpu_chart","hidden")
     value = XCpuUtilization
     tooltip = "CPU: " + Str(XCpuUtilization*100) + '%'
-    action = Exec $Term + " -e top"
+    action = Exec($Term + " -e top")
   }
 }

@@ -1,95 +1,97 @@
+#Api2
+
 module("wifi-nm")
 module("wifi-iwd")
 
-TriggerAction "wifi_updated", XWifiUpdate
-TriggerAction "wifi_removed", XWifiRemove
-TriggerAction "wifi_scan", SetValue "XWifiScanButton", GT("Scanning") + " ..."
-TriggerAction "wifi_scan_complete", SetValue "XWifiScanButton", GT("Scan")
+Private {
+  TriggerAction "wifi_updated", XWifiUpdate()
+  TriggerAction "wifi_removed", XWifiRemove()
+  TriggerAction "wifi_scan", Config("label 'XWifiScanButton' { value = GT('Scanning') + ' ...' }")
+  TriggerAction "wifi_scan_complete", Config("label 'XWifiScanButton' { value = GT('Scan') }")
 
-define XWifiIcon = "network-wireless-signal-" +
-  Lookup(Val(WifiGet("Strength")),
-    80, "excellent",
-    60, "good",
-    40, "ok",
-    20, "weak",
-    "none")
+  define XWifiIcon = "network-wireless-signal-" +
+    Lookup(Val(WifiGet("Strength")),
+      80, "excellent",
+      60, "good",
+      40, "ok",
+      20, "weak",
+      "none")
 
-Set XWifiNetTmpl = "
-  Grid 'XWifiGrid@WIFI_KNOWN@' {
-    grid '@WIFI_PATH@_grid@WIFI_KNOWN@' {
-      style = 'XWifiGrid'
-      action = Function 'XWifiConnect'
-      action[RightClick] = Menu 'XWifiItemMenu'
-      image '@WIFI_PATH@_icon' {
-        value = '@WIFI_ICON@'
-        style = 'XWifiIcon@WIFI_CONNECTED@'
+  Set XWifiNetTmpl = "
+    Grid 'XWifiGrid@WIFI_KNOWN@' {
+      grid '@WIFI_PATH@_grid@WIFI_KNOWN@' {
+        style = 'XWifiGrid'
+        action = XWifiConnect()
+        action[RightClick] = Menu('XWifiItemMenu')
+        image '@WIFI_PATH@_icon' {
+          value = '@WIFI_ICON@'
+          style = 'XWifiIcon@WIFI_CONNECTED@'
+        }
+        label '@WIFI_PATH@_label' {
+          value = Escape('@WIFI_SSID@')
+          style = 'XWifiName'
+        }
+        label '@WIFI_PATH@_type' {
+          value = '@WIFI_TYPE@'
+          style = 'XWifiType'
+        }
       }
-      label '@WIFI_PATH@_label' {
-        value = Escape('@WIFI_SSID@')
-        style = 'XWifiName'
+    }"
+
+  Function XWifiUpdate() {
+    Config(ReplaceAll( $XWifiNetTmpl,
+        "@WIFI_PATH@", Escape(WifiGet(id, "Path")),
+        "@WIFI_TYPE@", WifiGet(id, "Type"),
+        "@WIFI_SSID@", Replace(WifiGet(id, "SSID"),"'","\""),
+        "@WIFI_ICON@", XWifiIcon,
+        "@WIFI_KNOWN@",If(WifiGet(id, "Known")="","Other","Known"),
+        "@WIFI_CONNECTED@", If(WifiGet(id, "Connected")="1","Connected","")))
+  }
+
+  Function XWifiRemove() {
+    ClearWidget(id + "_gridKnown")
+    ClearWidget(id + "_gridOther")
+  }
+
+  Function XWifiConnect() {
+    Config("label '" + Extract(WidgetId(),'(.*)_grid') +
+        "_type' { value = 'connecting' }")
+    WifiConnect(Extract(WidgetId(),'(.*)_grid'))
+  }
+
+  Menu("XWifiItemMenu") {
+    item(GT("Connect"), XWifiConnect() );
+    item(GT("Disconnect"), WifiDisconnect(Extract(WidgetId(),"(.*)_grid")) );
+    item(GT("Forget"), WifiForget(Extract(WidgetId(),"(.*)_grid")) );
+  }
+
+  PopUp "XWifiWindow" {
+    style = "XWifiPopup"
+    grid "XWifiFrame" {
+      label {
+        value = "Wifi"
+        style = "XWifiHeader"
       }
-      label '@WIFI_PATH@_type' {
-        value = '@WIFI_TYPE@'
-        style = 'XWifiType'
+      style = "XWifiFrame"
+      label {
+        value = GT("Known networks")
+        style = "XWifiSeparator"
       }
-    }
-  }"
-
-Function XWifiUpdate() {
-  ClearWidget id + "_grid" +
-    If(WifiGet(id, "known")="", "Known", "Other")
-  Config ReplaceAll( $XWifiNetTmpl,
-      "@WIFI_PATH@", Escape(WifiGet(id, "Path")),
-      "@WIFI_TYPE@", WifiGet(id, "Type"),
-      "@WIFI_SSID@", Replace(WifiGet(id, "SSID"),"'","\""),
-      "@WIFI_ICON@", XWifiIcon,
-      "@WIFI_KNOWN@",If(WifiGet(id, "Known")="","Other","Known"),
-      "@WIFI_CONNECTED@", If(WifiGet(id, "Connected")="1","Connected",""))
-}
-
-Function XWifiRemove() {
-  ClearWidget id + "_gridKnown"
-  ClearWidget id + "_gridOther"
-}
-
-Function XWifiConnect() {
-  Eval "Addr", Extract(WidgetId(),'(.*)_grid') + "_type"
-  SetValue $Addr, "Connecting"
-  WifiConnect Extract(WidgetId(),'(.*)_grid')
-}
-
-Menu("XWifiItemMenu") {
-  item(GT("Connect"), Function "XWifiConnect" );
-  item(GT("Disconnect"), WifiDisconnect Extract(WidgetId(),"(.*)_grid") );
-  item(GT("Forget"), WifiForget Extract(WidgetId(),"(.*)_grid") );
-}
-
-PopUp "XWifiWindow" {
-  style = "XWifiPopup"
-  grid "XWifiFrame" {
-    label {
-      value = "Wifi"
-      style = "XWifiHeader"
-    }
-    style = "XWifiFrame"
-    label {
-      value = GT("Known networks")
-      style = "XWifiSeparator"
-    }
-    grid "XWifiGridKnown" {
-      style = "XWifiSection"
-    }
-    label {
-      value = GT("Other networks")
-      style = "XWifiSeparator"
-    }
-    grid "XWifiGridOther" {
-      style = "XWifiSection"
-    }
-    label "XWifiScanButton" {
-      value = GT("Scan")
-      style = "XWifiScan"
-      action = WifiScan
+      grid "XWifiGridKnown" {
+        style = "XWifiSection"
+      }
+      label {
+        value = GT("Other networks")
+        style = "XWifiSeparator"
+      }
+      grid "XWifiGridOther" {
+        style = "XWifiSection"
+      }
+      label "XWifiScanButton" {
+        value = GT("Scan")
+        style = "XWifiScan"
+        action = WifiScan()
+      }
     }
   }
 }
