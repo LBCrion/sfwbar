@@ -43,7 +43,7 @@ static void flow_grid_get_preferred_width (GtkWidget *self, gint *minimal,
       self, minimal, natural);
 
   if(priv->rows>0 && FLOW_GRID_GET_CLASS(self)->limit)
-    *minimal = MIN(*natural, 1);
+    *minimal = MIN(*natural, 0);
 }
 
 static void flow_grid_get_preferred_height (GtkWidget *self, gint *minimal,
@@ -58,7 +58,7 @@ static void flow_grid_get_preferred_height (GtkWidget *self, gint *minimal,
       self, minimal, natural);
 
   if(priv->cols>0 && FLOW_GRID_GET_CLASS(self)->limit)
-    *minimal = MIN(*natural, 1);
+    *minimal = MIN(*natural, 0);
 }
 
 static void flow_grid_destroy( GtkWidget *self )
