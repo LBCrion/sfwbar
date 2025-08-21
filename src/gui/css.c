@@ -72,12 +72,8 @@ static void css_custom_handle ( GtkWidget *widget )
     gtk_label_set_ellipsize(GTK_LABEL(widget),
         state?PANGO_ELLIPSIZE_END:PANGO_ELLIPSIZE_NONE);
 
-    /* don't set wrap property until size is allocated */
-    if(gtk_widget_get_allocated_width(widget)>1)
-    {
-      gtk_widget_style_get(widget, "wrap", &state, NULL);
-      gtk_label_set_line_wrap(GTK_LABEL(widget), state);
-    }
+    gtk_widget_style_get(widget, "wrap", &state, NULL);
+    gtk_label_set_line_wrap(GTK_LABEL(widget), state);
   }
   if(IS_BASE_WIDGET(widget))
   {
