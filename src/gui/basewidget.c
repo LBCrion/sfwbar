@@ -110,6 +110,7 @@ gboolean base_widget_update_expressions ( GtkWidget *self )
   g_return_val_if_fail(IS_BASE_WIDGET(self), FALSE);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
+  scanner_invalidate();
   if(vm_expr_eval(priv->value) || BASE_WIDGET_GET_CLASS(self)->always_update)
     g_main_context_invoke(NULL, (GSourceFunc)base_widget_update_value, self);
   priv->value->eval = TRUE;

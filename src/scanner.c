@@ -130,6 +130,7 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
   var->multi = flag;
   var->invalid = TRUE;
   var->store = store;
+  var->id = quark;
 
   switch(var->type)
   {
@@ -463,26 +464,21 @@ static ScanVar *scanner_var_update ( GQuark id, gboolean update,
 
   if(var->type == G_TOKEN_SET)
   {
-    if(!g_rec_mutex_trylock(&var->mutex))
-      g_rec_mutex_lock(&var->mutex);
-    else
+    g_rec_mutex_lock(&var->mutex);
+    if(!var->updating)
     {
-      if(!var->updating)
-      {
-        var->updating = TRUE;
-        var->expr->parent = expr;
-        (void)vm_expr_eval(var->expr);
-        var->expr->parent = NULL;
-        var->vstate = var->expr->vstate;
-        if(expr)
-          expr->vstate = expr->vstate || var->expr->vstate;
-        if(var->invalid)
-          scanner_var_reset(var, NULL);
-        scanner_var_values_update(var, g_strdup(var->expr->cache));
-        var->invalid = FALSE;
-        var->updating = FALSE;
-      }
+      var->updating = TRUE;
+      var->expr->parent = expr;
+      (void)vm_expr_eval(var->expr);
+      var->expr->parent = NULL;
+      var->vstate = var->expr->vstate;
+      if(var->invalid)
+        scanner_var_reset(var, NULL);
+      scanner_var_values_update(var, g_strdup(var->expr->cache));
+      var->invalid = FALSE;
+      var->updating = FALSE;
     }
+
     if(expr)
       expr->vstate = expr->vstate || var->expr->vstate;
     g_rec_mutex_unlock(&var->mutex);

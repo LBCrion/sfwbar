@@ -5,6 +5,7 @@
 
 #include <gio/gdesktopappinfo.h>
 #include "locale1.h"
+#include "scanner.h"
 #include "gui/css.h"
 #include "gui/menu.h"
 #include "gui/menuitem.h"
@@ -418,6 +419,7 @@ void menu_item_label_update ( GtkWidget *self )
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv);
 
+  scanner_invalidate();
   if(vm_expr_eval(priv->label_expr))
     menu_item_set_label(self, priv->label_expr->cache);
   if(vm_expr_eval(priv->tooltip_expr))

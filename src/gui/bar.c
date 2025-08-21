@@ -714,7 +714,7 @@ gint bar_get_toplevel_dir ( GtkWidget *widget )
   if(!toplevel)
     return GTK_POS_RIGHT;
 
-  gtk_widget_style_get(toplevel, "direction",&toplevel_dir,NULL);
+  gtk_widget_style_get(toplevel, "direction", &toplevel_dir, NULL);
   return toplevel_dir;
 }
 

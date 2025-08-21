@@ -45,6 +45,7 @@ typedef struct scan_file {
 
 typedef struct scan_var {
   GRecMutex mutex;
+  GQuark id;
   expr_cache_t *expr;
   vm_store_t *store;
   void *definition;
