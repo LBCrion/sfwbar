@@ -10,42 +10,6 @@
 
 static GData *expr_deps;
 
-/*gboolean expr_cache_eval ( expr_cache_t *expr )
-{
-  value_t v1;
-  gchar *eval;
-
-  if(!expr || !expr->eval)
-    return FALSE;
-
-  expr->vstate = FALSE;
-  v1 = vm_expr_eval(expr);
-  if(v1.type==EXPR_TYPE_STRING)
-    eval = v1.value.string;
-  else if(v1.type==EXPR_TYPE_NUMERIC)
-    eval = numeric_to_string(v1.value.numeric, -1);
-  else
-    eval = g_strdup("");
-
-  if(!expr->vstate)
-    expr->eval = FALSE;
-
-  g_debug("expr: '%s' = '%s', vstate: %d", expr->definition, eval,
-      expr->vstate);
-
-  if(g_strcmp0(eval, expr->cache))
-  {
-    g_free(expr->cache);
-    expr->cache = eval;
-    return TRUE;
-  }
-  else
-  {
-    g_free(eval);
-    return FALSE;
-  }
-}*/
-
 expr_cache_t *expr_cache_new ( void )
 {
   return g_malloc0(sizeof(expr_cache_t));
