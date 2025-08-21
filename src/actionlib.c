@@ -612,6 +612,7 @@ static value_t action_file_trigger ( vm_t *vm, value_t p[], gint np )
     g_object_unref(f);
     return value_na;
   }
+  g_file_monitor_set_rate_limit(m, 0);
   if(np==3)
     g_timeout_add(value_get_numeric(p[2]), (GSourceFunc)action_file_timeout_cb,
         (gpointer)trigger_name_intern(value_get_string(p[1])));
@@ -628,8 +629,7 @@ static value_t action_emit_trigger ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "");
   vm_param_check_string(vm, p, 0, "EmitTrigger");
 
-  g_main_context_invoke(NULL, (GSourceFunc)trigger_emit,
-      (gchar *)trigger_name_intern(value_get_string(p[0])));
+  trigger_emit(value_get_string(p[0]));
 
   return value_na;
 }
