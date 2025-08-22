@@ -182,6 +182,9 @@ static gboolean config_widget_variable ( GScanner *scanner, GtkWidget *widget )
   vm_var_t *var;
   GBytes *code;
 
+  if(scanner->token != G_TOKEN_IDENTIFIER)
+    return FALSE;
+
   if( !(var = vm_store_lookup_string(base_widget_get_store(widget),
           scanner->value.v_identifier)) )
     return FALSE;
