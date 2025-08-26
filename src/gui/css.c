@@ -12,9 +12,31 @@
 
 static void (*css_style_updated_original)(GtkWidget *);
 
+void css_provider_add ( gchar *css )
+{
+  static GtkCssProvider *provider;
+  gchar *old, *combined;
+
+  if(provider)
+  {
+    gtk_style_context_remove_provider_for_screen(gdk_screen_get_default(),
+        GTK_STYLE_PROVIDER(provider));
+    old = gtk_css_provider_to_string(provider);
+    g_object_unref(provider);
+    combined = g_strconcat(old, css, NULL);
+    g_free(old);
+  }
+  else
+    combined = g_strdup(css);
+
+  provider = gtk_css_provider_new();
+  gtk_css_provider_load_from_data(provider, combined ,strlen(combined), NULL);
+  gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
+    GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+}
+
 void css_file_load ( gchar *name )
 {
-  GtkCssProvider *css;
   gchar *fname, *css_input, *css_string;
 
   if(!name)
@@ -27,11 +49,7 @@ void css_file_load ( gchar *name )
   {
     css_string = css_legacy_preprocess(css_input, fname);
     g_free(css_input);
-    css = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(css, css_string, strlen(css_string), NULL);
-    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
-      GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
-    g_object_unref(css);
+    css_provider_add(css_string);
     g_free(css_string);
   }
   g_free(fname);
@@ -59,6 +77,8 @@ static void css_custom_handle ( GtkWidget *widget )
     gtk_widget_set_hexpand(widget, state);
     gtk_widget_style_get(widget, "vexpand", &state, NULL);
     gtk_widget_set_vexpand(widget, state);
+    if(gtk_widget_get_ancestor(widget, GTK_TYPE_GRID))
+      gtk_widget_queue_allocate(gtk_widget_get_ancestor(widget, GTK_TYPE_GRID));
     gtk_widget_style_get(widget, "halign", &align, NULL);
     gtk_widget_set_halign(widget, align);
     gtk_widget_style_get(widget, "valign", &align, NULL);
@@ -93,7 +113,6 @@ static void css_style_updated ( GtkWidget *widget )
 void css_init ( gchar *cssname )
 {
   gchar *css_str;
-  GtkCssProvider *css;
   GtkWidgetClass *widget_class = g_type_class_ref(GTK_TYPE_WIDGET);
 
   gtk_widget_class_install_style_property(widget_class,
@@ -189,11 +208,7 @@ void css_init ( gchar *cssname )
     "#hidden { -GtkWidget-visible: false; }"\
     ".flowgrid {-GtkWidget-row-homogeneous: true; }"\
     ".flowgrid {-GtkWidget-column-homogeneous: true; }";
-  css = gtk_css_provider_new();
-  gtk_css_provider_load_from_data(css,css_str,strlen(css_str),NULL);
-  gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
-    GTK_STYLE_PROVIDER(css),GTK_STYLE_PROVIDER_PRIORITY_USER);
-  g_object_unref(css);
+  css_provider_add(css_str);
 
   css_file_load(cssname);
 }

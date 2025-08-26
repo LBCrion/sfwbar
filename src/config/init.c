@@ -274,7 +274,6 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
 {
   GScanner *scanner;
   GtkWidget *w;
-  GtkCssProvider *css;
   gchar *tmp;
 
   if(!data)
@@ -293,7 +292,6 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
   scanner->input_name = fname;
   g_scanner_input_text(scanner, data, strlen(data));
 
-
   if( (tmp = strstr(data, "\n#CSS")) )
     *tmp = 0;
   w = config_parse_toplevel(scanner, container);
@@ -302,12 +300,8 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
 
   if(tmp)
   {
-    css = gtk_css_provider_new();
     tmp = css_legacy_preprocess(g_strdup(tmp + 5), fname);
-    gtk_css_provider_load_from_data(css, tmp, strlen(tmp), NULL);
-    gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
-      GTK_STYLE_PROVIDER(css), GTK_STYLE_PROVIDER_PRIORITY_USER);
-    g_object_unref(css);
+    css_provider_add(tmp);
     g_free(tmp);
   }
 

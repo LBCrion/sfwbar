@@ -11,6 +11,7 @@ void css_add_class ( GtkWidget *widget, gchar *css_class );
 void css_remove_class ( GtkWidget *widget, gchar *css_class );
 void css_set_class ( GtkWidget *widget, gchar *css_class, gboolean state );
 gchar *css_legacy_preprocess ( gchar *css_string, gchar *fname );
+void css_provider_add ( gchar *css );
 
 void widget_set_css ( GtkWidget *, gpointer );
 void widget_parse_css ( GtkWidget *widget, gchar *css );
