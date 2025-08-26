@@ -550,11 +550,17 @@ gboolean vm_expr_eval ( expr_cache_t *expr )
   }
 }
 
+static gboolean vm_event_free ( void *event )
+{
+  gdk_event_free(event);
+  return FALSE;
+}
+
 static void vm_run_action_thread ( vm_t *vm, gpointer d )
 {
   value_free(vm_run(vm));
   if(vm->event)
-    gdk_event_free(vm->event);
+    g_main_context_invoke(NULL, vm_event_free, vm->event);
   vm_free(vm);
 }
 
