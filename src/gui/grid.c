@@ -35,12 +35,6 @@ static void grid_mirror ( GtkWidget *self, GtkWidget *src )
     grid_attach(self, base_widget_mirror(iter->data));
 }
 
-static void grid_child_park ( GtkWidget *widget, GtkWidget *grid )
-{
-  g_object_ref(widget);
-  gtk_container_remove(GTK_CONTAINER(grid), widget);
-}
-
 static void grid_style_updated ( GtkWidget *grid, GtkWidget *self )
 {
   GridPrivate *priv;
@@ -53,12 +47,12 @@ static void grid_style_updated ( GtkWidget *grid, GtkWidget *self )
     return;
   priv->dir = dir;
 
-  gtk_container_foreach(GTK_CONTAINER(priv->grid),
-      (GtkCallback)grid_child_park, priv->grid);
-
   g_list_free(g_steal_pointer(&priv->last));
   for(iter=priv->children; iter; iter=g_list_next(iter))
   {
+    g_object_ref(iter->data);
+    if(gtk_widget_get_parent(iter->data)==priv->grid)
+      gtk_container_remove(GTK_CONTAINER(priv->grid), iter->data);
     grid_attach(self, iter->data);
     g_object_unref(iter->data);
   }
