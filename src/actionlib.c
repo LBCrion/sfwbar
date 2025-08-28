@@ -712,7 +712,7 @@ void action_lib_init ( void )
   vm_func_add("maximize", action_maximize, TRUE, FALSE);
   vm_func_add("unminimize", action_unminimize, TRUE, FALSE);
   vm_func_add("unmaximize", action_unmaximize, TRUE, FALSE);
-  vm_func_add("clientsend", action_client_send, TRUE, TRUE);
+  vm_func_add("clientsend", action_client_send, TRUE, FALSE);
   vm_func_add("eval", action_eval, TRUE, FALSE);
   vm_func_add("switcherevent", action_switcher, TRUE, TRUE);
   vm_func_add("workspaceactivate", action_workspace_activate, TRUE, FALSE);

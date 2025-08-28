@@ -7,6 +7,7 @@
 #include "util/string.h"
 
 GHashTable *vm_func_table;
+GMutex func_mutex;
 
 void vm_func_init ( void )
 {
@@ -20,12 +21,18 @@ vm_function_t *vm_func_lookup ( gchar *name )
 {
   vm_function_t *func;
 
-  if( (func = (vm_function_t *)g_hash_table_lookup(vm_func_table, name)) )
+  g_mutex_lock(&func_mutex);
+  func = (vm_function_t *)g_hash_table_lookup(vm_func_table, name);
+  g_mutex_unlock(&func_mutex);
+
+  if(func)
     return func;
 
   func = g_malloc0(sizeof(vm_function_t));
   func->name = g_strdup(name);
+  g_mutex_lock(&func_mutex);
   g_hash_table_insert(vm_func_table, func->name, func);
+  g_mutex_unlock(&func_mutex);
 
   return func;
 }
@@ -59,8 +66,10 @@ void vm_func_remove ( gchar *name )
 {
   vm_function_t *func;
 
-  if( !(func = g_hash_table_lookup(vm_func_table, name)) )
-    return;
+  g_mutex_lock(&func_mutex);
+  func = g_hash_table_lookup(vm_func_table, name);
+  g_mutex_unlock(&func_mutex);
 
-  func->ptr.function = NULL;
+  if(func)
+    func->ptr.function = NULL;
 }
