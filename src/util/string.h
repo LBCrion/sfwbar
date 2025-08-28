@@ -3,8 +3,11 @@
 
 #include <glib.h>
 
+#define str_get(x) g_atomic_pointer_get(&(x))
+
 guint str_nhash ( gchar *str );
 gboolean str_nequal ( gchar *str1, gchar *str2 );
+void str_assign ( gchar **old, gchar *new );
 gchar *str_replace ( gchar *str, gchar *old, gchar *new );
 gchar *str_escape ( gchar *string );
 void *ptr_pass ( void *ptr );

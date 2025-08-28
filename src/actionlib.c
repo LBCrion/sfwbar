@@ -411,72 +411,75 @@ static value_t action_client_send ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
-static window_t *action_window_get ( vm_t *vm, value_t p[], gint np )
+static gpointer action_window_get ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *widget = vm_widget_get(vm, np==1? value_get_string(p[0]) : NULL);
+  window_t *win;
 
   if(widget && IS_TASKBAR_ITEM(widget))
-    return flow_item_get_source(widget);
+    win = flow_item_get_source(widget);
   else
-    return wintree_from_id(VM_WINDOW(vm));
+    win = wintree_from_id(VM_WINDOW(vm));
+
+  return win? win->uid : NULL;
 }
 
 static value_t action_focus ( vm_t *vm, value_t p[], gint np )
 {
-  window_t *win;
+  gpointer wid;
 
-  if( (win = action_window_get(vm, p, np)) )
-    wintree_focus(win->uid);
+  if( (wid = action_window_get(vm, p, np)) )
+    wintree_focus(wid);
 
   return value_na;
 }
 
 static value_t action_close ( vm_t *vm, value_t p[], gint np )
 {
-  window_t *win;
+  gpointer wid;
 
-  if( (win = action_window_get(vm, p, np)) )
-    wintree_close(win->uid);
+  if( (wid = action_window_get(vm, p, np)) )
+    wintree_close(wid);
 
   return value_na;
 }
 
 static value_t action_minimize ( vm_t *vm, value_t p[], gint np )
 {
-  window_t *win;
+  gpointer wid;
 
-  if( (win = action_window_get(vm, p, np)) )
-    wintree_minimize(win->uid);
+  if( (wid = action_window_get(vm, p, np)) )
+    wintree_minimize(wid);
 
   return value_na;
 }
 
 static value_t action_maximize ( vm_t *vm, value_t p[], gint np )
 {
-  window_t *win;
+  gpointer wid;
 
-  if( (win = action_window_get(vm, p, np)) )
-    wintree_maximize(win->uid);
+  if( (wid = action_window_get(vm, p, np)) )
+    wintree_maximize(wid);
 
   return value_na;
 }
 
 static value_t action_unminimize ( vm_t *vm, value_t p[], gint np )
 {
-  window_t *win;
+  gpointer wid;
 
-  if( (win = action_window_get(vm, p, np)) )
-    wintree_unminimize(win->uid);
+  if( (wid = action_window_get(vm, p, np)) )
+    wintree_unminimize(wid);
 
   return value_na;
 }
 
 static value_t action_unmaximize ( vm_t *vm, value_t p[], gint np )
 {
-  window_t *win;
+  gpointer wid;
 
-  if( (win = action_window_get(vm, p, np)) )
-    wintree_unmaximize(win->uid);
+  if( (wid = action_window_get(vm, p, np)) )
+    wintree_unmaximize(wid);
 
   return value_na;
 }
@@ -679,7 +682,6 @@ static value_t action_usleep ( vm_t *vm, value_t p[], gint np )
 void action_lib_init ( void )
 {
   vm_func_add("exec", action_exec_impl, TRUE, TRUE);
-//  vm_func_add("function", action_function, TRUE, FALSE);
   vm_func_add("WidgetPush", action_widget_push, TRUE, FALSE);
   vm_func_add("WidgetPop", action_widget_pop, TRUE, FALSE);
   vm_func_add("Call", action_call, TRUE, TRUE);
@@ -704,12 +706,12 @@ void action_lib_init ( void )
   vm_func_add("setvalue", action_setvalue, TRUE, FALSE);
   vm_func_add("setstyle", action_setstyle, TRUE, FALSE);
   vm_func_add("settooltip", action_settooltip, TRUE, FALSE);
-  vm_func_add("focus", action_focus, TRUE, TRUE);
-  vm_func_add("close", action_close, TRUE, TRUE);
-  vm_func_add("minimize", action_minimize, TRUE, TRUE);
-  vm_func_add("maximize", action_maximize, TRUE, TRUE);
-  vm_func_add("unminimize", action_unminimize, TRUE, TRUE);
-  vm_func_add("unmaximize", action_unmaximize, TRUE, TRUE);
+  vm_func_add("focus", action_focus, TRUE, FALSE);
+  vm_func_add("close", action_close, TRUE, FALSE);
+  vm_func_add("minimize", action_minimize, TRUE, FALSE);
+  vm_func_add("maximize", action_maximize, TRUE, FALSE);
+  vm_func_add("unminimize", action_unminimize, TRUE, FALSE);
+  vm_func_add("unmaximize", action_unmaximize, TRUE, FALSE);
   vm_func_add("clientsend", action_client_send, TRUE, TRUE);
   vm_func_add("eval", action_eval, TRUE, FALSE);
   vm_func_add("switcherevent", action_switcher, TRUE, TRUE);

@@ -7,6 +7,7 @@
 #define set_bit(var, mask, state) { var = state?var|(mask):var&(~mask); }
 
 typedef struct wt_window {
+  GMutex mutex;
   gchar *title;
   gchar *appid;
   GList *outputs;

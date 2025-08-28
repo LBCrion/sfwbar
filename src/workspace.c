@@ -81,14 +81,14 @@ void workspace_unref ( gpointer id )
   if(ws->refcount)
     return;
 
-  g_debug("Workspace: destroying workspace: '%s'", ws->name);
+  g_debug("Workspace: destroying workspace: '%s'", str_get(ws->name));
 
   if(ws == focus)
     focus = NULL;
 
   if(g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0))
   {
-    g_debug("Workspace: workspace returned to a pin: '%s'", ws->name);
+    g_debug("Workspace: workspace returned to a pin: '%s'", str_get(ws->name));
     ws->id = PAGER_PIN_ID;
     ws->state = 0;
     LISTENER_CALL(workspace_destroy, ws);
@@ -97,7 +97,7 @@ void workspace_unref ( gpointer id )
   {
     workspaces = g_list_remove(workspaces, ws);
     LISTENER_CALL(workspace_destroy, ws);
-    g_free(ws->name);
+    g_free(str_get(ws->name));
     g_free(ws);
   }
 }
@@ -171,8 +171,7 @@ static void workspace_pin_remove ( const gchar *pin )
     return;
 
   ws = iter->data;
-  g_free(ws->name);
-  ws->name = "";
+  str_assign(&ws->name, "");
   LISTENER_CALL(workspace_destroy, ws);
   workspaces = g_list_remove(workspaces, ws);
   g_free(ws);
@@ -190,7 +189,7 @@ static void workspace_pin_restore ( const gchar *pin )
 
   ws = g_malloc0(sizeof(workspace_t));
   ws->id = PAGER_PIN_ID;
-  ws->name = g_strdup(pin);
+  str_assign(&ws->name, g_strdup(pin));
   workspaces = g_list_prepend(workspaces, ws);
   LISTENER_CALL(workspace_new, ws);
 }
@@ -293,18 +292,18 @@ void workspace_set_name ( workspace_t *ws, const gchar *name )
   workspace_t *old;
   GList *old_pin;
 
-  if(!g_strcmp0(ws->name, name))
+  if(!g_strcmp0(str_get(ws->name), name))
     return;
 
   old = workspace_from_name(name);
   workspace_pin_remove(name);
 
-  old_pin = g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0);
+  old_pin = g_list_find_custom(global_pins, str_get(ws->name),
+      (GCompareFunc)g_strcmp0);
 
   g_debug("Workspace: '%s' (pin: %s)  name change to: '%s' (duplicate: %s)",
-      ws->name, old_pin?"yes":"no", name, old?"yes":"no");
-  g_free(ws->name);
-  ws->name = g_strdup(name);
+      str_get(ws->name), old_pin?"yes":"no", name, old?"yes":"no");
+  str_assign(&ws->name, g_strdup(name));
   ws->state |= WS_STATE_INVALID;
 
   if(old_pin && !workspace_from_name(old_pin->data))

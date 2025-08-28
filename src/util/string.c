@@ -20,6 +20,13 @@ gboolean str_nequal ( gchar *str1, gchar *str2 )
   return (!g_ascii_strcasecmp(str1, str2));
 }
 
+void str_assign ( gchar **old, gchar *new )
+{
+  gchar *tmp = g_atomic_pointer_get(old);
+  g_atomic_pointer_set(old, new);
+  g_free(tmp);
+}
+
 gchar *str_replace ( gchar *str, gchar *old, gchar *new )
 {
   gssize olen, nlen;

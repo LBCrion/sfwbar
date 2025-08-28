@@ -95,7 +95,7 @@ gchar *wintree_get_active ( void )
   window_t *win;
 
   win = wintree_from_id(wintree_get_focus());
-  return win?win->title:"";
+  return win? win->title : "";
 }
 
 window_t *wintree_window_init ( void )
@@ -114,7 +114,7 @@ void wintree_log ( gpointer id )
   win = wintree_from_id(id);
   if(win)
     g_debug("app_id: '%s', title '%s'",
-        win->appid?win->appid:"(null)",win->title?win->title:"(null)");
+        win->appid ?win->appid : "(null)",win->title? win->title : "(null)");
 }
 
 gint wintree_compare ( window_t *a, window_t *b)
@@ -166,8 +166,7 @@ window_t *wintree_from_id ( gpointer id )
   for(iter = wt_list; iter; iter=g_list_next(iter) )
     if ( ((window_t *)(iter->data))->uid == id )
       break;
-
-  return iter?iter->data:NULL;
+  return iter? iter->data : NULL;
 }
 
 window_t *wintree_from_pid ( gint64 pid )
@@ -177,8 +176,7 @@ window_t *wintree_from_pid ( gint64 pid )
   for(iter = wt_list; iter; iter=g_list_next(iter) )
     if ( ((window_t *)(iter->data))->pid == pid )
       break;
-
-  return iter?iter->data:NULL;
+  return iter? iter->data : NULL;
 }
 
 void wintree_commit ( window_t *win )
@@ -202,8 +200,7 @@ void wintree_set_title ( gpointer wid, const gchar *title )
   if(!g_strcmp0(win->title,title))
     return;
 
-  g_free(win->title);
-  win->title = g_strdup(title);
+  str_assign(&win->title, g_strdup(title));
   wintree_commit(win);
 }
 
@@ -214,10 +211,9 @@ void wintree_set_app_id ( gpointer wid, const gchar *app_id)
   if(!app_id || !( win=wintree_from_id(wid)) || !g_strcmp0(win->appid, app_id))
     return;
   LISTENER_CALL(window_destroy, win);
-  g_free(win->appid);
-  win->appid = g_strdup(app_id);
+  str_assign(&win->appid, g_strdup(app_id));
   if(!win->title)
-    win->title = g_strdup(app_id);
+    str_assign(&win->title, g_strdup(app_id));
   LISTENER_CALL(window_new, win);
 
   wintree_commit(win);
@@ -274,14 +270,14 @@ void wintree_window_delete ( gpointer id )
   if(!iter || !iter->data)
     return;
   win = iter->data;
-
   wt_list = g_list_delete_link(wt_list, iter);
+
   LISTENER_CALL(window_destroy, win);
   if(win->workspace)
     workspace_unref(win->workspace->id);
   g_free(win->appid);
   g_free(win->title);
-  g_list_free_full(win->outputs,g_free);
+  g_list_free_full(win->outputs, g_free);
   g_free(win);
 }
 

@@ -2,6 +2,7 @@
 #include <locale.h>
 #include <gio/gio.h>
 #include "trigger.h"
+#include "util/string.h"
 #include "vm/expr.h"
 
 static const gchar *locale_iface = "org.freedesktop.locale1";
@@ -24,14 +25,13 @@ static void locale1_handle ( GVariantIter *iter )
       locale = g_strdup(lstrv[1]);
     g_strfreev(lstrv);
   }
-  if(!locale || !g_strcmp0(locale, locale1))
+  if(!locale || !g_strcmp0(locale, str_get(locale1)))
   {
     g_free(locale);
     return;
   }
-  g_clear_pointer(&locale1, g_free);
-  locale1 = locale;
-  setlocale(LC_MESSAGES, locale1);
+  str_assign(&locale1, locale);
+  setlocale(LC_MESSAGES, str_get(locale1));
   trigger_emit("locale1");
   expr_dep_trigger(g_quark_from_static_string(".locale1"));
 }
@@ -81,7 +81,7 @@ void locale1_init ( void )
 {
   GDBusConnection *con;
 
-  locale1 = g_strdup(setlocale(LC_MESSAGES, NULL));
+  str_assign(&locale1, g_strdup(setlocale(LC_MESSAGES, NULL)));
   if( (con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
   {
     g_dbus_connection_signal_subscribe(con, locale_iface,
@@ -99,5 +99,5 @@ void locale1_init ( void )
 
 const gchar *locale1_get_locale ( void )
 {
-  return locale1;
+  return str_get(locale1);
 }

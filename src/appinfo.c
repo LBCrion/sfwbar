@@ -10,16 +10,19 @@ static GtkIconTheme *app_info_theme;
 static GList *app_info_add, *app_info_delete;
 static GList *app_info_entries;
 static time_t app_info_mtime;
+GMutex icon_map_mutex;
 
 void app_icon_map_add ( gchar *appid, gchar *icon )
 {
   if(!appid || !icon)
     return;
 
+  g_mutex_lock(&icon_map_mutex);
   if(!icon_map)
     icon_map = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
   g_hash_table_insert(icon_map, g_strdup(appid), g_strdup(icon));
+  g_mutex_unlock(&icon_map_mutex);
 }
 
 void app_info_add_handlers ( AppInfoHandler add, AppInfoHandler del )
@@ -225,8 +228,10 @@ gchar *app_info_icon_lookup ( gchar *app_id_in, gboolean symbolic_pref )
   gchar *app_id, *clean_app_id, *icon;
   gsize i;
 
+  g_mutex_lock(&icon_map_mutex);
   if(!icon_map || !(app_id = g_hash_table_lookup(icon_map, app_id_in)) )
     app_id = app_id_in;
+  g_mutex_unlock(&icon_map_mutex);
 
   if(g_str_has_suffix(app_id, "-symbolic"))
   {

@@ -161,7 +161,7 @@ void client_socket ( ScanFile *file )
 
 gboolean client_exec_connect ( Client *client )
 {
-  gint in,out,err;
+  gint in, out, err;
   gchar **argv;
   gint argc;
 
@@ -206,7 +206,7 @@ void client_send ( gchar *addr, gchar *command )
   if(!addr || !command )
     return;
 
-  file = scanner_file_get ( addr );
+  file = scanner_file_get(addr);
   if(!file)
     return;
 

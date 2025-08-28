@@ -12,5 +12,6 @@ void signal_subscribe ( void );
 void action_lib_init ( void );
 void hypr_ipc_init ( void );
 void wayfire_ipc_init ( void );
+void scanner_init ( void );
 
 #endif

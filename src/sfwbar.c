@@ -128,6 +128,7 @@ static void activate (GtkApplication* app, gpointer data )
   bindtextdomain("sfwbar", LOCALE_DIR);
   bind_textdomain_codeset("sfwbar", "UTF-8");
   textdomain("sfwbar");
+  scanner_init();
   config_init();
   expr_lib_init();
   action_lib_init();
