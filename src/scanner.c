@@ -9,39 +9,51 @@
 #include <glob.h>
 #include "client.h"
 #include "config/config.h"
+#include "util/datalist.h"
 #include "util/json.h"
 #include "util/string.h"
 #include "vm/expr.h"
 
 static GList *file_list;
-static GData *scan_list;
+static datalist_t *scan_list;
 static GHashTable *trigger_list;
+static GMutex trigger_mutex;
+static GMutex file_mutex;
 
 void scanner_file_attach ( const gchar *trigger, ScanFile *file )
 {
-  if(!trigger_list)
-    trigger_list = g_hash_table_new(g_direct_hash, g_direct_equal);
-
+  g_mutex_lock(&trigger_mutex);
   g_hash_table_insert(trigger_list, (void *)g_intern_string(trigger), file);
+  g_mutex_unlock(&trigger_mutex);
 }
 
 ScanFile *scanner_file_get ( gchar *trigger )
 {
+  ScanFile *file;
+
+  g_mutex_lock(&trigger_mutex);
   if(!trigger_list)
     return NULL;
 
-  return g_hash_table_lookup(trigger_list, (void *)g_intern_string(trigger));
+  file = g_hash_table_lookup(trigger_list, (void *)g_intern_string(trigger));
+  g_mutex_unlock(&trigger_mutex);
+
+  return file;
 }
 
 void scanner_file_merge ( ScanFile *keep, ScanFile *temp )
 {
   GList *iter;
 
+  g_mutex_lock(&file_mutex);
   file_list = g_list_remove(file_list, temp);
+  g_mutex_unlock(&file_mutex);
 
+  g_mutex_lock(&keep->mutex);
   for(iter=temp->vars; iter; iter=g_list_next(iter))
     ((ScanVar *)(iter->data))->file = keep;
   keep->vars = g_list_concat(keep->vars, temp->vars);
+  g_mutex_unlock(&keep->mutex);
 
   g_free(temp->fname);
   g_free(temp);
@@ -56,9 +68,13 @@ ScanFile *scanner_file_new ( gint source, gchar *fname,
   if(source == SO_CLIENT)
     iter = NULL;
   else
+  {
+    g_mutex_lock(&file_mutex);
     for(iter=file_list;iter;iter=g_list_next(iter))
       if(!g_strcmp0(fname,((ScanFile *)(iter->data))->fname))
         break;
+    g_mutex_unlock(&file_mutex);
+  }
 
   if(iter)
   {
@@ -68,8 +84,10 @@ ScanFile *scanner_file_new ( gint source, gchar *fname,
   else
   {
     file = g_malloc0(sizeof(ScanFile));
-    file_list = g_list_append(file_list,file);
     file->fname = fname;
+    g_mutex_lock(&file_mutex);
+    file_list = g_list_append(file_list,file);
+    g_mutex_unlock(&file_mutex);
   }
 
   file->source = source;
@@ -80,7 +98,11 @@ ScanFile *scanner_file_new ( gint source, gchar *fname,
   if(file->trigger != g_intern_string(trigger))
   {
     if(file->trigger)
+    {
+      g_mutex_unlock(&trigger_mutex);
       g_hash_table_remove(trigger_list, file->trigger);
+      g_mutex_unlock(&trigger_mutex);
+    }
     file->trigger = g_intern_string(trigger);
     if(file->trigger)
       scanner_file_attach(file->trigger, file);
@@ -93,7 +115,11 @@ ScanFile *scanner_file_new ( gint source, gchar *fname,
 void scanner_var_free ( ScanVar *var )
 {
   if(var->file)
+  {
+    g_mutex_lock(&var->file->mutex);
     var->file->vars = g_list_remove(var->file->vars,var);
+    g_mutex_unlock(&var->file->mutex);
+  }
   if(var->type != G_TOKEN_REGEX)
     g_free(var->definition);
   else
@@ -115,7 +141,7 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
 
   quark = scanner_parse_identifier(name, NULL);
 
-  old = g_datalist_id_get_data(&scan_list, quark);
+  old = datalist_get(scan_list, quark);
   if(old && (type != G_TOKEN_SET || old->type != G_TOKEN_SET) &&
       (old->file != file))
   {
@@ -156,11 +182,15 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
   }
 
   if(file && !old)
+  {
+    g_mutex_lock(&file->mutex);
     file->vars = g_list_append(file->vars, var);
+    g_mutex_unlock(&file->mutex);
+  }
 
   if(!old)
   {
-    g_datalist_id_set_data(&scan_list, quark, var);
+    datalist_set(scan_list, quark, var);
     expr_dep_trigger(quark);
   }
 }
@@ -174,8 +204,7 @@ void scanner_var_invalidate ( GQuark key, ScanVar *var, void *data )
 /* expire all variables in the tree */
 void scanner_invalidate ( void )
 {
-  g_datalist_foreach(&scan_list, (GDataForeachFunc)scanner_var_invalidate,
-      NULL);
+  datalist_foreach(scan_list, (GDataForeachFunc)scanner_var_invalidate, NULL);
 }
 
 static void scanner_var_values_update ( ScanVar *var, gchar *value)
@@ -217,7 +246,8 @@ void scanner_update_json ( struct json_object *obj, ScanFile *file )
   struct json_object *ptr;
   gint i;
 
-  for(node=file->vars;node!=NULL;node=g_list_next(node))
+  g_mutex_lock(&file->mutex);
+  for(node=file->vars; node!=NULL; node=g_list_next(node))
   {
     ptr = jpath_parse(((ScanVar *)node->data)->definition,obj);
     if(ptr && json_object_is_type(ptr, json_type_array))
@@ -229,6 +259,7 @@ void scanner_update_json ( struct json_object *obj, ScanFile *file )
     if(ptr)
       json_object_put(ptr);
   }
+  g_mutex_unlock(&file->mutex);
 }
 
 /* update variables in a specific file (or pipe) */
@@ -246,12 +277,12 @@ GIOStatus scanner_file_update ( GIOChannel *in, ScanFile *file, gsize *size )
   if(size)
     *size = 0;
 
-  while((status = g_io_channel_read_line(in,&read_buff,&lsize,NULL,NULL))
+  while( (status = g_io_channel_read_line(in, &read_buff, &lsize, NULL, NULL))
       ==G_IO_STATUS_NORMAL)
   {
     if(size)
       *size += lsize;
-    for(node=file->vars;node!=NULL;node=g_list_next(node))
+    for(node=file->vars; node!=NULL; node=g_list_next(node))
     {
       var=node->data;
       switch(var->type)
@@ -266,7 +297,7 @@ GIOStatus scanner_file_update ( GIOChannel *in, ScanFile *file, gsize *size )
         case G_TOKEN_GRAB:
           if(lsize>0 && *(read_buff+lsize-1)=='\n')
             *(read_buff+lsize-1)='\0';
-          scanner_var_values_update(var,g_strdup(read_buff));
+          scanner_var_values_update(var, g_strdup(read_buff));
           break;
         case G_TOKEN_JSON:
           if(!json)
@@ -275,26 +306,25 @@ GIOStatus scanner_file_update ( GIOChannel *in, ScanFile *file, gsize *size )
       }
     }
     if(json)
-      obj = json_tokener_parse_ex(json,read_buff,
-          strlen(read_buff));
+      obj = json_tokener_parse_ex(json, read_buff, strlen(read_buff));
     g_free(read_buff);
   }
   g_free(read_buff);
 
   if(json)
   {
-    scanner_update_json(obj,file);
+    scanner_update_json(obj, file);
     json_object_put(obj);
     json_tokener_free(json);
   }
 
-  for(node=file->vars;node!=NULL;node=g_list_next(node))
+  for(node=file->vars; node!=NULL; node=g_list_next(node))
   {
     ((ScanVar *)node->data)->invalid = FALSE;
     ((ScanVar *)node->data)->vstate = TRUE;
   }
 
-  g_debug("channel status %d, (%s)",status,file->fname?file->fname:"(null)");
+  g_debug("channel status %d, (%s)",status, file->fname? file->fname : "(null)");
 
   return status;
 }
@@ -332,16 +362,16 @@ gboolean scanner_file_exec ( ScanFile *file )
   if(!g_shell_parse_argv(file->fname, NULL, &argv, NULL))
     return FALSE;
 
-  if(!g_spawn_async_with_pipes(NULL,argv,NULL,G_SPAWN_SEARCH_PATH,NULL,NULL,
+  if(!g_spawn_async_with_pipes(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL,
         NULL, NULL, &out, NULL, NULL))
     return FALSE;
 
   chan = g_io_channel_unix_new(out);
   if(chan)
   {
-    g_debug("scanner: exec '%s'",file->fname);
-    g_list_foreach(file->vars,(GFunc)scanner_var_reset,NULL);
-    (void)scanner_file_update(chan,file,NULL);
+    g_debug("scanner: exec '%s'", file->fname);
+    g_list_foreach(file->vars,(GFunc)scanner_var_reset, NULL);
+    (void)scanner_file_update(chan, file, NULL);
     g_io_channel_unref(chan);
   }
   close(out);
@@ -391,7 +421,7 @@ gboolean scanner_file_glob ( ScanFile *file )
         }
 
         chan = g_io_channel_unix_new(in);
-        (void)scanner_file_update(chan,file,NULL);
+        (void)scanner_file_update(chan, file, NULL);
         g_io_channel_unref(chan);
 
         close(in);
@@ -452,7 +482,7 @@ static ScanVar *scanner_var_update ( GQuark id, gboolean update,
 {
   ScanVar *var;
 
-  if(!(var = g_datalist_id_get_data(&scan_list, id)) )
+  if(!(var = datalist_get(scan_list, id)) )
     return NULL;
 
   if(!update || (!var->invalid && var->type != G_TOKEN_SET))
@@ -483,9 +513,11 @@ static ScanVar *scanner_var_update ( GQuark id, gboolean update,
       expr->vstate = expr->vstate || var->expr->vstate;
     g_rec_mutex_unlock(&var->mutex);
   }
-  else
+  else if(var->file)
   {
+    g_mutex_lock(&var->file->mutex);
     scanner_file_glob(var->file);
+    g_mutex_unlock(&var->file->mutex);
     if(expr)
       expr->vstate = TRUE;
     var->vstate = TRUE;
@@ -538,6 +570,11 @@ value_t scanner_get_value ( GQuark id, gchar ftype, gboolean update,
 
 gboolean scanner_is_variable ( gchar *identifier )
 {
-  return !!g_datalist_id_get_data(&scan_list,
-      scanner_parse_identifier(identifier, NULL));
+  return !!datalist_get(scan_list, scanner_parse_identifier(identifier, NULL));
+}
+
+void scanner_init ( void )
+{
+  scan_list = datalist_new();
+  trigger_list = g_hash_table_new(g_direct_hash, g_direct_equal);
 }
