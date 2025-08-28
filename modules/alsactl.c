@@ -37,6 +37,7 @@ typedef struct _mixer_api {
 
 static alsa_source_t *main_src;
 GHashTable *alsa_sources;
+GMutex source_mutex;
 
 static mixer_api_t playback_api = {
   .prefix = "sink",
@@ -110,7 +111,9 @@ static gboolean alsa_addr_parse ( mixer_api_t *api, gchar *address,
 
   device = alsa_device_get(address, &ptr);
 
+  g_mutex_lock(&source_mutex);
   *src = g_hash_table_lookup(alsa_sources, device);
+  g_mutex_unlock(&source_mutex);
   g_free(device);
 
   if(!*src)
@@ -284,7 +287,9 @@ static alsa_source_t *alsa_source_subscribe ( gchar *name )
   alsa_iface_advertise(&playback_api, src);
   alsa_iface_advertise(&capture_api, src);
 
+  g_mutex_lock(&source_mutex);
   g_hash_table_insert(alsa_sources, src->name, src);
+  g_mutex_unlock(&source_mutex);
   g_debug("alsactl: activated source '%s'", name);
 
   return src;
@@ -370,9 +375,10 @@ static value_t alsa_func_volume ( vm_t *vm, value_t p[], gint np )
 {
   snd_mixer_elem_t *element;
   snd_mixer_selem_channel_id_t channel;
+  mixer_api_t *api;
   alsa_source_t *src;
   gchar *verb;
-  mixer_api_t *api;
+  guint size;
 
   vm_param_check_np_range(vm, np, 1, 2, "Volume");
   vm_param_check_string(vm, p, 0, "Volume");
@@ -383,7 +389,13 @@ static value_t alsa_func_volume ( vm_t *vm, value_t p[], gint np )
     return value_na;
 
   if(!g_ascii_strcasecmp(verb, "count"))
-    return value_new_numeric( g_hash_table_size(alsa_sources));
+  {
+    g_mutex_lock(&source_mutex);
+    size = g_hash_table_size(alsa_sources);
+    g_mutex_unlock(&source_mutex);
+
+    return value_new_numeric(size);
+  }
 
   if(!alsa_addr_parse(api, (np==2)? value_get_string(p[1]) : NULL, &src,
         &element, &channel) || !element)
@@ -564,8 +576,13 @@ void alsa_activate ( void )
 
 void alsa_deactivate ( void )
 {
-  g_debug("alsactl: deactivating (%d sources)",g_hash_table_size(alsa_sources));
+  guint size;
+
+  g_mutex_lock(&source_mutex);
+  size = g_hash_table_size(alsa_sources);
+  g_debug("alsactl: deactivating (%d sources)", size);
   g_hash_table_remove_all(alsa_sources);
+  g_mutex_unlock(&source_mutex);
   g_clear_pointer(&playback_api.default_name, g_free);
   g_clear_pointer(&capture_api.default_name, g_free);
   sfwbar_interface.active = FALSE;

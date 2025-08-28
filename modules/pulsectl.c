@@ -12,7 +12,6 @@
 #include "vm/vm.h"
 
 static gboolean pulse_connect_try ( void *data );
-gboolean invalid;
 
 typedef struct _pulse_info {
   guint32 idx, client;
@@ -30,6 +29,7 @@ typedef struct _pulse_interface {
   gchar *default_control;
   gboolean fixed;
   GList *list;
+  GMutex list_mutex;
   pa_operation *(*set_volume)(pa_context *, uint32_t, const pa_cvolume *,
       pa_context_success_cb_t, void *);
   pa_operation *(*set_mute)(pa_context *, uint32_t, int,
@@ -53,14 +53,21 @@ static pulse_info *pulse_info_from_idx ( pulse_interface_t *iface, guint32 idx,
   GList *iter;
   pulse_info *info;
 
+  g_mutex_lock(&iface->list_mutex);
   for(iter=iface->list; iter; iter=g_list_next(iter))
     if(((pulse_info *)iter->data)->idx == idx)
+      break;
+  g_mutex_unlock(&iface->list_mutex);
+
+  if(iter)
       return iter->data;
 
   if(new)
   {
     info = g_malloc0(sizeof(pulse_info));
+    g_mutex_lock(&iface->list_mutex);
     iface->list = g_list_prepend(iface->list, info);
+    g_mutex_unlock(&iface->list_mutex);
     return info;
   }
   else
@@ -142,11 +149,13 @@ static pulse_info *pulse_addr_parse ( const gchar *addr,
   }
   else
   {
+    g_mutex_lock(&iface->list_mutex);
     for(iter=iface->list; iter; iter=g_list_next(iter))
       if(!g_strcmp0(((pulse_info *)iter->data)->name,
             device?device:iface->default_control))
         break;
-    info = iter?iter->data:NULL;
+    g_mutex_unlock(&iface->list_mutex);
+    info = iter? iter->data : NULL;
   }
 
   if(cidx && info && channel)
@@ -218,14 +227,18 @@ static void pulse_remove_device ( pulse_interface_t *iface, guint32 idx )
   GList *iter;
   pulse_info *info;
 
+  g_mutex_lock(&iface->list_mutex);
   for(iter=iface->list; iter; iter=g_list_next(iter))
     if(((pulse_info *)iter->data)->idx == idx)
       break;
+  g_mutex_unlock(&iface->list_mutex);
 
   if(iter)
   {
     info = iter->data;
+    g_mutex_lock(&iface->list_mutex);
     iface->list = g_list_delete_link(iface->list, iter);
+    g_mutex_unlock(&iface->list_mutex);
 
     if(info->name)
       trigger_emit_with_string("volume-conf-removed", "device_id",
@@ -574,6 +587,15 @@ static void pulse_client_set_sink ( pulse_info *info, gchar *dest )
         dinfo->idx, NULL, NULL), "pa_context_move_sink_input_by_index");
 }
 
+static gint pulse_iface_count ( pulse_interface_t *iface )
+{
+  gint count;
+  g_mutex_lock(&iface->list_mutex);
+  count = g_list_length(iface->list);
+  g_mutex_unlock(&iface->list_mutex);
+  return count;
+}
+
 static value_t pulse_volume_func ( vm_t *vm, value_t p[], gint np )
 {
   pulse_info *info;
@@ -596,7 +618,7 @@ static value_t pulse_volume_func ( vm_t *vm, value_t p[], gint np )
   if(info && !g_ascii_strcasecmp(cmd, "mute"))
     return value_new_numeric(info->mute);
   if(!g_ascii_strcasecmp(cmd, "count"))
-    return value_new_numeric(g_list_length(iface->list));
+    return value_new_numeric(pulse_iface_count(iface));
   if(info && !g_ascii_strcasecmp(cmd, "is-default-device"))
     return value_new_numeric(!g_strcmp0(info->name, iface->default_device));
   if(info && !g_ascii_strcasecmp(cmd, "is-default"))
@@ -718,11 +740,6 @@ gboolean sfwbar_module_init ( void )
   g_timeout_add (1000,(GSourceFunc )pulse_connect_try, NULL);
 
   return TRUE;
-}
-
-void sfwbar_module_invalidate ( void )
-{
-  invalid = TRUE;
 }
 
 ModuleInterfaceV1 sfwbar_interface = {
