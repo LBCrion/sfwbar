@@ -33,9 +33,9 @@ ScanFile *scanner_file_get ( gchar *trigger )
 
   g_mutex_lock(&trigger_mutex);
   if(!trigger_list)
-    return NULL;
-
-  file = g_hash_table_lookup(trigger_list, (void *)g_intern_string(trigger));
+    file = NULL;
+  else
+    file = g_hash_table_lookup(trigger_list, (void *)g_intern_string(trigger));
   g_mutex_unlock(&trigger_mutex);
 
   return file;
@@ -99,7 +99,7 @@ ScanFile *scanner_file_new ( gint source, gchar *fname,
   {
     if(file->trigger)
     {
-      g_mutex_unlock(&trigger_mutex);
+      g_mutex_lock(&trigger_mutex);
       g_hash_table_remove(trigger_list, file->trigger);
       g_mutex_unlock(&trigger_mutex);
     }

@@ -68,7 +68,7 @@ void vm_store_unref ( vm_store_t *store )
   }
 
   if(store->vars)
-    datalist_unref(store->vars);
+    g_clear_pointer(&store->vars, datalist_unref);
   if(store->widget_map)
     g_hash_table_unref(store->widget_map);
   g_mutex_unlock(&store->mutex);

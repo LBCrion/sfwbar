@@ -27,14 +27,18 @@ datalist_t *datalist_ref ( datalist_t *dlist )
 
 void datalist_unref ( datalist_t *dlist )
 {
+  gint count;
+
   g_mutex_lock(&dlist->mutex);
   dlist->refcount--;
-  if(!(dlist->refcount))
+  count = dlist->refcount;
+  g_mutex_unlock(&dlist->mutex);
+  if(!count)
   {
+    /* all refs are dropped, don't care abount concurrent access */
     g_datalist_clear(&dlist->data);
     g_free(dlist);
   }
-  g_mutex_unlock(&dlist->mutex);
 }
 
 gpointer datalist_get ( datalist_t *dlist, GQuark id )

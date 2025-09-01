@@ -230,27 +230,26 @@ static void pulse_remove_device ( pulse_interface_t *iface, guint32 idx )
   g_mutex_lock(&iface->list_mutex);
   for(iter=iface->list; iter; iter=g_list_next(iter))
     if(((pulse_info *)iter->data)->idx == idx)
+    {
+      info = iter->data;
+      iface->list = g_list_delete_link(iface->list, iter);
       break;
+    }
   g_mutex_unlock(&iface->list_mutex);
 
-  if(iter)
-  {
-    info = iter->data;
-    g_mutex_lock(&iface->list_mutex);
-    iface->list = g_list_delete_link(iface->list, iter);
-    g_mutex_unlock(&iface->list_mutex);
+  if(!iter)
+    return;
 
-    if(info->name)
-      trigger_emit_with_string("volume-conf-removed", "device_id",
-          g_strdup_printf("@pulse-%s-%d", iface->prefix, idx));
-    g_free(info->name);
-    g_free(info->icon);
-    g_free(info->form);
-    g_free(info->port);
-    g_free(info->monitor);
-    g_free(info->description);
-    g_free(info);
-  }
+  if(info->name)
+    trigger_emit_with_string("volume-conf-removed", "device_id",
+        g_strdup_printf("@pulse-%s-%d", iface->prefix, idx));
+  g_free(info->name);
+  g_free(info->icon);
+  g_free(info->form);
+  g_free(info->port);
+  g_free(info->monitor);
+  g_free(info->description);
+  g_free(info);
 }
 
 static void pulse_operation ( pa_operation *o, gchar *cmd )
@@ -344,6 +343,7 @@ static void pulse_client_cb ( pa_context *ctx, const pa_client_info *cinfo,
   if(!cinfo)
     return;
 
+  g_mutex_lock(&pulse_interfaces[2].list_mutex);
   for(iter=pulse_interfaces[2].list; iter; iter=g_list_next(iter))
   {
     info = iter->data;
@@ -354,6 +354,7 @@ static void pulse_client_cb ( pa_context *ctx, const pa_client_info *cinfo,
       change = TRUE;
     }
   }
+  g_mutex_unlock(&pulse_interfaces[2].list_mutex);
 
   if(change)
     trigger_emit("volume");
@@ -715,9 +716,13 @@ static void pulse_deactivate ( void )
   pa_context_set_subscribe_callback(pctx, NULL, NULL);
 
   for(i=0; i<3; i++)
+  {
+    g_mutex_lock(&pulse_interfaces[i].list_mutex);
       while(pulse_interfaces[i].list)
         pulse_remove_device(&pulse_interfaces[i],
             ((pulse_info *)pulse_interfaces[i].list->data)->idx);
+    g_mutex_unlock(&pulse_interfaces[i].list_mutex);
+  }
 
   sfwbar_interface.active = FALSE;
 }
