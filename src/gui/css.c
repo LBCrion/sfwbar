@@ -57,7 +57,7 @@ void css_file_load ( gchar *name )
 
 static void css_custom_handle ( GtkWidget *widget )
 {
-  gboolean state;
+  gboolean state, change;
   gdouble xalign;
   GtkAlign align;
   guint x;
@@ -74,10 +74,12 @@ static void css_custom_handle ( GtkWidget *widget )
   if(!GTK_IS_EVENT_BOX(widget))
   {
     gtk_widget_style_get(widget, "hexpand", &state, NULL);
+    change = (state != gtk_widget_get_hexpand(widget));
     gtk_widget_set_hexpand(widget, state);
     gtk_widget_style_get(widget, "vexpand", &state, NULL);
+    change |= (state != gtk_widget_get_vexpand(widget));
     gtk_widget_set_vexpand(widget, state);
-    if(gtk_widget_get_ancestor(widget, GTK_TYPE_GRID))
+    if(change && gtk_widget_get_ancestor(widget, GTK_TYPE_GRID))
       gtk_widget_queue_allocate(gtk_widget_get_ancestor(widget, GTK_TYPE_GRID));
     gtk_widget_style_get(widget, "halign", &align, NULL);
     gtk_widget_set_halign(widget, align);
