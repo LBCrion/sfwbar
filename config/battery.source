@@ -1,0 +1,79 @@
+#Api2
+
+module("bsdctl");
+
+Var device = '';
+
+Function XBatteryInit() {
+  Var base, dir, sub, file, i, j;
+  Var file_full, file_status, file_charge, file_current, file_uevent;
+  Var BatteryConf = "file('%file_full%') { XBatteryTotal = Grab(First) };
+    file('%file_charge%') { XBatteryLeft = Grab(First) };
+    file ('%file_status%') { XBatteryState = RegEx('^(.*)$',First) };"
+
+  If(Ident("BSDCtl"))
+    return;
+
+  base = "/sys/class/power_supply";
+  if device != ''
+    dir = [ device ];
+  else
+    dir = ls(base);
+  i = 0;
+
+  while i<ArraySize(dir) {
+    If Mid(dir[i], 1, 3)="BAT" {
+      sub = ls(base + "/" + dir[i]);
+      j = 0;
+      file_full = ""
+      file_charge = ""
+      file_current = ""
+      file_status = ""
+      file_uevent = ""
+      while j<ArraySize(sub) {
+        file = base + "/" + dir[i] + "/" + sub[j];
+        If mid(sub[j], -5, -1) = "_full"
+          file_full = file;
+        If sub[j] = "charge_now" | sub[j] = "energy_now"
+          file_charge = file;
+        If sub[j] = "current_now"
+          file_current = file;
+        If sub[j] = "status"
+          file_status = file;
+        If sub[j] = "uevent"
+          file_uevent = file;
+        j = j + 1;
+      }
+      if file_full != "" & file_charge != "" & file_status != ""
+      {
+        Config(ReplaceAll(BatteryConf,
+            "%file_full%", file_full,
+            "%file_charge%", file_charge,
+            "%file_status%", file_status));
+        if file_current != ""
+          Config( "file('" + file_current + "')
+            { XBatteryCurrent = Grab(First) };")
+        if file_uevent != ""
+        {
+          FileTrigger(file, "battery-event", 1000);
+          Config("button 'XBatteryModule' { trigger = 'battery-event' }")
+          EmitTrigger("battery-event")
+        }
+      }
+    }
+    i = i + 1;
+  }
+}
+
+set Level = If(!Ident(BSDCtl),
+    XBatteryLeft/XBatteryTotal*100,
+    BSDCtl("hw.acpi.battery.life"))
+set Time = If(!Ident(BSDCtl),
+    If(XBatteryCurrent, XBatteryLeft/XBatteryCurrent*60, 0),
+    Val(BSDCtl("hw.acpi.battery.time")))
+
+set Discharging = If(!Ident(BSDCtl),
+      $BatteryStatus="Discharging",
+      BSDCtl("hw.acpi.battery.state")="1"
+    )
+

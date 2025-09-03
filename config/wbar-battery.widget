@@ -1,37 +1,19 @@
-scanner {
-  file("/sys/class/power_supply/BAT0/charge_full") {
-    BatteryTotal = Grab(Sum)
-  }
-  file("/sys/class/power_supply/BAT0/charge_now") {
-    BatteryChargeNow = Grab(Sum)
-  }
-  file("/sys/class/power_supply/BAT0/energy_now") {
-    BatteryEnergyNow = Grab(Sum)
-  }
-  file("/sys/class/power_supply/BAT0/status") {
-    BatteryStatus = RegEx("^(.*)$")
-  }
-}
+#Api2
 
-module("bsdctl")
+Private {
 
-set BatteryLeft = If(BatteryChargeNow.count,BatteryChargeNow,BatteryEnergyNow)
-set XBatteryLevel = If(!Ident(BSDCtl),
-      BatteryLeft / BatteryTotal * 100,
-      BSDCtl("hw.acpi.battery.level.life")
-    )
-set XBatteryDischarging = If(!Ident(BSDCtl),
-      $BatteryStatus="Discharging",
-      BSDCtl("hw.acpi.battery.state")="1"
-    )
+  include("battery.source")
 
-layout {
-  label {
-    style = "battery"
-    interval = 60000
-    value = Str(XBatteryLevel) + '% ' +
-            if(XBatteryDischarging,
-              Lookup(XBatteryLevel,80,"",60,"",40,"",20,"",""),
-              "")
+  widget_grid {
+    label {
+      style = If(!Ident($XBatteryState) & !Ident(BSDCtl), "hidden", "battery")
+      interval = 60000
+      value = Str(Level) + '% ' +
+        if(Discharging, Lookup(Level,80,"",60,"",40,"",20,"",""), "")
+      tooltip = GT("Battery") + ": " + Str(Level) + "%" + If(Time, " " +
+            Str(Time/60 - Time%60/60) + GT("h") +
+            Str(Time%60) + GT("m"), "")
+      action[0] = XBatteryInit()
+    }
   }
 }
