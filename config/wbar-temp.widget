@@ -1,9 +1,28 @@
-include("cpu-temp.source")
+Private {
 
-layout {
-  label {
-    style = if(XCpuTempPresent,"temperature","hidden")
-    interval = 10000
-    value = Str(XCPUTemp/1000)+'°C '+Lookup(XCpuTemp/1000,40,"",20,"","")
+  Var thresholds=[40,20];
+  Var icons = ["","",""];
+  Var format = "{temperatureC}°C {icon}"
+
+  Function IconLookup ( x, thresholds, icons ) {
+    Var result = icons[arraysize(icons)-1], i = 0;
+
+    while i<arraysize(thresholds) {
+      if x>thresholds[i]
+        result = icons[i];
+      i=i+1;
+    }
+    Return result;
+  }
+
+  include("cpu-temp.source")
+
+  layout {
+    label {
+      style = if(XCpuTempPresent,"temperature","hidden")
+      value = ReplaceAll(format, "{temperatureC}", Str(XCpuTemp),
+          "{icon}", IconLookup(XCpuTemp, thresholds, icons))
+      interval = 10000
+    }
   }
 }

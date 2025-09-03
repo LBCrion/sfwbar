@@ -1,21 +1,35 @@
-module("pulsectl")
+#Api2
 
-Set PulseIcon = Map(VolumeInfo("sink-form"),
+module("pulsectl")
+module("alsactl")
+
+Private {
+
+  Var format = ""
+
+  include("volume-popup.widget")
+
+  Function VolumeString() {
+    Return If(Volume("sink-mute"),"", Str(Volume("sink-volume")) + "% ") +
+        Map(VolumeInfo("sink-form"),
             "headphone", "",
             "hands-free", "",
             "headset", "",
             "phone", "",
             "portable", "",
             "car", "",
-              Lookup(Volume("sink-volume"),66,"",33,"",""))
+            Lookup(Volume("sink-volume"),66,"",33,"","")) +
+        " " + Str(Volume("source-volume")) + "% ";
+  }
 
-layout {
-  label {
-    style = If(Ident(Volume),If(Volume("sink-mute"),"pulseaudio_muted","pulseaudio"),"hidden")
-    trigger = "volume"
-    value = If(Volume("sink-mute"),"", Str(Volume("sink-volume")) + "% ") +
-    $PulseIcon + " " + Str(Volume("source-volume")) + "% "
-    action[4] = VolumeCtl "sink-volume +1"
-    action[5] = VolumeCtl "sink-volume -1"
+  layout {
+    label {
+      style = If(Ident(Volume),If(Volume("sink-mute"),"pulseaudio_muted","pulseaudio"),"hidden");
+      trigger = "volume";
+      value = VolumeString();
+      action[ScrollUp] = VolumeCtl("sink-volume +1");
+      action[ScrollDown] = VolumeCtl("sink-volume -1");
+      action[LeftClick] = PopUp("XVolumeWindow");
+    }
   }
 }

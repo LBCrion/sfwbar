@@ -1,33 +1,34 @@
+#Api2
+
 Module("network")
 
-function("ToggleNet") {
-  [UserState] UserState "off"
-  [UserState] SetValue
-    If(NetInfo("ip")="",
-      "Disconnected ⚠",
-      NetInfo("interface") + ": " + NetInfo("ip") + "/" + NetInfo("cidr")
-    )
-  [!UserState] UserState "on"
-  [!UserState] SetValue
-    If(NetInfo("ip")="", "Disconnected ⚠",
-      If(NetInfo("Essid")="",
-        NetInfo("ip") + ": " + NetInfo("cidr") + " ",
-        NetInfo("Essid") + " (" + Str(NetStat("signal")) + "%) "
-      )
-    )
-}
+Private {
+  include("wifi.widget")
 
-layout {
-  label {
-    style = If(Ident(NetInfo),
-              If(NetInfo("ip")="",
-                "network_disconnected",
-                "network"
-              ),
-              "hidden"
+  function ToggleNet() {
+    UserState(If(WidgetState(1)=0,"on","off"));
+    UpdateWidget();
+  }
+
+  layout {
+    label {
+      style = If(!Ident(NetInfo), "hidden",
+                If(NetInfo("ip")="",
+                  "network_disconnected",
+                  "network"
+                ))
+      value = If(NetInfo('ip')='', 'Disconnected ⚠',
+        If(WidgetState(1),
+          NetInfo("interface") + ": " + NetInfo("ip") + "/" + NetInfo("cidr"),
+          If(NetInfo("Essid")="",
+            NetInfo("ip") + ": " + NetInfo("cidr") + " ",
+            NetInfo("Essid") + " (" + Str(NetStat("signal")) + "%) "
             )
-    trigger = "network"
-    action = Function "ToggleNet"
-    action[0] = Function "ToggleNet"
+          )
+        )
+      trigger = "network"
+      action[LeftClick] =  ToggleNet()
+      action[RightClick] = Popup("XWifiWindow")
+    }
   }
 }

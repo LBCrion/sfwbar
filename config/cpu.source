@@ -1,11 +1,9 @@
 # Add up CPU utilization stats across all CPUs
-scanner {
-  file("/proc/stat") {
-    CpuUser = RegEx("^cpu [\t ]*([0-9]+)",Sum)
-    CpuNice = RegEx("^cpu [\t ]*[0-9]+ ([0-9]+)",Sum)
-    CpuSystem = RegEx("^cpu [\t ]*(?:[0-9]+ ){2}([0-9]+)",Sum)
-    CpuIdle = RegEx("^cpu [\t ]*(?:[0-9]+ ){3}([0-9]+)",Sum)
-  }
+file("/proc/stat") {
+  CpuUser = RegEx("^cpu [\t ]*([0-9]+)",Sum)
+  CpuNice = RegEx("^cpu [\t ]*[0-9]+ ([0-9]+)",Sum)
+  CpuSystem = RegEx("^cpu [\t ]*(?:[0-9]+ ){2}([0-9]+)",Sum)
+  CpuIdle = RegEx("^cpu [\t ]*(?:[0-9]+ ){3}([0-9]+)",Sum)
 }
 
 module("bsdctl")
@@ -16,7 +14,7 @@ Set XCpuSystem = If(!Ident(BSDCtl),CpuSystem,Extract($XCpuBSD,"[0-9]+ ([0-9]+)")
 Set XCpuNice = If(!Ident(BSDCtl),CpuNice,Extract($XCpuBSD,"(?:[0-9]+ ){2}([0-9]+)"))
 Set XCpuIntr = If(!Ident(BSDCtl),0,Extract($XCpuBSD,"(?:[0-9]+ ){3}([0-9]+)"))
 Set XCpuIdle = If(!Ident(BSDCtl),CpuIdle,Extract($XCpuBSD,"(?:[0-9]+ ){4}([0-9]+)"))
-Set XCpuUtilization =(XCpuUser-XCpuUser.pval)/
+Set XCpuUtilization = (XCpuUser-XCpuUser.pval)/
   (XCpuUser+XCpuNice+XCpuSystem+XCpuIntr+XCpuIdle-
    XCpuUser.pval-XCpuNice.pval-XCpuSystem.pval-XCpuIntr.pval-XCpuIdle.pval)
 Set XCpuPresent = If(Ident(BSDCtl),$XCpuBSD!="",CpuIdle.count)

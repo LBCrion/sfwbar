@@ -1,7 +1,5 @@
-scanner {
-  file("/sys/class/hwmon/hwmon1/temp1_input") {
-    CPUTemp = Grab()
-  }
+file("/sys/class/hwmon/hwmon1/temp1_input") {
+  CPUTemp = Grab()
 }
 
 module("bsdctl")

@@ -1,23 +1,23 @@
-scanner {
-  file("/sys/class/backlight/*/actual_brightness") {
-    BacklightActual = Grab(Sum)
-  }
-  file("/sys/class/backlight/*/max_brightness") {
-    BacklightMax = Grab(Sum)
-  }
-}
+#Api2
 
-module("bsdctl")
+Private {
 
-Set XBacklight = If(!Ident(BSDCtl),
-      BacklightActual/BacklightMax*100,
-      Val(BSDCtl("hw.acpi.video.lcd0.brightness"))
-    )
+  include("backlight.source")
 
-layout {
-  label {
-    style = "backlight"
-    interval = 2000
-    value = $XBacklight + '% '
+  Var format = "{percent}% {icon}";
+  Var icon = "";
+  Var Step = 0.005;
+
+  widget_grid {
+    label {
+      style = if(BacklightPresent, "backlight", "hidden")
+      action[0] = BacklightInit()
+      action[ScrollUp] = SetBacklight(BacklightPct+Step)
+      action[ScrollDown] = SetBacklight(BacklightPct-Step)
+      action[LeftClick] = PopUp("BacklightPopup")
+      value = ReplaceAll(format, "{percent}", Str(BacklightPct *100), "{icon}", icon);
+      tooltip = ReplaceAll(format, "{percent}", Str(BacklightPct *100), "{icon}", icon);
+      trigger = "backlight"
+    }
   }
 }

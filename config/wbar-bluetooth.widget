@@ -1,11 +1,18 @@
-include("rfkill.source")
+#Api2
 
-Set RfKillBTVisible = Cached(RfKillBTVisible) | RfKillBluetoothSoft.count
+Private {
 
-layout {
-  label {
-    style = If(RfKillBTVisible,"bluetooth","hidden")
-    trigger = "rfkill"
-    value = If(RfKillBluetoothSoft = 0," ","")
+  include("bluez-popup.widget")
+
+  Var icon = "";
+
+  layout {
+    label {
+      style = If(BluezAdapter("Count"), "bluetooth", "hidden");
+      value = icon + " ";
+      trigger = "bluez_adapter";
+      action[LeftClick] = Function("XBluezPop");
+      action[RightClick] = Menu("XBluezAdapter")
+    }
   }
 }

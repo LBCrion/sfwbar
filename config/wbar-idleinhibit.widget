@@ -1,18 +1,18 @@
+#Api2
+
 Module("idleinhibit");
 
-layout {
-  label {
-    style = If(!Ident(IdleInhibitState),"hidden",
-        If(IdleInhibitState()="on",
-          "idle_inhibitor_activated",
-          "idle_inhibitor"))
-    value = If(IdleInhibitState()="on",
-        "",
-        "")
-    tooltip = If(IdleInhibitState()="on",
-        "activated",
-        "deactivated")
-    trigger = "idleinhibitor"
-    action[1] = SetIdleInhibitor "toggle"
+Private {
+
+  layout {
+    label {
+      style = If(!Ident(IdleInhibitState),"hidden",
+          If(IdleInhibitState()="on",
+            "idle_inhibitor_activated", "idle_inhibitor"))
+      value = If(IdleInhibitState()="on", "", "")
+      tooltip = If(IdleInhibitState()="on", "activated", "deactivated")
+      trigger = "idleinhibitor"
+      action[1] = SetIdleInhibitor("toggle")
+    }
   }
 }

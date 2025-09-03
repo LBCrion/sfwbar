@@ -1,0 +1,72 @@
+#Api2
+
+module("dbus")
+module("bsdctl")
+
+Var BacklightSrc, BacklightMax;
+Var BacklightTmpl = '<?xml version="1.0" encoding="utf-8"?>
+  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 612">
+  <path d="M256 150 L256 362 A106 106 0 0 1 256 150" fill="black"/>
+  <circle cx="256" cy="256" r="106" stroke="black" stroke-width="45"
+    fill="transparent"/>
+  <path class="st1" d="M255 20 V45 M255 465 V490 M90 90 L110 110
+    M405 400 L425 425 M20 255 H45 M465 255 H490 M90 422 L110 402
+    M425 90 L400 110" stroke-linecap="round" stroke-width="40" stroke="black"/>
+  <path d="M20 585 H492" stroke-linecap="round" stroke-width="65"
+    stroke="rgb(0,0,255,0.3)"/>
+  <path d="M20 585 H@BRIGHTNESS@" stroke-linecap="round" stroke-width="65"
+    stroke="blue"/>
+  </svg>'
+
+Set BacklightPresent = (ident(DbusCall) & BacklightSrc!='') |
+    (ident(BSDCtl) & BSDCtl("hw.acpi.video.lcd0.brightness")!='');
+
+Set BacklightPct = Val(Read(BacklightSrc))/BacklightMax;
+
+Function BacklightInit() {
+  Var base = "/sys/class/backlight";
+  Var dirs = ls(base);
+  Var i = 0;
+
+  BacklightSrc=''
+  while i<ArraySize(dirs) & Backlightsrc='' {
+    if testfile(base+"/"+dirs[i]+"/actual_brightness") &
+      testfile(base+"/"+dirs[i]+"/max_brightness")
+      {
+        BacklightSrc = base+"/"+dirs[i]+"/actual_brightness"
+        BacklightMax = Val(Read(base+"/"+dirs[i]+"/max_brightness"))
+        FileTrigger(BacklightSrc, "backlight", 1000)
+        SetBacklight(Val(Read(BacklightSrc))/BacklightMax)
+        EmitTrigger( "backlight")
+      }
+    i = i + 1
+  }
+}
+
+Function SetBacklight ( pct )
+{
+  Var SessionInterface = ["system",
+      "org.freedesktop.login1",
+      "/org/freedesktop/login1/session/auto",
+      "org.freedesktop.login1.Session"];
+  If BacklightMax > 0 {
+    DBusCall(SessionInterface, "SetBrightness", "(ssu)",
+           ["backlight", "intel_backlight",
+           BacklightMax * Min(1, Max(0.3, pct ))])
+    EmitTrigger("backlight")
+  }
+}
+
+PopUp("BacklightPopup") {
+  style = "backlight_popup"
+  image {
+    value = "display-brightness"
+  }
+  scale {
+    style = 'volume_scale'
+    value = Val(Read(BacklightSrc))/BacklightMax
+    trigger = "backlight"
+    action[LeftClick] = SetBacklight(GtkEvent("dir"))
+  }
+}
+

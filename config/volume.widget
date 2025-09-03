@@ -1,19 +1,8 @@
 #Api2
 
-module("pulsectl")
-module("alsactl")
+include("volume-popup.widget")
 
-Set XVolumeMutedIcon = If(!Ident($VolumeMutedIcon),
-    "audio-volume-muted", $VolumeMutedIcon)
-Set XVolumeLowIcon = If(!Ident($VolumeLowIcon),
-    "audio-volume-low", $VolumeLowIcon)
-Set XVolumeMediumIcon = If(!Ident($VolumeMediumIcon),
-    "audio-volume-medium", $VolumeMediumIcon)
-Set XVolumeHighIcon = If(!Ident($VolumeHighIcon),
-    "audio-volume-high", $VolumeHighIcon)
-Set XVolumeAction = If(!Ident($VolumeAction), "pavucontrol", $VolumeAction)
-
-set XVolumeIconSpeaker = 'd="m 7 1.007812 c -0.296875 -0.003906 -0.578125
+Var XVolumeIconSpeaker = 'd="m 7 1.007812 c -0.296875 -0.003906 -0.578125
   0.125 -0.769531 0.351563 l -3.230469 3.640625 h -1 c -1.09375 0 -2 0.84375 -2
   2 v 2 c 0 1.089844 0.910156 2 2 2 h 1 l 3.230469 3.640625 c 0.210937 0.253906
   0.492187 0.363281 0.769531 0.359375 z m 6.460938 0.960938 c -0.191407
@@ -32,7 +21,7 @@ set XVolumeIconSpeaker = 'd="m 7 1.007812 c -0.296875 -0.003906 -0.578125
   -3.609375 s -0.402344 -2.542969 -1.207031 -3.613281 c -0.183594 -0.246094
   -0.464844 -0.382813 -0.753907 -0.398438 z m 0 0" fill="#2e3436"'
 
-set XVolumeIconHeadphones = 'd="m 8 0 c -1.230469 0 -2.4375 0.324219 -3.5
+Var XVolumeIconHeadphones = 'd="m 8 0 c -1.230469 0 -2.4375 0.324219 -3.5
   0.9375 c -2.164062 1.25 -3.5 3.5625 -3.5 6.0625 v 6 s 0 2 2 2 h 1 c 0.554688
   0 1 -0.445312 1 -1 v -4 c 0 -0.554688 -0.5 -1 -1 -1 c 0 0 -1 0 -1 -1 v -1 c 0
   -1.785156 0.953125 -3.4375 2.5 -4.332031 c 1.546875 -0.890625 3.453125
@@ -41,187 +30,25 @@ set XVolumeIconHeadphones = 'd="m 8 0 c -1.230469 0 -2.4375 0.324219 -3.5
   -2 v -6 c 0 -2.5 -1.335938 -4.8125 -3.5 -6.0625 c -1.0625 -0.613281 -2.269531
   -0.9375 -3.5 -0.9375 z m 0 0" fill="#2e3436"'
 
-set XVolumeIconTmpl = '<?xml version="1.0" encoding="utf-8"?>
-<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<g transform="rotate(-90 256 256)">
-<circle cx="256" cy="256" r="230" stroke="#808080" stroke-width="45"
-  fill="transparent"/>
-<circle cx="256" cy="256" r="230" stroke="Rgb(0,@ICON_CIRCLE_COLOR@,0)"
-  stroke-width="60" fill="transparent" stroke-dashoffset="@ICON_PCT@"
-  stroke-dasharray="1444.4"/>
-</g>
-<svg x="8" y="8" width="16" height="16" transform="scale(16)">
-<path stroke="@ICON_COLOR@" @ICON_FORM@/></svg>
-</svg>'
-
-Var XVolumeSinkMenuTmpl = "Menu('XVolumeSinkMenu') {
-  Item('@SINK_DESC@',
-      { VolumeCtl(Extract(WidgetId(),'(.*)_menu'),
-        'client-set-sink @SINK_NAME@') },
-      '@SINK_NAME@')
-}"
-
-Menu('XVolumeDeviceMenu') {
-  Item(GT("Set As Default Control Interface"),
-      { VolumeCtl('sink-set-default ' + Extract(WidgetId(), '(.*)_name')) } )
-}
-
-Var XVolumeControlTmpl = "
-grid 'volume_section_@DEVICE_IFACE@' {
-  grid '@DEVICE_ID@' {
-    style = 'volume_grid'
-    image '@DEVICE_ID@_mute' {
-      value = If(Volume('@DEVICE_IFACE@-mute','@DEVICE_ID@'),
-            $XVolumeMutedIcon,
-            Lookup(Volume('@DEVICE_IFACE@-volume','@DEVICE_ID@'),
-              80, $XVolumeHighIcon,
-              50, $XVolumeMediumIcon,
-              0, $XVolumeLowIcon,
-              $XVolumeMutedIcon))
-      style = 'volume_mute';
-      action = {VolumeCtl('@DEVICE_ID@', '@DEVICE_IFACE@-mute toggle')}
-      trigger = 'volume';
-      loc (1,1,1,1)
-    }
-    image '@DEVICE_ID@_expand' {
-      value = 'pan-end'
-      style = 'volume_control_expander'
-      tooltip = GT('expand/collapse channels')
-      action = XVolumeToggleChannels()
-      loc(2,1,1,1)
-    }
-    label '@DEVICE_ID@_name' {
-      style = 'volume_device_name'
-      value = VolumeInfo('@DEVICE_IFACE@-description','@DEVICE_ID@')
-      trigger = 'volume'
-      action[3] = Menu('XVolumeDeviceMenu')
-      loc (3,1,1,1)
-    }
-    grid '@DEVICE_ID@_misc' {
-      loc(4,1,1,1)
-      image '@DEVICE_ID@_set_default' {
-        value = If(Volume('@DEVICE_IFACE@-is-default-device','@DEVICE_ID@'),
-            'checkbox-checked', 'checkbox')
-        style = If('@DEVICE_IFACE@' = 'sink' & Volume('sink-count')>1,
-            'volume_default', 'hidden')
-        tooltip = GT('set as default') + ' @DEVICE_IFACE@'
-        trigger = 'volume'
-        action = VolumeCtl('@DEVICE_IFACE@-set-default-device @DEVICE_ID@')
-      }
-      image '@DEVICE_ID@_menu' {
-        value = 'open-menu'
-        style = If('@DEVICE_IFACE@' = 'client' & Volume('sink-count')>1,
-            'volume_client_menu', 'hidden')
-        tooltip = GT('route to sink')
-        action = Menu('XVolumeSinkMenu')
-        trigger = 'volume'
-      }
-    }
-    scale '@DEVICE_ID@_volume' {
-      style = 'volume_scale'
-      value = Volume('@DEVICE_IFACE@-volume','@DEVICE_ID@')/100
-      action[1] = VolumeCtl('@DEVICE_ID@',
-        '@DEVICE_IFACE@-volume ' + Str(GtkEvent('dir') * 100))
-      trigger = 'volume'
-      loc (1,2,4,1)
-    }
-    grid '@DEVICE_ID@_channels' {
-      style = 'hidden'
-      loc(1,3,4,1)
-    }
-  }
-}"
-
-Var XVolumeChannelTmpl = "
-  grid '@DEVICE_ID@_channels' {
-    label '@DEVICE_ID@-@CHANNEL_ID@_label' {
-      value = '@CHANNEL_ID@'
-      style = 'volume_channel_name'
-      loc(1,@CHANNEL_NUM@,1,1)
-    }
-    scale '@DEVICE_ID@-@CHANNEL_ID@_scale' {
-      style = 'volume_scale'
-      value = Volume('@DEVICE_IFACE@-volume','@DEVICE_ID@:@CHANNEL_ID@')/100
-      action[1] = VolumeCtl('@DEVICE_ID@:@CHANNEL_ID@',
-        '@DEVICE_IFACE@-volume ' + Str(GtkEvent('dir') * 100))
-      trigger = 'volume'
-      loc(2,@CHANNEL_NUM@,1,1)
-    }
-  }"
-
-Function XVolumeToggleChannels() {
-  Var DeviceId = Extract(WidgetId(), "(.*)_expand");
-  Var State = WidgetState(1)
-  Var DeviceTmpl = "
-    image '@DEVICE_ID@_expand' { value = '%EXPAND_ICON%' }
-    scale '@DEVICE_ID@_volume' { style = '%VOLUME_STYLE%' }
-    grid '@DEVICE_ID@_channels' { style = '%CHANNELS_STYLE%' }"
-
-  Config(ReplaceAll(DeviceTmpl, "@DEVICE_ID@", DeviceID,
-    "%EXPAND_ICON%", If(State, "pan-end", "pan-down"),
-    "%VOLUME_STYLE%", If(State, "volume_scale", "hidden"),
-    "%CHANNELS_STYLE%", If(State, "hidden", "volume_channel_list")));
-
-  UserState(WidgetId(),If(State, "off", "on"))
-}
-
-Function XVolumeChannelHandler() {
-  Var i;
-
-  If interface = "sink" | interface = "client" {
-    Config(ReplaceAll(XVolumeControlTmpl,
-        "@DEVICE_ID@", device_id,
-        "@DEVICE_IFACE@", interface))
-    i = 0;
-    While i < arraysize(channel_indices) {
-      Config(ReplaceAll(XVolumeChannelTmpl,
-        "@DEVICE_ID@", device_id,
-        "@CHANNEL_ID@", channel_ids[i],
-        "@CHANNEL_NUM@", channel_indices[i],
-        "@DEVICE_IFACE@", interface))
-      i = i + 1;
-    }
-  }
-  MenuItemClear(device_id)
-  If interface = "sink"
-    Config(ReplaceAll($XVolumeSinkMenuTmpl, "@SINK_NAME@", device_id,
-        "@SINK_DESC@", VolumeInfo("sink-description", device_id)))
-}
-
-Function XVolumeChannelRemove() {
-  ClearWidget(device_id)
-  MenuItemClear(device_id)
-}
-
-TriggerAction "volume-conf", XVolumeChannelHandler()
-TriggerAction "volume-conf-removed", XVolumeChannelRemove()
-
-PopUp "XVolumeWindow" {
-  style = "volume_popup"
-  label {
-    value = GT("sinks")
-    style = If(Volume("sink-count")>0, "volume_separator", "hidden")
-    trigger = "volume"
-  }
-  grid "volume_section_sink" {
-    style = "volume_section"
-  }
-  label {
-    value = GT("clients")
-    style = If(Volume("client-count")>0, "volume_separator", "hidden")
-    trigger = "volume"
-  }
-  grid "volume_section_client" {
-    style = "volume_section"
-  }
-}
+Var XVolumeIconTmpl = '<?xml version="1.0" encoding="utf-8"?>
+  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <g transform="rotate(-90 256 256)">
+  <circle cx="256" cy="256" r="230" stroke="#808080" stroke-width="45"
+    fill="transparent"/>
+  <circle cx="256" cy="256" r="230" stroke="Rgb(0,@ICON_CIRCLE_COLOR@,0)"
+    stroke-width="60" fill="transparent" stroke-dashoffset="@ICON_PCT@"
+    stroke-dasharray="1444.4"/>
+  </g>
+  <svg x="8" y="8" width="16" height="16" transform="scale(16)">
+  <path stroke="@ICON_COLOR@" @ICON_FORM@/></svg>
+  </svg>'
 
 layout {
   style = "module"
   button {
-    value = ReplaceAll($XVolumeIconTmpl,
+    value = ReplaceAll(XVolumeIconTmpl,
         "@ICON_FORM@", If(Mid(VolumeInfo("sink-form"),1,4)="head" | Extract(VolumeInfo("sink-port"),"(Head)")="Head",
-          $XVolumeIconHeadphones, $XVolumeIconSpeaker),
+          XVolumeIconHeadphones, XVolumeIconSpeaker),
         "@ICON_PCT@", Str(1444.4-Volume("sink-volume")*14.444),
         "@ICON_COLOR@", If(Volume("sink-mute"),"red","@theme_fg_color"),
         "@ICON_CIRCLE_COLOR@", Str(2.56*Volume("sink-volume")));
@@ -238,80 +65,4 @@ layout {
     action[ScrollUp] = VolumeCtl("sink-volume +1")
     action[ScrollDown] = VolumeCtl("sink-volume -1")
   }
-}
-
-#CSS
-
-window#XVolumeWindow {
-  background: rgba(0,0,0,0);
-}
-
-grid#volume_popup {
-  border-radius: 10px;
-  border: 1px solid @borders;
-  margin: 5px;
-  padding: 10px;
-  background-color: @theme_bg_color;
-  -GtkWidget-hexpand: true;
-  -GtkWidget-vexpand: false;
-  -GtkWidget-direction: bottom;
-}
-
-image#volume_control_expander,
-image#volume_default,
-image#volume_client_menu,
-image#volume_mute {
-  color: @theme_fg_color;
-  padding: 3px;
-  min-width: 16px;
-  min-height: 16px;
-  -GtkWidget-hexpand: false;
-  -GtkWidget-halign: start;
-}
-
-#volume_scale {
-  margin: 5px;
-  -GtkWidget-direction: right;
-  -GtkWidget-valign: center;
-  -GtkWidget-hexpand: true;
-}
-
-#volume_scale progress,
-#volume_scale trough {
-  min-height: 10px;
-}
-
-label#volume_separator {
-  padding-top: 3px;
-  font-size: 10px;
-  -GtkWidget-align: 0.0;
-  -GtkWidget-hexpand: true;
-  border-bottom: dashed 1px @border;
-  min-height: 20px;
-}
-
-grid#volume_section {
-  -GtkWidget-hexpand: true;
-  -GtkWidget-direction: bottom;
-}
-#volume_device_name {
-  -GtkWidget-hexpand: true;
-  -GtkWidget-align: 0;
-  -GtkWidget-halign: start;
-}
-
-#volume_control_expander {
-  -GtkWidget-halign: start;
-}
-
-#volume_channel_list {
-  -GtkWidget-direction: bottom;
-}
-
-#volume_grid {
-  -GtkWidget-hexpand: true;
-}
-
-#volume_channel_name {
-  -GtkWidget-halign: start;
 }
