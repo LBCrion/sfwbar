@@ -20,6 +20,7 @@ typedef struct wt_window {
 } window_t;
 
 struct wintree_api {
+  gchar *custom_ipc;
   void (*minimize) ( void *);
   void (*unminimize) ( void *);
   void (*maximize) ( void *);
@@ -40,6 +41,7 @@ typedef struct _window_listener {
 
 void wintree_api_register ( struct wintree_api *new );
 gboolean wintree_api_check ( void );
+gchar *wintree_get_custom_ipc ( void );
 void wintree_listener_register ( window_listener_t *, void *);
 void wintree_listener_remove ( void *data );
 window_t *wintree_window_init ( void );

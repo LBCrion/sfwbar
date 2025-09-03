@@ -46,6 +46,11 @@ gboolean wintree_api_check ( void )
   return !!api;
 }
 
+gchar *wintree_get_custom_ipc ( void )
+{
+  return api->custom_ipc;
+}
+
 void wintree_listener_register ( window_listener_t *listener, void *data )
 {
   window_listener_t *copy;

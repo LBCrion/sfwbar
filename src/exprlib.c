@@ -662,6 +662,11 @@ static value_t expr_ls ( vm_t *vm, value_t p[], gint np )
   return value_new_array(array);
 }
 
+static value_t expr_custom_ipc ( vm_t *vm, value_t p[], gint np )
+{
+  return value_new_string(g_strdup(wintree_get_custom_ipc()));
+}
+
 void expr_lib_init ( void )
 {
   vm_func_init();
@@ -701,4 +706,5 @@ void expr_lib_init ( void )
   vm_func_add("widgetchildren", expr_widget_children, FALSE, FALSE);
   vm_func_add("testfile", expr_test_file, FALSE, TRUE);
   vm_func_add("ls", expr_ls, FALSE, TRUE);
+  vm_func_add("customipc", expr_custom_ipc, FALSE, TRUE);
 }

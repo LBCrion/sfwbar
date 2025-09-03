@@ -500,6 +500,7 @@ static void hypr_ipc_move_to ( gpointer id, gpointer wsid )
 }
 
 static struct wintree_api hypr_wintree_api = {
+  .custom_ipc = "hyprland",
   .minimize = hypr_ipc_minimize,
   .unminimize = hypr_ipc_unminimize,
   .maximize = hypr_ipc_maximize,

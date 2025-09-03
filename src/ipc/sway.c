@@ -11,7 +11,6 @@
 #include "util/json.h"
 #include "vm/vm.h"
 
-
 static gint main_ipc;
 static ScanFile *sway_file;
 
@@ -483,6 +482,7 @@ static void sway_ipc_move_to ( gpointer id, gpointer wsid )
 }
 
 static struct wintree_api sway_wintree_api = {
+  .custom_ipc = "sway",
   .minimize = sway_ipc_minimize,
   .unminimize = sway_ipc_unminimize,
   .maximize = sway_ipc_maximize,

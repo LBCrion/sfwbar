@@ -194,6 +194,7 @@ static void wayfire_ipc_move_to ( gpointer wid, gpointer wsid )
 }
 
 static struct wintree_api wayfire_wintree_api = {
+  .custom_ipc = "wayfire",
   .minimize = wayfire_ipc_minimize,
   .unminimize = wayfire_ipc_unminimize,
   .maximize = wayfire_ipc_maximize,
