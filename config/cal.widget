@@ -1,6 +1,5 @@
 #Api2
 
-Private {
   Var YearMonth;
   Var WeekStartsOnSunday;
 
@@ -132,7 +131,7 @@ Private {
 
   Function XCalToday() {
     YearMonth = val(time("%Y"))*12+val(time("%m"))-1;
-    XCalBuild YearMonth
+    XCalBuild(YearMonth)
   }
 
   Function XCalPopUp() {
@@ -166,7 +165,7 @@ Private {
       image {
         value = 'go-first'
         style = 'cal_arrow'
-        action = XCalBuild YearMonth-12
+        action = XCalBuild(YearMonth-12)
       }
       image {
         value = 'go-previous'
@@ -193,7 +192,6 @@ Private {
       style = 'cal_grid'
     }
   }
-}
 
 #CSS
 
