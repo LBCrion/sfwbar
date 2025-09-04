@@ -27,6 +27,9 @@ enum {
   BAR_SIZE,
   BAR_EXCLUSIVE_ZONE,
   BAR_MIRROR,
+  BAR_EDGE,
+  BAR_HALIGN,
+  BAR_VALIGN,
   BAR_N_PROPERTIES,
 };
 
@@ -269,9 +272,18 @@ static void bar_style_updated ( GtkWidget *self )
   priv = bar_get_instance_private(BAR(self));
   GTK_WIDGET_CLASS(bar_parent_class)->style_updated(self);
 
-  gtk_widget_style_get(self, "halign", &halign, NULL);
-  gtk_widget_style_get(self, "valign", &valign, NULL);
-  gtk_widget_style_get(self, "direction", &dir, NULL);
+  if(priv->overrides & BAR_OVERRIDE_HALIGN)
+    halign = priv->override_halign;
+  else
+    gtk_widget_style_get(self, "halign", &halign, NULL);
+  if(priv->overrides & BAR_OVERRIDE_VALIGN)
+    valign = priv->override_valign;
+  else
+    gtk_widget_style_get(self, "valign", &valign, NULL);
+  if(priv->overrides & BAR_OVERRIDE_EDGE)
+    dir = priv->override_edge;
+  else
+    gtk_widget_style_get(self, "direction", &dir, NULL);
 
   horizontal = (dir == GTK_POS_TOP || dir == GTK_POS_BOTTOM);
   if(priv->current_monitor)
@@ -387,6 +399,18 @@ static void bar_get_property ( GObject *self, guint id, GValue *value,
     case BAR_MIRROR:
       g_value_set_boxed(value, priv->mirror_targets);
       break;
+    case BAR_EDGE:
+      g_value_set_enum(value,
+          (priv->overrides & BAR_OVERRIDE_EDGE)? priv->override_edge : -1);
+      break;
+    case BAR_HALIGN:
+      g_value_set_enum(value,
+          (priv->overrides & BAR_OVERRIDE_HALIGN)? priv->override_halign : -1);
+      break;
+    case BAR_VALIGN:
+      g_value_set_enum(value,
+          (priv->overrides & BAR_OVERRIDE_VALIGN)? priv->override_valign : -1);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
   }
@@ -441,6 +465,27 @@ static void bar_set_property ( GObject *self, guint id,
       if(!priv->mirror_parent)
         bar_update_monitor(GTK_WIDGET(self));
       break;
+    case BAR_EDGE:
+      if(g_value_get_enum(value)==-1)
+        break;
+      priv->override_edge = g_value_get_enum(value);
+      priv->overrides |= BAR_OVERRIDE_EDGE;
+      bar_style_updated(GTK_WIDGET(self));
+      break;
+    case BAR_HALIGN:
+      if(g_value_get_enum(value)==-1)
+        break;
+      priv->override_halign = g_value_get_enum(value);
+      priv->overrides |= BAR_OVERRIDE_HALIGN;
+      bar_style_updated(GTK_WIDGET(self));
+      break;
+    case BAR_VALIGN:
+      if(g_value_get_enum(value)==-1)
+        break;
+      priv->override_valign = g_value_get_enum(value);
+      priv->overrides |= BAR_OVERRIDE_VALIGN;
+      bar_style_updated(GTK_WIDGET(self));
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
   }
@@ -492,6 +537,15 @@ static void bar_class_init ( BarClass *kclass )
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BAR_MIRROR,
       g_param_spec_boxed("mirror", "mirror", "sfwbar_config", G_TYPE_PTR_ARRAY,
         G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), BAR_HALIGN,
+    g_param_spec_enum("halign","horizontal alignment","sfwbar_config",
+      g_type_from_name("halign"), GTK_ALIGN_FILL, G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), BAR_HALIGN,
+    g_param_spec_enum("valign","vertical alignment","sfwbar_config",
+      g_type_from_name("valign"), GTK_ALIGN_FILL, G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), BAR_EDGE,
+    g_param_spec_enum("edge", "bar edge","sfwbar_config",
+      g_type_from_name("direction"), GTK_POS_BOTTOM, G_PARAM_READWRITE));
 }
 
 GtkWidget *bar_from_name ( gchar *name )
@@ -703,6 +757,7 @@ void bar_set_visibility ( GtkWidget *self, const gchar *id, gchar state )
 
 gint bar_get_toplevel_dir ( GtkWidget *widget )
 {
+  BarPrivate *priv;
   GtkWidget *toplevel;
   gint toplevel_dir;
 
@@ -714,6 +769,11 @@ gint bar_get_toplevel_dir ( GtkWidget *widget )
   if(!toplevel)
     return GTK_POS_RIGHT;
 
+  priv = bar_get_instance_private(BAR(toplevel));
+
+  if(priv->overrides & BAR_OVERRIDE_EDGE)
+    toplevel_dir = priv->override_edge;
+  else
   gtk_widget_style_get(toplevel, "direction", &toplevel_dir, NULL);
   return toplevel_dir;
 }

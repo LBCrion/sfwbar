@@ -37,6 +37,9 @@ struct _BarPrivate {
   gchar *bar_id;
   gint dir;
   GtkAlign halign, valign;
+  guint8 overrides;
+  GtkAlign override_halign, override_valign;
+  gint override_edge;
   GtkWidget *start, *center, *end;
   GtkWidget *box, *sensor, *ebox;
   GtkRevealer *revealer;
@@ -53,6 +56,12 @@ struct _BarPrivate {
   GPtrArray *mirror_targets;
   GList *mirror_children;
   GtkWidget *mirror_parent;
+};
+
+enum {
+  BAR_OVERRIDE_EDGE = 1,
+  BAR_OVERRIDE_HALIGN = 2,
+  BAR_OVERRIDE_VALIGN = 4
 };
 
 GtkWidget *bar_new ( gchar * );
