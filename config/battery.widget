@@ -1,43 +1,19 @@
-define BatChargeStr = Str(10*BatLeft/BatTotal,0)
-define BatIcon = "battery-level-" + BatChargeStr + "0" + 
-        If($BatState = "Discharging","",
-          If(BatChargeStr = "10","","-charging"))
+#Api2
 
-Function("BatteryInitScanner"){
-  PipeRead "/usr/bin/env python3 << END
-import os
-sysdir = '/sys/class/power_supply'
-list = os.scandir(sysdir)
-batdir=''
-for entry in list:
-  if(entry.name.startswith('BAT')):
-    batdir = os.path.join(sysdir,entry.name)
-if(batdir==''):
-  exit(1)
-list = os.scandir(batdir)
-print('scanner {')
-for entry in list:
-  if(entry.name.endswith('_full')):
-    print('file(\"' + os.path.join(batdir,entry.name) +
-          '\") { BatTotal = Grab(First) }')
-  if(entry.name.endswith('_now') and
-          ('charge' in entry.name or 'energy' in entry.name)):
-    print('file(\"' + os.path.join(batdir,entry.name) +
-          '\") { BatLeft = Grab(First) }')
-  if(entry.name == 'status'):
-    print('file(\"' + os.path.join(batdir,'status') +
-          '\") { BatState = RegEx(\"^(.*)$\",First) }')
-print('}')
-END"
-  SetValue "battery", BatIcon
-}
+Private {
 
-layout {
-  style = "module"
-  button "battery" {
-    action[0] = Function "BatteryInitScanner"
-    style = If($BatState="","hidden","module")
-    tooltip = Str(100*BatLeft/BatTotal,0) + "%"
-    value = BatIcon
+  include("battery.source")
+
+  widget_grid {
+    style = "module"
+    button "battery" {
+      action[0] = XBatteryInit()
+      style = If(!Ident($XBatteryState) & !Ident(BSDCtl), "hidden", "module")
+      tooltip = GT("Battery") + ": " + Str(Level) + "%" + If(Time, " " +
+            Str(Time/60 - Time%60/60) + GT("h") +
+            Str(Time%60) + GT("m"), "")
+      value = "battery-level-" + Str(Level/10,0) + "0" + 
+            If($XBatteryState = "Discharging","","-charging")
+    }
   }
 }

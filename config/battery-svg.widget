@@ -4,7 +4,7 @@ Private {
 
   include("battery.source")
 
-  Var pretty_icon = FALSE;
+  Var pretty_icon = TRUE;
 
   Var Minus = '<path style="fill:#BB0000;stroke:none"
     d="m 19 50 28 0 0 8 -28 0 z"/>';
@@ -27,25 +27,24 @@ Private {
       @SIGN@
       </svg>'
 
-  Function Svg() {
-    Var Discharging = If(!Ident(BSDCtl),
-        $XBatteryState="Discharging",
-        BSDCtl("hw.acpi.battery.state")="1")
-
-    Return ReplaceAll(BatterySvg,
-        '@GRADIENT_START@', Str(Max(0, 100 - Level)),
-        '@GRADIENT_END@', Str(100 - Level),
-        '@RED_LEVEL@', Str(Min(256, 512-5.12*Level)),
-        '@BLUE_LEVEL@', Str(Min(256, 5.12*Level)),
-        '@SIGN@', If(Discharging, Minus, Plus))
+  Function BatteryIcon() {
+    If pretty_icon
+      Return ReplaceAll(BatterySvg,
+          '@GRADIENT_START@', Str(Max(0, 100 - Level)),
+          '@GRADIENT_END@', Str(100 - Level),
+          '@RED_LEVEL@', Str(Min(256, 512-5.12*Level)),
+          '@BLUE_LEVEL@', Str(Min(256, 5.12*Level)),
+          '@SIGN@', If(Discharging, Minus, Plus));
+    Else
+      Return "battery-level-" + Str(Level/10,0) + "0" +
+        If(Discharging, "", "-charging");
   }
 
   widget_grid {
     style = "module"
     button "XBatteryModule" {
       action[0] = XBatteryInit()
-      value = if(pretty_icon, Svg(), "battery-level-" + Str(Level/10,0) + "0" +
-            If($XBatteryState = "Discharging","","-charging"))
+      value = BatteryIcon()
       style = If(!Ident($XBatteryState) & !Ident(BSDCtl),"hidden","module")
       tooltip = GT("Battery") + ": " + Str(Level) + "%" + If(Time, " " +
             Str(Time/60 - Time%60/60) + GT("h") +

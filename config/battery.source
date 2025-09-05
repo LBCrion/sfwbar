@@ -73,7 +73,7 @@ set Time = If(!Ident(BSDCtl),
     Val(BSDCtl("hw.acpi.battery.time")))
 
 set Discharging = If(!Ident(BSDCtl),
-      $BatteryStatus="Discharging",
+      $XBatteryState="Discharging",
       BSDCtl("hw.acpi.battery.state")="1"
     )
 
