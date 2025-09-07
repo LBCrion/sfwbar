@@ -96,8 +96,8 @@ void *ptr_pass ( void *ptr )
 gchar *numeric_to_string ( double num, gint dec )
 {
   static const gchar *format = "%%0.%df";
-  static gchar fbuf[16];
-  static gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
+  gchar fbuf[16];
+  gchar buf[G_ASCII_DTOSTR_BUF_SIZE];
 
   if(dec<0)
     return g_strdup(g_ascii_dtostr(buf, G_ASCII_DTOSTR_BUF_SIZE, num));
