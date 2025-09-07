@@ -4,7 +4,6 @@
 #include "vm/expr.h"
 #include "vm/vm.h"
 
-#define BASE_WIDGET_MAX_ACTION  8
 
 #define BASE_WIDGET_TYPE            (base_widget_get_type())
 #define BASE_WIDGET_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), BASE_WIDGET_TYPE, BaseWidgetClass))
@@ -69,6 +68,20 @@ typedef struct _base_widget_attachment {
 
 GType base_widget_get_type ( void );
 
+enum {
+  BASE_WIDGET_ACTION_INIT = 0,
+  BASE_WIDGET_ACTION_LEFTCLICK = 1,
+  BASE_WIDGET_ACTION_MIDDLECLICK = 2,
+  BASE_WIDGET_ACTION_RIGHTCLICK = 3,
+  BASE_WIDGET_ACTION_SCROLLUP = 4,
+  BASE_WIDGET_ACTION_SCROLLDOWN = 5,
+  BASE_WIDGET_ACTION_SCROLLLEFT = 6,
+  BASE_WIDGET_ACTION_SCROLLRIGHT = 7,
+  BASE_WIDGET_ACTION_DRAG = 8,
+  BASE_WIDGET_ACTION_CONFIGURE = 9,
+  BASE_WIDGET_ACTION_LAST
+};
+
 void base_widget_set_state ( GtkWidget *self, guint16 mask, gboolean state );
 void base_widget_set_action ( GtkWidget *, gint, GdkModifierType, GBytes *);
 void base_widget_set_max_width ( GtkWidget *self, guint x );
@@ -92,5 +105,6 @@ void base_widget_action_configure ( GtkWidget *self, gint slot );
 gboolean base_widget_update_expressions ( GtkWidget *self );
 GPtrArray *base_widget_attachment_new_array ( GBytes *code, gint ev,
     GdkModifierType mods );
+gboolean base_widget_configure ( GtkWidget *self );
 
 #endif

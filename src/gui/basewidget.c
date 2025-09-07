@@ -1064,3 +1064,22 @@ void base_widget_autoexec ( GtkWidget *self, gpointer data )
         NULL, priv->store, NULL);
   }
 }
+
+
+gboolean base_widget_configure ( GtkWidget *self )
+{
+  BaseWidgetPrivate *priv;
+  GBytes *action;
+
+  g_return_val_if_fail(IS_BASE_WIDGET(self), G_SOURCE_REMOVE);
+
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+  if( (action = base_widget_get_action(self, BASE_WIDGET_ACTION_CONFIGURE, 0)) )
+  {
+    g_bytes_ref(action);
+    vm_run_action(action, self, NULL, wintree_from_id(wintree_get_focus()),
+        NULL, priv->store, NULL);
+  }
+
+  return G_SOURCE_REMOVE;
+}

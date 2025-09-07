@@ -84,6 +84,7 @@ void config_init ( void )
   config_add_key(config_events, "ScrollLeft", 6);
   config_add_key(config_events, "ScrollRight", 7);
   config_add_key(config_events, "Drag", 8);
+  config_add_key(config_events, "Configure", 9);
 
   config_var_types = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);

@@ -53,14 +53,14 @@ gboolean config_action_slot ( GScanner *scanner, gint *slot )
 
   g_scanner_get_next_token(scanner);
   if(scanner->token == G_TOKEN_FLOAT && scanner->value.v_float >= 0 &&
-      scanner->value.v_float <= BASE_WIDGET_MAX_ACTION)
+      scanner->value.v_float < BASE_WIDGET_ACTION_LAST)
     *slot = scanner->value.v_float;
   else if( (token = config_lookup_key(scanner, config_events)) )
     *slot = token;
   else
     return FALSE;
 
-  return !(*slot<0 || *slot>BASE_WIDGET_MAX_ACTION );
+  return !(*slot<0 || *slot>BASE_WIDGET_ACTION_LAST );
 }
 
 static GPtrArray *config_action_attachment ( GScanner *scanner )
@@ -322,6 +322,7 @@ void config_widget ( GScanner *scanner, GtkWidget *widget )
     g_scanner_error(scanner, "Invalid property in a widget declaration");
     config_skip_statement(scanner);
   }
+  g_idle_add((GSourceFunc)base_widget_configure, widget);
   scanner->max_parse_errors = FALSE;
 }
 
