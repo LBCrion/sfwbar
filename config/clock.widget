@@ -4,14 +4,22 @@ Private {
 
   include("cal.widget")
 
+  Var week_starts_on_sunday = 0;
+  Var time_format = "%H:%M"
+  Var tooltip_format = "%k:%M\n%x"
+  Var reset_on_popup = TRUE;
+
   widget_grid {
-      label {
-        value = Time(time_format)
-        style ="clock"
-        tooltip = Time(tooltip_format)
-        action[0] = Function("XCalInit")
-        action = Function("XCalPopUp")
+    label {
+      value = Time(time_format)
+      style ="clock"
+      tooltip = Time(tooltip_format)
+      action = {
+        If reset_on_popup
+          EmitTrigger("calendar-reset")
+        PopUp("Xcal")
       }
+    }
   }
 }
 
