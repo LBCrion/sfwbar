@@ -249,7 +249,7 @@ static GtkWidget *config_widget_get ( GScanner *scanner,
       gtk_container_remove(GTK_CONTAINER(parent), widget);
     }
   }
-  else
+  else if(type_get != base_widget_get_type)
   {
     widget = GTK_WIDGET(g_object_new(type_get(), NULL));
     g_object_ref_sink(widget);

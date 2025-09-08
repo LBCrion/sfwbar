@@ -195,6 +195,7 @@ void config_init ( void )
   g_hash_table_insert(config_widget_keys, "Chart", cchart_get_type);
   g_hash_table_insert(config_widget_keys, "Taskbar", taskbar_shell_get_type);
   g_hash_table_insert(config_widget_keys, "Tray", tray_get_type);
+  g_hash_table_insert(config_widget_keys, "Any", base_widget_get_type);
 
   config_prop_keys = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);
