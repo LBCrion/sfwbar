@@ -95,7 +95,7 @@ static GtkWidget *config_private ( GScanner *scanner, GtkWidget *container )
   return widget;
 }
 
-static void config_vars ( GScanner *scanner, gboolean private )
+static void config_vars ( GScanner *scanner )
 {
   vm_var_t *var;
   GBytes *code;
@@ -236,7 +236,7 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
         layout = config_private(scanner, container);
         break;
       case G_TOKEN_VAR:
-        config_vars(scanner, FALSE);
+        config_vars(scanner);
         break;
       case G_TOKEN_TRIGGERACTION:
         config_trigger_action(scanner);
