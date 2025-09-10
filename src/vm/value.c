@@ -71,6 +71,29 @@ value_t value_dup ( value_t v1 )
   return v1;
 }
 
+gboolean value_compare ( value_t v1, value_t v2 )
+{
+  gint i;
+
+  if(v1.type != v2.type)
+    return FALSE;
+  if(value_is_numeric(v1))
+    return v1.value.numeric == v2.value.numeric;
+  if(value_is_string(v1))
+    return !g_strcmp0(value_get_string(v1), value_get_string(v2));
+  if(value_is_array(v1))
+  {
+    if(v1.value.array->len != v2.value.array->len)
+      return FALSE;
+    for(i=0; i<v1.value.array->len; i++)
+      if(!value_compare(g_array_index(v1.value.array, value_t, i),
+            g_array_index(v2.value.array, value_t, i)))
+        return FALSE;
+    return TRUE;
+  }
+  return FALSE;
+}
+
 gchar *value_array_to_string ( value_t value )
 {
   GString *result;

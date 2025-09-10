@@ -103,7 +103,9 @@ static gboolean vm_op_binary ( vm_t *vm )
 
   result = value_na;
 
-  if(value_is_na(v1) && value_is_na(v2))
+  if(op == '=')
+    result = value_new_numeric(value_compare(v1, v2));
+  else if(value_is_na(v1) && value_is_na(v2))
     result = value_na;
 
   else if(value_is_array(v1) || value_is_array(v2))
@@ -114,9 +116,6 @@ static gboolean vm_op_binary ( vm_t *vm )
     if(op == '+')
       result = value_new_string(
           g_strconcat(value_get_string(v1), value_get_string(v2), NULL));
-    else if(op == '=')
-      result = value_new_numeric(
-          !g_ascii_strcasecmp(value_get_string(v1), value_get_string(v2)));
   }
 
   else if(value_like_numeric(v1) && value_like_numeric(v2))
@@ -140,8 +139,6 @@ static gboolean vm_op_binary ( vm_t *vm )
       result = value_new_numeric(value_get_numeric(v1)<value_get_numeric(v2));
     else if(op=='>')
       result = value_new_numeric(value_get_numeric(v1)>value_get_numeric(v2));
-    else if(op=='=')
-      result = value_new_numeric(value_get_numeric(v1)==value_get_numeric(v2));
     else if(op=='!')
       result = value_new_numeric(value_get_numeric(v1)!=value_get_numeric(v2));
     else
