@@ -90,6 +90,26 @@ static value_t expr_lib_map( vm_t *vm, value_t p[], gint np )
   return value_new_string(g_strdup(value_get_string(p[np-1])));
 }
 
+static value_t expr_lib_array_map( vm_t *vm, value_t p[], gint np )
+{
+  gint i;
+
+  vm_param_check_np_range(vm, np, 3, 4, "arraymap");
+  vm_param_check_array(vm, p, 1, "arraymap");
+  vm_param_check_array(vm, p, 2, "arraymap");
+
+  if(p[1].value.array->len != p[2].value.array->len)
+  {
+    g_warning("ArrayMap: inconsistent array sizes");
+    return value_na;
+  }
+  for(i=0; i<p[1].value.array->len; i++)
+    if(value_compare(g_array_index(p[1].value.array, value_t, i), p[0]))
+      break;
+  return value_dup(i==p[1].value.array->len? (np==4? p[3] : value_na) :
+    g_array_index(p[2].value.array, value_t, i));
+}
+
 static value_t expr_lib_lookup( vm_t *vm, value_t p[], gint np )
 {
   gchar *result = NULL;
@@ -107,6 +127,36 @@ static value_t expr_lib_lookup( vm_t *vm, value_t p[], gint np )
     result = value_get_string(p[np-1]);
 
   return value_new_string(g_strdup(result?result:""));
+}
+
+static value_t expr_lib_array_lookup( vm_t *vm, value_t p[], gint np )
+{
+  gint i;
+
+  vm_param_check_np_range(vm, np, 3, 4, "arraylookup");
+  vm_param_check_numeric(vm, p, 0, "arraylookup");
+  vm_param_check_array(vm, p, 1, "arraylookup");
+  vm_param_check_array(vm, p, 2, "arraylookup");
+
+  if( (p[1].value.array->len != p[2].value.array->len) &&
+      (p[1].value.array->len != p[2].value.array->len-1))
+  {
+    g_warning("ArrayLookup: inconsistent array sizes");
+    return value_na;
+  }
+  for(i=0; i<p[1].value.array->len; i++)
+    if(value_as_numeric(g_array_index(p[1].value.array, value_t, i)) <
+        value_get_numeric(p[0]))
+      break;
+
+  if(i!=p[1].value.array->len)
+    return value_dup(g_array_index(p[2].value.array, value_t, i));
+
+  if(p[1].value.array->len==p[2].value.array->len-1)
+    return value_dup(g_array_index(p[2].value.array, value_t,
+          p[2].value.array->len-1));
+
+  return np==4? value_dup(p[3]) : value_na;
 }
 
 /* Extract substring using regex */
@@ -677,7 +727,9 @@ void expr_lib_init ( void )
   vm_func_add("replace", expr_lib_replace, TRUE, TRUE);
   vm_func_add("replaceall", expr_lib_replace_all, TRUE, TRUE);
   vm_func_add("map", expr_lib_map, TRUE, TRUE);
+  vm_func_add("arraymap", expr_lib_array_map, TRUE, TRUE);
   vm_func_add("lookup", expr_lib_lookup, TRUE, TRUE);
+  vm_func_add("arraylookup", expr_lib_array_lookup, TRUE, TRUE);
   vm_func_add("time", expr_lib_time, FALSE, TRUE);
   vm_func_add("elapsedstr", expr_lib_elapsed_str, TRUE, TRUE);
   vm_func_add("getlocale", expr_lib_getlocale, FALSE, FALSE);
