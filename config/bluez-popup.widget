@@ -2,130 +2,133 @@
 
 module("bluez")
 
-TriggerAction "bluez_updated", XBluezUpdate();
-TriggerAction "bluez_removed", XBluezRemove();
+Private {
 
-Var XBluezTmpl = "
-  grid 'XBluezGrid@BLUEZ_PAIRED@' {
-    grid '@BLUEZ_PATH@_grid_@BLUEZ_PAIRED@' {
-      style = if(BluezDevice('@BLUEZ_PATH@','Visible'),'XBluezGrid','hidden')
-      action = BluezPair('@BLUEZ_PATH@');
-      action[RightClick] = Menu('XBluezItemMenu');
-      interval = 0
-      image '@BLUEZ_PATH@_icon' {
-        value = If(BluezDevice('@BLUEZ_PATH@', 'Icon') = '',
-            'bluetooth', BluezDevice('@BLUEZ_PATH@', 'Icon'))
-        style = 'XBluezIcon'
+  TriggerAction "bluez_updated", XBluezUpdate();
+  TriggerAction "bluez_removed", XBluezRemove();
+
+  Var XBluezTmpl = "
+    grid 'XBluezGrid@BLUEZ_PAIRED@' {
+      grid '@BLUEZ_PATH@_grid_@BLUEZ_PAIRED@' {
+        style = if(BluezDevice('@BLUEZ_PATH@','Visible'),'XBluezGrid','hidden')
+        action = BluezPair('@BLUEZ_PATH@');
+        action[RightClick] = Menu('XBluezItemMenu');
         interval = 0
-        loc(0,0,1,2)
+        image '@BLUEZ_PATH@_icon' {
+          value = If(BluezDevice('@BLUEZ_PATH@', 'Icon') = '',
+              'bluetooth', BluezDevice('@BLUEZ_PATH@', 'Icon'))
+          style = 'XBluezIcon'
+          interval = 0
+          loc(0,0,1,2)
+        }
+        label '@BLUEZ_PATH@_label' {
+          value = BluezDevice('@BLUEZ_PATH@', 'Name')
+          style = 'XBluezName'
+          interval = 0
+          loc(1,0,2,1)
+        }
+        label '@BLUEZ_PATH@_status' {
+          value = If(BluezDevice('@BLUEZ_PATH@', 'Connected'), GT('Connected'),
+            If(BluezDevice('@BLUEZ_PATH@','Connecting'), GT('Connecting')+'...', ''))
+          style = 'XBluezStatus'
+          interval = 0
+          loc(2,1,1,1)
+        }
+        label '@BLUEZ_PATH@_class' {
+          value = BluezDevice('@BLUEZ_PATH@', 'MinorClass')
+          style = 'XBluezClass'
+          interval = 0
+          loc(1,1,1,1)
+        }
       }
-      label '@BLUEZ_PATH@_label' {
-        value = BluezDevice('@BLUEZ_PATH@', 'Name')
-        style = 'XBluezName'
-        interval = 0
-        loc(1,0,2,1)
+    }"
+
+  Menu("XBluezItemMenu") {
+    item "bluez_connect" {
+      value = GT("Connect");
+      action = BluezConnect(Extract(WidgetId(),"(.*)_grid"));
+    }
+    item "bluez_disconnect" {
+      value = GT("Disconnect");
+      action = BluezDisConnect(Extract(WidgetId(),"(.*)_grid"));
+    }
+    item "bluez_pair" {
+      value = GT("Pair");
+      action = BluezPair(Extract(WidgetId(),"(.*)_grid"));
+    }
+    item "bluez_remove" {
+      value = GT("Remove");
+      action = BluezRemove(Extract(WidgetId(),"(.*)_grid"));
+    }
+  }
+
+  menu("XBluezAdapter") {
+    Item "bluez_power" {
+      value = GT("Power") + ": " +
+        If(BluezAdapter("Powered"), GT("On"), GT("Off"))
+      action = BluezPower(!BluezAdapter("Powered"))
+      index = 1;
+    }
+    Item "bluez_hidden" {
+      value = GT("Hidden") + ": " +
+        If(!BluezAdapter("Discoverable"), GT("On"), GT("Off"));
+      action = BluezDiscoverable(!BluezAdapter("Discoverable"));
+      index = 2;
+    }
+    Item "bluez_scan" {
+      value = GT("Scan");
+      action = BluezScan();
+      index = 3;
+    }
+  }
+
+  Function XBluezUpdate() {
+    Config(ReplaceAll( $XBluezTmpl,
+      "@BLUEZ_PAIRED@", If(BluezDevice(Path, "Paired"),"Paired","Avail"),
+      "@BLUEZ_PATH@", Path));
+  }
+
+  Function XBluezRemove() {
+    ClearWidget(Path + "_grid_avail");
+    ClearWidget(Path + "_grid_paired");
+  }
+
+  Function XBluezPop() {
+    If !WidgetState(1)
+      BluezScan();
+
+    UserState(If(WidgetState(1),"off","on"))
+    PopUp("XBluezWindow");
+  }
+
+  PopUp "XBluezWindow" {
+    style = "XBluezPopup"
+    grid "XBluezFrame" {
+      style = "XBluezFrame"
+      label {
+        value = GT("Bluetooth")
+        style = "XBluezHeader"
       }
-      label '@BLUEZ_PATH@_status' {
-        value = If(BluezDevice('@BLUEZ_PATH@', 'Connected'), GT('Connected'),
-          If(BluezDevice('@BLUEZ_PATH@','Connecting'), GT('Connecting')+'...', ''))
-        style = 'XBluezStatus'
-        interval = 0
-        loc(2,1,1,1)
+      label {
+        value = GT("Paired devices")
+        style = "XBluezSeparator"
       }
-      label '@BLUEZ_PATH@_class' {
-        value = BluezDevice('@BLUEZ_PATH@', 'MinorClass')
-        style = 'XBluezClass'
-        interval = 0
-        loc(1,1,1,1)
+      grid "XBluezGridPaired" {
+        style = "XBluezSection"
       }
-    }
-  }"
-
-Menu("XBluezItemMenu") {
-  item "bluez_connect" {
-    value = GT("Connect");
-    action = BluezConnect(Extract(WidgetId(),"(.*)_grid"));
-  }
-  item "bluez_disconnect" {
-    value = GT("Disconnect");
-    action = BluezDisConnect(Extract(WidgetId(),"(.*)_grid"));
-  }
-  item "bluez_pair" {
-    value = GT("Pair");
-    action = BluezPair(Extract(WidgetId(),"(.*)_grid"));
-  }
-  item "bluez_remove" {
-    value = GT("Remove");
-    action = BluezRemove(Extract(WidgetId(),"(.*)_grid"));
-  }
-}
-
-menu("XBluezAdapter") {
-  Item "bluez_power" {
-    value = GT("Power") + ": " +
-      If(BluezAdapter("Powered"), GT("On"), GT("Off"))
-    action = BluezPower(!BluezAdapter("Powered"))
-    index = 1;
-  }
-  Item "bluez_hidden" {
-    value = GT("Hidden") + ": " +
-      If(!BluezAdapter("Discoverable"), GT("On"), GT("Off"));
-    action = BluezDiscoverable(!BluezAdapter("Discoverable"));
-    index = 2;
-  }
-  Item "bluez_scan" {
-    value = GT("Scan");
-    action = BluezScan();
-    index = 3;
-  }
-}
-
-Function XBluezUpdate() {
-  Config(ReplaceAll( $XBluezTmpl,
-    "@BLUEZ_PAIRED@", If(BluezDevice(Path, "Paired"),"Paired","Avail"),
-    "@BLUEZ_PATH@", Path));
-}
-
-Function XBluezRemove() {
-  ClearWidget(Path + "_grid_avail");
-  ClearWidget(Path + "_grid_paired");
-}
-
-Function XBluezPop() {
-  If !WidgetState(1)
-    BluezScan();
-
-  UserState(If(WidgetState(1),"off","on"))
-  PopUp("XBluezWindow");
-}
-
-PopUp "XBluezWindow" {
-  style = "XBluezPopup"
-  grid "XBluezFrame" {
-    style = "XBluezFrame"
-    label {
-      value = GT("Bluetooth")
-      style = "XBluezHeader"
-    }
-    label {
-      value = GT("Paired devices")
-      style = "XBluezSeparator"
-    }
-    grid "XBluezGridPaired" {
-      style = "XBluezSection"
-    }
-    label {
-      value = GT("Available devices")
-      style = "XBluezSeparator"
-    }
-    grid "XBluezGridAvail" {
-      style = "XBluezSection"
-    }
-    label "XBluezScanButton" {
-      value = If(BluezAdapter("Discovering"), GT("Scanning")+"...", GT("Scan"))
-      trigger = "bluez_adapter"
-      style = "XBluezScan"
-      action = BluezScan()
+      label {
+        value = GT("Available devices")
+        style = "XBluezSeparator"
+      }
+      grid "XBluezGridAvail" {
+        style = "XBluezSection"
+      }
+      label "XBluezScanButton" {
+        value = If(BluezAdapter("Discovering"), GT("Scanning")+"...", GT("Scan"))
+        trigger = "bluez_adapter"
+        style = "XBluezScan"
+        action = BluezScan()
+      }
     }
   }
 }

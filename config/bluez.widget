@@ -11,7 +11,7 @@ Private {
       style = "module"
       value = If(!BluezAdapter("Powered"), "bluetooth-disabled",
           if(BluezAdapter("Discovering"), "bluetooth-acquiring", "bluetooth-active"))
-      action = Function("XBluezPop")
+      action = XBluezPop()
       action[RightClick] = Menu("XBluezAdapter")
       tooltip = GT("Bluetooth")
       trigger = "bluez_adapter"

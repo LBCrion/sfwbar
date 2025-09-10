@@ -1,6 +1,6 @@
 Private {
 
-  Var thresholds=[40,20];
+  Var thresholds = [40,20];
   Var icons = ["","",""];
   Var format = "{temperatureC}°C {icon}"
 
@@ -21,7 +21,7 @@ Private {
     label {
       style = if(XCpuTempPresent,"temperature","hidden")
       value = ReplaceAll(format, "{temperatureC}", Str(XCpuTemp),
-          "{icon}", IconLookup(XCpuTemp, thresholds, icons))
+          "{icon}", ArrayLookup(XCpuTemp, thresholds, icons))
       interval = 10000
     }
   }

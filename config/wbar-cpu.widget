@@ -1,9 +1,15 @@
+#Api2
+
 include("cpu.source")
 
-layout {
-  label {
-    style = if(XCpuPresent,"cpu","hidden")
-    interval = 10000
-    value = Str(XCpuUtilization*100) + '% '
+Private {
+  Var icon = '';
+
+  layout {
+    label {
+      style = if(XCpuPresent,"cpu","hidden")
+      interval = 10000
+      value = Str(XCpuUtilization*100) + '% ' + icon
+    }
   }
 }

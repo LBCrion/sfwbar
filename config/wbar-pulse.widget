@@ -6,20 +6,26 @@ module("alsactl")
 Private {
 
   Var format = ""
+  Var wbar_sink_forms = ["headphones", "hands-free", "headset", "phone", "portable", "car" ];
+  Var wbar_sink_icons = [ "", "", "", "", "", "" ];
+  Var wbar_volume_thresholds = [66, 33, 0];
+  Var wbar_volume_icons = ["", "", "" ];
+  Var wbar_volume_muted = "";
 
   include("volume-popup.widget")
 
   Function VolumeString() {
-    Return If(Volume("sink-mute"),"", Str(Volume("sink-volume")) + "% ") +
-        Map(VolumeInfo("sink-form"),
-            "headphone", "",
-            "hands-free", "",
-            "headset", "",
-            "phone", "",
-            "portable", "",
-            "car", "",
-            Lookup(Volume("sink-volume"),66,"",33,"","")) +
-        " " + Str(Volume("source-volume")) + "% ";
+    Return If(Volume("sink-mute"),
+        wbar_volume_muted,
+        Str(Volume("sink-volume")) + "% ") +
+      ArrayMap(VolumeInfo("sink-form"),
+          wbar_sink_forms,
+          wbar_sink_icons,
+          ArrayLookup(Volume("sink-volume"),
+            wbar_volume_thresholds,
+            wbar_volume_icons,
+            wbar_volume_muted)) +
+      " " + Str(Volume("source-volume")) + "% ";
   }
 
   layout {

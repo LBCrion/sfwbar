@@ -1,10 +1,15 @@
 module("appmenu")
 
-layout {
-  button {
-    value = "open-menu"
-    style = "startmenu"
-    action = Menu "app_menu_system"
-    tooltip = GT("Application menu")
+Private {
+
+  Var icon = "open-menu";
+
+  layout {
+    button {
+      value = icon;
+      style = "startmenu"
+      action = Menu("app_menu_system")
+      tooltip = GT("Application menu")
+    }
   }
 }

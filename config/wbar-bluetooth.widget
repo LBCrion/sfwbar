@@ -11,7 +11,7 @@ Private {
       style = If(BluezAdapter("Count"), "bluetooth", "hidden");
       value = icon + " ";
       trigger = "bluez_adapter";
-      action[LeftClick] = Function("XBluezPop");
+      action[LeftClick] = XBluezPop();
       action[RightClick] = Menu("XBluezAdapter")
     }
   }

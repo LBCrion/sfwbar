@@ -2,7 +2,7 @@
 
 include("cpu.source")
 
-layout {
+widget_grid {
   chart {
     interval = 1000
     style = If(XCpuPresent,"cpu_chart","hidden")

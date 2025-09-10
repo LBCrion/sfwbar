@@ -2,7 +2,7 @@
 
 include("memory.source")
 
-layout {
+widget_grid {
   scale {
     interval = 1000
     style = If(XMemPresent,"memory","hidden")

@@ -1,16 +1,44 @@
-function("ToggleMinimize") {
-  [!Minimized] Minimize
-  [Minimized] UnMinimize
+#Api2
+
+function ToggleMinimize() {
+  If !WindowInfo("minimized")
+    Minimize();
+  Else
+    UnMinimize();
 }
 
-function("ToggleMaximize") {
-  [!Maximized] Maximize
-  [Maximized] UnMaximize
+function ToggleMaximize() {
+  If !WindowInfo("maximized")
+    Maximize();
+  Else
+    UnMaximize();
 }
 
 menu("winops") {
-  item(" "+GT("focus")+"%focus-windows-symbolic", Focus );
-  item(" "+GT("close")+"%window-close-symbolic", Close );
-  item(" "+GT("(un)minimize")+"%window-minimize-symbolic", Function "ToggleMinimize" );
-  item(" "+GT("(un)maximize")+"%window-maximize-symbolic", Function "ToggleMaximize" );
+  item {
+    value = GT("focus");
+    icon = "focus-windows-symbolic";
+    action = Focus();
+  }
+  item {
+    value = GT("close");
+    icon = "window-close-symbolic";
+    action = Close();
+  }
+  item {
+    value = GT("(un)minimize");
+    icon = "window-minimize-symbolic";
+    action = ToggleMinimize();
+  }
+  item {
+    value = GT("(un)maximize");
+    icon = "window-maximize-symbolic";
+    action = ToggleMaximize();
+  }
+}
+
+#CSS
+
+menuitem label {
+  padding-left: 5px;
 }
