@@ -21,6 +21,7 @@ enum {
   MENU_ITEM_ACTION,
   MENU_ITEM_MENU,
   MENU_ITEM_INDEX,
+  MENU_ITEM_ICON,
 };
 
 G_DEFINE_INTERFACE(MenuIface, menu_iface, G_TYPE_OBJECT)
@@ -45,6 +46,8 @@ static void menu_item_set_property ( GObject *self, guint id,
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(self), g_object_ref(g_value_get_object(value)));
   else if(id == MENU_ITEM_INDEX)
     menu_item_set_sort_index(GTK_WIDGET(self), g_value_get_int(value));
+  else if(id == MENU_ITEM_ICON)
+    menu_item_set_icon(GTK_WIDGET(self), g_value_get_string(value));
 }
 
 static void menu_iface_class_init ( GObjectClass *class )
@@ -68,6 +71,9 @@ static void menu_iface_class_init ( GObjectClass *class )
   g_object_class_install_property(class, MENU_ITEM_INDEX,
       g_param_spec_int("index", "index", "sfwbar_config",
         0, INT_MAX, 0, G_PARAM_WRITABLE));
+  g_object_class_install_property(class, MENU_ITEM_ICON,
+      g_param_spec_string("icon", "icon", "sfwbar_config", NULL,
+        G_PARAM_WRITABLE));
 }
 
 static void menu_item_priv_free( MenuItemPrivate *priv )
@@ -258,7 +264,7 @@ void menu_item_set_label ( GtkWidget *self, const gchar *label )
     *icon = 0;
     gtk_label_set_text_with_mnemonic(GTK_LABEL(priv->label), label);
     *icon = '%';
-    menu_item_set_icon(self, icon+1);
+    g_object_set(G_OBJECT(self), "icon", icon+1, NULL);
   }
   else
     gtk_label_set_text_with_mnemonic(GTK_LABEL(priv->label), label);
