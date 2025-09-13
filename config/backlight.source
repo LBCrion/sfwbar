@@ -3,7 +3,7 @@
 module("dbus")
 module("bsdctl")
 
-Var BacklightSrc, BacklightMax;
+Var BacklightSrc, BacklightMax, BacklightName;
 Var BacklightTmpl = '<?xml version="1.0" encoding="utf-8"?>
   <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 612">
   <path d="M256 150 L256 362 A106 106 0 0 1 256 150" fill="black"/>
@@ -33,8 +33,9 @@ Function BacklightInit() {
     if testfile(base+"/"+dirs[i]+"/actual_brightness") &
       testfile(base+"/"+dirs[i]+"/max_brightness")
       {
-        BacklightSrc = base+"/"+dirs[i]+"/actual_brightness"
-        BacklightMax = Val(Read(base+"/"+dirs[i]+"/max_brightness"))
+        BacklightName = dirs[i]
+        BacklightSrc = base+"/"+BacklightName+"/actual_brightness"
+        BacklightMax = Val(Read(base+"/"+BacklightName+"/max_brightness"))
         FileTrigger(BacklightSrc, "backlight", 1000)
         SetBacklight(Val(Read(BacklightSrc))/BacklightMax)
         EmitTrigger( "backlight")
@@ -51,7 +52,7 @@ Function SetBacklight ( pct )
       "org.freedesktop.login1.Session"];
   If BacklightMax > 0 {
     DBusCall(SessionInterface, "SetBrightness", "(ssu)",
-           ["backlight", "intel_backlight",
+           ["backlight", BacklightName,
            BacklightMax * Min(1, Max(0.3, pct ))])
     EmitTrigger("backlight")
   }
