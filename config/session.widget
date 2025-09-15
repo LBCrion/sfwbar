@@ -1,0 +1,133 @@
+#Api2
+
+Var session_actions = [
+  ["icons/misc/hibernate", "Hibernate", "systemctl hibernate"],
+  ["icons/misc/suspend", "Suspend", "systemctl suspend"],
+  ["system-lock-screen", "Lock", "loginctl lock-session"],
+  ["system-log-out", "Logout", "loginctl terminate-user $USER"],
+  ["system-reboot", "Reboot", "systemctl reboot"],
+  ["system-shutdown", "Shutdown", "systemctl poweroff"]
+];
+
+Private {
+
+  Var conf_id;
+
+  Var SessionTmpl = "
+    grid 'session_container' {
+      grid {
+        style = 'session_grid';
+        action = {
+          Config('grid \"session_@LOC@\" {style = \"session_conf\"}');
+          if conf_id!=''
+            Config('grid \"session_' + conf_id +'\" {style = \"hidden\"}');
+          conf_id = '@LOC@';
+        }
+        loc(0,@LOC@);
+        image {
+          value = session_actions[@LOC@][0];
+          style = 'session_icon';
+          loc(0,0);
+        }
+        label {
+          value = session_actions[@LOC@][1];
+          style = 'session_label';
+          loc(1,0);
+        }
+        grid 'session_@LOC@' {
+          loc(0,1,2,1);
+          style = 'hidden';
+          label {
+            value = 'Confirm';
+            action = {
+              PopUp('SessionPopup');
+              Config('grid \"session_@LOC@\" {style = \"hidden\"}');
+              Exec(session_actions[@LOC@][2]);
+            }
+            loc(0,0,1,1);
+          }
+          label {
+            value = 'Cancel';
+            action = Config('grid \"session_@LOC@\" {style = \"hidden\"}');
+            loc(1,0,1,1);
+          }
+        }
+      }
+    }"
+
+  Function PowerInit() {
+    Var i = 0;
+    While i < ArraySize(session_actions) {
+      Config(Replace(SessionTmpl, "@LOC@", Str(i)));
+      i = i + 1;
+    }
+  }
+
+  PopUp("SessionPopup") {
+    style = "SessionPopup";
+    grid "session_container" {}
+  }
+
+  widget_grid {
+    button {
+      style = "module";
+      value = "system-shutdown";
+      action[0] = PowerInit();
+      action = PopUp("SessionPopup");
+    }
+  }
+}
+
+#CSS
+
+window#SessionPopup {
+  background: rgba(0,0,0,0);
+  -GtkWidget-direction: right;
+  padding: 5px;
+}
+
+grid#SessionPopup {
+  -GtkWidget-direction: bottom;
+  -GtkWidget-hexpand: true;
+  margin: 5px;
+  border-radius: 10px;
+  border: 1px solid @borders;
+  padding: 10px;
+  background-color: @theme_bg_color;
+}
+
+image#session_icon {
+  min-width: 32px;
+  min-height: 32px;
+  padding-right: 8px;
+  -GtkWidget-hexpand: false;
+  -GtkWidget-halign: start;
+}
+
+label#session_label {
+  -GtkWidget-hexpand: false;
+  -GtkWidget-halign: start;
+}
+
+grid#session_grid {
+  -GtkWidget-hexpand: false;
+  padding-bottom: 5px;
+}
+
+grid#session_conf {
+  border: solid 1px;
+  border-radius: 5px;
+  -GtkWidget-hexpand: true;
+  -GtkWidget-halign: fill;
+}
+
+grid#sesion_conf label {
+  padding-left: 5px;
+  padding-right: 5px;
+  -GtkWidget-hexpand: true;
+  -GtkWidget-halign: center;
+}
+
+grid#session_conf :not(:last-child) label {
+  border-right: solid 1px;
+}
