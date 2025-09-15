@@ -769,12 +769,14 @@ gint bar_get_toplevel_dir ( GtkWidget *widget )
   if(!toplevel)
     return GTK_POS_RIGHT;
 
-  priv = bar_get_instance_private(BAR(toplevel));
+  gtk_widget_style_get(toplevel, "direction", &toplevel_dir, NULL);
+  if(!IS_BAR(toplevel))
+    return toplevel_dir;
 
+  priv = bar_get_instance_private(BAR(toplevel));
   if(priv->overrides & BAR_OVERRIDE_EDGE)
     toplevel_dir = priv->override_edge;
-  else
-  gtk_widget_style_get(toplevel, "direction", &toplevel_dir, NULL);
+
   return toplevel_dir;
 }
 
@@ -818,7 +820,7 @@ GdkMonitor *bar_get_monitor ( GtkWidget *self )
 {
   BarPrivate *priv;
 
-  g_return_val_if_fail(IS_BAR(self),NULL);
+  g_return_val_if_fail(IS_BAR(self), NULL);
   priv = bar_get_instance_private(BAR(self));
 
   return priv->current_monitor;

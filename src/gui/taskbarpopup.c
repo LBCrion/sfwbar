@@ -294,6 +294,8 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *shell )
 
   priv->shell = shell;
   priv->tgroup = taskbar_new(self);
+  g_object_bind_property(G_OBJECT(priv->shell), "store",
+      G_OBJECT(priv->tgroup), "store", G_BINDING_SYNC_CREATE);
   taskbar_shell_init_child(shell, priv->tgroup);
   priv->appid = g_strdup(appid);
   priv->button = gtk_button_new();
