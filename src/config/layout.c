@@ -322,7 +322,8 @@ void config_widget ( GScanner *scanner, GtkWidget *widget )
     g_scanner_error(scanner, "Invalid property in a widget declaration");
     config_skip_statement(scanner);
   }
-  g_idle_add((GSourceFunc)base_widget_configure, widget);
+  if(base_widget_check_action_slot(widget, BASE_WIDGET_ACTION_CONFIGURE))
+    g_idle_add((GSourceFunc)base_widget_configure, widget);
   scanner->max_parse_errors = FALSE;
 }
 

@@ -132,6 +132,7 @@ static void base_widget_destroy ( GtkWidget *self )
   trigger_remove((gchar *)(priv->trigger),
       (trigger_func_t)base_widget_update_expressions, self);
   priv->trigger = NULL;
+  g_idle_remove_by_data(self);
   g_mutex_lock(&widget_mutex);
   widgets_scan = g_list_remove(widgets_scan, self);
   g_mutex_unlock(&widget_mutex);
@@ -516,6 +517,8 @@ static void base_widget_set_rect ( GtkWidget *self, GdkRectangle *rect )
   GtkWidget *parent;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
+  g_return_if_fail(rect->width>0);
+  g_return_if_fail(rect->height>0);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(!memcmp(&priv->rect, rect, sizeof(GdkRectangle)))
