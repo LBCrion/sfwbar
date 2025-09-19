@@ -1,0 +1,23 @@
+#Api2
+
+module("xkbmap")
+
+Private {
+
+  layout {
+    label {
+      action[1] = SetLayout("next");
+#      action[1] = SwayCmd("input type:keyboard xkb_switch_layout next")
+      style = If(Language()!="", "sway_lang", "hidden")
+      value = Upper(XkbMap(Layout(), "description", "name"))
+      trigger = "language"
+    }
+  }
+}
+
+#CSS
+
+label#sway_lang {
+  -GtkWidget-vexpand: true;
+  -GtWidget-valign: center;
+}

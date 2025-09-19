@@ -3,6 +3,7 @@
  * Copyright 2022- sfwbar maintainers
  */
 
+#include "input.h"
 #include "wintree.h"
 #include "util/json.h"
 
@@ -499,6 +500,16 @@ static void hypr_ipc_move_to ( gpointer id, gpointer wsid )
       wsid, GPOINTER_TO_SIZE(id));
 }
 
+static void hypr_ipc_layout_prev ( void )
+{
+  hypr_ipc_command("switchxkblayout current prev");
+}
+
+static void hypr_ipc_layout_next ( void )
+{
+  hypr_ipc_command("switchxkblayout current next");
+}
+
 static struct wintree_api hypr_wintree_api = {
   .custom_ipc = "hyprland",
   .minimize = hypr_ipc_minimize,
@@ -513,6 +524,11 @@ static struct wintree_api hypr_wintree_api = {
 static struct workspace_api hypr_workspace_api = {
   .set_workspace = hypr_ipc_set_workspace,
     .get_geom = hypr_ipc_get_geom
+};
+
+static struct input_api hypr_input_api = {
+  .layout_prev = hypr_ipc_layout_prev,
+  .layout_next = hypr_ipc_layout_next,
 };
 
 static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
@@ -556,6 +572,9 @@ static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
       workspace_unref(hypr_ipc_parse_ws(event+20, NULL));
     else if(!strncmp(event, "urgent>>", 8))
       hypr_ipc_handle_urgent(event+8);
+    else if(!strncmp(event, "activelayout>>", 14))
+      if( (ptr = g_strrstr(event, ",")) )
+        input_layout_set(ptr+1);
     g_free(event);
     (void)g_io_channel_read_line(chan, &event, NULL, NULL, NULL);
   }
@@ -582,6 +601,7 @@ void hypr_ipc_init ( void )
 
   workspace_api_register(&hypr_workspace_api);
   wintree_api_register(&hypr_wintree_api);
+  input_api_register(&hypr_input_api);
 
   sockaddr = g_build_filename(g_get_user_runtime_dir(), "hypr",
       g_getenv("HYPRLAND_INSTANCE_SIGNATURE"), ".socket2.sock", NULL);

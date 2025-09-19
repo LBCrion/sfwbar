@@ -3,6 +3,7 @@
  * Copyright 2024- sfwbar maintainers
  */
 
+#include "input.h"
 #include "wintree.h"
 #include "util/json.h"
 #include "gui/monitor.h"
@@ -38,6 +39,7 @@ typedef struct _wayfire_ipc_view {
 static gint main_ipc;
 static GList *wset_list, *output_list, *view_list;
 static gint focused_output;
+static gint layout_count, layout_current;
 
 static gint wayfire_ipc_send_req ( gint sock, gchar *method,
     struct json_object *data )
@@ -306,6 +308,32 @@ static struct workspace_api wayfire_workspace_api = {
   .check_monitor = wayfire_ipc_workspace_check_monitor,
 };
 
+static void wayfire_ipc_layout_set ( gint index )
+{
+  struct json_object *json;
+
+  json = json_object_new_object();
+  json_object_object_add(json, "layout-index", json_object_new_int(index));
+  wayfire_ipc_send_req(main_ipc, "wayfire/set-keyboard-state", json);
+}
+
+static void wayfire_ipc_layout_prev ( void )
+{
+  if(layout_current >=0 && layout_count > 0)
+    wayfire_ipc_layout_set((layout_current? layout_current : layout_count)-1);
+}
+
+static void wayfire_ipc_layout_next ( void )
+{
+  if(layout_current >= 0 && layout_count > 0)
+    wayfire_ipc_layout_set((layout_current+1)%layout_count);
+}
+
+static struct input_api wayfire_input_api = {
+  .layout_prev = wayfire_ipc_layout_prev,
+  .layout_next = wayfire_ipc_layout_next,
+};
+
 static void wayfire_ipc_window_workspace_track ( struct json_object *json )
 {
   wayfire_ipc_output_t *output;
@@ -559,6 +587,15 @@ static void wayfire_ipc_output_set_wset ( struct json_object *json )
     wayfire_ipc_set_focused_output(json_node_by_name(json, "output-data"));
 }
 
+static void wayfire_ipc_keyboard_state ( struct json_object *json )
+{
+  struct json_object *possible;
+  input_layout_set(json_string_by_name(json, "layout"));
+  if( (possible = json_array_by_name(json, "possible-layouts")) )
+    layout_count = json_object_array_length(possible);
+  layout_current = json_int_by_name(json, "layout-index", -1);
+}
+
 static gboolean wayfire_ipc_event ( GIOChannel *chan, GIOCondition cond,
     gpointer data )
 {
@@ -572,6 +609,8 @@ static gboolean wayfire_ipc_event ( GIOChannel *chan, GIOCondition cond,
   if( !(json = wayfire_ipc_recv_msg(sock)) )
     return TRUE;
 
+  g_debug("wayfire event: %s",
+      json_object_to_json_string_ext(json, JSON_C_TO_STRING_PRETTY));
   if( (event = json_string_by_name(json, "event")) )
   {
     if( (view = json_object_object_get(json, "view")) &&
@@ -596,7 +635,7 @@ static gboolean wayfire_ipc_event ( GIOChannel *chan, GIOCondition cond,
           set_bit(win->state, WS_MINIMIZED,
               json_bool_by_name(view, "minimized", FALSE));
       }
-      else if(!g_strcmp0(event, "view-fullscreened"))
+      else if(!g_strcmp0(event, "view-fullscreen"))
       {
         if( (win = wintree_from_id(wid)) )
           set_bit(win->state, WS_MAXIMIZED | WS_FULLSCREEN,
@@ -613,6 +652,8 @@ static gboolean wayfire_ipc_event ( GIOChannel *chan, GIOCondition cond,
       wayfire_ipc_output_set_wset(json);
     else if(!g_strcmp0(event, "output-gain-focus"))
       wayfire_ipc_set_focused_output(json_node_by_name(json, "output"));
+    else if(!g_strcmp0(event, "keyboard-modifier-state-changed"))
+      wayfire_ipc_keyboard_state(json_node_by_name(json, "state"));
 
   }
   json_object_put(json);
@@ -667,6 +708,7 @@ void wayfire_ipc_init ( void )
     return;
   wintree_api_register(&wayfire_wintree_api);
   workspace_api_register(&wayfire_workspace_api);
+  input_api_register(&wayfire_input_api);
 
   disp = gdk_display_get_default();
   g_signal_connect(G_OBJECT(disp), "monitor-removed",
@@ -699,18 +741,24 @@ void wayfire_ipc_init ( void )
       wayfire_ipc_window_new(json_object_array_get_idx(json, i));
   json_object_put(json);
 
+  wayfire_ipc_send_req(main_ipc, "wayfire/get-keyboard-state", NULL);
+  json = wayfire_ipc_recv_msg(main_ipc);
+  wayfire_ipc_keyboard_state(json);
+  json_object_put(json);
+
   events = json_object_new_array();
   json_object_array_add(events, json_object_new_string("view-focused"));
   json_object_array_add(events, json_object_new_string("view-mapped"));
   json_object_array_add(events, json_object_new_string("view-unmapped"));
   json_object_array_add(events, json_object_new_string("view-minimized"));
-  json_object_array_add(events, json_object_new_string("view-fullscreened"));
+  json_object_array_add(events, json_object_new_string("view-fullscreen"));
   json_object_array_add(events, json_object_new_string("view-title-changed"));
   json_object_array_add(events, json_object_new_string("view-app-id-changed"));
   json_object_array_add(events, json_object_new_string("view-workspace-changed"));
   json_object_array_add(events, json_object_new_string("view-geometry-changed"));
   json_object_array_add(events, json_object_new_string("wset-workspace-changed"));
   json_object_array_add(events, json_object_new_string("output-gain-focus"));
+  json_object_array_add(events, json_object_new_string("keyboard-modifier-state-changed"));
 
   json = json_object_new_object();
   json_object_object_add(json, "events", events);

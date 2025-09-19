@@ -14,6 +14,7 @@ puls = dependency('libpulse', required: get_option('pulse'))
 pulg = dependency('libpulse-mainloop-glib', required: get_option('pulse'))
 mpdc = dependency('libmpdclient', required: get_option('mpd'))
 xkbr = dependency('xkbregistry', required: get_option('xkb'))
+xkbc = dependency('xkbcommon', required: get_option('xkb'))
 alsa = dependency('alsa', required: get_option('alsa'))
 pipe = dependency('libpipewire-0.3', required: get_option('pipewire'))
 
@@ -59,6 +60,7 @@ libsrc = [
     'src/appinfo.c',
     'src/client.c',
     'src/exprlib.c',
+    'src/input.c',
     'src/locale1.c',
     'src/module.c',
     'src/mpd.c',
@@ -224,7 +226,7 @@ if alsa.found()
 endif
 
 if xkbr.found()
-  library('xkbmap', sources: 'modules/xkbmap.c', dependencies: [deps, xkbr],
+  library('xkbmap', sources: 'modules/xkbmap.c', dependencies: [deps, xkbr, xkbc],
       include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )

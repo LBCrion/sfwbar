@@ -4,6 +4,7 @@
  */
 
 #include "scanner.h"
+#include "input.h"
 #include "module.h"
 #include "trigger.h"
 #include "wintree.h"
@@ -350,6 +351,19 @@ static void sway_ipc_window_event ( struct json_object *obj )
           json_string_by_name(container, "type"), "floating_con"));
 }
 
+static void sway_ipc_input_event ( struct json_object *obj )
+{
+  struct json_object *input;
+
+  if(g_strcmp0(json_string_by_name(obj, "change"), "xkb_layout"))
+    return;
+
+  if(!json_object_object_get_ex(obj, "input", &input))
+    return;
+
+  input_layout_set(json_string_by_name(input, "xkb_active_layout_name"));
+}
+
 static void sway_ipc_scan_input ( struct json_object *obj, guint32 etype )
 {
   struct json_object *scan;
@@ -409,6 +423,8 @@ static gboolean sway_ipc_event ( GIOChannel *chan, GIOCondition cond,
     else if(etype==0x80000014)
       bar_set_visibility(NULL, json_string_by_name(obj, "id"),
           json_bool_by_name(obj, "visible_by_modifier", FALSE)?'v':'x');
+    else if(etype==0x80000015)
+      sway_ipc_input_event(obj);
 
     sway_ipc_scan_input(obj, etype);
 
@@ -546,6 +562,21 @@ static struct workspace_api sway_workspace_api = {
   .get_geom = sway_ipc_get_geom
 };
 
+static void sway_ipc_layout_prev ( void )
+{
+  sway_ipc_command("input type:keyboard xkb_switch_layout prev");
+}
+
+static void sway_ipc_layout_next ( void )
+{
+  sway_ipc_command("input type:keyboard xkb_switch_layout next");
+}
+
+static struct input_api sway_input_api = {
+  .layout_prev = sway_ipc_layout_prev,
+  .layout_next = sway_ipc_layout_next,
+};
+
 static value_t sway_ipc_cmd_action ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np(vm, np, 1, "SwayCmd");
@@ -576,6 +607,7 @@ void sway_ipc_init ( void )
     return;
   workspace_api_register(&sway_workspace_api);
   wintree_api_register(&sway_wintree_api);
+  input_api_register(&sway_input_api);
 
   sway_ipc_send(sock, 0, "bar hidden_state hide");
   if( (obj = sway_ipc_poll(sock, NULL)) )

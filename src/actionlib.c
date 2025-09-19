@@ -3,10 +3,11 @@
  * Copyright 2023- sfwbar maintainers
  */
 
-#include "module.h"
-#include "client.h"
-#include "trigger.h"
 #include "appinfo.h"
+#include "client.h"
+#include "input.h"
+#include "module.h"
+#include "trigger.h"
 #include "config/config.h"
 #include "gui/bar.h"
 #include "gui/basewidget.h"
@@ -678,6 +679,18 @@ static value_t action_usleep ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
+static value_t action_set_layout ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "SetLayout");
+  vm_param_check_string(vm, p, 0, "SetLayout");
+
+  if(!g_ascii_strcasecmp(value_get_string(p[0]), "prev"))
+    input_layout_prev();
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "next"))
+    input_layout_next();
+
+  return value_na;
+}
 
 void action_lib_init ( void )
 {
@@ -725,6 +738,7 @@ void action_lib_init ( void )
   vm_func_add("UpdateWidget", action_update_widget, TRUE, FALSE);
   vm_func_add("Print", action_print, TRUE, TRUE);
   vm_func_add("uSleep", action_usleep, TRUE, TRUE);
+  vm_func_add("SetLayout", action_set_layout, TRUE, TRUE);
   config_parse_data("config string",
       "#Api2\n function function(x,y) { WidgetPush(x); Call(y); WidgetPop();}",
       NULL, NULL, 0);
