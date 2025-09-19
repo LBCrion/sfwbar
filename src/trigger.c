@@ -82,13 +82,15 @@ void trigger_remove ( gchar *name, GSourceFunc func, void *data )
     }
 }
 
-void trigger_emit_in_main_context ( const gchar *name )
+gboolean trigger_emit_in_main_context ( const gchar *name )
 {
   GList *iter;
 
   if(trigger_list)
     for(iter=g_hash_table_lookup(trigger_list, name); iter; iter=iter->next)
       TRIGGER(iter->data)->func(TRIGGER(iter->data)->data);
+
+  return FALSE;
 }
 
 void trigger_emit ( gchar *name )
