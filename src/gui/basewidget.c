@@ -882,19 +882,6 @@ gchar *base_widget_get_id ( GtkWidget *self )
   return priv->id;
 }
 
-void base_widget_set_next_poll ( GtkWidget *self, gint64 ctime )
-{
-  BaseWidgetPrivate *priv;
-
-  g_return_if_fail(IS_BASE_WIDGET(self));
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
-
-  if(priv->trigger)
-    return;
-
-  priv->next_poll = ctime + priv->interval;
-}
-
 gint64 base_widget_get_next_poll ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
@@ -1017,6 +1004,7 @@ GtkWidget *base_widget_get_mirror_parent ( GtkWidget *self )
 
 gpointer base_widget_scanner_thread ( GMainContext *gmc )
 {
+  BaseWidgetPrivate *priv;
   GList *iter;
   gint64 timer, ctime;
 
@@ -1032,10 +1020,10 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
     {
       if(base_widget_get_next_poll(iter->data) <= ctime)
       {
-        g_mutex_unlock(&widget_mutex);
         base_widget_update_expressions(iter->data);
-        base_widget_set_next_poll(iter->data, ctime);
-        g_mutex_lock(&widget_mutex);
+        priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
+        if(!priv->trigger)
+          priv->next_poll = ctime + priv->interval;
       }
       timer = MIN(timer, base_widget_get_next_poll(iter->data));
     }
