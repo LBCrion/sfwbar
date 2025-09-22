@@ -18,8 +18,7 @@ void value_free_ptr ( value_t *v1 )
 
 value_t value_array_concat ( value_t v1, value_t v2 )
 {
-  GArray *result;
-  value_t new;
+  value_t result, new;
   gpointer data;
   gsize len;
 
@@ -29,20 +28,27 @@ value_t value_array_concat ( value_t v1, value_t v2 )
   if(!value_is_array(v1))
   {
     new = value_dup(v1);
-    result = g_array_prepend_vals(g_array_ref(v2.value.array), &new, 1);
+    result = value_dup(v2);
+    g_array_prepend_vals(result.value.array, &new, 1);
   }
   else if(!value_is_array(v2))
   {
     new = value_dup(v2);
-    result = g_array_append_vals(g_array_ref(v1.value.array), &new, 1);
+    result = value_dup(v1);
+    g_array_append_vals(result.value.array, &new, 1);
   }
   else
   {
+    result = value_new_array(g_array_sized_new(FALSE, FALSE, sizeof(value_t),
+          v1.value.array->len + v2.value.array->len));
+    g_array_set_clear_func(result.value.array, (GDestroyNotify)value_free_ptr);
+    data = g_array_steal(v1.value.array, &len);
+    g_array_append_vals(result.value.array, data, len);
     data = g_array_steal(v2.value.array, &len);
-    result = g_array_append_vals(g_array_ref(v1.value.array), data, len);
+    g_array_append_vals(result.value.array, data, len);
   }
 
-  return value_new_array(result);
+  return result;
 }
 
 value_t value_dup_array ( value_t v1 )
@@ -52,9 +58,9 @@ value_t value_dup_array ( value_t v1 )
   gsize i;
 
   array = g_array_sized_new(FALSE, FALSE, sizeof(value_t), v1.value.array->len);
-  g_array_set_clear_func(array, (GDestroyNotify)value_free);
+  g_array_set_clear_func(array, (GDestroyNotify)value_free_ptr);
 
-  for(i=0; i<v1.value.array->len;i++)
+  for(i=0; i<v1.value.array->len; i++)
   {
     v2 = value_dup(g_array_index(v1.value.array, value_t, i));
     g_array_append_val(array, v2);

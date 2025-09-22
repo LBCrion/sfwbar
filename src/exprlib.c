@@ -585,7 +585,7 @@ static value_t expr_array_build ( vm_t *vm, value_t p[], gint np )
   gint i;
 
   array = g_array_sized_new(FALSE, FALSE, sizeof(value_t), np);
-  g_array_set_clear_func(array, (GDestroyNotify)value_free);
+  g_array_set_clear_func(array, (GDestroyNotify)value_free_ptr);
 
   for(i=0; i<np; i++)
   {
@@ -606,14 +606,13 @@ static value_t expr_array_index ( vm_t *vm, value_t p[], gint np )
       p[0].value.array->len <= ((gint)value_get_numeric(p[1])))
   return value_na;
 
-  return g_array_index(p[0].value.array, value_t,
-      (gint)value_get_numeric(p[1]));
+  return value_dup(g_array_index(p[0].value.array, value_t,
+      (gint)value_get_numeric(p[1])));
 }
 
 static value_t expr_array_assign ( vm_t *vm, value_t p[], gint np )
 {
-  value_t *v1;
-  GArray *arr;
+  value_t *v1, arr;
   gint n;
 
   vm_param_check_np(vm, np, 3, "ArrayAssign");
@@ -623,16 +622,16 @@ static value_t expr_array_assign ( vm_t *vm, value_t p[], gint np )
   if(!value_is_array(p[0]))
     return value_na;
 
-  arr = g_array_ref(p[0].value.array);
+  arr = value_dup(p[0]);
   n = (gint)value_get_numeric(p[1]);
-  if(n<0 || n>=arr->len)
-    g_array_set_size(arr, n+1);
+  if(n<0 || n>=arr.value.array->len)
+    g_array_set_size(arr.value.array, n+1);
 
-  v1 = &g_array_index(arr, value_t, n);
+  v1 = &g_array_index(arr.value.array, value_t, n);
   value_free(*v1);
   *v1 = value_dup(p[2]);
 
-  return value_new_array(arr);
+  return arr;
 }
 
 static value_t expr_array_concat ( vm_t *vm, value_t p[], gint np )
@@ -669,7 +668,7 @@ static value_t expr_widget_children ( vm_t *vm, value_t p[], gint np )
   widget = vm_widget_get(vm, np? value_get_string(p[0]) : NULL);
 
   array = g_array_new(FALSE, FALSE, sizeof(value_t));
-  g_array_set_clear_func(array, (GDestroyNotify)value_free);
+  g_array_set_clear_func(array, (GDestroyNotify)value_free_ptr);
 
   if(!IS_BASE_WIDGET(widget))
     return value_new_array(array);
@@ -699,7 +698,7 @@ static value_t expr_ls ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, 0, "ls");
 
   array = g_array_new(FALSE, FALSE, sizeof(value_t));
-  g_array_set_clear_func(array, (GDestroyNotify)value_free);
+  g_array_set_clear_func(array, (GDestroyNotify)value_free_ptr);
   if( (dir = g_dir_open(value_get_string(p[0]), 0, NULL)) )
   {
     while( (file = g_dir_read_name(dir)) )
