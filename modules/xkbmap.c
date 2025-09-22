@@ -30,11 +30,15 @@ static void handle_keymap(void *data, struct wl_keyboard *wl_keyboard,
     xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
     xkb_keymap = xkb_keymap_new_from_string(xkb_context, xkb_string, format,
       XKB_KEYMAP_COMPILE_NO_FLAGS);
+
     xkb_state = xkb_state_new(xkb_keymap);
     maxl = xkb_keymap_num_layouts(xkb_keymap);
     for(l=0; l<maxl; l++)
       if(xkb_state_layout_index_is_active(xkb_state, l, XKB_STATE_LAYOUT_EFFECTIVE))
         input_layout_set(xkb_keymap_layout_get_name(xkb_keymap, l));
+    xkb_state_unref(xkb_state);
+    xkb_keymap_unref(xkb_keymap);
+    xkb_context_unref(xkb_context);
   }
 }
 
