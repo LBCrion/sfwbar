@@ -126,6 +126,7 @@ static void base_widget_destroy ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv, *ppriv;
 
+  g_return_if_fail(g_main_context_is_owner(g_main_context_default()));
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
@@ -228,14 +229,14 @@ GdkModifierType base_widget_get_modifiers ( GtkWidget *self )
   return state;
 }
 
-gboolean base_widget_attachment_event ( gconstpointer p1, gconstpointer p2 )
+static gboolean base_widget_attachment_event ( gconstpointer p1, gconstpointer p2 )
 {
   const base_widget_attachment_t *a1 = p1;
 
   return (a1->event == GPOINTER_TO_INT(p2));
 }
 
-gboolean base_widget_attachment_comp ( gconstpointer p1, gconstpointer p2 )
+static gboolean base_widget_attachment_comp ( gconstpointer p1, gconstpointer p2 )
 {
   const base_widget_attachment_t *a1 = p1, *a2 = p2;
 
@@ -824,6 +825,7 @@ void base_widget_attach ( GtkWidget *parent, GtkWidget *self,
   BaseWidgetPrivate *priv;
   gint dir;
 
+  g_return_if_fail(g_main_context_is_owner(g_main_context_default()));
   g_return_if_fail(IS_BASE_WIDGET(self));
   g_return_if_fail(GTK_IS_GRID(parent));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));

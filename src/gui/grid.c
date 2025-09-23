@@ -13,7 +13,10 @@ static void grid_destroy ( GtkWidget *self )
 {
   GridPrivate *priv;
 
+  g_return_if_fail(g_main_context_is_owner(g_main_context_default()));
+  g_return_if_fail(IS_GRID(self));
   priv = grid_get_instance_private(GRID(self));
+
   while(priv->children)
     grid_detach(priv->children->data, self);
   g_list_free(g_steal_pointer(&priv->last));
@@ -41,7 +44,10 @@ static void grid_style_updated ( GtkWidget *grid, GtkWidget *self )
   gint dir;
   GList *iter;
 
+  g_return_if_fail(g_main_context_is_owner(g_main_context_default()));
+  g_return_if_fail(IS_GRID(self));
   priv = grid_get_instance_private(GRID(self));
+  g_return_if_fail(GTK_IS_GRID(priv->grid));
   gtk_widget_style_get(priv->grid, "direction", &dir, NULL);
   if(priv->dir == dir)
     return;
@@ -95,6 +101,7 @@ void grid_detach( GtkWidget *child, GtkWidget *self )
 {
   GridPrivate *priv;
 
+  g_return_if_fail(g_main_context_is_owner(g_main_context_default()));
   priv = grid_get_instance_private(GRID(self));
   g_signal_handlers_disconnect_by_func(G_OBJECT(child), (GCallback)grid_detach,
       self);
@@ -106,6 +113,7 @@ gboolean grid_attach ( GtkWidget *self, GtkWidget *child )
 {
   GridPrivate *priv;
 
+  g_return_val_if_fail(g_main_context_is_owner(g_main_context_default()), TRUE);
   g_return_val_if_fail(IS_GRID(self), FALSE);
   g_return_val_if_fail(IS_BASE_WIDGET(child), FALSE);
 

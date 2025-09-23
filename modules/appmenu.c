@@ -284,6 +284,7 @@ static gboolean app_menu_add ( gchar *id )
   app_menu_dir_t *cat;
   app_menu_item_t *item;
 
+  g_return_val_if_fail(g_main_context_is_owner(g_main_context_default()), FALSE);
   if(g_hash_table_lookup(app_menu_filter, id))
   {
     g_debug("appmenu item: filter out '%s'", id);
@@ -335,6 +336,7 @@ static gboolean app_menu_add ( gchar *id )
 //        item->name, item->icon, item->cat?item->cat->title:"null");
   }
   g_object_unref(app);
+  g_free(id);
 
   return FALSE;
 }
@@ -350,6 +352,7 @@ static void app_menu_handle_delete ( const gchar *id )
   app_menu_dir_t *cat;
   GList *list;
 
+  g_return_if_fail(g_main_context_is_owner(g_main_context_default()));
   if( !(item = g_hash_table_lookup(app_menu_items, id)) )
     return;
 
@@ -362,7 +365,7 @@ static void app_menu_handle_delete ( const gchar *id )
           gtk_menu_item_get_submenu(GTK_MENU_ITEM(cat->widget))))) )
       g_list_free(list);
     else
-      gtk_widget_destroy(g_steal_pointer(&(cat->widget)));
+      g_clear_pointer(&(cat->widget), gtk_widget_destroy);
   }
 
   g_debug("appmenu item removed: '%s'", id);
@@ -376,6 +379,7 @@ static void app_info_categories_update1 ( const gchar *dir )
   const gchar *file;
   gsize i;
 
+  g_return_if_fail(g_main_context_is_owner(g_main_context_default()));
   path = g_build_filename(dir, "desktop-directories", NULL);
 
   if( (gdir = g_dir_open(path, 0, NULL)) )
@@ -413,6 +417,7 @@ static void app_info_categories_update ( void )
   const gchar * const *sysdirs;
   gsize i;
 
+  g_return_if_fail(g_main_context_is_owner(g_main_context_default()));
   for(i=0; app_menu_map[i].category; i++)
     g_clear_pointer(&app_menu_map[i].local_title, g_free);
   app_info_categories_update1(g_get_user_data_dir());
@@ -447,6 +452,7 @@ static value_t app_menu_item_add ( vm_t *vm, value_t p[], gboolean top )
   if(!vm->pstack->len)
     return value_na;
 
+  g_return_val_if_fail(g_main_context_is_owner(g_main_context_default()), value_na);
   item = menu_item_get(NULL, TRUE);
   menu_item_set_label(item, value_get_string(p[0]));
   menu_item_set_action(item, parser_exec_build(value_get_string(p[1])));
