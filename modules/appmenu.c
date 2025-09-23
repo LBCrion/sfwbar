@@ -505,10 +505,10 @@ gboolean sfwbar_module_init ( void )
   app_menu_main = menu_new(app_menu_name);
   g_object_set_data(G_OBJECT(app_menu_main), "sort", GINT_TO_POINTER(TRUE));
   app_info_add_handlers(app_menu_handle_add, app_menu_handle_delete);
-  vm_func_add("AppMenuFilter", app_menu_func_filter, TRUE, TRUE);
-  vm_func_add("AppMenuItemTop", app_menu_item_top, TRUE, TRUE);
-  vm_func_add("AppMenuItemBottom", app_menu_item_bottom, TRUE, TRUE);
-  vm_func_add("AppMenuSetFlat", app_menu_set_flat, TRUE, TRUE);
+  vm_func_add("AppMenuFilter", app_menu_func_filter, TRUE, FALSE);
+  vm_func_add("AppMenuItemTop", app_menu_item_top, TRUE, FALSE);
+  vm_func_add("AppMenuItemBottom", app_menu_item_bottom, TRUE, FALSE);
+  vm_func_add("AppMenuSetFlat", app_menu_set_flat, TRUE, FALSE);
   
   return TRUE;
 }
