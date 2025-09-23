@@ -262,7 +262,7 @@ void menu_item_set_label ( GtkWidget *self, const gchar *label )
   ptr = strchr(label, '%');
   icon = ptr? g_strdup(ptr+1) : NULL;
   text = ptr? g_strndup(label, ptr - label) : g_strdup(label);
-  gtk_label_set_text_with_mnemonic(GTK_LABEL(priv->label), label);
+  gtk_label_set_text_with_mnemonic(GTK_LABEL(priv->label), text);
   g_object_set(G_OBJECT(self), "icon", icon, NULL);
   g_free(text);
   g_free(icon);
