@@ -87,7 +87,6 @@ void base_widget_set_action ( GtkWidget *, gint, GdkModifierType, GBytes *);
 void base_widget_set_max_width ( GtkWidget *self, guint x );
 void base_widget_set_max_height ( GtkWidget *self, guint x );
 vm_store_t * base_widget_get_store ( GtkWidget *self );
-void base_widget_attach ( GtkWidget *, GtkWidget *, GtkWidget *);
 GList *base_widget_get_mirror_children ( GtkWidget *self );
 GtkWidget *base_widget_get_mirror_parent ( GtkWidget *self );
 gchar *base_widget_get_id ( GtkWidget *self );

@@ -819,25 +819,6 @@ void base_widget_set_state ( GtkWidget *self, guint16 mask, gboolean state )
       state? priv->user_state | mask : priv->user_state & ~mask, NULL);
 }
 
-void base_widget_attach ( GtkWidget *parent, GtkWidget *self,
-    GtkWidget *sibling )
-{
-  BaseWidgetPrivate *priv;
-  gint dir;
-
-  g_return_if_fail(g_main_context_is_owner(g_main_context_default()));
-  g_return_if_fail(IS_BASE_WIDGET(self));
-  g_return_if_fail(GTK_IS_GRID(parent));
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
-
-  gtk_widget_style_get(parent, "direction", &dir, NULL);
-  if( (priv->rect.x < 0) || (priv->rect.y < 0 ) )
-    gtk_grid_attach_next_to(GTK_GRID(parent), self, sibling, dir, 1, 1);
-  else
-    gtk_grid_attach(GTK_GRID(parent), self,
-        priv->rect.x, priv->rect.y, priv->rect.width, priv->rect.height);
-}
-
 void base_widget_set_max_width ( GtkWidget *self, guint x )
 {
   BaseWidgetPrivate *priv;
@@ -1057,7 +1038,6 @@ void base_widget_autoexec ( GtkWidget *self, gpointer data )
         NULL, priv->store, NULL);
   }
 }
-
 
 gboolean base_widget_configure ( GtkWidget *self )
 {
