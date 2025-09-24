@@ -238,6 +238,7 @@ static void bar_destroy ( GtkWidget *self )
   BarPrivate *priv, *ppriv;
 
   priv = bar_get_instance_private(BAR(self));
+  g_idle_remove_by_data(self);
   if(priv->mirror_parent)
   {
     ppriv = bar_get_instance_private(BAR(priv->mirror_parent));
