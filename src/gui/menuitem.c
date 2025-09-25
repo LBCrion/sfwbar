@@ -254,18 +254,17 @@ gchar *menu_item_get_id ( GtkWidget *self )
 void menu_item_set_label ( GtkWidget *self, const gchar *label )
 {
   MenuItemPrivate *priv;
-  gchar *ptr, *icon, *text;
+  gchar *ptr, *text;
 
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv && priv->label);
 
   ptr = strchr(label, '%');
-  icon = ptr? g_strdup(ptr+1) : NULL;
+  if(ptr)
+    g_object_set(G_OBJECT(self), "icon", ptr+1, NULL);
   text = ptr? g_strndup(label, ptr - label) : g_strdup(label);
   gtk_label_set_text_with_mnemonic(GTK_LABEL(priv->label), text);
-  g_object_set(G_OBJECT(self), "icon", icon, NULL);
   g_free(text);
-  g_free(icon);
 
   priv->flags |= MI_LABEL;
 }
