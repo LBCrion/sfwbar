@@ -166,11 +166,16 @@ gchar *config_assign_string ( GScanner *scanner, const gchar *expr )
   if(!config_expect_token(scanner, '=', "Missing '=' in %s = <string>", expr))
     return NULL;
 
-  if(!config_expect_token(scanner, G_TOKEN_STRING,
-        "Missing <string> in %s = <string>", expr))
-    return NULL;
+  g_scanner_get_next_token(scanner);
+  if(scanner->token == G_TOKEN_STRING)
+    return g_strdup(scanner->value.v_string);
+  else if(scanner->token == G_TOKEN_IDENTIFIER)
+    return g_strdup(scanner->value.v_identifier);
+  else if(scanner->token == G_TOKEN_FLOAT)
+    return numeric_to_string(scanner->value.v_float, -1);
 
-  return scanner->value.v_string;
+  g_scanner_error(scanner, "Missing <string> in %s = <string>", expr);
+  return NULL;
 }
 
 gdouble config_assign_number ( GScanner *scanner, const gchar *expr )

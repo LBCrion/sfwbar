@@ -32,7 +32,7 @@ GdkRectangle *config_get_loc ( GScanner *scanner )
   return g_memdup2(&rect, sizeof(rect));
 }
 
-gboolean config_action_mods ( GScanner *scanner, gint *mods )
+static gboolean config_action_mods ( GScanner *scanner, gint *mods )
 {
   gpointer mod;
 
@@ -47,7 +47,7 @@ gboolean config_action_mods ( GScanner *scanner, gint *mods )
   return TRUE;
 }
 
-gboolean config_action_slot ( GScanner *scanner, gint *slot )
+static gboolean config_action_slot ( GScanner *scanner, gint *slot )
 {
   gint token;
 
@@ -156,7 +156,7 @@ gboolean config_widget_set_property ( GScanner *scanner, gchar *prefix,
   else if(G_IS_PARAM_SPEC_BOOLEAN(spec))
     g_value_set_boolean(&value, config_assign_boolean(scanner, FALSE, name));
   else if(G_IS_PARAM_SPEC_STRING(spec))
-    g_value_set_string(&value, config_assign_string(scanner, name));
+    g_value_take_string(&value, config_assign_string(scanner, name));
   else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_PTR_ARRAY && *blurb=='b')
     g_value_take_boxed(&value, config_action_attachment(scanner));
   else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_PTR_ARRAY)
