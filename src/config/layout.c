@@ -10,8 +10,6 @@
 #include "gui/popup.h"
 #include "vm/vm.h"
 
-void config_widget (GScanner *scanner, GtkWidget *widget);
-
 GdkRectangle *config_get_loc ( GScanner *scanner )
 {
   GdkRectangle rect = { .x=0, .y=0, .width=1, .height=1 };
@@ -260,17 +258,11 @@ static GtkWidget *config_widget_get ( GScanner *scanner,
   return widget;
 }
 
-gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
+GtkWidget *config_widget_build ( GScanner *scanner, GtkWidget *container )
 {
   GtkWidget *widget;
   gboolean disabled;
   GType (*type_get)(void);
-
-  if(container && !IS_GRID(container))
-  {
-    g_scanner_error(scanner, "invalid container in widget declaration");
-    return FALSE;
-  }
 
   if(scanner->token != G_TOKEN_IDENTIFIER)
     return FALSE;
@@ -280,14 +272,37 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
   else if( (type_get = config_lookup_ptr(scanner, config_widget_keys)) )
     widget = config_widget_get(scanner, container, type_get);
   else
-    return FALSE;
+    return NULL;
 
   if(!widget)
   {
     if(g_scanner_peek_next_token(scanner)=='{')
       config_skip_statement(scanner);
-    return TRUE;
+    return NULL;
   }
+
+  config_widget(scanner, widget);
+  css_widget_cascade(widget, NULL);
+
+  g_object_get(G_OBJECT(widget), "disable", &disabled, NULL);
+  if(disabled)
+    g_clear_pointer(&widget, gtk_widget_destroy);
+
+  return widget;
+}
+
+gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
+{
+  GtkWidget *widget;
+
+  if(container && !IS_GRID(container))
+  {
+    g_scanner_error(scanner, "invalid container in widget declaration");
+    return FALSE;
+  }
+
+  if( !(widget = config_widget_build(scanner, container)) )
+    return FALSE;
 
   if(container && !gtk_widget_get_parent(widget))
   {
@@ -295,12 +310,6 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
     g_object_unref(widget);
     grid_mirror_child(container, widget);
   }
-  config_widget(scanner, widget);
-  css_widget_cascade(widget, NULL);
-
-  g_object_get(G_OBJECT(widget), "disable", &disabled, NULL);
-  if(disabled || !gtk_widget_get_parent(widget))
-    gtk_widget_destroy(widget);
 
   return TRUE;
 }

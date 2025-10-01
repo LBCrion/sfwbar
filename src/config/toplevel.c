@@ -208,6 +208,14 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
       case G_TOKEN_LAYOUT:
         layout = config_layout(scanner, container);
         break;
+      case G_TOKEN_EXPORT:
+        if(container)
+        {
+          g_clear_pointer(&layout, gtk_widget_destroy);
+          g_scanner_get_next_token(scanner);
+          layout = config_widget_build(scanner, container);
+        }
+        break;
       case G_TOKEN_POPUP:
         config_popup(scanner);
         break;

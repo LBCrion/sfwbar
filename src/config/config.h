@@ -39,6 +39,8 @@ extern GHashTable *config_flowgrid_props, *config_menu_item_keys;
 typedef gboolean (*parse_func) ( GScanner *, void * );
 
 void config_init ( void );
+void config_widget (GScanner *scanner, GtkWidget *widget);
+GtkWidget *config_widget_build ( GScanner *scanner, GtkWidget *container );
 gpointer config_lookup_ptr ( GScanner *scanner, GHashTable *table );
 gpointer config_lookup_next_ptr ( GScanner *scanner, GHashTable *table );
 gboolean config_check_and_consume ( GScanner *scanner, gint token );
@@ -80,6 +82,7 @@ void config_skip_statement ( GScanner *scanner );
 enum {
   G_TOKEN_SCANNER = G_TOKEN_LAST + 50,
   G_TOKEN_LAYOUT,
+  G_TOKEN_EXPORT,
   G_TOKEN_POPUP,
   G_TOKEN_PLACER,
   G_TOKEN_SWITCHER,
