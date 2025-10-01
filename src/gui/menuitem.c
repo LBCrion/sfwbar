@@ -217,6 +217,8 @@ void menu_item_update_from_desktop ( GtkWidget *self, const gchar *desktop_id )
   GDesktopAppInfo *app;
   gchar *desktop_file;
 
+  if(GTK_IS_SEPARATOR_MENU_ITEM(self))
+    return;
   if(g_str_has_suffix(desktop_id, ".desktop"))
     desktop_file = g_strdup(desktop_id);
   else
@@ -256,6 +258,8 @@ void menu_item_set_label ( GtkWidget *self, const gchar *label )
   MenuItemPrivate *priv;
   gchar *ptr, *text;
 
+  if(GTK_IS_SEPARATOR_MENU_ITEM(self))
+    return;
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv && priv->label);
 
@@ -273,6 +277,8 @@ void menu_item_set_label_expr ( GtkWidget *self, GBytes *code )
 {
   MenuItemPrivate *priv;
 
+  if(GTK_IS_SEPARATOR_MENU_ITEM(self))
+    return;
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv && priv->label);
 
@@ -291,6 +297,8 @@ void menu_item_set_icon ( GtkWidget *self, const gchar *icon )
 {
   MenuItemPrivate *priv;
 
+  if(GTK_IS_SEPARATOR_MENU_ITEM(self))
+    return;
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv && priv->icon);
 
@@ -316,6 +324,8 @@ void menu_item_set_action ( GtkWidget *self, GBytes *action )
 {
   MenuItemPrivate *priv;
 
+  if(GTK_IS_SEPARATOR_MENU_ITEM(self))
+    return;
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv);
 
@@ -374,6 +384,8 @@ void menu_item_set_submenu ( GtkWidget *self, gchar *subname )
   MenuItemPrivate *priv;
   GtkWidget *submenu;
 
+  if(GTK_IS_SEPARATOR_MENU_ITEM(self))
+    return;
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv);
 
