@@ -26,6 +26,15 @@ expr_cache_t *expr_cache_new_with_code ( GBytes *code )
   return expr;
 }
 
+void expr_update ( expr_cache_t **expr, GBytes *code )
+{
+  if(!*expr)
+    *expr = expr_cache_new();
+  g_clear_pointer(&((*expr)->code), g_bytes_unref);
+  (*expr)->code = g_bytes_ref(code);
+  (*expr)->eval = TRUE;
+}
+
 void expr_cache_free ( expr_cache_t *expr )
 {
   if(!expr)

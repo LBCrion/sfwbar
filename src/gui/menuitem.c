@@ -10,6 +10,7 @@
 #include "gui/menu.h"
 #include "gui/menuitem.h"
 #include "gui/scaleimage.h"
+#include "util/string.h"
 #include "vm/vm.h"
 
 static GHashTable *menu_items;
@@ -17,14 +18,42 @@ static GHashTable *menu_items;
 enum {
   MENU_ITEM_DESKTOPID = 1,
   MENU_ITEM_VALUE,
+  MENU_ITEM_STYLE,
   MENU_ITEM_TOOLTIP,
   MENU_ITEM_ACTION,
   MENU_ITEM_MENU,
   MENU_ITEM_INDEX,
   MENU_ITEM_ICON,
+  MENU_ITEM_CSS,
 };
 
 G_DEFINE_INTERFACE(MenuIface, menu_iface, G_TYPE_OBJECT)
+
+static void menu_item_set_style (GtkWidget *self, GBytes *code )
+{
+  MenuItemPrivate *priv;
+
+  priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
+  g_return_if_fail(priv);
+  expr_update(&priv->style_expr, code);
+}
+
+static void menu_item_set_css (GtkWidget *self, const gchar *css )
+{
+  MenuItemPrivate *priv;
+
+  priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
+  g_return_if_fail(priv);
+
+  if(!g_strcmp0(priv->css, css))
+    return;
+
+  str_assign(&priv->css, g_strdup(css));
+  if(priv->provider)
+    gtk_style_context_remove_provider(gtk_widget_get_style_context(
+          GTK_WIDGET(self)), GTK_STYLE_PROVIDER(priv->provider));
+  priv->provider = css_widget_apply(GTK_WIDGET(self), priv->css);
+}
 
 static void menu_item_set_property ( GObject *self, guint id,
     const GValue *value, GParamSpec *spec )
@@ -38,6 +67,8 @@ static void menu_item_set_property ( GObject *self, guint id,
     menu_item_update_from_desktop(GTK_WIDGET(self), g_value_get_string(value));
   else if(id == MENU_ITEM_VALUE)
     menu_item_set_label_expr(GTK_WIDGET(self), g_value_get_boxed(value));
+  else if(id == MENU_ITEM_STYLE)
+    menu_item_set_style(GTK_WIDGET(self), g_value_get_boxed(value));
   else if(id == MENU_ITEM_TOOLTIP)
     menu_item_set_tooltip(GTK_WIDGET(self), g_value_get_boxed(value));
   else if(id == MENU_ITEM_ACTION)
@@ -48,6 +79,8 @@ static void menu_item_set_property ( GObject *self, guint id,
     menu_item_set_sort_index(GTK_WIDGET(self), g_value_get_int(value));
   else if(id == MENU_ITEM_ICON)
     menu_item_set_icon(GTK_WIDGET(self), g_value_get_string(value));
+  else if(id == MENU_ITEM_CSS)
+    menu_item_set_css(GTK_WIDGET(self), g_value_get_string(value));
 }
 
 static void menu_iface_class_init ( GObjectClass *class )
@@ -58,6 +91,9 @@ static void menu_iface_class_init ( GObjectClass *class )
         G_PARAM_WRITABLE));
   g_object_class_install_property(class, MENU_ITEM_VALUE,
       g_param_spec_boxed("value", "value", "sfwbar_config", G_TYPE_BYTES,
+        G_PARAM_WRITABLE));
+  g_object_class_install_property(class, MENU_ITEM_STYLE,
+      g_param_spec_boxed("style", "style", "sfwbar_config", G_TYPE_BYTES,
         G_PARAM_WRITABLE));
   g_object_class_install_property(class, MENU_ITEM_TOOLTIP,
       g_param_spec_boxed("tooltip", "tooltip", "sfwbar_config", G_TYPE_BYTES,
@@ -74,6 +110,9 @@ static void menu_iface_class_init ( GObjectClass *class )
   g_object_class_install_property(class, MENU_ITEM_ICON,
       g_param_spec_string("icon", "icon", "sfwbar_config", NULL,
         G_PARAM_WRITABLE));
+  g_object_class_install_property(class, MENU_ITEM_CSS,
+      g_param_spec_string("css", "css", "sfwbar_config", NULL,
+        G_PARAM_WRITABLE));
 }
 
 static void menu_item_priv_free( MenuItemPrivate *priv )
@@ -84,8 +123,12 @@ static void menu_item_priv_free( MenuItemPrivate *priv )
   if(priv->id)
     g_hash_table_remove(menu_items, priv->id);
   g_clear_pointer(&priv->label_expr, expr_cache_free);
+  g_clear_pointer(&priv->style_expr, expr_cache_free);
+  g_clear_pointer(&priv->tooltip_expr, expr_cache_free);
   g_clear_pointer(&priv->desktop_file, g_free);
   g_clear_pointer(&priv->action, g_bytes_unref);
+  g_clear_pointer(&priv->css, g_free);
+  g_clear_pointer(&priv->provider, g_object_unref);
   g_free(priv);
 }
 
@@ -282,15 +325,7 @@ void menu_item_set_label_expr ( GtkWidget *self, GBytes *code )
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv && priv->label);
 
-  if(priv->label_expr)
-  {
-    if(priv->label_expr->code)
-      g_clear_pointer(&priv->label_expr->code, g_bytes_unref);
-    priv->label_expr->code = g_bytes_ref(code);
-    priv->label_expr->eval = TRUE;
-  }
-  else
-    priv->label_expr = expr_cache_new_with_code(code);
+  expr_update(&priv->label_expr, code);
 }
 
 void menu_item_set_icon ( GtkWidget *self, const gchar *icon )
@@ -425,18 +460,18 @@ gboolean menu_item_remove ( gchar *id )
   return FALSE;
 }
 
-void menu_item_label_update ( GtkWidget *self )
+void menu_item_update ( GtkWidget *self )
 {
   MenuItemPrivate *priv;
 
-  if(GTK_IS_SEPARATOR_MENU_ITEM(self))
-    return;
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv);
 
   scanner_invalidate();
   if(vm_expr_eval(priv->label_expr))
     menu_item_set_label(self, priv->label_expr->cache);
+  if(vm_expr_eval(priv->style_expr))
+    gtk_widget_set_name(self, priv->style_expr->cache);
   if(vm_expr_eval(priv->tooltip_expr))
     gtk_widget_set_tooltip_text(self, priv->tooltip_expr->cache);
 }

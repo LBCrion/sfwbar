@@ -43,12 +43,15 @@ typedef struct _MenuItemPrivate {
   gint sort_index;
   guint16 flags;
   gchar *desktop_file;
+  gchar *css;
+  GtkCssProvider *provider;
   GtkWidget *icon;
   GtkWidget *label;
   GtkWidget *box;
   GtkWidget *menu;
   GBytes *action;
   expr_cache_t *label_expr;
+  expr_cache_t *style_expr;
   expr_cache_t *tooltip_expr;
 } MenuItemPrivate;
 
@@ -77,7 +80,7 @@ void menu_item_set_tooltip ( GtkWidget *self, GBytes *tooltip );
 void menu_item_set_sort_index ( GtkWidget *self, gint index );
 gint menu_item_get_sort_index ( GtkWidget *self );
 void menu_item_set_submenu ( GtkWidget *self, gchar *subname );
-void menu_item_label_update ( GtkWidget *self );
+void menu_item_update ( GtkWidget *self );
 gint menu_item_compare ( GtkWidget *i1, GtkWidget *i2 );
 void menu_item_insert ( GtkWidget *menu, GtkWidget *item );
 

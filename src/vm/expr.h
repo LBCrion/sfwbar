@@ -19,6 +19,7 @@ typedef struct expr_cache {
 void expr_lib_init ( void );
 expr_cache_t *expr_cache_new ( void );
 expr_cache_t *expr_cache_new_with_code ( GBytes *code );
+void expr_update ( expr_cache_t **expr, GBytes *code );
 void expr_cache_set ( expr_cache_t *expr, gchar *def );
 void expr_cache_free ( expr_cache_t *expr );
 void expr_dep_add ( GQuark quark, expr_cache_t *expr );

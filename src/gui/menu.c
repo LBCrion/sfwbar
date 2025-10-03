@@ -95,10 +95,10 @@ static void menu_item_set_name ( GtkWidget *item, void *d )
 {
   GtkWidget *sub;
 
-  if(!GTK_IS_MENU_ITEM(item))
+  if(!GTK_IS_MENU_ITEM(item) && !GTK_IS_SEPARATOR(item))
     return;
 
-  menu_item_label_update(item);
+  menu_item_update(item);
 
   if( (sub=gtk_menu_item_get_submenu(GTK_MENU_ITEM(item))) )
     menu_set_names(sub);
