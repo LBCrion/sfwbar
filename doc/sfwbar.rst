@@ -15,15 +15,9 @@ SYNOPSIS
 
 DESCRIPTION
 ===========
-**SFWBar** is a taskbar for wayland compositors. Originally written for Sway,
-it should work with any compositor supporting layer-shell protocol. SFWBar
-assists in handling of floating windows on a wayland desktop. It provides a
-taskbar, a pager, a task switcher, a system tray, a floating window placement
-engine, a simple widget set for display data extracted from various system
-files.
-SFWBar can work with any wayland compositor supporting layer shell protocol.
-Taskbar and switcher require either sway or wlr-foreign-toplevel protocol
-support. Placer and  pager require sway.
+**SFWBar** is a taskbar for wayland compositors. It works with wayland
+compositors supporting layer shell protocol. Some features rely on wlr
+protocols or custom compositor IPCs.
 
 OPTIONS
 =======
@@ -46,91 +40,49 @@ SFWBar executable can be invoked with the following options:
 
 CONFIGURATION
 =============
-SFWBar reads configuration from a config file (sfwbar.config by default). The
+SFWBar reads configuration from a file (sfwbar.config by default). The
 program checks users XDG config directory (usually ~/.config/sfwbar/) for this
 file, followed by system xdg data directories. Additionally, user can specify
-a location and a name of the config file using ``-f`` command line option.
+a location and a name of the configuration file using ``-f`` command line option.
 
-Appearance of the program can be specified using CSS properties, these
+Appearance of the program is controlled using CSS properties. These
 are sourced either from the css section of the main configuration file or
-from a file with a .css extension with the same base name as the config file
-located in the same directory as the config file. The name of the css file 
-can be also specified using ``-c`` option.
+from a file with a .css extension with the same base name and the same location
+as the configuration file. The name of the css file can be also specified using
+``-c`` option.
+
+Please note that both ``-f`` and ``-c`` options require full path to the file.
+
+Additional configuration files can be included from the main configuration file
+using the `include` directive i.e. `include "file.widget"`.
 
 Sfwbar can be restarted and configuration reloaded by sending a SIGHUP signal
 to the sfwbar process (i.e. `killall -SIGHUP sfwbar`).
 
-The config file consists of the following top level sections:
+The configuration files described in this document are using API V2 format. To
+distinguish between old and new format, the configuration files should begin
+with `#Api2` tag. If the file is missing this tag, SFWBar assumes that the file
+uses an old configuration format.
 
-Placer
-------
-Placer section enables intelligent placement of new floating windows. If
-enabled the program will first attempt to place the window in a location, where
-it won't overlap with other windows. If such location doesn't exist, the window
-will be placed in a cascading pattern from top-left to bottom-right. The Placer
-declaration accepts parameters "xstep" and "ystep" that specify the
-steps in the window cascade. These are specified in percentage of the desktop
-dimensions. The cascade placement will start at a location specified by "xorigin"
-"yorigin" parameters. I.e.::
+bar
+---
 
-  placer {
-    xorigin = 5
-    yorigin = 5
-    xstep = 5
-    ystep = 5
-    children = false
+The layout of the bar is specified in one of the parent structures, these are
+`bar`, `popup` or `widget_grid`. Each one is a nested structure consisting of
+widgets and their properties. i.e.::
+
+  bar "sfwbar" {
+    button {
+      value = "icon-name";
+      style = "launcher";
+      action[LeftClick] = Exec("firefox");
+    }
+    grid {
+      label "mylabel" {
+        value = "Some text";
+      }
+    }
   }
-
-"children" parameter specifies if new windows opened by a program with other
-windows already opened should be placed. These are usually dialog windows and
-SFWBar won't place them by default. If the placer section is not present in 
-the file, SFWBar will let the compositor determine the locations for new windows.
-
-Task Switcher
--------------
-Task switcher implements a keyboard shortcut to cycle focus across windows
-(i.e. Alt-Tab). The action is triggered upon receiving a change in a bar
-hidden_state property or signal SIGUSR1. This can be configured in Sway, via
-one of the following bindings: ::
-
-  bindsym Alt-Tab bar hidden_state toggle
-  or
-  bindsym Alt-Tab exec killall -SIGUSR1 sfwbar
-
-(for non-sway compositors, use SIGUSR1 trigger)
-
-NixOS + Hyprland (probably other non-sway compositors) use: ::
-
-  bind = ALT, Tab, exec, killall -SIGUSR1 .sfwbar-wrapped 
-
-Task switcher is configured in the "switcher" section of the configuration file.
-The following parameters are accepted:
-
-interval
-      an timeout after the last task switch event after which the selected
-      window is activated
-
-labels [true|false]
-      display window titles in the task list
-
-icons [true|false]
-      display window icons in the task list
-
-cols
-      a number of columns in the task list
-
-css
-      css code applicable to the switcher grid. This property can only be set
-      to a static string, not an expression.
-      You can specify more detailed css code in the main CSS file. Using style
-      name #switcher for the task switcher window and the main grid and names
-      #switcher_normal and #switcher_active for inactive and active window 
-      representations respectively.
-
-Layout
-------
-Defines the layout of the taskbar. The layout holds a set of widgets. Widgets
-can be nested in case of a ``grid`` widget, which acts as a container.
 
 The following widget types are supported:
 
@@ -167,6 +119,10 @@ image
 button
   add a clickable button with an icon/image.
 
+any
+  special type used to address existing widgets, this can't be used to declare
+  a new widget, only to modify an existing widget.
+
 Each widget is placed within the parent grid. By default, widgets are placed
 next to the previous widget along the "direction" of the grid (left to right
 by default). You can specify widget's positions within a grid by using a
@@ -174,7 +130,7 @@ property "loc(x,y[,w,h])" with the first two parameters specifying the location
 of the widget within the parent grid and the last two parameters specifying the
 widget dimensions in grid cells::
 
-  layout "id" {
+ bar "id" {
     label {
     style = "mystyle"
     value = SwapUsed / SwapTotal + "%"
@@ -187,14 +143,14 @@ control positioning of the grid within a bar using syntax of "name:position",
 valid positions are start, center and end. This allows placement of some
 widgets in the center of the bar. In case of a single bar, the name of a bar
 can be omitted, i.e. ":center".
-External widgets can be included in layout using the following syntax: ::
+External widgets can be included using the following syntax: ::
 
-  layout {
-    include("MyWidget.widget")
+  bar {
+    widget "MyWidget.widget"
   }
 
-The above will include all scanner variables data and widget sub-layout from
-file MyWidget.widget
+The above will process the contents of configuration file `MyWidget.widget` and
+place the `widget_grid` object from the included file into the `bar`.
 
 Grid widgets can contain other widgets, these are declared within the grid
 definition i.e. ::
@@ -210,39 +166,43 @@ definition i.e. ::
 Widgets can optionally have unique id's assigned to them in order to allow
 manipulating them in the future.
 
+Properties define the appearance and behavior of widgets. These are generally
+defined as `property = value` with a few exceptions.
 All widgets can have the following properties:
 
-value 
+value = <expression>
   an expression specifying the value to display. This can be a static value
   (i.e. ``"string"`` or ``1``) or an expression (i.e.
   ``"Value is:" + $MyString`` or ``2 * MyNumber.val``). See ``expressions``
   section for more detail.
-  For ``Label`` widgets value tells text to display.
+  For ``Label`` widgets value specifies text to display.
   For ``Scale`` widgets it specifies a fraction to display.
   For ``Chart`` widgets it specifies a fraction of the next datapoint.
-  For ``Image`` widgets and buttons it provides an icon or an image file name.
+  For ``Image`` and ``Button`` widgets and buttons it provides an icon or an
+  image file name.
 
-style 
+style = <expression>
   a style name for the widget. Styles can be used in CSS to theme widgets.
   Multiple widgets can have the same style. A style name can be used in css
   using gtk+ named widget convention, i.e. ``label#mystyle``. Style property
   can be set to an expression to change styles in response to changes in
   system parameters.
 
-tooltip
+tooltip = <expression>
   sets a tooltip for a widget. A tooltip can be a static value or an
   expression. In case of the latter, the tooltip will be dynamically
   updated every time it pops up.
 
-interval
-  widget update frequency in milliseconds.. 
+interval = <number>
+  widget update frequency in milliseconds.
 
-trigger 
-  trigger on which event updates. Triggers are emitted by Client sources
-  a widget should not have both an interval and a trigger specified.
-  (if both are specified, interval is ignored and trigger is used).
+trigger = <string>
+  a tigger event that should cause the widget to update. Triggers are emitted
+  by a variety of sources (i.e. modules, compositor events, data available in
+  from a client connection etc.).
+  (if trigger is specified, the interval property is ignored).
 
-css
+css = <string>
   additional css properties for the widget. These properties will only apply to
   the widget in question. You can have multiple instances of the css property
   in a single widget definition and they all will be applied in the order of
@@ -252,58 +212,58 @@ css
 action
   an action to execute upon interaction with a widget. Actions can be attached
   to any widget. Multiple actions can be attached to various pointer events.
-  The notation is ``action[<event>] = <action>``.  Event values are 1,2,3 or
-  LeftClick, MiddleClick or RightClick respectively. For mouse scroll events,
-  use values 4,5,6,7,8 or ScrollUp, ScrollDown, ScrollLeft, ScrollRight and
-  Drag respectively. If no index is specified the action is attached to a left
-  mouse button click.
+  The notation is ``action[<event>] = <action>``.  Event values are
+  LeftClick, MiddleClick or RightClick, ScrollUp, ScrollDown, ScrollLeft,
+  ScrollRight and Drag respectively.
   Additionallly, modifiers can be specified using the notation of
-  ``[Modifier+]Index``. I.e. ``action[Ctrl+LeftClick]``. The following
+  ``[Modifier+]<event>``. I.e. ``action[Ctrl+LeftClick]``. The following
   modifiers supported: Shift, Ctrl, Mod1, Mod2, Mod3, Mod4, Mod5, Super, Hyper,
   and Meta. Multiple modifiers can be added, i.e.
   ``action[Ctrl+Shift+ScrollUp]``. action[0] will be executed on startup. You
   can use this action to set initial configuration for a widget.  See
   ``Actions`` section for more details on how actions are specified.
 
+disable = [true|false]
+  can be sued to disable a widget without commenting out the entire section.
+  I.e. setting `disable = true;` will discard the widget definition.
+
 ``Taskbar`` widget may contain the following options
 
-labels [true|false]
-  an indicator whether to display an application title within the taskbar
-
-icons [true|false]
+icons = [true|false]
   an indicator whether to display application icons within the taskbar
 
-filter_output [true|false]
-  This property is deprecated, please use ``filter`` instead.
-  specifies whether taskbar should only list windows present on the same
-  output as the taskbar
+labels = [true|false]
+  an indicator whether to display an application title within the taskbar
 
-filter [output|workspace]
-  Specifies whether taskbar should only list windows present on the same
-  output or workspace as the taskbar itself.
-
-title_width
+title_width = <number>
   set maximum width of an application title in characters
 
-sort [true|false]
+filter = [floating|minimized|output|workspace]
+  controls which windows are shown in the switcher.
+  `floating` will only show flowing windows.
+  `minimized` will filter out minimized windows.
+  `output` will only show windows from the current display.
+  `worspace` will only show window from the current workspace.
+
+sort = [true|false]
   setting of whether taskbar items should be sorted. If the items are not
   sorted, user can sort them manually via drag-and-drop mechanism.
   Items are sorted by default, set this to false to enable drag-and-drop.
 
-rows
+rows = <number>
   a number of rows in a taskbar.
 
-cols
+cols = <number>
   a number of columns in a taskbar.
   If both rows and cols are specified, rows will be used. If neither is
   specified, the default is rows=1
 
-group [popup|pager|false]
+group = [popup|pager|false]
   if set to true, the taskbar items will be grouped. Supported grouppings
   are: popup and pager. In a popup grouping windows are grouped by app_id,
   the main taskbar will contain one item per app_id with an icon and a
   label set to app_id. On over, it will popup a "group taskbar" containing
-  items for individual windows. 
+  items for individual windows.
   In a pager grouping mode, the taskbar is partitioned into workspaces and
   each workspace contains windows belonging to it. Dragging windows from
   one workspace to another moves it to a destination workspace. (currently
@@ -313,19 +273,86 @@ group [popup|pager|false]
   prefix, i.e. ``group cols = 1``. The properties supported for groups 
   are cols, rows, style, css, title_width, labels, icons.
 
-``Layout`` objects may have the following options
+``pager`` widget may contain the following options
 
-sensor <timeout>
-  Specify whether the bar should be hidden once the pointer leaves the bar
-  window (autohide). Once hidden, the bar will popup again if the pointer
+preview = [true|false]
+  specifies whether workspace previews are displayed on mouse hover over
+  pager buttons
+
+sort = [true|false]
+  setting of whether pager items should be sorted. If the items are not
+  sorted, user can sort them manually via drag-and-drop mechanism.
+  Items are sorted by default, set this to false to enable drag-and-drop.
+
+primary_axis = [rows|columns]
+  specifies a primary axis for sorting items, i.e. will the next item be placed
+  to the right or below it's sibling.
+
+pins = <string list>
+  a list of "pinned" workspaces. These will show up in the pager even if the
+  workspace is empty. I.e. ``pins = "1", "2", "3", "4";``
+
+rows = <number>
+  a number of rows in a pager.
+
+cols = <number>
+  a number of columns in a pager.
+  If both rows and cols are specified, rows will be used. If neither is
+  specified, the default is rows=1
+
+``tray`` widget may contain the following options
+
+rows = <number>
+  a number of rows in a pager.
+
+cols = <number>
+  a number of columns in a pager.
+  If both rows and cols are specified, rows will be used. If neither is
+  specified, the default is rows=1
+
+sort = [true|false]
+  setting of whether tray items should be sorted. If the items are not
+  sorted, user can sort them manually via drag-and-drop mechanism.
+  Items are sorted by default, set this to false to enable drag-and-drop.
+
+primary_axis = [rows|columns]
+  specifies a primary axis for sorting items, i.e. will the next item be placed
+  to the right or below it's sibling.
+
+``bar`` objects may have the following options
+
+edge = <direction>
+  Specifies the edge against which the bar should be positioned. The valid
+  values are `top`, `left`, `right`, `bottom`;
+
+size = <number|string>
+  set size of the bar (width for top or bottom bar, height for left or right
+  bar). The argument is a number, specifying the size in pixels or a string.
+  I.e. "800" for 800 pixels or "50%" for 50% of screen size
+
+halign = <alignment>
+  specified horizonal alignment of the bar if the bar occupies less than 100%
+  of the monitor. The valid values are `start`, `center`, `end`;
+
+valign = <alignment>
+  specified vertical alignment of the bar if the bar occupies less than 100%
+  of the monitor. The valid values are `start`, `center`, `end`;
+
+sensor = <number>
+  Specifies the interval after the pointer leaves the bar before the bar is
+  hidden (autohide mode). Once hidden, the bar will popup again if the pointer
   touches the sensor located along the screen edge along which the bar is
   placed.  A numeric value specifies the bar pop-down delay in milliseconds.
   If the timeout is zero, the bar will always be visible.
 
-size = <string>
-  set size of the bar (width for top or bottom bar, height for left or right
-  bar). The argument is a string. I.e. "800" for 800 pixels or "50%" for 
-  50% of screen size
+sensor_delay = <number>
+  Specifies the interval after the pointer enters the bar sensor area and the
+  hidden bar pops back up. This property is ignore if the `sensor` proeprty is
+  not specified.
+
+transition = <number>
+  Speficies the transition period (in milliseconds) for bar appearance
+  animation.
 
 monitor = <string>
   assign bar to a given monitor. The  monitor name can be prefixed by
@@ -342,60 +369,43 @@ mirror = <string>
   are specified in glob style '*' and '?' are used as wildcards. The simplest
   use is `mirror = "*"`, which will mirror the bar across all monitors.
 
-layer = <string>
-  move bar to a specified layer (supported parameters are "top", "bottom",
-  "background" and "overlay". 
+layer = <layer>
+  move bar to a specified layer (supported parameters are `top`, `bottom`,
+  `background` and `overlay`.
 
 margin = <string>
   set margin around the bar to the number of pixels specified by string.
 
-exclusive_zone <string>
+exclusive_zone = <string>
   specify exclusive zone policy for the bar window. Acceptable values are
   "auto", "-1", "0" or positive integers. These have meanings in line with
   exclusive zone setting in the layer shell protocol. Default value is "auto"
-  
-sway_bar_id <string>
+
+bar_id = <string>
   specify bar ID to listen on for mode and hidden_state signals. If no
   bar ID is specified, SfwBar will listen to signals on all IDs
 
+PopUps
+------
 
-``Pager`` widget may contain the following options
+Popup windows can be defined the same way as bars. The only difference is
+that popup's are not part of a bar and will not be displayed by default.
+Instead they are displayed when a PopUp action is invoked on a widget. i.e.: ::
 
-preview [true|false]
-  specifies whether workspace previews are displayed on mouse hover over
-  pager buttons
+  popup "MyPopup" {
+    label { value = "test"; }
+  }
 
-sort [true|false]
-  setting of whether pager items should be sorted. If the items are not
-  sorted, user can sort them manually via drag-and-drop mechanism.
-  Items are sorted by default, set this to false to enable drag-and-drop.
+  bar {
+    label {
+      value = "click me";
+      action = PopUp("MyPopup");
+    }
+  }
 
-pins
-  a list of "pinned" workspaces. These will show up in the pager even if the
-  workspace is empty.
-
-rows
-  a number of rows in a pager.
-
-cols
-  a number of columns in a pager.
-  If both rows and cols are specified, rows will be used. If neither is
-  specified, the default is rows=1
-
-``tray`` widget may contain the following options
-
-rows
-  a number of rows in a pager.
-
-cols
-  a number of columns in a pager.
-  If both rows and cols are specified, rows will be used. If neither is
-  specified, the default is rows=1
-
-sort [true|false]
-  setting of whether tray items should be sorted. If the items are not
-  sorted, user can sort them manually via drag-and-drop mechanism.
-  Items are sorted by default, set this to false to enable drag-and-drop.
+The `PopUp` action toggles visibility of the popup window. I.e. the first time
+it's invoked, the window will pop up and on the second invocation it will pop
+down. As a result it should be safe to bind the PopUp to multiple widgets.
 
 ``popup`` window may contain the following options
 
@@ -403,75 +413,185 @@ AutoClose [true|false]
   specify whether the popup window should close if user clicks anywhere outside
   of the window.
 
-PopUp
------
-
-Popup windows can be defined the same way as layouts. The only difference is
-that popup's are not part of a bar and will not be displayed by default.
-Instead they are displayed when a PopUp action is invoked on a widget. i.e.: ::
-
-  PopUp "MyPopup" {
-    label { value = "test" }
-  }
-
-  Layout {
-    label {
-      value = "click me"
-      action = PopUp "MyPopup"
-    }
-  }
-
-The PopUp action toggles visibility of the popup window. I.e. the first time
-it's invoked, the window will pop up and on the second invocation it will pop
-down. As a result it should be safe to bind the PopUp to multiple widgets.
-
 Menus
 -----
 
-User defined menus can be attached to any widget (see ``action`` widget
-property). Menus are defined using a Menu section in the config file.
-The example syntax is as following: ::
+User defined menus can be creating using a `menu` structure. The format is
+similar to the `bar`, but widgets and properties differ. For example: ::
 
-  menuclear("menu_name")
-  menu ("menu_name") {
-    item("item1", Exec "command")
-    separator
-    submenu("sub","mysubmenu") {
-      item("item2", SwayCmd "focus next")
+  menu "menu_name" {
+    item {
+      value = "item1";
+      tooltip = "the first item";
+      action = Exec("command");
+    }
+    separator;
+    item {
+      value = "sub";
+      menu "mysubmenu" {
+        item {
+          value = "item2";
+          action = SwayCmd("focus next");
+        }
+      }
     }
   }
 
-Command MenuClear deletes any existing items from a menu.
+  bar {
+    ...
+    button {
+      value = "menu-icon";
+      action = Menu("menu_name");
+    }
+  }
+
 Each menu has a name used to link the menu to the widget action and a
 list of menu items. If a menu with the same name is defined more than
-once, the items from subsequent declarations will be appended to the
-original menu. If you want to re-define the menu, use MenuClear action
-to clear the original menu.
-
+once.
 The following menu items are supported:
 
 item
-  an actionable menu item. This item has three parameters, the first one
-  is a label, the second is an action to execute when the item is activated,
-  the third is an option id you can use to delete the item later if needed.
-  See ``Actions`` section for more details on supported actions.
+  A menu item. If the item conains a `menu` widget inside it, it will be
+  presented as a submenu, otherwise the item will have invoke an `action` upon
+  activation if an `action` is defined.
 
 separator
-  a menu separator. This item has no parameters
+  A separator item. This item does not accept any properties.
 
-submenu
-  attach a submenu. The first parameter parameter is a label to display in the
-  parent menu, the second optional parameter is a menu name, if a menu name is
-  assigned, the third optional parameter is an id you can use later to delete
-  the submenu using `MenuItemClear` action. Further items can be added to a
-  submenu as to any other menu.
+Menu structure supports one property:
+
+sort = [true|false]
+  if set to true, the menu items will be sorted with the menu. The items are
+  sorted using `index` as the primary sort key and item `value` as a secondary
+  sort key.
+
+Menu items contain the following properties:
+
+value = <expression>
+  a value to be displayed in the menu item, this will change if the result of
+  the expression changes.
+
+icon = <string>
+  an icon to be displayed next to the item text.
+
+tooltip = <expression>
+  a value to be displayed in the tooltip when pointer hovers over the item.
+
+desktopid = <string>
+  populate a menu item from a desktop entry file. If any other properties are
+  specified for the item, they will override the data extracted from the desktop
+  entry file.
+
+action = <action>
+  an action to execute if the item is activated.
+
+index = <number>
+  a sort index assocciated with an item. If a menu has a `sort` property set to
+  true, the items will be sorted using this index as a primary sort key.
+
+The config file consists of the following top level sections:
+
+Placer
+------
+Placer structure controls intelligent placement of new floating windows. This
+functionality currently relies on side channel IPCs and is not supported for
+all compositors. If placer is enabled, SFWBar will first attempt to place a new
+floating window in a location, where it won't overlap with other windows. If
+such location doesn't exist, the window will be placed in a cascading pattern
+from top-left to bottom-right.
+
+The `placer` structure supports the following properties:
+
+children
+  place child windows on screen (child windows are windows sharing a pid with
+  existing windows).
+
+xorigin = <number>
+  a horizontal position (as a percentage of a desktop size) of the first window
+  in a cascade.
+
+yorigin = <number>
+  a vertical position (as a percentage of a desktop size) of the first window
+  in a cascade.
+
+xstep = <number>
+  a horizontal step (as a percentage of desktop size) of the window cascade.
+
+ystep = <number>
+  a vertical step (as a percentage of desktop size) of the window cascade.
+
+I.e.::
+
+  placer {
+    xorigin = 5
+    yorigin = 5
+    xstep = 5
+    ystep = 5
+    children = false
+  }
+
+Task Switcher
+-------------
+Task switcher cycles the focus across windows (i.e. Alt-Tab function). Switcher
+can be invoked through a `SwitcherEvent` action. The forward switch action is
+bound to `SIGUSR1` signal by default,  in `sway`, the action is additioanlly
+bound to a change in a bar hidden_state property.
+
+In sway, you can bind alt-tab using `bindsym Alt-Tab bar hidden_state toggle`
+In other compositors, you can bind a key to `killall -SIGUSR1 sfwbar` (you may
+need to replace `sfwbar` with the name of the sfwbar executable if it differs
+from the default on your system).
+
+Task switcher is configured in the "switcher" section of the configuration file.
+The following parameters are accepted:
+
+interval = <number>
+  an timeout after the last task switch event after which the selected window
+  is activated.
+
+filter = [floating|minimized|output|workspace]
+  controls which windows are shown in the switcher.
+  `floating` will only show flowing windows.
+  `minimized` will filter out minimized windows.
+  `output` will only show windows from the current display.
+  `worspace` will only show window from the current workspace.
+
+icons = [true|false]
+  display window icons in the task list.
+
+labels = [true|false]
+  display window titles in the task list.
+
+title_width = <number>
+  controls the width of the label (in character).
+
+row = <number>
+  a number of rows in the task list
+
+cols = <number>
+  a number of columns in the task list
+  If both rows and cols are specified, rows will be used. If neither is
+  specified, the default is rows=1
+
+sort = [true|false]
+  controls whether the items in the switcher should be sorted.
+
+primary_axis = [rows|columns]
+  specifies a primary axis for sorting items, i.e. will the next item be placed
+  to the right or below it's sibling.
+
+css = <string>
+  css code applicable to the switcher grid. This property can only be set to a
+  static string, not an expression. You can specify more detailed css code in
+  the main CSS file. Using style name `#switcher` for the task switcher window
+  and the main grid and names `#switcher_item` for window representations.
 
 Triggers
 --------
 Triggers are emitted in response to various events, such as compositor state
 changes, real time signals or notifications from modules. Some triggers can
-be defined as part of the configuration (i.e. SocketClient or ExecClient 
-scanner sources), others are built in, or defined in modules.
+be defined as part of the configuration (i.e. SocketClient or ExecClient
+scanner sources), others are built in, or defined in modules and user actions.
 
 Built-in triggers are:
 
@@ -485,212 +605,461 @@ mpd                   Data has been received on MpdClient scanner source
 
 Actions
 -------
-Actions can be attached to click and scroll events for any widget or to items
-within a menu. Actions can be conditional on a state of a window or a widget
-they refer to and some actions may require a parameter. Conditions are specified
-in square brackets prior to the action i.e. ``[Minimized]`` and can be inverted
-using ``!`` or joined using ``|`` i.e. ``[!Minimized | Focused]``. All
-conditions on the list must be satisfied. Supported conditions are: 
-``Minimized``, ``Maximized``, ``Focused``, ``FullScreen`` and
-``UserState``
+SFWBar will execute actions in response to certain events. These can be user
+input events such as clicking or scroll a mouse over a widget or system events,
+such as realtime signals, data arriving via a pipe etc.
 
-Actions can be activated upon receipt of a trigger from one of the client type
-sources, using TriggerAction top-level keyword. I.e. ::
+To bind an action to user input events, use widgets `action` property. Or for
+system events, you can bind an action to a trigger, using `TriggerAction`
+keyword. I.e.::
 
-  TriggerAction "mytrigger", Exec "MyCommand"
+  TriggerAction "mytrigger", Exec("MyCommand")
 
-Parameters are specified as strings immediately following the relevant action.
-I.e. ``Menu "WindowOps"``. Some actions apply to a window, if the action is
-attached to taskbar button, the action will be applied to a window referenced
-by the button, otherwise, it will apply to the currently focused window. The
-following action types are supported:
+An action can be a single instruction, i.e. `Exec("firefox");` or a sequence of
+instructions enclosed in curly brackets.
 
-Config <string>
-  Process a snippet of configuration file. This action permits changing the
-  bar configuration on the fly
+An instruction can be a function call using syntax::
 
-Exec <string>
-  execute a shell command
+  [<variable> = ] my_func ( [<expression>, ... ] );
 
-Function [<addr>,]<string>
-  Execute a function. Accepts an optional address, to invoke a function on a
-  specific widget.
+You can use variables within action `{ }` blocks. Variables are declared using
+a `Var` keyword::
 
-Menu <string>
-  open a menu with a given name
+  Var <identifier> [ = <expression> ];
 
-MenuClear <string>
+Conditional operations can be implemented using `If` keyword::
+
+  If <expression>
+    <instruction>
+  [else
+    <instruction>]
+
+Loops can be implemented using `While` keyword::
+
+  While <expression>
+    <instruction>
+
+Functions can be terminated early and return a value using a `Return` keyword::
+
+  Return [<expression>];
+
+For more complex actions, you can define yu own functions using a toplevel
+`function` keyword. I.e.::
+
+  Function my_func ( x ) {
+    Var y = "This is a test " + Str(x);
+    Print(y);
+    Return x+1;
+  }
+  TriggerAction "sometrigger", my_func(1);
+
+Function "SfwBarInit" is executed on startup. Use it set initial parameters for
+the bar, modules etc.
+
+Expressions
+-----------
+As part of the configation SFWBar can evaluate expressions. These can be part of
+an action or user defined function, but some properties also accept expressions.
+In case of the later, the expression is evaluated periodically or in response to
+to a trigger (see `interval` and `trigger` widget properties).
+
+A value in an expression can have one of four types: numeric, string, array or
+n/a.
+
+Expressions support the following operators:
+============ =========================================================================================
+Operation    Description
+============ =========================================================================================
+``+``        addition of numeric values or concatenation of strings, append value operator for arrays.
+``-``        subtraction of numeric values.
+``*``        multiplication of numeric values.
+``/``        division of numeric values.
+``%``        remainder of an integer division for numeric values.
+``>``        greater than comparison of numeric values.
+``>=``       greater than or equal comparison of numeric values.
+``<``        less than comparison of numeric values.
+``<=``       less than or equal comparison of numeric values.
+``=``        equality comparison of two values, returns false if types differ.
+``If``       conditional: If(<condition>, <expression>, <expression>)
+``Cached``   get last value from a scanner variable without updating it, i.e. `Cached(identifier)`.
+``Ident``    Check if an identifier exists either as a variable or a function.
+============ =========================================================================================
+
+Expressions can include function calls, i.e.::
+
+  Var my_var = 1 + my_func(2);
+
+Arrays can be declared and array elements can be accessed using `[ ]` operator::
+
+  Var my_array = [1,2,3];
+  Var my_var = my_array[2];
+
+Array indices start at 0.
+
+Native functions
+----------------
+Actions and functions can call user definer or built-in (native) functions, the
+following is the list of the functions provided by SFWBar. Modules can expose
+their own functions which are documented separately.
+
+SFWBar supports the following native functions:
+
+Config(<string>)
+  Process a snippet of configuration file. This action permits changing the bar
+  configuration on the fly. Returns n/a.
+
+PipeRead(<string>)
+  Process a snippet of configuration sourced from an output of a shell command.
+  This function can be used to update SFWBar configuration from a script.
+  Returns n/a.
+
+Exec(<string>)
+  Execute a shell command. Returns n/a.
+
+Print(<string>)
+  Print a string to standard output. Useful for debugging user functions.
+  Returns n/a.
+
+USleep(<numeric>)
+  Sleep for duration specified in microseconds. Actions and expressions are
+  executed in separate threads. USleep will block the relevant thread only.
+  Returns n/a.
+
+Exit()
+  Terminate SFWBar.
+
+EmitTrigger(<string>)
+  Emit a trigger event. The string parameter specifies the name of a trigger.
+  Returns n/a.
+
+FileTrigger(<file:string>, <trigger:string>[, <timeout:numeric>])
+  Setup a file monitor. Upon any changes to the file, a trigger will be
+  emitted. If the timeout is specified, the trigger will be emitted at an
+  interval specified by timeout value (in microseconds) until the first
+  file monitor event is detected (this iis useful for /sys files where
+  monitoring may not be effective. Returns n/a.
+
+ClientSend(<id:string>, <string>)
+  send a string to a client. The string will be written to client's standard
+  input for execClient or to a socket for socketClient. The first parameter is
+  the client id, the second is the string to send. Returns n/a.
+
+Eval(<string>, <string>)
+  update a value of an intermediate scanner variable with a result of an
+  expression. The first parameter is the name of the intermediate variable,
+  the second parameter is the expression. Returns n/a.
+
+PopUp(<string>)
+  open a popup window. The popup will be attached to a widget executing the
+  action. Returns n/a.
+
+Menu(<string>)
+  open a menu with a specified name. The menu will be attached to the widget
+  executing the action. Returns n/a.
+
+MenuClear(<string>)
   delete a menu with a given name (This is useful if you want to generate
   menus dynamically via PipeRead and would like to delete a previously
-  generated menu)
+  generated menu). Returns n/a.
 
-MenuItemClear <string>
-  delete a menu item with an id corresponding to the string. The menu item
-  must be declared with an id if you want to use this action on it.
+MenuItemClear(<string>)
+  delete a menu item with a given id. The menu item must be declared with an id
+  if you want to modify or clear it. Returns n/a.
 
-PipeRead <string>
-  Process a snippet of configuration sourced from an output of a shell command
+ClearWidget(<string>)
+  delete a widget with a given id. A widget must be declared with id if you want
+  to modify or delete it. Returns n/a.
 
-SwayCmd <string>
-  send a command over Sway IPC
+UpdateWidget()
+  Triggers an update of a widget invoking the action. Returns n/a.
 
-SwayWinCmd <string>
-  send a command over Sway IPC applicable to a current window
+MapIcon(<app_id:string>, <icon:string>)
+  use icon <icon> for applications with app id <app_id>. Both parameters are
+  strings. Returns n/a.
 
-MpdCmd <string>
-  send a command to Music Player Daemon
+FilterAppId(<pattern:string>)
+  Any windows with appids matching a regular expression pattern will not be
+  shown on the taskbar or switcher. Returns n/a.
 
-ClientSend <string>, <string>
-  send a string to a client. The string will be written to client's standard
-  input for execClient clients or written into a socket for socketClient's.
-  The first parameter is the client id, the second is the string to send.
+FilterTitle(<pattern:string>)
+  Any windows with titles matching a regular expression pattern will not be
+  shown on the taskbar or switcher. Returns n/a.
 
-SwitcherEvent <string>
+DisownMinimized(<boolean>)
+  Disassociate windows from their workplaces when they are minimized. If this
+  option is set, selecting a minimized window will unminimize it on the active
+  workplace. If set to False (default), the window will be unminimzied to it's
+  last workplace. This option requires custom IPC support. Returns n/a.
+
+SwitcherEvent(<string>)
   trigger a switcher event, this action will bring up the switcher window and
   cycle the focus either forward or back based on the argument. The string
   argument can be either "foward" or "back". If the argument is omitted, the
   focus will cycle forward.
 
-MapIcon <app_id>, <icon>
-  use icon <icon> for applications with app id <app_id>.
-
-SetMonitor [<bar_name>,]<string>
-  move bar to a given monitor. Bar_name string specifies a bar to move.
-  monitor name can be prefixed by "static:", i.e. "static:eDP-1", if this
-  is set and the specified monitor doesn't exist or gets disconnected, 
-  the bar will not jump to another montior, but will be hidden and won't
-  reappear until the monitor is reconnected.
-  ** This action is deprecated, please use property `monitor` instead **
-
-SetMirror  [<bar_name>,]<string>
-  mirror the bar to monitors matching any of the specified patterns. If
-  bar_name is specified, mirror instruction would be applied to specific
-  bar, otherwise it will be applied to all bars. The string parameter
-  specifies a colon delimited list of patters to match the monitors against,
-  i.e. "eDP-*:HDMI-1" will mirror to any monitor with name starting with 
-  "eDP-" or monitor named "HDMI-1". The patterns are specified in glob style
-  '*' and '?' are used as wildcards. A simplest use is `SetMirror "*"` will
-  mirror all bars across all monitors.
-  ** This action is deprecated, please use property `mirror` instead **
-
-SetLayer [<bar_name>,]<string>
-  move bar to a specified layer (supported parameters are "top", "bottom",
-  "background" and "overlay". 
-  ** This action is deprecated, please use property `layer` instead **
-
-SetBarSize [<bar_name>,]<string>
-  set size of the bar (width for top or bottom bar, height for left or right
-  bar). The argument is a string. I.e. "800" for 800 pixels or "50%" for 
-  50% of screen size
-  ** This action is deprecated, please use property `size` instead **
-
-SetBarMargin [<bar_name>,]<string>
-  set margin around the bar to the number of pixels specified by string.
-  ** This action is deprecated, please use property `margin` instead **
-
-SetBarSensor [<bar_name>],<string>
-  Specify whether the bar should be hidden once the pointer leaves the bar
-  window. Once hidden, the bar will popup again if the pointer touches the
-  sensor located along the screen edge along which the bar is placed.
-  String specifies the bar pop-down delay in milliseconds.
-  ** This action is deprecated, please use property `sensor` instead **
-
-SetBarID <string>
-  specify bar ID to listen on for mode and hidden_state signals. If no
-  bar ID is specified, SfwBar will listen to signals on all IDs
-  ** This action is deprecated, please use property `sway_bar_id` instead **
-
-SetExclusiveZone [<bar_name>,]<string>
-  specify exclusive zone policy for the bar window. Acceptable values are
-  "auto", "-1", "0" or positive integers. These have meanings in line with
-  exclusive zone setting in the layer shell protocol. Default value is "auto"
-  ** This action is deprecated, please use property `exclusive_zone` instead **
-
-SetValue [<widget>,]<string>
+SetValue([<widget:string>,]<string>)
   set the value of the widget. This action applies to the widget from which
   the action chain has been invoked. I.e. a widget may popup a menu, which
   in turn will call a function, which executed SetValue, the SetValue will
   still ac upon the widget that popped up the menu. 
 
-SetStyle [<widget>,]<string>
+SetStyle([<widget:string>,]<string>)
   set style name for a widget
 
-SetTooltip [<widget>,]<string>
+SetTooltip([<widget:string>,]<value:string>)
   set tooltip text for a widget
 
-UserState <string>
-  Set boolean user state on a widget. Valid values are "On" or "Off".
+UserState([<widget:string>,]<string>)
+  Set boolean user state on a widget. If widget parameter isn't specified, the
+  state will be set for a widget invoking the action. Valid values are "On" or
+  "Off". Returns n/a.
 
-Focus
-  set window to focused
+Focus()
+  set window to focused. This action can only be invoked from a taskbar item
+  widget. Returns n/a.
 
-Close
-  close a window
+Close()
+  close a window. This action can only be invoked from a taskbar item
+  widget. Returns n/a.
 
-Minimize
-  minimize a window (send to scratchpad in sway)
+Minimize()
+  minimize a window. This action can only be invoked from a taskbar item
+  widget. Returns n/a.
 
-UnMinimize
-  unset a minimized state for the window
+UnMinimize()
+  unset a minimized state for the window. This action can only be invoked from
+  a taskbar item widget. Returns n/a.
 
-Maximize
-  maximize a window (set fullscreen in sway)
+Maximize()
+  maximize a window. This action can only be invoked from a taskbar item
+  widget. Returns n/a.
 
-UnMaximize
-  unset a maximized state for the window
+UnMaximize()
+  unset a maximized state for the window. This action can only be invoked from
+  a taskbar item widget. Returns n/a.
 
-Functions
----------
+SetLayout(<string>)
+  Switches current keyboard layout. The string parameter can have values "next"
+  or "prev" for next or previous layout respectively. Returns n/a.
 
-Functions are sequences of actions. They are used when multiple actions need
-to be execute on a single triggeer. A good example of this functionality is
-dynamically constructed menus generated by an external script: ::
+MpdCmd(<string>)
+  send a command to Music Player Daemon client. Returns n/a.
 
-  function("fancy_menu") {
-    MenuClear "dynamic_menu"
-    PipeRead "$HOME/bin/buildmenu.sh"
-    Menu "dynamic_menu"
-  }
+SwayCmd <string>
+  Send a command over Sway IPC. Returns n/a.
 
-The above example clears a menu, executes a script that builds a menu again
-and opens the resulting menu.
+SwayWinCmd <string>
+  Send a command over Sway IPC applicable to a current window, Returns n/a.
 
-Function "SfwBarInit" executed on startup. You can use this function to set
-initial parameters for the bar, such as default monitor and layer.
+Str(<value>, <number>)
+  Convert a value to string.If converting a numner, the second parameter
+  controls decimal precision. Returns <string>.
+
+Val(<string)
+  Convert a string to a number. Returns <nuemric>
+
+Min(<number>, <number>)
+  Return a smaller of the two numbers.
+
+Max(<number>, <number>)
+  Return a larger of the two numbers.
+
+Mid(<string>, <numeric>, <numeric>)
+  Extract a substring from a string, the first paramter is the string to extract
+  the substring from, second and third parameters are thef frist and last
+  characters of the substring. Returns <string>.
+
+Extract(<string>, <pattern:string>)
+  Extract a substring using a regular expression. The function will return
+  contents of the first capture buffer in the regular expression specified
+  by <pattern>. Returns <string>.
+
+Pad(<string>, <length:number>[, <string>])
+  Pad the string to a desired length. The first parameter is the string to pad.
+  The second is the desired length, the third optional parameter is a character
+  to pad with (defaults to space). Returns <string>.
+
+Upper(<string>)
+  Convert a string to uppercase. Returns <string>.
+
+Lower(<string>)
+  Convert a string to lowercase. Returns <string>.
+
+Escape(<string>)
+  Escapes quotes and other special characters in a string making it suitable to
+  be included as a substring within double quotes. Returns <string>.
+
+Replace(<string>, <old:string>, <new:string>)
+  Replaces an `old` substring with a `new` substring within a string. Returns
+  <string>.
+
+ReplaceAll(<string>, <old:string>, <new:string>, ... )
+  Perform multiple substitutions within a string. Identical to calling `Replace`
+  multiple times. Further parameters must be supplied in pairs of `old` and
+  `new` substrings. Returns <string>.
+
+Map(<string>, <match:string>, <result:string>, ..., <default:string>)
+  Looks for a `string` in a list of `match` strings and returns a corresponding
+  `result`. Further parameters must be supplied in pairs of `match` and
+  `result`. If the string doesn't match any `match`'es, returns `default`.
+  Returns <string>.
+
+ArrayMap(<string>, <match:array>, <result:array> [, <default:string>)
+  Looks up a `string` in a `match` array. If a match is found returns a
+  corresponding element of a `result` array. If no match is found and `result`
+  array is longer than a `match` array, returns an extra (default) element of
+  a `result` array, otherwise returns a `default` string. Returns <string>.
+
+Lookup(<number>, <threshold:number>, <result:string>, ..., <default:string>)
+  Looks up a `number` against a list of `threshold`s. Returns a `result` string
+  corrsponding to a first `threshold` smaller than the `number`. This means
+  `threasholds` should be sorted in a descending order. If all `threshold`s are
+  greather than the `number`, returns `default` string. Returns <string>.
+
+ArrayLookup(<number>, <threshold:array>, <result:array> [, <default:string>])
+  Looks up a `number` in a `threshold` array and returns a `result` with an
+  index corresponding to a first element of a `threshold` array smaller than a
+  `number`. If all `threshold` elements are greater than the `number`, and a
+  `result` array is longer than a `threshold` array, returns an extra (default)
+  element of a `result` array, otherwise returns a `default` string.
+  Returns <string>.
+
+ArraySize(<array>)
+  Returns the size of the array. Valid indices for the array will be
+  0 to size-1. Returns <number>.
+
+ArrayBuild(<any>, ... )
+  Concatenate values into an array. Equivalent to  [<any>, ...].
+  Returns <array>.
+
+ArrayConcat(<array>, <array>)
+  Concatenates two arrays. Equivalent to a `+` operator on two arrays.
+  Returns <array>.
+
+ArrayIndex(<array>, <index:number>)
+  Get a value of an item in the array specified by the `index`. Return value
+  is value dependent.
+
+ArrayAssign(<array>, <index:number>, <value>)
+  Assigns a value to an index within the array, if the index is out of bounds,
+  the array will be resized. This is equivalent to `array[index] = value`.
+
+Read(<string>)
+  Reads the contents of a file and returns them as a string. Returns <string>.
+
+ls(<string>)
+  Retrieves a list of files in a directory specified by the parameter.
+  Returns <array>.
+
+TestFile(<string>)
+  Check if the file exists and is readable by the SFWBar process.
+  Returns <number>.
+
+GT(<string>)
+  Returns a transaltion of a string corresponding to a current locale. If
+  translation is not available, returns the string. Returns <string>.
+
+Layout()
+  Returns the current keyboard layout. Returns <string>.
+
+GetLocale()
+  Returns current locale. Returns <string>.
+
+Time(<format:string> [, <tz:string>])
+  Returns current time in a format specified by a `format` string. If a `tz`
+  argument is supplied, returns time corresponding to a supplied time zone.
+  Returns <string>.
+
+Disk(<fs:string>, <info:string>)
+  queries disk information for a disk. `fs` specifies a mountpoint to query.
+  `info` specifies desired information. Available options are:
+  `total` - total space on disk in bytes.
+  `avail` - avaialble space on disk.
+  `free` - free space on disk.
+  `%avail` - available fraction of space on disk.
+  `%used` - used fraction of space on disk.
+  Returns <number>.
+
+ActiveWin()
+  Returns a tile of the currently focused window. Returns <string>.
+
+WindowInfo([<id:string>,] <query:string>)
+  Queries information about a window. Optional parameter `id` specifies the
+  the widget id of a taskbar item corresponding to a window to query. If omitted
+  the widget calling the function is used. `query` parameter specifies the data
+  to query. Valid values are:
+  "appid" - application id of a window. Returns <string>.
+  "title" - title of a window. Returns <string>.
+  "minimized" - minimized state of a window. Returns <number>.
+  "maximized" - maximized state of a window. Returns <number>.
+  "fillscreen" - fullscreen state of a window. Returns <number>.
+  "focused" - focused state of a window. Returns <number>.
+
+WidgetId()
+  Returns an ID of a widget invoking the action. Returns <string>.
+
+WidgetState([<id:string>,] <stateid:number>)
+  Returns a value of one of two widget `state` booelans. The optional parameter
+  `id` specifies an id of a widget to query. If omitted, the state of a widget
+  calling the expression will be returned. The `stateid` parameter specifies
+  which state variable to query (valid values are 1 or 2). Returns <number>.
+
+WidgetChildren([<id:string>])
+  Returns a list of child widgets within a widget. The optional parameter `id`
+  specifies an id of a widget to query. If omitted, the state of a widget
+  calling the expression will be returned. Returns <array>.
+
+BarDir()
+  Returns a direction of a bar containing the current widget. Returns <string>.
+
+GtkEvent(<axis:string>)
+  Returns position of a GTK+ event triggering the execution of the current
+  action. I.e. location of a click within the widget. The `axis` parameter
+  specifies which axis to query. Possible values are "x" for horizontal,
+  "y for vertical or "dir" to use the direction property of a widget. The
+  returned value is a fraction of a size of a widget. Returns <number>.
+
+CustomIPC()
+  Returns a name of a custom IPC currently in use (if any). Returns <string>.
+
+InterfaceProvider(<interface:string>)
+  Returns a name of a module currently handling the specified interface.
+  Returns <string>.
+
 
 Scanner
 -------
-SFWBar widgets display data obtained from various sources. These can be files
-or output of commands.
+Bar often require polling data from system files (i.e. /sys or /proc). To this
+end, SFWBar provides a scanner infrastructure. Scanners allow reading system
+files and extract multiple datapoints from them in a single pass. This ensures
+that multiple data items are consistent and resources are not wasted reading the
+same file multiple times.::
 
-Each source section contains one or more variables that SFWBar will poll
-periodically and populate with the data parsed from the source. The sources
-and variables linked to them as configured in the section ``scanner`` ::
 
-  scanner {
-    File("/proc/swaps",NoGlob) {
-      SwapTotal = RegEx("[\t ]([0-9]+)")
-      SwapUsed = RegEx("[\t ][0-9]+[\t ]([0-9]+)")
-    }
-    Exec("getweather.sh") {
-      WeatherTemp = Json(".forecast.today.degrees")
-    }
-    ExecClient("stdbuf -oL foo.sh BAR BAZ", "foo") {
-      Foo_foo = Json(".foo")
-      Foo_bar = Json(".bar")
-    }
+  File("/proc/swaps",NoGlob) {
+    SwapTotal = RegEx("[\t ]([0-9]+)")
+    SwapUsed = RegEx("[\t ][0-9]+[\t ]([0-9]+)")
+  }
+  Exec("getweather.sh") {
+    WeatherTemp = Json(".forecast.today.degrees")
+  }
+  ExecClient("stdbuf -oL foo.sh BAR BAZ", "foo") {
+    Foo_foo = Json(".foo")
+    Foo_bar = Json(".bar")
   }
 
-Each declaration within the ``scanner`` section specifies a source. This can
-be one of the following:
+Scanner declarations consist of a scanner source and one or more parsers used to
+populate the scanner variables.
 
-File
+The sources are:
+
+File(<name>, <flags>)
         Read data from a file
 
-Exec
+Exec(<command>)
         Read data from an output of a shell command
 
-ExecClient
+ExecClient(<command> [,<trigger>)
         Read data from an executable, this source will wait for any output from
         the standard output of the executable. Once available (i.e. the program
         flushes its output) the source will populate the variables and emit a
@@ -703,7 +1072,7 @@ ExecClient
         from the source, you can end up with an infinite loop.
         (see alsa.widget and rfkill-wifi.widget as examples).
 
-SocketClient
+SocketClient(<address> [,<trigger>)
         Read data from a socket, this source will read a bust of data
         using it to populate the variables and emit a trigger event once done.
         This source accepts two parameters, a socket address and an id. The
@@ -713,12 +1082,12 @@ SocketClient
         (i.e. by triggering a ClientSend command that in turn triggers response
         from the source, you can end up with an infinite loop.
 
-MpdClient
+MpdClient(<address> [,<trigger>)
         Read data from Music Player Daemon IPC (data is polled whenever MPD
         responds to an 'idle player' event).  MpdClient emits trigger "mpd".
         (see mpd-int.widget as an example)
 
-SwayClient
+SwayClient(<command> [,<trigger>)
         Receive updates on Sway state, updates are the json objects sent by
         sway, wrapped into an object with a name of the event i.e.
         ``window: { sway window change object }``.
@@ -726,19 +1095,19 @@ SwayClient
         (see sway-lang.widget as an example).
 
 
-The file source also accepts further optional arguments specifying how
+The `File` source also accepts further optional arguments specifying how
 scanner should handle the source, these can be:
 
-NoGlob    
+NoGlob
           specifies that SFWBar shouldn't attempt to expand the pattern in 
           the file name. If this flag is not specified, the file source will
           attempt to read from all files matching a filename pattern.
 
-CheckTime 
+CheckTime
           indicates that the program should only update the variables from 
           this file when file modification date/time changes.
 
-``Variables`` are extracted from sources using parsers, currently the following
+Scanner variables are extracted from sources using parsers, currently the following
 parsers are supported:
 
 Grab([Aggregator])
@@ -772,143 +1141,11 @@ Product
   Variable should be set to the product of all occurrences of the pattern in
   the source
 
-For string variables, Sum and Product aggregators are treated as Last.
-
-Global Options
---------------
-
-Theme <string>
-  Override a Gtk theme to name specified.
-
-IconTheme <string>
-  Override a Gtk icon theme.
-
-DisownMinimized <boolean>
-  Disassociate windows from their workplaces when they are minimized.
-  If this option is set, selecting a minimize window will unminimize
-  it on the active workplace. If set to False (default), the window 
-  will be unminimzied to it's last workplace.
-  This option only applies to Sway and Hyprland comositors
-
-FilterTitle <regex>
-  Any windows with titles matching a regular expression <regex> will
-  not be shown on the taskbar or switcher.
-
-FilterAppId <regex>
-  Any windows with appids matching a regular expression <regex> will
-  not be shown on the taskbar or switcher.
-
-TriggerAction <trigger>, <action>
-  execute an action when a trigger is emitted. Trigger is a string, an
-  action is any valid action, as described in the Actions section.
-
-EXPRESSIONS
------------
-Values in widgets can contain basic arithmetic and string manipulation
-expressions. These allow transformation of data obtained by the scanner before
-it is displayed by the widgets.
-
-The numeric operations are:
-
-============ ====================================================================
-Operation    Description
-============ ====================================================================
-``+``        addition
-``-``        subtraction
-``*``        multiplication
-``/``        division
-``%``        remainder of an integer division
-``>``        greater than
-``>=``       greater than or equal
-``<``        less than
-``<=``       less than or equal
-``=``        equal
-``Val``      convert a string into a number, the argument is a string or a
-             string expression to convert.
-``If``       conditional: If(condition,expr1,expr2)
-``Cached``   get last value from a variable without updating it:
-             Cached(identifier)
-``Ident``    Check if an identifier exists either as a variable or a function
-============ ====================================================================
-
-The string operations are:
-
-============== ===================================================================
-Operation      Description
-============== ===================================================================
-``+``          concatenate strings i.e. ``"'String'+$Var"``.
-``Mid``        extract substring i.e. ``Mid($Var,2,5)``
-``Extract``    extract a regex pattern i.e.
-               ``Extract($Var,'FindThis: (GrabThat)')``
-``Str``        convert a number into a string, the first argument is a number (or
-               a numeric expression), the second argument is decimal precision.
-               If precision is omitted, the number is rounded to the nearest 
-               integer.
-``Pad``        pad a string to be n characters long, the first parameter is a
-               string to pad, the second is the desired number of characters,
-               if the number is negative, the string is padded at the end, if
-               positive, the string is padded at the front. The third optional
-               string parameter specifies the character to pad the string with.
-``Upper``      Convert a string to upper case
-``Lower``      Convert a string to lower case
-``Escape``     Sanitize text input for label widget.
-``Read``       Read contents of a file into a string
-``Replace``    Replace one substring with another within a string
-               ``Replace (string, old, new)``
-``Lookup``     lookup a numeric value within a list of tuplets, the function call
-               is ``Lookup(Value, Threshold1, String1, ..., DefaultString)``. The
-               function checks value against a thresholds and returns a String
-               associated with the highest threshold matched by the Value. If the
-               Value is lower than all thresholds, DefaultString is returned. 
-               Thresholds in the function call must be in decreasing order.
-``Map``        Match a string within a list of tuplets, the usage is:
-               ``Map(Value, Match1,String`,...,DefaultString)``. The function will
-               match Value against all Match strings and will return a
-               corresponding String, if none of the Match strings match, the
-               function will return DefaultString.
-``ReplaceAll`` Perform multiple substring replacements in a string,
-               ``ReplaceAll(string, old1, new1, ... )``
-``GT``         gettext substring i.e. ``GT("msgid" [,"domain"])``
-============== ===================================================================
-
-In addition the following query functions are supported
-
-=============== ===============================================================
-Function        Description
-=============== ===============================================================
-``Time``        get current time as a string, the first optional argument
-                specifies the format, the second argument specifies a timezone.
-                Return a string
-``ElapsedStr``  format a time interval specified in second into an elapsed time
-                string, i.e. `Just now` or `5 minutes ago`.
-``Disk``        get disk utilization data. You need to specify a mount point as
-                a first argument and data field as a second. The supported data
-                fields are "total", "avail", "free", "%avail", "%free" or
-                "%used".  Returns a number.
-``ActiveWin``   get the title of currently focused window. Returns a string.
-``GtkEvent``    Get the location of an event that triggered the action. This
-                function is only applicable in action command expressions where
-                an action is called as a result of button click. The function
-                returns location of the click within the widget. The value is
-                returned as percentage of the widget width or height.
-                Acceptable arguments are "X","Y" and "Dir". X and Y select an
-                axis for which to return the event location, Dir returns the
-                event location along the widget direction property.
-``BarDir``      get direction property of the taskbar holding the current
-                widget. Returns a string: "left", "right", "top", "bottom" or
-                "unknown".
-``WidgetID``    Obtain an ID of the current widget (i.e. a widget in respect to
-                which the expression is being evaluated.
-``WindowInfo``  Obtain information about a window. This function takes window
-                property as a single input parameter. Valid properties are:
-                `appid`, `title`, `minimized`, `maximized`, `fullscreen`,
-                `focused`
-=============== ===============================================================
-
-Each numeric variable contains four values
+For string values, Sum and Product aggregators are treated as Last.
+Each scanner variable holds the following information:
 
 .val
-  current value of the variable
+  current numeric value of the variable
 .pval
   previous value of the variable
 .time
@@ -918,12 +1155,10 @@ Each numeric variable contains four values
 .count
   a number of time the pattern has been matched
   during the last scan
+.str
+  a string value of the variable (can also be accessed by using $ prefix).
 
-By default, the value of the variable is the value of .val. 
-String variables are prefixed with $, i.e. $StringVar
-The following string operation are supported. For example: ::
-
-  $MyString + Str((MyValue - MyValue.pval)/MyValue.time),2)
+If a suffix is omitted for a scanner variable, the .val suffix is assumed.
 
 User defined expression macros are supported via top-level ``define``
 keyword. I.e. ::
@@ -939,7 +1174,7 @@ The above will expand the expression into: ::
 Macro's don't have types, as they perform substitution before the
 expression is evaluated.
 
-Intermediate variables can be declared using a toplevel ``set`` keyword
+Intermediate scanner variables can be declared using a toplevel ``set`` keyword
 I.e. ::
 
   set MyExpr = VarA + VarB * VarC + Val($Complex
@@ -951,13 +1186,28 @@ the result will be used in computing the value expression. Intermediate
 variables have type and have all of the fields of a scan variable (i.e. val,
 pval, time etc). They can be used the same way as scan variables.
 
+Toplevel keywords
+-----------------
+
+Theme <string>
+  Override a Gtk theme to name specified.
+
+IconTheme <string>
+  Override a Gtk icon theme.
+
+TriggerAction <trigger>, <action>
+  execute an action when a trigger is emitted. Trigger is a string, an
+  action is any valid action, as described in the Actions section.
+
+
+
 Miscellaneous
 =============
 
 If the icon is missing for a specific program in the taskbar or switcher, it
 is likely due to an missing icon or application not setting app_id correctly.
 You can check app_id's of running programs by running sfwbar -d -g app_id.
-if app_id is present, you need to add an icon with the appropriate name to 
+if app_id is present, you need to add an icon with the appropriate name to
 your icon theme. If it's blank, you can try mapping it from the program's title
 (please note that the title may change during runtime, so matching it can be
 tricky). Mapping is supported via top-level ``MapAppId`` keyword. I.e. ::
@@ -1019,7 +1269,7 @@ scale         GtkProgressBar  progressbar, trough, progress
 ============= =============== ===============
 
 Taskbar, Pager, Tray and Switcher use combinations of these widgets and can
-be themed using gtk+ nested css convention, 
+be themed using gtk+ nested css convention,
 i.e. ``grid#taskbar button { ... }``
 (this example assumes you assigned ``style = taskbar`` to your taskbar
 widget).
