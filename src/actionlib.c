@@ -153,6 +153,26 @@ static value_t action_map_icon ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
+static value_t action_filter_appid ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "FilterAppid");
+  vm_param_check_string(vm, p, 0, "FilterAppid");
+
+  wintree_filter_appid(value_get_string(p[0]));
+
+  return value_na;
+}
+
+static value_t action_filter_title ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "FilterTitle");
+  vm_param_check_string(vm, p, 0, "FilterTitle");
+
+  wintree_filter_title(value_get_string(p[0]));
+
+  return value_na;
+}
+
 static value_t action_setmonitor ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *bar;
@@ -705,6 +725,8 @@ void action_lib_init ( void )
   vm_func_add("mpdcmd", action_mpd, TRUE, TRUE);
   vm_func_add("config", action_config, TRUE, FALSE);
   vm_func_add("mapicon", action_map_icon, TRUE, TRUE);
+  vm_func_add("filterappid", action_filter_appid, TRUE, TRUE);
+  vm_func_add("filtertitle", action_filter_title, TRUE, TRUE);
   vm_func_add("popup", action_popup, TRUE, FALSE);
   vm_func_add("setmonitor", action_setmonitor, TRUE, FALSE);
   vm_func_add("setlayer", action_setlayer, TRUE, FALSE);
