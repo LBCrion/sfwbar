@@ -99,7 +99,8 @@ static value_t expr_lib_array_map( vm_t *vm, value_t p[], gint np )
   vm_param_check_array(vm, p, 1, "arraymap");
   vm_param_check_array(vm, p, 2, "arraymap");
 
-  if(p[1].value.array->len != p[2].value.array->len)
+  if( (p[1].value.array->len != p[2].value.array->len) &&
+      (p[1].value.array->len != p[2].value.array->len-1))
   {
     g_warning("ArrayMap: inconsistent array sizes");
     return value_na;
@@ -107,8 +108,15 @@ static value_t expr_lib_array_map( vm_t *vm, value_t p[], gint np )
   for(i=0; i<p[1].value.array->len; i++)
     if(value_compare(g_array_index(p[1].value.array, value_t, i), p[0]))
       break;
-  return value_dup(i==p[1].value.array->len? (np==4? p[3] : value_na) :
-    g_array_index(p[2].value.array, value_t, i));
+
+  if(i!=p[1].value.array->len)
+    return value_dup(g_array_index(p[2].value.array, value_t, i));
+
+  if(p[1].value.array->len==p[2].value.array->len-1)
+    return value_dup(g_array_index(p[2].value.array, value_t,
+          p[2].value.array->len-1));
+
+  return np==4? value_dup(p[3]) : value_na;
 }
 
 static value_t expr_lib_lookup( vm_t *vm, value_t p[], gint np )
