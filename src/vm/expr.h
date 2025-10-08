@@ -3,7 +3,7 @@
 
 #include <gtk/gtk.h>
 
-typedef struct expr_cache {
+typedef struct _expr_cache {
   gchar *definition;
   gchar *cache;
   GBytes *code;
@@ -12,9 +12,14 @@ typedef struct expr_cache {
   gboolean eval;
   gint stack_depth;
   guint vstate;
-  struct expr_cache *parent;
+  struct _expr_cache *parent;
   void *store;
 } expr_cache_t;
+
+typedef struct _expr_dep {
+  GList *list;
+  GMutex mutex;
+} expr_dep_t;
 
 void expr_lib_init ( void );
 expr_cache_t *expr_cache_new ( void );

@@ -296,8 +296,7 @@ static void vm_variable ( vm_t *vm )
   if( (var = vm_store_lookup(VM_STORE(vm), quark)) )
   {
     value = value_dup(var->value);
-    if(vm->expr)
-      vm->expr->vstate = TRUE;
+    expr_dep_add(quark, vm->expr);
   }
   else
   {
@@ -344,6 +343,7 @@ static void vm_heap_assign ( vm_t *vm )
   {
     value_free(var->value);
     var->value = vm_pop(vm);
+    expr_dep_trigger(quark);
   }
   else
     value_free(vm_pop(vm));
