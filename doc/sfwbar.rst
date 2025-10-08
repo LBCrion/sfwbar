@@ -64,6 +64,19 @@ distinguish between old and new format, the configuration files should begin
 with `#Api2` tag. If the file is missing this tag, SFWBar assumes that the file
 uses an old configuration format.
 
+Toplevel keywords
+-----------------
+
+Theme <string>
+  Override a Gtk theme to name specified.
+
+IconTheme <string>
+  Override a Gtk icon theme.
+
+TriggerAction <trigger>, <action>
+  execute an action when a trigger is emitted. Trigger is a string, an
+  action is any valid action, as described in the Actions section.
+
 bar
 ---
 
@@ -773,6 +786,14 @@ ClearWidget(<string>)
 UpdateWidget()
   Triggers an update of a widget invoking the action. Returns n/a.
 
+MapAppId(app_id:string>, <pattern:string>)
+  add a fallback title to app_id mapping. If an application is missing an
+  application id, SFWBar can assign one based on a title of an application,
+  please note that title of an application can vary, so mapping may not be
+  stable. The `pattern` parameter specifies a regular expression pattern to
+  match titles against. `app_id` parameter specifies the application id to
+  assign. Returns n/a.
+
 MapIcon(<app_id:string>, <icon:string>)
   use icon <icon> for applications with app id <app_id>. Both parameters are
   strings. Returns n/a.
@@ -1026,7 +1047,6 @@ InterfaceProvider(<interface:string>)
   Returns a name of a module currently handling the specified interface.
   Returns <string>.
 
-
 Scanner
 -------
 Bar often require polling data from system files (i.e. /sys or /proc). To this
@@ -1162,7 +1182,7 @@ If a suffix is omitted for a scanner variable, the .val suffix is assumed.
 
 User defined expression macros are supported via top-level ``define``
 keyword. I.e. ::
-  
+
   define MyExpr = VarA + VarB * VarC + Val($Complex)
   ...
   value = Str(MyExpr,2)
@@ -1186,78 +1206,47 @@ the result will be used in computing the value expression. Intermediate
 variables have type and have all of the fields of a scan variable (i.e. val,
 pval, time etc). They can be used the same way as scan variables.
 
-Toplevel keywords
------------------
-
-Theme <string>
-  Override a Gtk theme to name specified.
-
-IconTheme <string>
-  Override a Gtk icon theme.
-
-TriggerAction <trigger>, <action>
-  execute an action when a trigger is emitted. Trigger is a string, an
-  action is any valid action, as described in the Actions section.
-
-
-
-Miscellaneous
+Mapping icons
 =============
 
 If the icon is missing for a specific program in the taskbar or switcher, it
 is likely due to an missing icon or application not setting app_id correctly.
-You can check app_id's of running programs by running sfwbar -d -g app_id.
-if app_id is present, you need to add an icon with the appropriate name to
-your icon theme. If it's blank, you can try mapping it from the program's title
-(please note that the title may change during runtime, so matching it can be
-tricky). Mapping is supported via top-level ``MapAppId`` keyword. I.e. ::
+You can check app_id's of running programs by running `sfwbar -d -g app_id`,
+this should produce output like below: ::
 
-  MapAppId app_id, pattern
+  08:08:28,69 [DEBUG] app_id: 'firefox', title 'Mozilla Firefox'
 
-where app_id is the desired app_id and pattern is a regular expression to
-match the title against.
+Alternatively your desktop environment might have a command to display a list:
+- Sway: `swaymsg -t get_tree`
+- Hyperland: `hyprctl -j clients`
 
-If you are using an XWayland app, they usually do not have an `app_id` set. If
-an icon is not showing, you can add your icon to the following locations:
+If an application id is present, you need to add an icon with the appropriate
+name to your icon theme. To do this this, copy a file with a name matching appid
+into one of the following directories:
+
 1. `$HOME/.icons`
 2. One of the directories listed in `$XDG_DATA_DIRS/icons`
 3. `/usr/share/pixmaps`
 4. Location of the main config file currently in use
 5. `$XDG_CONFIG_HOME/sfwbar/`
 
+In the above example, you can put an icon called `firefox.svg` (you can also use
+.png or .xpm) into one of the above directories.
+
+If application id is blank, you can try mapping it from the program's title
+(please note that the title may change during runtime, so matching it can be
+tricky). Mapping is supported via function ``MapAppId``. You can add a function
+call to yor `SfwbarInit` function to run it on startup, I.e. ::
+
+  MapAppId("firefox", ".*Mozilla Firefox");
+
 If an `app_id` is not set, and sway is being used, sfwbar will fallback to
 using the `instance` in the `window-properties`.
 
-You can find the `app_id` that is being used with sfwbar by using the
-`sfwbar -d -g app_id` command, which will show a list of running applications
-if your compositor supports the
-wlr-foreign-toplevel protocol (i.e. labwc, wayfire, sway):
-```
-14:49:25.41 app_id: 'jetbrains-clion', title 'sfwbar – pager.c'
-```
-
-Alternatively your desktop environment might have a command to display a list:
-- Sway: `swaymsg -t get_tree`
-- Hyperland: `hyprctl -j clients`
-
-When using `swaymsg -t get_tree`, with CLion this will show the following: ::
-
-  "window_properties": {
-    "class": "jetbrains-clion",
-    "instance": "jetbrains-clion",
-    "title": "sfwbar – trayitem.c",
-    "transient_for": null,
-    "window_type": "normal"
-  }
-
-So we can put an icon called jetbrains-clion.svg (or other formats, see the
-[Arch wiki](https://wiki.archlinux.org/title/desktop_entries#Icons)) for
-information about file formats.
-
-CSS Style
-=========
-SFWBar uses gtk+ widgets and can accept all css properties supported by 
-gtk+. SFWBar widgets correspond to gtk+ widgets as following:
+CSS Styling
+===========
+SFWBar uses gtk+ widgets and can accept all css properties supported by gtk+.
+SFWBar widgets correspond to gtk+ widgets as following:
 
 ============= =============== ===============
 SFWBar widget gtk+ widget      css class
@@ -1270,8 +1259,8 @@ scale         GtkProgressBar  progressbar, trough, progress
 
 Taskbar, Pager, Tray and Switcher use combinations of these widgets and can
 be themed using gtk+ nested css convention,
-i.e. ``grid#taskbar button { ... }``
-(this example assumes you assigned ``style = taskbar`` to your taskbar
+i.e. ``grid#mytaskbar button { ... }``
+(this example assumes you assigned ``style = "mytaskbar"`` to your taskbar
 widget).
 
 In addition to standard gtk+ css properties SFWBar implements several
@@ -1283,6 +1272,18 @@ property                    description
 -GtkWidget-align            specify text alignment for a label, defined as a
                             fraction.  (i.e. 0 = left aligned, 1 = right
                             aligned, 0.5 = centered)
+-GtkWidget-hexpand          specify if a widget should expand horizontally to
+                            occupy available space. [true|false]
+-GtkWidget-vexpand          as above, for vertical expansion.
+-GtkWidget-halign           Horizontally align widget within any free space
+                            allocated to it, values supported are: fill, start,
+                            end, center and baseline. The last vertically
+                            aligns widgets to align text within.
+-GtkWidget-valign           Vertically align widget.
+-GtkWidget-visible          Control visibility of a widget. If set to false,
+                            widget will be hidden.
+-GtkWidget-max-width        Limit maximum width of a widget (in pixels)
+-GtkWidget-max-height       Limit maximum height of a widget (in pixels)
 -GtkWidget-ellipsize        specify whether a text in a label should be
                             ellipsized if it's too long to fit in allocated
                             space.
@@ -1295,18 +1296,6 @@ property                    description
                             relative to the last placed widget. For a window
                             it's an edge along which the bar is positioned.
                             Possible values [top|bottom|left|right]
--GtkWidget-max-width        Limit maximum width of a widget (in pixels)
--GtkWidget-max-height       Limit maximum height of a widget (in pixels)
--GtkWidget-hexpand          specify if a widget should expand horizontally to
-                            occupy available space. [true|false]
--GtkWidget-vexpand          as above, for vertical expansion.
--GtkWidget-halign           Horizontally align widget within any free space
-                            allocated to it, values supported are: fill, start,
-                            end, center and baseline. The last vertically
-                            aligns widgets to align text within.
--GtkWidget-valign           Vertically align widget.
--GtkWidget-visible          Control visibility of a widget. If set to false,
-                            widget will be hidden.
 -ScaleImage-color           Specify a color to repaint an image with. The image
                             will be painted with this color using image's alpha
                             channel as a mask. The color's own alpha value can

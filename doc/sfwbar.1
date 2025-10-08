@@ -90,6 +90,19 @@ The configuration files described in this document are using API V2 format. To
 distinguish between old and new format, the configuration files should begin
 with \fI#Api2\fP tag. If the file is missing this tag, SFWBar assumes that the file
 uses an old configuration format.
+.SS Toplevel keywords
+.INDENT 0.0
+.TP
+.B Theme <string>
+Override a Gtk theme to name specified.
+.TP
+.B IconTheme <string>
+Override a Gtk icon theme.
+.TP
+.B TriggerAction <trigger>, <action>
+execute an action when a trigger is emitted. Trigger is a string, an
+action is any valid action, as described in the Actions section.
+.UNINDENT
 .SS bar
 .sp
 The layout of the bar is specified in one of the parent structures, these are
@@ -934,6 +947,14 @@ to modify or delete it. Returns n/a.
 .B UpdateWidget()
 Triggers an update of a widget invoking the action. Returns n/a.
 .TP
+.B MapAppId(app_id:string>, <pattern:string>)
+add a fallback title to app_id mapping. If an application is missing an
+application id, SFWBar can assign one based on a title of an application,
+please note that title of an application can vary, so mapping may not be
+stable. The \fIpattern\fP parameter specifies a regular expression pattern to
+match titles against. \fIapp_id\fP parameter specifies the application id to
+assign. Returns n/a.
+.TP
 .B MapIcon(<app_id:string>, <icon:string>)
 use icon <icon> for applications with app id <app_id>. Both parameters are
 strings. Returns n/a.
@@ -1382,86 +1403,63 @@ In the above example, value of the MyExpr variable will be calculated and
 the result will be used in computing the value expression. Intermediate
 variables have type and have all of the fields of a scan variable (i.e. val,
 pval, time etc). They can be used the same way as scan variables.
-.SS Toplevel keywords
-.INDENT 0.0
-.TP
-.B Theme <string>
-Override a Gtk theme to name specified.
-.TP
-.B IconTheme <string>
-Override a Gtk icon theme.
-.TP
-.B TriggerAction <trigger>, <action>
-execute an action when a trigger is emitted. Trigger is a string, an
-action is any valid action, as described in the Actions section.
-.UNINDENT
-.SH MISCELLANEOUS
+.SH MAPPING ICONS
 .sp
 If the icon is missing for a specific program in the taskbar or switcher, it
 is likely due to an missing icon or application not setting app_id correctly.
-You can check app_id\(aqs of running programs by running sfwbar \-d \-g app_id.
-if app_id is present, you need to add an icon with the appropriate name to
-your icon theme. If it\(aqs blank, you can try mapping it from the program\(aqs title
-(please note that the title may change during runtime, so matching it can be
-tricky). Mapping is supported via top\-level \fBMapAppId\fP keyword. I.e.
+You can check app_id\(aqs of running programs by running \fIsfwbar \-d \-g app_id\fP,
+this should produce output like below:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .EX
-MapAppId app_id, pattern
+08:08:28,69 [DEBUG] app_id: \(aqfirefox\(aq, title \(aqMozilla Firefox\(aq
 .EE
 .UNINDENT
 .UNINDENT
-.sp
-where app_id is the desired app_id and pattern is a regular expression to
-match the title against.
-.sp
-If you are using an XWayland app, they usually do not have an \fIapp_id\fP set. If
-an icon is not showing, you can add your icon to the following locations:
-1. \fI$HOME/.icons\fP
-2. One of the directories listed in \fI$XDG_DATA_DIRS/icons\fP
-3. \fI/usr/share/pixmaps\fP
-4. Location of the main config file currently in use
-5. \fI$XDG_CONFIG_HOME/sfwbar/\fP
-.sp
-If an \fIapp_id\fP is not set, and sway is being used, sfwbar will fallback to
-using the \fIinstance\fP in the \fIwindow\-properties\fP\&.
-.sp
-You can find the \fIapp_id\fP that is being used with sfwbar by using the
-\fIsfwbar \-d \-g app_id\fP command, which will show a list of running applications
-if your compositor supports the
-wlr\-foreign\-toplevel protocol (i.e. labwc, wayfire, sway):
-\fB\(ga
-14:49:25.41 app_id: \(aqjetbrains\-clion\(aq, title \(aqsfwbar – pager.c\(aq
-\(ga\fP
 .sp
 Alternatively your desktop environment might have a command to display a list:
 \- Sway: \fIswaymsg \-t get_tree\fP
 \- Hyperland: \fIhyprctl \-j clients\fP
 .sp
-When using \fIswaymsg \-t get_tree\fP, with CLion this will show the following:
+If an application id is present, you need to add an icon with the appropriate
+name to your icon theme. To do this this, copy a file with a name matching appid
+into one of the following directories:
+.INDENT 0.0
+.IP 1. 3
+\fI$HOME/.icons\fP
+.IP 2. 3
+One of the directories listed in \fI$XDG_DATA_DIRS/icons\fP
+.IP 3. 3
+\fI/usr/share/pixmaps\fP
+.IP 4. 3
+Location of the main config file currently in use
+.IP 5. 3
+\fI$XDG_CONFIG_HOME/sfwbar/\fP
+.UNINDENT
+.sp
+In the above example, you can put an icon called \fIfirefox.svg\fP (you can also use
+\&.png or .xpm) into one of the above directories.
+.sp
+If application id is blank, you can try mapping it from the program\(aqs title
+(please note that the title may change during runtime, so matching it can be
+tricky). Mapping is supported via function \fBMapAppId\fP\&. You can add a function
+call to yor \fISfwbarInit\fP function to run it on startup, I.e.
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .EX
-\(dqwindow_properties\(dq: {
-  \(dqclass\(dq: \(dqjetbrains\-clion\(dq,
-  \(dqinstance\(dq: \(dqjetbrains\-clion\(dq,
-  \(dqtitle\(dq: \(dqsfwbar – trayitem.c\(dq,
-  \(dqtransient_for\(dq: null,
-  \(dqwindow_type\(dq: \(dqnormal\(dq
-}
+MapAppId(\(dqfirefox\(dq, \(dq.*Mozilla Firefox\(dq);
 .EE
 .UNINDENT
 .UNINDENT
 .sp
-So we can put an icon called jetbrains\-clion.svg (or other formats, see the
-[Arch wiki]( <https://wiki.archlinux.org/title/desktop_entries#Icons> )) for
-information about file formats.
-.SH CSS STYLE
+If an \fIapp_id\fP is not set, and sway is being used, sfwbar will fallback to
+using the \fIinstance\fP in the \fIwindow\-properties\fP\&.
+.SH CSS STYLING
 .sp
-SFWBar uses gtk+ widgets and can accept all css properties supported by
-gtk+. SFWBar widgets correspond to gtk+ widgets as following:
+SFWBar uses gtk+ widgets and can accept all css properties supported by gtk+.
+SFWBar widgets correspond to gtk+ widgets as following:
 .TS
 box center;
 l|l|l.
@@ -1508,8 +1506,8 @@ T}
 .sp
 Taskbar, Pager, Tray and Switcher use combinations of these widgets and can
 be themed using gtk+ nested css convention,
-i.e. \fBgrid#taskbar button { ... }\fP
-(this example assumes you assigned \fBstyle = taskbar\fP to your taskbar
+i.e. \fBgrid#mytaskbar button { ... }\fP
+(this example assumes you assigned \fBstyle = \(dqmytaskbar\(dq\fP to your taskbar
 widget).
 .sp
 In addition to standard gtk+ css properties SFWBar implements several
@@ -1529,45 +1527,6 @@ T}	T{
 specify text alignment for a label, defined as a
 fraction.  (i.e. 0 = left aligned, 1 = right
 aligned, 0.5 = centered)
-T}
-_
-T{
-\-GtkWidget\-ellipsize
-T}	T{
-specify whether a text in a label should be
-ellipsized if it\(aqs too long to fit in allocated
-space.
-T}
-_
-T{
-\-GtkWidget\-wrap
-T}	T{
-wrap a string if it\(aqs too long for it\(aqs container
-(you would usually want to pair it with
-\-GtkWidget\-max\-width)
-T}
-_
-T{
-\-GtkWidget\-direction
-T}	T{
-specify a direction for a widget.  For scale, it\(aqs
-a direction towards which scale grows.  For a grid,
-it\(aqs a direction in which a new widget is position
-relative to the last placed widget. For a window
-it\(aqs an edge along which the bar is positioned.
-Possible values [top|bottom|left|right]
-T}
-_
-T{
-\-GtkWidget\-max\-width
-T}	T{
-Limit maximum width of a widget (in pixels)
-T}
-_
-T{
-\-GtkWidget\-max\-height
-T}	T{
-Limit maximum height of a widget (in pixels)
 T}
 _
 T{
@@ -1603,6 +1562,45 @@ T{
 T}	T{
 Control visibility of a widget. If set to false,
 widget will be hidden.
+T}
+_
+T{
+\-GtkWidget\-max\-width
+T}	T{
+Limit maximum width of a widget (in pixels)
+T}
+_
+T{
+\-GtkWidget\-max\-height
+T}	T{
+Limit maximum height of a widget (in pixels)
+T}
+_
+T{
+\-GtkWidget\-ellipsize
+T}	T{
+specify whether a text in a label should be
+ellipsized if it\(aqs too long to fit in allocated
+space.
+T}
+_
+T{
+\-GtkWidget\-wrap
+T}	T{
+wrap a string if it\(aqs too long for it\(aqs container
+(you would usually want to pair it with
+\-GtkWidget\-max\-width)
+T}
+_
+T{
+\-GtkWidget\-direction
+T}	T{
+specify a direction for a widget.  For scale, it\(aqs
+a direction towards which scale grows.  For a grid,
+it\(aqs a direction in which a new widget is position
+relative to the last placed widget. For a window
+it\(aqs an edge along which the bar is positioned.
+Possible values [top|bottom|left|right]
 T}
 _
 T{
