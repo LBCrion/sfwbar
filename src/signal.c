@@ -68,9 +68,9 @@ void signal_subscribe ( void )
   sigfillset(&act.sa_mask);
   act.sa_flags = 0;
   for(sig=SIGRTMIN; sig<=SIGRTMAX; sig++)
-    sigaction(sig,&act,NULL);
+    sigaction(sig, &act, NULL);
 
   source = g_source_new(&signal_source_funcs, sizeof(GSource));
-  g_source_attach(source,NULL);
-  g_source_set_priority(source,G_PRIORITY_DEFAULT);
+  g_source_attach(source, NULL);
+  g_source_set_priority(source, G_PRIORITY_DEFAULT);
 }
