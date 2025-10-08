@@ -112,7 +112,7 @@ static value_t action_menu ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, 0, "Menu");
 
   g_debug("menu: popup '%s' at '%s' (%p)", value_get_string(p[0]),
-      VM_WIDGET(vm), vm_widget_get(vm, NULL));
+      VM_WIDGET(vm), menu_from_name(value_get_string(p[0])));
   state = VM_WSTATE(vm);
   menu_popup(vm_widget_get(vm, NULL), menu_from_name(value_get_string(p[0])),
       vm->event, VM_WINDOW(vm), &state);
@@ -138,6 +138,17 @@ static value_t action_config ( vm_t *vm, value_t p[], gint np )
   g_debug("parsing config string: %s", value_get_string(p[0]));
   config_parse_data("config string", value_get_string(p[0]), NULL,
       VM_STORE(vm), ((guint8 *)g_bytes_get_data(vm->bytes, NULL))[0]);
+
+  return value_na;
+}
+
+static value_t action_map_appid ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "MapAppId");
+  vm_param_check_string(vm, p, 0, "MapAppId");
+  vm_param_check_string(vm, p, 1, "MapAppId");
+
+  wintree_appid_map_add(value_get_string(p[0]), value_get_string(p[1]));
 
   return value_na;
 }
@@ -650,7 +661,7 @@ static value_t action_file_trigger ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_emit_trigger ( vm_t *vm, value_t p[], gint np )
 {
-  vm_param_check_np(vm, np, 1, "");
+  vm_param_check_np(vm, np, 1, "EmitTrigger");
   vm_param_check_string(vm, p, 0, "EmitTrigger");
 
   trigger_emit(value_get_string(p[0]));
@@ -724,6 +735,7 @@ void action_lib_init ( void )
   vm_func_add("menu", action_menu, TRUE, FALSE);
   vm_func_add("mpdcmd", action_mpd, TRUE, TRUE);
   vm_func_add("config", action_config, TRUE, FALSE);
+  vm_func_add("mapappid", action_map_appid, TRUE, TRUE);
   vm_func_add("mapicon", action_map_icon, TRUE, TRUE);
   vm_func_add("filterappid", action_filter_appid, TRUE, TRUE);
   vm_func_add("filtertitle", action_filter_title, TRUE, TRUE);
