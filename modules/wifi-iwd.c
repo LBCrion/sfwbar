@@ -19,7 +19,7 @@ static const gchar *iw_serv = "net.connman.iwd";
 static GDBusConnection *iw_con;
 static GList *iw_devices;
 static hash_table_t *iw_networks, *iw_known_networks;
-GMutex device_mutex;
+static GRecMutex device_mutex;
 static gint sub_add, sub_del, sub_chg;
 static gchar *iw_owner;
 
@@ -265,11 +265,11 @@ static iw_device_t *iw_device_get ( gchar *path, gboolean create )
   iw_device_t *device;
   GList *iter;
 
-  g_mutex_lock(&device_mutex);
+  g_rec_mutex_lock(&device_mutex);
   for(iter=iw_devices; iter; iter=g_list_next(iter))
     if(!g_strcmp0(((iw_device_t *)iter->data)->path, path))
       break;
-  g_mutex_unlock(&device_mutex);
+  g_rec_mutex_unlock(&device_mutex);
 
   if(iter)
     return iter->data;
@@ -281,9 +281,9 @@ static iw_device_t *iw_device_get ( gchar *path, gboolean create )
   iw_scan_start(path);
   device = g_malloc0(sizeof(iw_device_t));
   device->path = g_strdup(path);
-  g_mutex_lock(&device_mutex);
+  g_rec_mutex_lock(&device_mutex);
   iw_devices = g_list_prepend(iw_devices, device);
-  g_mutex_unlock(&device_mutex);
+  g_rec_mutex_unlock(&device_mutex);
   return device;
 }
 
@@ -294,9 +294,9 @@ static void iw_device_free ( iw_device_t *device )
 
   g_debug("iwd: remove device: %s", device->name);
 
-  g_mutex_lock(&device_mutex);
+  g_rec_mutex_lock(&device_mutex);
   iw_devices = g_list_remove(iw_devices, device);
-  g_mutex_unlock(&device_mutex);
+  g_rec_mutex_unlock(&device_mutex);
   g_free(device->path);
   g_free(device->name);
   g_free(device->state);
@@ -318,10 +318,12 @@ static void iw_signal_level_agent_method(GDBusConnection *con,
   else if(!g_strcmp0(method, "Changed"))
   {
     g_variant_get (parameters, "(&oy)", &object, &level);
+    g_rec_mutex_lock(&device_mutex);
     if( (device = iw_device_get(object, FALSE)) )
         device->strength = level;
     
     g_debug("iwd: level %d on %s", level, device?device->name:object);
+    g_rec_mutex_unlock(&device_mutex);
     trigger_emit("wifi_level");
     g_dbus_method_invocation_return_value(invocation, NULL);
   }
@@ -490,13 +492,16 @@ static void iw_scan_start ( gchar *path )
 {
   iw_device_t *device;
 
+  g_rec_mutex_lock(&device_mutex);
   device = iw_device_get(path, FALSE);
-  if(device && device->scanning)
-    return;
-  g_debug("iwd: initiating scan");
-  trigger_emit("wifi_scan");
-  g_dbus_connection_call(iw_con, iw_serv, path, iw_iface_station, "Scan",
+  if(device && !device->scanning)
+  {
+    g_debug("iwd: initiating scan");
+    trigger_emit("wifi_scan");
+    g_dbus_connection_call(iw_con, iw_serv, path, iw_iface_station, "Scan",
       NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+  }
+  g_rec_mutex_unlock(&device_mutex);
 }
 
 static void iw_network_connect_cb ( GDBusConnection *con, GAsyncResult *res,
@@ -529,7 +534,7 @@ static void iw_network_disconnect ( gchar *path )
   GList *iter;
   iw_device_t *device;
 
-  g_mutex_lock(&device_mutex);
+  g_rec_mutex_lock(&device_mutex);
   for(iter=iw_devices; iter; iter=g_list_next(iter))
   {
     device = iter->data;
@@ -538,7 +543,7 @@ static void iw_network_disconnect ( gchar *path )
           "Disconnect", NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL,
           NULL);
   }
-  g_mutex_unlock(&device_mutex);
+  g_rec_mutex_unlock(&device_mutex);
 }
 
 static void iw_network_forget ( gchar *path )
@@ -588,11 +593,13 @@ static void iw_device_handle ( gchar *path, gchar *iface, GVariant *dict )
   iw_device_t *device;
   gboolean change = FALSE;
 
+  g_rec_mutex_lock(&device_mutex);
   device = iw_device_get(path, TRUE);
   change |= iw_string_from_dict( dict, "Name", "&s", &device->name);
 
   if(change)
     g_debug("iwd: device: %s, state: %s", device->name, device->state);
+  g_rec_mutex_unlock(&device_mutex);
 }
 
 static void iw_station_handle ( gchar *path, gchar *iface, GVariant *dict )
@@ -600,6 +607,7 @@ static void iw_station_handle ( gchar *path, gchar *iface, GVariant *dict )
   iw_device_t *device;
   gboolean change = FALSE, scan;
 
+  g_rec_mutex_lock(&device_mutex);
   device = iw_device_get(path, TRUE);
   change |= iw_string_from_dict(dict, "State", "&s", &device->state);
   change |= iw_string_from_dict(dict, "ConnectedNetwork", "&o",
@@ -617,6 +625,7 @@ static void iw_station_handle ( gchar *path, gchar *iface, GVariant *dict )
   if(change)
     g_debug("iwd: device: %s, state: %s, scanning: %d", device->name,
         device->state, device->scanning);
+  g_rec_mutex_unlock(&device_mutex);
 }
 
 static void iw_known_network_handle ( gchar *path, gchar *iface, GVariant *dict )
@@ -796,12 +805,12 @@ static value_t iw_expr_get ( vm_t *vm, value_t p[], gint np )
   if(iw_devices &&
       !g_ascii_strcasecmp(value_get_string(p[0]), "DeviceStrength"))
   {
-    g_mutex_lock(&device_mutex);
+    g_rec_mutex_lock(&device_mutex);
     device = value_get_string(p[1])?
       iw_device_get(value_get_string(p[1]), FALSE) : iw_devices->data;
     val = value_new_string(g_strdup_printf("%d",
         device? CLAMP((device->strength*-10+100), 0, 100) : 0));
-    g_mutex_unlock(&device_mutex);
+    g_rec_mutex_unlock(&device_mutex);
 
     return val;
   }
@@ -819,11 +828,11 @@ static value_t iw_action_scan ( vm_t *vm, value_t p[], gint np )
   if(np)
   {
     vm_param_check_string(vm, p, 0, "WifiScan");
-    g_mutex_lock(&device_mutex);
+    g_rec_mutex_lock(&device_mutex);
     for(iter=iw_devices; iter; iter=g_list_next(iter))
       if(!g_strcmp0(((iw_device_t *)iter->data)->name, value_get_string(p[0])))
         break;
-    g_mutex_unlock(&device_mutex);
+    g_rec_mutex_unlock(&device_mutex);
 
     if(iter)
       device = iter->data;
@@ -899,10 +908,10 @@ static void iw_deactivate ( void )
 {
   g_debug("iwd: daemon disappeared");
 
-  g_mutex_lock(&device_mutex);
+  g_rec_mutex_lock(&device_mutex);
   while(iw_devices)
     iw_device_free(iw_devices->data);
-  g_mutex_unlock(&device_mutex);
+  g_rec_mutex_unlock(&device_mutex);
   hash_table_remove_all(iw_networks);
   hash_table_remove_all(iw_known_networks);
 
