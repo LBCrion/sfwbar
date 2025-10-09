@@ -123,6 +123,7 @@ libsrc = [
     'src/ipc/wayfire.c',
     'src/util/datalist.c',
     'src/util/file.c',
+    'src/util/hash.c',
     'src/util/json.c',
     'src/util/string.c',
     wayland_targets ]
