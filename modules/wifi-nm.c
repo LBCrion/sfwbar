@@ -124,6 +124,21 @@ static guint sub_add, sub_del, sub_chg;
 static guint32 nm_strength_threshold;
 static gchar *nm_owner;
 
+static gboolean nm_device_name_cmp ( nm_device_t *device, gchar *name )
+{
+  return !g_strcmp0(device->name, name);
+}
+
+static gboolean nm_conn_ssid_cmp ( gpointer key, nm_conn_t *conn, gchar *ssid )
+{
+  return !g_strcmp0(conn->ssid, ssid);
+}
+
+static gboolean nm_active_ap_cmp ( gchar *k, nm_active_t *active, gchar *path )
+{
+  return !g_strcmp0(active->ap_path, path);
+}
+
 static gchar *nm_ssid_get ( GVariant *dict, gchar *key )
 {
   GVariant *vssid;
@@ -159,11 +174,6 @@ static void nm_apoint_free ( nm_apoint_t *apoint )
   g_free(apoint->ssid);
   g_free(apoint->hash);
   g_free(apoint);
-}
-
-static gboolean nm_conn_ssid_cmp ( gpointer key, nm_conn_t *conn, gchar *ssid )
-{
-  return !g_strcmp0(conn->ssid, ssid);
 }
 
 static void nm_apoint_update ( nm_apoint_t *ap )
@@ -466,11 +476,6 @@ static void nm_ap_node_free ( nm_ap_node_t *node )
 
   g_free(node->path);
   g_free(node);
-}
-
-static gboolean nm_active_ap_cmp ( gchar *k, nm_active_t *active, gchar *path )
-{
-  return !g_strcmp0(active->ap_path, path);
 }
 
 static gboolean nm_ap_node_active_update ( const gchar *path )
@@ -903,11 +908,6 @@ static value_t nm_ap_get_info ( nm_apoint_t *ap, gchar *prop )
     return value_new_string(g_strdup_printf("%d", !!ap->active_node));
 
   return value_na;
-}
-
-static gboolean nm_device_name_cmp ( nm_device_t *device, gchar *name )
-{
-  return !g_strcmp0(device->name, name);
 }
 
 static value_t nm_expr_get ( vm_t *vm, value_t p[], gint np )

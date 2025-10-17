@@ -912,8 +912,8 @@ static void iw_deactivate ( void )
   while(iw_devices)
     iw_device_free(iw_devices->data);
   g_rec_mutex_unlock(&device_mutex);
-  hash_table_remove_all(iw_networks);
-  hash_table_remove_all(iw_known_networks);
+  g_clear_pointer(&iw_networks, hash_table_remove_all);
+  g_clear_pointer(&iw_known_networks, hash_table_remove_all);
 
   sfwbar_interface.active = FALSE;
 }
