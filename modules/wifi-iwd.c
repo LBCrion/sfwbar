@@ -773,7 +773,7 @@ static value_t iw_expr_get ( vm_t *vm, value_t p[], gint np )
 {
   iw_device_t *device;
   iw_network_t *net;
-  value_t val;
+  value_t val = value_na;
   gchar *prop;
 
   vm_param_check_np_range(vm, np, 1, 2, "WifiGet");
@@ -781,27 +781,27 @@ static value_t iw_expr_get ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 1, "WifiGet");
 
-//  hash_table_lock(iw_networks);
+  hash_table_lock(iw_networks);
   if(np==2 && (net = iw_network_get(value_get_string(p[0]), FALSE)) )
   {
     prop = value_get_string(p[1]);
     if(!g_ascii_strcasecmp(prop, "ssid"))
-      return value_new_string(g_strdup(net->ssid?net->ssid:""));
+      val = value_new_string(g_strdup(net->ssid?net->ssid:""));
     if(!g_ascii_strcasecmp(prop, "path"))
-      return value_new_string(g_strdup(net->path?net->path:""));
+      val = value_new_string(g_strdup(net->path?net->path:""));
     if(!g_ascii_strcasecmp(prop, "type"))
-      return value_new_string(g_strdup(net->type?net->type:""));
+      val = value_new_string(g_strdup(net->type?net->type:""));
     if(!g_ascii_strcasecmp(prop, "known"))
-      return value_new_string(g_strdup(net->known?net->known:""));
+      val = value_new_string(g_strdup(net->known?net->known:""));
     if(!g_ascii_strcasecmp(prop, "strength"))
-      return value_new_string(
+      val = value_new_string(
           g_strdup_printf("%d", CLAMP(2*(net->strength/100+100),0,100)));
     if(!g_ascii_strcasecmp(prop, "connected"))
-      return value_new_string(g_strdup_printf("%d", net->connected));
+      val = value_new_string(g_strdup_printf("%d", net->connected));
   }
-//  hash_table_unlock(iw_networks);
+  hash_table_unlock(iw_networks);
 
-  if(iw_devices &&
+  if(value_is_na(val) && iw_devices &&
       !g_ascii_strcasecmp(value_get_string(p[0]), "DeviceStrength"))
   {
     g_rec_mutex_lock(&device_mutex);
@@ -810,11 +810,9 @@ static value_t iw_expr_get ( vm_t *vm, value_t p[], gint np )
     val = value_new_string(g_strdup_printf("%d",
         device? CLAMP((device->strength*-10+100), 0, 100) : 0));
     g_rec_mutex_unlock(&device_mutex);
-
-    return val;
   }
 
-  return value_na;
+  return val;
 }
 
 static value_t iw_action_scan ( vm_t *vm, value_t p[], gint np )
