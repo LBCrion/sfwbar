@@ -5,6 +5,7 @@
 #include "trigger.h"
 #include "gui/popup.h"
 #include "util/hash.h"
+#include "util/string.h"
 #include "vm/vm.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
@@ -123,12 +124,12 @@ static gboolean iw_string_from_dict ( GVariant *dict, gchar *key,
   if(!str || !dict || !key || !format)
     return FALSE;
 
-  if(g_variant_check_format_string(dict,"a{sv}",FALSE))
+  if(g_variant_check_format_string(dict, "a{sv}", FALSE))
   {
     if(!g_variant_lookup(dict, key, format, &tmp) || !g_strcmp0(*str, tmp))
       return FALSE;
   }
-  else if(g_variant_check_format_string(dict,"as",FALSE))
+  else if(g_variant_check_format_string(dict, "as", FALSE))
   {
     if(!iw_array_lookup(dict, key) || !*str)
       return FALSE;
@@ -136,9 +137,8 @@ static gboolean iw_string_from_dict ( GVariant *dict, gchar *key,
   }
   else
     return FALSE;
-  
-  g_free(*str);
-  *str = g_strdup(tmp);
+
+  str_assign(str, g_strdup(tmp));
   return TRUE;
 }
 
@@ -247,7 +247,7 @@ static iw_network_t *iw_network_get ( gchar *path, gboolean create )
 {
   iw_network_t *net;
 
-  if(!create || !path)
+  if(!create && !path)
     return NULL;
 
   if( (net = hash_table_lookup(iw_networks, path)) )
@@ -781,8 +781,7 @@ static value_t iw_expr_get ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 1, "WifiGet");
 
-
-  hash_table_lock(iw_networks);
+//  hash_table_lock(iw_networks);
   if(np==2 && (net = iw_network_get(value_get_string(p[0]), FALSE)) )
   {
     prop = value_get_string(p[1]);
@@ -800,7 +799,7 @@ static value_t iw_expr_get ( vm_t *vm, value_t p[], gint np )
     if(!g_ascii_strcasecmp(prop, "connected"))
       return value_new_string(g_strdup_printf("%d", net->connected));
   }
-  hash_table_unlock(iw_networks);
+//  hash_table_unlock(iw_networks);
 
   if(iw_devices &&
       !g_ascii_strcasecmp(value_get_string(p[0]), "DeviceStrength"))
