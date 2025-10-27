@@ -241,6 +241,7 @@ static GtkWidget *config_widget_get ( GScanner *scanner,
   else if(widget)
   {
     parent = gtk_widget_get_parent(widget);
+    g_message("Widget lookup: '%s' -> %p, parent: %p, old: %p", name, widget, container, parent);
     if(container && parent && gtk_widget_get_parent(parent) != container)
     {
       grid_detach(g_object_ref(widget), gtk_widget_get_parent(parent));
