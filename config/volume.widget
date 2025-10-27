@@ -43,26 +43,24 @@ Var XVolumeIconTmpl = '<?xml version="1.0" encoding="utf-8"?>
   <path stroke="@ICON_COLOR@" @ICON_FORM@/></svg>
   </svg>'
 
-layout {
-  style = "module"
-  button {
-    value = ReplaceAll(XVolumeIconTmpl,
-        "@ICON_FORM@", If(Mid(VolumeInfo("sink-form"),1,4)="head" | Extract(VolumeInfo("sink-port"),"(Head)")="Head",
-          XVolumeIconHeadphones, XVolumeIconSpeaker),
-        "@ICON_PCT@", Str(1444.4-Volume("sink-volume")*14.444),
-        "@ICON_COLOR@", If(Volume("sink-mute"),"red","@theme_fg_color"),
-        "@ICON_CIRCLE_COLOR@", Str(2.56*Volume("sink-volume")));
-    trigger = "volume"
-    tooltip = GT("Volume") + ": " + Str(Volume("sink-volume"),0) + "%" +
-      If(Volume("sink-mute"),"(" + GT("muted") + ")","") +
-      "\n" + GT("Form") + ": " + VolumeInfo("sink-form") +
-      "\n" + GT("Port") + ": " + VolumeInfo("sink-port") +
-      "\n" + GT("Monitor") + ": " + VolumeInfo("sink-monitor")
-    style = If(Ident(volume),"module","hidden")
-    action[RightClick] = VolumeCtl("sink-mute toggle")
-    action[MiddleClick] = Exec($XVolumeAction)
-    action[LeftClick] = PopUp("XVolumeWindow")
-    action[ScrollUp] = VolumeCtl("sink-volume +1")
-    action[ScrollDown] = VolumeCtl("sink-volume -1")
-  }
+export button {
+  value = ReplaceAll(XVolumeIconTmpl,
+      "@ICON_FORM@", If(Mid(VolumeInfo("sink-form"),1,4)="head" |
+        Extract(VolumeInfo("sink-port"),"(Head)")="Head",
+        XVolumeIconHeadphones, XVolumeIconSpeaker),
+      "@ICON_PCT@", Str(1444.4-Volume("sink-volume")*14.444),
+      "@ICON_COLOR@", If(Volume("sink-mute"),"red","@theme_fg_color"),
+      "@ICON_CIRCLE_COLOR@", Str(2.56*Volume("sink-volume")));
+  trigger = "volume"
+  tooltip = GT("Volume") + ": " + Str(Volume("sink-volume"),0) + "%" +
+    If(Volume("sink-mute"),"(" + GT("muted") + ")","") +
+    "\n" + GT("Form") + ": " + VolumeInfo("sink-form") +
+    "\n" + GT("Port") + ": " + VolumeInfo("sink-port") +
+    "\n" + GT("Monitor") + ": " + VolumeInfo("sink-monitor")
+  style = If(Ident(volume),"module","hidden")
+  action[RightClick] = VolumeCtl("sink-mute toggle")
+  action[MiddleClick] = Exec($XVolumeAction)
+  action[LeftClick] = PopUp("XVolumeWindow")
+  action[ScrollUp] = VolumeCtl("sink-volume +1")
+  action[ScrollDown] = VolumeCtl("sink-volume -1")
 }

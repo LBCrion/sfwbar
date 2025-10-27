@@ -9,15 +9,16 @@ Private {
   TriggerAction "wifi_scan", Config("label 'XWifiScanButton' { value = GT('Scanning') + ' ...' }")
   TriggerAction "wifi_scan_complete", Config("label 'XWifiScanButton' { value = GT('Scan') }")
 
-  define XWifiIcon = "network-wireless-signal-" +
-    Lookup(Val(WifiGet("Strength")),
-      80, "excellent",
-      60, "good",
-      40, "ok",
-      20, "weak",
-      "none")
+  Var wifi_thresholds = [80, 60, 40, 20];
+  Var wifi_icons = [
+    "network-wireless-signal-excellent",
+    "network-wireless-signal-good",
+    "network-wireless-signal-ok",
+    "network-wireless-signal-weak",
+    "network-wireless-signal-none"
+  ];
 
-  Set XWifiNetTmpl = "
+  Var XWifiNetTmpl = "
     Grid 'XWifiGrid@WIFI_KNOWN@' {
       grid '@WIFI_PATH@_grid@WIFI_KNOWN@' {
         style = 'XWifiGrid'
@@ -39,11 +40,11 @@ Private {
     }"
 
   Function XWifiUpdate() {
-    Config(ReplaceAll( $XWifiNetTmpl,
+    Config(ReplaceAll( XWifiNetTmpl,
         "@WIFI_PATH@", Escape(WifiGet(id, "Path")),
         "@WIFI_TYPE@", WifiGet(id, "Type"),
         "@WIFI_SSID@", Replace(WifiGet(id, "SSID"),"'","\""),
-        "@WIFI_ICON@", XWifiIcon,
+        "@WIFI_ICON@", ArrayLookup(Val(WifiGet(id, "strength")), wifi_thresholds, wifi_icons),
         "@WIFI_KNOWN@",If(WifiGet(id, "Known")="","Other","Known"),
         "@WIFI_CONNECTED@", If(WifiGet(id, "Connected")="1","Connected","")))
   }

@@ -8,21 +8,20 @@ Var UPowerPropInterface = ["system",
 Var UPowerMenuTmpl = "Menu 'power-profile-selector' {
   item {
     value = '@PROFILE_NAME@';
-    action = UPowerSetProfile('@PROFILE_NAME@')
+    action = UPowerSetProfile('@PROFILE_NAME@');
   }
 }"
 
-
 Private {
 
-  TriggerAction "power_event", PowerEventHandle()
-  TriggerAction "power_appeared", PowerProfilesInit()
+  TriggerAction "power_event", PowerEventHandle();
+  TriggerAction "power_appeared", PowerProfilesInit();
   Var ActiveProfile;
 
   Function UPowerSetProfile ( profile )
   {
-    DBusCall(UPowerPropInterface, "Set",
-        "(ssvs)", ["org.freedesktop.UPower.PowerProfiles", "ActiveProfile", profile]);
+    DBusCall(UPowerPropInterface, "Set", "(ssvs)",
+        ["org.freedesktop.UPower.PowerProfiles", "ActiveProfile", profile]);
   }
 
   Function PowerEventHandle() {
@@ -30,9 +29,9 @@ Private {
     While(i<ArraySize(DbusSignal[1])) {
       If(DbusSignal[1][i][0] = "ActiveProfile") {
         ActiveProfile = DbusSignal[1][i][1];
-        EmitSignal("upower")
+        EmitTrigger("upower");
       }
-      i = i + 1
+      i = i + 1;
     }
   }
 
@@ -51,28 +50,28 @@ Private {
       While(j<ArraySize(Response[0][i]))
       {
         If(Response[0][i][j][0]="Profile")
-          Config(Replace(UPowerMenuTmpl, "@PROFILE_NAME@", Response[0][i][j][1]))
+          Config(Replace(UPowerMenuTmpl, "@PROFILE_NAME@", Response[0][i][j][1]));
         j=j+1;
       }
       i=i+1;
     }
 
     Response = DBusCall(UPowerPropInterface, "Get",
-        "(ss)", ["org.freedesktop.UPower.PowerProfiles", "ActiveProfile"]);
+       "(ss)", ["org.freedesktop.UPower.PowerProfiles", "ActiveProfile"]);
 
     ActiveProfile = Response[0];
-    EmitSignal("upower")
+    EmitTrigger("upower");
 
     DbusSubscribe(UPowerPropInterface, "PropertiesChanged", "power_event",
-        "org.freedesktop.UPower.PowerProfiles")
+        "org.freedesktop.UPower.PowerProfiles");
   }
 
-widget_grid {
-  button {
-    style = if(ActiveProfile!="", "module", "hidden")
-    action[0] = DbusWatch("system",
-        "org.freedesktop.UPower.PowerProfiles", "power_appeared");
-    action[1] = Menu("power-profile-selector")
-    value = "power-profile-" + ActiveProfile
-  }
+export button {
+  value = "power-profile-" + ActiveProfile;
+  style = if(ActiveProfile!="", "module", "hidden");
+  trigger = "upower";
+  action[0] = DbusWatch("system",
+      "org.freedesktop.UPower.PowerProfiles", "power_appeared");
+  action[LeftClick] = Menu("power-profile-selector");
+  action[Configure] = EmitTrigger("upower");
 }

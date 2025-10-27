@@ -19,7 +19,7 @@ Private {
         style = 'session_grid';
         action = {
           Config('grid \"session_@LOC@\" {style = \"session_conf\"}');
-          if conf_id!=''
+          if conf_id!='' & conf_id!='@LOC@'
             Config('grid \"session_' + conf_id +'\" {style = \"hidden\"}');
           conf_id = '@LOC@';
         }
@@ -55,7 +55,7 @@ Private {
       }
     }"
 
-  Function PowerInit() {
+  Function SessionInit() {
     Var i = 0;
     While i < ArraySize(session_actions) {
       Config(Replace(SessionTmpl, "@LOC@", Str(i)));
@@ -72,7 +72,7 @@ Private {
     button {
       style = "module";
       value = "system-shutdown";
-      action[0] = PowerInit();
+      action[0] = SessionInit();
       action = PopUp("SessionPopup");
     }
   }
