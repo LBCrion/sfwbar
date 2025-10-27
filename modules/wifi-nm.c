@@ -914,7 +914,7 @@ static value_t nm_expr_get ( vm_t *vm, value_t p[], gint np )
 {
   nm_device_t *device;
   nm_apoint_t *ap;
-  value_t v1;
+  value_t v1 = value_na;
   GList *l;
 
   vm_param_check_np_range(vm, np, 1, 2, "WifiGet");
