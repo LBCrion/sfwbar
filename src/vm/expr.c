@@ -59,13 +59,12 @@ void expr_dep_add ( GQuark quark, expr_cache_t *expr )
     dep = g_malloc0(sizeof(expr_dep_t));
     datalist_set(expr_deps, quark, dep);
   }
+
+  g_mutex_lock(&dep->mutex);
   for(iter=expr; iter; iter=iter->parent)
     if(!g_list_find(dep->list, iter))
-    {
-      g_mutex_lock(&dep->mutex);
       dep->list = g_list_prepend(dep->list, iter);
-      g_mutex_unlock(&dep->mutex);
-    }
+  g_mutex_unlock(&dep->mutex);
 }
 
 static void expr_dep_remove_func ( GQuark quark, expr_dep_t *dep,
