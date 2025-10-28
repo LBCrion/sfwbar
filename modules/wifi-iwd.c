@@ -801,7 +801,7 @@ static value_t iw_expr_get ( vm_t *vm, value_t p[], gint np )
   }
   hash_table_unlock(iw_networks);
 
-  if(value_is_na(val) && iw_devices &&
+  if(value_is_na(val) &&
       !g_ascii_strcasecmp(value_get_string(p[0]), "DeviceStrength"))
   {
     g_rec_mutex_lock(&device_mutex);
@@ -822,28 +822,24 @@ static value_t iw_action_scan ( vm_t *vm, value_t p[], gint np )
 
   vm_param_check_np_range(vm, np, 0, 1, "WifiScan");
 
+  g_rec_mutex_lock(&device_mutex);
   if(np)
   {
     vm_param_check_string(vm, p, 0, "WifiScan");
-    g_rec_mutex_lock(&device_mutex);
     for(iter=iw_devices; iter; iter=g_list_next(iter))
       if(!g_strcmp0(((iw_device_t *)iter->data)->name, value_get_string(p[0])))
         break;
-    g_rec_mutex_unlock(&device_mutex);
 
     if(iter)
       device = iter->data;
   }
 
-  if(!device)
-  {
-    if(iw_devices)
-      device = iw_devices->data;
-    else
-      return value_na;
-  }
+  if(!device && iw_devices)
+    device = iw_devices->data;
 
-  iw_scan_start(device->path);
+  if(device)
+    iw_scan_start(device->path);
+  g_rec_mutex_unlock(&device_mutex);
 
   return value_na;
 }
@@ -880,11 +876,17 @@ static value_t iw_action_forget ( vm_t *vm, value_t p[], gint np )
 
 static void iw_activate ( void )
 {
+  iw_networks = hash_table_new_full(g_str_hash, g_str_equal, NULL,
+      (GDestroyNotify)iw_network_free);
+  iw_known_networks = hash_table_new_full(g_str_hash, g_str_equal, NULL,
+      (GDestroyNotify)iw_known_network_free);
+
   vm_func_add("wifiget", iw_expr_get, FALSE, TRUE);
   vm_func_add("wifiscan", iw_action_scan, TRUE, TRUE);
   vm_func_add("wificonnect", iw_action_connect, TRUE, TRUE);
   vm_func_add("wifidisconnect", iw_action_disconnect, TRUE, TRUE);
   vm_func_add("wififorget", iw_action_forget, TRUE, TRUE);
+
   sub_add = g_dbus_connection_signal_subscribe(iw_con, iw_owner,
       "org.freedesktop.DBus.ObjectManager", "InterfacesAdded", NULL, NULL,
       G_DBUS_SIGNAL_FLAGS_NONE, iw_object_new_cb, NULL, NULL);
@@ -936,11 +938,6 @@ gboolean sfwbar_module_init ( void )
 
   if( !(iw_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
     return FALSE;
-
-  iw_networks = hash_table_new_full(g_str_hash, g_str_equal, NULL,
-      (GDestroyNotify)iw_network_free);
-  iw_known_networks = hash_table_new_full(g_str_hash, g_str_equal, NULL,
-      (GDestroyNotify)iw_known_network_free);
 
   node = g_dbus_node_info_new_for_xml(iw_agent_xml, NULL);
   g_dbus_connection_register_object (iw_con,
