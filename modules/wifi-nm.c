@@ -450,7 +450,7 @@ static void nm_conn_handle_cb ( GDBusConnection *con, GAsyncResult *res,
         conn->ssid = ssid;
         hash_table_insert(conn_list, conn->path, conn);
         hash_table_foreach(apoint_list, (GHFunc)nm_apoint_ssid_update, ssid);
-        g_debug("nm: new connection: %s (%s)", ssid, path);
+        g_debug("nm: connection: %s (%s)", ssid, path);
       }
       g_variant_unref(dict);
     }
@@ -465,7 +465,10 @@ static void nm_ap_node_free ( nm_ap_node_t *node )
   nm_apoint_t *apoint;
 
   if(node->ap->active_node == node)
+  {
+    node->active->ap = NULL;
     node->ap->active_node = NULL;
+  }
   if( (apoint = node->ap) )
     if( !(apoint->nodes = g_list_remove(apoint->nodes, node)) )
     {
@@ -522,7 +525,7 @@ static void nm_ap_node_handle ( const gchar *path, gchar *ifa, GVariant *dict )
   {
     if( !(ssid = nm_ssid_get(dict, "Ssid")) )
       return;
-
+    
     node = g_malloc0(sizeof(nm_ap_node_t));
     node->path = g_strdup(path);
     if(!g_variant_lookup(dict, "Flags", "u", &flags)) flags = 0;
@@ -550,6 +553,7 @@ static void nm_ap_node_handle ( const gchar *path, gchar *ifa, GVariant *dict )
     apoint->nodes = g_list_prepend(apoint->nodes, node);
     node->ap = apoint;
     hash_table_insert(ap_nodes, node->path, node);
+    nm_apoint_ssid_update(NULL, apoint, ssid);
     change = TRUE;
   }
   apoint = node->ap;
@@ -642,7 +646,6 @@ static void nm_active_handle ( const gchar *path, gchar *ifa, GVariant *dict )
     if(nm_ap_node_active_update(ap_path) && active->ap)
       nm_apoint_update(active->ap);
   }
-  hash_table_unlock(active_list);
 
   if(g_variant_lookup(dict, "Devices", "ao", &iter))
   {
@@ -651,12 +654,13 @@ static void nm_active_handle ( const gchar *path, gchar *ifa, GVariant *dict )
       for(liter=devices; liter; liter=g_list_next(liter))
         if(!g_strcmp0(NM_DEVICE(liter->data)->path, dev_path))
         {
+          NM_DEVICE(liter->data)->active = active;
           active->device = liter->data;
-          active->device->active = active;
         }
     g_mutex_unlock(&device_lock);
     g_variant_iter_free(iter);
   }
+  hash_table_unlock(active_list);
 
   g_debug("nm: connected to: %s", path);
 }
@@ -667,11 +671,12 @@ static void nm_active_free ( nm_active_t *active )
 
   if(active->device)
     active->device->active = NULL;
-  if(active->ap)
-  {
+  hash_table_lock(ap_nodes);
+  if(active->ap && active->ap->active_node)
     active->ap->active_node->active = NULL;
+  hash_table_unlock(ap_nodes);
+  if(active->ap)
     active->ap->active_node = NULL;
-  }
   g_free(active->path);
   g_free(active);
 }
@@ -997,6 +1002,17 @@ static value_t nm_action_forget ( vm_t *vm, value_t p[], gint np )
 
 static void nm_activate ( void )
 {
+  ap_nodes = hash_table_new_full(g_str_hash, g_str_equal,
+      NULL, (GDestroyNotify)nm_ap_node_free);
+  dialog_list = hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+  new_conns = hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+  conn_list = hash_table_new_full(g_str_hash, g_str_equal, NULL,
+      (GDestroyNotify)nm_conn_free);
+  active_list = hash_table_new_full(g_str_hash, g_str_equal, NULL,
+      (GDestroyNotify)nm_active_free);
+  apoint_list = hash_table_new_full(g_str_hash, g_str_equal, NULL,
+      (GDestroyNotify)nm_apoint_free);
+
   vm_func_add("wifiget", nm_expr_get, FALSE, TRUE);
   vm_func_add("wifiscan", nm_action_scan, FALSE, TRUE);
   vm_func_add("wificonnect", nm_action_connect, FALSE, TRUE);
@@ -1050,17 +1066,6 @@ gboolean sfwbar_module_init ( void )
   GDBusNodeInfo *node;
   static GDBusInterfaceVTable nm_secret_agent_vtable = {
     (GDBusInterfaceMethodCallFunc)nm_secret_agent_method, NULL, NULL };
-
-  ap_nodes = hash_table_new_full(g_str_hash, g_str_equal,
-      NULL, (GDestroyNotify)nm_ap_node_free);
-  dialog_list = hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
-  new_conns = hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
-  conn_list = hash_table_new_full(g_str_hash, g_str_equal, NULL,
-      (GDestroyNotify)nm_conn_free);
-  active_list = hash_table_new_full(g_str_hash, g_str_equal, NULL,
-      (GDestroyNotify)nm_active_free);
-  apoint_list = hash_table_new_full(g_str_hash, g_str_equal, NULL,
-      (GDestroyNotify)nm_apoint_free);
 
   nm_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
   node = g_dbus_node_info_new_for_xml(nm_secret_agent_xml, NULL);
