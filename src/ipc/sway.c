@@ -318,7 +318,9 @@ static void sway_ipc_window_event ( struct json_object *obj )
   if( !(change = json_string_by_name(obj, "change")) )
     return;
 
-  json_object_object_get_ex(obj, "container", &container);
+  if(!json_object_object_get_ex(obj, "container", &container))
+    return;
+
   wid = GINT_TO_POINTER(json_int_by_name(container, "id", G_MININT64));
 
   if(!g_strcmp0(change, "new"))
