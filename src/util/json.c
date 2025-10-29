@@ -63,7 +63,7 @@ const gchar *json_string_by_name ( struct json_object *obj, gchar *name )
 {
   struct json_object *ptr;
 
-  if(json_object_object_get_ex(obj,name,&ptr))
+  if(json_object_object_get_ex(obj, name, &ptr))
     return json_object_get_string(ptr);
   return NULL;
 }
@@ -73,7 +73,7 @@ gint64 json_int_by_name ( struct json_object *obj, gchar *name, gint64 defval)
 {
   struct json_object *ptr;
 
-  if(json_object_object_get_ex(obj,name,&ptr))
+  if(json_object_object_get_ex(obj, name, &ptr))
     return json_object_get_int64(ptr);
 
   return defval;
@@ -84,7 +84,7 @@ gboolean json_bool_by_name ( struct json_object *obj, gchar *name, gboolean defv
 {
   struct json_object *ptr;
 
-  if(json_object_object_get_ex(obj,name,&ptr) && ptr)
+  if(json_object_object_get_ex(obj, name, &ptr) && ptr)
     return json_object_get_boolean(ptr);
 
   return defval;
@@ -147,18 +147,20 @@ gboolean jpath_filter_test ( GScanner *scanner, gint idx, gchar *key,
         return TRUE;
       break;
     case G_TOKEN_STRING:
-      json_object_object_get_ex(obj,key,&tmp);
-      if(tmp && !eq)
-        return TRUE;
-      if(tmp && eq && scanner->token == G_TOKEN_STRING)
-        if(!g_ascii_strcasecmp(val.v_string,json_object_get_string(tmp)))
+      if(json_object_object_get_ex(obj, key, &tmp) && tmp)
+      {
+        if(!eq)
           return TRUE;
-      if(tmp && eq && scanner->token == G_TOKEN_INT)
-        if(val.v_int == json_object_get_int64(tmp))
+        if(scanner->token == G_TOKEN_STRING &&
+            !g_ascii_strcasecmp(val.v_string, json_object_get_string(tmp)))
           return TRUE;
-      if(tmp && eq && scanner->token == G_TOKEN_FLOAT)
-        if(val.v_float == json_object_get_double(tmp))
+        if(scanner->token == G_TOKEN_INT &&
+            val.v_int == json_object_get_int64(tmp))
           return TRUE;
+        if(scanner->token == G_TOKEN_FLOAT &&
+            val.v_float == json_object_get_double(tmp))
+          return TRUE;
+      }
       break;
     default:
       break;
@@ -203,19 +205,19 @@ struct json_object *jpath_filter (GScanner *scanner, struct json_object *obj )
       break;
   }
 
-  for(i=0;i<json_object_array_length(obj);i++)
+  for(i=0; i<json_object_array_length(obj); i++)
   {
-    iter = json_object_array_get_idx(obj,i);
-    if(json_object_is_type(iter,json_type_array))
-      for(j=0;j<json_object_array_length(iter);j++)
+    iter = json_object_array_get_idx(obj, i);
+    if(json_object_is_type(iter, json_type_array))
+      for(j=0; j<json_object_array_length(iter); j++)
       {
-        jiter = json_object_array_get_idx(iter,j);
-        if(jpath_filter_test(scanner,j,key,eq,jiter,type,val))
-          json_object_array_add(next,jiter);
+        jiter = json_object_array_get_idx(iter, j);
+        if(jpath_filter_test(scanner, j, key, eq, jiter, type, val))
+          json_object_array_add(next, jiter);
       }
     else
-      if(jpath_filter_test(scanner,-1,key,eq,iter,type,val))
-        json_object_array_add(next,iter);
+      if(jpath_filter_test(scanner, -1, key, eq, iter, type, val))
+        json_object_array_add(next, iter);
   }
 
   if(type == G_TOKEN_STRING || type == G_TOKEN_INT)
@@ -233,24 +235,20 @@ struct json_object *jpath_key ( GScanner *scanner, struct json_object *obj )
 
   next = json_object_new_array();
 
-  for(i=0;i<json_object_array_length(obj);i++)
+  for(i=0; i<json_object_array_length(obj); i++)
   {
-    iter = json_object_array_get_idx(obj,i);
-    if(json_object_is_type(iter,json_type_array))
-      for(j=0;j<json_object_array_length(iter);j++)
+    iter = json_object_array_get_idx(obj, i);
+    if(json_object_is_type(iter, json_type_array))
+      for(j=0; j<json_object_array_length(iter); j++)
       {
-        json_object_object_get_ex(json_object_array_get_idx(iter,j),
-          scanner->value.v_string,&tmp);
+        json_object_object_get_ex(json_object_array_get_idx(iter, j),
+          scanner->value.v_string, &tmp);
         if(tmp)
           json_object_array_add(next,tmp);
       }
-    else
-    {
-      json_object_object_get_ex(json_object_array_get_idx(obj,i),
-        scanner->value.v_string,&tmp);
-      if(tmp)
-        json_object_array_add(next,tmp);
-    }
+    else if(json_object_object_get_ex(json_object_array_get_idx(obj, i),
+        scanner->value.v_string, &tmp))
+      json_object_array_add(next, tmp);
   }
   return next;
 }
@@ -262,12 +260,12 @@ struct json_object *jpath_index ( GScanner *scanner, struct json_object *obj )
 
   next = json_object_new_array();
 
-  for(i=0;i<json_object_array_length(obj);i++)
+  for(i=0; i<json_object_array_length(obj); i++)
   {
-    iter = json_object_array_get_idx(obj,i);
-    if(json_object_is_type(iter,json_type_array))
+    iter = json_object_array_get_idx(obj, i);
+    if(json_object_is_type(iter, json_type_array))
       json_object_array_add(next,
-           json_object_array_get_idx(iter,(gint)scanner->value.v_int));
+           json_object_array_get_idx(iter, (gint)scanner->value.v_int));
   }
   return next;
 }
@@ -298,12 +296,12 @@ struct json_object *jpath_parse ( gchar *path, struct json_object *obj )
   scanner->config->char_2_token = 1;
 
   json_object_get(obj);
-  if(json_object_is_type(obj,json_type_array))
+  if(json_object_is_type(obj, json_type_array))
     cur = obj;
   else
   {
     cur = json_object_new_array();
-    json_object_array_add(cur,obj);
+    json_object_array_add(cur, obj);
   }
 
   do 
@@ -311,13 +309,13 @@ struct json_object *jpath_parse ( gchar *path, struct json_object *obj )
     switch((gint)g_scanner_get_next_token(scanner))
     {
       case '[':
-        next = jpath_filter(scanner,cur);
+        next = jpath_filter(scanner, cur);
         break;
       case G_TOKEN_STRING:
-        next = jpath_key(scanner,cur);
+        next = jpath_key(scanner, cur);
         break;
       case G_TOKEN_INT:
-        next = jpath_index(scanner,cur);
+        next = jpath_index(scanner, cur);
         break;
       default:
         g_scanner_error(scanner,"invalid token in json path %d %d",scanner->token,G_TOKEN_ERROR);
@@ -326,8 +324,8 @@ struct json_object *jpath_parse ( gchar *path, struct json_object *obj )
     }
     if(next)
     {
-      for(i=0;i<json_object_array_length(next);i++)
-        json_object_get(json_object_array_get_idx(next,i));
+      for(i=0; i<json_object_array_length(next); i++)
+        json_object_get(json_object_array_get_idx(next, i));
       json_object_put(cur);
       cur = next;
     }
