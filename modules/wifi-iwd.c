@@ -817,25 +817,26 @@ static value_t iw_expr_get ( vm_t *vm, value_t p[], gint np )
 
 static value_t iw_action_scan ( vm_t *vm, value_t p[], gint np )
 {
-  iw_device_t *device = NULL;
+  iw_device_t *device;
   GList *iter;
 
   vm_param_check_np_range(vm, np, 0, 1, "WifiScan");
+  if(np)
+    vm_param_check_string(vm, p, 0, "WifiScan");
 
   g_rec_mutex_lock(&device_mutex);
+
   if(np)
-  {
-    vm_param_check_string(vm, p, 0, "WifiScan");
     for(iter=iw_devices; iter; iter=g_list_next(iter))
       if(!g_strcmp0(((iw_device_t *)iter->data)->name, value_get_string(p[0])))
         break;
 
-    if(iter)
-      device = iter->data;
-  }
-
-  if(!device && iw_devices)
+  if(np && iter)
+    device = iter->data;
+  else if(iw_devices)
     device = iw_devices->data;
+  else
+    device = NULL;
 
   if(device)
     iw_scan_start(device->path);
