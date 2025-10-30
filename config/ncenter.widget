@@ -1,174 +1,185 @@
+#Api2
+
 module("ncenter")
 
-TriggerAction "notification-updated", Function "XNotificationUpdate"
-TriggerAction "notification-removed", Function "XNotificationRemove"
+Private {
 
-Set XNotificationIcon = '<?xml version="1.0" encoding="utf-8"?>
-<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" version="1.1">
-  <style>
-    .st0 { font: normal 8px serif; } </style>
-  <path d="M6,17v-.5H2.25A2.253,2.253,0,0,1,0,14.25v-.382a2.542,2.542,0,0,1,
-    1.415-2.289A1.248,1.248,0,0,0,2.1,10.572l.446-4.91a6.225,6.225,0,0,1,
-    12.4,0l.446,4.91a1.26,1.26,0,0,0,.686,1.005,2.547,2.547,0,0,1,1.418,2.29
-    v.382a2.252,2.252,0,0,1-2.25,2.25H11.5V17A2.75,2.75,0,0,1,6,17Zm1.5,0A1.25,
-    1.25,0,0,0,10,17v-.5H7.5ZM4.045,5.8,3.6,10.708A2.738,2.738,0,0,1,2.089,
-    12.92a1.055,1.055,0,0,0-.589.949v.382A.751.751,0,0,0,2.25,15h13A.751.751,0,
-    0,0,16,14.25v-.382a1.054,1.054,0,0,0-.586-.948A2.739,2.739,0,0,1,13.9,
-    10.708L13.456,5.8a4.725,4.725,0,0,0-9.411,0Z"
-    transform="translate(3.25 2.25)" fill="@theme_fg_color"/>' +
-If(!NotificationCount(),'','<circle cx="18" cy="6" r="6" fill="red"/>
-    <text x="18" y="8.5" font="6px" font-size="8"
-    stroke="white" text-anchor="middle">' +
-  If(NotificationCount()>9,'9+',Str(NotificationCount()))+'</text>') + '</svg>'
+  TriggerAction "notification-updated", XNotificationUpdate()
+  TriggerAction "notification-removed", XNotificationRemove()
 
-Var XNotificationTmpl = "
-grid 'notification_frame' {
-  grid '@NOTIF_ID@_grid' {
-    style = If(NotificationGroup('@NOTIF_ID@')='','hidden',
-        If(NotificationGroup('@NOTIF_ID@')='header','notification_grid_header',
-          'notification_grid'))
-    trigger = 'notification-group'
-    action = NotificationExpand '@NOTIF_ID@'
-    grid '@NOTIF_ID@_header' {
-      style = 'notification_header_line'
-      loc(1,1)
-      label {
-        value = '@NOTIF_APP@'
-        style = 'notification_app'
-        interval = 0
+  Function XNotificationIcon() {
+    Var NEmblem, NCount = NotificationCount();
+
+    If !NCount
+      Nemblem = '';
+    Else
+      Nemblem = '<circle cx="18" cy="6" r="6" fill="red"/>
+        <text x="18" y="8.5" font="6px" font-size="8"
+          stroke="white" text-anchor="middle">' +
+          If(NCount>9,'9+', Str(NCount)) + '</text>';
+
+    NCount = If(NotificationCount()>9,'9+',Str(NotificationCount()));
+    Var NEmblem
+    Return '<?xml version="1.0" encoding="utf-8"?>
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" version="1.1">
+        <path d="M6,17v-.5H2.25A2.253,2.253,0,0,1,0,14.25v-.382a2.542,2.542,0,
+          0,1,1.415-2.289A1.248,1.248,0,0,0,2.1,10.572l.446-4.91a6.225,6.225,
+          0,0,1,12.4,0l.446,4.91a1.26,1.26,0,0,0,.686,1.005,2.547,2.547,0,0,1,
+          1.418,2.29 v.382a2.252,2.252,0,0,1-2.25,2.25H11.5V17A2.75,2.75,0,0,
+          1,6,17Zm1.5,0A1.25,1.25,0,0,0,10,17v-.5H7.5ZM4.045,5.8,3.6,
+          10.708A2.738,2.738,0,0,1,2.089,12.92a1.055,1.055,0,0,
+          0-.589.949v.382A.751.751,0,0,0,2.25,15h13A.751.751,0,0,0,16,
+          14.25v-.382a1.054,1.054,0,0,0-.586-.948A2.739,2.739,0,0,1,13.9,
+          10.708L13.456,5.8a4.725,4.725,0,0,0-9.411,0Z"
+          transform="translate(3.25 2.25)" fill="@theme_fg_color"/>' +
+          Nemblem + '</svg>';
+  }
+
+  Var XNotificationTmpl = "
+  grid 'notification_frame' {
+    grid '@NOTIF_ID@_grid' {
+      style = If(NotificationGroup('@NOTIF_ID@')+''='','hidden',
+          If(NotificationGroup('@NOTIF_ID@')='header','notification_grid_header',
+            'notification_grid'))
+      trigger = 'notification-group'
+      action = NotificationExpand('@NOTIF_ID@')
+      grid '@NOTIF_ID@_header' {
+        style = 'notification_header_line'
         loc(1,1)
-      }
-      label '@NOTIF_ID@_time' {
-        value = ElapsedStr(Val(Time('%s'))-Val('@NOTIF_TIME@'))
-        style = 'notification_time'
-        interval = 10000
-        loc(2,1)
-      }
-      grid '@NOTIF_ID@_count_grid' {
-        style = If(NotificationGroup('@NOTIF_ID@')='header',
-            'notification_count_grid','hidden')
-        trigger = 'notification-group'
-        loc(3,1)
-        label '@NOTIF_ID@_count' {
-          value = Str(NotificationCount('@NOTIF_ID@'))
-          style = 'notification_count'
-          trigger = 'notification-group'
+        label {
+          value = '@NOTIF_APP@'
+          style = 'notification_app'
+          interval = 0
           loc(1,1)
         }
-        image {
-          value = 'go-down'
-          style = 'notification_count_expand'
+        label '@NOTIF_ID@_time' {
+          value = ElapsedStr(Val(Time('%s'))-Val('@NOTIF_TIME@'))
+          style = 'notification_time'
+          interval = 10000
+          loc(2,1)
+        }
+        grid '@NOTIF_ID@_count_grid' {
+          style = If(NotificationGroup('@NOTIF_ID@')='header',
+              'notification_count_grid','hidden')
+          trigger = 'notification-group'
+          loc(3,1)
+          label '@NOTIF_ID@_count' {
+            value = Str(NotificationCount('@NOTIF_ID@'))
+            style = 'notification_count'
+            trigger = 'notification-group'
+            loc(1,1)
+          }
+          image {
+            value = 'go-down'
+            style = 'notification_count_expand'
+            interval = 0
+            loc(2,1)
+          }
+        }
+        image '@NOTIF_ID@_close' {
+          value = 'window-close'
+          style = 'notification_close'
+          action = NotificationClose(Extract(WidgetId(), '(.*)_close'))
+          loc(4,1)
+        }
+      }
+      grid '@NOTIF_ID@_text' {
+        style = 'notification_text'
+        loc(1,2)
+        image '@NOTIF_ID@_icon' {
+          value = '@NOTIF_ICON@'
+          style = If('@NOTIF_ICON@'='','hidden','notification_icon')
+          interval = 0
+          loc(1,1,1,2)
+        }
+        label '@NOTIF_ID@_title' {
+          value = '@NOTIF_SUMMARY@'
+          style = 'notification_summary'
           interval = 0
           loc(2,1)
         }
-      }
-      image '@NOTIF_ID@_close' {
-        value = 'window-close'
-        style = 'notification_close'
-        action = NotificationClose Extract(WidgetId(), '(.*)_close')
-        loc(4,1)
-      }
-    }
-    grid '@NOTIF_ID@_text' {
-      style = 'notification_text'
-      loc(1,2)
-      image '@NOTIF_ID@_icon' {
-        value = '@NOTIF_ICON@'
-        style = If('@NOTIF_ICON@'='','hidden','notification_icon')
-        interval = 0
-        loc(1,1,1,2)
-      }
-      label '@NOTIF_ID@_title' {
-        value = '@NOTIF_SUMMARY@'
-        style = 'notification_summary'
-        interval = 0
-        loc(2,1)
-      }
-      label '@NOTIF_ID@_body' {
-        value = '@NOTIF_BODY@'
-        style = 'notification_body'
-        interval = 0
-        loc(2,2,2,1)
-      }
-    }
-  }
-}"
-
-set XNotificationActionTmpl = "
-  grid '@NOTIF_ID@_grid' {
-    grid '@NOTIF_ID@_actions' {
-      style = 'notification_action_grid'
-      loc(0,3,3,1)
-      label '@NOTIF_ID@_@ACTION_ID@_action' {
-        value = '@ACTION_TITLE@'
-        style = 'notification_action'
-        action = NotificationAction '@NOTIF_ID@', '@ACTION_ID@'
+        label '@NOTIF_ID@_body' {
+          value = '@NOTIF_BODY@'
+          style = 'notification_body'
+          interval = 0
+          loc(2,2,2,1)
+        }
       }
     }
   }"
 
-Function XNotificationUpdate() {
-  Var i = 0;
-  ClearWidget id + "_grid"
-  Config ReplaceAll( XNotificationTmpl,
-    "@NOTIF_ID@", id,
-    "@NOTIF_SUMMARY@", Escape(NotificationGet(id, "summary")),
-    "@NOTIF_BODY@", Escape(NotificationGet(id, "body")),
-    "@NOTIF_ICON@", NotificationGet(id, "icon"),
-    "@NOTIF_APP@", NotificationGet(id, "app"),
-    "@NOTIF_TIME@", NotificationGet(id, "time"))
-  While i<arraysize(action_ids) {
-    Config ReplaceAll($XNotificationActionTmpl,
+  Var XNotificationActionTmpl = "
+    grid '@NOTIF_ID@_grid' {
+      grid '@NOTIF_ID@_actions' {
+        style = 'notification_action_grid'
+        loc(0,3,3,1)
+        label '@NOTIF_ID@_@ACTION_ID@_action' {
+          value = '@ACTION_TITLE@'
+          style = 'notification_action'
+          action = NotificationAction('@NOTIF_ID@', '@ACTION_ID@')
+        }
+      }
+    }"
+
+  Function XNotificationUpdate() {
+    Var i = 0;
+    ClearWidget(id + "_grid")
+    Config(ReplaceAll( XNotificationTmpl,
       "@NOTIF_ID@", id,
-      "@ACTION_ID@", action_ids[i],
-      "@ACTION_TITLE@", action_titles[i])
-    i = i + 1
+      "@NOTIF_SUMMARY@", Escape(NotificationGet(id, "summary")),
+      "@NOTIF_BODY@", Escape(NotificationGet(id, "body")),
+      "@NOTIF_ICON@", NotificationGet(id, "icon"),
+      "@NOTIF_APP@", NotificationGet(id, "app"),
+      "@NOTIF_TIME@", NotificationGet(id, "time")))
+    While i<arraysize(action_ids) {
+      Config(ReplaceAll(XNotificationActionTmpl,
+        "@NOTIF_ID@", id,
+        "@ACTION_ID@", action_ids[i],
+        "@ACTION_TITLE@", action_titles[i]))
+      i = i + 1
+    }
   }
-}
 
-Function XNotificationRemove() {
-  ClearWidget NotificationGet("removed-id") + "_grid"
-}
+  Function XNotificationRemove() {
+    ClearWidget(NotificationGet("removed-id") + "_grid")
+  }
 
-PopUp "XNotificationWindow" {
-  style = "notification_popup"
-  label {
-    value = GT("Notification Center")
-    style = "notification_header"
-    loc(1,1,2,1)
+  PopUp "XNotificationWindow" {
+    style = "notification_popup"
+    label {
+      value = GT("Notification Center")
+      style = "notification_header"
+      loc(1,1,2,1)
+    }
+    label {
+      value = NotificationActiveGroup()
+      style = If(NotificationActiveGroup()='','hidden','notification_group')
+      trigger = 'notification-group'
+      loc(1,2)
+    }
+    image {
+      value = 'go-up'
+      style = If(NotificationActiveGroup()='','hidden','notification_close')
+      action = NotificationCollapse()
+      trigger = 'notification-group'
+      loc(2,2)
+    }
+    grid "notification_frame" {
+      style = "notification_frame"
+      loc(1,3,2,1)
+    }
+    label {
+      style = "notification_frespace"
+      loc(1,4,2,1)
+    }
   }
-  label {
-    value = NotificationActiveGroup()
-    style = If(NotificationActiveGroup()='','hidden','notification_group')
-    trigger = 'notification-group'
-    loc(1,2)
-  }
-  image {
-    value = 'go-up'
-    style = If(NotificationActiveGroup()='','hidden','notification_close')
-    action = NotificationCollapse
-    trigger = 'notification-group'
-    loc(2,2)
-  }
-  grid "notification_frame" {
-    style = "notification_frame"
-    loc(1,3,2,1)
-  }
-  label {
-    style = "notification_frespace"
-    loc(1,4,2,1)
-  }
-}
 
-layout {
-  style = "module"
-  trigger = "notification"
-  button "notification_widget" {
+  export button "notification_widget" {
     style = "module"
-    value = $XNotificationIcon
+    value = XNotificationIcon()
     trigger = "notification-group"
     css = "* { -ScaleImage-symbolic: false; }"
-    action = PopUp "XNotificationWindow"
+    action = PopUp("XNotificationWindow")
   }
 }
 
