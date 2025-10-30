@@ -553,7 +553,7 @@ static void nm_ap_node_handle ( const gchar *path, gchar *ifa, GVariant *dict )
     apoint->nodes = g_list_prepend(apoint->nodes, node);
     node->ap = apoint;
     hash_table_insert(ap_nodes, node->path, node);
-    nm_apoint_ssid_update(NULL, apoint, ssid);
+    nm_apoint_ssid_update(NULL, apoint, apoint->ssid);
     change = TRUE;
   }
   apoint = node->ap;
