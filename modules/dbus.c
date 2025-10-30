@@ -290,7 +290,6 @@ static void dbus_watch_appeared ( GDBusConnection *con, const gchar *name,
     const gchar *owner, gpointer trigger )
 {
   trigger_emit_with_string((gchar *)trigger, "DbusStatus", g_strdup("appeared"));
-
 }
 
 static void dbus_watch_vanished ( GDBusConnection *con, const gchar *name,

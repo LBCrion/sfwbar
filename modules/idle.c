@@ -92,7 +92,7 @@ gboolean sfwbar_module_init ( void )
           &ext_idle_notifier_v1_interface);
   if(!idle_notifier)
     return FALSE;
-  vm_func_add("IdleTimeout", idle_timeout_action, TRUE, TRUE);
+  vm_func_add("IdleTimeout", idle_timeout_action, TRUE, FALSE);
   idle_timers = g_hash_table_new_full((GHashFunc)str_nhash, (GCompareFunc)str_nequal,
       NULL, (GDestroyNotify)idle_notification_free);
   return TRUE;

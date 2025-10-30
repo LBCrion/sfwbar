@@ -67,8 +67,8 @@ static value_t idle_inhibitor_action ( vm_t *vm, value_t p[], gint np )
 
 gboolean sfwbar_module_init ( void )
 {
-  vm_func_add("idleinhibitstate", idle_inhibit_state, FALSE, TRUE);
-  vm_func_add("setidleinhibitor", idle_inhibitor_action, TRUE, TRUE);
+  vm_func_add("idleinhibitstate", idle_inhibit_state, FALSE, FALSE);
+  vm_func_add("setidleinhibitor", idle_inhibitor_action, TRUE, FALSE);
   idle_inhibit_manager = wayland_iface_register(
           zwp_idle_inhibit_manager_v1_interface.name, 1, 1,
           &zwp_idle_inhibit_manager_v1_interface);
