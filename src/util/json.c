@@ -24,14 +24,16 @@ gint socket_connect ( const gchar *sockaddr, gint to )
   return -1;
 }
 
-gssize recv_retry ( gint sock, gpointer buff, gssize len )
+gboolean recv_retry ( gint sock, gpointer buff, gsize len )
 {
-  gssize rlen, tlen=0;
+  gssize rlen;
+  gsize tlen = 0;
 
-  while(tlen<len && tlen>=0 && (rlen = recv(sock, buff+tlen, len-tlen, 0))>0 )
-    tlen += rlen;
+  while( tlen<len && (rlen = recv(sock, buff+tlen, len-tlen, 0))>0 )
+    if(!g_size_checked_add(&tlen, tlen, rlen))
+      return FALSE;
 
-  return MAX(tlen, 0);
+  return (tlen == len);
 }
 
 json_object *recv_json ( gint sock, gssize len )

@@ -22,7 +22,7 @@ static json_object *sway_ipc_poll ( gint sock, guint32 *etype )
   gint8 sway_ipc_header[14] = {0x69, 0x33, 0x2d, 0x69, 0x70, 0x63};
   guint32 len;
 
-  if(recv_retry(sock, sway_ipc_header, 14)!=14)
+  if(!recv_retry(sock, sway_ipc_header, 14))
     return NULL;
 
   if(etype)
