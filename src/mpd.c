@@ -7,6 +7,8 @@
 #include <gio/gunixsocketaddress.h>
 #include "trigger.h"
 #include "client.h"
+#include "util/file.h"
+#include "util/string.h"
 
 typedef struct _MpdState {
   gchar *path;
@@ -20,30 +22,28 @@ ScanFile *mpd_file;
 
 gboolean client_mpd_connect ( Client *client )
 {
-  gchar *host, *port;
-  const gchar *dir;
+  const gchar *dir, *host, *port;
+  gchar *fname;
 
-  g_free(client->file->fname);
   if(MPD_STATE(client->data)->path && *(MPD_STATE(client->data)->path) )
-    client->file->fname = g_strdup(MPD_STATE(client->data)->path);
+    fname = g_strdup(MPD_STATE(client->data)->path);
   else
   {
     dir = g_get_user_runtime_dir();
-    client->file->fname = g_build_filename(dir?dir:"/run","/mpd/socket",NULL);
-    if( !g_file_test(client->file->fname, G_FILE_TEST_EXISTS) &&
-        g_strcmp0(client->file->fname,"/run/mpd/socket") )
+    fname = dir? g_build_filename(dir, "/mpd/socket", NULL) : NULL;
+    if( !file_test_read(fname) )
     {
-      g_free(client->file->fname);
-      client->file->fname = g_strdup("/run/mpd/socket");
-    }
-    if( !g_file_test(client->file->fname, G_FILE_TEST_EXISTS) )
-    {
-      host = g_strdup(g_getenv("MPD_HOST"));
-      port = g_strdup(g_getenv("MPD_PORT"));
-      client->file->fname = g_strconcat(host?host:"localhost",":",
-          port?port:"6600",NULL);
+      str_assign(&fname, g_strdup("/run/mpd/socket"));
+      if( !file_test_read(fname) )
+      {
+        host = g_getenv("MPD_HOST");
+        port = g_getenv("MPD_PORT");
+        str_assign(&fname, g_strconcat(host? host : "localhost", ":",
+              port? port : "6600", NULL));
+      }
     }
   }
+  str_assign(&client->file->fname, fname);
 
   return client_socket_connect(client);
 }
@@ -59,7 +59,7 @@ GIOStatus client_mpd_respond ( Client *client )
   if(!g_queue_is_empty(MPD_STATE(client->data)->commands))
   {
     str = g_queue_pop_head(MPD_STATE(client->data)->commands);
-    s = g_io_channel_write_chars(client->out,str,-1,NULL,NULL);
+    s = g_io_channel_write_chars(client->out, str, -1, NULL, NULL);
     g_free(str);
   }
   else
@@ -67,10 +67,10 @@ GIOStatus client_mpd_respond ( Client *client )
     MPD_STATE(client->data)->idle = !MPD_STATE(client->data)->idle;
     s = g_io_channel_write_chars(client->out,
         MPD_STATE(client->data)->idle?
-        "status\ncurrentsong\n":"idle player options\n",
-        -1,NULL,NULL);
+        "status\ncurrentsong\n" : "idle player options\n",
+        -1, NULL, NULL);
   }
-  g_io_channel_flush(client->out,NULL);
+  g_io_channel_flush(client->out, NULL);
 
   return s;
 }
@@ -120,8 +120,8 @@ void client_mpd_command ( gchar *command )
     return;
 
   g_queue_push_tail(MPD_STATE(client->data)->commands,
-      g_strconcat(command,"\n",NULL));
-  (void)g_io_channel_write_chars(client->out,"noidle\n",-1,NULL,NULL);
-  g_io_channel_flush(client->out,NULL);
+      g_strconcat(command, "\n", NULL));
+  (void)g_io_channel_write_chars(client->out, "noidle\n", -1, NULL, NULL);
+  g_io_channel_flush(client->out, NULL);
   MPD_STATE(client->data)->idle = FALSE;
 }

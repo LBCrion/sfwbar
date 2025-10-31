@@ -33,7 +33,7 @@ gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
 
   if( cond & G_IO_ERR || cond & G_IO_HUP )
   {
-    g_debug("client %s: error cond = %d",client->file->fname,cond);
+    g_debug("client %s: error cond = %d", client->file->fname, cond);
     return FALSE;
   }
 
@@ -43,7 +43,7 @@ gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
       cstat = client->consume(client, &size);
     else
     {
-      g_list_foreach(client->file->vars,(GFunc)scanner_var_reset,NULL);
+      g_list_foreach(client->file->vars, (GFunc)scanner_var_reset, NULL);
       cstat = scanner_file_update( chan, client->file, &size );
     }
     if(cstat == G_IO_STATUS_ERROR || !size )
@@ -61,7 +61,7 @@ gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
     cstat = client->respond(client);
     if(cstat != G_IO_STATUS_NORMAL)
     {
-      g_debug("client %s: write error, status = %d",client->file->fname,cstat);
+      g_debug("client %s: write error, status = %d", client->file->fname, cstat);
       client_reconnect(client);
       return FALSE;
     }

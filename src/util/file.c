@@ -12,7 +12,7 @@ gchar *sockname;
 
 gboolean file_test_read ( gchar *filename )
 {
-  if( !g_file_test(filename, G_FILE_TEST_EXISTS) )
+  if( !filename || !g_file_test(filename, G_FILE_TEST_EXISTS) )
     return FALSE;
   if( access(filename, R_OK) == -1 )
     return FALSE;
