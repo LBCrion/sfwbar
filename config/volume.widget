@@ -19,7 +19,7 @@ Var XVolumeIconSpeaker = 'd="m 7 1.007812 c -0.296875 -0.003906 -0.578125
   0.304688 0.132812 0.605469 0.394531 0.804688 c 0.441407 0.332031 1.066407
   0.242187 1.398438 -0.199219 c 0.804687 -1.066406 1.207031 -2.335937 1.207031
   -3.609375 s -0.402344 -2.542969 -1.207031 -3.613281 c -0.183594 -0.246094
-  -0.464844 -0.382813 -0.753907 -0.398438 z m 0 0" fill="#2e3436"'
+  -0.464844 -0.382813 -0.753907 -0.398438 z m 0 0" fill="@theme_fg_color"'
 
 Var XVolumeIconHeadphones = 'd="m 8 0 c -1.230469 0 -2.4375 0.324219 -3.5
   0.9375 c -2.164062 1.25 -3.5 3.5625 -3.5 6.0625 v 6 s 0 2 2 2 h 1 c 0.554688
@@ -28,13 +28,13 @@ Var XVolumeIconHeadphones = 'd="m 8 0 c -1.230469 0 -2.4375 0.324219 -3.5
   -0.890625 5 0 c 1.546875 0.894531 2.5 2.546875 2.5 4.332031 v 1 c 0 1 -1 1 -1
   1 c -0.5 0 -1 0.445312 -1 1 v 4 c 0 0.554688 0.445312 1 1 1 h 1 c 2 0 2 -2 2
   -2 v -6 c 0 -2.5 -1.335938 -4.8125 -3.5 -6.0625 c -1.0625 -0.613281 -2.269531
-  -0.9375 -3.5 -0.9375 z m 0 0" fill="#2e3436"'
+  -0.9375 -3.5 -0.9375 z m 0 0" fill="@theme_fg_color"'
 
 Var XVolumeIconTmpl = '<?xml version="1.0" encoding="utf-8"?>
   <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <g transform="rotate(-90 256 256)">
-  <circle cx="256" cy="256" r="230" stroke="#808080" stroke-width="45"
-    fill="transparent"/>
+  <circle cx="256" cy="256" r="230" stroke="@theme_fg_color" stroke-width="45"
+    fill="transparent" stroke-opacity="0.5"/>
   <circle cx="256" cy="256" r="230" stroke="Rgb(0,@ICON_CIRCLE_COLOR@,0)"
     stroke-width="60" fill="transparent" stroke-dashoffset="@ICON_PCT@"
     stroke-dasharray="1444.4"/>

@@ -4,19 +4,6 @@ module("dbus")
 module("bsdctl")
 
 Var BacklightSrc, BacklightMax, BacklightName;
-Var BacklightTmpl = '<?xml version="1.0" encoding="utf-8"?>
-  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 612">
-  <path d="M256 150 L256 362 A106 106 0 0 1 256 150" fill="black"/>
-  <circle cx="256" cy="256" r="106" stroke="black" stroke-width="45"
-    fill="transparent"/>
-  <path class="st1" d="M255 20 V45 M255 465 V490 M90 90 L110 110
-    M405 400 L425 425 M20 255 H45 M465 255 H490 M90 422 L110 402
-    M425 90 L400 110" stroke-linecap="round" stroke-width="40" stroke="black"/>
-  <path d="M20 585 H492" stroke-linecap="round" stroke-width="65"
-    stroke="rgb(0,0,255,0.3)"/>
-  <path d="M20 585 H@BRIGHTNESS@" stroke-linecap="round" stroke-width="65"
-    stroke="blue"/>
-  </svg>'
 
 Set BacklightPresent = (ident(DbusCall) & BacklightSrc!='') |
     (ident(BSDCtl) & BSDCtl("hw.acpi.video.lcd0.brightness")!='');
