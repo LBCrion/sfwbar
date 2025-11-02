@@ -170,9 +170,9 @@ static void dn_notification_expand ( guint32 id )
 
 static void dn_notification_collapse ( void )
 {
+  g_rec_mutex_lock(&dn_mutex);
   g_debug("ncenter: collapse event: '%s'", expanded_group);
 
-  g_rec_mutex_lock(&dn_mutex);
   g_clear_pointer(&expanded_group, g_free);
   g_rec_mutex_unlock(&dn_mutex);
 
@@ -492,7 +492,13 @@ static value_t dn_group_func ( vm_t *vm, value_t p[], gint np )
 
 static value_t dn_active_group_func ( vm_t *vm, value_t p[], gint np )
 {
-  return value_new_string(g_strdup(expanded_group));
+  value_t v1;
+
+  g_rec_mutex_lock(&dn_mutex);
+  v1 = value_new_string(g_strdup(expanded_group));
+  g_rec_mutex_unlock(&dn_mutex);
+
+  return v1;
 }
 
 static value_t dn_count_func ( vm_t *vm, value_t p[], gint np )
