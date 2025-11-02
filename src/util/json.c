@@ -230,26 +230,21 @@ struct json_object *jpath_filter (GScanner *scanner, struct json_object *obj )
   return next;
 }
 
-struct json_object *jpath_key ( GScanner *scanner, struct json_object *obj )
+struct json_object *jpath_key ( GScanner *scanner, struct json_object *obj,
+   json_object *existing )
 {
   struct json_object *next, *iter, *tmp;
-  gint i,j;
+  gint i;
 
-  next = json_object_new_array();
+  next = existing? existing : json_object_new_array();
 
   for(i=0; i<json_object_array_length(obj); i++)
   {
     iter = json_object_array_get_idx(obj, i);
     if(json_object_is_type(iter, json_type_array))
-      for(j=0; j<json_object_array_length(iter); j++)
-      {
-        json_object_object_get_ex(json_object_array_get_idx(iter, j),
-          scanner->value.v_string, &tmp);
-        if(tmp)
-          json_object_array_add(next,tmp);
-      }
+      jpath_key(scanner, iter, next);
     else if(json_object_object_get_ex(json_object_array_get_idx(obj, i),
-        scanner->value.v_string, &tmp))
+        scanner->value.v_string, &tmp) && tmp)
       json_object_array_add(next, tmp);
   }
   return next;
@@ -314,7 +309,7 @@ struct json_object *jpath_parse ( gchar *path, struct json_object *obj )
         next = jpath_filter(scanner, cur);
         break;
       case G_TOKEN_STRING:
-        next = jpath_key(scanner, cur);
+        next = jpath_key(scanner, cur, NULL);
         break;
       case G_TOKEN_INT:
         next = jpath_index(scanner, cur);
