@@ -309,8 +309,8 @@ gboolean config_widget_child ( GScanner *scanner, GtkWidget *container )
   if(container && !gtk_widget_get_parent(widget))
   {
     grid_attach(container, widget);
-    g_object_unref(widget);
     grid_mirror_child(container, widget);
+    g_object_unref(widget);
   }
 
   return TRUE;

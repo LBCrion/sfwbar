@@ -532,7 +532,7 @@ static value_t expr_lib_read ( vm_t *vm, value_t p[], gint np )
 
   if( (in = g_io_channel_new_file(value_get_string(p[0]), "r", NULL)) )
   {
-    g_io_channel_read_to_end(in, &result, NULL, NULL);
+    (void)g_io_channel_read_to_end(in, &result, NULL, NULL);
     g_io_channel_unref(in);
   }
   else

@@ -289,10 +289,12 @@ GIOStatus scanner_file_update ( GIOChannel *in, ScanFile *file, gsize *size )
       {
         case G_TOKEN_REGEX:
           if(var->definition &&
-              g_regex_match (var->definition, read_buff, 0, &match))
-            scanner_var_values_update(var,g_match_info_fetch (match, 1));
-          if(match)
-            g_match_info_free (match);
+              g_regex_match(var->definition, read_buff, 0, &match))
+          {
+            scanner_var_values_update(var, g_match_info_fetch (match, 1));
+            if(match)
+              g_match_info_free (match);
+          }
           break;
         case G_TOKEN_GRAB:
           if(lsize>0 && *(read_buff+lsize-1)=='\n')
