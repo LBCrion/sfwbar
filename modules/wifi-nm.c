@@ -238,13 +238,14 @@ static void nm_passphrase_cb ( GtkEntry *entry, nm_dialog_t *dialog )
 static void nm_button_clicked ( GtkWidget *button, nm_dialog_t *dialog )
 {
   if(button==dialog->ok)
-    g_dbus_method_invocation_return_value(dialog->invocation,
-        g_variant_new("(s)", gtk_entry_get_text(GTK_ENTRY(dialog->pass))));
+    nm_passphrase_cb(NULL, dialog);
   else
+  {
     g_dbus_method_invocation_return_dbus_error(dialog->invocation,
         "org.freedesktop.NetworkManager.SecretAgent.UserCanceled", "");
-  gtk_widget_destroy(dialog->win);
-  hash_table_remove(dialog_list, dialog->path);
+    gtk_widget_destroy(dialog->win);
+    hash_table_remove(dialog_list, dialog->path);
+  }
 }
 
 static void nm_passphrase_changed_cb ( gpointer *w, nm_dialog_t *dialog )
@@ -271,7 +272,7 @@ static gboolean nm_passphrase_prompt ( GVariant *vconn, gpointer inv )
   gchar *title, *path;
   gboolean user = FALSE;
 
-  g_variant_get(vconn,"(@a{sa{sv}}&osasu)", NULL, &path, NULL, NULL, NULL);
+  g_variant_get(vconn,"(@a{sa{sv}}&o&sasu)", NULL, &path, NULL, NULL, NULL);
   hash_table_lock(conn_list);
   if( (conn = hash_table_lookup(conn_list, path)) )
     title = g_strdup_printf("Passphrase for network %s", conn->ssid);
@@ -367,6 +368,8 @@ static void nm_conn_new ( gchar *path )
   if( !(ap = hash_table_lookup(apoint_list, path)) ||
       (ap->rsn & 0x00000200) || (ap->wpa & 0x00000200))
   {
+    if(ap)
+      trigger_emit_with_string("wifi_updated", "id", g_strdup(ap->hash));
     hash_table_unlock(apoint_list);
     return; // we don't support 802.11x
   }
