@@ -266,7 +266,8 @@ static void net_rt_request ( gint sock )
   nlreq.hdr.nlmsg_len = sizeof(nlreq);
   nlreq.hdr.nlmsg_seq = seq++;
   nlreq.rtm.rtm_family = AF_INET;
-  send(sock, &nlreq, sizeof(nlreq), 0);
+  if(send(sock, &nlreq, sizeof(nlreq), 0)==-1)
+    g_debug("network: failed to send a netlink request");
 }
 
 static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
@@ -298,7 +299,7 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
     {
       if(hdr->nlmsg_type == RTM_DELADDR)
       {
-        g_debug("netinfo: delete interface: %s",
+        g_debug("network: delete interface: %s",
               if_indextoname(ifmsg->ifi_index, ifname));
         net_iface_unref(ifmsg->ifi_index);
       }
@@ -345,7 +346,7 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
       if(!dest.s_addr && gate.s_addr && iidx && !rtm->rtm_dst_len)
       {
         routeset = TRUE;
-        g_debug("netstat: set interface: %s %s", if_indextoname(iidx, ifname),
+        g_debug("network: set interface: %s %s", if_indextoname(iidx, ifname),
             inet_ntop(AF_INET, &gate, addr, INET6_ADDRSTRLEN));
         net_iface_update(iidx, gate, gate6);
         break;
@@ -747,7 +748,7 @@ gboolean sfwbar_module_init ( void )
   if( (sock = net_rt_connect()) <0 )
     return FALSE;
 
-  g_debug("netstat: socket: %d", sock);
+  g_debug("network: socket: %d", sock);
   if( (chan = g_io_channel_unix_new(sock)) )
   {
     vm_func_add("netstat", network_func_netstat, FALSE, TRUE);

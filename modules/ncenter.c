@@ -267,16 +267,16 @@ guint32 dn_notification_parse ( GVariant *params )
     notif->id = dn_id_counter++;
 
   g_clear_pointer(&notif->category, g_free);
-  g_variant_lookup(hints, "category", "s", &notif->category);
+  (void)g_variant_lookup(hints, "category", "s", &notif->category);
   g_clear_pointer(&notif->desktop, g_free);
-  g_variant_lookup(hints, "desktop-entry", "s", &notif->desktop);
+  (void)g_variant_lookup(hints, "desktop-entry", "s", &notif->desktop);
   g_clear_pointer(&notif->image, g_free);
   if( !(notif->image = dn_parse_image_data(hints)) )
     g_variant_lookup(hints, "image-path", "s", &notif->image);
   g_clear_pointer(&notif->sound_file, g_free);
-  g_variant_lookup(hints, "sound-file", "s", &notif->sound_file);
+  (void)g_variant_lookup(hints, "sound-file", "s", &notif->sound_file);
   g_clear_pointer(&notif->sound_name, g_free);
-  g_variant_lookup(hints, "sound-name", "s", &notif->sound_name);
+  (void)g_variant_lookup(hints, "sound-name", "s", &notif->sound_name);
   if(!g_variant_lookup(hints, "action-icons", "b", &notif->action_icons))
     notif->action_icons = FALSE;
   if(!g_variant_lookup(hints, "transient", "b", &notif->transient))
