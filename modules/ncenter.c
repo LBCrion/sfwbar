@@ -159,10 +159,7 @@ static void dn_notification_expand ( guint32 id )
   if( (notif = dn_notification_lookup(id)) )
   {
     g_debug("ncenter: expand event: '%s'", notif->app_name);
-
-    g_free(expanded_group);
-    expanded_group = g_strdup(notif->app_name);
-
+    str_assign(&expanded_group, g_strdup(notif->app_name));
     trigger_emit("notification-group");
   }
   g_rec_mutex_unlock(&dn_mutex);
@@ -272,7 +269,7 @@ guint32 dn_notification_parse ( GVariant *params )
   (void)g_variant_lookup(hints, "desktop-entry", "s", &notif->desktop);
   g_clear_pointer(&notif->image, g_free);
   if( !(notif->image = dn_parse_image_data(hints)) )
-    g_variant_lookup(hints, "image-path", "s", &notif->image);
+    (void)g_variant_lookup(hints, "image-path", "s", &notif->image);
   g_clear_pointer(&notif->sound_file, g_free);
   (void)g_variant_lookup(hints, "sound-file", "s", &notif->sound_file);
   g_clear_pointer(&notif->sound_name, g_free);
