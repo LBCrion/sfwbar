@@ -267,7 +267,7 @@ GIOStatus scanner_file_update ( GIOChannel *in, ScanFile *file, gsize *size )
 {
   ScanVar *var;
   GList *node;
-  GMatchInfo *match;
+  GMatchInfo *match = NULL;
   struct json_tokener *json = NULL;
   struct json_object *obj;
   gchar *read_buff;
@@ -290,11 +290,9 @@ GIOStatus scanner_file_update ( GIOChannel *in, ScanFile *file, gsize *size )
         case G_TOKEN_REGEX:
           if(var->definition &&
               g_regex_match(var->definition, read_buff, 0, &match))
-          {
-            scanner_var_values_update(var, g_match_info_fetch (match, 1));
-            if(match)
-              g_match_info_free (match);
-          }
+            scanner_var_values_update(var, g_match_info_fetch(match, 1));
+          if(match)
+            g_match_info_free(match);
           break;
         case G_TOKEN_GRAB:
           if(lsize>0 && *(read_buff+lsize-1)=='\n')
@@ -392,9 +390,10 @@ gboolean scanner_file_glob ( ScanFile *file )
   GIOChannel *chan;
   gboolean reset=FALSE;
 
-  if(!file)
-    return FALSE;
-  if(file->source == SO_CLIENT || !file->fname)
+  g_return_val_if_fail(file, FALSE);
+  g_return_val_if_fail(file->fname, FALSE);
+
+  if(file->source == SO_CLIENT)
     return FALSE;
   if(file->source == SO_EXEC)
     return scanner_file_exec(file);
