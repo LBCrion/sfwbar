@@ -129,14 +129,16 @@ gboolean config_assign_boolean (GScanner *scanner, gboolean def, const gchar *ex
   if(!config_expect_token(scanner, '=', "Missing '=' in %s = <boolean>", expr))
     return FALSE;
 
-  g_scanner_get_next_token(scanner);
-
-  if(!g_ascii_strcasecmp(scanner->value.v_identifier, "true"))
-    result = TRUE;
-  else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "false"))
-    result = FALSE;
-  else
-    g_scanner_error(scanner, "Missing value in %s = <boolean>", expr);
+  if(config_expect_token(scanner, G_TOKEN_IDENTIFIER,
+        "Invalid value in '%s' = <boolean>", expr))
+  {
+    if(!g_ascii_strcasecmp(scanner->value.v_identifier, "true"))
+      result = TRUE;
+    else if(!g_ascii_strcasecmp(scanner->value.v_identifier, "false"))
+      result = FALSE;
+    else
+      g_scanner_error(scanner, "Missing value in %s = <boolean>", expr);
+  }
 
   config_check_and_consume(scanner, ';');
 
