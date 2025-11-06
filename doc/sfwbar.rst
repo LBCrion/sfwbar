@@ -68,10 +68,10 @@ Toplevel keywords
 -----------------
 
 Theme <string>
-  Override a Gtk theme to name specified.
+  Override a GTK theme to name specified.
 
 IconTheme <string>
-  Override a Gtk icon theme.
+  Override a GTK icon theme.
 
 TriggerAction <trigger>, <action>
   execute an action when a trigger is emitted. Trigger is a string, an
@@ -179,7 +179,7 @@ definition i.e. ::
 Widgets can optionally have unique id's assigned to them in order to allow
 manipulating them in the future.
 
-Properties define the appearance and behavior of widgets. These are generally
+Properties define the appearance and behaviour of widgets. These are generally
 defined as `property = value` with a few exceptions.
 All widgets can have the following properties:
 
@@ -190,14 +190,14 @@ value = <expression>
   section for more detail.
   For ``Label`` widgets value specifies text to display.
   For ``Scale`` widgets it specifies a fraction to display.
-  For ``Chart`` widgets it specifies a fraction of the next datapoint.
+  For ``Chart`` widgets it specifies a fraction of the next data point.
   For ``Image`` and ``Button`` widgets and buttons it provides an icon or an
   image file name.
 
 style = <expression>
   a style name for the widget. Styles can be used in CSS to theme widgets.
   Multiple widgets can have the same style. A style name can be used in css
-  using gtk+ named widget convention, i.e. ``label#mystyle``. Style property
+  using GTK+ named widget convention, i.e. ``label#mystyle``. Style property
   can be set to an expression to change styles in response to changes in
   system parameters.
 
@@ -210,7 +210,7 @@ interval = <number>
   widget update frequency in milliseconds.
 
 trigger = <string>
-  a tigger event that should cause the widget to update. Triggers are emitted
+  a trigger event that should cause the widget to update. Triggers are emitted
   by a variety of sources (i.e. modules, compositor events, data available in
   from a client connection etc.).
   (if trigger is specified, the interval property is ignored).
@@ -219,7 +219,7 @@ css = <string>
   additional css properties for the widget. These properties will only apply to
   the widget in question. You can have multiple instances of the css property
   in a single widget definition and they all will be applied in the order of
-  their occurence. css property value can only be a static string, not an
+  their occurrence. css property value can only be a static string, not an
   expression.
 
 action
@@ -228,7 +228,7 @@ action
   The notation is ``action[<event>] = <action>``.  Event values are
   LeftClick, MiddleClick or RightClick, ScrollUp, ScrollDown, ScrollLeft,
   ScrollRight and Drag respectively.
-  Additionallly, modifiers can be specified using the notation of
+  Additionally, modifiers can be specified using the notation of
   ``[Modifier+]<event>``. I.e. ``action[Ctrl+LeftClick]``. The following
   modifiers supported: Shift, Ctrl, Mod1, Mod2, Mod3, Mod4, Mod5, Super, Hyper,
   and Meta. Multiple modifiers can be added, i.e.
@@ -256,7 +256,7 @@ filter = [floating|minimized|output|workspace]
   `floating` will only show flowing windows.
   `minimized` will filter out minimized windows.
   `output` will only show windows from the current display.
-  `worspace` will only show window from the current workspace.
+  `workspace` will only show window from the current workspace.
 
 sort = [true|false]
   setting of whether taskbar items should be sorted. If the items are not
@@ -272,7 +272,7 @@ cols = <number>
   specified, the default is rows=1
 
 group = [popup|pager|false]
-  if set to true, the taskbar items will be grouped. Supported grouppings
+  if set to true, the taskbar items will be grouped. Supported groupings
   are: popup and pager. In a popup grouping windows are grouped by app_id,
   the main taskbar will contain one item per app_id with an icon and a
   label set to app_id. On over, it will popup a "group taskbar" containing
@@ -344,7 +344,7 @@ size = <number|string>
   I.e. "800" for 800 pixels or "50%" for 50% of screen size
 
 halign = <alignment>
-  specified horizonal alignment of the bar if the bar occupies less than 100%
+  specified horizontal alignment of the bar if the bar occupies less than 100%
   of the monitor. The valid values are `start`, `center`, `end`;
 
 valign = <alignment>
@@ -360,17 +360,17 @@ sensor = <number>
 
 sensor_delay = <number>
   Specifies the interval after the pointer enters the bar sensor area and the
-  hidden bar pops back up. This property is ignore if the `sensor` proeprty is
+  hidden bar pops back up. This property is ignore if the `sensor` property is
   not specified.
 
 transition = <number>
-  Speficies the transition period (in milliseconds) for bar appearance
+  Specifies the transition period (in milliseconds) for bar appearance
   animation.
 
 monitor = <string>
   assign bar to a given monitor. The  monitor name can be prefixed by
   "static:", i.e. "static:eDP-1". if this is set and the specified monitor
-  doesn't exist or gets disconnected, the bar will not jump to another montior,
+  doesn't exist or gets disconnected, the bar will not jump to another monitor,
   but will be hidden and won't reappear until the monitor is reconnected.
 
 mirror = <string>
@@ -464,7 +464,7 @@ once.
 The following menu items are supported:
 
 item
-  A menu item. If the item conains a `menu` widget inside it, it will be
+  A menu item. If the item contains a `menu` widget inside it, it will be
   presented as a submenu, otherwise the item will have invoke an `action` upon
   activation if an `action` is defined.
 
@@ -499,7 +499,7 @@ action = <action>
   an action to execute if the item is activated.
 
 index = <number>
-  a sort index assocciated with an item. If a menu has a `sort` property set to
+  a sort index associated with an item. If a menu has a `sort` property set to
   true, the items will be sorted using this index as a primary sort key.
 
 The config file consists of the following top level sections:
@@ -547,7 +547,7 @@ Task Switcher
 -------------
 Task switcher cycles the focus across windows (i.e. Alt-Tab function). Switcher
 can be invoked through a `SwitcherEvent` action. The forward switch action is
-bound to `SIGUSR1` signal by default,  in `sway`, the action is additioanlly
+bound to `SIGUSR1` signal by default,  in `sway`, the action is additionally
 bound to a change in a bar hidden_state property.
 
 In sway, you can bind alt-tab using `bindsym Alt-Tab bar hidden_state toggle`
@@ -567,7 +567,7 @@ filter = [floating|minimized|output|workspace]
   `floating` will only show flowing windows.
   `minimized` will filter out minimized windows.
   `output` will only show windows from the current display.
-  `worspace` will only show window from the current workspace.
+  `workspace` will only show window from the current workspace.
 
 icons = [true|false]
   display window icons in the task list.
@@ -656,7 +656,7 @@ Functions can be terminated early and return a value using a `Return` keyword::
 
   Return [<expression>];
 
-For more complex actions, you can define yu own functions using a toplevel
+For more complex actions, you can define your own functions using a toplevel
 `function` keyword. I.e.::
 
   Function my_func ( x ) {
@@ -671,7 +671,7 @@ the bar, modules etc.
 
 Expressions
 -----------
-As part of the configation SFWBar can evaluate expressions. These can be part of
+As part of the configuration SFWBar can evaluate expressions. These can be part of
 an action or user defined function, but some properties also accept expressions.
 In case of the later, the expression is evaluated periodically or in response to
 to a trigger (see `interval` and `trigger` widget properties).
@@ -749,7 +749,7 @@ FileTrigger(<file:string>, <trigger:string>[, <timeout:numeric>])
   Setup a file monitor. Upon any changes to the file, a trigger will be
   emitted. If the timeout is specified, the trigger will be emitted at an
   interval specified by timeout value (in microseconds) until the first
-  file monitor event is detected (this iis useful for /sys files where
+  file monitor event is detected (this is useful for /sys files where
   monitoring may not be effective. Returns n/a.
 
 ClientSend(<id:string>, <string>)
@@ -815,7 +815,7 @@ DisownMinimized(<boolean>)
 SwitcherEvent(<string>)
   trigger a switcher event, this action will bring up the switcher window and
   cycle the focus either forward or back based on the argument. The string
-  argument can be either "foward" or "back". If the argument is omitted, the
+  argument can be either "forward" or "back". If the argument is omitted, the
   focus will cycle forward.
 
 SetValue([<widget:string>,]<string>)
@@ -873,11 +873,11 @@ SwayWinCmd <string>
   Send a command over Sway IPC applicable to a current window, Returns n/a.
 
 Str(<value>, <number>)
-  Convert a value to string.If converting a numner, the second parameter
+  Convert a value to string.If converting a number, the second parameter
   controls decimal precision. Returns <string>.
 
 Val(<string)
-  Convert a string to a number. Returns <nuemric>
+  Convert a string to a number. Returns <numeric>
 
 Min(<number>, <number>)
   Return a smaller of the two numbers.
@@ -886,8 +886,8 @@ Max(<number>, <number>)
   Return a larger of the two numbers.
 
 Mid(<string>, <numeric>, <numeric>)
-  Extract a substring from a string, the first paramter is the string to extract
-  the substring from, second and third parameters are thef frist and last
+  Extract a substring from a string, the first parameter is the string to extract
+  the substring from, second and third parameters are the first and last
   characters of the substring. Returns <string>.
 
 Extract(<string>, <pattern:string>)
@@ -933,9 +933,9 @@ ArrayMap(<string>, <match:array>, <result:array> [, <default:string>)
 
 Lookup(<number>, <threshold:number>, <result:string>, ..., <default:string>)
   Looks up a `number` against a list of `threshold`s. Returns a `result` string
-  corrsponding to a first `threshold` smaller than the `number`. This means
-  `threasholds` should be sorted in a descending order. If all `threshold`s are
-  greather than the `number`, returns `default` string. Returns <string>.
+  corresponding to a first `threshold` smaller than the `number`. This means
+  `thresholds` should be sorted in a descending order. If all `threshold`s are
+  greater than the `number`, returns `default` string. Returns <string>.
 
 ArrayLookup(<number>, <threshold:array>, <result:array> [, <default:string>])
   Looks up a `number` in a `threshold` array and returns a `result` with an
@@ -977,7 +977,7 @@ TestFile(<string>)
   Returns <number>.
 
 GT(<string>)
-  Returns a transaltion of a string corresponding to a current locale. If
+  Returns a translation of a string corresponding to a current locale. If
   translation is not available, returns the string. Returns <string>.
 
 Layout()
@@ -992,10 +992,10 @@ Time(<format:string> [, <tz:string>])
   Returns <string>.
 
 Disk(<fs:string>, <info:string>)
-  queries disk information for a disk. `fs` specifies a mountpoint to query.
+  queries disk information for a disk. `fs` specifies a mount point to query.
   `info` specifies desired information. Available options are:
   `total` - total space on disk in bytes.
-  `avail` - avaialble space on disk.
+  `avail` - available space on disk.
   `free` - free space on disk.
   `%avail` - available fraction of space on disk.
   `%used` - used fraction of space on disk.
@@ -1013,14 +1013,14 @@ WindowInfo([<id:string>,] <query:string>)
   "title" - title of a window. Returns <string>.
   "minimized" - minimized state of a window. Returns <number>.
   "maximized" - maximized state of a window. Returns <number>.
-  "fillscreen" - fullscreen state of a window. Returns <number>.
+  "fullscreen" - fullscreen state of a window. Returns <number>.
   "focused" - focused state of a window. Returns <number>.
 
 WidgetId()
   Returns an ID of a widget invoking the action. Returns <string>.
 
 WidgetState([<id:string>,] <stateid:number>)
-  Returns a value of one of two widget `state` booelans. The optional parameter
+  Returns a value of one of two widget `state` boolean. The optional parameter
   `id` specifies an id of a widget to query. If omitted, the state of a widget
   calling the expression will be returned. The `stateid` parameter specifies
   which state variable to query (valid values are 1 or 2). Returns <number>.
@@ -1051,7 +1051,7 @@ Scanner
 -------
 Bar often require polling data from system files (i.e. /sys or /proc). To this
 end, SFWBar provides a scanner infrastructure. Scanners allow reading system
-files and extract multiple datapoints from them in a single pass. This ensures
+files and extract multiple data points from them in a single pass. This ensures
 that multiple data items are consistent and resources are not wasted reading the
 same file multiple times.::
 
@@ -1236,7 +1236,7 @@ In the above example, you can put an icon called `firefox.svg` (you can also use
 If application id is blank, you can try mapping it from the program's title
 (please note that the title may change during runtime, so matching it can be
 tricky). Mapping is supported via function ``MapAppId``. You can add a function
-call to yor `SfwbarInit` function to run it on startup, I.e. ::
+call to your `SfwbarInit` function to run it on startup, I.e. ::
 
   MapAppId("firefox", ".*Mozilla Firefox");
 
@@ -1245,25 +1245,25 @@ using the `instance` in the `window-properties`.
 
 CSS Styling
 ===========
-SFWBar uses gtk+ widgets and can accept all css properties supported by gtk+.
-SFWBar widgets correspond to gtk+ widgets as following:
+SFWBar uses GTK+ widgets and can accept all css properties supported by GTK+.
+SFWBar widgets correspond to GTK+ widgets as following:
 
 ============= =============== ===============
-SFWBar widget gtk+ widget      css class
+SFWBar widget GTK+ widget      css class
 ============= =============== ===============
 label         GtkLabel        label
 image         GtkImage        image
 button        GtkButton       button
-scale         GtkProgressBar  progressbar, trough, progress
+scale         GtkProgressBar  progress bar, trough, progress
 ============= =============== ===============
 
 Taskbar, Pager, Tray and Switcher use combinations of these widgets and can
-be themed using gtk+ nested css convention,
+be themed using GTK+ nested css convention,
 i.e. ``grid#mytaskbar button { ... }``
 (this example assumes you assigned ``style = "mytaskbar"`` to your taskbar
 widget).
 
-In addition to standard gtk+ css properties SFWBar implements several
+In addition to standard GTK+ css properties SFWBar implements several
 additional properties. These are:
 
 =========================== =============

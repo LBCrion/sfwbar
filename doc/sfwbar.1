@@ -94,10 +94,10 @@ uses an old configuration format.
 .INDENT 0.0
 .TP
 .B Theme <string>
-Override a Gtk theme to name specified.
+Override a GTK theme to name specified.
 .TP
 .B IconTheme <string>
-Override a Gtk icon theme.
+Override a GTK icon theme.
 .TP
 .B TriggerAction <trigger>, <action>
 execute an action when a trigger is emitted. Trigger is a string, an
@@ -230,7 +230,7 @@ grid {
 Widgets can optionally have unique id\(aqs assigned to them in order to allow
 manipulating them in the future.
 .sp
-Properties define the appearance and behavior of widgets. These are generally
+Properties define the appearance and behaviour of widgets. These are generally
 defined as \fIproperty = value\fP with a few exceptions.
 All widgets can have the following properties:
 .INDENT 0.0
@@ -242,14 +242,14 @@ an expression specifying the value to display. This can be a static value
 section for more detail.
 For \fBLabel\fP widgets value specifies text to display.
 For \fBScale\fP widgets it specifies a fraction to display.
-For \fBChart\fP widgets it specifies a fraction of the next datapoint.
+For \fBChart\fP widgets it specifies a fraction of the next data point.
 For \fBImage\fP and \fBButton\fP widgets and buttons it provides an icon or an
 image file name.
 .TP
 .B style = <expression>
 a style name for the widget. Styles can be used in CSS to theme widgets.
 Multiple widgets can have the same style. A style name can be used in css
-using gtk+ named widget convention, i.e. \fBlabel#mystyle\fP\&. Style property
+using GTK+ named widget convention, i.e. \fBlabel#mystyle\fP\&. Style property
 can be set to an expression to change styles in response to changes in
 system parameters.
 .TP
@@ -262,7 +262,7 @@ updated every time it pops up.
 widget update frequency in milliseconds.
 .TP
 .B trigger = <string>
-a tigger event that should cause the widget to update. Triggers are emitted
+a trigger event that should cause the widget to update. Triggers are emitted
 by a variety of sources (i.e. modules, compositor events, data available in
 from a client connection etc.).
 (if trigger is specified, the interval property is ignored).
@@ -271,7 +271,7 @@ from a client connection etc.).
 additional css properties for the widget. These properties will only apply to
 the widget in question. You can have multiple instances of the css property
 in a single widget definition and they all will be applied in the order of
-their occurence. css property value can only be a static string, not an
+their occurrence. css property value can only be a static string, not an
 expression.
 .TP
 .B action
@@ -280,7 +280,7 @@ to any widget. Multiple actions can be attached to various pointer events.
 The notation is \fBaction[<event>] = <action>\fP\&.  Event values are
 LeftClick, MiddleClick or RightClick, ScrollUp, ScrollDown, ScrollLeft,
 ScrollRight and Drag respectively.
-Additionallly, modifiers can be specified using the notation of
+Additionally, modifiers can be specified using the notation of
 \fB[Modifier+]<event>\fP\&. I.e. \fBaction[Ctrl+LeftClick]\fP\&. The following
 modifiers supported: Shift, Ctrl, Mod1, Mod2, Mod3, Mod4, Mod5, Super, Hyper,
 and Meta. Multiple modifiers can be added, i.e.
@@ -310,7 +310,7 @@ controls which windows are shown in the switcher.
 \fIfloating\fP will only show flowing windows.
 \fIminimized\fP will filter out minimized windows.
 \fIoutput\fP will only show windows from the current display.
-\fIworspace\fP will only show window from the current workspace.
+\fIworkspace\fP will only show window from the current workspace.
 .TP
 .B sort = [true|false]
 setting of whether taskbar items should be sorted. If the items are not
@@ -326,7 +326,7 @@ If both rows and cols are specified, rows will be used. If neither is
 specified, the default is rows=1
 .TP
 .B group = [popup|pager|false]
-if set to true, the taskbar items will be grouped. Supported grouppings
+if set to true, the taskbar items will be grouped. Supported groupings
 are: popup and pager. In a popup grouping windows are grouped by app_id,
 the main taskbar will contain one item per app_id with an icon and a
 label set to app_id. On over, it will popup a \(dqgroup taskbar\(dq containing
@@ -404,7 +404,7 @@ bar). The argument is a number, specifying the size in pixels or a string.
 I.e. \(dq800\(dq for 800 pixels or \(dq50%\(dq for 50% of screen size
 .TP
 .B halign = <alignment>
-specified horizonal alignment of the bar if the bar occupies less than 100%
+specified horizontal alignment of the bar if the bar occupies less than 100%
 of the monitor. The valid values are \fIstart\fP, \fIcenter\fP, \fIend\fP;
 .TP
 .B valign = <alignment>
@@ -420,17 +420,17 @@ If the timeout is zero, the bar will always be visible.
 .TP
 .B sensor_delay = <number>
 Specifies the interval after the pointer enters the bar sensor area and the
-hidden bar pops back up. This property is ignore if the \fIsensor\fP proeprty is
+hidden bar pops back up. This property is ignore if the \fIsensor\fP property is
 not specified.
 .TP
 .B transition = <number>
-Speficies the transition period (in milliseconds) for bar appearance
+Specifies the transition period (in milliseconds) for bar appearance
 animation.
 .TP
 .B monitor = <string>
 assign bar to a given monitor. The  monitor name can be prefixed by
 \(dqstatic:\(dq, i.e. \(dqstatic:eDP\-1\(dq. if this is set and the specified monitor
-doesn\(aqt exist or gets disconnected, the bar will not jump to another montior,
+doesn\(aqt exist or gets disconnected, the bar will not jump to another monitor,
 but will be hidden and won\(aqt reappear until the monitor is reconnected.
 .TP
 .B mirror = <string>
@@ -536,7 +536,7 @@ The following menu items are supported:
 .INDENT 0.0
 .TP
 .B item
-A menu item. If the item conains a \fImenu\fP widget inside it, it will be
+A menu item. If the item contains a \fImenu\fP widget inside it, it will be
 presented as a submenu, otherwise the item will have invoke an \fIaction\fP upon
 activation if an \fIaction\fP is defined.
 .TP
@@ -575,7 +575,7 @@ entry file.
 an action to execute if the item is activated.
 .TP
 .B index = <number>
-a sort index assocciated with an item. If a menu has a \fIsort\fP property set to
+a sort index associated with an item. If a menu has a \fIsort\fP property set to
 true, the items will be sorted using this index as a primary sort key.
 .UNINDENT
 .sp
@@ -630,7 +630,7 @@ placer {
 .sp
 Task switcher cycles the focus across windows (i.e. Alt\-Tab function). Switcher
 can be invoked through a \fISwitcherEvent\fP action. The forward switch action is
-bound to \fISIGUSR1\fP signal by default,  in \fIsway\fP, the action is additioanlly
+bound to \fISIGUSR1\fP signal by default,  in \fIsway\fP, the action is additionally
 bound to a change in a bar hidden_state property.
 .sp
 In sway, you can bind alt\-tab using \fIbindsym Alt\-Tab bar hidden_state toggle\fP
@@ -651,7 +651,7 @@ controls which windows are shown in the switcher.
 \fIfloating\fP will only show flowing windows.
 \fIminimized\fP will filter out minimized windows.
 \fIoutput\fP will only show windows from the current display.
-\fIworspace\fP will only show window from the current workspace.
+\fIworkspace\fP will only show window from the current workspace.
 .TP
 .B icons = [true|false]
 display window icons in the task list.
@@ -800,7 +800,7 @@ Return [<expression>];
 .UNINDENT
 .UNINDENT
 .sp
-For more complex actions, you can define yu own functions using a toplevel
+For more complex actions, you can define your own functions using a toplevel
 \fIfunction\fP keyword. I.e.:
 .INDENT 0.0
 .INDENT 3.5
@@ -820,7 +820,7 @@ Function \(dqSfwBarInit\(dq is executed on startup. Use it set initial parameter
 the bar, modules etc.
 .SS Expressions
 .sp
-As part of the configation SFWBar can evaluate expressions. These can be part of
+As part of the configuration SFWBar can evaluate expressions. These can be part of
 an action or user defined function, but some properties also accept expressions.
 In case of the later, the expression is evaluated periodically or in response to
 to a trigger (see \fIinterval\fP and \fItrigger\fP widget properties).
@@ -910,7 +910,7 @@ Returns n/a.
 Setup a file monitor. Upon any changes to the file, a trigger will be
 emitted. If the timeout is specified, the trigger will be emitted at an
 interval specified by timeout value (in microseconds) until the first
-file monitor event is detected (this iis useful for /sys files where
+file monitor event is detected (this is useful for /sys files where
 monitoring may not be effective. Returns n/a.
 .TP
 .B ClientSend(<id:string>, <string>)
@@ -976,7 +976,7 @@ last workplace. This option requires custom IPC support. Returns n/a.
 .B SwitcherEvent(<string>)
 trigger a switcher event, this action will bring up the switcher window and
 cycle the focus either forward or back based on the argument. The string
-argument can be either \(dqfoward\(dq or \(dqback\(dq. If the argument is omitted, the
+argument can be either \(dqforward\(dq or \(dqback\(dq. If the argument is omitted, the
 focus will cycle forward.
 .TP
 .B SetValue([<widget:string>,]<string>)
@@ -1034,11 +1034,11 @@ Send a command over Sway IPC. Returns n/a.
 Send a command over Sway IPC applicable to a current window, Returns n/a.
 .TP
 .B Str(<value>, <number>)
-Convert a value to string.If converting a numner, the second parameter
+Convert a value to string.If converting a number, the second parameter
 controls decimal precision. Returns <string>.
 .TP
 .B Val(<string)
-Convert a string to a number. Returns <nuemric>
+Convert a string to a number. Returns <numeric>
 .TP
 .B Min(<number>, <number>)
 Return a smaller of the two numbers.
@@ -1047,8 +1047,8 @@ Return a smaller of the two numbers.
 Return a larger of the two numbers.
 .TP
 .B Mid(<string>, <numeric>, <numeric>)
-Extract a substring from a string, the first paramter is the string to extract
-the substring from, second and third parameters are thef frist and last
+Extract a substring from a string, the first parameter is the string to extract
+the substring from, second and third parameters are the first and last
 characters of the substring. Returns <string>.
 .TP
 .B Extract(<string>, <pattern:string>)
@@ -1094,9 +1094,9 @@ a \fIresult\fP array, otherwise returns a \fIdefault\fP string. Returns <string>
 .TP
 .B Lookup(<number>, <threshold:number>, <result:string>, ..., <default:string>)
 Looks up a \fInumber\fP against a list of \fIthreshold\(gas. Returns a \(garesult\fP string
-corrsponding to a first \fIthreshold\fP smaller than the \fInumber\fP\&. This means
-\fIthreasholds\fP should be sorted in a descending order. If all \fIthreshold\(gas are
-greather than the \(ganumber\fP, returns \fIdefault\fP string. Returns <string>.
+corresponding to a first \fIthreshold\fP smaller than the \fInumber\fP\&. This means
+\fIthresholds\fP should be sorted in a descending order. If all \fIthreshold\(gas are
+greater than the \(ganumber\fP, returns \fIdefault\fP string. Returns <string>.
 .TP
 .B ArrayLookup(<number>, <threshold:array>, <result:array> [, <default:string>])
 Looks up a \fInumber\fP in a \fIthreshold\fP array and returns a \fIresult\fP with an
@@ -1138,7 +1138,7 @@ Check if the file exists and is readable by the SFWBar process.
 Returns <number>.
 .TP
 .B GT(<string>)
-Returns a transaltion of a string corresponding to a current locale. If
+Returns a translation of a string corresponding to a current locale. If
 translation is not available, returns the string. Returns <string>.
 .TP
 .B Layout()
@@ -1153,10 +1153,10 @@ argument is supplied, returns time corresponding to a supplied time zone.
 Returns <string>.
 .TP
 .B Disk(<fs:string>, <info:string>)
-queries disk information for a disk. \fIfs\fP specifies a mountpoint to query.
+queries disk information for a disk. \fIfs\fP specifies a mount point to query.
 \fIinfo\fP specifies desired information. Available options are:
 \fItotal\fP \- total space on disk in bytes.
-\fIavail\fP \- avaialble space on disk.
+\fIavail\fP \- available space on disk.
 \fIfree\fP \- free space on disk.
 \fI%avail\fP \- available fraction of space on disk.
 \fI%used\fP \- used fraction of space on disk.
@@ -1174,14 +1174,14 @@ to query. Valid values are:
 \(dqtitle\(dq \- title of a window. Returns <string>.
 \(dqminimized\(dq \- minimized state of a window. Returns <number>.
 \(dqmaximized\(dq \- maximized state of a window. Returns <number>.
-\(dqfillscreen\(dq \- fullscreen state of a window. Returns <number>.
+\(dqfullscreen\(dq \- fullscreen state of a window. Returns <number>.
 \(dqfocused\(dq \- focused state of a window. Returns <number>.
 .TP
 .B WidgetId()
 Returns an ID of a widget invoking the action. Returns <string>.
 .TP
 .B WidgetState([<id:string>,] <stateid:number>)
-Returns a value of one of two widget \fIstate\fP booelans. The optional parameter
+Returns a value of one of two widget \fIstate\fP boolean. The optional parameter
 \fIid\fP specifies an id of a widget to query. If omitted, the state of a widget
 calling the expression will be returned. The \fIstateid\fP parameter specifies
 which state variable to query (valid values are 1 or 2). Returns <number>.
@@ -1212,7 +1212,7 @@ Returns <string>.
 .sp
 Bar often require polling data from system files (i.e. /sys or /proc). To this
 end, SFWBar provides a scanner infrastructure. Scanners allow reading system
-files and extract multiple datapoints from them in a single pass. This ensures
+files and extract multiple data points from them in a single pass. This ensures
 that multiple data items are consistent and resources are not wasted reading the
 same file multiple times.:
 .INDENT 0.0
@@ -1444,7 +1444,7 @@ In the above example, you can put an icon called \fIfirefox.svg\fP (you can also
 If application id is blank, you can try mapping it from the program\(aqs title
 (please note that the title may change during runtime, so matching it can be
 tricky). Mapping is supported via function \fBMapAppId\fP\&. You can add a function
-call to yor \fISfwbarInit\fP function to run it on startup, I.e.
+call to your \fISfwbarInit\fP function to run it on startup, I.e.
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -1458,15 +1458,15 @@ If an \fIapp_id\fP is not set, and sway is being used, sfwbar will fallback to
 using the \fIinstance\fP in the \fIwindow\-properties\fP\&.
 .SH CSS STYLING
 .sp
-SFWBar uses gtk+ widgets and can accept all css properties supported by gtk+.
-SFWBar widgets correspond to gtk+ widgets as following:
+SFWBar uses GTK+ widgets and can accept all css properties supported by GTK+.
+SFWBar widgets correspond to GTK+ widgets as following:
 .TS
 box center;
 l|l|l.
 T{
 SFWBar widget
 T}	T{
-gtk+ widget
+GTK+ widget
 T}	T{
 css class
 T}
@@ -1500,17 +1500,17 @@ scale
 T}	T{
 GtkProgressBar
 T}	T{
-progressbar, trough, progress
+progress bar, trough, progress
 T}
 .TE
 .sp
 Taskbar, Pager, Tray and Switcher use combinations of these widgets and can
-be themed using gtk+ nested css convention,
+be themed using GTK+ nested css convention,
 i.e. \fBgrid#mytaskbar button { ... }\fP
 (this example assumes you assigned \fBstyle = \(dqmytaskbar\(dq\fP to your taskbar
 widget).
 .sp
-In addition to standard gtk+ css properties SFWBar implements several
+In addition to standard GTK+ css properties SFWBar implements several
 additional properties. These are:
 .TS
 box center;
