@@ -443,9 +443,9 @@ static value_t dn_get_func ( vm_t *vm, value_t p[], gint np )
 static value_t dn_group_func ( vm_t *vm, value_t p[], gint np )
 {
   dn_notification *notif;
-  value_t v1 = value_na;
   GList *iter;
   guint32 id, count = 0;
+  gchar *result = NULL;
   gboolean header = FALSE;
 
   if(np!=1 || !value_is_string(p[0]))
@@ -464,7 +464,7 @@ static value_t dn_group_func ( vm_t *vm, value_t p[], gint np )
     notif = iter->data;
 
     if(expanded_group && !g_strcmp0(expanded_group, notif->app_name))
-      v1 = value_new_string(g_strdup("visible"));
+      result = g_strdup("visible");
     else
     {
       for(iter=notif_list; iter; iter=g_list_next(iter))
@@ -476,15 +476,15 @@ static value_t dn_group_func ( vm_t *vm, value_t p[], gint np )
         }
 
       if(count==1)
-        v1 = value_new_string(g_strdup("sole"));
+        result = g_strdup("sole");
 
       if(count>1 && header)
-        v1 = value_new_string(g_strdup("header"));
+        result = g_strdup("header");
     }
   }
   g_rec_mutex_unlock(&dn_mutex);
 
-  return v1;
+  return value_new_string(result);
 }
 
 static value_t dn_active_group_func ( vm_t *vm, value_t p[], gint np )
