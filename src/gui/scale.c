@@ -18,9 +18,9 @@ static void scale_update_value ( GtkWidget *self )
 
   value = base_widget_get_value(self);
 
-  if(!g_strrstr(value,"nan"))
+  if(!g_strrstr(value, "nan"))
       gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(priv->scale),
-          g_ascii_strtod(value,NULL));
+          g_ascii_strtod(value, NULL));
 }
 
 static void scale_style_updated ( GtkWidget *widget, GtkWidget *self )
@@ -29,7 +29,7 @@ static void scale_style_updated ( GtkWidget *widget, GtkWidget *self )
   gint dir;
 
   priv = scale_get_instance_private(SCALE(self));
-  gtk_widget_style_get(priv->scale,"direction",&dir,NULL);
+  gtk_widget_style_get(priv->scale, "direction", &dir, NULL);
   if(priv->dir == dir)
     return;
   priv->dir = dir;

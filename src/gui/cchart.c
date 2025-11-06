@@ -19,8 +19,8 @@ static void cchart_update_value ( GtkWidget *self )
 
   value = base_widget_get_value(self);
 
-  if(!g_strrstr(value,"nan"))
-      chart_update(priv->chart,g_ascii_strtod(value,NULL));
+  if(!g_strrstr(value, "nan"))
+      chart_update(priv->chart,g_ascii_strtod(value, NULL));
 }
 
 static void cchart_class_init ( CChartClass *kclass )
@@ -36,5 +36,5 @@ static void cchart_init ( CChart *self )
   priv = cchart_get_instance_private(CCHART(self));
 
   priv->chart = chart_new();
-  gtk_container_add(GTK_CONTAINER(self),priv->chart);
+  gtk_container_add(GTK_CONTAINER(self), priv->chart);
 }
