@@ -179,9 +179,9 @@ static void nm_apoint_free ( nm_apoint_t *apoint )
 static void nm_apoint_update ( nm_apoint_t *ap )
 {
   if(ap->visible)
-    trigger_emit_with_string("wifi_updated", "id", g_strdup(ap->hash));
+    trigger_emit_with_string("wifi-conf", "id", g_strdup(ap->hash));
   else
-    trigger_emit_with_string("wifi_removed", "id", g_strdup(ap->hash));
+    trigger_emit_with_string("wifi-conf-removed", "id", g_strdup(ap->hash));
 
   g_debug("nm: ap: %s, %s, known: %d, conn: %d, strength: %d", ap->ssid,
       nm_apoint_get_type(ap), !!ap->conn, !!ap->active_node, ap->strength);
@@ -369,7 +369,7 @@ static void nm_conn_new ( gchar *path )
       (ap->rsn & 0x00000200) || (ap->wpa & 0x00000200))
   {
     if(ap)
-      trigger_emit_with_string("wifi_updated", "id", g_strdup(ap->hash));
+      trigger_emit_with_string("wifi-conf", "id", g_strdup(ap->hash));
     hash_table_unlock(apoint_list);
     return; // we don't support 802.11x
   }
@@ -476,7 +476,7 @@ static void nm_ap_node_free ( nm_ap_node_t *node )
     if( !(apoint->nodes = g_list_remove(apoint->nodes, node)) )
     {
       g_debug("nm: ap removed: %s", apoint->ssid);
-      trigger_emit_with_string("wifi_removed", "id", g_strdup(apoint->hash));
+      trigger_emit_with_string("wifi-conf-removed", "id", g_strdup(apoint->hash));
       hash_table_remove(apoint_list, apoint->hash);
     }
 
@@ -827,7 +827,7 @@ static void nm_object_changed ( GDBusConnection *con, const gchar *sender,
   else if(!g_strcmp0(iface, nm_iface_wireless))
   {
     if(g_variant_lookup(dict, "LastScan", "x", NULL))
-      trigger_emit("wifi_scan_complete");
+      trigger_emit("wifi-scan-complete");
   }
   else if(!g_strcmp0(iface, nm_iface_active))
   {
@@ -960,7 +960,7 @@ static value_t nm_action_scan ( vm_t *vm, value_t p[], gint np )
   g_mutex_lock(&device_lock);
   if(default_dev)
   {
-    trigger_emit("wifi_scan");
+    trigger_emit("wifi-scan");
     g_dbus_connection_call(nm_con, nm_iface, default_dev->path,
         nm_iface_wireless, "RequestScan", g_variant_new("(a{sv})", NULL),
         NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);

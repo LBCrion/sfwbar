@@ -4,10 +4,10 @@ module("wifi-nm")
 module("wifi-iwd")
 
 Private {
-  TriggerAction "wifi_updated", XWifiUpdate()
-  TriggerAction "wifi_removed", XWifiRemove()
-  TriggerAction "wifi_scan", Config("label 'XWifiScanButton' { value = GT('Scanning') + ' ...' }")
-  TriggerAction "wifi_scan_complete", Config("label 'XWifiScanButton' { value = GT('Scan') }")
+  TriggerAction "wifi-conf", XWifiUpdate()
+  TriggerAction "wifi-conf-removed", XWifiRemove()
+  TriggerAction "wifi-scan", Config("label 'XWifiScanButton' { value = GT('Scanning') + ' ...' }")
+  TriggerAction "wifi-scan-complete", Config("label 'XWifiScanButton' { value = GT('Scan') }")
 
   Var wifi_thresholds = [80, 60, 40, 20];
   Var wifi_icons = [
@@ -40,6 +40,8 @@ Private {
     }"
 
   Function XWifiUpdate() {
+    If WifiGet(id, "SSID")+"" = ""
+      Return;
     Config(ReplaceAll( XWifiNetTmpl,
         "@WIFI_PATH@", Escape(WifiGet(id, "Path")),
         "@WIFI_TYPE@", WifiGet(id, "Type"),
@@ -50,8 +52,8 @@ Private {
   }
 
   Function XWifiRemove() {
-    ClearWidget(id + "_gridKnown")
-    ClearWidget(id + "_gridOther")
+    ClearWidget(Escape(id) + "_gridKnown")
+    ClearWidget(Escape(id) + "_gridOther")
   }
 
   Function XWifiConnect() {

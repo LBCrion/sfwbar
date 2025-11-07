@@ -225,7 +225,7 @@ static void iw_network_updated ( iw_network_t *net )
 {
   if(net)
   {
-    trigger_emit_with_string("wifi_updated", "id", g_strdup(net->path));
+    trigger_emit_with_string("wifi-conf", "id", g_strdup(net->path));
     g_debug("iwd: network: %s, type: %s, conn: %d, known: %s, strength: %d",
         net->ssid, net->type, net->connected, net->known, net->strength);
   }
@@ -237,7 +237,7 @@ static void iw_network_remove ( iw_network_t *network )
     return;
 
   g_debug("iwd: remove network: %s", network->ssid);
-  trigger_emit_with_string("wifi_removed", "id", g_strdup(network->path));
+  trigger_emit_with_string("wifi-conf-removed", "id", g_strdup(network->path));
 
   if(network->path)
     hash_table_remove(iw_networks, network->path);
@@ -324,7 +324,7 @@ static void iw_signal_level_agent_method(GDBusConnection *con,
     
     g_debug("iwd: level %d on %s", level, device?device->name:object);
     g_rec_mutex_unlock(&device_mutex);
-    trigger_emit("wifi_level");
+    trigger_emit("wifi-level");
     g_dbus_method_invocation_return_value(invocation, NULL);
   }
 }
@@ -497,7 +497,7 @@ static void iw_scan_start ( gchar *path )
   if(device && !device->scanning)
   {
     g_debug("iwd: initiating scan");
-    trigger_emit("wifi_scan");
+    trigger_emit("wifi-scan");
     g_dbus_connection_call(iw_con, iw_serv, path, iw_iface_station, "Scan",
       NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
   }
@@ -616,7 +616,7 @@ static void iw_station_handle ( gchar *path, gchar *iface, GVariant *dict )
   change |= scan;
   if(scan && !device->scanning)
   {
-    trigger_emit("wifi_scan_complete");
+    trigger_emit("wifi-scan-complete");
     g_dbus_connection_call(iw_con, iw_serv, path, iw_iface_station,
         "GetOrderedNetworks", NULL, G_VARIANT_TYPE("(a(on))"),
         G_DBUS_CALL_FLAGS_NONE, -1, NULL,
