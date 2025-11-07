@@ -4,8 +4,8 @@ module("bluez")
 
 Private {
 
-  TriggerAction "bluez_updated", XBluezUpdate();
-  TriggerAction "bluez_removed", XBluezRemove();
+  TriggerAction "bluez-conf", XBluezUpdate();
+  TriggerAction "bluez-conf-removed", XBluezRemove();
 
   Var XBluezTmpl = "
     grid 'XBluezGrid@BLUEZ_PAIRED@' {
@@ -125,7 +125,7 @@ Private {
       }
       label "XBluezScanButton" {
         value = If(BluezAdapter("Discovering"), GT("Scanning")+"...", GT("Scan"))
-        trigger = "bluez_adapter"
+        trigger = "bluez-adapter"
         style = "XBluezScan"
         action = BluezScan()
       }

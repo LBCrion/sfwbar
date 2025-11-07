@@ -6,7 +6,7 @@ Private {
 
   layout {
     style = If(BluezAdapter("Count"), "module", "hidden")
-    trigger = "bluez_adapter"
+    trigger = "bluez-adapter"
     button "XBluezWidget" {
       style = "module"
       value = If(!BluezAdapter("Powered"), "bluetooth-disabled",
@@ -14,7 +14,7 @@ Private {
       action = XBluezPop()
       action[RightClick] = Menu("XBluezAdapter")
       tooltip = GT("Bluetooth")
-      trigger = "bluez_adapter"
+      trigger = "bluez-adapter"
     }
   }
 }

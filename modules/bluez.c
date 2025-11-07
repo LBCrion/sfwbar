@@ -155,7 +155,6 @@ static void bz_adapter_free ( gchar *object )
 {
   GList *iter;
   BzAdapter *adapter;
-  gboolean trigger;
 
   for(iter=adapters; iter; iter=g_list_next(iter))
     if(!g_strcmp0(((BzAdapter *)(iter->data))->path, object))
@@ -165,9 +164,6 @@ static void bz_adapter_free ( gchar *object )
 
   adapter = iter->data;
   adapters = g_list_remove(adapters, adapter);
-  trigger = !adapters;
-  if(trigger)
-    trigger_emit("bluez_running");
   g_cancellable_cancel(adapter->cancel);
   g_object_unref(adapter->cancel);
   if(adapter->timeout_handle)
@@ -175,6 +171,7 @@ static void bz_adapter_free ( gchar *object )
   g_free(adapter->path);
   g_free(adapter->iface);
   g_free(adapter);
+  trigger_emit("bluez-adapter");
 }
 
 static void bz_device_free ( BzDevice *device )
@@ -183,7 +180,7 @@ static void bz_device_free ( BzDevice *device )
       device->connected, device->addr, device->name, device->path);
   g_cancellable_cancel(device->cancel);
   g_object_unref(device->cancel);
-  trigger_emit_with_string("bluez_removed", "path", g_strdup(device->path));
+  trigger_emit_with_string("bluez-conf-removed", "path", g_strdup(device->path));
   g_free(device->path);
   g_free(device->addr);
   g_free(device->name);
@@ -258,7 +255,7 @@ static void bz_connect_cb ( GDBusConnection *con, GAsyncResult *res,
   GVariant *result;
 
   device->connecting =  FALSE;
-  trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
+  trigger_emit_with_string("bluez-conf", "path", g_strdup(device->path));
   if( (result = g_dbus_connection_call_finish(con, res, NULL)) )
   {
     g_debug("bluez: connected %s (%s)", device->addr, device->name);
@@ -271,7 +268,7 @@ static void bz_connect ( BzDevice *device )
   if(!device->connecting)
   {
     device->connecting = TRUE;
-    trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
+    trigger_emit_with_string("bluez-conf", "path", g_strdup(device->path));
   }
   g_debug("bluez: attempting to connect %s (%s)", device->addr, device->name);
   g_dbus_connection_call(bz_con, bz_serv, device->path,
@@ -311,7 +308,7 @@ static void bz_trust_cb ( GDBusConnection *con, GAsyncResult *res,
   if( !(result = g_dbus_connection_call_finish(con, res, NULL)) )
   {
     device->connecting =  FALSE;
-    trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
+    trigger_emit_with_string("bluez-conf", "path", g_strdup(device->path));
   }
   else
   {
@@ -345,7 +342,7 @@ static void bz_pair_cb ( GDBusConnection *con, GAsyncResult *res,
   if( !(result = g_dbus_connection_call_finish(con, res, NULL)) )
   {
     device->connecting =  FALSE;
-    trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
+    trigger_emit_with_string("bluez-conf", "path", g_strdup(device->path));
   }
   else
   {
@@ -358,7 +355,7 @@ static void bz_pair_cb ( GDBusConnection *con, GAsyncResult *res,
 static void bz_pair ( BzDevice *device )
 {
   device->connecting =  TRUE;
-  trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
+  trigger_emit_with_string("bluez-conf", "path", g_strdup(device->path));
 
   if(device->paired)
   {
@@ -480,7 +477,7 @@ static void bz_device_handle ( gchar *path, gchar *iface, GVariantIter *piter )
   }
 
   bz_device_properties (device, piter);
-  trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
+  trigger_emit_with_string("bluez-conf", "path", g_strdup(device->path));
 
   g_debug("bluez: device added: %d %d %s %s on %s",device->paired,
       device->connected, device->addr, device->name, device->path);
@@ -513,7 +510,7 @@ static void bz_device_changed ( GDBusConnection *con, const gchar *sender,
   {
     g_debug("bluez: device changed: %d %d %s %s on %s",device->paired,
         device->connected, device->addr, device->name, device->path);
-    trigger_emit_with_string("bluez_updated", "path", g_strdup(device->path));
+    trigger_emit_with_string("bluez-conf", "path", g_strdup(device->path));
   }
   g_variant_iter_free(piter);
 }
@@ -533,7 +530,7 @@ static void bz_adapter_update ( const gchar *path, GVariant *dict )
   if(g_variant_lookup(dict, "Powered", "b", &state))
     adapter->powered = state;
 
-  trigger_emit("bluez_adapter");
+  trigger_emit("bluez-adapter");
 }
 
 static void bz_adapter_prop_cb ( GDBusConnection *con, GAsyncResult *res,
@@ -567,8 +564,7 @@ static void bz_adapter_handle ( gchar *object, gchar *iface )
       (GAsyncReadyCallback)bz_adapter_prop_cb, adapter);
 
   adapters = g_list_append(adapters, adapter);
-  if(adapters && !g_list_next(adapters))
-    trigger_emit("bluez_running");
+  trigger_emit("bluez-adapter");
 }
 
 static void bz_adapter_changed ( GDBusConnection *con, const gchar *sender,
