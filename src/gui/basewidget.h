@@ -91,6 +91,7 @@ GList *base_widget_get_mirror_children ( GtkWidget *self );
 GtkWidget *base_widget_get_mirror_parent ( GtkWidget *self );
 gchar *base_widget_get_id ( GtkWidget *self );
 GtkWidget *base_widget_get_child ( GtkWidget *self );
+GtkWidget *base_widget_get_parent ( GtkWidget *self );
 gchar *base_widget_get_value ( GtkWidget *self );
 GBytes *base_widget_get_action ( GtkWidget *self, gint, GdkModifierType );
 gpointer base_widget_scanner_thread ( GMainContext *gmc );

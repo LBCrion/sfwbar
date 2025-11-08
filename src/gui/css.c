@@ -71,7 +71,8 @@ static void css_custom_handle ( GtkWidget *widget )
       window_collapse_popups(widget);
     gtk_widget_hide(widget);
   }
-  if(!GTK_IS_EVENT_BOX(widget))
+  if(!GTK_IS_VIEWPORT(widget) && !GTK_IS_SCROLLED_WINDOW(widget) &&
+      !GTK_IS_EVENT_BOX(widget))
   {
     gtk_widget_style_get(widget, "hexpand", &state, NULL);
     change = (state != gtk_widget_get_hexpand(widget));

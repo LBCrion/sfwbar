@@ -170,12 +170,12 @@ static void base_widget_size_allocate ( GtkWidget *self, GtkAllocation *alloc )
   if(priv->maxw)
   {
     gtk_widget_get_preferred_width(base_widget_get_child(self), &m, &n);
-    alloc->width = MAX(m,MIN(priv->maxw, alloc->width));
+    alloc->width = MAX(m, MIN(priv->maxw, alloc->width));
   }
   if(priv->maxh)
   {
     gtk_widget_get_preferred_height(base_widget_get_child(self), &m, &n);
-    alloc->height = MAX(m,MIN(priv->maxh, alloc->height));
+    alloc->height = MAX(m, MIN(priv->maxh, alloc->height));
   }
   GTK_WIDGET_CLASS(base_widget_parent_class)->size_allocate(self, alloc);
 }
@@ -527,8 +527,7 @@ static void base_widget_set_rect ( GtkWidget *self, GdkRectangle *rect )
 
   priv->rect = *rect;
 
-  parent = gtk_widget_get_parent(self);
-  parent = parent?gtk_widget_get_parent(parent):NULL;
+  parent = base_widget_get_parent(self);
   if(!parent || !IS_GRID(parent))
     return;
 
@@ -794,8 +793,25 @@ static void base_widget_init ( BaseWidget *self )
 
 GtkWidget *base_widget_get_child ( GtkWidget *self )
 {
+  GtkWidget *child;
+
   g_return_val_if_fail(IS_BASE_WIDGET(self), NULL);
-  return gtk_bin_get_child(GTK_BIN(self));
+  child = gtk_bin_get_child(GTK_BIN(self));
+  while(GTK_IS_VIEWPORT(child) || GTK_IS_SCROLLED_WINDOW(child))
+    child = gtk_bin_get_child(GTK_BIN(child));
+
+  return child;
+}
+
+GtkWidget *base_widget_get_parent ( GtkWidget *self )
+{
+  GtkWidget *parent;
+
+  parent = gtk_widget_get_parent(self);
+  while(parent && !GTK_IS_EVENT_BOX(parent))
+    parent = gtk_widget_get_parent(parent);
+
+  return parent;
 }
 
 gboolean base_widget_get_local_state ( GtkWidget *self )

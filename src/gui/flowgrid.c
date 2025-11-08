@@ -82,10 +82,10 @@ static void flow_grid_style_updated ( GtkWidget *self )
   g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
-  gtk_widget_style_get(GTK_WIDGET(priv->grid), "row-homogeneous", &h, NULL);
-  gtk_grid_set_row_homogeneous(priv->grid, h);
-  gtk_widget_style_get(GTK_WIDGET(priv->grid), "column-homogeneous", &h, NULL);
-  gtk_grid_set_column_homogeneous(priv->grid, h);
+  gtk_widget_style_get(priv->grid, "row-homogeneous", &h, NULL);
+  gtk_grid_set_row_homogeneous(GTK_GRID(priv->grid), h);
+  gtk_widget_style_get(priv->grid, "column-homogeneous", &h, NULL);
+  gtk_grid_set_column_homogeneous(GTK_GRID(priv->grid), h);
 
   GTK_WIDGET_CLASS(flow_grid_parent_class)->style_updated(self);
 }
@@ -261,8 +261,8 @@ static void flow_grid_init ( FlowGrid *self )
   g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
-  priv->grid = GTK_GRID(gtk_grid_new());
-  gtk_container_add(GTK_CONTAINER(self), GTK_WIDGET(priv->grid));
+  priv->grid = gtk_grid_new();
+  gtk_container_add(GTK_CONTAINER(self), priv->grid);
 
   sig = g_strdup_printf("flow-item-%p", (void *)self);
   priv->dnd_target = gtk_target_entry_new(sig, 0, SFWB_DND_TARGET_FLOW_ITEM);
@@ -398,15 +398,15 @@ gboolean flow_grid_update ( GtkWidget *self )
   for(iter=priv->children; iter; iter=g_list_next(iter))
     if(flow_item_get_active(iter->data))
     {
-      flow_grid_child_position(priv->grid, iter->data,
+      flow_grid_child_position(GTK_GRID(priv->grid), iter->data,
           axis_cols? i/dim : i%dim, axis_cols? i%dim : i/dim);
       i++;
     }
-    else if(gtk_widget_get_parent(iter->data) == GTK_WIDGET(priv->grid))
+    else if(gtk_widget_get_parent(iter->data) == priv->grid)
       gtk_container_remove(GTK_CONTAINER(priv->grid), iter->data);
 
   for(;i<dim; i++)
-    gtk_grid_attach(priv->grid, gtk_label_new(""),
+    gtk_grid_attach(GTK_GRID(priv->grid), gtk_label_new(""),
         axis_cols? 0 : i, axis_cols? i : 0, 1, 1);
   css_widget_cascade(self, NULL);
 

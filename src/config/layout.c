@@ -240,13 +240,13 @@ static GtkWidget *config_widget_get ( GScanner *scanner,
   }
   else if(widget)
   {
-    parent = gtk_widget_get_parent(widget);
+    parent = base_widget_get_parent(widget);
     g_debug("Widget lookup: '%s' -> %p, parent: %p, old: %p", name, widget,
-        container, gtk_widget_get_parent(parent));
-    if(container && parent && gtk_widget_get_parent(parent) != container)
+        container, parent);
+    if(container && parent != container)
     {
-      grid_detach(g_object_ref(widget), gtk_widget_get_parent(parent));
-      gtk_container_remove(GTK_CONTAINER(parent), widget);
+      grid_detach(g_object_ref(widget), base_widget_get_child(parent));
+      gtk_container_remove(GTK_CONTAINER(base_widget_get_child(parent)), widget);
     }
   }
   else if(type_get != base_widget_get_type)

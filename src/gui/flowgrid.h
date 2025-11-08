@@ -52,7 +52,7 @@ struct _FlowGridPrivate
   gint (*comp)( GtkWidget *, GtkWidget *, GtkWidget * );
   GtkTargetEntry *dnd_target;
   GtkWidget *parent;
-  GtkGrid *grid;
+  GtkWidget *grid;
 };
 
 GType flow_grid_get_type ( void );
