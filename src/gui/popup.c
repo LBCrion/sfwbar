@@ -204,7 +204,7 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkSeat *seat )
   gdk_window_set_transient_for(gpopup, gparent);
   gdk_window_move_to_rect(gpopup, &rect, wanchor, panchor,
       GDK_ANCHOR_FLIP_X | GDK_ANCHOR_FLIP_Y, 0, 0);
-  css_widget_cascade(popup,NULL);
+  css_widget_cascade(popup, NULL);
 
   transfer = g_object_get_data(G_OBJECT(gpopup), "gdk-attached-grab-window");
   if(transfer)
@@ -259,6 +259,8 @@ static void popup_resize_maybe ( GtkWidget *self )
   gtk_window_resize(GTK_WINDOW(self), req.width, req.height);
   popup_show(g_object_get_data(G_OBJECT(self), "parent"), self,
       g_object_get_data(G_OBJECT(self), "seat"));
+  g_idle_add((GSourceFunc)gtk_widget_queue_resize,
+      gtk_bin_get_child(GTK_BIN(self)));
 }
 
 static void popup_size_allocate_cb ( GtkWidget *g, gpointer d, GtkWidget *win )
