@@ -241,6 +241,7 @@ void grid_detach( GtkWidget *child, GtkWidget *self )
   GridPrivate *priv;
 
   g_return_if_fail(g_main_context_is_owner(g_main_context_default()));
+  g_return_if_fail(IS_GRID(self));
   priv = grid_get_instance_private(GRID(self));
   g_signal_handlers_disconnect_by_func(G_OBJECT(child), (GCallback)grid_detach,
       self);

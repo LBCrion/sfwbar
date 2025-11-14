@@ -245,7 +245,7 @@ static GtkWidget *config_widget_get ( GScanner *scanner,
         container, parent);
     if(container && parent != container)
     {
-      grid_detach(g_object_ref(widget), base_widget_get_child(parent));
+      grid_detach(g_object_ref(widget), parent);
       gtk_container_remove(GTK_CONTAINER(base_widget_get_child(parent)), widget);
     }
   }

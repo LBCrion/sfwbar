@@ -808,7 +808,7 @@ GtkWidget *base_widget_get_parent ( GtkWidget *self )
   GtkWidget *parent;
 
   parent = gtk_widget_get_parent(self);
-  while(parent && !GTK_IS_EVENT_BOX(parent))
+  while(parent && !IS_BASE_WIDGET(parent))
     parent = gtk_widget_get_parent(parent);
 
   return parent;
