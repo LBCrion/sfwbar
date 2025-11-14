@@ -27,9 +27,11 @@ typedef struct _GridPrivate GridPrivate;
 struct _GridPrivate
 {
   GtkWidget *grid;
+  GtkWidget *scroller;
   GList *last;
   GList *children;
   gint dir;
+  gboolean hscroll, vscroll;
 };
 
 GType grid_get_type ( void );
