@@ -496,6 +496,7 @@ static gboolean scale_image_set ( GtkWidget *self )
         g_free(priv->fname);
         priv->fname = temp;
         priv->ftype = SI_FILE;
+        priv->symbolic = i%2!=priv->symbolic;
         break;
       }
       else
