@@ -32,10 +32,7 @@ ScanFile *scanner_file_get ( gchar *trigger )
   ScanFile *file;
 
   g_mutex_lock(&trigger_mutex);
-  if(!trigger_list)
-    file = NULL;
-  else
-    file = g_hash_table_lookup(trigger_list, (void *)g_intern_string(trigger));
+  file = g_hash_table_lookup(trigger_list, (void *)g_intern_string(trigger));
   g_mutex_unlock(&trigger_mutex);
 
   return file;
@@ -125,7 +122,7 @@ void scanner_var_free ( ScanVar *var )
   else
     if(var->definition)
       g_regex_unref(var->definition);
-  expr_cache_free(var->expr);
+  expr_cache_unref(var->expr);
   g_free(var->str);
   g_free(var);
 }
@@ -161,7 +158,7 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
   switch(var->type)
   {
     case G_TOKEN_SET:
-      expr_cache_free(var->expr);
+      expr_cache_unref(var->expr);
       var->expr = expr_cache_new_with_code((GBytes *)pattern);
       if(var->expr)
         var->expr->store = store;
@@ -197,8 +194,11 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
 
 void scanner_var_invalidate ( GQuark key, ScanVar *var, void *data )
 {
-  if( !var->file || var->file->source != SO_CLIENT )
-    var->invalid = TRUE;
+  if( var->file && var->file->source == SO_CLIENT )
+    return;
+  var->invalid = TRUE;
+  if(var->file)
+    var->file->invalid = TRUE;
 }
 
 /* expire all variables in the tree */
@@ -397,6 +397,8 @@ gboolean scanner_file_glob ( ScanFile *file )
     return FALSE;
   if(file->source == SO_EXEC)
     return scanner_file_exec(file);
+  if(!file->invalid)
+    return FALSE;
   if((file->flags & VF_NOGLOB)||(file->source != SO_FILE))
   {
     dnames[0] = file->fname;
@@ -434,6 +436,7 @@ gboolean scanner_file_glob ( ScanFile *file )
   if(!(file->flags & VF_NOGLOB)&&(file->source == SO_FILE))
     globfree(&gbuf);
 
+  file->invalid = FALSE;
   return TRUE;
 }
 
@@ -493,9 +496,9 @@ static ScanVar *scanner_var_update ( GQuark id, gboolean update,
     return var;
   }
 
+  g_rec_mutex_lock(&var->mutex);
   if(var->type == G_TOKEN_SET)
   {
-    g_rec_mutex_lock(&var->mutex);
     if(!var->updating)
     {
       var->updating = TRUE;
@@ -512,17 +515,19 @@ static ScanVar *scanner_var_update ( GQuark id, gboolean update,
 
     if(expr)
       expr->vstate = expr->vstate || var->expr->vstate;
-    g_rec_mutex_unlock(&var->mutex);
   }
   else if(var->file)
   {
-    g_mutex_lock(&var->file->mutex);
-    scanner_file_glob(var->file);
+    if(g_mutex_trylock(&var->file->mutex))
+      scanner_file_glob(var->file);
+    else
+      g_mutex_lock(&var->file->mutex);
     g_mutex_unlock(&var->file->mutex);
     if(expr)
       expr->vstate = TRUE;
     var->vstate = TRUE;
   }
+  g_rec_mutex_unlock(&var->mutex);
 
   return var;
 }

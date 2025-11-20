@@ -34,6 +34,7 @@ enum {
 };
 
 typedef struct scan_file {
+  gboolean invalid;
   GMutex mutex;
   gchar *fname;
   const gchar *trigger;

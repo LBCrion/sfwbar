@@ -122,9 +122,9 @@ static void menu_item_priv_free( MenuItemPrivate *priv )
 
   if(priv->id)
     g_hash_table_remove(menu_items, priv->id);
-  g_clear_pointer(&priv->label_expr, expr_cache_free);
-  g_clear_pointer(&priv->style_expr, expr_cache_free);
-  g_clear_pointer(&priv->tooltip_expr, expr_cache_free);
+  g_clear_pointer(&priv->label_expr, expr_cache_unref);
+  g_clear_pointer(&priv->style_expr, expr_cache_unref);
+  g_clear_pointer(&priv->tooltip_expr, expr_cache_unref);
   g_clear_pointer(&priv->desktop_file, g_free);
   g_clear_pointer(&priv->action, g_bytes_unref);
   g_clear_pointer(&priv->css, g_free);
@@ -350,7 +350,7 @@ void menu_item_set_tooltip ( GtkWidget *self, GBytes *code )
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv);
 
-  g_clear_pointer(&priv->tooltip_expr, expr_cache_free);
+  g_clear_pointer(&priv->tooltip_expr, expr_cache_unref);
   priv->tooltip_expr = expr_cache_new_with_code(code);
   priv->flags |= MI_TOOLTIP;
 }

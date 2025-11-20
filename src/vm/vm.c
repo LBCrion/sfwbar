@@ -6,10 +6,10 @@
 #include "expr.h"
 #include "scanner.h"
 #include "module.h"
+#include "util/string.h"
 #include "gui/taskbaritem.h"
 
 const value_t value_na = { .type = EXPR_TYPE_NA };
-static value_t vm_run ( vm_t *vm );
 
 static gint vm_op_length[] = {
   [EXPR_OP_IMMEDIATE] = 2,
@@ -368,7 +368,7 @@ static void vm_immediate ( vm_t *vm )
   vm_push(vm, v1);
 }
 
-static value_t vm_run ( vm_t *vm )
+value_t vm_run ( vm_t *vm )
 {
   GtkWidget *widget;
   window_t *win;
@@ -469,7 +469,7 @@ static vm_t *vm_new ( GBytes *code )
   return vm;
 }
 
-static void vm_free ( vm_t *vm )
+void vm_free ( vm_t *vm )
 {
   if(vm->stack)
   {
@@ -491,6 +491,7 @@ static void vm_free ( vm_t *vm )
     vm_target_pop(vm);
 
   g_bytes_unref(vm->bytes);
+  expr_cache_unref(vm->expr);
   g_free(vm);
 }
 
@@ -509,26 +510,33 @@ value_t vm_code_eval ( GBytes *code, GtkWidget *widget )
   return v1;
 }
 
-gboolean vm_expr_eval ( expr_cache_t *expr )
+vm_t *vm_expr_prep ( expr_cache_t *expr )
 {
-  value_t v1;
   vm_t *vm;
-  gchar *eval;
 
   if(!expr || !expr->eval || !expr->code)
-    return FALSE;
+    return NULL;
   vm = vm_new(expr->code);
 
   vm_target_push(vm, base_widget_get_id(expr->widget), NULL, NULL,
       expr->store? expr->store : base_widget_get_store(expr->widget));
   vm->event = expr->event;
-  vm->expr = expr;
+  vm->expr = expr_cache_ref(expr);
 
   expr->vstate = FALSE;
+
+  return vm;
+}
+
+gboolean vm_expr_run ( vm_t *vm )
+{
+  value_t v1;
+  expr_cache_t *expr = vm->expr;
+  gchar *eval;
+
   v1 = vm_run(vm);
   expr->eval &= expr->vstate;
   eval = value_to_string(v1, -1);
-  vm_free(vm);
   value_free(v1);
 
   g_debug("expr: '%s' = '%s', vstate: %d", expr->definition, eval,
@@ -536,15 +544,26 @@ gboolean vm_expr_eval ( expr_cache_t *expr )
 
   if(g_strcmp0(eval, expr->cache))
   {
-    g_free(expr->cache);
-    expr->cache = eval;
+    str_assign(&expr->cache, eval);
+    vm_free(vm);
     return TRUE;
   }
   else
   {
     g_free(eval);
-    return FALSE;
+    vm_free(vm);
+    return expr->always_update;
   }
+}
+
+gboolean vm_expr_eval ( expr_cache_t *expr )
+{
+  vm_t *vm;
+
+  if( !(vm = vm_expr_prep(expr)) )
+    return FALSE;
+
+  return vm_expr_run(vm);
 }
 
 static gboolean vm_event_free ( void *event )

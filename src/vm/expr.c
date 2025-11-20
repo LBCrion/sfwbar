@@ -12,7 +12,9 @@ static datalist_t *expr_deps;
 
 expr_cache_t *expr_cache_new ( void )
 {
-  return g_malloc0(sizeof(expr_cache_t));
+  expr_cache_t *expr = g_malloc0(sizeof(expr_cache_t));
+  expr->refcount = 1;
+  return expr;
 }
 
 expr_cache_t *expr_cache_new_with_code ( GBytes *code )
@@ -35,9 +37,17 @@ void expr_update ( expr_cache_t **expr, GBytes *code )
   (*expr)->eval = TRUE;
 }
 
-void expr_cache_free ( expr_cache_t *expr )
+expr_cache_t *expr_cache_ref ( expr_cache_t *expr )
+{
+  g_atomic_int_inc(&expr->refcount);
+  return expr;
+}
+
+void expr_cache_unref ( expr_cache_t *expr )
 {
   if(!expr)
+    return;
+  if(!g_atomic_int_dec_and_test(&expr->refcount))
     return;
   expr_dep_remove(expr);
   g_free(expr->definition);

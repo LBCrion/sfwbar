@@ -64,6 +64,7 @@ typedef struct {
   GdkEvent *event;
   expr_cache_t *expr;
   GList *tstack;
+  gpointer user_data;
 } vm_t;
 
 typedef value_t (*vm_func_t)(vm_t *vm, value_t params[], gint np);
@@ -116,7 +117,11 @@ GBytes *parser_action_build ( GScanner *scanner );
 GBytes *parser_expr_build ( GScanner *scanner );
 GBytes *parser_function_call_build ( gchar *name );
 
+void vm_free ( vm_t *vm );
+value_t vm_run ( vm_t *vm );
 value_t vm_code_eval ( GBytes *code, GtkWidget *widget );
+vm_t *vm_expr_prep ( expr_cache_t *expr );
+gboolean vm_expr_run ( vm_t *vm );
 gboolean vm_expr_eval ( expr_cache_t *expr );
 value_t vm_function_user ( vm_t *vm, GBytes *code, guint8 np );
 GThreadPool *vm_pool_new ( gint num );

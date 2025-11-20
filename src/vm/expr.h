@@ -4,9 +4,11 @@
 #include <gtk/gtk.h>
 
 typedef struct _expr_cache {
+  gint refcount;
   gchar *definition;
   gchar *cache;
   GBytes *code;
+  gboolean always_update;
   GtkWidget *widget;
   GdkEvent *event;
   gboolean eval;
@@ -26,7 +28,8 @@ expr_cache_t *expr_cache_new ( void );
 expr_cache_t *expr_cache_new_with_code ( GBytes *code );
 void expr_update ( expr_cache_t **expr, GBytes *code );
 void expr_cache_set ( expr_cache_t *expr, gchar *def );
-void expr_cache_free ( expr_cache_t *expr );
+expr_cache_t *expr_cache_ref ( expr_cache_t *expr );
+void expr_cache_unref ( expr_cache_t *expr );
 void expr_dep_add ( GQuark quark, expr_cache_t *expr );
 void expr_dep_remove ( expr_cache_t *expr );
 void expr_dep_trigger ( GQuark quark );
