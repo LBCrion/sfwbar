@@ -3,16 +3,14 @@
 Module("idleinhibit");
 
 Private {
-  Var IconOn = "icons/misc/lock.svg";
-  Var IconOff = "icons/misc/unlock.svg";
+  Var icon_active = "icons/misc/lock-symbolic";
+  Var icon_inactive = "icons/misc/unlock-symbolic";
 
-  layout {
-    button {
-      style = If(Ident(IdleInhibitState), "module", "hidden")
-      value = If(IdleInhibitState()="on", IconOn, IconOff)
-      local = true
-      trigger = "idleinhibitor"
-      action[1] = SetIdleInhibitor("toggle")
-    }
+  export button {
+    style = If(Ident(IdleInhibitState), "module", "hidden")
+    value = If(IdleInhibitState()="on", icon_active, icon_inactive)
+    local = true
+    trigger = "idleinhibitor"
+    action[1] = SetIdleInhibitor("toggle")
   }
 }
