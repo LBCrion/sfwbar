@@ -231,6 +231,12 @@ void popup_trigger ( GtkWidget *parent, gchar *name, GdkEvent *ev )
     popup_show(parent, popup, gdk_device_get_seat(gdk_event_get_device(ev)));
 }
 
+static gboolean popup_resize ( gpointer self )
+{
+  gtk_widget_queue_resize(self);
+  return FALSE;
+}
+
 static void popup_resize_maybe ( GtkWidget *self )
 {
   GtkWidget *grab;
@@ -259,8 +265,7 @@ static void popup_resize_maybe ( GtkWidget *self )
   gtk_window_resize(GTK_WINDOW(self), req.width, req.height);
   popup_show(g_object_get_data(G_OBJECT(self), "parent"), self,
       g_object_get_data(G_OBJECT(self), "seat"));
-  g_idle_add((GSourceFunc)gtk_widget_queue_resize,
-      gtk_bin_get_child(GTK_BIN(self)));
+  g_idle_add((GSourceFunc)popup_resize, gtk_bin_get_child(GTK_BIN(self)));
 }
 
 static void popup_size_allocate_cb ( GtkWidget *g, gpointer d, GtkWidget *win )
