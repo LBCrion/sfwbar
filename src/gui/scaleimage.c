@@ -448,8 +448,9 @@ static gboolean scale_image_set ( GtkWidget *self )
   static gchar *exts[4] = {"", ".svg", ".png", ".xpm"};
   ScaleImagePrivate *priv;
   GdkPixbuf *buf;
+  GString *test;
   gint i;
-  gchar *temp,*test;
+  gchar *temp;
 
   g_return_val_if_fail(IS_SCALE_IMAGE(self), FALSE);
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
@@ -482,12 +483,19 @@ static gboolean scale_image_set ( GtkWidget *self )
     return TRUE;
   }
 
+  if(g_str_has_prefix(priv->file, "-symbolic"))
+    priv->symbolic_pref = TRUE;
+
   for(i=0; i<8; i++)
   {
-    test = g_strconcat(priv->file, (i%2!=priv->symbolic_pref)?"-symbolic":"",
-        exts[i/2], NULL);
-    temp = get_xdg_config_file(test, priv->extra);
-    g_free(test);
+    test = g_string_new_len(priv->file, strlen(priv->file)-
+        (g_str_has_suffix(priv->file, "-symbolic")?9:0));
+    if(i%2!=priv->symbolic_pref)
+      g_string_append(test, "-symbolic");
+    g_string_append(test, exts[i/2]);
+
+    temp = get_xdg_config_file(test->str, priv->extra);
+    g_string_free(test, TRUE);
     if(temp)
     {
       if( (buf = gdk_pixbuf_new_from_file_at_scale(temp, 10, 10, TRUE, NULL)) )
@@ -496,7 +504,7 @@ static gboolean scale_image_set ( GtkWidget *self )
         g_free(priv->fname);
         priv->fname = temp;
         priv->ftype = SI_FILE;
-        priv->symbolic = i%2!=priv->symbolic_pref;
+        priv->symbolic = (i%2!=priv->symbolic_pref);
         break;
       }
       else
