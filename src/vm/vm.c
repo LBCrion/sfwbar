@@ -220,9 +220,7 @@ value_t vm_function_user ( vm_t *vm, GBytes *code, guint8 np )
   vm->fp = vm->stack->len - np;
   v1 = vm_run(vm);
 
-  if(vm->expr)
-    vm->expr->vstate = TRUE;
-
+  vm->vstate = TRUE;
   g_bytes_unref(vm->bytes);
   vm->bytes = saved_bytes;
   vm->ip = saved_ip;
@@ -252,7 +250,7 @@ static gboolean vm_function ( vm_t *vm )
   {
     result = vm_function_native(vm, func, np);
     if(vm->expr)
-      vm->expr->vstate |= !(func->flags & VM_FUNC_DETERMINISTIC);
+      vm->vstate |= !(func->flags & VM_FUNC_DETERMINISTIC);
   }
   else if(func->flags & VM_FUNC_USERDEFINED)
   {
@@ -300,7 +298,7 @@ static void vm_variable ( vm_t *vm )
   }
   else
   {
-    value = scanner_get_value(quark, ftype, !vm->use_cached, vm->expr);
+    value = scanner_get_value(quark, ftype, !vm->use_cached, &vm->vstate);
     expr_dep_add(quark, vm->expr);
   }
 
@@ -319,7 +317,7 @@ static void vm_local ( vm_t *vm )
   g_ptr_array_add(vm->pstack, vm->ip);
   vm->ip += sizeof(guint16);
   if(vm->expr)
-    vm->expr->vstate = TRUE;
+    vm->vstate = TRUE;
 }
 
 static void vm_local_assign ( vm_t *vm )
@@ -514,7 +512,7 @@ vm_t *vm_expr_prep ( expr_cache_t *expr )
 {
   vm_t *vm;
 
-  if(!expr || !expr->eval || !expr->code)
+  if(!expr || !expr->invalid || !expr->code)
     return NULL;
   vm = vm_new(expr->code);
 
@@ -522,8 +520,6 @@ vm_t *vm_expr_prep ( expr_cache_t *expr )
       expr->store? expr->store : base_widget_get_store(expr->widget));
   vm->event = expr->event;
   vm->expr = expr_cache_ref(expr);
-
-  expr->vstate = FALSE;
 
   return vm;
 }
@@ -535,12 +531,12 @@ gboolean vm_expr_run ( vm_t *vm )
   gchar *eval;
 
   v1 = vm_run(vm);
-  expr->eval &= expr->vstate;
+  expr->invalid = vm->vstate;
   eval = value_to_string(v1, -1);
   value_free(v1);
 
   g_debug("expr: '%s' = '%s', vstate: %d", expr->definition, eval,
-      expr->vstate);
+      vm->vstate);
 
   if(g_strcmp0(eval, expr->cache))
   {

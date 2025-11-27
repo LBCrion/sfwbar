@@ -5,16 +5,15 @@
 
 typedef struct _expr_cache {
   gint refcount;
+  gboolean invalid;
   gchar *definition;
   gchar *cache;
   GBytes *code;
   gboolean always_update;
   GtkWidget *widget;
   GdkEvent *event;
-  gboolean eval;
   gint stack_depth;
-  guint vstate;
-  struct _expr_cache *parent;
+  GQuark quark;
   void *store;
 } expr_cache_t;
 
@@ -22,6 +21,8 @@ typedef struct _expr_dep {
   GList *list;
   GMutex mutex;
 } expr_dep_t;
+
+#define EXPR_CACHE(x) ((expr_cache_t *)(x))
 
 void expr_lib_init ( void );
 expr_cache_t *expr_cache_new ( void );

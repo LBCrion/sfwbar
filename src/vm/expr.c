@@ -23,7 +23,7 @@ expr_cache_t *expr_cache_new_with_code ( GBytes *code )
 
   expr = expr_cache_new();
   expr->code = g_bytes_ref(code);
-  expr->eval = TRUE;
+  expr->invalid = TRUE;
 
   return expr;
 }
@@ -34,7 +34,7 @@ void expr_update ( expr_cache_t **expr, GBytes *code )
     *expr = expr_cache_new();
   g_clear_pointer(&((*expr)->code), g_bytes_unref);
   (*expr)->code = g_bytes_ref(code);
-  (*expr)->eval = TRUE;
+  (*expr)->invalid = TRUE;
 }
 
 expr_cache_t *expr_cache_ref ( expr_cache_t *expr )
@@ -58,7 +58,6 @@ void expr_cache_unref ( expr_cache_t *expr )
 
 void expr_dep_add ( GQuark quark, expr_cache_t *expr )
 {
-  expr_cache_t *iter;
   expr_dep_t *dep;
 
   if(!expr)
@@ -71,9 +70,8 @@ void expr_dep_add ( GQuark quark, expr_cache_t *expr )
   }
 
   g_mutex_lock(&dep->mutex);
-  for(iter=expr; iter; iter=iter->parent)
-    if(!g_list_find(dep->list, iter))
-      dep->list = g_list_prepend(dep->list, iter);
+  if(!g_list_find(dep->list, expr))
+    dep->list = g_list_prepend(dep->list, expr);
   g_mutex_unlock(&dep->mutex);
 }
 
@@ -100,7 +98,11 @@ void expr_dep_trigger ( GQuark quark )
 
   g_mutex_lock(&dep->mutex);
   for(iter=dep->list; iter; iter=g_list_next(iter))
-    ((expr_cache_t *)(iter->data))->eval = TRUE;
+  {
+    if(!EXPR_CACHE(iter->data)->invalid && EXPR_CACHE(iter->data)->quark)
+      expr_dep_trigger(EXPR_CACHE(iter->data)->quark);
+    EXPR_CACHE(iter->data)->invalid = TRUE;
+  }
   g_mutex_unlock(&dep->mutex);
 }
 
@@ -114,7 +116,7 @@ static void expr_dep_dump_each ( GQuark key, void *value, void *d )
   g_mutex_lock(&dep->mutex);
   for(iter=dep->list; iter; iter=g_list_next(iter))
     g_message("%s: %s", g_quark_to_string(key),
-        ((expr_cache_t *)iter->data)->definition);
+        EXPR_CACHE(iter->data)->definition);
   g_mutex_unlock(&dep->mutex);
 }
 

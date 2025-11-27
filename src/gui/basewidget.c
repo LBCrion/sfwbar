@@ -83,7 +83,7 @@ static gboolean base_widget_update_value ( GtkWidget *self )
 
   if(BASE_WIDGET_GET_CLASS(self)->update_value)
     BASE_WIDGET_GET_CLASS(self)->update_value(self);
-  priv->value->eval = TRUE;
+  priv->value->invalid = TRUE;
 
   if(!priv->local_state)
     g_list_foreach(base_widget_get_mirror_children(self),
@@ -488,7 +488,7 @@ static void base_widget_set_tooltip ( GtkWidget *self, GBytes *code )
   g_bytes_unref(priv->tooltip->code);
   priv->tooltip->code = code? g_bytes_ref(code) : NULL;
   priv->tooltip->widget = self;
-  priv->tooltip->eval = !!code;
+  priv->tooltip->invalid = !!code;
 
   if(!BASE_WIDGET_GET_CLASS(self)->custom_tooltip)
   {
@@ -509,7 +509,7 @@ static void base_widget_set_value ( GtkWidget *self, GBytes *code )
   g_bytes_unref(priv->value->code);
   priv->value->code = code? g_bytes_ref(code) : NULL;
   priv->value->widget = self;
-  priv->value->eval = !!code;
+  priv->value->invalid = !!code;
   priv->value->always_update = BASE_WIDGET_GET_CLASS(self)->always_update;
 
   if(vm_expr_eval(priv->value))
@@ -534,7 +534,7 @@ static void base_widget_set_style ( GtkWidget *self, GBytes *code )
   g_bytes_unref(priv->style->code);
   priv->style->code = code? g_bytes_ref(code) : NULL;
   priv->style->widget = self;
-  priv->style->eval = !!code;
+  priv->style->invalid = !!code;
   priv->style->always_update = BASE_WIDGET_GET_CLASS(self)->always_update;
 
   if((priv->mirror_parent && !priv->local_state) ||
@@ -929,7 +929,7 @@ gint64 base_widget_get_next_poll ( GtkWidget *self )
   if(priv->trigger || !priv->interval)
     return G_MAXINT64;
 
-  if(!priv->value->eval && !priv->style->eval)
+  if(!priv->value->invalid && !priv->style->invalid)
     return G_MAXINT64;
 
   return priv->next_poll;

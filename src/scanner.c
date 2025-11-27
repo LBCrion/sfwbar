@@ -109,24 +109,6 @@ ScanFile *scanner_file_new ( gint source, gchar *fname,
   return file;
 }
 
-void scanner_var_free ( ScanVar *var )
-{
-  if(var->file)
-  {
-    g_mutex_lock(&var->file->mutex);
-    var->file->vars = g_list_remove(var->file->vars,var);
-    g_mutex_unlock(&var->file->mutex);
-  }
-  if(var->type != G_TOKEN_REGEX)
-    g_free(var->definition);
-  else
-    if(var->definition)
-      g_regex_unref(var->definition);
-  expr_cache_unref(var->expr);
-  g_free(var->str);
-  g_free(var);
-}
-
 void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
     guint type, gint flag, vm_store_t *store )
 {
@@ -160,11 +142,11 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
     case G_TOKEN_SET:
       expr_cache_unref(var->expr);
       var->expr = expr_cache_new_with_code((GBytes *)pattern);
-      if(var->expr)
-        var->expr->store = store;
+      var->expr->store = store;
       g_debug("scanner: new set: '%s' in %p", g_quark_to_string(quark),
-          var->expr? var->expr->store : NULL);
-      var->vstate = 1;
+          var->expr->store);
+      var->vstate = TRUE;
+      var->expr->quark = quark;
       expr_dep_trigger(quark);
       break;
     case G_TOKEN_JSON:
@@ -219,7 +201,7 @@ static void scanner_var_values_update ( ScanVar *var, gchar *value)
     switch(var->multi)
     {
       case VT_SUM:
-        var->val += g_ascii_strtod(var->str,NULL);
+        var->val += g_ascii_strtod(var->str, NULL);
         break;
       case VT_PROD:
         var->val *= g_ascii_strtod(var->str,NULL);
@@ -481,40 +463,19 @@ GQuark scanner_parse_identifier ( const gchar *id, guint8 *dtype )
   return quark;
 }
 
-static ScanVar *scanner_var_update ( GQuark id, gboolean update,
-    expr_cache_t *expr )
+static ScanVar *scanner_var_update ( ScanVar *var )
 {
-  ScanVar *var;
-
-  if(!(var = datalist_get(scan_list, id)) )
-    return NULL;
-
-  if(!update || (!var->invalid && var->type != G_TOKEN_SET))
-  {
-    if(expr)
-      expr->vstate = expr->vstate || var->vstate;
-    return var;
-  }
-
   g_rec_mutex_lock(&var->mutex);
-  if(var->type == G_TOKEN_SET)
+  if(var->type == G_TOKEN_SET && !var->updating)
   {
-    if(!var->updating)
-    {
-      var->updating = TRUE;
-      var->expr->parent = expr;
-      (void)vm_expr_eval(var->expr);
-      var->expr->parent = NULL;
-      var->vstate = var->expr->vstate;
-      if(var->invalid)
-        scanner_var_reset(var, NULL);
-      scanner_var_values_update(var, g_strdup(var->expr->cache));
-      var->invalid = FALSE;
-      var->updating = FALSE;
-    }
-
-    if(expr)
-      expr->vstate = expr->vstate || var->expr->vstate;
+    var->updating = TRUE;
+    (void)vm_expr_eval(var->expr);
+    var->vstate = var->expr->invalid;
+    if(var->invalid)
+      scanner_var_reset(var, NULL);
+    scanner_var_values_update(var, g_strdup(var->expr->cache));
+    var->invalid = FALSE;
+    var->updating = FALSE;
   }
   else if(var->file)
   {
@@ -523,8 +484,6 @@ static ScanVar *scanner_var_update ( GQuark id, gboolean update,
     else
       g_mutex_lock(&var->file->mutex);
     g_mutex_unlock(&var->file->mutex);
-    if(expr)
-      expr->vstate = TRUE;
     var->vstate = TRUE;
   }
   g_rec_mutex_unlock(&var->mutex);
@@ -534,43 +493,41 @@ static ScanVar *scanner_var_update ( GQuark id, gboolean update,
 
 /* get value of a variable by name */
 value_t scanner_get_value ( GQuark id, gchar ftype, gboolean update,
-    expr_cache_t *expr )
+    gboolean *vstate )
 {
   value_t result;
   ScanVar *var;
 
-  if( !(var = scanner_var_update(id, update, expr)) )
-  {
-    expr_dep_add(id, expr);
+  if( !(var = datalist_get(scan_list, id)) )
     return value_na;
-  }
-  if(var->type == G_TOKEN_SET)
-    expr_dep_add(id, expr);
+
+  if(update && (var->invalid || var->type == G_TOKEN_SET))
+    scanner_var_update(var);
+
+  if(vstate)
+    *vstate = *vstate || var->vstate;
 
   if(ftype == SCANNER_TYPE_STR)
     result = value_new_string(g_strdup(var->str));
+  else if(ftype == SCANNER_TYPE_VAL || ftype == SCANNER_TYPE_NONE)
+    result = value_new_numeric(var->val);
+  else if(ftype == SCANNER_TYPE_PVAL)
+    result = value_new_numeric(var->pval);
+  else if(ftype == SCANNER_TYPE_COUNT)
+    result = value_new_numeric(var->count);
+  else if(ftype == SCANNER_TYPE_TIME)
+    result = value_new_numeric(var->time);
+  else if(ftype == SCANNER_TYPE_AGE)
+    result = value_new_numeric(g_get_monotonic_time() - var->ptime);
   else
-  {
-    if(ftype == SCANNER_TYPE_VAL || ftype == SCANNER_TYPE_NONE)
-      result = value_new_numeric(var->val);
-    else if(ftype == SCANNER_TYPE_PVAL)
-      result = value_new_numeric(var->pval);
-    else if(ftype == SCANNER_TYPE_COUNT)
-      result = value_new_numeric(var->count);
-    else if(ftype == SCANNER_TYPE_TIME)
-      result = value_new_numeric(var->time);
-    else if(ftype == SCANNER_TYPE_AGE)
-      result = value_new_numeric(g_get_monotonic_time() - var->ptime);
-    else
-      result = value_na;
-  }
+    result = value_na;
 
   if(result.type == EXPR_TYPE_NUMERIC)
     g_debug("scanner: %s = %f (vstate: %d)", g_quark_to_string(id),
-        result.value.numeric, (expr?  expr->vstate: 0));
+        result.value.numeric, vstate? *vstate: 0);
   else if(result.type == EXPR_TYPE_STRING)
     g_debug("scanner: %s = %s (vstate: %d)", g_quark_to_string(id),
-        result.value.string, (expr?  expr->vstate: 0));
+        result.value.string, vstate? *vstate: 0);
   return result;
 }
 

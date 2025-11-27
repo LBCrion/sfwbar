@@ -48,11 +48,11 @@ typedef struct scan_file {
 typedef struct scan_var {
   GRecMutex mutex;
   GQuark id;
+  gboolean vstate;
   expr_cache_t *expr;
   vm_store_t *store;
   void *definition;
   gchar *str;
-  guint vstate;
   double val;
   double pval;
   gint64 time;
@@ -71,7 +71,7 @@ void scanner_update_json ( struct json_object *, ScanFile * );
 GIOStatus scanner_file_update ( GIOChannel *, ScanFile *, gsize * );
 int scanner_glob_file ( ScanFile * );
 value_t scanner_get_value ( GQuark id, gchar ftype, gboolean update,
-    expr_cache_t *expr );
+    gboolean *vstate );
 void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
     guint type, gint flag, vm_store_t *store );
 void scanner_file_merge ( ScanFile *keep, ScanFile *temp );
