@@ -20,7 +20,7 @@ static void cchart_update_value ( GtkWidget *self )
   value = base_widget_get_value(self);
 
   if(!g_strrstr(value, "nan"))
-      chart_update(priv->chart,g_ascii_strtod(value, NULL));
+    chart_update(priv->chart, g_ascii_strtod(value, NULL));
 }
 
 static void cchart_class_init ( CChartClass *kclass )

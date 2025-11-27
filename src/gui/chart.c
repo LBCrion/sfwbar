@@ -72,7 +72,7 @@ static gboolean chart_draw ( GtkWidget *self, cairo_t *cr )
   for(i=0; i<len; i++)
     cairo_line_to(cr, x_offset + i, y_offset -
         height * *(gdouble *)g_queue_peek_nth(priv->data, i));
-  cairo_line_to(cr,x_offset + len - 1, y_offset);
+  cairo_line_to(cr, x_offset + len - 1, y_offset);
   cairo_close_path(cr);
   cairo_stroke_preserve(cr);
   cairo_fill(cr);
