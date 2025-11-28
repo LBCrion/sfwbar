@@ -12,14 +12,15 @@ struct _Client {
   GSocketClient *sclient;
   GIOChannel *in,*out;
   void *data;
+  gchar *trigger;
   gboolean (*connect) ( Client * );
   GIOStatus (*respond) ( Client * );
   GIOStatus (*consume) ( Client *, gsize *size );
 };
 
-void client_exec ( ScanFile *file );
-void client_socket ( ScanFile *file );
-void client_mpd ( ScanFile *file );
+ScanFile *client_exec ( gchar  *fname, gchar *trigger );
+ScanFile *client_socket ( gchar *fname, gchar *trigger );
+ScanFile *client_mpd ( gchar *fname );
 void client_attach ( Client *client );
 gboolean client_socket_connect ( Client *client );
 void client_send ( gchar *addr, gchar *command );

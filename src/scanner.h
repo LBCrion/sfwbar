@@ -24,8 +24,7 @@ enum {
 };
 
 enum {
-  SCANNER_TYPE_NONE = 0,
-  SCANNER_TYPE_STR,
+  SCANNER_TYPE_STR = 1,
   SCANNER_TYPE_VAL,
   SCANNER_TYPE_PVAL,
   SCANNER_TYPE_COUNT,
@@ -37,12 +36,11 @@ typedef struct scan_file {
   gboolean invalid;
   GMutex mutex;
   gchar *fname;
-  const gchar *trigger;
   gint flags;
   guchar source;
   time_t mtime;
   GList *vars;
-  void *client;
+//  void *client;
 } ScanFile;
 
 typedef struct scan_var {
@@ -77,7 +75,7 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
 void scanner_file_merge ( ScanFile *keep, ScanFile *temp );
 GQuark scanner_parse_identifier ( const gchar *id, guint8 *dtype );
 ScanFile *scanner_file_get ( gchar *trigger );
-ScanFile *scanner_file_new ( gint , gchar *, gchar *, gint );
+ScanFile *scanner_file_new ( gint , gchar *, gint );
 gboolean scanner_is_variable ( gchar *identifier );
 void scanner_file_attach ( const gchar *trigger, ScanFile *file );
 

@@ -7,6 +7,9 @@
 #include <gio/gunixsocketaddress.h>
 #include "trigger.h"
 #include "client.h"
+#include "util/hash.h"
+
+static hash_table_t *client_list;
 
 void client_reconnect ( Client *client )
 {
@@ -44,7 +47,7 @@ gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
     else
     {
       g_list_foreach(client->file->vars, (GFunc)scanner_var_reset, NULL);
-      cstat = scanner_file_update( chan, client->file, &size );
+      cstat = scanner_file_update(chan, client->file, &size);
     }
     if(cstat == G_IO_STATUS_ERROR || !size )
     {
@@ -66,13 +69,15 @@ gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
       return FALSE;
     }
   }
-  trigger_emit((gchar *)client->file->trigger);
+  trigger_emit((gchar *)client->trigger);
   return TRUE;
 }
 
 void client_attach ( Client *client )
 {
-  scanner_file_attach(client->file->trigger, client->file);
+  if(!client_list)
+    client_list = hash_table_new(g_direct_hash, g_direct_equal);
+  hash_table_insert(client_list, (gchar *)client->trigger, client);
   client->connect(client);
 }
 
@@ -145,18 +150,22 @@ gboolean client_socket_connect ( Client *client )
   return FALSE;
 }
 
-void client_socket ( ScanFile *file )
+ScanFile *client_socket ( gchar *fname, gchar *trigger )
 {
   Client *client;
+  ScanFile *file;
 
-  if( !file || !file->fname )
-    return;
+  if(!fname)
+    return NULL;
+
+  file = scanner_file_new(SO_CLIENT, fname, 0);
 
   client = g_malloc0(sizeof(Client));
   client->file = file;
   client->connect = client_socket_connect;
-  file->client = client;
   client_attach(client);
+
+  return file;
 }
 
 gboolean client_exec_connect ( Client *client )
@@ -184,33 +193,34 @@ gboolean client_exec_connect ( Client *client )
   return FALSE;
 }
 
-void client_exec ( ScanFile *file )
+ScanFile *client_exec ( gchar *fname, gchar *trigger )
 {
+  ScanFile *file;
   Client *client;
 
-  if( !file || !file->fname )
-    return;
+  if(!fname)
+    return NULL;
+
+  file = scanner_file_new(SO_CLIENT, fname, 0);
 
   client = g_malloc0(sizeof(Client));
   client->file = file;
   client->connect = client_exec_connect;
   client_attach(client);
-  file->client = client;
+
+  return file;
 }
 
 void client_send ( gchar *addr, gchar *command )
 {
-  ScanFile *file;
   Client *client;
 
   if(!addr || !command )
     return;
 
-  file = scanner_file_get(addr);
-  if(!file)
+  if( !(client = hash_table_lookup(client_list, addr)) )
     return;
 
-  client = file->client;
   if(!client || !client->out)
     return;
   (void)g_io_channel_write_chars(client->out, command, -1, NULL, NULL);

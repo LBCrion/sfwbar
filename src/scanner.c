@@ -10,101 +10,31 @@
 #include "client.h"
 #include "config/config.h"
 #include "util/datalist.h"
+#include "util/hash.h"
 #include "util/json.h"
 #include "util/string.h"
 #include "vm/expr.h"
 
-static GList *file_list;
 static datalist_t *scan_list;
-static GHashTable *trigger_list;
-static GMutex trigger_mutex;
-static GMutex file_mutex;
 
-void scanner_file_attach ( const gchar *trigger, ScanFile *file )
+ScanFile *scanner_file_new ( gint source, gchar *fname, gint flags )
 {
-  g_mutex_lock(&trigger_mutex);
-  g_hash_table_insert(trigger_list, (void *)g_intern_string(trigger), file);
-  g_mutex_unlock(&trigger_mutex);
-}
-
-ScanFile *scanner_file_get ( gchar *trigger )
-{
+  static hash_table_t *file_list;
   ScanFile *file;
 
-  g_mutex_lock(&trigger_mutex);
-  file = g_hash_table_lookup(trigger_list, (void *)g_intern_string(trigger));
-  g_mutex_unlock(&trigger_mutex);
-
-  return file;
-}
-
-void scanner_file_merge ( ScanFile *keep, ScanFile *temp )
-{
-  GList *iter;
-
-  g_mutex_lock(&file_mutex);
-  file_list = g_list_remove(file_list, temp);
-  g_mutex_unlock(&file_mutex);
-
-  g_mutex_lock(&keep->mutex);
-  for(iter=temp->vars; iter; iter=g_list_next(iter))
-    ((ScanVar *)(iter->data))->file = keep;
-  keep->vars = g_list_concat(keep->vars, temp->vars);
-  g_mutex_unlock(&keep->mutex);
-
-  g_free(temp->fname);
-  g_free(temp);
-}
-
-ScanFile *scanner_file_new ( gint source, gchar *fname,
-    gchar *trigger, gint flags )
-{
-  ScanFile *file;
-  GList *iter;
-
-  if(source == SO_CLIENT)
-    iter = NULL;
-  else
-  {
-    g_mutex_lock(&file_mutex);
-    for(iter=file_list;iter;iter=g_list_next(iter))
-      if(!g_strcmp0(fname,((ScanFile *)(iter->data))->fname))
-        break;
-    g_mutex_unlock(&file_mutex);
-  }
-
-  if(iter)
-  {
-    file = iter->data;
-    g_free(fname);
-  }
-  else
+  if(!fname || !(file = hash_table_lookup(file_list, fname)) )
   {
     file = g_malloc0(sizeof(ScanFile));
-    file->fname = fname;
-    g_mutex_lock(&file_mutex);
-    file_list = g_list_append(file_list,file);
-    g_mutex_unlock(&file_mutex);
+    file->fname = g_strdup(fname);
+    if(!file_list)
+      file_list = hash_table_new(g_direct_hash, g_direct_equal);
+    hash_table_insert(file_list, file->fname, file);
   }
 
   file->source = source;
   file->flags = flags;
-  if( !strchr(file->fname,'*') && !strchr(file->fname,'?') )
+  if( !strchr(file->fname,'*') && !strchr(file->fname, '?') )
     file->flags |= VF_NOGLOB;
-
-  if(file->trigger != g_intern_string(trigger))
-  {
-    if(file->trigger)
-    {
-      g_mutex_lock(&trigger_mutex);
-      g_hash_table_remove(trigger_list, file->trigger);
-      g_mutex_unlock(&trigger_mutex);
-    }
-    file->trigger = g_intern_string(trigger);
-    if(file->trigger)
-      scanner_file_attach(file->trigger, file);
-  }
-  g_free(trigger);
 
   return file;
 }
@@ -150,8 +80,7 @@ void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
       expr_dep_trigger(quark);
       break;
     case G_TOKEN_JSON:
-      g_free(var->definition);
-      var->definition = g_strdup(pattern);
+      str_assign((gchar **)&var->definition, g_strdup(pattern));
       break;
     case G_TOKEN_REGEX:
       if(var->definition)
@@ -196,8 +125,7 @@ static void scanner_var_values_update ( ScanVar *var, gchar *value)
 
   if(var->multi!=VT_FIRST || !var->count || var->type==G_TOKEN_SET)
   {
-    g_clear_pointer(&var->str, g_free);
-    var->str = value;
+    str_assign(&var->str, value);
     switch(var->multi)
     {
       case VT_SUM:
@@ -231,12 +159,12 @@ void scanner_update_json ( struct json_object *obj, ScanFile *file )
   g_mutex_lock(&file->mutex);
   for(node=file->vars; node!=NULL; node=g_list_next(node))
   {
-    ptr = jpath_parse(((ScanVar *)node->data)->definition,obj);
+    ptr = jpath_parse(((ScanVar *)node->data)->definition, obj);
     if(ptr && json_object_is_type(ptr, json_type_array))
-      for(i=0;i<json_object_array_length(ptr);i++)
+      for(i=0; i<json_object_array_length(ptr); i++)
       {
         scanner_var_values_update(((ScanVar *)node->data),
-          g_strdup(json_object_get_string(json_object_array_get_idx(ptr,i))));
+          g_strdup(json_object_get_string(json_object_array_get_idx(ptr, i))));
       }
     if(ptr)
       json_object_put(ptr);
@@ -313,13 +241,13 @@ GIOStatus scanner_file_update ( GIOChannel *in, ScanFile *file, gsize *size )
 
 void scanner_var_reset ( ScanVar *var, gpointer dummy )
 {
-  gint64 tv = g_get_monotonic_time();
+  gint64 t = g_get_monotonic_time();
 
   var->pval = var->val;
   var->count = 0;
   var->val = 0;
-  var->time = tv-var->ptime;
-  var->ptime = tv;
+  var->time = t-var->ptime;
+  var->ptime = t;
 }
 
 time_t scanner_file_mtime ( glob_t *gbuf )
@@ -348,11 +276,10 @@ gboolean scanner_file_exec ( ScanFile *file )
         NULL, NULL, &out, NULL, NULL))
     return FALSE;
 
-  chan = g_io_channel_unix_new(out);
-  if(chan)
+  if( (chan = g_io_channel_unix_new(out)) )
   {
     g_debug("scanner: exec '%s'", file->fname);
-    g_list_foreach(file->vars,(GFunc)scanner_var_reset, NULL);
+    g_list_foreach(file->vars, (GFunc)scanner_var_reset, NULL);
     (void)scanner_file_update(chan, file, NULL);
     g_io_channel_unref(chan);
   }
@@ -430,7 +357,7 @@ GQuark scanner_parse_identifier ( const gchar *id, guint8 *dtype )
   if(!id)
     return (GQuark)0;
 
-  type = (*id=='$')? SCANNER_TYPE_STR : SCANNER_TYPE_NONE;
+  type = (*id=='$')? SCANNER_TYPE_STR : SCANNER_TYPE_VAL;
 
   if(*id=='$')
     id = id + sizeof(gchar);
@@ -509,7 +436,7 @@ value_t scanner_get_value ( GQuark id, gchar ftype, gboolean update,
 
   if(ftype == SCANNER_TYPE_STR)
     result = value_new_string(g_strdup(var->str));
-  else if(ftype == SCANNER_TYPE_VAL || ftype == SCANNER_TYPE_NONE)
+  else if(ftype == SCANNER_TYPE_VAL)
     result = value_new_numeric(var->val);
   else if(ftype == SCANNER_TYPE_PVAL)
     result = value_new_numeric(var->pval);
@@ -539,5 +466,4 @@ gboolean scanner_is_variable ( gchar *identifier )
 void scanner_init ( void )
 {
   scan_list = datalist_new();
-  trigger_list = g_hash_table_new(g_direct_hash, g_direct_equal);
 }

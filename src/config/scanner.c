@@ -94,81 +94,70 @@ static gboolean config_source_flags ( GScanner *scanner, gint *flags )
   return !scanner->max_parse_errors;
 }
 
-static ScanFile *config_source ( GScanner *scanner, gint source )
+gboolean config_scanner_source ( GScanner *scanner )
 {
   ScanFile *file;
   gchar *fname = NULL, *trigger = NULL;
-  gint flags = 0;
+  gint type, flags = 0;
 
-  switch(source)
+  if( (type = config_lookup_key(scanner, config_scanner_keys)) )
   {
-    case SO_FILE:
-      config_parse_sequence(scanner,
-          SEQ_REQ, '(', NULL, NULL, "Missing '(' after source",
-          SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing file in a source",
-          SEQ_OPT, -2, (parse_func)config_source_flags, &flags, NULL,
-          SEQ_REQ, ')', NULL, NULL, "Missing ')' after source",
-          SEQ_REQ, '{', NULL, NULL, "Missing '{' after source",
-          SEQ_END);
-      break;
-    case SO_CLIENT:
-      config_parse_sequence(scanner,
-          SEQ_REQ, '(', NULL, NULL, "Missing '(' after source",
-          SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing file in a source",
-          SEQ_OPT, ',', NULL, NULL, NULL,
-          SEQ_CON, G_TOKEN_STRING, NULL, &trigger, NULL,
-          SEQ_REQ, ')', NULL, NULL, "Missing ')' after source",
-          SEQ_REQ, '{', NULL, NULL, "Missing '{' after source",
-          SEQ_END);
-      break;
-    default:
-      config_parse_sequence(scanner,
-          SEQ_REQ, '(', NULL, NULL, "Missing '(' after source",
-          SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing file in a source",
-          SEQ_REQ, ')', NULL, NULL, "Missing ')' after source",
-          SEQ_REQ, '{', NULL, NULL, "Missing '{' after source",
-          SEQ_END);
-      break;
-  }
+    switch(type)
+    {
+      case G_TOKEN_FILE:
+        config_parse_sequence(scanner,
+            SEQ_REQ, '(', NULL, NULL, "Missing '(' after source",
+            SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing file in a source",
+            SEQ_OPT, -2, (parse_func)config_source_flags, &flags, NULL,
+            SEQ_REQ, ')', NULL, NULL, "Missing ')' after source",
+            SEQ_REQ, '{', NULL, NULL, "Missing '{' after source",
+            SEQ_END);
+        if(!scanner->max_parse_errors)
+          file = scanner_file_new(SO_FILE, fname, flags);
+        break;
+      case G_TOKEN_EXEC:
+        config_parse_sequence(scanner,
+            SEQ_REQ, '(', NULL, NULL, "Missing '(' after source",
+            SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing file in a source",
+            SEQ_REQ, ')', NULL, NULL, "Missing ')' after source",
+            SEQ_REQ, '{', NULL, NULL, "Missing '{' after source",
+            SEQ_END);
+        if(!scanner->max_parse_errors)
+          file = scanner_file_new(SO_EXEC, fname, 0);
+        break;
+      default:
+        config_parse_sequence(scanner,
+            SEQ_REQ, '(', NULL, NULL, "Missing '(' after source",
+            SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing file in a source",
+            SEQ_OPT, ',', NULL, NULL, NULL,
+            SEQ_CON, G_TOKEN_STRING, NULL, &trigger, NULL,
+            SEQ_REQ, ')', NULL, NULL, "Missing ')' after source",
+            SEQ_REQ, '{', NULL, NULL, "Missing '{' after source",
+            SEQ_END);
+        if(!scanner->max_parse_errors)
+        {
+          if(type == G_TOKEN_EXECCLIENT)
+            file = client_exec(fname, trigger);
+          else if(type == G_TOKEN_SOCKETCLIENT)
+            file = client_socket(fname, trigger);
+          else if(type == G_TOKEN_SWAYCLIENT)
+            file = sway_ipc_client_init();
+          else if(type == G_TOKEN_MPDCLIENT)
+            file = client_mpd(fname);
+        }
+        break;
+    }
 
-  if(scanner->max_parse_errors)
-  {
     g_free(fname);
     g_free(trigger);
-    return NULL;
+    if(scanner->max_parse_errors)
+      return FALSE;
+
+    while(!config_is_section_end(scanner))
+      config_var(scanner, file);
   }
 
-  file = scanner_file_new(source, fname, trigger, flags);
-  while(!config_is_section_end(scanner))
-    config_var(scanner, file);
-
-  return file;
-}
-
-gboolean config_scanner_source ( GScanner *scanner )
-{
-  switch(config_lookup_key(scanner, config_scanner_keys))
-  {
-    case G_TOKEN_FILE:
-      config_source(scanner, SO_FILE);
-      return TRUE;
-    case G_TOKEN_EXEC:
-      config_source(scanner, SO_EXEC);
-      return TRUE;
-    case G_TOKEN_MPDCLIENT:
-      client_mpd(config_source(scanner, SO_CLIENT));
-      return TRUE;
-    case G_TOKEN_SWAYCLIENT:
-      sway_ipc_client_init(config_source(scanner, SO_CLIENT));
-      return TRUE;
-    case G_TOKEN_EXECCLIENT:
-      client_exec(config_source(scanner, SO_CLIENT));
-      return TRUE;
-    case G_TOKEN_SOCKETCLIENT:
-      client_socket(config_source(scanner, SO_CLIENT));
-      return TRUE;
-  }
-  return FALSE;
+  return !!type;
 }
 
 void config_scanner ( GScanner *scanner )
