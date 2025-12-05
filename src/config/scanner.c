@@ -3,10 +3,11 @@
  * Copyright 2022- sfwbar maintainers
  */
 
+#include "client.h"
 #include "config.h"
 #include "scanner.h"
 #include "ipc/sway.h"
-#include "client.h"
+#include "util/string.h"
 
 static gboolean config_var_flag ( GScanner *scanner, gint *flag )
 {
@@ -28,7 +29,7 @@ static gboolean config_var_type (GScanner *scanner, gint *type )
   return !scanner->max_parse_errors;
 }
 
-static void config_var ( GScanner *scanner, ScanFile *file )
+static void config_var ( GScanner *scanner, source_t *file )
 {
   gchar *vname, *pattern = NULL;
   guint type;
@@ -96,66 +97,100 @@ static gboolean config_source_flags ( GScanner *scanner, gint *flags )
 
 gboolean config_scanner_source ( GScanner *scanner )
 {
-  ScanFile *file;
+  source_t *src;
   gchar *fname = NULL, *trigger = NULL;
   gint type, flags = 0;
 
-  if( (type = config_lookup_key(scanner, config_scanner_keys)) )
+  if( !(type = config_lookup_key(scanner, config_scanner_keys)) )
+    return FALSE;
+
+  if(!config_expect_token(scanner, '(', "Missing '(' in source declaration"))
+    return FALSE;
+
+  if(!config_expect_token(scanner, G_TOKEN_STRING, "Missing file in source declaration"))
+    return FALSE;
+
+  fname = g_strdup(scanner->value.v_string);
+
+  while(config_check_and_consume(scanner, ','))
   {
-    switch(type)
-    {
-      case G_TOKEN_FILE:
-        config_parse_sequence(scanner,
-            SEQ_REQ, '(', NULL, NULL, "Missing '(' after source",
-            SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing file in a source",
-            SEQ_OPT, -2, (parse_func)config_source_flags, &flags, NULL,
-            SEQ_REQ, ')', NULL, NULL, "Missing ')' after source",
-            SEQ_REQ, '{', NULL, NULL, "Missing '{' after source",
-            SEQ_END);
-        if(!scanner->max_parse_errors)
-          file = scanner_file_new(SO_FILE, fname, flags);
-        break;
-      case G_TOKEN_EXEC:
-        config_parse_sequence(scanner,
-            SEQ_REQ, '(', NULL, NULL, "Missing '(' after source",
-            SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing file in a source",
-            SEQ_REQ, ')', NULL, NULL, "Missing ')' after source",
-            SEQ_REQ, '{', NULL, NULL, "Missing '{' after source",
-            SEQ_END);
-        if(!scanner->max_parse_errors)
-          file = scanner_file_new(SO_EXEC, fname, 0);
-        break;
-      default:
-        config_parse_sequence(scanner,
-            SEQ_REQ, '(', NULL, NULL, "Missing '(' after source",
-            SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing file in a source",
-            SEQ_OPT, ',', NULL, NULL, NULL,
-            SEQ_CON, G_TOKEN_STRING, NULL, &trigger, NULL,
-            SEQ_REQ, ')', NULL, NULL, "Missing ')' after source",
-            SEQ_REQ, '{', NULL, NULL, "Missing '{' after source",
-            SEQ_END);
-        if(!scanner->max_parse_errors)
-        {
-          if(type == G_TOKEN_EXECCLIENT)
-            file = client_exec(fname, trigger);
-          else if(type == G_TOKEN_SOCKETCLIENT)
-            file = client_socket(fname, trigger);
-          else if(type == G_TOKEN_SWAYCLIENT)
-            file = sway_ipc_client_init();
-          else if(type == G_TOKEN_MPDCLIENT)
-            file = client_mpd(fname);
-        }
-        break;
-    }
-
-    g_free(fname);
-    g_free(trigger);
-    if(scanner->max_parse_errors)
-      return FALSE;
-
-    while(!config_is_section_end(scanner))
-      config_var(scanner, file);
+    if(config_check_and_consume(scanner, G_TOKEN_STRING))
+      str_assign(&trigger, g_strdup(scanner->value.v_string));
+    else
+      config_source_flags(scanner, &flags);
   }
+
+  if(config_expect_token(scanner, ')', "Missing ')' in source declaration") &&
+      config_expect_token(scanner, '{', "Missing '{' in source declaration"))
+  {
+    if(type == G_TOKEN_FILE)
+      src = scanner_file_new(fname, flags);
+    else if(type == G_TOKEN_EXEC)
+      src = scanner_exec_new(fname);
+    else if(type == G_TOKEN_EXECCLIENT)
+      src = client_exec(fname, trigger);
+    else if(type == G_TOKEN_SOCKETCLIENT)
+      src = client_socket(fname, trigger);
+    else if(type == G_TOKEN_SWAYCLIENT)
+      src = sway_ipc_client_init();
+    else if(type == G_TOKEN_MPDCLIENT)
+      src = client_mpd(fname);
+    else
+      src = NULL;
+
+    if(src)
+      while(!config_is_section_end(scanner))
+        config_var(scanner, src);
+  }
+
+/*  switch(type)
+  {
+    case G_TOKEN_FILE:
+      config_parse_sequence(scanner,
+          SEQ_REQ, '(', NULL, NULL, "Missing '(' after source",
+          SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing file in a source",
+          SEQ_OPT, -2, (parse_func)config_source_flags, &flags, NULL,
+          SEQ_REQ, ')', NULL, NULL, "Missing ')' after source",
+          SEQ_REQ, '{', NULL, NULL, "Missing '{' after source",
+          SEQ_END);
+      if(!scanner->max_parse_errors)
+        file = scanner_file_new(SO_FILE, fname, flags);
+      break;
+    case G_TOKEN_EXEC:
+      config_parse_sequence(scanner,
+          SEQ_REQ, '(', NULL, NULL, "Missing '(' after source",
+          SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing file in a source",
+          SEQ_REQ, ')', NULL, NULL, "Missing ')' after source",
+          SEQ_REQ, '{', NULL, NULL, "Missing '{' after source",
+          SEQ_END);
+      if(!scanner->max_parse_errors)
+        file = scanner_file_new(SO_EXEC, fname, 0);
+      break;
+    default:
+      config_parse_sequence(scanner,
+          SEQ_REQ, '(', NULL, NULL, "Missing '(' after source",
+          SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing file in a source",
+          SEQ_OPT, ',', NULL, NULL, NULL,
+          SEQ_CON, G_TOKEN_STRING, NULL, &trigger, NULL,
+          SEQ_REQ, ')', NULL, NULL, "Missing ')' after source",
+          SEQ_REQ, '{', NULL, NULL, "Missing '{' after source",
+          SEQ_END);
+      if(!scanner->max_parse_errors)
+      {
+        if(type == G_TOKEN_EXECCLIENT)
+          file = client_exec(fname, trigger);
+        else if(type == G_TOKEN_SOCKETCLIENT)
+          file = client_socket(fname, trigger);
+        else if(type == G_TOKEN_SWAYCLIENT)
+          file = sway_ipc_client_init();
+        else if(type == G_TOKEN_MPDCLIENT)
+          file = client_mpd(fname);
+      }
+      break;
+  }*/
+
+  g_free(fname);
+  g_free(trigger);
 
   return !!type;
 }

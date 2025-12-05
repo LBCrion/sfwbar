@@ -6,7 +6,7 @@
 
 typedef struct _Client Client;
 struct _Client {
-  ScanFile *file;
+  source_t *src;
   GSocketConnection *scon;
   GSocketConnectable *addr;
   GSocketClient *sclient;
@@ -18,12 +18,12 @@ struct _Client {
   GIOStatus (*consume) ( Client *, gsize *size );
 };
 
-ScanFile *client_exec ( gchar  *fname, gchar *trigger );
-ScanFile *client_socket ( gchar *fname, gchar *trigger );
-ScanFile *client_mpd ( gchar *fname );
+source_t *client_exec ( gchar  *fname, gchar *trigger );
+source_t *client_socket ( gchar *fname, gchar *trigger );
+source_t *client_mpd ( gchar *fname );
 void client_attach ( Client *client );
 gboolean client_socket_connect ( Client *client );
+GIOStatus client_source_update ( Client *client, gsize *size );
 void client_send ( gchar *addr, gchar *command );
-void client_mpd_command ( gchar *command );
 
 #endif

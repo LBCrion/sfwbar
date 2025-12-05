@@ -11,9 +11,15 @@
 
 static hash_table_t *client_list;
 
-void client_reconnect ( Client *client )
+GIOStatus client_source_update ( Client *client, gsize *size )
 {
-  g_debug("client %s: disconnecting", client->file->fname);
+  return scanner_source_update(client->in, client->src, size);
+}
+
+static void client_reconnect ( Client *client )
+{
+  g_debug("client %s: disconnecting", client->src->fname);
+
   if(client->in == client->out)
     client->out = NULL;
   g_clear_pointer(&client->in, g_io_channel_unref);
@@ -25,46 +31,44 @@ void client_reconnect ( Client *client )
     g_timeout_add(1000, (GSourceFunc )client->connect, client);
 }
 
-gboolean client_event ( GIOChannel *chan, GIOCondition cond, gpointer data )
+static gboolean client_event ( GIOChannel *chan, GIOCondition cond, Client *client )
 {
-  Client *client = data;
-  gsize size;
   GIOStatus cstat;
+  GList *iter;
+  gsize size;
 
-  g_debug("client %s: event fd %d, flags %d, cond %d", client->file->fname,
+  g_debug("client: %s: event fd %d, flags %d, cond %d", client->src->fname,
       g_io_channel_unix_get_fd(chan), g_io_channel_get_flags(chan), cond);
 
-  if( cond & G_IO_ERR || cond & G_IO_HUP )
+  if(cond & G_IO_ERR || cond & G_IO_HUP)
   {
-    g_debug("client %s: error cond = %d", client->file->fname, cond);
+    g_debug("client: %s: error cond = %d", client->src->fname, cond);
     return FALSE;
   }
 
-  if( cond & G_IO_IN || cond & G_IO_PRI )
+  if(client->consume && (cond & G_IO_IN || cond & G_IO_PRI) )
   {
-    if(client->consume)
-      cstat = client->consume(client, &size);
-    else
-    {
-      g_list_foreach(client->file->vars, (GFunc)scanner_var_reset, NULL);
-      cstat = scanner_file_update(chan, client->file, &size);
-    }
+    g_rec_mutex_lock(&client->src->mutex);
+    for(iter=client->src->vars; iter; iter=g_list_next(iter))
+      scanner_var_invalidate(0, iter->data, NULL);
+    cstat = client->consume(client, &size);
+    g_rec_mutex_unlock(&client->src->mutex);
     if(cstat == G_IO_STATUS_ERROR || !size )
     {
-      g_debug("client %s: read error, status = %d, size = %zu",
-          client->file->fname, cstat, size);
+      g_debug("client: %s: read error, status = %d, size = %zu",
+          client->src->fname, cstat, size);
       return FALSE;
     }
     else
       g_debug("client %s: status %d, read %zu bytes",
-          client->file->fname, cstat, size);
+          client->src->fname, cstat, size);
   }
   if(client->respond)
   {
     cstat = client->respond(client);
     if(cstat != G_IO_STATUS_NORMAL)
     {
-      g_debug("client %s: write error, status = %d", client->file->fname, cstat);
+      g_debug("client %s: write error, status = %d", client->src->fname, cstat);
       client_reconnect(client);
       return FALSE;
     }
@@ -81,7 +85,7 @@ void client_attach ( Client *client )
   client->connect(client);
 }
 
-void client_subscribe ( Client *client )
+static void client_subscribe ( Client *client )
 {
   if(client->out && client->out != client->in)
   {
@@ -94,15 +98,15 @@ void client_subscribe ( Client *client )
     g_io_channel_set_close_on_unref(client->in, TRUE);
     g_io_add_watch_full(client->in, G_PRIORITY_DEFAULT,
         G_IO_IN | G_IO_PRI | G_IO_HUP | G_IO_ERR,
-        client_event, client, (GDestroyNotify)client_reconnect);
+        (GIOFunc)client_event, client, (GDestroyNotify)client_reconnect);
     g_debug("client %s: connected, channel: %p, fd: %d, flags: %d, conn: %p",
-        client->file->fname, (void *)client->out,
+        client->src->fname, (void *)client->out,
         g_io_channel_unix_get_fd(client->out),
         g_io_channel_get_flags(client->out), (void *)client->scon);
   }
 }
 
-void client_socket_connect_cb ( GSocketClient *src, GAsyncResult *res,
+static void client_socket_connect_cb ( GSocketClient *src, GAsyncResult *res,
     Client *client )
 {
   GSocket *sock;
@@ -124,21 +128,21 @@ void client_socket_connect_cb ( GSocketClient *src, GAsyncResult *res,
     }
   }
 
-  g_debug("client: %s: socket connection failed", client->file->fname);
+  g_debug("client: %s: socket connection failed", client->src->fname);
   client_reconnect(client);
 }
 
 gboolean client_socket_connect ( Client *client )
 {
-  g_debug("client %s: connecting", client->file->fname);
-  if(strchr(client->file->fname,':'))
-    client->addr = g_network_address_parse(client->file->fname, 0, NULL);
+  g_debug("client %s: connecting", client->src->fname);
+  if(strchr(client->src->fname,':'))
+    client->addr = g_network_address_parse(client->src->fname, 0, NULL);
   else
     client->addr = (GSocketConnectable*)
-      g_unix_socket_address_new(client->file->fname);
+      g_unix_socket_address_new(client->src->fname);
   if(!client->addr)
   {
-    g_debug("client %s: unable to parse address", client->file->fname);
+    g_debug("client %s: unable to parse address", client->src->fname);
     client_reconnect(client);
     return FALSE;
   }
@@ -150,37 +154,35 @@ gboolean client_socket_connect ( Client *client )
   return FALSE;
 }
 
-ScanFile *client_socket ( gchar *fname, gchar *trigger )
+source_t *client_socket ( gchar *fname, gchar *trigger )
 {
   Client *client;
-  ScanFile *file;
 
   if(!fname)
     return NULL;
 
-  file = scanner_file_new(SO_CLIENT, fname, 0);
-
   client = g_malloc0(sizeof(Client));
-  client->file = file;
+  client->src =  scanner_source_new(fname);
   client->connect = client_socket_connect;
+  client->consume = client_source_update;
   client_attach(client);
 
-  return file;
+  return client->src;
 }
 
-gboolean client_exec_connect ( Client *client )
+static gboolean client_exec_connect ( Client *client )
 {
   gint in, out, err;
   gchar **argv;
   gint argc;
 
-  if(!g_shell_parse_argv(client->file->fname, &argc, &argv, NULL))
+  if(!g_shell_parse_argv(client->src->fname, &argc, &argv, NULL))
     return FALSE;
 
   if(!g_spawn_async_with_pipes(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL,
         NULL,NULL, &in, &out, &err, NULL))
   {
-    g_debug("client exec error on: %s", client->file->fname);
+    g_debug("client exec error on: %s", client->src->fname);
     g_strfreev(argv);
     return FALSE;
   }
@@ -193,22 +195,20 @@ gboolean client_exec_connect ( Client *client )
   return FALSE;
 }
 
-ScanFile *client_exec ( gchar *fname, gchar *trigger )
+source_t *client_exec ( gchar *fname, gchar *trigger )
 {
-  ScanFile *file;
   Client *client;
 
   if(!fname)
     return NULL;
 
-  file = scanner_file_new(SO_CLIENT, fname, 0);
-
   client = g_malloc0(sizeof(Client));
-  client->file = file;
+  client->src = scanner_source_new(fname);
   client->connect = client_exec_connect;
+  client->consume = client_source_update;
   client_attach(client);
 
-  return file;
+  return client->src;
 }
 
 void client_send ( gchar *addr, gchar *command )

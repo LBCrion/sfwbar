@@ -120,16 +120,6 @@ static value_t action_menu ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
-static value_t action_mpd ( vm_t *vm, value_t p[], gint np )
-{
-  vm_param_check_np(vm, np, 1, "MpdCmd");
-  vm_param_check_string(vm, p, 0, "MpdCmd");
-
-  client_mpd_command(value_get_string(p[0]));
-
-  return value_na;
-}
-
 static value_t action_config ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np(vm, np, 1, "Config");
@@ -733,7 +723,6 @@ void action_lib_init ( void )
   vm_func_add("menuclear", action_menuclear, TRUE, FALSE);
   vm_func_add("menuitemclear", action_menuitemclear, TRUE, FALSE);
   vm_func_add("menu", action_menu, TRUE, FALSE);
-  vm_func_add("mpdcmd", action_mpd, TRUE, TRUE);
   vm_func_add("config", action_config, TRUE, FALSE);
   vm_func_add("mapappid", action_map_appid, TRUE, TRUE);
   vm_func_add("mapicon", action_map_icon, TRUE, TRUE);

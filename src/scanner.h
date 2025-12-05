@@ -6,12 +6,6 @@
 #include "vm/vm.h"
 
 enum {
-  SO_FILE = 0,
-  SO_EXEC = 1,
-  SO_CLIENT = 2
-};
-
-enum {
   VF_CHTIME = 1,
   VF_NOGLOB = 2
 };
@@ -32,23 +26,37 @@ enum {
   SCANNER_TYPE_AGE
 };
 
-typedef struct scan_file {
-  gboolean invalid;
-  GMutex mutex;
-  gchar *fname;
-  gint flags;
-  guchar source;
-  time_t mtime;
-  GList *vars;
-//  void *client;
-} ScanFile;
+typedef struct _source source_t;
+typedef struct _scan_var scan_var_t;
 
-typedef struct scan_var {
+struct _source {
+  gboolean invalid;
+  gboolean (*update)(source_t *src);
   GRecMutex mutex;
-  GQuark id;
-  gboolean vstate;
+  GList *vars;
+  gchar *fname;
+  gpointer data;
+};
+
+typedef struct _file_source {
+  gint flags;
+  time_t mtime;
+} file_source_t;
+
+#define FILE_SOURCE(x) ((file_source_t *)(x->data))
+
+typedef struct _expr_source {
   expr_cache_t *expr;
   vm_store_t *store;
+  gboolean updating;
+} expr_source_t;
+
+#define EXPR_SOURCE(x) ((expr_source_t *)(x->data))
+
+struct _scan_var {
+  GQuark id;
+  gboolean vstate;
+  gchar * (*parse)(scan_var_t *, GString *);
   void *definition;
   gchar *str;
   double val;
@@ -58,25 +66,23 @@ typedef struct scan_var {
   gint count;
   gint multi;
   guint type;
-  gboolean updating;
   gboolean invalid;
-  ScanFile *file;
-} ScanVar;
+  source_t *src;
+};
 
 void scanner_invalidate ( void );
-void scanner_var_reset ( ScanVar *var, gpointer dummy );
-void scanner_update_json ( struct json_object *, ScanFile * );
-GIOStatus scanner_file_update ( GIOChannel *, ScanFile *, gsize * );
-int scanner_glob_file ( ScanFile * );
+void scanner_var_invalidate ( GQuark key, scan_var_t *var, void *data );
+void scanner_var_reset ( scan_var_t *var, gpointer dummy );
+void scanner_update_json ( struct json_object *, source_t * );
+GIOStatus scanner_source_update ( GIOChannel *, source_t *, gsize * );
 value_t scanner_get_value ( GQuark id, gchar ftype, gboolean update,
     gboolean *vstate );
-void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
+void scanner_var_new ( gchar *name, source_t *file, gchar *pattern,
     guint type, gint flag, vm_store_t *store );
-void scanner_file_merge ( ScanFile *keep, ScanFile *temp );
 GQuark scanner_parse_identifier ( const gchar *id, guint8 *dtype );
-ScanFile *scanner_file_get ( gchar *trigger );
-ScanFile *scanner_file_new ( gint , gchar *, gint );
+source_t *scanner_source_new ( gchar *fname );
+source_t *scanner_file_new ( gchar *fname, gint flags );
+source_t *scanner_exec_new ( gchar *fname );
 gboolean scanner_is_variable ( gchar *identifier );
-void scanner_file_attach ( const gchar *trigger, ScanFile *file );
 
 #endif

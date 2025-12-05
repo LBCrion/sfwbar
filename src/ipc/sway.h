@@ -4,6 +4,6 @@
 #include "scanner.h"
 
 void sway_ipc_init ( void );
-ScanFile *sway_ipc_client_init ( void );
+source_t *sway_ipc_client_init ( void );
 
 #endif

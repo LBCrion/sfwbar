@@ -17,113 +17,22 @@
 
 static datalist_t *scan_list;
 
-ScanFile *scanner_file_new ( gint source, gchar *fname, gint flags )
+static void scanner_var_values_update ( scan_var_t *var, gchar *value )
 {
-  static hash_table_t *file_list;
-  ScanFile *file;
+  gint64 t = g_get_monotonic_time();
 
-  if(!fname || !(file = hash_table_lookup(file_list, fname)) )
-  {
-    file = g_malloc0(sizeof(ScanFile));
-    file->fname = g_strdup(fname);
-    if(!file_list)
-      file_list = hash_table_new(g_direct_hash, g_direct_equal);
-    hash_table_insert(file_list, file->fname, file);
-  }
-
-  file->source = source;
-  file->flags = flags;
-  if( !strchr(file->fname,'*') && !strchr(file->fname, '?') )
-    file->flags |= VF_NOGLOB;
-
-  return file;
-}
-
-void scanner_var_new ( gchar *name, ScanFile *file, gchar *pattern,
-    guint type, gint flag, vm_store_t *store )
-{
-  ScanVar *var, *old;
-  GQuark quark;
-
-  if(!name)
-    return;
-
-  quark = scanner_parse_identifier(name, NULL);
-
-  old = datalist_get(scan_list, quark);
-  if(old && (type != G_TOKEN_SET || old->type != G_TOKEN_SET) &&
-      (old->file != file))
-  {
-    g_debug("scanner: variable '%s' redeclared in a different file", name);
-    return;
-  }
-
-  var = old? old: g_malloc0(sizeof(ScanVar));
-
-  var->file = file;
-  var->type = type;
-  var->multi = flag;
-  var->invalid = TRUE;
-  var->store = store;
-  var->id = quark;
-
-  switch(var->type)
-  {
-    case G_TOKEN_SET:
-      expr_cache_unref(var->expr);
-      var->expr = expr_cache_new_with_code((GBytes *)pattern);
-      var->expr->store = store;
-      g_debug("scanner: new set: '%s' in %p", g_quark_to_string(quark),
-          var->expr->store);
-      var->vstate = TRUE;
-      var->expr->quark = quark;
-      expr_dep_trigger(quark);
-      break;
-    case G_TOKEN_JSON:
-      str_assign((gchar **)&var->definition, g_strdup(pattern));
-      break;
-    case G_TOKEN_REGEX:
-      if(var->definition)
-        g_regex_unref(var->definition);
-      var->definition = g_regex_new(pattern, 0, 0, NULL);
-      break;
-  }
-
-  if(file && !old)
-  {
-    g_mutex_lock(&file->mutex);
-    file->vars = g_list_append(file->vars, var);
-    g_mutex_unlock(&file->mutex);
-  }
-
-  if(!old)
-  {
-    datalist_set(scan_list, quark, var);
-    expr_dep_trigger(quark);
-  }
-}
-
-void scanner_var_invalidate ( GQuark key, ScanVar *var, void *data )
-{
-  if( var->file && var->file->source == SO_CLIENT )
-    return;
-  var->invalid = TRUE;
-  if(var->file)
-    var->file->invalid = TRUE;
-}
-
-/* expire all variables in the tree */
-void scanner_invalidate ( void )
-{
-  datalist_foreach(scan_list, (GDataForeachFunc)scanner_var_invalidate, NULL);
-}
-
-static void scanner_var_values_update ( ScanVar *var, gchar *value)
-{
   if(!value)
     return;
 
-  if(var->multi!=VT_FIRST || !var->count || var->type==G_TOKEN_SET)
+  if(var->invalid)
+  {
+    var->pval = var->val;
+    var->count = 0;
+    var->val = 0;
+    var->time = t-var->ptime;
+    var->ptime = t;
+  }
+  if(var->multi!=VT_FIRST || !var->count)
   {
     str_assign(&var->str, value);
     switch(var->multi)
@@ -132,14 +41,14 @@ static void scanner_var_values_update ( ScanVar *var, gchar *value)
         var->val += g_ascii_strtod(var->str, NULL);
         break;
       case VT_PROD:
-        var->val *= g_ascii_strtod(var->str,NULL);
+        var->val *= g_ascii_strtod(var->str, NULL);
         break;
       case VT_LAST:
-        var->val = g_ascii_strtod(var->str,NULL);
+        var->val = g_ascii_strtod(var->str, NULL);
         break;
       case VT_FIRST:
         if(!var->count)
-          var->val = g_ascii_strtod(var->str,NULL);
+          var->val = g_ascii_strtod(var->str, NULL);
         break;
     }
     var->count++;
@@ -150,126 +59,133 @@ static void scanner_var_values_update ( ScanVar *var, gchar *value)
   var->invalid = FALSE;
 }
 
-void scanner_update_json ( struct json_object *obj, ScanFile *file )
+static gchar *scanner_var_parse_regex ( scan_var_t *var, GString *str )
 {
-  GList *node;
+  GMatchInfo *match;
+  gchar *value;
+
+  g_return_val_if_fail(var->definition, NULL);
+  value = g_regex_match_full(var->definition, str->str, str->len, 0, 0, &match,
+      NULL) ?  g_match_info_fetch(match, 1) : NULL;
+  if(match)
+    g_match_info_free(match);
+  return value;
+}
+
+static gchar *scanner_var_parse_grab ( scan_var_t *var, GString *str )
+{
+  return g_strndup(str->str, str->len - (str->str[str->len - 1]=='\n' ? 1:0));
+}
+
+static void scanner_var_parse ( scan_var_t *var, GString *str )
+{
+  gchar *val;
+
+  if(var->parse && (val = var->parse(var, str)))
+    scanner_var_values_update(var, val);
+}
+
+static gboolean scanner_expr_update ( source_t *source )
+{
+  scan_var_t *var = source->vars->data;
+
+  if(EXPR_SOURCE(source)->updating)
+    return FALSE;
+
+  EXPR_SOURCE(source)->updating = TRUE;
+  (void)vm_expr_eval(EXPR_SOURCE(source)->expr);
+  var->vstate = EXPR_SOURCE(source)->expr->invalid;
+  scanner_var_values_update(var, g_strdup(EXPR_SOURCE(source)->expr->cache));
+  var->invalid = FALSE;
+  var->src->invalid = TRUE;
+  EXPR_SOURCE(source)->updating = FALSE;
+
+  return TRUE;
+}
+
+void scanner_update_json1 ( scan_var_t *var, struct json_object *obj )
+{
   struct json_object *ptr;
   gint i;
 
-  g_mutex_lock(&file->mutex);
-  for(node=file->vars; node!=NULL; node=g_list_next(node))
-  {
-    ptr = jpath_parse(((ScanVar *)node->data)->definition, obj);
-    if(ptr && json_object_is_type(ptr, json_type_array))
-      for(i=0; i<json_object_array_length(ptr); i++)
-      {
-        scanner_var_values_update(((ScanVar *)node->data),
-          g_strdup(json_object_get_string(json_object_array_get_idx(ptr, i))));
-      }
-    if(ptr)
-      json_object_put(ptr);
-  }
-  g_mutex_unlock(&file->mutex);
+  ptr = jpath_parse(var->definition, obj);
+  if(ptr && json_object_is_type(ptr, json_type_array))
+    for(i=0; i<json_object_array_length(ptr); i++)
+      scanner_var_values_update(var,
+        g_strdup(json_object_get_string(json_object_array_get_idx(ptr, i))));
+  if(ptr)
+    json_object_put(ptr);
 }
 
-/* update variables in a specific file (or pipe) */
-GIOStatus scanner_file_update ( GIOChannel *in, ScanFile *file, gsize *size )
+void scanner_update_json ( struct json_object *obj, source_t *src )
 {
-  ScanVar *var;
-  GList *node;
-  GMatchInfo *match = NULL;
+  g_list_foreach(src->vars, (GFunc)scanner_update_json1, obj);
+}
+
+/* update variables in a specific source from a channel */
+GIOStatus scanner_source_update ( GIOChannel *in, source_t *src, gsize *size )
+{
   struct json_tokener *json = NULL;
   struct json_object *obj;
-  gchar *read_buff;
   GIOStatus status;
-  gsize lsize;
+  GString *str;
+  GList *iter;
 
   if(size)
     *size = 0;
 
-  while( (status = g_io_channel_read_line(in, &read_buff, &lsize, NULL, NULL))
+  for(iter=src->vars; iter!=NULL; iter=g_list_next(iter))
+    if(((scan_var_t *)iter->data)->type == G_TOKEN_JSON)
+      json = json_tokener_new();
+
+  str = g_string_new(NULL);
+  while( (status = g_io_channel_read_line_string(in, str, NULL, NULL))
       ==G_IO_STATUS_NORMAL)
   {
     if(size)
-      *size += lsize;
-    for(node=file->vars; node!=NULL; node=g_list_next(node))
-    {
-      var=node->data;
-      switch(var->type)
-      {
-        case G_TOKEN_REGEX:
-          if(var->definition &&
-              g_regex_match(var->definition, read_buff, 0, &match))
-            scanner_var_values_update(var, g_match_info_fetch(match, 1));
-          if(match)
-            g_match_info_free(match);
-          break;
-        case G_TOKEN_GRAB:
-          if(lsize>0 && *(read_buff+lsize-1)=='\n')
-            *(read_buff+lsize-1)='\0';
-          scanner_var_values_update(var, g_strdup(read_buff));
-          break;
-        case G_TOKEN_JSON:
-          if(!json)
-            json = json_tokener_new();
-          break;
-      }
-    }
+      *size += str->len;
+    g_list_foreach(src->vars, (GFunc)scanner_var_parse, str);
     if(json)
-      obj = json_tokener_parse_ex(json, read_buff, strlen(read_buff));
-    g_free(read_buff);
+      obj = json_tokener_parse_ex(json, str->str, str->len);
   }
-  g_free(read_buff);
+  g_string_free(str, TRUE);
 
   if(json)
   {
-    scanner_update_json(obj, file);
+    scanner_update_json(obj, src);
     json_object_put(obj);
     json_tokener_free(json);
   }
 
-  for(node=file->vars; node!=NULL; node=g_list_next(node))
-  {
-    ((ScanVar *)node->data)->invalid = FALSE;
-    ((ScanVar *)node->data)->vstate = TRUE;
-  }
+  for(iter=src->vars; iter; iter=g_list_next(iter))
+    ((scan_var_t *)iter->data)->invalid = FALSE;
 
-  g_debug("channel status %d, (%s)",status, file->fname? file->fname : "(null)");
+  g_debug("scanner: input status %d, (%s)", status, src->fname? src->fname :
+      "(null)");
 
   return status;
 }
 
-void scanner_var_reset ( ScanVar *var, gpointer dummy )
-{
-  gint64 t = g_get_monotonic_time();
-
-  var->pval = var->val;
-  var->count = 0;
-  var->val = 0;
-  var->time = t-var->ptime;
-  var->ptime = t;
-}
-
-time_t scanner_file_mtime ( glob_t *gbuf )
+static time_t scanner_file_mtime ( glob_t *gbuf )
 {
   gint i;
   struct stat stattr;
   time_t res = 0;
 
-  for(i=0;gbuf->gl_pathv[i]!=NULL;i++)
-    if(!stat(gbuf->gl_pathv[i],&stattr))
+  for(i=0; gbuf->gl_pathv[i]; i++)
+    if(!stat(gbuf->gl_pathv[i], &stattr))
       res = MAX(stattr.st_mtime, res);
 
   return res;
 }
 
-gboolean scanner_file_exec ( ScanFile *file )
+static gboolean scanner_exec_update ( source_t *src )
 {
   GIOChannel *chan;
   gint out;
   gchar **argv;
 
-  if(!g_shell_parse_argv(file->fname, NULL, &argv, NULL))
+  if(!g_shell_parse_argv(src->fname, NULL, &argv, NULL))
     return FALSE;
 
   if(!g_spawn_async_with_pipes(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL,
@@ -278,10 +194,10 @@ gboolean scanner_file_exec ( ScanFile *file )
 
   if( (chan = g_io_channel_unix_new(out)) )
   {
-    g_debug("scanner: exec '%s'", file->fname);
-    g_list_foreach(file->vars, (GFunc)scanner_var_reset, NULL);
-    (void)scanner_file_update(chan, file, NULL);
+    g_debug("scanner: exec: '%s'", src->fname);
+    (void)scanner_source_update(chan, src, NULL);
     g_io_channel_unref(chan);
+    src->invalid = FALSE;
   }
   close(out);
 
@@ -289,64 +205,173 @@ gboolean scanner_file_exec ( ScanFile *file )
 }
 
 /* update all variables in a file (by glob) */
-gboolean scanner_file_glob ( ScanFile *file )
+gboolean scanner_file_update ( source_t *src )
 {
+  GIOChannel *chan;
   glob_t gbuf;
   gchar *dnames[2];
-  struct stat stattr;
+  time_t mtime;
   gint i;
-  gint in;
-  GIOChannel *chan;
-  gboolean reset=FALSE;
 
-  g_return_val_if_fail(file, FALSE);
-  g_return_val_if_fail(file->fname, FALSE);
+  g_return_val_if_fail(src, FALSE);
+  g_return_val_if_fail(src->fname, FALSE);
 
-  if(file->source == SO_CLIENT)
-    return FALSE;
-  if(file->source == SO_EXEC)
-    return scanner_file_exec(file);
-  if(!file->invalid)
-    return FALSE;
-  if((file->flags & VF_NOGLOB)||(file->source != SO_FILE))
+  if(FILE_SOURCE(src)->flags & VF_NOGLOB)
   {
-    dnames[0] = file->fname;
+    dnames[0] = src->fname;
     dnames[1] = NULL;
     gbuf.gl_pathv = dnames;
   }
-  else if(glob(file->fname, GLOB_NOSORT, NULL, &gbuf))
+  else if(glob(src->fname, GLOB_NOSORT, NULL, &gbuf))
   {
     globfree(&gbuf);
     return FALSE;
   }
 
-  if( !(file->flags & VF_CHTIME) || (file->mtime < scanner_file_mtime(&gbuf)) )
-    for(i=0;gbuf.gl_pathv[i];i++)
-    {
-      in = open(gbuf.gl_pathv[i],O_RDONLY);
-      if(in != -1)
+  if(FILE_SOURCE(src)->flags & VF_CHTIME)
+    mtime = scanner_file_mtime(&gbuf);
+  if(!(FILE_SOURCE(src)->flags & VF_CHTIME) || (FILE_SOURCE(src)->mtime < mtime))
+    for(i=0; gbuf.gl_pathv[i]; i++)
+      if( (chan = g_io_channel_new_file(gbuf.gl_pathv[i], "r", NULL)) )
       {
-        if(!reset)
-        {
-          reset=TRUE;
-          g_list_foreach(file->vars,(GFunc)scanner_var_reset,NULL);
-        }
-
-        chan = g_io_channel_unix_new(in);
-        (void)scanner_file_update(chan, file, NULL);
+        src->invalid = FALSE;
+        (void)scanner_source_update(chan, src, NULL);
         g_io_channel_unref(chan);
-
-        close(in);
-        if(!stat(gbuf.gl_pathv[i],&stattr))
-          file->mtime = stattr.st_mtime;
+        FILE_SOURCE(src)->mtime = mtime;
       }
-    }
 
-  if(!(file->flags & VF_NOGLOB)&&(file->source == SO_FILE))
+  if(!(FILE_SOURCE(src)->flags & VF_NOGLOB))
     globfree(&gbuf);
 
-  file->invalid = FALSE;
   return TRUE;
+}
+
+source_t *scanner_source_new ( gchar *fname )
+{
+  static hash_table_t *src_list;
+  source_t *src;
+
+  if(!fname || !(src = hash_table_lookup(src_list, fname)) )
+  {
+    src = g_malloc0(sizeof(source_t));
+    src->fname = g_strdup(fname);
+    if(!src_list)
+      src_list = hash_table_new(g_direct_hash, g_direct_equal);
+    if(src->fname)
+      hash_table_insert(src_list, src->fname, src);
+  }
+
+  return src;
+}
+
+source_t *scanner_file_new ( gchar *fname, gint flags )
+{
+  source_t *src = scanner_source_new(fname);
+
+  if(!src->data)
+    src->data = g_malloc0(sizeof(file_source_t));
+
+  FILE_SOURCE(src)->flags = flags;
+
+  if(!strchr(src->fname, '*') && !strchr(src->fname, '?'))
+    FILE_SOURCE(src)->flags |= VF_NOGLOB;
+
+  src->update = scanner_file_update;
+
+  return src;
+}
+
+source_t *scanner_exec_new ( gchar *fname )
+{
+  source_t *src = scanner_source_new(fname);
+
+  src->update = scanner_exec_update;
+
+  return src;
+}
+
+void scanner_var_new ( gchar *name, source_t *src, gchar *pattern,
+    guint type, gint flag, vm_store_t *store )
+{
+  scan_var_t *var, *old;
+  GQuark quark;
+
+  g_return_if_fail(name);
+
+  quark = scanner_parse_identifier(name, NULL);
+
+  if( (old = datalist_get(scan_list, quark)) && src && old->src != src)
+  {
+    g_debug("scanner: variable '%s' redeclared in a different source", name);
+    return;
+  }
+
+  var = old? old : g_malloc0(sizeof(scan_var_t));
+  var->src = src;
+  var->type = type;
+  var->multi = flag;
+  var->invalid = TRUE;
+  var->id = quark;
+  var->vstate = TRUE;
+
+  switch(var->type)
+  {
+    case G_TOKEN_SET:
+      if(!var->src)
+      {
+        var->src = scanner_source_new(NULL);
+        var->src->update = scanner_expr_update;
+        var->src->vars = g_list_append(NULL, var);
+        var->src->data = g_malloc0(sizeof(expr_source_t));
+      }
+      var->src->invalid = TRUE;
+
+      expr_cache_unref(EXPR_SOURCE(var->src)->expr);
+      EXPR_SOURCE(var->src)->expr = expr_cache_new_with_code((GBytes *)pattern);
+      EXPR_SOURCE(var->src)->store = store;
+      g_debug("scanner: new set: '%s' in %p", g_quark_to_string(quark),
+          EXPR_SOURCE(var->src)->store);
+      var->multi = VT_LAST;
+      expr_dep_trigger(quark);
+      break;
+    case G_TOKEN_JSON:
+      str_assign((gchar **)&var->definition, g_strdup(pattern));
+      break;
+    case G_TOKEN_REGEX:
+      if(var->definition)
+        g_regex_unref(var->definition);
+      var->definition = g_regex_new(pattern, 0, 0, NULL);
+      var->parse = scanner_var_parse_regex;
+      break;
+    case G_TOKEN_GRAB:
+      var->parse = scanner_var_parse_grab;
+  }
+
+  if(src && !old)
+  {
+    g_rec_mutex_lock(&src->mutex);
+    src->vars = g_list_append(src->vars, var);
+    g_rec_mutex_unlock(&src->mutex);
+  }
+
+  if(!old)
+  {
+    datalist_set(scan_list, quark, var);
+    expr_dep_trigger(quark);
+  }
+}
+
+void scanner_var_invalidate ( GQuark key, scan_var_t *var, void *data )
+{
+  var->invalid = TRUE;
+  if(var->src)
+    var->src->invalid = TRUE;
+}
+
+/* expire all variables in the tree */
+void scanner_invalidate ( void )
+{
+  datalist_foreach(scan_list, (GDataForeachFunc)scanner_var_invalidate, NULL);
 }
 
 GQuark scanner_parse_identifier ( const gchar *id, guint8 *dtype )
@@ -390,46 +415,24 @@ GQuark scanner_parse_identifier ( const gchar *id, guint8 *dtype )
   return quark;
 }
 
-static ScanVar *scanner_var_update ( ScanVar *var )
-{
-  g_rec_mutex_lock(&var->mutex);
-  if(var->type == G_TOKEN_SET && !var->updating)
-  {
-    var->updating = TRUE;
-    (void)vm_expr_eval(var->expr);
-    var->vstate = var->expr->invalid;
-    if(var->invalid)
-      scanner_var_reset(var, NULL);
-    scanner_var_values_update(var, g_strdup(var->expr->cache));
-    var->invalid = FALSE;
-    var->updating = FALSE;
-  }
-  else if(var->file)
-  {
-    if(g_mutex_trylock(&var->file->mutex))
-      scanner_file_glob(var->file);
-    else
-      g_mutex_lock(&var->file->mutex);
-    g_mutex_unlock(&var->file->mutex);
-    var->vstate = TRUE;
-  }
-  g_rec_mutex_unlock(&var->mutex);
-
-  return var;
-}
-
 /* get value of a variable by name */
 value_t scanner_get_value ( GQuark id, gchar ftype, gboolean update,
     gboolean *vstate )
 {
+  scan_var_t *var;
   value_t result;
-  ScanVar *var;
 
   if( !(var = datalist_get(scan_list, id)) )
     return value_na;
 
-  if(update && (var->invalid || var->type == G_TOKEN_SET))
-    scanner_var_update(var);
+  if(update && var->src && var->src->invalid)
+  {
+    if(var->src->update && g_rec_mutex_trylock(&var->src->mutex))
+      var->src->update(var->src);
+    else
+      g_rec_mutex_lock(&var->src->mutex);
+    g_rec_mutex_unlock(&var->src->mutex);
+  }
 
   if(vstate)
     *vstate = *vstate || var->vstate;

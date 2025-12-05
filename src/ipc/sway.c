@@ -13,7 +13,7 @@
 #include "vm/vm.h"
 
 static gint main_ipc;
-static ScanFile *sway_file;
+static source_t *sway_file;
 
 extern gchar *sockname;
 
@@ -202,12 +202,9 @@ static void sway_traverse_tree ( struct json_object *obj, const gchar *parent,
     }
 }
 
-ScanFile *sway_ipc_client_init ( void )
+source_t *sway_ipc_client_init ( void )
 {
-  if(!sway_file)
-    sway_file = scanner_file_new(SO_CLIENT, NULL, 0);
-
-  return sway_file;
+  return sway_file? sway_file : (sway_file = scanner_source_new(NULL));
 }
 
 static workspace_t *sway_ipc_workspace_new ( struct json_object *obj )
@@ -378,14 +375,18 @@ static void sway_ipc_scan_input ( struct json_object *obj, guint32 etype )
     "","","","","","","","","","","","",
     "bar_state_update",
     "input" };
+  GList *iter;
 
   if(!sway_file || etype<0x80000000 || etype>0x80000015)
     return;
 
   scan = json_object_new_object();
   json_object_object_add_ex(scan, ename[etype-0x80000000], obj, 0);
-  g_list_foreach(sway_file->vars, (GFunc)scanner_var_reset, NULL);
+  g_rec_mutex_lock(&sway_file->mutex);
+  for(iter=sway_file->vars; iter; iter=g_list_next(iter))
+     scanner_var_invalidate(0, iter->data, NULL);
   scanner_update_json(scan, sway_file);
+  g_rec_mutex_unlock(&sway_file->mutex);
   json_object_get(obj);
   json_object_put(scan);
   trigger_emit("sway");
