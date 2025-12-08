@@ -28,12 +28,14 @@ enum {
 
 typedef struct _source source_t;
 typedef struct _scan_var scan_var_t;
+typedef struct _src_handler src_handler_t;
 
 struct _source {
   gboolean invalid;
   gboolean (*update)(source_t *src);
   GRecMutex mutex;
   GList *vars;
+  GList *handlers;
   gchar *fname;
   gpointer data;
 };
@@ -70,6 +72,17 @@ struct _scan_var {
   source_t *src;
 };
 
+#define SCAN_VAR(x) ((scan_var_t *)(x))
+
+struct _src_handler {
+  void (*init)(source_t *, src_handler_t *);
+  void (*handle)(source_t *, src_handler_t *, GString *);
+  void (*finish)(source_t *, src_handler_t *);
+  gpointer data;
+};
+
+#define SRC_HANDLER(x) ((src_handler_t *)(x))
+
 void scanner_invalidate ( void );
 void scanner_var_invalidate ( GQuark key, scan_var_t *var, void *data );
 void scanner_var_reset ( scan_var_t *var, gpointer dummy );
@@ -77,8 +90,11 @@ void scanner_update_json ( struct json_object *, source_t * );
 GIOStatus scanner_source_update ( GIOChannel *, source_t *, gsize * );
 value_t scanner_get_value ( GQuark id, gchar ftype, gboolean update,
     gboolean *vstate );
-void scanner_var_new ( gchar *name, source_t *file, gchar *pattern,
-    guint type, gint flag, vm_store_t *store );
+scan_var_t *scanner_var_new_calc ( gchar *name, source_t *src, gpointer code,
+   vm_store_t *store );
+scan_var_t *scanner_var_new_regex ( gchar *name, source_t *src, void *regex );
+scan_var_t *scanner_var_new_json ( gchar *name, source_t *src, void *path );
+scan_var_t *scanner_var_new_grab ( gchar *name, source_t *src, void *dummy );
 GQuark scanner_parse_identifier ( const gchar *id, guint8 *dtype );
 source_t *scanner_source_new ( gchar *fname );
 source_t *scanner_file_new ( gchar *fname, gint flags );

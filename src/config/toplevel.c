@@ -23,8 +23,7 @@ static void config_set ( GScanner *scanner )
       SEQ_END);
 
   if(!scanner->max_parse_errors && ident && config_expr(scanner, &code))
-    scanner_var_new(ident, NULL, (gchar *)code, G_TOKEN_SET, VT_FIRST,
-        SCANNER_STORE(scanner));
+    scanner_var_new_calc(ident, NULL, code, SCANNER_STORE(scanner));
 
   g_free(ident);
 }

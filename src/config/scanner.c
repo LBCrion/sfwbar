@@ -29,51 +29,29 @@ static gboolean config_var_type (GScanner *scanner, gint *type )
   return !scanner->max_parse_errors;
 }
 
-static void config_var ( GScanner *scanner, source_t *file )
+static void config_var ( GScanner *scanner, source_t *src )
 {
   gchar *vname, *pattern = NULL;
-  guint type;
+  scan_var_t *(*scan_var_init)(gchar *, source_t *, gpointer);
+  scan_var_t *var = NULL;
   gint flag = VT_LAST;
 
   config_parse_sequence(scanner,
       SEQ_REQ, G_TOKEN_IDENTIFIER, NULL, &vname,
         "invalid variable identifier in scanner",
       SEQ_REQ, '=', NULL, NULL, "Missing '=' in variable declaration",
-      SEQ_REQ, -2, (parse_func)config_var_type, &type, NULL,
+      SEQ_REQ, -2, (parse_func)config_var_type, &scan_var_init, NULL,
       SEQ_REQ, '(', NULL, NULL, "Missing '(' after parser",
+      SEQ_OPT, G_TOKEN_STRING, NULL, &pattern, "Missing pattern in parser",
+      SEQ_OPT, ',', NULL, NULL, NULL,
+      SEQ_OPT, -2, (parse_func)config_var_flag, &flag, NULL,
+      SEQ_REQ, ')', NULL, NULL, "Missing ')' after parser",
+      SEQ_OPT, ';', NULL, NULL, NULL,
       SEQ_END);
 
-  if(scanner->max_parse_errors)
-  {
-    g_free(vname);
-    return;
-  }
-
-  switch(type)
-  {
-    case G_TOKEN_REGEX:
-    case G_TOKEN_JSON:
-      config_parse_sequence(scanner,
-          SEQ_REQ, G_TOKEN_STRING, NULL, &pattern, "Missing pattern in parser",
-          SEQ_OPT, ',', NULL, NULL, NULL,
-          SEQ_CON, -2, (parse_func)config_var_flag, &flag, NULL,
-          SEQ_REQ, ')', NULL, NULL, "Missing ')' after parser",
-          SEQ_OPT, ';', NULL, NULL, NULL,
-          SEQ_END);
-      break;
-    case G_TOKEN_GRAB:
-      config_parse_sequence(scanner,
-          SEQ_OPT, -2, (parse_func)config_var_flag, &flag, NULL,
-          SEQ_REQ, ')', NULL, NULL, "Missing ')' after parser",
-          SEQ_OPT, ';', NULL, NULL, NULL,
-          SEQ_END);
-      break;
-    default:
-      g_scanner_error(scanner, "invalid parser for variable %s", vname);
-  }
-
-  if(!scanner->max_parse_errors)
-    scanner_var_new(vname, file, pattern, type, flag, SCANNER_STORE(scanner));
+  if(!scanner->max_parse_errors && vname && scan_var_init)
+    if( (var = scan_var_init(vname, src, pattern)) )
+      var->multi = flag;
 
   g_free(vname);
   g_free(pattern);
@@ -142,52 +120,6 @@ gboolean config_scanner_source ( GScanner *scanner )
       while(!config_is_section_end(scanner))
         config_var(scanner, src);
   }
-
-/*  switch(type)
-  {
-    case G_TOKEN_FILE:
-      config_parse_sequence(scanner,
-          SEQ_REQ, '(', NULL, NULL, "Missing '(' after source",
-          SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing file in a source",
-          SEQ_OPT, -2, (parse_func)config_source_flags, &flags, NULL,
-          SEQ_REQ, ')', NULL, NULL, "Missing ')' after source",
-          SEQ_REQ, '{', NULL, NULL, "Missing '{' after source",
-          SEQ_END);
-      if(!scanner->max_parse_errors)
-        file = scanner_file_new(SO_FILE, fname, flags);
-      break;
-    case G_TOKEN_EXEC:
-      config_parse_sequence(scanner,
-          SEQ_REQ, '(', NULL, NULL, "Missing '(' after source",
-          SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing file in a source",
-          SEQ_REQ, ')', NULL, NULL, "Missing ')' after source",
-          SEQ_REQ, '{', NULL, NULL, "Missing '{' after source",
-          SEQ_END);
-      if(!scanner->max_parse_errors)
-        file = scanner_file_new(SO_EXEC, fname, 0);
-      break;
-    default:
-      config_parse_sequence(scanner,
-          SEQ_REQ, '(', NULL, NULL, "Missing '(' after source",
-          SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing file in a source",
-          SEQ_OPT, ',', NULL, NULL, NULL,
-          SEQ_CON, G_TOKEN_STRING, NULL, &trigger, NULL,
-          SEQ_REQ, ')', NULL, NULL, "Missing ')' after source",
-          SEQ_REQ, '{', NULL, NULL, "Missing '{' after source",
-          SEQ_END);
-      if(!scanner->max_parse_errors)
-      {
-        if(type == G_TOKEN_EXECCLIENT)
-          file = client_exec(fname, trigger);
-        else if(type == G_TOKEN_SOCKETCLIENT)
-          file = client_socket(fname, trigger);
-        else if(type == G_TOKEN_SWAYCLIENT)
-          file = sway_ipc_client_init();
-        else if(type == G_TOKEN_MPDCLIENT)
-          file = client_mpd(fname);
-      }
-      break;
-  }*/
 
   g_free(fname);
   g_free(trigger);

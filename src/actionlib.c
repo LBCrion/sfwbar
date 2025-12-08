@@ -521,8 +521,8 @@ static value_t action_eval ( vm_t *vm, value_t p[], gint np )
   if(!ptr)
     return value_na;
 
-  scanner_var_new(value_get_string(p[0]), NULL,
-      (gchar *)parser_string_build(ptr), G_TOKEN_SET, VT_FIRST, VM_STORE(vm));
+  scanner_var_new_calc(value_get_string(p[0]), NULL,
+      parser_string_build(ptr), VM_STORE(vm));
 
   return value_na;
 }

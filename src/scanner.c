@@ -1,7 +1,7 @@
 /* This entire file is licensed under GNU General Public License v3.0
- *
- * Copyright 2020- sfwbar maintainers
- */
+*
+* Copyright 2020- sfwbar maintainers
+*/
 
 #include <glib.h>
 #include <fcntl.h>
@@ -16,6 +16,20 @@
 #include "vm/expr.h"
 
 static datalist_t *scan_list;
+
+static gboolean scanner_handler_cmp ( src_handler_t *h1, src_handler_t *h2 )
+{
+  return h1->init != h2->init || h1->handle != h2->handle || 
+    h1->finish != h2->finish;
+}
+
+static void scanner_source_handler_add ( source_t *src, src_handler_t *h )
+{
+  if(g_list_find_custom(src->handlers, h, (GCompareFunc)scanner_handler_cmp))
+    return;
+  src->handlers = g_list_prepend(src->handlers,
+      g_memdup2(h, sizeof(src_handler_t)));
+}
 
 static void scanner_var_values_update ( scan_var_t *var, gchar *value )
 {
@@ -77,13 +91,83 @@ static gchar *scanner_var_parse_grab ( scan_var_t *var, GString *str )
   return g_strndup(str->str, str->len - (str->str[str->len - 1]=='\n' ? 1:0));
 }
 
-static void scanner_var_parse ( scan_var_t *var, GString *str )
+static void scanner_var_parse_default ( source_t *src, src_handler_t *handler,
+  GString *str )
 {
+  GList *iter;
   gchar *val;
 
-  if(var->parse && (val = var->parse(var, str)))
-    scanner_var_values_update(var, val);
+  for(iter=src->vars; iter; iter=g_list_next(iter))
+    if(SCAN_VAR(iter->data)->parse)
+      if( (val = SCAN_VAR(iter->data)->parse(iter->data, str)) )
+        scanner_var_values_update(iter->data, val);
 }
+
+static src_handler_t src_handler_default = {
+  .handle = scanner_var_parse_default,
+};
+
+static void scanner_handler_json_init ( source_t *src, src_handler_t *hnd )
+{
+  hnd->data = json_tokener_new();
+}
+
+void scanner_update_json1 ( scan_var_t *var, struct json_object *obj )
+{
+  struct json_object *ptr;
+  gint i;
+
+  ptr = jpath_parse(var->definition, obj);
+  if(ptr && json_object_is_type(ptr, json_type_array))
+    for(i=0; i<json_object_array_length(ptr); i++)
+      scanner_var_values_update(var,
+        g_strdup(json_object_get_string(json_object_array_get_idx(ptr, i))));
+  if(ptr)
+    json_object_put(ptr);
+}
+
+void scanner_update_json( json_object *obj, source_t *src )
+{
+  g_list_foreach(src->vars, (GFunc)scanner_update_json1, obj);
+}
+
+static void scanner_handler_json_handle ( source_t *src, src_handler_t *hnd,
+  GString *str )
+{
+  json_object *obj;
+  json_tokener *tok = hnd->data;
+  enum json_tokener_error err;
+  GString *remainder;
+
+  obj = json_tokener_parse_ex(tok, str->str, str->len);
+  err = json_tokener_get_error(tok);
+  if(err == json_tokener_continue)
+    return;
+  if(!obj || err != json_tokener_success)
+  {
+    json_tokener_reset(tok);
+    return;
+  }
+  g_list_foreach(src->vars, (GFunc)scanner_update_json1, obj);
+  json_object_put(obj);
+  if(tok->char_offset < str->len)
+  {
+    remainder = g_string_new(str->str+tok->char_offset);
+    scanner_handler_json_handle(src, hnd, remainder);
+    g_string_free(remainder, TRUE);
+  }
+}
+
+static void scanner_handler_json_finish ( source_t *src, src_handler_t *hnd )
+{
+  json_tokener_free(hnd->data);
+}
+
+static src_handler_t src_handler_json = {
+  .init = scanner_handler_json_init,
+  .handle = scanner_handler_json_handle,
+  .finish = scanner_handler_json_finish,
+};
 
 static gboolean scanner_expr_update ( source_t *source )
 {
@@ -103,30 +187,9 @@ static gboolean scanner_expr_update ( source_t *source )
   return TRUE;
 }
 
-void scanner_update_json1 ( scan_var_t *var, struct json_object *obj )
-{
-  struct json_object *ptr;
-  gint i;
-
-  ptr = jpath_parse(var->definition, obj);
-  if(ptr && json_object_is_type(ptr, json_type_array))
-    for(i=0; i<json_object_array_length(ptr); i++)
-      scanner_var_values_update(var,
-        g_strdup(json_object_get_string(json_object_array_get_idx(ptr, i))));
-  if(ptr)
-    json_object_put(ptr);
-}
-
-void scanner_update_json ( struct json_object *obj, source_t *src )
-{
-  g_list_foreach(src->vars, (GFunc)scanner_update_json1, obj);
-}
-
 /* update variables in a specific source from a channel */
 GIOStatus scanner_source_update ( GIOChannel *in, source_t *src, gsize *size )
 {
-  struct json_tokener *json = NULL;
-  struct json_object *obj;
   GIOStatus status;
   GString *str;
   GList *iter;
@@ -134,9 +197,9 @@ GIOStatus scanner_source_update ( GIOChannel *in, source_t *src, gsize *size )
   if(size)
     *size = 0;
 
-  for(iter=src->vars; iter!=NULL; iter=g_list_next(iter))
-    if(((scan_var_t *)iter->data)->type == G_TOKEN_JSON)
-      json = json_tokener_new();
+  for(iter=src->handlers; iter; iter=g_list_next(iter))
+    if(SRC_HANDLER(iter->data)->init)
+      SRC_HANDLER(iter->data)->init(src, iter->data);
 
   str = g_string_new(NULL);
   while( (status = g_io_channel_read_line_string(in, str, NULL, NULL))
@@ -144,18 +207,15 @@ GIOStatus scanner_source_update ( GIOChannel *in, source_t *src, gsize *size )
   {
     if(size)
       *size += str->len;
-    g_list_foreach(src->vars, (GFunc)scanner_var_parse, str);
-    if(json)
-      obj = json_tokener_parse_ex(json, str->str, str->len);
+    for(iter=src->handlers; iter; iter=g_list_next(iter))
+      if(SRC_HANDLER(iter->data)->handle)
+        SRC_HANDLER(iter->data)->handle(src, iter->data, str);
   }
   g_string_free(str, TRUE);
 
-  if(json)
-  {
-    scanner_update_json(obj, src);
-    json_object_put(obj);
-    json_tokener_free(json);
-  }
+  for(iter=src->handlers; iter; iter=g_list_next(iter))
+    if(SRC_HANDLER(iter->data)->finish)
+      SRC_HANDLER(iter->data)->finish(src, iter->data);
 
   for(iter=src->vars; iter; iter=g_list_next(iter))
     ((scan_var_t *)iter->data)->invalid = FALSE;
@@ -237,7 +297,8 @@ gboolean scanner_file_update ( source_t *src )
         src->invalid = FALSE;
         (void)scanner_source_update(chan, src, NULL);
         g_io_channel_unref(chan);
-        FILE_SOURCE(src)->mtime = mtime;
+        if(FILE_SOURCE(src)->flags & VF_CHTIME)
+          FILE_SOURCE(src)->mtime = mtime;
       }
 
   if(!(FILE_SOURCE(src)->flags & VF_NOGLOB))
@@ -290,75 +351,113 @@ source_t *scanner_exec_new ( gchar *fname )
   return src;
 }
 
-void scanner_var_new ( gchar *name, source_t *src, gchar *pattern,
-    guint type, gint flag, vm_store_t *store )
+static scan_var_t *scanner_var_new ( gchar *name, source_t *src )
 {
-  scan_var_t *var, *old;
+  scan_var_t *var;
   GQuark quark;
 
-  g_return_if_fail(name);
+  g_return_val_if_fail(name, NULL);
 
   quark = scanner_parse_identifier(name, NULL);
 
-  if( (old = datalist_get(scan_list, quark)) && src && old->src != src)
+  if( (var = datalist_get(scan_list, quark)) && src && var->src != src)
   {
     g_debug("scanner: variable '%s' redeclared in a different source", name);
-    return;
+    return NULL;
   }
-
-  var = old? old : g_malloc0(sizeof(scan_var_t));
-  var->src = src;
-  var->type = type;
-  var->multi = flag;
-  var->invalid = TRUE;
-  var->id = quark;
-  var->vstate = TRUE;
-
-  switch(var->type)
+  if(!var)
   {
-    case G_TOKEN_SET:
-      if(!var->src)
-      {
-        var->src = scanner_source_new(NULL);
-        var->src->update = scanner_expr_update;
-        var->src->vars = g_list_append(NULL, var);
-        var->src->data = g_malloc0(sizeof(expr_source_t));
-      }
-      var->src->invalid = TRUE;
-
-      expr_cache_unref(EXPR_SOURCE(var->src)->expr);
-      EXPR_SOURCE(var->src)->expr = expr_cache_new_with_code((GBytes *)pattern);
-      EXPR_SOURCE(var->src)->store = store;
-      g_debug("scanner: new set: '%s' in %p", g_quark_to_string(quark),
-          EXPR_SOURCE(var->src)->store);
-      var->multi = VT_LAST;
-      expr_dep_trigger(quark);
-      break;
-    case G_TOKEN_JSON:
-      str_assign((gchar **)&var->definition, g_strdup(pattern));
-      break;
-    case G_TOKEN_REGEX:
-      if(var->definition)
-        g_regex_unref(var->definition);
-      var->definition = g_regex_new(pattern, 0, 0, NULL);
-      var->parse = scanner_var_parse_regex;
-      break;
-    case G_TOKEN_GRAB:
-      var->parse = scanner_var_parse_grab;
+    var = g_malloc0(sizeof(scan_var_t));
+    var->src = src;
+    var->invalid = TRUE;
+    var->id = quark;
+    var->vstate = TRUE;
   }
+  return var;
+}
 
-  if(src && !old)
+static scan_var_t *scanner_var_attach ( scan_var_t *var )
+{
+  if(datalist_get(scan_list, var->id))
+    return NULL;
+
+  if(var->src)
   {
-    g_rec_mutex_lock(&src->mutex);
-    src->vars = g_list_append(src->vars, var);
-    g_rec_mutex_unlock(&src->mutex);
+    g_rec_mutex_lock(&var->src->mutex);
+    var->src->vars = g_list_append(var->src->vars, var);
+    g_rec_mutex_unlock(&var->src->mutex);
   }
 
-  if(!old)
+  datalist_set(scan_list, var->id, var);
+  expr_dep_trigger(var->id);
+
+  return var;
+}
+
+scan_var_t *scanner_var_new_calc ( gchar *name, source_t *src, gpointer code,
+   vm_store_t *store )
+{
+  scan_var_t *var;
+  if( !(var = scanner_var_new(name, src)) )
+    return NULL;
+
+  if(!var->src)
   {
-    datalist_set(scan_list, quark, var);
-    expr_dep_trigger(quark);
+    var->src = scanner_source_new(NULL);
+    var->src->update = scanner_expr_update;
+    var->src->vars = g_list_append(NULL, var);
+    var->src->data = g_malloc0(sizeof(expr_source_t));
   }
+  var->src->invalid = TRUE;
+
+  expr_cache_unref(EXPR_SOURCE(var->src)->expr);
+  EXPR_SOURCE(var->src)->expr = expr_cache_new_with_code((GBytes *)code);
+  EXPR_SOURCE(var->src)->store = store;
+  g_debug("scanner: new set: '%s' in %p", g_quark_to_string(var->id),
+      EXPR_SOURCE(var->src)->store);
+  var->multi = VT_LAST;
+  expr_dep_trigger(var->id);
+  scanner_source_handler_add(var->src, &src_handler_default);
+
+  return scanner_var_attach(var);
+}
+
+scan_var_t *scanner_var_new_regex ( gchar *name, source_t *src, void *regex )
+{
+  scan_var_t *var;
+  if( !(var = scanner_var_new(name, src)) )
+    return NULL;
+
+  if(var->definition)
+    g_regex_unref(var->definition);
+  var->definition = g_regex_new(regex, 0, 0, NULL);
+  var->parse = scanner_var_parse_regex;
+  scanner_source_handler_add(var->src, &src_handler_default);
+
+  return scanner_var_attach(var);
+}
+
+scan_var_t *scanner_var_new_json ( gchar *name, source_t *src, void *path )
+{
+  scan_var_t *var;
+  if( !(var = scanner_var_new(name, src)) )
+    return NULL;
+
+  str_assign((gchar **)&var->definition, g_strdup(path));
+  scanner_source_handler_add(var->src, &src_handler_json);
+
+  return scanner_var_attach(var);
+}
+
+scan_var_t *scanner_var_new_grab ( gchar *name, source_t *src, void *dummy )
+{
+  scan_var_t *var;
+  if( !(var = scanner_var_new(name, src)) )
+    return NULL;
+  var->parse = scanner_var_parse_grab;
+  scanner_source_handler_add(var->src, &src_handler_default);
+
+  return scanner_var_attach(var);
 }
 
 void scanner_var_invalidate ( GQuark key, scan_var_t *var, void *data )

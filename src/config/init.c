@@ -158,9 +158,9 @@ void config_init ( void )
 
   config_scanner_types = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);
-  config_add_key(config_scanner_types, "RegEx", G_TOKEN_REGEX);
-  config_add_key(config_scanner_types, "Json", G_TOKEN_JSON);
-  config_add_key(config_scanner_types, "Grab", G_TOKEN_GRAB);
+  config_add_key(config_scanner_types, "RegEx", scanner_var_new_regex);
+  config_add_key(config_scanner_types, "Json", scanner_var_new_json);
+  config_add_key(config_scanner_types, "Grab", scanner_var_new_grab);
 
   config_scanner_flags = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);
