@@ -49,7 +49,6 @@ typedef struct _file_source {
 
 typedef struct _expr_source {
   expr_cache_t *expr;
-  vm_store_t *store;
   gboolean updating;
 } expr_source_t;
 

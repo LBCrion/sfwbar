@@ -412,12 +412,11 @@ scan_var_t *scanner_var_new_calc ( gchar *name, source_t *src, gpointer code,
 
   expr_cache_unref(EXPR_SOURCE(var->src)->expr);
   EXPR_SOURCE(var->src)->expr = expr_cache_new_with_code((GBytes *)code);
-  EXPR_SOURCE(var->src)->store = store;
+  EXPR_SOURCE(var->src)->expr->store = store;
   g_debug("scanner: new set: '%s' in %p", g_quark_to_string(var->id),
-      EXPR_SOURCE(var->src)->store);
+      EXPR_SOURCE(var->src)->expr->store);
   var->multi = VT_LAST;
   expr_dep_trigger(var->id);
-  scanner_source_handler_add(var->src, &src_handler_default);
 
   return scanner_var_attach(var);
 }
