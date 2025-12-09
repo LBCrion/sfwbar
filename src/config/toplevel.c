@@ -16,15 +16,13 @@ static void config_set ( GScanner *scanner )
   GBytes *code;
   gchar *ident;
 
-  config_parse_sequence(scanner,
-      SEQ_REQ, G_TOKEN_IDENTIFIER, NULL, &ident,
-        "Missing identifier after 'set'",
-      SEQ_REQ, '=', NULL, NULL, "Missing '=' after 'set'",
-      SEQ_END);
+  if(!config_expect_token(scanner, G_TOKEN_IDENTIFIER,
+        "Missing identifier after 'set'"))
+    return;
 
-  if(!scanner->max_parse_errors && ident && config_expr(scanner, &code))
+  ident = g_strdup(scanner->value.v_identifier);
+  if((code = config_assign_expr(scanner, ident)))
     scanner_var_new_calc(ident, NULL, code, SCANNER_STORE(scanner));
-
   g_free(ident);
 }
 
