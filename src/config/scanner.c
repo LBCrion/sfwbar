@@ -31,8 +31,8 @@ static gboolean config_var_type (GScanner *scanner, gint *type )
 
 static void config_var ( GScanner *scanner, source_t *src )
 {
-  gchar *vname, *pattern = NULL;
-  scan_var_t *(*scan_var_init)(gchar *, source_t *, gpointer);
+  gchar *vname = NULL, *pattern = NULL;
+  scan_var_t *(*scan_var_init)(gchar *, source_t *, gpointer) = NULL;
   scan_var_t *var = NULL;
   gint flag = VT_LAST;
 
