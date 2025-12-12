@@ -257,13 +257,13 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
         break;
       case G_TOKEN_FILTERAPPID:
         if(!config_expect_token(scanner, G_TOKEN_STRING,
-          "Missing <string> after FilterAppId"))
+              "Missing <string> after FilterAppId"))
           break;
         wintree_filter_appid(scanner->value.v_string);
         break;
       case G_TOKEN_FILTERTITLE:
         if(!config_expect_token(scanner, G_TOKEN_STRING,
-          "Missing <string> after FilterTitle"))
+              "Missing <string> after FilterTitle"))
           break;
         wintree_filter_title(scanner->value.v_string);
         break;
@@ -282,7 +282,7 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
           break;
         if(config_scanner_source(scanner))
           break;
-        g_scanner_error(scanner,"Unexpected toplevel token");
+        g_scanner_error(scanner, "Unexpected toplevel token");
         break;
     }
   }

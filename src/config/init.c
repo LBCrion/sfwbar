@@ -130,15 +130,6 @@ void config_init ( void )
   config_add_key(config_toplevel_keys, "MenuClear", G_TOKEN_MENUCLEAR);
   config_add_key(config_toplevel_keys, "Menu", G_TOKEN_MENU);
   config_add_key(config_toplevel_keys, "Include", G_TOKEN_INCLUDE);
-  config_add_key(config_toplevel_keys, "Grid", G_TOKEN_GRID);
-  config_add_key(config_toplevel_keys, "Scale", G_TOKEN_SCALE);
-  config_add_key(config_toplevel_keys, "Label", G_TOKEN_LABEL);
-  config_add_key(config_toplevel_keys, "Button", G_TOKEN_BUTTON);
-  config_add_key(config_toplevel_keys, "Image", G_TOKEN_IMAGE);
-  config_add_key(config_toplevel_keys, "Chart", G_TOKEN_CHART);
-  config_add_key(config_toplevel_keys, "Taskbar", G_TOKEN_TASKBAR);
-  config_add_key(config_toplevel_keys, "Pager", G_TOKEN_PAGER);
-  config_add_key(config_toplevel_keys, "Tray", G_TOKEN_TRAY);
 
   config_menu_keys = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);

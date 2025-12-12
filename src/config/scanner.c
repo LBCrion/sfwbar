@@ -26,7 +26,7 @@ static gboolean config_var_type (GScanner *scanner, gint *type )
   g_scanner_get_next_token(scanner);
   if( !(*type = config_lookup_key(scanner, config_scanner_types)) )
     g_scanner_error(scanner,"invalid parser");
-  return !scanner->max_parse_errors;
+  return !!(*type);
 }
 
 static void config_var ( GScanner *scanner, source_t *src )
