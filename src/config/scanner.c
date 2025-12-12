@@ -21,10 +21,10 @@ static gboolean config_var_flag ( GScanner *scanner, gint *flag )
   return TRUE;
 }
 
-static gboolean config_var_type (GScanner *scanner, gint *type )
+static gboolean config_var_type (GScanner *scanner, void **type )
 {
   g_scanner_get_next_token(scanner);
-  if( !(*type = config_lookup_key(scanner, config_scanner_types)) )
+  if( !(*type = config_lookup_ptr(scanner, config_scanner_types)) )
     g_scanner_error(scanner,"invalid parser");
   return !!(*type);
 }
