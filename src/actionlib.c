@@ -254,13 +254,13 @@ static value_t action_setbarmargin ( vm_t *vm, value_t p[], gint np )
 
   if( np==2 && (bar = bar_from_name(value_get_string(p[0]))) )
     g_object_set(G_OBJECT(bar), "margin",
-        (gint)g_ascii_strtoll(value_get_string(p[1]), NULL, 10), NULL);
+        (gint)str_ascii_toll(value_get_string(p[1]), NULL, 10), NULL);
   else if( (list = bar_get_list()) )
   {
     g_hash_table_iter_init(&iter, list);
     while(g_hash_table_iter_next(&iter, NULL, (gpointer *)&bar))
       g_object_set(G_OBJECT(bar), "margin",
-          (gint)g_ascii_strtoll(value_get_string(p[1]), NULL, 10), NULL);
+          (gint)str_ascii_toll(value_get_string(p[1]), NULL, 10), NULL);
   }
 
   return value_na;
@@ -293,7 +293,7 @@ static value_t action_setbarsensor ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np_range(vm, np, 1, 2, "SetBarSensor");
   vm_param_check_string(vm, p, np-1, "SetBarSensor");
 
-  timeout = g_ascii_strtoll(value_get_string(p[np-1]), NULL, 10);
+  timeout = str_ascii_toll(value_get_string(p[np-1]), NULL, 10);
 
   if( np==2 && (bar = bar_from_name(value_get_string(p[0]))) )
     bar_set_sensor(bar, timeout);
@@ -709,6 +709,8 @@ static value_t action_set_layout ( vm_t *vm, value_t p[], gint np )
     input_layout_prev();
   else if(!g_ascii_strcasecmp(value_get_string(p[0]), "next"))
     input_layout_next();
+  else
+    input_layout_change(value_get_string(p[0]));
 
   return value_na;
 }

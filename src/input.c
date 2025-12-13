@@ -9,6 +9,7 @@
 #include "util/string.h"
 
 static gchar *layout;
+static gchar **layout_list;
 static struct input_api *api;
 
 void input_api_register ( struct input_api *new )
@@ -44,4 +45,22 @@ void input_layout_next ( void )
 {
   if(api && api->layout_next)
     api->layout_next();
+}
+
+void input_layout_change ( gchar *layout )
+{
+  if(api && api->layout_set)
+    api->layout_set(layout);
+}
+
+void input_layout_list_set ( gchar **new )
+{
+  g_clear_pointer(&layout_list, g_strfreev);
+  g_atomic_pointer_set(&layout_list, new);
+  trigger_emit("language-list");
+}
+
+gchar **input_layout_list_get ( void )
+{
+  return g_atomic_pointer_get(&layout_list);
 }

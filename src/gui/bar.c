@@ -814,7 +814,7 @@ void bar_set_exclusive_zone ( GtkWidget *self, const gchar *zone )
     gtk_layer_auto_exclusive_zone_enable(GTK_WINDOW(self));
   else
     gtk_layer_set_exclusive_zone(GTK_WINDOW(self),
-        MAX(-1, g_ascii_strtoll(zone, NULL, 10)));
+        MAX(-1, str_ascii_toll(zone, NULL, 10)));
 }
 
 GdkMonitor *bar_get_monitor ( GtkWidget *self )

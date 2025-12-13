@@ -7,6 +7,7 @@
 #include "bar.h"
 #include "pager.h"
 #include "pageritem.h"
+#include "util/string.h"
 #include "vm/vm.h"
 
 G_DEFINE_TYPE_WITH_CODE (PagerItem, pager_item, FLOW_ITEM_TYPE, G_ADD_PRIVATE (PagerItem));
@@ -110,8 +111,8 @@ static gint pager_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent)
   p1 = pager_item_get_instance_private(PAGER_ITEM(a));
   p2 = pager_item_get_instance_private(PAGER_ITEM(b));
 
-  n1 = p1->ws->name?g_ascii_strtoll(p1->ws->name, &e1, 10):0;
-  n2 = p2->ws->name?g_ascii_strtoll(p2->ws->name, &e2, 10):0;
+  n1 = str_ascii_toll(p1->ws->name, &e1, 10);
+  n2 = str_ascii_toll(p2->ws->name, &e2, 10);
   if((e1 && *e1) || (e2 && *e2))
     return g_strcmp0(p1->ws->name, p2->ws->name);
   else

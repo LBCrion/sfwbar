@@ -27,6 +27,22 @@ void str_assign ( gchar **old, gchar *new )
   g_free(tmp);
 }
 
+gint64 str_ascii_toll ( const gchar *str, gchar **end, guint base )
+{
+  if(str)
+    return g_ascii_strtoll(str, end, base);
+  *end = NULL;
+  return 0;
+}
+
+guint64 str_ascii_toull ( const gchar *str, gchar **end, guint base )
+{
+  if(str)
+    return g_ascii_strtoull(str, end, base);
+  *end = NULL;
+  return 0;
+}
+
 gchar *str_replace ( gchar *str, gchar *old, gchar *new )
 {
   gssize olen, nlen;

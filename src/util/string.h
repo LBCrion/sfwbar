@@ -6,6 +6,8 @@
 #define str_get(x) g_atomic_pointer_get(&(x))
 
 guint str_nhash ( gchar *str );
+gint64 str_ascii_toll ( const gchar *str, gchar **end, guint base );
+guint64 str_ascii_toull ( const gchar *str, gchar **end, guint base );
 gboolean str_nequal ( gchar *str1, gchar *str2 );
 void str_assign ( gchar **old, gchar *new );
 gchar *str_replace ( gchar *str, gchar *old, gchar *new );

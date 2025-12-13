@@ -15,5 +15,8 @@ void input_layout_set ( const gchar *new_layout );
 const gchar *input_layout_get ( void );
 void input_layout_next ( void );
 void input_layout_prev ( void );
+void input_layout_change ( gchar *layout );
+void input_layout_list_set ( gchar **new );
+gchar **input_layout_list_get ( void );
 
 #endif

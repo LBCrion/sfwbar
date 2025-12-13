@@ -14,6 +14,7 @@
 #include "wintree.h"
 #include "menu.h"
 #include "popup.h"
+#include "util/string.h"
 #include <gtk-layer-shell.h>
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarPager, taskbar_pager, FLOW_ITEM_TYPE,
@@ -115,8 +116,8 @@ static gint taskbar_pager_compare ( GtkWidget *a, GtkWidget *b,
   p1 = taskbar_pager_get_instance_private(TASKBAR_PAGER(a));
   p2 = taskbar_pager_get_instance_private(TASKBAR_PAGER(b));
 
-  n1 = g_ascii_strtoll(p1->ws->name, &e1, 10);
-  n2 = g_ascii_strtoll(p2->ws->name, &e2, 10);
+  n1 = str_ascii_toll(p1->ws->name, &e1, 10);
+  n2 = str_ascii_toll(p2->ws->name, &e2, 10);
   if((e1 && *e1) || (e2 && *e2))
     return g_strcmp0(p1->ws->name, p2->ws->name);
   else
