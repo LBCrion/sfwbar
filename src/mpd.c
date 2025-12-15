@@ -38,8 +38,11 @@ static gboolean client_mpd_connect ( Client *client )
       {
         host = g_getenv("MPD_HOST");
         port = g_getenv("MPD_PORT");
-        str_assign(&fname, g_strconcat(host? host : "localhost", ":",
-              port? port : "6600", NULL));
+        if(host && *host=='/')
+          str_assign(&fname, g_strdup(host));
+        else
+          str_assign(&fname, g_strconcat(host? host : "localhost", ":",
+                port? port : "6600", NULL));
       }
     }
   }
