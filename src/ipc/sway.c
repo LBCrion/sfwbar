@@ -14,6 +14,7 @@
 
 static gint main_ipc;
 static source_t *sway_file;
+static gchar **sway_layouts;
 
 extern gchar *sockname;
 
@@ -347,6 +348,12 @@ static void sway_ipc_window_event ( struct json_object *obj )
           json_string_by_name(container, "type"), "floating_con"));
 }
 
+static void sway_ipc_inputs_handle ( struct json_object *obj )
+{
+  if(json_array_to_strv(json_array_by_name(obj, "xkb_layout_names"), &sway_layouts))
+    input_layout_list_set(sway_layouts);
+}
+
 static void sway_ipc_input_event ( struct json_object *obj )
 {
   struct json_object *input;
@@ -572,9 +579,20 @@ static void sway_ipc_layout_next ( void )
   sway_ipc_command("input type:keyboard xkb_switch_layout next");
 }
 
+static void sway_ipc_layout_set ( gchar *layout )
+{
+  gint i;
+
+  if(sway_layouts)
+    for(i=0; sway_layouts[i]; i++)
+      if(!g_strcmp0(sway_layouts[i], layout))
+        sway_ipc_command("input type:keyboard xkb_switch_layout %d", i);
+}
+
 static struct input_api sway_input_api = {
   .layout_prev = sway_ipc_layout_prev,
   .layout_next = sway_ipc_layout_next,
+  .layout_set = sway_ipc_layout_set,
 };
 
 static value_t sway_ipc_cmd_action ( vm_t *vm, value_t p[], gint np )
@@ -617,6 +635,18 @@ void sway_ipc_init ( void )
   if( (obj = sway_ipc_poll(sock, NULL)) )
   {
     sway_traverse_tree(obj, NULL, NULL);
+    json_object_put(obj);
+  }
+  sway_ipc_send(sock, 100, "");
+  if( (obj = sway_ipc_poll(sock, NULL)) )
+  {
+    gint i;
+    for(i=0; i<json_object_array_length(obj); i++)
+      if(!g_strcmp0(json_string_by_name(json_object_array_get_idx(obj, i), "type"), "keyboard"))
+      {
+        sway_ipc_inputs_handle(json_object_array_get_idx(obj, i));
+        break;
+      }
     json_object_put(obj);
   }
   close(sock);

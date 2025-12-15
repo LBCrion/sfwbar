@@ -55,7 +55,6 @@ void input_layout_change ( gchar *layout )
 
 void input_layout_list_set ( gchar **new )
 {
-  g_clear_pointer(&layout_list, g_strfreev);
   g_atomic_pointer_set(&layout_list, new);
   trigger_emit("language-list");
 }

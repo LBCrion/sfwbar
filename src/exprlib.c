@@ -730,6 +730,11 @@ static value_t expr_layout ( vm_t *vm, value_t p[], gint np )
   return value_new_string(g_strdup(input_layout_get()));
 }
 
+static value_t expr_layout_list ( vm_t *vm, value_t p[], gint np )
+{
+  return value_array_from_strv(input_layout_list_get());
+}
+
 void expr_lib_init ( void )
 {
   vm_func_init();
@@ -773,4 +778,5 @@ void expr_lib_init ( void )
   vm_func_add("ls", expr_ls, FALSE, TRUE);
   vm_func_add("customipc", expr_custom_ipc, FALSE, TRUE);
   vm_func_add("layout", expr_layout, FALSE, TRUE);
+  vm_func_add("layoutlist", expr_layout_list, FALSE, TRUE);
 }

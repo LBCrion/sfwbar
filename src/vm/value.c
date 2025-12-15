@@ -144,3 +144,24 @@ gchar *value_to_string ( value_t v1, gint prec )
     return g_strdup(value_get_string(v1));
   return g_strdup("n/a");
 }
+
+value_t value_array_from_strv ( gchar **strv )
+{
+  GArray *array;
+  value_t v1;
+  gint i, l;
+
+  if( !strv )
+    return value_na;
+  l = g_strv_length(strv);
+  array = g_array_sized_new(FALSE, FALSE, sizeof(value_t), l);
+  g_array_set_clear_func(array, (GDestroyNotify)value_free_ptr);
+
+  for(i=0; i<l; i++)
+  {
+    v1 = value_new_string(g_strdup(strv[i]));
+    g_array_append_val(array, v1);
+  }
+
+  return value_new_array(array);
+}

@@ -122,6 +122,43 @@ struct json_object *json_node_by_name ( struct json_object *json, gchar *key )
   return NULL;
 }
 
+gboolean json_array_to_strv ( struct json_object *json, gchar ***strv )
+{
+  GStrvBuilder *builder;
+  struct json_object *ptr;
+  gint i;
+
+  if(!strv || !json || !json_object_is_type(json, json_type_array))
+    return FALSE;
+
+  for(i=0; i<json_object_array_length(json); i++)
+    if(!json_object_is_type(json_object_array_get_idx(json, i),
+          json_type_string))
+      return FALSE;
+
+  if(*strv && json_object_array_length(json) == g_strv_length(*strv))
+  {
+    for(i=0; i<json_object_array_length(json); i++)
+      if(!g_strcmp0(*strv[i], 
+            json_object_get_string(json_object_array_get_idx(json, i))))
+        break;
+    if(i==json_object_array_length(json))
+      return FALSE;
+  }
+
+  builder = g_strv_builder_new();
+  for(i=0; i<json_object_array_length(json); i++)
+  {
+    ptr = json_object_array_get_idx(json, i);
+    if(json_object_is_type(ptr, json_type_string))
+      g_strv_builder_add(builder, g_strdup(json_object_get_string(ptr)));
+  }
+  
+  g_strfreev(*strv);
+  *strv = g_strv_builder_end(builder);
+  return TRUE;
+}
+
 GdkRectangle json_rect_get ( struct json_object *json )
 {
   GdkRectangle ret;

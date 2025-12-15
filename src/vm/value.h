@@ -55,5 +55,6 @@ gboolean value_compare ( value_t v1, value_t v2 );
 value_t value_array_concat ( value_t v1, value_t v2 );
 gchar *value_array_to_string ( value_t value );
 gchar *value_to_string ( value_t v1, gint prec );
+value_t value_array_from_strv ( gchar **strv );
 
 #endif
