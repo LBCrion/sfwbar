@@ -6,6 +6,7 @@
 #include "input.h"
 #include "wintree.h"
 #include "util/json.h"
+#include "util/string.h"
 #include "gui/monitor.h"
 #include <sys/socket.h>
 
@@ -40,6 +41,7 @@ static gint main_ipc;
 static GList *wset_list, *output_list, *view_list;
 static gint focused_output;
 static gint layout_count, layout_current;
+static gchar **layout_list;
 
 static gint wayfire_ipc_send_req ( gint sock, gchar *method,
     struct json_object *data )
@@ -312,6 +314,8 @@ static void wayfire_ipc_layout_set ( gint index )
 {
   struct json_object *json;
 
+  if(index<0)
+    return;
   json = json_object_new_object();
   json_object_object_add(json, "layout-index", json_object_new_int(index));
   wayfire_ipc_send_req(main_ipc, "wayfire/set-keyboard-state", json);
@@ -329,9 +333,15 @@ static void wayfire_ipc_layout_next ( void )
     wayfire_ipc_layout_set((layout_current+1)%layout_count);
 }
 
+static void wayfire_ipc_layout_active_set ( gchar *layout )
+{
+  wayfire_ipc_layout_set(strv_index(layout_list, layout));
+}
+
 static struct input_api wayfire_input_api = {
   .layout_prev = wayfire_ipc_layout_prev,
   .layout_next = wayfire_ipc_layout_next,
+  .layout_set = wayfire_ipc_layout_active_set,
 };
 
 static void wayfire_ipc_window_workspace_track ( struct json_object *json )
@@ -590,9 +600,12 @@ static void wayfire_ipc_output_set_wset ( struct json_object *json )
 static void wayfire_ipc_keyboard_state ( struct json_object *json )
 {
   struct json_object *possible;
+
   input_layout_set(json_string_by_name(json, "layout"));
   if( (possible = json_array_by_name(json, "possible-layouts")) )
     layout_count = json_object_array_length(possible);
+  if(json_array_to_strv(possible, &layout_list))
+    input_layout_list_set(layout_list);
   layout_current = json_int_by_name(json, "layout-index", -1);
 }
 

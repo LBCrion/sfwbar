@@ -13,6 +13,7 @@ void str_assign ( gchar **old, gchar *new );
 gchar *str_replace ( gchar *str, gchar *old, gchar *new );
 gchar *str_escape ( gchar *string );
 void *ptr_pass ( void *ptr );
+gint strv_index ( gchar **strv, gchar *key );
 int md5_file( gchar *path, guchar output[16] );
 gchar *numeric_to_string ( double num, gint dec );
 gboolean pattern_match ( gchar **dict, gchar *string );

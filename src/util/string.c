@@ -109,6 +109,18 @@ void *ptr_pass ( void *ptr )
   return ptr;
 }
 
+gint strv_index ( gchar **strv, gchar *key )
+{
+  gint i;
+
+  if(strv)
+    for(i=0; i<g_strv_length(strv); i++)
+      if(!g_strcmp0(strv[i], key))
+        return i;
+
+  return -1;
+}
+
 gchar *numeric_to_string ( double num, gint dec )
 {
   static const gchar *format = "%%0.%df";

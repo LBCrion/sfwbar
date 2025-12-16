@@ -6,11 +6,13 @@
 #include "input.h"
 #include "wintree.h"
 #include "util/json.h"
+#include "util/string.h"
 
-#define hypr_ipc_parse_id(x, y) GSIZE_TO_POINTER(g_ascii_strtoull(x, y, 16))
-#define hypr_ipc_parse_ws(x, y) GSIZE_TO_POINTER(g_ascii_strtoll(x, y, 10))
+#define hypr_ipc_parse_id(x, y) GSIZE_TO_POINTER(str_ascii_toull(x, y, 16))
+#define hypr_ipc_parse_ws(x, y) GSIZE_TO_POINTER(str_ascii_toll(x, y, 10))
 
 static gchar *ipc_sockaddr;
+static gchar **hypr_layouts, *hypr_layout_str;
 
 static gpointer hypr_ipc_window_id ( json_object *json )
 {
@@ -357,6 +359,29 @@ static void hypr_ipc_pager_populate( void )
   json_object_put(json);
 }
 
+static void hypr_ipc_layouts_get ( void )
+{
+  json_object *json, *keyboards, *iter;
+  const gchar *str;
+  gint i;
+
+  if(!hypr_ipc_request(ipc_sockaddr, "j/devices", &json) || !json)
+    return;
+  if(!json_object_object_get_ex(json, "keyboards", &keyboards))
+    return;
+  for(i=0; i<json_object_array_length(keyboards); i++)
+    if( (iter = json_object_array_get_idx(keyboards, i)) )
+      if(json_bool_by_name(iter, "main", FALSE))
+        if( (str = json_string_by_name(iter, "layout")) )
+        if(g_strcmp0(hypr_layout_str, str))
+        {
+          str_assign(&hypr_layout_str, g_strdup(str));
+          g_clear_pointer(&hypr_layouts, g_strfreev);
+          hypr_layouts = g_strsplit(str, ", ", 0);
+          input_layout_list_set(hypr_layouts);
+        }
+}
+
 static void hypr_ipc_title_handle ( gchar *str )
 {
   gchar *eptr;
@@ -510,6 +535,12 @@ static void hypr_ipc_layout_next ( void )
   hypr_ipc_command("switchxkblayout current next");
 }
 
+static void hypr_ipc_layout_set ( gchar *layout )
+{
+  hypr_ipc_command("switchxkblayout current %d",
+      strv_index(hypr_layouts, layout));
+}
+
 static struct wintree_api hypr_wintree_api = {
   .custom_ipc = "hyprland",
   .minimize = hypr_ipc_minimize,
@@ -529,6 +560,7 @@ static struct workspace_api hypr_workspace_api = {
 static struct input_api hypr_input_api = {
   .layout_prev = hypr_ipc_layout_prev,
   .layout_next = hypr_ipc_layout_next,
+  .layout_set = hypr_ipc_layout_set,
 };
 
 static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
@@ -590,7 +622,6 @@ void hypr_ipc_init ( void )
   if(wintree_api_check())
     return;
 
-
   ipc_sockaddr = g_build_filename(g_get_user_runtime_dir(), "hypr",
       g_getenv("HYPRLAND_INSTANCE_SIGNATURE"), ".socket.sock", NULL);
   if(!hypr_ipc_get_clients(NULL))
@@ -610,4 +641,5 @@ void hypr_ipc_init ( void )
     g_io_add_watch(g_io_channel_unix_new(sock), G_IO_IN, hypr_ipc_event, NULL);
   g_free(sockaddr);
   hypr_ipc_pager_populate();
+  hypr_ipc_layouts_get();
 }

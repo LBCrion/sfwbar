@@ -10,6 +10,7 @@
 #include "wintree.h"
 #include "gui/bar.h"
 #include "util/json.h"
+#include "util/string.h"
 #include "vm/vm.h"
 
 static gint main_ipc;
@@ -581,12 +582,8 @@ static void sway_ipc_layout_next ( void )
 
 static void sway_ipc_layout_set ( gchar *layout )
 {
-  gint i;
-
-  if(sway_layouts)
-    for(i=0; sway_layouts[i]; i++)
-      if(!g_strcmp0(sway_layouts[i], layout))
-        sway_ipc_command("input type:keyboard xkb_switch_layout %d", i);
+  sway_ipc_command("input type:keyboard xkb_switch_layout %d",
+      strv_index(sway_layouts, layout));
 }
 
 static struct input_api sway_input_api = {
