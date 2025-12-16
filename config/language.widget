@@ -2,22 +2,54 @@
 
 module("xkbmap")
 
+TriggerAction "language-list", LayoutMenuBuild();
+
+Var LayoutMenuTmpl = "
+  Menu('LayoutList') {
+    Item {
+      value = '%NAME%';
+      action = SetLayout('%LAYOUT%');
+    }
+  }"
+
+Function LayoutName ( lang )
+{
+  if(CustomIPC() = "hyprland")
+    Return XkbMap(lang, "name", "description");
+  Else
+    Return lang;
+}
+
+Function LayoutMenuBuild()
+{
+  Var i, l = LayoutList();
+
+  MenuClear("LayoutList");
+  i = 0;
+  While i<ArraySize(l) {
+    Config(ReplaceAll(LayoutMenuTmpl,
+          "%NAME%", LayoutName(l[i]),
+          "%LAYOUT%", l[i]));
+    i=i+1;
+  }
+}
+
 Private {
 
-  layout {
-    label {
-      action[1] = SetLayout("next");
-#      action[1] = SwayCmd("input type:keyboard xkb_switch_layout next")
-      style = If(Language()!="", "sway_lang", "hidden")
-      value = Upper(XkbMap(Layout(), "description", "name"))
-      trigger = "language"
-    }
+  export label {
+    style = If(Layout()!="", "language", "hidden");
+    value = Upper(XkbMap(Layout(), "description", "name"));
+    tooltip = "Language: " + Layout();
+    action[0] = LayoutMenuBuild();
+    action[1] = SetLayout("next");
+    action[3] = Menu("LayoutList");
+    trigger = "language";
   }
 }
 
 #CSS
 
-label#sway_lang {
+label#language {
   -GtkWidget-vexpand: true;
   -GtWidget-valign: center;
 }
