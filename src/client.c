@@ -165,6 +165,7 @@ source_t *client_socket ( gchar *fname, gchar *trigger )
   client->src =  scanner_source_new(fname);
   client->connect = client_socket_connect;
   client->consume = client_source_update;
+  client->trigger = trigger_name_intern(trigger);
   client_attach(client);
 
   return client->src;
@@ -206,6 +207,7 @@ source_t *client_exec ( gchar *fname, gchar *trigger )
   client->src = scanner_source_new(fname);
   client->connect = client_exec_connect;
   client->consume = client_source_update;
+  client->trigger = trigger_name_intern(trigger);
   client_attach(client);
 
   return client->src;

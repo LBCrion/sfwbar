@@ -12,7 +12,7 @@ struct _Client {
   GSocketClient *sclient;
   GIOChannel *in,*out;
   void *data;
-  gchar *trigger;
+  const gchar *trigger;
   gboolean (*connect) ( Client * );
   GIOStatus (*respond) ( Client * );
   GIOStatus (*consume) ( Client *, gsize *size );
