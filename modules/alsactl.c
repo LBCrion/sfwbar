@@ -409,30 +409,6 @@ static value_t alsa_func_volume ( vm_t *vm, value_t p[], gint np )
       !g_ascii_strcasecmp(verb, "is-default-device"))
     return value_new_numeric(!g_strcmp0(
           api->default_name? api->default_name : "default", src->name));
-
-  return value_na;
-}
-
-static value_t alsa_func_volume_info ( vm_t *vm, value_t p[], gint np )
-{
-  snd_mixer_elem_t *element;
-  snd_mixer_selem_channel_id_t channel;
-  alsa_source_t *src;
-  gchar *verb;
-  mixer_api_t *api;
-
-  vm_param_check_np_range(vm, np, 1, 2, "VolumeInfo");
-  vm_param_check_string(vm, p, 0, "VolumeInfo");
-  if(np==2)
-    vm_param_check_string(vm, p, 1, "VolumeInfo");
-
-  if( !(api = alsa_api_parse(value_get_string(p[0]), &verb)) )
-    return value_na;
-
-  if(!alsa_addr_parse(api, (np==2)? value_get_string(p[1]) : NULL, &src,
-        &element, &channel) || !element)
-    return value_na;
-
   if(!g_ascii_strcasecmp(verb, "description"))
     return value_new_string(g_strdup(src->desc));
 
@@ -569,7 +545,7 @@ void alsa_activate ( void )
 {
   g_debug("alsactl: activating");
   vm_func_add("volume", alsa_func_volume, FALSE, TRUE);
-  vm_func_add("volumeinfo", alsa_func_volume_info, FALSE, TRUE);
+  vm_func_add("volumeinfo", alsa_func_volume, FALSE, TRUE);
   vm_func_add("volumectl", alsa_action_volumectl, TRUE, TRUE);
   g_idle_add((GSourceFunc)alsa_source_subscribe_all, NULL);
 }

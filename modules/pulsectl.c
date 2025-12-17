@@ -257,7 +257,7 @@ static void pulse_operation ( pa_operation *o, gchar *cmd )
   if(o)
     pa_operation_unref(o);
   else
-    g_message("%s() failed: %s", cmd, pa_strerror(pa_context_errno(pctx)));
+    g_warning("%s() failed: %s", cmd, pa_strerror(pa_context_errno(pctx)));
 }
 
 static void pulse_device_advertise ( gint iface_idx,
@@ -612,41 +612,21 @@ static value_t pulse_volume_func ( vm_t *vm, value_t p[], gint np )
   if( !(iface = pulse_interface_get(value_get_string(p[0]), &cmd)) )
     return value_na;
 
-  info = pulse_addr_parse(np==2? value_get_string(p[1]) : NULL, iface, &cidx);
-
-  if(info && !g_ascii_strcasecmp(cmd, "volume"))
-    return value_new_numeric(100.0*pulse_volume_get(info,cidx)/PA_VOLUME_NORM);
-  if(info && !g_ascii_strcasecmp(cmd, "mute"))
-    return value_new_numeric(info->mute);
   if(!g_ascii_strcasecmp(cmd, "count"))
     return value_new_numeric(pulse_iface_count(iface));
-  if(info && !g_ascii_strcasecmp(cmd, "is-default-device"))
-    return value_new_numeric(!g_strcmp0(info->name, iface->default_device));
-  if(info && !g_ascii_strcasecmp(cmd, "is-default"))
-    return value_new_numeric(!g_strcmp0(info->name, iface->default_control));
-
-  return value_na;
-}
-
-static value_t pulse_volume_info_func ( vm_t *vm, value_t p[], gint np )
-{
-  pulse_info *info;
-  pulse_interface_t *iface;
-  gchar *cmd;
-  gint cidx;
-
-  vm_param_check_np_range(vm, np, 1, 2, "VolumeInfo");
-  vm_param_check_string(vm, p, 0, "VolumeInfo");
-  if(np==2)
-    vm_param_check_string(vm, p, 1, "VolumeInfo");
-
-  if( !(iface = pulse_interface_get(value_get_string(p[0]), &cmd)) )
-    return value_na;
 
   if( !(info = pulse_addr_parse(np==2? value_get_string(p[1]) : NULL, iface,
           &cidx)) )
     return value_na;
 
+  if(info && !g_ascii_strcasecmp(cmd, "volume"))
+    return value_new_numeric(100.0*pulse_volume_get(info,cidx)/PA_VOLUME_NORM);
+  if(info && !g_ascii_strcasecmp(cmd, "mute"))
+    return value_new_numeric(info->mute);
+  if(info && !g_ascii_strcasecmp(cmd, "is-default-device"))
+    return value_new_numeric(!g_strcmp0(info->name, iface->default_device));
+  if(info && !g_ascii_strcasecmp(cmd, "is-default"))
+    return value_new_numeric(!g_strcmp0(info->name, iface->default_control));
   if(!g_ascii_strcasecmp(cmd, "icon"))
     return value_new_string(g_strdup(info->icon? info->icon : ""));
   if(!g_ascii_strcasecmp(cmd, "form"))
@@ -658,7 +638,7 @@ static value_t pulse_volume_info_func ( vm_t *vm, value_t p[], gint np )
   if(!g_ascii_strcasecmp(cmd, "description"))
     return value_new_string(g_strdup(info->description? info->description:""));
 
-  return value_new_string(g_strdup_printf("invalid query: %s", cmd));
+  return value_new_string(g_strdup_printf("pulse: invalid property: %s", cmd));
 }
 
 static value_t pulse_volume_ctl_action ( vm_t *vm, value_t p[], gint np )
@@ -697,7 +677,7 @@ static value_t pulse_volume_ctl_action ( vm_t *vm, value_t p[], gint np )
 static void pulse_activate ( void )
 {
   vm_func_add("volume", pulse_volume_func, FALSE, TRUE);
-  vm_func_add("volumeinfo", pulse_volume_info_func, FALSE, TRUE);
+  vm_func_add("volumeinfo", pulse_volume_func, FALSE, TRUE);
   vm_func_add("volumectl", pulse_volume_ctl_action, TRUE, TRUE);
   pa_context_set_subscribe_callback(pctx, pulse_subscribe_cb, NULL);
   pulse_operation(pa_context_subscribe(pctx, PA_SUBSCRIPTION_MASK_SERVER |
@@ -731,9 +711,7 @@ static void pulse_finalize ( void )
 {
   vm_func_remove("volume");
   vm_func_remove("volumeinfo");
-  vm_func_remove("volumeconf");
   vm_func_remove("volumectl");
-  vm_func_remove("volumeack");
 }
 
 gboolean sfwbar_module_init ( void )
