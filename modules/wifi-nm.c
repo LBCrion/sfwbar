@@ -903,17 +903,15 @@ static void nm_secret_agent_method(GDBusConnection *con,
 static value_t nm_ap_get_info ( nm_apoint_t *ap, gchar *prop )
 {
   if(!g_ascii_strcasecmp(prop, "ssid"))
-    return value_new_string(g_strdup(ap->ssid?ap->ssid:""));
-  if(!g_ascii_strcasecmp(prop, "path"))
-    return value_new_string(g_strdup(ap->hash?ap->hash:""));
+    return value_new_string(g_strdup(ap->ssid? ap->ssid: ""));
   if(!g_ascii_strcasecmp(prop, "type"))
     return value_new_string(g_strdup(nm_apoint_get_type(ap)));
   if(!g_ascii_strcasecmp(prop, "known"))
-    return value_new_string(g_strdup(ap->conn?ap->ssid : ""));
+    return value_new_numeric(!!ap->conn);
   if(!g_ascii_strcasecmp(prop, "strength"))
-    return value_new_string(g_strdup_printf("%d", ap->strength));
+    return value_new_numeric(ap->strength);
   if(!g_ascii_strcasecmp(prop, "connected"))
-    return value_new_string(g_strdup_printf("%d", !!ap->active_node));
+    return value_new_numeric(!!ap->active_node);
 
   return value_na;
 }

@@ -787,17 +787,14 @@ static value_t iw_expr_get ( vm_t *vm, value_t p[], gint np )
     prop = value_get_string(p[1]);
     if(!g_ascii_strcasecmp(prop, "ssid"))
       val = value_new_string(g_strdup(net->ssid?net->ssid:""));
-    if(!g_ascii_strcasecmp(prop, "path"))
-      val = value_new_string(g_strdup(net->path?net->path:""));
     if(!g_ascii_strcasecmp(prop, "type"))
       val = value_new_string(g_strdup(net->type?net->type:""));
     if(!g_ascii_strcasecmp(prop, "known"))
-      val = value_new_string(g_strdup(net->known?net->known:""));
+      val = value_new_numeric(!!net->known);
     if(!g_ascii_strcasecmp(prop, "strength"))
-      val = value_new_string(
-          g_strdup_printf("%d", CLAMP(2*(net->strength/100+100),0,100)));
+      val = value_new_numeric(CLAMP(2*(net->strength/100+100),0,100));
     if(!g_ascii_strcasecmp(prop, "connected"))
-      val = value_new_string(g_strdup_printf("%d", net->connected));
+      val = value_new_numeric(!!net->connected);
   }
   hash_table_unlock(iw_networks);
 
