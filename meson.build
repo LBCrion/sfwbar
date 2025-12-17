@@ -59,6 +59,7 @@ libsrc = [
     'src/actionlib.c',
     'src/appinfo.c',
     'src/client.c',
+    'src/exec.c',
     'src/exprlib.c',
     'src/input.c',
     'src/locale1.c',

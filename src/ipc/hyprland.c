@@ -3,6 +3,7 @@
  * Copyright 2022- sfwbar maintainers
  */
 
+#include "exec.h"
 #include "input.h"
 #include "wintree.h"
 #include "util/json.h"
@@ -541,6 +542,11 @@ static void hypr_ipc_layout_set ( gchar *layout )
       strv_index(hypr_layouts, layout));
 }
 
+static void hypr_ipc_exec ( const gchar *cmd )
+{
+  hypr_ipc_command("dispatch exec %s", cmd);
+}
+
 static struct wintree_api hypr_wintree_api = {
   .custom_ipc = "hyprland",
   .minimize = hypr_ipc_minimize,
@@ -633,6 +639,7 @@ void hypr_ipc_init ( void )
   workspace_api_register(&hypr_workspace_api);
   wintree_api_register(&hypr_wintree_api);
   input_api_register(&hypr_input_api);
+  exec_api_set(hypr_ipc_exec);
 
   sockaddr = g_build_filename(g_get_user_runtime_dir(), "hypr",
       g_getenv("HYPRLAND_INSTANCE_SIGNATURE"), ".socket2.sock", NULL);

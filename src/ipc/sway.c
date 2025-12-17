@@ -3,9 +3,10 @@
  * Copyright 2020- sfwbar maintainers
  */
 
-#include "scanner.h"
+#include "exec.h"
 #include "input.h"
 #include "module.h"
+#include "scanner.h"
 #include "trigger.h"
 #include "wintree.h"
 #include "gui/bar.h"
@@ -505,6 +506,11 @@ static void sway_ipc_move_to ( gpointer id, gpointer wsid )
       GPOINTER_TO_INT(id), ws->name);
 }
 
+static void sway_ipc_exec ( const gchar *cmd )
+{
+  sway_ipc_command("exec %s", cmd);
+}
+
 static struct wintree_api sway_wintree_api = {
   .custom_ipc = "sway",
   .minimize = sway_ipc_minimize,
@@ -623,6 +629,7 @@ void sway_ipc_init ( void )
   workspace_api_register(&sway_workspace_api);
   wintree_api_register(&sway_wintree_api);
   input_api_register(&sway_input_api);
+  exec_api_set(sway_ipc_exec);
 
   sway_ipc_send(sock, 0, "bar hidden_state hide");
   if( (obj = sway_ipc_poll(sock, NULL)) )

@@ -4,6 +4,7 @@
  */
 
 #include <gio/gdesktopappinfo.h>
+#include "exec.h"
 #include "locale1.h"
 #include "scanner.h"
 #include "gui/css.h"
@@ -145,7 +146,8 @@ static void menu_item_activate ( GtkMenuItem *self, gpointer d )
   if(!priv->action && priv->desktop_file)
     if( (app = g_desktop_app_info_new_from_filename(priv->desktop_file)) )
     {
-      g_app_info_launch((GAppInfo *)app, NULL, NULL, NULL);
+//      g_app_info_launch((GAppInfo *)app, NULL, NULL, NULL);
+      exec_launch(app);
       g_object_unref(app);
       return;
     }

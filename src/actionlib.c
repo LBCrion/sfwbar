@@ -4,6 +4,7 @@
  */
 
 #include "appinfo.h"
+#include "exec.h"
 #include "client.h"
 #include "input.h"
 #include "module.h"
@@ -21,18 +22,16 @@
 
 static value_t action_exec_impl ( vm_t *vm, value_t p[], gint np )
 {
-  gint argc;
-  gchar **argv;
+  if(np==1 && value_is_string(p[0]) && p[0].value.string)
+    exec_cmd(value_get_string(p[0]));
 
-  if(np!=1 || !value_is_string(p[0]) || !p[0].value.string)
-    return value_na;
+  return value_na;
+}
 
-  if(!g_shell_parse_argv(p[0].value.string, &argc, &argv, NULL))
-    return value_na;
-  g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH |
-       G_SPAWN_STDOUT_TO_DEV_NULL |
-       G_SPAWN_STDERR_TO_DEV_NULL, NULL, NULL, NULL, NULL);
-  g_strfreev(argv);
+static value_t action_exec_term ( vm_t *vm, value_t p[], gint np )
+{
+  if(np==1 && value_is_string(p[0]) && p[0].value.string)
+    exec_cmd_in_term(value_get_string(p[0]));
 
   return value_na;
 }
@@ -718,6 +717,7 @@ static value_t action_set_layout ( vm_t *vm, value_t p[], gint np )
 void action_lib_init ( void )
 {
   vm_func_add("exec", action_exec_impl, TRUE, TRUE);
+  vm_func_add("execterm", action_exec_term, TRUE, TRUE);
   vm_func_add("WidgetPush", action_widget_push, TRUE, FALSE);
   vm_func_add("WidgetPop", action_widget_pop, TRUE, FALSE);
   vm_func_add("Call", action_call, TRUE, TRUE);
