@@ -414,7 +414,7 @@ static value_t expr_lib_gtkevent ( vm_t *vm, value_t p[], gint np )
   if(GTK_IS_BIN(base))
   {
     widget = gtk_bin_get_child(GTK_BIN(base));
-    gtk_widget_translate_coordinates(widget, widget,
+    gtk_widget_translate_coordinates(base, widget,
         ev->x, ev->y, &x, &y);
   }
   else
