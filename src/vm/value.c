@@ -39,9 +39,7 @@ value_t value_array_concat ( value_t v1, value_t v2 )
   }
   else
   {
-    result = value_new_array(g_array_sized_new(FALSE, FALSE, sizeof(value_t),
-          v1.value.array->len + v2.value.array->len));
-    g_array_set_clear_func(result.value.array, (GDestroyNotify)value_free_ptr);
+    result = value_array_create(v1.value.array->len + v2.value.array->len);
     data = g_array_steal(v1.value.array, &len);
     g_array_append_vals(result.value.array, data, len);
     data = g_array_steal(v2.value.array, &len);
@@ -51,21 +49,32 @@ value_t value_array_concat ( value_t v1, value_t v2 )
   return result;
 }
 
-value_t value_dup_array ( value_t v1 )
+value_t value_array_create ( gint size )
 {
   GArray *array;
-  value_t v2;
-  gsize i;
 
-  array = g_array_sized_new(FALSE, FALSE, sizeof(value_t), v1.value.array->len);
+  array = g_array_sized_new(FALSE, FALSE, sizeof(value_t), size);
   g_array_set_clear_func(array, (GDestroyNotify)value_free_ptr);
 
-  for(i=0; i<v1.value.array->len; i++)
-  {
-    v2 = value_dup(g_array_index(v1.value.array, value_t, i));
-    g_array_append_val(array, v2);
-  }
   return value_new_array(array);
+}
+
+void value_array_append ( value_t array, value_t v )
+{
+  g_array_append_val(array.value.array, v);
+}
+
+value_t value_dup_array ( value_t v1 )
+{
+  value_t array;
+  gsize i;
+
+  array = value_array_create(v1.value.array->len);
+
+  for(i=0; i<v1.value.array->len; i++)
+    value_array_append(array,
+        value_dup(g_array_index(v1.value.array, value_t, i)));
+  return array;
 }
 
 value_t value_dup ( value_t v1 )
@@ -145,23 +154,36 @@ gchar *value_to_string ( value_t v1, gint prec )
   return g_strdup("n/a");
 }
 
+value_t value_from_string ( gchar *str, gint type )
+{
+  value_t array;
+
+  if(type == EXPR_TYPE_STRING)
+    return value_new_string(g_strdup(str));
+  if(type == EXPR_TYPE_NUMERIC)
+    return value_new_numeric(str? g_ascii_strtod(str, NULL) : 0);
+  if(type == EXPR_TYPE_ARRAY)
+  {
+    array = value_array_create(1);
+    value_array_append(array, value_new_string(g_strdup(str)));
+    return array;
+  }
+
+  return value_na;
+}
+
 value_t value_array_from_strv ( gchar **strv )
 {
-  GArray *array;
-  value_t v1;
+  value_t array;
   gint i, l;
 
   if( !strv )
     return value_na;
   l = g_strv_length(strv);
-  array = g_array_sized_new(FALSE, FALSE, sizeof(value_t), l);
-  g_array_set_clear_func(array, (GDestroyNotify)value_free_ptr);
+  array = value_array_create(l);
 
   for(i=0; i<l; i++)
-  {
-    v1 = value_new_string(g_strdup(strv[i]));
-    g_array_append_val(array, v1);
-  }
+    value_array_append(array, value_new_string(g_strdup(strv[i])));
 
-  return value_new_array(array);
+  return array;
 }

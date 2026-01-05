@@ -4,11 +4,11 @@
 #include <glib.h>
 
 enum expr_type_t {
+  EXPR_TYPE_NA,
   EXPR_TYPE_NUMERIC,
   EXPR_TYPE_STRING,
   EXPR_TYPE_ARRAY,
-  EXPR_TYPE_BOOLEAN, // Not in use
-  EXPR_TYPE_NA
+  EXPR_TYPE_BOOLEAN // Not in use
 };
 
 typedef struct {
@@ -50,10 +50,13 @@ extern const value_t value_na;
 
 void value_free ( value_t );
 void value_free_ptr ( value_t *v1 );
+value_t value_array_create ( gint size );
+void value_array_append ( value_t array, value_t v );
 value_t value_dup ( value_t );
 gboolean value_compare ( value_t v1, value_t v2 );
 value_t value_array_concat ( value_t v1, value_t v2 );
 gchar *value_array_to_string ( value_t value );
+value_t value_from_string ( gchar *str, gint type );
 gchar *value_to_string ( value_t v1, gint prec );
 value_t value_array_from_strv ( gchar **strv );
 

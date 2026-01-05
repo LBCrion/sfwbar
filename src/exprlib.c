@@ -588,20 +588,15 @@ static value_t expr_gettext ( vm_t *vm, value_t p[], gint np )
 
 static value_t expr_array_build ( vm_t *vm, value_t p[], gint np )
 {
-  GArray *array;
-  value_t v1;
+  value_t array;
   gint i;
 
-  array = g_array_sized_new(FALSE, FALSE, sizeof(value_t), np);
-  g_array_set_clear_func(array, (GDestroyNotify)value_free_ptr);
+  array = value_array_create(np);
 
   for(i=0; i<np; i++)
-  {
-    v1 = value_dup(p[i]);
-    g_array_append_val(array, v1);
-  }
+    value_array_append(array, value_dup(p[i]));
 
-  return value_new_array(array);
+  return array;
 }
 
 static value_t expr_array_index ( vm_t *vm, value_t p[], gint np )
@@ -668,31 +663,26 @@ static value_t expr_widget_children ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *widget;
   GList *children, *iter;
-  GArray *array;
-  value_t v1;
+  value_t array;
 
   vm_param_check_np_range(vm, np, 0, 1, "WidgetChildren");
 
   widget = vm_widget_get(vm, np? value_get_string(p[0]) : NULL);
 
-  array = g_array_new(FALSE, FALSE, sizeof(value_t));
-  g_array_set_clear_func(array, (GDestroyNotify)value_free_ptr);
-
   if(!IS_BASE_WIDGET(widget))
-    return value_new_array(array);
+    return value_array_create(0);
 
   children = gtk_container_get_children(GTK_CONTAINER(base_widget_get_child(
           widget)));
 
+  array = value_array_create(g_list_length(children)); 
   for(iter=children; iter; iter=g_list_next(iter))
     if(IS_BASE_WIDGET(iter->data))
-    {
-      v1 = value_new_string(g_strdup(base_widget_get_id(iter->data)));
-      g_array_append_val(array, v1);
-    }
+      value_array_append(array,
+          value_new_string(g_strdup(base_widget_get_id(iter->data))));
   g_list_free(children);
 
-  return value_new_array(array);
+  return array;
 }
 
 static value_t expr_ls ( vm_t *vm, value_t p[], gint np )
