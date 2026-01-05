@@ -12,7 +12,6 @@ wayl = dependency('wayland-client')
 wayp = dependency('wayland-protocols', version: '>=1.17')
 puls = dependency('libpulse', required: get_option('pulse'))
 pulg = dependency('libpulse-mainloop-glib', required: get_option('pulse'))
-mpdc = dependency('libmpdclient', required: get_option('mpd'))
 xkbr = dependency('xkbregistry', required: get_option('xkb'))
 xkbc = dependency('xkbcommon', required: get_option('xkb'))
 alsa = dependency('alsa', required: get_option('alsa'))
@@ -209,8 +208,8 @@ if pipe.found()
       install: true, install_dir: get_option('libdir') / 'sfwbar' )
 endif
 
-if mpdc.found()
-  library('mpd', sources: 'modules/mpd.c', dependencies: [deps, mpdc],
+if get_option('mpd').enabled() or get_option('mpd').auto()
+  library('mpd', sources: 'modules/mpd.c', dependencies: deps,
       include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
