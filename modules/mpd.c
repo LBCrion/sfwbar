@@ -42,6 +42,7 @@ static void mpd_cmd_append ( gchar *cmd, ... )
 
   va_start(args, cmd);
   mpd_cmd_queue = g_list_append(mpd_cmd_queue, g_strdup_vprintf(cmd, args));
+  va_end(args);
   if(mpd_idle)
   {
     g_io_channel_write_chars(chan, "noidle\n", 7, NULL, NULL);
@@ -247,10 +248,12 @@ static gboolean mpd_event ( GIOChannel *chan, GIOCondition cond, void *d )
       mpd_cover_handle(str);
     else if(mpd_cmd_current == mpd_cmd_playlistinfo)
       mpd_playlist_handle(str, &mpd_playlist);
-    else if(mpd_cmd_current == mpd_cmd_search || mpd_cmd_current == mpd_cmd_find)
+    else if(mpd_cmd_current == mpd_cmd_search ||
+        mpd_cmd_current == mpd_cmd_find)
       mpd_playlist_handle(str, &mpd_search_list);
     else if(mpd_cmd_current == mpd_cmd_list && strchr(str,':'))
-      mpd_db_list = g_list_prepend(mpd_db_list, g_strdup(g_strstrip(strchr(str, ':')+1)));
+      mpd_db_list = g_list_prepend(mpd_db_list,
+          g_strdup(g_strstrip(strchr(str, ':')+1)));
 
     if(!mpd_ok_handle(str))
       mpd_error_handle(str);
@@ -293,7 +296,7 @@ static void mpd_connect_cb ( GSocketClient *client, GAsyncResult *res,
     mpd_cmd_current = mpd_cmd_init;
     g_io_add_watch_full(chan, G_PRIORITY_DEFAULT,
         G_IO_IN | G_IO_PRI | G_IO_HUP | G_IO_ERR,
-        (GIOFunc)mpd_event, client, (GDestroyNotify)mpd_reconnect);
+        (GIOFunc)mpd_event, NULL, (GDestroyNotify)mpd_reconnect);
   }
   else
     mpd_reconnect();
@@ -336,7 +339,7 @@ static void mpd_address_new ( const gchar *host, guint16 port )
   if(*host_act == '@')
     conn = (GSocketConnectable *)g_unix_socket_address_new_with_type(
         host_act+1, -1, G_UNIX_SOCKET_ADDRESS_ABSTRACT);
-  if(*host_act == '/')
+  else if(*host_act == '/')
     conn = (GSocketConnectable *)g_unix_socket_address_new(host_act);
   else
     conn = g_network_address_parse(host_act, port? port : 6600, NULL);
@@ -391,6 +394,7 @@ static value_t mpd_func_info ( vm_t *vm, value_t p[], gint np )
     return value_new_string(g_strdup(mpd_cover));
   if(!g_ascii_strcasecmp(value_get_string(p[0]), "db"))
   {
+    mpd_db_list = g_list_sort(mpd_db_list, (GCompareFunc)g_ascii_strcasecmp);
     value_t array = value_array_create(g_list_length(mpd_db_list));
     for(GList *iter=mpd_db_list; iter; iter=g_list_next(iter))
       value_array_append(array, value_new_string(g_strdup(iter->data)));
