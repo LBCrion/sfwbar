@@ -1,0 +1,339 @@
+#Api2
+
+Module("mpd")
+
+TriggerAction "mpd-playlist", MpdUpdatePlaylist();
+TriggerAction "mpd-list", MpdUpdateList();
+TriggerAction "mpd-search", MpdUpdateSearch();
+
+Var MpdFilters = [ "artist", "album", "track" ], MpdFilterVals = [];
+Var MpdFilterLevel = 0;
+Var MpdBrowser = 0;
+Var MpdQueueWidget = "", MpdQueueSong = "";
+Var MpdDbWidget = "", MpdDbSong = "";
+
+Var PlaylistTmpl = "
+  grid 'mpd_%GRID%_grid_%LINE%' {
+    style = 'mpd_browser_grid';
+    loc(1, %LINE%);
+    action = %ACTION%;
+    action[3] = %SECACT%;
+    style = 'mpd_browser_item';
+    label {
+      value = '%TITLE%';
+      style = 'mpd_browser_title';
+      loc(1,1);
+    }
+    label {
+      value = '%COMMENT%';
+      style = If('%COMMENT%'='', 'hidden', 'mpd_browser_comment');
+      loc(1, 2);
+    }
+  }";
+
+Menu "MpdDbMenu" {
+  Item {
+    value = "Add";
+    action = MpdCmd("searchadd "+MpdFilter(MpdFilterLevel+1));
+  }
+}
+
+Function MpdMenu ( level, value )
+{
+  if level > MpdFilterLevel
+    MpdFilterVals[level-1] = value;
+  Menu("MpdDbMenu");
+}
+
+Function MpdQueueDelete () {
+  If MpdQueueSong !="" {
+    MpdCmd("deleteid " + MpdQueueSong);
+    ClearWidget(MpdQueueWidget);
+    MpdQueueSong = "";
+    MpdQueueWidget = "";
+  };
+}
+
+Function MpdQueueAdd () {
+  If MpdDbSong != "" {
+    MpdFilterVals[2] = MpdDbSong;
+    MpdCmd('searchadd ' + MpdFilter(3));
+    MpdCmd("playlistinfo");
+  }
+}
+
+Function MpdPlaylistSelect ( WidgetId, SongId )
+{
+  If MpdQueueWidget != ""
+    Config("any '" + MpdQueueWidget + "' { style = 'mpd_browser_grid' };");
+  Config("any '" + WidgetId + "' { style = 'mpd_browser_active' };");
+
+  MpdQueueWidget = WidgetId;
+  MpdQueueSong = SongId;
+}
+
+Function MpdFilter( level ) {
+  Var i = 0, Tag, Filter = "";
+
+  While i<level {
+    Tag = "(" + MpdFilters[i] + " == \\\"" + Escape(MpdFilterVals[i]) + "\\\")";
+    If i = 0
+      Filter = Filter + Tag;
+    Else
+      Filter = "(" + Filter + " AND " + Tag + ")";
+    i = i + 1;
+  }
+  If Filter = ""
+    Return "";
+  Else
+    Return "\"" + Filter +"\"";
+}
+
+Function MpdClearChildren ( parent ) {
+  Var i = 0, children = WidgetChildren(parent);
+
+  While i<arraysize(children) {
+    ClearWidget(children[i]);
+    i=i+1;
+  }
+}
+
+Function MpdUpdatePlaylist() {
+  Var list=MpdList("playlist", "track", "artist", "album", "title", "id");
+  Var i=0, CfgInfo = "grid 'mpd_playlist' {";
+
+  MpdClearChildren("mpd_playlist");
+  While i<arraysize(list) {
+    CfgInfo = CfgInfo + ReplaceAll(PlaylistTmpl,
+          "%COMMENT%", Escape(list[i][1]) + " - " + Escape(list[i][2]),
+          "%TITLE%", Str(list[i][0]) + " - " + Escape(list[i][3]),
+          "%ACTION%", "MpdPlaylistSelect('mpd_playlist_grid_" +
+            Str(i) + "', '"+Str(list[i][4]) + "');",
+          "%SECACT%", "{}",
+          "%LINE%", Str(i),
+          "%GRID%", "playlist"
+          );
+    i = i + 1;
+  }
+  Config(CfgInfo+"};");
+}
+
+Function MpdDbRequest ( level, value )
+{
+  if level > MpdFilterLevel
+    MpdFilterVals[level-1] = value;
+  if level < 2
+    MpdCmd("list " + MpdFilters[level] + " " + MpdFilter(level));
+  else if level = 2
+    MpdCmd("search " + MpdFilter(level) + " sort -track");
+
+  MpdFilterLevel=level;
+}
+
+Function MpdDbSelect ( WidgetId, SongId )
+{
+  If MpdDbWidget != ""
+    Config("any '" + MpdDbWidget + "' { style = 'mpd_browser_grid' };");
+  Config("any '" + WidgetId + "' { style = 'mpd_browser_active' };");
+  
+  MpdDbWidget = WidgetId;
+  MpdDbSong = SongId;
+}
+
+Function MpdUpdateList() {
+  Var i=0, list=MpdInfo("db");
+  Var CfgInfo = "grid 'mpd_database' {";
+
+  MpdClearChildren('mpd_database');
+
+  if(MpdFilterLevel>0)
+    CfgInfo = CfgInfo + ReplaceAll(PlaylistTmpl,
+        "%TITLE%", "..",
+        "%LINE%", "0",
+        "%COMMENT%", "",
+        "%ACTION%", 'MpdDbRequest(' + Str(MpdFilterLevel-1) + ',"")',
+        "%SECACT%", "{}",
+        "%GRID%", "db"
+        );
+  While i<arraysize(list) {
+    If list[i]!=""
+      CfgInfo = CfgInfo + ReplaceAll(PlaylistTmpl,
+          "%TITLE%", Escape(list[i]),
+          "%COMMENT%", "",
+          "%LINE%", Str(i+1),
+          "%ACTION%", 'MpdDbRequest('+Str(MpdFilterLevel+1)+',"'+Escape(list[i])+'")',
+          "%SECACT%", 'MpdMenu('+Str(MpdFilterLevel+1)+',"'+Escape(list[i])+'")',
+          "%GRID%", "db"
+          );
+    i=i+1;
+  }
+  Config(CfgInfo+"};");
+}
+
+Function MpdUpdateSearch () {
+  Var list=MpdList("search", "track", "artist", "album", "title", "id");
+  Var i = 0, CfgInfo = "grid 'mpd_database' {";
+
+  MpdClearChildren('mpd_database');
+
+  if(MpdFilterLevel>0)
+    CfgInfo = CfgInfo + ReplaceAll(PlaylistTmpl,
+        "%TITLE%", "..",
+        "%LINE%", "0",
+        "%COMMENT%", "",
+        "%ACTION%", 'MpdDbRequest(' + Str(MpdFilterLevel-1) + ',"")',
+        "%SECACT%", "{}",
+        "%GRID%", "db"
+        );
+  While i<arraysize(list) {
+    CfgInfo = CfgInfo + ReplaceAll(PlaylistTmpl,
+        "%TITLE%", Str(list[i][0]) + " - " + Escape(list[i][3]),
+        "%COMMENT%", Escape(list[i][1]) + " - " +Escape(list[i][2]),
+        "%LINE%", Str(i+1),
+        "%ACTION%", "MpdDbSelect('mpd_db_grid_" +
+            Str(i+1) + "', '" + Str(list[i][0]) + "');",
+        "%SECACT%", "{}",
+        "%GRID%", "db"
+        );
+    i=i+1;
+  }
+  Config(CfgInfo+"};");
+}
+
+Function MpdBrowserSwitch(state) {
+  MpdBrowser = state;
+  if MpdBrowser {
+    MpdCmd("playlistinfo");
+    MpdCmd("list artist");
+  }
+  EmitTrigger("mpd-browser");
+}
+
+PopUp "XMpdWindow" {
+  grid 'mpd_browser' {
+    style = If(MpdBrowser, "", "hidden");
+    trigger = "mpd-browser";
+    grid {
+      style = "mpd_playlist_sizer";
+      loc(1,1);
+      grid "mpd_database" {
+        style = "mpd_playlist";
+        vscroll = TRUE;
+        hscroll = TRUE;
+      }
+    }
+    grid "mpd_playlist_control_grid" {
+      style = "mpd_playlist_control_grid";
+      loc(2,1);
+      image {
+        value = "go-next";
+        style = "mpd_playlist_control";
+        interval = 0;
+        action = MpdQueueAdd();
+      }
+      image {
+        value = "go-previous";
+        style = "mpd_playlist_control";
+        interval = 0;
+        action = MpdQueueDelete();
+      }
+    }
+    grid {
+      style = "mpd_playlist_sizer";
+      loc(3,1);
+      grid "mpd_playlist" {
+        style = "mpd_playlist";
+        vscroll = TRUE;
+        hscroll = TRUE;
+      }
+    }
+    grid {
+      style = "mpd_playlist_control_grid";
+      loc(4,1);
+      image {
+        value = "go-up";
+        style = "mpd_playlist_control";
+        interval = 0;
+      }
+      image {
+        value = "go-down";
+        style = "mpd_playlist_control";
+        interval = 0;
+      }
+    }
+    image {
+      value = "application-exit";
+      style = "mpd_playlist_control";
+      loc(4,2);
+      interval = 0;
+      action = MpdBrowserSwitch(0);
+    }
+  }
+}
+
+#CSS
+window#XMpdPlaylist {
+  background-color: rgba(0,0,0,0);
+}
+
+grid#XMpdPlaylist {
+  margin: 10px;
+  border-radius: 10px;
+  border-image: none;
+  border-width: 1px;
+  border-style: solid;
+  border-color: @borders;
+  background-color: @theme_bg_color;
+  padding: 10px;
+}
+
+grid#mpd_playlist_control_grid {
+  -GtkWidget-valign: center;
+  -GtkWidget-vexpand: true;
+  -GtkWidget-direction: bottom;
+}
+
+grid#mpd_playlist_sizer {
+  padding: 10px;
+  border: solid 1px @theme_fg_color;
+  border-radius: 5px;
+  min-width: 200px;
+  min-height: 400px;
+}
+
+grid#mpd_playlist {
+  -GtkWidget-vexpand: true;
+  -GtkWidget-hexpand: true;
+}
+
+image#mpd_playlist_control {
+  min-width: 16px;
+  min-height: 16px;
+  padding: 8px;
+}
+
+label#mpd_browser_title {
+  -GtkWidget-halign: start;
+  font-size: 16px;
+}
+
+label#mpd_browser_comment {
+  -GtkWidget-halign: start;
+  font-size: 8px;
+}
+
+image#mpd_browser_delete {
+  min-width: 16px;
+  min-height: 16px;
+  -GtkWidget-hexpand: true;
+  -GtkWidget-halign: end;
+}
+
+grid#mpd_browser_grid {
+  -GtkWidget-hexpand: true;
+}
+
+grid#mpd_browser_active {
+  -GtkWidget-hexpand: true;
+  background-color: red;
+}
