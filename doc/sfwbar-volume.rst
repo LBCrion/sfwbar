@@ -20,22 +20,42 @@ SYNOPSIS
 The volume control interface provides means to query and adjust the volume
 settings.
 
-Expression Functions
-====================
+Triggers
+========
 
-Volume(Query[,Address])
-------------------------
+"volume"
+  A signal emitted upon change of the state of the sound server.
 
-function Volume queries the volume settings. The Query parameter
-specifies the information to query, the optional Address parameter
+"volume-conf"
+  Emitted when a new or updaded volume control element information is
+  available. Functions handling this trigger can access the following
+  variables:
+  `device_id` - an id of a device.
+  `interface` - an interface of the device ("source", "sink" or "client").
+  `channels` - an array of channel information, the first column is channel
+  indices, the second column is channel id's.
+
+"volume-conf-removed"
+  emitted when a volume control element is removed. Functions handling this
+  trigger can access variable `device_id` specifying the id of a removed
+  device.
+
+Functions
+=========
+
+Volume(<Property>[,<ID>])
+-------------------------
+
+Function Volume queries the volume settings. The `Property` parameter
+specifies the information to query, the optional `ID` parameter
 specifies the volume control element to which the query applies.
-The addresses are server specific. Pulse address is specified in a
-format `Device[:Channel]`. Pulse also supports an internal address
-format `@pulse-interface-index`, this format is used for elements
-returned by VolumeConf and shouldn't be used directly.
-ALSA interface is specified as `Device[:Element][:Channel]`.
+The ids are server specific. Pulse address is specified in a format
+`Device[:Channel]`. Pulse also supports an internal address format
+`@pulse-interface-index`, this format is used for elements supplied by the
+`volume-conf` trigger and shouldn't be used directly.  ALSA interface is
+specified as `Device[:Element][:Channel]`.
 
-This function returns a numberic value.
+This function returns a <numberic> value.
 
 The supported queries are:
 
@@ -59,11 +79,11 @@ The supported queries are:
   the volume of a client.
 "client-mute"
   muted state of a client.
-"sink-count"
+"client-count"
   a number of clients currently available.
 
-VolumeInfo(Query[,Address])
----------------------------
+VolumeInfo(Query[,ID])
+----------------------
 
 Returns additional information about a volume control element. The
 Query parameter specified the information to get. The Address parameter
@@ -94,28 +114,8 @@ This function returns a string value.
 "client-description"
   a description of the client.
 
-VolumeConf("Query")
--------------------
-
-Query device and channel information upon receipt of `volume-conf` or
-`volume-conf-removed` event. The valid `Query` values are:
-
-"device"
-  an id of a device advertised by `volume-conf` event.
-"id"
-  an address of a device/channel advertised by `volume-conf` event.
-"name"
-  name of a channel advertised by `volume-conf` event.
-"index"
-  ordinal of a channel advertised by `volume-conf` event.
-"removed-id"
-  an address of a removed device advertised by `volume-conf-removed` event.
-
-Actions
-=======
-
-VolumeCtl [Address,],Command
------------------------------
+VolumeCtl([ID,], <Command>)
+---------------------------
 
 Manipulate the state of the volume control. if the address isn't specified,
 the command will be applied to the default device for the interface.
@@ -152,13 +152,3 @@ been processed. The Type corresponds to a trigger event ack'ed, i.e.
 `volume-conf` or `volume-conf-removed`.  The module may then emit another
 conf event if further updates are available.
 
-Triggers
-========
-
-volume
-  a signal emitted whenever the state of the sound server changes.
-volume-conf
-  emitted when a new or updared volume control element information is
-  available.
-volume-conf-removed
-  emitted when a volume control element is removed.

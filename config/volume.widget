@@ -54,9 +54,9 @@ export button {
   trigger = "volume"
   tooltip = GT("Volume") + ": " + Str(Volume("sink-volume"),0) + "%" +
     If(Volume("sink-mute"),"(" + GT("muted") + ")","") +
+    "\n" + GT("Name") + ": " + VolumeInfo("sink-description") +
     "\n" + GT("Form") + ": " + VolumeInfo("sink-form") +
-    "\n" + GT("Port") + ": " + VolumeInfo("sink-port") +
-    "\n" + GT("Monitor") + ": " + VolumeInfo("sink-monitor")
+    "\n" + GT("Port") + ": " + VolumeInfo("sink-port")
   style = If(Ident(volume),"module","hidden")
   action[RightClick] = VolumeCtl("sink-mute toggle")
   action[MiddleClick] = Exec($XVolumeAction)

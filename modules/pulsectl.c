@@ -263,25 +263,21 @@ static void pulse_operation ( pa_operation *o, gchar *cmd )
 static void pulse_device_advertise ( gint iface_idx,
     const pa_channel_map *cmap, gint idx )
 {
-  GArray *channel_ids, *channel_indices;
   vm_store_t *store;
-  value_t v1;
+  value_t channels, row;
   gint i;
 
   if(iface_idx<0 || iface_idx>2)
     return;
 
-  channel_ids = g_array_new(FALSE, FALSE, sizeof(value_t));
-  g_array_set_clear_func(channel_ids, (GDestroyNotify)value_free_ptr);
-  channel_indices = g_array_new(FALSE, FALSE, sizeof(value_t));
-  g_array_set_clear_func(channel_indices, (GDestroyNotify)value_free_ptr);
+  channels = value_array_create(cmap->channels);
   for(i=0; i<cmap->channels; i++)
   {
-    v1 = value_new_string(g_strdup(
-          pa_channel_position_to_string(cmap->map[i])));
-    g_array_append_val(channel_ids, v1);
-    v1 = value_new_string(g_strdup_printf("%d", i));
-    g_array_append_val(channel_indices, v1);
+    row = value_array_create(2);
+    value_array_append(row, value_new_string(g_strdup_printf("%d", i)));
+    value_array_append(row,  value_new_string(g_strdup(
+            pa_channel_position_to_string(cmap->map[i]))));
+    value_array_append(channels, row);
   }
   store = vm_store_new(NULL, TRUE);
   vm_store_insert_full(store, "interface", value_new_string(g_strdup(
@@ -289,9 +285,7 @@ static void pulse_device_advertise ( gint iface_idx,
   vm_store_insert_full(store, "device_id", value_new_string(
         g_strdup_printf("@pulse-%s-%d",
           pulse_interfaces[iface_idx].prefix, idx)));
-  vm_store_insert_full(store, "channel_ids", value_new_array(channel_ids));
-  vm_store_insert_full(store, "channel_indices",
-    value_new_array(channel_indices));
+  vm_store_insert_full(store, "channels", channels);
   trigger_emit_with_data("volume-conf", store);
   vm_store_unref(store);
 }

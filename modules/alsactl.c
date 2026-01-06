@@ -147,8 +147,7 @@ static void alsa_iface_advertise ( mixer_api_t *api, alsa_source_t *src )
 {
   snd_mixer_elem_t *elem;
   vm_store_t *store;
-  value_t v1;
-  GArray *channel_ids, *channel_indices;
+  value_t channels, row ;
   gint i, cnum=0;
 
   for(elem=snd_mixer_first_elem(src->mixer); elem;
@@ -156,27 +155,26 @@ static void alsa_iface_advertise ( mixer_api_t *api, alsa_source_t *src )
   {
     if(api->has_volume(elem) && !snd_mixer_selem_has_common_volume(elem))
     {
-      channel_ids = g_array_new(FALSE, FALSE, sizeof(value_t));
-      channel_indices = g_array_new(FALSE, FALSE, sizeof(value_t));
+      channels = value_array_create(1);
       for(i=0;i<=SND_MIXER_SCHN_LAST;i++)
         if(api->has_channel(elem, i))
         {
-          v1 = value_new_string(g_strdup_printf("%s:%s",
-                snd_mixer_selem_get_name(elem),
-                snd_mixer_selem_is_playback_mono(elem)?  "Mono":
-                snd_mixer_selem_channel_name(i)));
-          g_array_append_val(channel_ids, v1);
-          v1 = value_new_string(g_strdup_printf("%d", cnum++));
-          g_array_append_val(channel_indices, v1);
+          row = value_array_create(2);
+          value_array_append(row,
+              value_new_string(g_strdup_printf("%d", cnum++)));
+          value_array_append(row,
+              value_new_string(g_strdup_printf("%s:%s",
+                  snd_mixer_selem_get_name(elem),
+                  snd_mixer_selem_is_playback_mono(elem)?  "Mono":
+                  snd_mixer_selem_channel_name(i))));
+          value_array_append(channels, row);
         }
       store = vm_store_new(NULL, TRUE);
       vm_store_insert_full(store, "interface",
           value_new_string(g_strdup(api->prefix)));
       vm_store_insert_full(store, "device_id",
           value_new_string(g_strdup(src->name)));
-      vm_store_insert_full(store, "channel_ids", value_new_array(channel_ids));
-      vm_store_insert_full(store, "channel_indices",
-          value_new_array(channel_indices));
+      vm_store_insert_full(store, "channels", channels);
       trigger_emit_with_data("volume-conf", store);
       vm_store_unref(store);
     }

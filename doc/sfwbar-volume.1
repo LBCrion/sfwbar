@@ -1,4 +1,5 @@
-.\" Man page generated from reStructuredText.
+.\" Man page generated from reStructuredText
+.\" by the Docutils 0.22.3 manpage writer.
 .
 .
 .nr rst2man-indent-level 0
@@ -27,8 +28,8 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "SFWBAR-VOLUME" 1 "" ""
-.SH NAME
+.TH "sfwbar-volume" "1" "" ""
+.SH Name
 sfwbar-volume \- Sfwbar volume control interface
 .sp
 Filename: alsactl.so
@@ -40,19 +41,39 @@ Requires: libasound (alsactl.so)
 .sp
 The volume control interface provides means to query and adjust the volume
 settings.
-.SH EXPRESSION FUNCTIONS
-.SS Volume(Query[,Address])
+.SH Triggers
+.INDENT 0.0
+.TP
+.B \(dqvolume\(dq
+A signal emitted upon change of the state of the sound server.
+.TP
+.B \(dqvolume\-conf\(dq
+Emitted when a new or updaded volume control element information is
+available. Functions handling this trigger can access the following
+variables:
+\fIdevice_id\fP \- an id of a device.
+\fIinterface\fP \- an interface of the device (\(dqsource\(dq, \(dqsink\(dq or \(dqclient\(dq).
+\fIchannels\fP \- an array of channel information, the first column is channel
+indices, the second column is channel id\(aqs.
+.TP
+.B \(dqvolume\-conf\-removed\(dq
+emitted when a volume control element is removed. Functions handling this
+trigger can access variable \fIdevice_id\fP specifying the id of a removed
+device.
+.UNINDENT
+.SH Functions
+.SS Volume(<Property>[,<ID>])
 .sp
-function Volume queries the volume settings. The Query parameter
-specifies the information to query, the optional Address parameter
+Function Volume queries the volume settings. The \fIProperty\fP parameter
+specifies the information to query, the optional \fIID\fP parameter
 specifies the volume control element to which the query applies.
-The addresses are server specific. Pulse address is specified in a
-format \fIDevice[:Channel]\fP\&. Pulse also supports an internal address
-format \fI@pulse\-interface\-index\fP, this format is used for elements
-returned by VolumeConf and shouldn\(aqt be used directly.
-ALSA interface is specified as \fIDevice[:Element][:Channel]\fP\&.
+The ids are server specific. Pulse address is specified in a format
+\fIDevice[:Channel]\fP\&. Pulse also supports an internal address format
+\fI@pulse\-interface\-index\fP, this format is used for elements supplied by the
+\fIvolume\-conf\fP trigger and shouldn\(aqt be used directly.  ALSA interface is
+specified as \fIDevice[:Element][:Channel]\fP\&.
 .sp
-This function returns a numberic value.
+This function returns a <numberic> value.
 .sp
 The supported queries are:
 .INDENT 0.0
@@ -87,10 +108,10 @@ the volume of a client.
 .B \(dqclient\-mute\(dq
 muted state of a client.
 .TP
-.B \(dqsink\-count\(dq
+.B \(dqclient\-count\(dq
 a number of clients currently available.
 .UNINDENT
-.SS VolumeInfo(Query[,Address])
+.SS VolumeInfo(Query[,ID])
 .sp
 Returns additional information about a volume control element. The
 Query parameter specified the information to get. The Address parameter
@@ -132,36 +153,14 @@ name of the sink monitor for the source.
 .B \(dqclient\-description\(dq
 a description of the client.
 .UNINDENT
-.SS VolumeConf(\(dqQuery\(dq)
-.sp
-Query device and channel information upon receipt of \fIvolume\-conf\fP or
-\fIvolume\-conf\-removed\fP event. The valid \fIQuery\fP values are:
-.INDENT 0.0
-.TP
-.B \(dqdevice\(dq
-an id of a device advertised by \fIvolume\-conf\fP event.
-.TP
-.B \(dqid\(dq
-an address of a device/channel advertised by \fIvolume\-conf\fP event.
-.TP
-.B \(dqname\(dq
-name of a channel advertised by \fIvolume\-conf\fP event.
-.TP
-.B \(dqindex\(dq
-ordinal of a channel advertised by \fIvolume\-conf\fP event.
-.TP
-.B \(dqremoved\-id\(dq
-an address of a removed device advertised by \fIvolume\-conf\-removed\fP event.
-.UNINDENT
-.SH ACTIONS
-.SS VolumeCtl [Address,],Command
+.SS VolumeCtl([ID,], <Command>)
 .sp
 Manipulate the state of the volume control. if the address isn\(aqt specified,
 the command will be applied to the default device for the interface.
 .INDENT 0.0
 .TP
 .B \(dqsink\-volume +/\-X\(dq
-Adjust the volume of a sink by X%. If the value is prefixed by netiher
+Adjust the volume of a sink by X%. If the value is prefixed by neither
 a \(aq+\(aq or a \(aq\-\(aq, the volume will be set to value X.
 .TP
 .B \(dqsink\-mute State\(dq
@@ -171,7 +170,7 @@ Change the state of a sink, State can be On, Off or Toggle.
 Set a sink as a default sink.
 .TP
 .B \(dqsource\-volume +/\-X\(dq
-Adjust the volume of a source by X%. If the value is prefixed by netiher
+Adjust the volume of a source by X%. If the value is prefixed by neither
 a \(aq+\(aq or a \(aq\-\(aq, the volume will be set to value X.
 .TP
 .B \(dqsource\-mute State\(dq
@@ -181,7 +180,7 @@ Change the state of a source, State can be On, Off or Toggle.
 Set a source as a default source.
 .TP
 .B \(dqclient\-volume +/\-X\(dq
-Adjust the volume of a client by X%. If the value is prefixed by netiher
+Adjust the volume of a client by X%. If the value is prefixed by neither
 a \(aq+\(aq or a \(aq\-\(aq, the volume will be set to value X.
 .TP
 .B \(dqclient\-mute State\(dq
@@ -199,20 +198,6 @@ Notify the module that all information for the currently advertised element
 been processed. The Type corresponds to a trigger event ack\(aqed, i.e.
 \fIvolume\-conf\fP or \fIvolume\-conf\-removed\fP\&.  The module may then emit another
 conf event if further updates are available.
-.SH TRIGGERS
-.INDENT 0.0
-.TP
-.B volume
-a signal emitted whenever the state of the sound server changes.
-.TP
-.B volume\-conf
-emitted when a new or updared volume control element information is
-available.
-.TP
-.B volume\-conf\-removed
-emitted when a volume control element is removed.
-.UNINDENT
-.SH COPYRIGHT
+.SH Copyright
 GPLv3+
-.\" Generated by docutils manpage writer.
-.
+.\" End of generated man page.
