@@ -187,8 +187,7 @@ static value_t dbus_variant2value ( GVariant *variant )
 {
   GVariantIter *iter;
   GVariant *var;
-  GArray *array;
-  value_t v;
+  value_t array;
 
   if(!variant)
     return value_na;
@@ -198,17 +197,12 @@ static value_t dbus_variant2value ( GVariant *variant )
   if(!g_variant_is_container(variant))
     return dbus_variant2value_basic(variant);
 
-  array = g_array_new(FALSE, FALSE, sizeof(value_t));
-  g_array_set_clear_func(array, (GDestroyNotify)value_free);
-
+  array = value_array_create(1);
   iter = g_variant_iter_new(variant);
   while((var = g_variant_iter_next_value(iter)))
-  {
-    v = dbus_variant2value(var);
-    g_array_append_val(array, v);
-  }
+    value_array_append(array, dbus_variant2value(var));
 
-  return value_new_array(array);
+  return array;
 }
 
 static GDBusConnection *dbus_conn_get ( value_t v )
