@@ -129,11 +129,11 @@ Private {
       "@NOTIF_ICON@", NotificationGet(id, "icon"),
       "@NOTIF_APP@", NotificationGet(id, "app"),
       "@NOTIF_TIME@", NotificationGet(id, "time")))
-    While i<arraysize(action_ids) {
+    While i<arraysize(actions) {
       Config(ReplaceAll(XNotificationActionTmpl,
         "@NOTIF_ID@", id,
-        "@ACTION_ID@", action_ids[i],
-        "@ACTION_TITLE@", action_titles[i]))
+        "@ACTION_ID@", actions[i][0],
+        "@ACTION_TITLE@", actions[i][1]))
       i = i + 1
     }
   }

@@ -234,10 +234,9 @@ guint32 dn_notification_parse ( GVariant *params )
   dn_notification *notif;
   GVariantIter *aiter;
   GVariant *hints;
-  GArray *action_ids, *action_titles;
   GList *iter;
   vm_store_t *store;
-  value_t v1;
+  value_t actions, row;
   gchar *action_title, *action_id;
   guint32 id;
 
@@ -299,15 +298,14 @@ guint32 dn_notification_parse ( GVariant *params )
     notif->timeout_handle =
       g_timeout_add(notif->timeout, (GSourceFunc)dn_timeout, notif);
 
-  action_ids = g_array_new(FALSE, FALSE, sizeof(value_t));
-  action_titles = g_array_new(FALSE, FALSE, sizeof(value_t));
+  actions = value_array_create(1);
   while(g_variant_iter_next(aiter, "&s", &action_id) &&
     g_variant_iter_next(aiter, "&s", &action_title))
   {
-    v1 = value_new_string(action_id);
-    g_array_append_val(action_ids, v1);
-    v1 = value_new_string(action_title);
-    g_array_append_val(action_titles, v1);
+    row = value_array_create(2);
+    value_array_append(row, value_new_string(g_strdup(action_id)));
+    value_array_append(row, value_new_string(g_strdup(action_title)));
+    value_array_append(actions, row);
     g_debug("ncenter: app: %u, action: %s: '%s'", notif->id, action_id,
         action_title);
   }
@@ -316,10 +314,7 @@ guint32 dn_notification_parse ( GVariant *params )
   store = vm_store_new(NULL, TRUE);
   vm_store_insert_full(store, "id",
       value_new_string(g_strdup_printf("%d", notif->id)));
-  vm_store_insert_full(store, "action_ids",
-      value_new_array(action_ids));
-  vm_store_insert_full(store, "action_titles",
-      value_new_array(action_titles));
+  vm_store_insert_full(store, "actions", actions);
 
   trigger_emit_with_data("notification-updated", store);
   vm_store_unref(store);
