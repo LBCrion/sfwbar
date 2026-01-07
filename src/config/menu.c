@@ -65,6 +65,8 @@ static GtkWidget *config_menu_item ( GScanner *scanner )
     if(!config_menu_item_props(scanner, item))
       g_clear_pointer(&item, gtk_widget_destroy);
 
+  menu_item_set_store(item, SCANNER_STORE(scanner));
+
   return item;
 }
 

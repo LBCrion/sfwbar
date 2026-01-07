@@ -146,7 +146,6 @@ static void menu_item_activate ( GtkMenuItem *self, gpointer d )
   if(!priv->action && priv->desktop_file)
     if( (app = g_desktop_app_info_new_from_filename(priv->desktop_file)) )
     {
-//      g_app_info_launch((GAppInfo *)app, NULL, NULL, NULL);
       exec_launch(app);
       g_object_unref(app);
       return;
@@ -476,6 +475,23 @@ void menu_item_update ( GtkWidget *self )
     gtk_widget_set_name(self, priv->style_expr->cache);
   if(vm_expr_eval(priv->tooltip_expr))
     gtk_widget_set_tooltip_text(self, priv->tooltip_expr->cache);
+}
+
+void menu_item_set_store ( GtkWidget *self, vm_store_t *store )
+{
+  MenuItemPrivate *priv;
+
+  priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
+  g_return_if_fail(priv);
+
+  if(priv->label_expr && !priv->label_expr->store)
+    priv->label_expr->store = store;
+
+  if(priv->style_expr && !priv->style_expr->store)
+    priv->style_expr->store = store;
+
+  if(priv->tooltip_expr && !priv->tooltip_expr->store)
+    priv->tooltip_expr->store = store;
 }
 
 void menu_item_insert ( GtkWidget *menu, GtkWidget *item )

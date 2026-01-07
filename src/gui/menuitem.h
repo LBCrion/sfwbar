@@ -3,7 +3,7 @@
 
 #include <gtk/gtk.h>
 #include <gio/gdesktopappinfo.h>
-#include "vm/expr.h"
+#include "vm/vm.h"
 
 #define DECLARE_MENU_ITEM(T_c, T_u, T_s, T_e, T_p) \
   G_DECLARE_FINAL_TYPE(T_c, T_u, T_s, T_e, T_p) \
@@ -83,5 +83,6 @@ void menu_item_set_submenu ( GtkWidget *self, gchar *subname );
 void menu_item_update ( GtkWidget *self );
 gint menu_item_compare ( GtkWidget *i1, GtkWidget *i2 );
 void menu_item_insert ( GtkWidget *menu, GtkWidget *item );
+void menu_item_set_store ( GtkWidget *self, vm_store_t *store );
 
 #endif
