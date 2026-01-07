@@ -59,7 +59,10 @@ static void mpd_cmd_cover ( gsize offset )
     mpd_cover_total = 0;
     mpd_cover_received = 0;
     if(mpd_cover_loader)
+    {
+      gdk_pixbuf_loader_close(mpd_cover_loader, NULL);
       g_clear_pointer(&mpd_cover_loader, g_object_unref);
+    }
     mpd_cover_loader = gdk_pixbuf_loader_new();
   }
   if( (file = g_hash_table_lookup(mpd_song_current, "file")) && *file)
@@ -196,17 +199,18 @@ static gboolean mpd_cover_handle ( gchar *str )
       gdk_pixbuf_loader_write(mpd_cover_loader, mpd_cover_buf, chunk, NULL);
       if(mpd_cover_received>=mpd_cover_total)
       {
+        scale_image_cache_remove(mpd_cover);
+        g_clear_pointer(&mpd_cover, g_free);
         if(gdk_pixbuf_loader_close(mpd_cover_loader, NULL) &&
             (pixbuf = gdk_pixbuf_loader_get_pixbuf(mpd_cover_loader)) )
         {
-          scale_image_cache_remove(mpd_cover);
           str_assign(&mpd_cover, g_strdup_printf("<pixbufcache/>mpdart-%ld",
                 mpd_pb_counter++));
           scale_image_cache_insert(mpd_cover, gdk_pixbuf_copy(pixbuf));
-          trigger_emit("mpd-cover");
         }
         if(mpd_cover_loader)
           g_clear_pointer(&mpd_cover_loader, g_object_unref);
+        trigger_emit("mpd-cover");
       }
       else
         mpd_cmd_cover(mpd_cover_received);
@@ -383,6 +387,7 @@ static value_t mpd_func_list ( vm_t *vm, value_t p[], gint np )
 
 static value_t mpd_func_info ( vm_t *vm, value_t p[], gint np )
 {
+  GList *iter;
   gchar *val;
 
   vm_param_check_np(vm, np, 1, "MpdInfo");
@@ -396,7 +401,7 @@ static value_t mpd_func_info ( vm_t *vm, value_t p[], gint np )
   {
     mpd_db_list = g_list_sort(mpd_db_list, (GCompareFunc)g_ascii_strcasecmp);
     value_t array = value_array_create(g_list_length(mpd_db_list));
-    for(GList *iter=mpd_db_list; iter; iter=g_list_next(iter))
+    for(iter=mpd_db_list; iter; iter=g_list_next(iter))
       value_array_append(array, value_new_string(g_strdup(iter->data)));
     return array;
   }
