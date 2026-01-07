@@ -687,27 +687,22 @@ static value_t expr_widget_children ( vm_t *vm, value_t p[], gint np )
 
 static value_t expr_ls ( vm_t *vm, value_t p[], gint np )
 {
-  GArray *array;
   GDir *dir;
-  value_t v1;
+  value_t array;
   const gchar *file;
 
   vm_param_check_np(vm, np, 1, "ls");
   vm_param_check_string(vm, p, 0, "ls");
 
-  array = g_array_new(FALSE, FALSE, sizeof(value_t));
-  g_array_set_clear_func(array, (GDestroyNotify)value_free_ptr);
-  if( (dir = g_dir_open(value_get_string(p[0]), 0, NULL)) )
-  {
-    while( (file = g_dir_read_name(dir)) )
-    {
-      v1 = value_new_string(g_strdup(file));
-      g_array_append_val(array, v1);
-    }
-    g_dir_close(dir);
-  }
+  if( !(dir = g_dir_open(value_get_string(p[0]), 0, NULL)) )
+    return value_na;
 
-  return value_new_array(array);
+  array = value_array_create(1);
+  while( (file = g_dir_read_name(dir)) )
+    value_array_append(array, value_new_string(g_strdup(file)));
+  g_dir_close(dir);
+
+  return array;
 }
 
 static value_t expr_custom_ipc ( vm_t *vm, value_t p[], gint np )
