@@ -108,8 +108,10 @@ static gboolean vm_op_binary ( vm_t *vm )
   else if(value_is_na(v1) && value_is_na(v2))
     result = value_na;
 
-  else if(value_is_array(v1) || value_is_array(v2))
+  else if((value_is_array(v1) || value_is_array(v2)) && op == '+')
     result = value_array_concat(v1, v2);
+  else if(value_is_array(v1) && op == '-')
+    result = value_array_remove(v1, v2);
 
   else if(value_like_string(v1) && value_like_string(v2))
   {

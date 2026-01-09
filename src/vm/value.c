@@ -86,6 +86,35 @@ value_t value_dup ( value_t v1 )
   return v1;
 }
 
+gint value_array_find ( value_t needle, value_t haystack )
+{
+  gint i;
+
+  if(!value_is_array(haystack))
+    return -1;
+
+  for(i=0; i<haystack.value.array->len; i++)
+    if(value_compare(needle, g_array_index(haystack.value.array, value_t, i)))
+      return i;
+
+  return -1;
+}
+
+value_t value_array_remove ( value_t array, value_t token )
+{
+  gint i;
+
+  if(!value_is_array(array))
+    return value_na;
+
+  if( (i = value_array_find(token, array))>=0)
+    g_array_remove_index(array.value.array, i);
+
+  g_array_ref(array.value.array);
+
+  return array;
+}
+
 gboolean value_compare ( value_t v1, value_t v2 )
 {
   gint i;

@@ -651,6 +651,20 @@ static value_t expr_array_size ( vm_t *vm, value_t p[], gint np )
   return value_new_numeric(value_is_array(p[0])? p[0].value.array->len : 0);
 }
 
+static value_t expr_array_find ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 2, "ArrayFind");
+
+  return value_new_numeric(value_array_find(p[0], p[1])!=-1);
+}
+
+static value_t expr_array_remove ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 2, "ArrayRemove");
+
+  return value_array_remove(p[0], p[1]);
+}
+
 static value_t expr_test_file ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np(vm, np, 1, "TestFile");
@@ -758,6 +772,8 @@ void expr_lib_init ( void )
   vm_func_add("arrayassign", expr_array_assign, FALSE, TRUE);
   vm_func_add("arrayconcat", expr_array_concat, FALSE, TRUE);
   vm_func_add("arraysize", expr_array_size, FALSE, TRUE);
+  vm_func_add("arrayfind", expr_array_find, FALSE, TRUE);
+  vm_func_add("arrayremove", expr_array_remove, FALSE, TRUE);
   vm_func_add("widgetchildren", expr_widget_children, FALSE, FALSE);
   vm_func_add("testfile", expr_test_file, FALSE, TRUE);
   vm_func_add("ls", expr_ls, FALSE, TRUE);

@@ -53,6 +53,8 @@ void value_free_ptr ( value_t *v1 );
 value_t value_array_create ( gint size );
 void value_array_append ( value_t array, value_t v );
 value_t value_dup ( value_t );
+gint value_array_find ( value_t needle, value_t haystack );
+value_t value_array_remove ( value_t array, value_t token );
 gboolean value_compare ( value_t v1, value_t v2 );
 value_t value_array_concat ( value_t v1, value_t v2 );
 gchar *value_array_to_string ( value_t value );
