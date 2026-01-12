@@ -432,6 +432,17 @@ static value_t mpd_func_info ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
+static value_t mpd_func_server ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "MpdServer");
+  vm_param_check_string(vm, p, 0, "MpdServer");
+
+  mpd_address_new(value_get_string(p[0]), 0);
+  mpd_reconnect();
+
+  return value_na;
+}
+
 static value_t mpd_func_cmd ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np(vm, np, 1, "MpdCmd");
@@ -466,6 +477,7 @@ gboolean sfwbar_module_init ( void )
 
   vm_func_add("mpdlist", mpd_func_list, FALSE, FALSE);
   vm_func_add("mpdinfo", mpd_func_info, FALSE, FALSE);
+  vm_func_add("mpdserver", mpd_func_server, TRUE, FALSE);
   vm_func_add("mpdcmd", mpd_func_cmd, TRUE, FALSE);
 
   mpd_address_new("localhost", 6600);
