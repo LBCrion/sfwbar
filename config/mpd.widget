@@ -31,8 +31,8 @@ Private {
       stroke="red"/>
     </svg>'
 
-  Set MpdProgress = (MpdInfo("elapsed") +
-      If(MpdInfo("state")="play", MpdInfo("age")/1000000, 0))/MpdInfo("duration");
+  Set MpdProgress = (Val(MpdInfo("elapsed")) + If(MpdInfo("state")="play",
+        Val(MpdInfo("age"))/1000000, 0))/Val(MpdInfo("duration"));
 
   PopUp "XMpdWindow" {
     autoclose = true;
@@ -71,7 +71,7 @@ Private {
         scale "mpd_progress" {
           value = MpdProgress;
           style = "mpd_progress"
-          action = MpdCmd("seekcur " + Str(gtkevent("x") * MpdInfo("Duration")))
+          action = MpdCmd("seekcur " + Str(gtkevent("x") * Val(MpdInfo("Duration"))))
           interval = 1000
           loc(2,4);
         }
@@ -80,14 +80,14 @@ Private {
           css = "* { -GtkWidget-direction: right; -GtkWidget-halign: center; -GtkWidget-hexpand: true; }"
           image {
             value = "media-playlist-repeat"
-            action = MpdCmd("repeat " + If(MpdInfo("Repeat"),"0","1"))
-            style = If(MpdInfo("repeat"),"mpd_icon_red","mpd_icon")
+            action = MpdCmd("repeat " + If(Val(MpdInfo("Repeat")),"0","1"))
+            style = If(Val(MpdInfo("repeat")),"mpd_icon_red","mpd_icon")
             trigger = "mpd"
           }
           image {
             value = "media-playlist-shuffle"
-            action = MpdCmd("random " + If(MpdInfo("Random"),"0","1"))
-            style = If(MpdInfo("random"),"mpd_icon_red","mpd_icon")
+            action = MpdCmd("random " + If(Val(MpdInfo("Random")),"0","1"))
+            style = If(Val(MpdInfo("random")),"mpd_icon_red","mpd_icon")
             trigger = "mpd"
           }
           image {
