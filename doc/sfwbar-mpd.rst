@@ -10,74 +10,80 @@ Sfwbar Music Player Daemon module
 
 Filename: mpd.so
 
-Requires: libmpdclient
+Requires: none
 
 SYNOPSIS
 ========
 
 The Music Player Daemon module provides an interface to control an MPD server.
 
-Expression Functions
-====================
+Functions
+=========
 
-Mpd(Query)
-------------------------
-
-Function Mpd queries the state of the MPD server. The function returns a string.
-the following queries are supported:
-
-"title"
-  The title of current song.
-"track"
-  Track number of the current song.
-"artist"
-  Artist of the current song.
-"album"
-  Album of the current song.
-"genre"
-  Genre of the current song.
-"volume"
-  Current playback volume.
-"repeat"
-  Repeat flag of the current playlist: "1"/"0".
-"random"
-  Random flag of the current playlist: "1"/"0".
-"queue_len"
-  Length of the current playlist.
-"queue_pos"
-  Number of the current song in the playlist.
-"elapsed"
-  Elapsed time since the beginning of the song.
-"length"
-  Length of the current song.
-"rate"
-  Sample rate of the current song (in kbps).
-"state"
-  State of the player: "play","pause","stop","unknown".
-
-Actions
-=======
-
-MpdSetPassword "Password"
+MpdServer(<address>)
 -------------------------
 
-Specify a password used to connect to the MPD server.
+Specify an address for an MPD server to use. The address is specified using the
+MPD_HOST convention ([password@]host[:port], where a host can be a local socket
+or an abstract socket prefixed by @). If MpdServer is not called, the MPD
+module will use MPD_HOST/MPD_PORT environment variables and failing that, will
+fallback to $XDG_RUNTIME_DIR/mpd/socket, /run/mpd/socket and localhost:6600.
 
-MpdCommand "Command"
+MpdCmd(<command>)
 --------------------
 
-Send a command to the MPD server. The supported commands are:
+Send a command to the MPD server. You can send any command supported by an MPD
+protocol. Output of some MPD commands is processed by the module and made
+available to the configuation layer. (Please note that while you can send
+command lists, the output of a command list will not be processed). The output
+of the following commands is processed:
 
-"play"
-  Play the current song.
-"pause"
-  Pause playback.
-"stop"
-  Stop playback.
-"prev"
-  Switch to the previous song in the playlist.
-"next"
-  Switch to the next song in the playlist.
+"list"
+  upon completion `mpd-search` trigger is emitted and the results are available
+  using `MpdList` function.
+
+"find"
+  upon completion `mpd-search` trigger is emitted and the results are available
+  using `MpdList` function.
+
+"playlistinfo"
+  upon completion `mpd-queue` trigger is emitted and the results are
+  available using `MpdList` function.
+
+"listplaylistinfo"
+  upon completion `mpd-playlist` trigger is emitted and the results are
+  available using `MpdList` function.
+
+"list"
+  upon completion `mpd-list` trigger is emitted and the results are
+  available using `MpdInfo("list")` function.
+
+"listplaylists"
+  upon completion `mpd-playlists` trigger is emitted and the results are
+  available using `MpdInfo("playlists")` function.
+
+MpdInfo(<Query>)
+------------------------
+
+Function MpdInfo queries the state of the MPD server. The function provides an
+interface to query the current value of any tag of the `status` and
+`currentsong` MPD protocol commands. The values are returned as strings. In
+addition, MpdInfo supports a few additional query values:
+
+"age"
+  time (in microseconds) ellapsed since the MPD server state was last queried
+  (this is useful in computing the progress of the current song playback).
+
+"cover"
+  the coverart of the currently playing album.
+
+"list"
+  output of the last executed `list` protocol command. This query returns an
+  array of string values.
+
+"playlists"
+  output of the last executed `listplaylists` protocol command. This query
+  returns an array of string values.
 
 Triggers
 ========
@@ -86,5 +92,16 @@ The module defines two triggers:
 
 "mpd"
   Emitted whenever the state of the MPD server changes.
-"mpd-progress"
-  Emitted every second while player is in "play" state.
+"mpd-error"
+  Emitted when MPD server returns an error. An error string is provded in the
+  string variable `message`.
+"mpd-list"
+  Emitted upon completion of the `list` MPD protocol command.
+"mpd-playlists"
+  Emitted upon completion of the `listplaylists` MPD protocol command.
+"mpd-search"
+  Emitted upon completion of the `search` or `find` MPD protocol commands.
+"mpd-queue"
+  Emitted upon completion of the `playlistinfo` MPD protocol command.
+"mpd-playlist"
+  Emitted upon completion of the `listplaylistinfo` MPD protocol command.
