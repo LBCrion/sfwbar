@@ -438,6 +438,7 @@ static value_t mpd_func_server ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, 0, "MpdServer");
 
   mpd_address_new(value_get_string(p[0]), 0);
+  address_current = NULL;
   mpd_reconnect();
 
   return value_na;
