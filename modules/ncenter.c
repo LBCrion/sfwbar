@@ -18,7 +18,6 @@ typedef struct _dn_notification {
   guint32 id;
   gboolean action_icons, resident, transient, silent;
   gchar *category, *desktop, *image, *sound_file, *sound_name;
-  gchar *action_id, *action_title;
   gint32 x,y;
   gchar urgency;
   /* need image data */
@@ -102,8 +101,6 @@ static void dn_notification_free ( dn_notification *notif )
   g_free(notif->image);
   g_free(notif->sound_file);
   g_free(notif->sound_name);
-  g_free(notif->action_id);
-  g_free(notif->action_title);
   g_free(notif);
 }
 
@@ -298,7 +295,7 @@ guint32 dn_notification_parse ( GVariant *params )
     notif->timeout_handle =
       g_timeout_add(notif->timeout, (GSourceFunc)dn_timeout, notif);
 
-  actions = value_array_create(1);
+  actions = value_array_create(g_variant_iter_n_children(aiter)/2);
   while(g_variant_iter_next(aiter, "&s", &action_id) &&
     g_variant_iter_next(aiter, "&s", &action_title))
   {
@@ -314,6 +311,18 @@ guint32 dn_notification_parse ( GVariant *params )
   store = vm_store_new(NULL, TRUE);
   vm_store_insert_full(store, "id",
       value_new_string(g_strdup_printf("%d", notif->id)));
+  vm_store_insert_full(store, "icon", value_new_string(
+        g_strdup(notif->image? notif->image : notif->app_icon)));
+  vm_store_insert_full(store, "app",
+      value_new_string(g_strdup(notif->app_name)));
+  vm_store_insert_full(store, "summary",
+      value_new_string(g_strdup(notif->summary)));
+  vm_store_insert_full(store, "body",
+      value_new_string(g_strdup(notif->body)));
+  vm_store_insert_full(store, "time",
+      value_new_string(g_date_time_format(notif->time, "%s")));
+  vm_store_insert_full(store, "category",
+      value_new_string(g_strdup(notif->category)));
   vm_store_insert_full(store, "actions", actions);
 
   trigger_emit_with_data("notification-updated", store);
@@ -394,45 +403,6 @@ static void dn_name_acquired_cb (GDBusConnection *con, const gchar *name,
 static void dn_name_lost_cb (GDBusConnection *con, const gchar *name,
     gpointer d)
 {
-}
-
-static value_t dn_get_func ( vm_t *vm, value_t p[], gint np )
-{
-  dn_notification *notif;
-  value_t v1;
-  gchar *prop;
-
-  if(np!=2)
-    return value_na;
-
-  g_rec_mutex_lock(&dn_mutex);
-  if( !(notif = dn_notification_lookup(value_as_numeric(p[0]))) ||
-      !(prop = value_get_string(p[1])) )
-    v1 = value_na;
-  else if(!g_ascii_strcasecmp(prop, "id"))
-    v1 = value_new_string(g_strdup_printf("%d", notif->id));
-  else if(!g_ascii_strcasecmp(prop, "icon"))
-    v1 = value_new_string(
-      g_strdup(notif->image? notif->image : notif->app_icon));
-  else if(!g_ascii_strcasecmp(prop, "app"))
-    v1 = value_new_string(g_strdup(notif->app_name));
-  else if(!g_ascii_strcasecmp(prop, "summary"))
-    v1 = value_new_string(g_strdup(notif->summary));
-  else if(!g_ascii_strcasecmp(prop, "body"))
-    v1 = value_new_string(g_strdup(notif->body));
-  else if(!g_ascii_strcasecmp(prop, "time"))
-    v1 = value_new_string(g_date_time_format(notif->time,"%s"));
-  else if(!g_ascii_strcasecmp(prop, "category"))
-    v1 = value_new_string(g_strdup(notif->category));
-  else if(!g_ascii_strcasecmp(prop, "action_id"))
-    v1 = value_new_string(g_strdup(notif->action_id));
-  else if(!g_ascii_strcasecmp(prop, "action_title"))
-    v1 = value_new_string(g_strdup(notif->action_title));
-  else
-    v1 = value_na;
-  g_rec_mutex_unlock(&dn_mutex);
-
-  return v1;
 }
 
 static value_t dn_group_func ( vm_t *vm, value_t p[], gint np )
@@ -561,18 +531,16 @@ static value_t dn_action_action ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, 0, "NotificationAction");
   vm_param_check_string(vm, p, 1, "NotificationAction");
 
-  if(value_is_string(p[0]) && p[0].value.string && value_is_string(p[1]) &&
-      p[1].value.string &&
+  if(value_is_string(p[0]) && p[0].value.string &&
       (id = g_ascii_strtoull(p[0].value.string, &end, 10)) &&
       !(end && *end) && id <= G_MAXUINT32)
-    dn_notification_action(id, p[1].value.string);
+    dn_notification_action(id, value_get_string(p[1]));
 
   return value_na;
 }
 
 gboolean sfwbar_module_init ( void )
 {
-  vm_func_add("notificationget", dn_get_func, FALSE, TRUE);
   vm_func_add("notificationgroup", dn_group_func, FALSE, TRUE);
   vm_func_add("notificationactivegroup", dn_active_group_func, FALSE, TRUE);
   vm_func_add("notificationcount", dn_count_func, FALSE, TRUE);

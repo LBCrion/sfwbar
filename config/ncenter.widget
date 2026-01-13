@@ -124,11 +124,11 @@ Private {
     ClearWidget(id + "_grid")
     Config(ReplaceAll( XNotificationTmpl,
       "@NOTIF_ID@", id,
-      "@NOTIF_SUMMARY@", Escape(NotificationGet(id, "summary")),
-      "@NOTIF_BODY@", Escape(NotificationGet(id, "body")),
-      "@NOTIF_ICON@", NotificationGet(id, "icon"),
-      "@NOTIF_APP@", NotificationGet(id, "app"),
-      "@NOTIF_TIME@", NotificationGet(id, "time")))
+      "@NOTIF_SUMMARY@", Escape(summary),
+      "@NOTIF_BODY@", Escape(body),
+      "@NOTIF_ICON@", icon,
+      "@NOTIF_APP@", app,
+      "@NOTIF_TIME@", time));
     While i<arraysize(actions) {
       Config(ReplaceAll(XNotificationActionTmpl,
         "@NOTIF_ID@", id,
@@ -139,7 +139,7 @@ Private {
   }
 
   Function XNotificationRemove() {
-    ClearWidget(NotificationGet("removed-id") + "_grid")
+    ClearWidget(id + "_grid")
   }
 
   PopUp "XNotificationWindow" {
