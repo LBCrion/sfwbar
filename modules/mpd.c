@@ -420,7 +420,7 @@ static value_t mpd_func_info ( vm_t *vm, value_t p[], gint np )
     return value_new_string(g_strdup_printf("%ld", g_get_monotonic_time() - mpd_time));
   if(!g_ascii_strcasecmp(value_get_string(p[0]), "cover"))
     return value_new_string(g_strdup(mpd_cover));
-  if(!g_ascii_strcasecmp(value_get_string(p[0]), "db"))
+  if(!g_ascii_strcasecmp(value_get_string(p[0]), "list"))
     return mpd_list_to_value(&mpd_db_list);
   if(!g_ascii_strcasecmp(value_get_string(p[0]), "playlists"))
     return mpd_list_to_value(&mpd_playlist_list);
