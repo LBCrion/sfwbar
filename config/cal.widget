@@ -80,19 +80,15 @@ Private {
 
     Config("label 'cal_date' { value = '"+GT(months[month])+" "+Str(year)+"' }")
 
-    i = 0;
-    While i < 7 {
+    for(i = 0; i<7; i=i+1)
       Config(ReplaceAll(XCalWeekdayTmpl,
           "$CAL_WEEKDAY$", GT(weekdays[i]),
           "$CAL_COL$", Str(i)));
-      i = i + 1;
-    }
 
     ndays = XCalDaysInAMonth(emonth);
     pndays = XCalDaysInAMonth(emonth-1);
     fdow = XCalFDOW(month, year);
-    i = 0;
-    While i<42 {
+    for(i = 0; i<42; i=i+1) {
       day = i - fdow + 1;
       if day < 1
         day = day + pndays;
@@ -117,7 +113,6 @@ Private {
               )
             )
         ))
-      i = i + 1;
     }
   }
 

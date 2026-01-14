@@ -55,11 +55,11 @@ Function MpdMenu ( value )
 }
 
 Function MpdQueueDelete () {
-  Var i = 0;
-  While i < ArraySize(MpdQueueSelection) {
+  Var i;
+
+  for(i=0; i < ArraySize(MpdQueueSelection); i=i+1) {
     MpdCmd("deleteid " + Extract(MpdQueueSelection[i], "mpd_queue_grid_(.*)"));
     ClearWidget(MpdQueueSelection[i]);
-    i = i + 1;
   };
   MpdQueueSelection = [];
 }
@@ -76,9 +76,9 @@ Function MpdQueueSwap ( Down )
 {
   Var WidgetId = MpdQueueSelection[0];
   Var Children = WidgetChildren("mpd_playlist");
-  Var i = 0, j;
+  Var i, j;
 
-  While i<ArraySize(Children) {
+  for(i=0; i<ArraySize(Children); i=i+1)
     if Children[i] = WidgetId {
       j = If(Down, i-1, i+1);
       if j>=0  & j<ArraySize(Children) {
@@ -88,42 +88,32 @@ Function MpdQueueSwap ( Down )
       }
       Return;
     }
-    i = i + 1;
-  }
 }
 
 Function MpdFilter( level ) {
-  Var i = 0, Tag, Filter = "";
+  Var i, Tag, Filter = "";
 
-  While i<level {
+  for(i=0; i<level; i=i+1) 
+  {
     Tag = "(" + MpdFilters[i] + " == \\\"" + Escape(MpdFilterVals[i]) + "\\\")";
-    If i = 0
-      Filter = Filter + Tag;
-    Else
-      Filter = "(" + Filter + " AND " + Tag + ")";
-    i = i + 1;
+    Filter = If(i=0, Tag, "(" + Filter + " AND " + Tag + ")");
   }
-  If Filter = ""
-    Return "";
-  Else
-    Return "\"" + Filter +"\"";
+  Return If(Filter="", "", "\"" + Filter +"\"");
 }
 
 Function MpdClearChildren ( parent ) {
-  Var i = 0, children = WidgetChildren(parent);
+  Var i, children = WidgetChildren(parent);
 
-  While i<arraysize(children) {
+  for(i=0; i<arraysize(children); i=i+1)
     ClearWidget(children[i]);
-    i=i+1;
-  }
 }
 
 Function MpdUpdateQueue() {
   Var list=MpdList("queue", "track", "artist", "album", "title", "id");
-  Var i=0, CfgInfo = "grid 'mpd_playlist' {";
+  Var i, CfgInfo = "grid 'mpd_playlist' {";
 
   MpdClearChildren("mpd_playlist");
-  While i<arraysize(list) {
+  for(i=0; i<arraysize(list); i=i+1)
     CfgInfo = CfgInfo + ReplaceAll(BrowserTmpl,
           "%COMMENT%", Escape(list[i][1]) + " - " + Escape(list[i][2]),
           "%TITLE%", Str(list[i][0]) + " - " + Escape(list[i][3]),
@@ -132,8 +122,6 @@ Function MpdUpdateQueue() {
           "%ID%", Str(list[i][4]),
           "%GRID%", "queue"
           );
-    i = i + 1;
-  }
   Config(CfgInfo+"};");
 }
 
@@ -150,7 +138,7 @@ Function MpdDbRequest ( level, value )
 }
 
 Function MpdUpdateList() {
-  Var i=0, list=MpdInfo("db");
+  Var i, list=MpdInfo("list");
   Var CfgInfo = "grid 'mpd_database' {";
 
   MpdClearChildren('mpd_database');
@@ -164,7 +152,7 @@ Function MpdUpdateList() {
         "%ACTION%", 'MpdDbRequest(' + Str(MpdFilterLevel-1) + ',"")',
         "%GRID%", "db"
         );
-  While i<arraysize(list) {
+  for(i=0; i<arraysize(list); i=i+1)
     If list[i]!=""
       CfgInfo = CfgInfo + ReplaceAll(BrowserTmpl,
           "%TITLE%", Escape(list[i]),
@@ -174,14 +162,12 @@ Function MpdUpdateList() {
           "%ACTION%", 'MpdDbRequest('+Str(MpdFilterLevel+1)+',"'+Escape(list[i])+'")',
           "%GRID%", "db"
           );
-    i=i+1;
-  }
   Config(CfgInfo+"};");
 }
 
 Function MpdUpdateSearch () {
   Var list=MpdList("search", "track", "artist", "album", "title", "id");
-  Var i = 0, CfgInfo = "grid 'mpd_database' {";
+  Var i, CfgInfo = "grid 'mpd_database' {";
 
   MpdClearChildren('mpd_database');
 
@@ -194,7 +180,7 @@ Function MpdUpdateSearch () {
         "%ACTION%", 'MpdDbRequest(' + Str(MpdFilterLevel-1) + ',"")',
         "%GRID%", "db"
         );
-  While i<arraysize(list) {
+  for(i=0; i<arraysize(list); i=i+1)
     CfgInfo = CfgInfo + ReplaceAll(BrowserTmpl,
         "%TITLE%", Str(list[i][0]) + " - " + Escape(list[i][3]),
         "%COMMENT%", Escape(list[i][1]) + " - " +Escape(list[i][2]),
@@ -203,8 +189,6 @@ Function MpdUpdateSearch () {
         "%ACTION%", "{ MpdDbSelection = [ WidgetId() ]; EmitTrigger('mpd-browser-selection'); }",
         "%GRID%", "db"
         );
-    i=i+1;
-  }
   Config(CfgInfo+"};");
 }
 

@@ -26,11 +26,13 @@ Private {
         loc(0,@LOC@);
         image {
           value = session_actions[@LOC@][0];
+          interval = 0;
           style = 'session_icon';
           loc(0,0);
         }
         label {
           value = session_actions[@LOC@][1];
+          interval = 0;
           style = 'session_label';
           loc(1,0);
         }
@@ -56,11 +58,8 @@ Private {
     }"
 
   Function SessionInit() {
-    Var i = 0;
-    While i < ArraySize(session_actions) {
+    for(Var i = 0; i < ArraySize(session_actions); i=i+1)
       Config(Replace(SessionTmpl, "@LOC@", Str(i)));
-      i = i + 1;
-    }
   }
 
   PopUp("SessionPopup") {

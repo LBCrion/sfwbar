@@ -16,7 +16,7 @@ Function BacklightInit() {
   Var i = 0;
 
   BacklightSrc=''
-  while i<ArraySize(dirs) & Backlightsrc='' {
+  for(i=0; i<ArraySize(dirs) & Backlightsrc=''; i=i+1)
     if testfile(base+"/"+dirs[i]+"/actual_brightness") &
       testfile(base+"/"+dirs[i]+"/max_brightness")
       {
@@ -27,8 +27,6 @@ Function BacklightInit() {
         SetBacklight(Val(Read(BacklightSrc))/BacklightMax)
         EmitTrigger( "backlight")
       }
-    i = i + 1
-  }
 }
 
 Function SetBacklight ( pct )

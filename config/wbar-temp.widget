@@ -5,13 +5,11 @@ Private {
   Var format = "{temperatureC}°C {icon}"
 
   Function IconLookup ( x, thresholds, icons ) {
-    Var result = icons[arraysize(icons)-1], i = 0;
+    Var result = icons[arraysize(icons)-1];
 
-    while i<arraysize(thresholds) {
+    for(Var i=0; i<arraysize(thresholds); i=i+1)
       if x>thresholds[i]
         result = icons[i];
-      i=i+1;
-    }
     Return result;
   }
 

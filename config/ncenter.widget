@@ -129,13 +129,11 @@ Private {
       "@NOTIF_ICON@", icon,
       "@NOTIF_APP@", app,
       "@NOTIF_TIME@", time));
-    While i<arraysize(actions) {
+    For(i=0; i<arraysize(actions); i=i+1) 
       Config(ReplaceAll(XNotificationActionTmpl,
         "@NOTIF_ID@", id,
         "@ACTION_ID@", actions[i][0],
         "@ACTION_TITLE@", actions[i][1]))
-      i = i + 1
-    }
   }
 
   Function XNotificationRemove() {

@@ -7,14 +7,11 @@ Private {
     Var i, wins;
 
     wins = WidgetChildren("target");
-    i = 0;
-    While i <ArraySize(wins) {
+    for(i = 0; i <ArraySize(wins); i=i+1)
       If WidgetState(wins[i], 1) {
         UserState(wins[i], "off");
         UnMinimize(wins[i]);
       }
-      i = i + 1;
-    }
     If FocusedWindow!='' {
       Focus(FocusEdWindow);
       FocusedWindow = '';
@@ -27,15 +24,13 @@ Private {
     Var i, wins;
 
     wins = WidgetChildren("target");
-    i = 0;
-    While i <ArraySize(wins) {
+    for(i = 0; i <ArraySize(wins); i=i+1) {
       If WindowInfo(wins[i], "focused") & FocusedWindow=''
         FocusedWindow = wins[i];
       If !WindowInfo(wins[i], "minimized") {
         UserState(wins[i], "on");
         Minimize(wins[i]);
       }
-      i = i + 1;
     }
     UserState("on")
   }

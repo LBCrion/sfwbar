@@ -25,13 +25,10 @@ Function LayoutMenuBuild()
   Var i, l = LayoutList();
 
   MenuClear("LayoutList");
-  i = 0;
-  While i<ArraySize(l) {
+  for(i = 0; i<ArraySize(l); i=i+1)
     Config(ReplaceAll(LayoutMenuTmpl,
           "%NAME%", LayoutName(l[i]),
           "%LAYOUT%", l[i]));
-    i=i+1;
-  }
 }
 
 Private {

@@ -127,15 +127,12 @@ Private {
       Config(ReplaceAll(XVolumeControlTmpl,
           "@DEVICE_ID@", device_id,
           "@DEVICE_IFACE@", interface))
-      i = 0;
-      While i < arraysize(channels) {
+      For(i=0; i<arraysize(channels); i=i+1)
         Config(ReplaceAll(XVolumeChannelTmpl,
           "@DEVICE_ID@", device_id,
           "@CHANNEL_NUM@", channels[i][0],
           "@CHANNEL_ID@", channels[i][1],
           "@DEVICE_IFACE@", interface))
-        i = i + 1;
-      }
     }
     MenuItemClear(device_id)
     If interface = "sink"
