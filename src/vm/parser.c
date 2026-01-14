@@ -645,6 +645,44 @@ static gboolean parser_while_parse ( GScanner *scanner, GByteArray *code )
   return TRUE;
 }
 
+static gboolean parser_for_parse ( GScanner *scanner, GByteArray *code )
+{
+  gint cond, cont, updt, done;
+
+  if(!config_expect_token(scanner, '(', "missing '(' after for"))
+    return FALSE;
+
+  if(!parser_block_parse(scanner, code))
+    return FALSE;
+
+  cond = code->len;
+
+  if(!parser_expr_parse(scanner, code))
+    return FALSE;
+
+  done = parser_emit_jump(code, EXPR_OP_JZ);
+  cont = parser_emit_jump(code, EXPR_OP_JMP);
+  updt = code->len;
+
+  if(!config_expect_token(scanner, ';', "missing ';' in for"))
+    return FALSE;
+  if(!parser_block_parse(scanner, code))
+    return FALSE;
+  if(!config_expect_token(scanner, ')', "missing ')' after for"))
+    return FALSE;
+
+  parser_jump_backpatch(code, parser_emit_jump(code, EXPR_OP_JMP), cond);
+  parser_jump_backpatch(code, cont, code->len);
+
+  if(!parser_block_parse(scanner, code))
+    return FALSE;
+
+  parser_jump_backpatch(code, parser_emit_jump(code, EXPR_OP_JMP), updt);
+  parser_jump_backpatch(code, done, code->len);
+
+  return TRUE;
+}
+
 static gboolean parser_var_parse ( GScanner *scanner, GByteArray *code )
 {
   do {
@@ -843,4 +881,5 @@ void parser_init ( void )
   config_add_key(parser_instructions, "if", parser_if_instr_parse);
   config_add_key(parser_instructions, "while", parser_while_parse);
   config_add_key(parser_instructions, "return", parser_return_parse);
+  config_add_key(parser_instructions, "for", parser_for_parse);
 }
