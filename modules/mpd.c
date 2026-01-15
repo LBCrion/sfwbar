@@ -97,6 +97,25 @@ static gboolean mpd_error_handle ( gchar *str )
   return TRUE;
 }
 
+static void mpd_emit_with_array ( gchar *trigger, GList **list )
+{
+  value_t array;
+  vm_store_t *store;
+  GList *iter;
+
+  array = value_array_create(g_list_length(*list));
+  for(iter=*list; iter; iter=g_list_next(iter))
+    value_array_append(array, value_new_string(iter->data));
+  g_list_free(g_steal_pointer(list));
+
+  store = vm_store_new(NULL, TRUE);
+  vm_store_insert_full(store, "list", array);
+
+  trigger_emit_with_data(trigger, store);
+  vm_store_unref(store);
+
+}
+
 static gboolean mpd_ok_handle ( gchar *str )
 {
   gchar *ptr;
@@ -105,15 +124,15 @@ static gboolean mpd_ok_handle ( gchar *str )
     return FALSE;
 
   if(mpd_cmd_current == mpd_cmd_playlistinfo)
-    trigger_emit("mpd-queue");
+    trigger_emit("mpd-playlistinfo");
   else if(mpd_cmd_current == mpd_cmd_search || mpd_cmd_current == mpd_cmd_find)
     trigger_emit("mpd-search");
   else if(mpd_cmd_current == mpd_cmd_listplaylistinfo)
-    trigger_emit("mpd-playlist");
+    trigger_emit("mpd-listplaylistinfo");
   else if(mpd_cmd_current == mpd_cmd_list)
-    trigger_emit("mpd-list");
+    mpd_emit_with_array("mpd-list", &mpd_db_list);
   else if(mpd_cmd_current == mpd_cmd_listplaylists)
-    trigger_emit("mpd-playlists");
+    mpd_emit_with_array("mpd-list", &mpd_playlist_list);
   else
     trigger_emit("mpd");
   mpd_cmd_current = NULL;
@@ -376,7 +395,7 @@ static value_t mpd_func_list ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, 0, "MpdList");
   if(!g_ascii_strcasecmp(value_get_string(p[0]), "queue"))
     list = mpd_queue;
-  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "playlist"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "listplaylistinfo"))
     list = mpd_playlist;
   else if(!g_ascii_strcasecmp(value_get_string(p[0]), "search"))
     list = mpd_search_list;
@@ -396,19 +415,6 @@ static value_t mpd_func_list ( vm_t *vm, value_t p[], gint np )
   return result;
 }
 
-static value_t mpd_list_to_value ( GList **list )
-{
-  GList *iter;
-  value_t array;
-
-  *list = g_list_sort(*list, (GCompareFunc)g_ascii_strcasecmp);
-  array = value_array_create(g_list_length(*list));
-  for(iter=*list; iter; iter=g_list_next(iter))
-    value_array_append(array, value_new_string(g_strdup(iter->data)));
-
-  return array;
-}
-
 static value_t mpd_func_info ( vm_t *vm, value_t p[], gint np )
 {
   gchar *val;
@@ -420,10 +426,6 @@ static value_t mpd_func_info ( vm_t *vm, value_t p[], gint np )
     return value_new_string(g_strdup_printf("%ld", g_get_monotonic_time() - mpd_time));
   if(!g_ascii_strcasecmp(value_get_string(p[0]), "cover"))
     return value_new_string(g_strdup(mpd_cover));
-  if(!g_ascii_strcasecmp(value_get_string(p[0]), "list"))
-    return mpd_list_to_value(&mpd_db_list);
-  if(!g_ascii_strcasecmp(value_get_string(p[0]), "playlists"))
-    return mpd_list_to_value(&mpd_playlist_list);
 
   if((val = g_hash_table_lookup(mpd_state, value_get_string(p[0]))) ||
       (val = g_hash_table_lookup(mpd_song_current, value_get_string(p[0]))))

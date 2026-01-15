@@ -51,12 +51,12 @@ of the following commands is processed:
   available using `MpdList` function.
 
 "listplaylistinfo"
-  upon completion `mpd-playlist` trigger is emitted and the results are
-  available using `MpdList` function.
+  upon completion `mpd-playlist` trigger is emitted and the results are stored
+  in an array variable `list`.
 
 "list"
-  upon completion `mpd-list` trigger is emitted and the results are
-  available using `MpdInfo("list")` function.
+  upon completion `mpd-list` trigger is emitted and the results are stored in
+  an array variable `list`.
 
 "listplaylists"
   upon completion `mpd-playlists` trigger is emitted and the results are
@@ -77,14 +77,6 @@ addition, MpdInfo supports a few additional query values:
 "cover"
   the coverart of the currently playing album.
 
-"list"
-  output of the last executed `list` protocol command. This query returns an
-  array of string values.
-
-"playlists"
-  output of the last executed `listplaylists` protocol command. This query
-  returns an array of string values.
-
 Triggers
 ========
 
@@ -96,12 +88,17 @@ The module defines two triggers:
   Emitted when MPD server returns an error. An error string is provded in the
   string variable `message`.
 "mpd-list"
-  Emitted upon completion of the `list` MPD protocol command.
-"mpd-playlists"
-  Emitted upon completion of the `listplaylists` MPD protocol command.
+  Emitted upon completion of the `list` MPD protocol command. Results of the
+  query are available in variable `list`.
+"mpd-listplaylists"
+  Emitted upon completion of the `listplaylists` MPD protocol command. Results
+  of the query are available in variable `list`.
 "mpd-search"
   Emitted upon completion of the `search` or `find` MPD protocol commands.
-"mpd-queue"
+  Results of the query can be retrieved using `MpdList` function.
+"mpd-playlistinfo"
   Emitted upon completion of the `playlistinfo` MPD protocol command.
-"mpd-playlist"
+  Results of the query can be retrieved using `MpdList` function.
+"mpd-listplaylistinfo"
   Emitted upon completion of the `listplaylistinfo` MPD protocol command.
+  Results of the query can be retrieved using `MpdList` function.

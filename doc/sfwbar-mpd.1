@@ -68,12 +68,12 @@ upon completion \fImpd\-queue\fP trigger is emitted and the results are
 available using \fIMpdList\fP function.
 .TP
 .B \(dqlistplaylistinfo\(dq
-upon completion \fImpd\-playlist\fP trigger is emitted and the results are
-available using \fIMpdList\fP function.
+upon completion \fImpd\-playlist\fP trigger is emitted and the results are stored
+in an array variable \fIlist\fP\&.
 .TP
 .B \(dqlist\(dq
-upon completion \fImpd\-list\fP trigger is emitted and the results are
-available using \fIMpdInfo(\(dqlist\(dq)\fP function.
+upon completion \fImpd\-list\fP trigger is emitted and the results are stored in
+an array variable \fIlist\fP\&.
 .TP
 .B \(dqlistplaylists\(dq
 upon completion \fImpd\-playlists\fP trigger is emitted and the results are
@@ -93,14 +93,6 @@ time (in microseconds) ellapsed since the MPD server state was last queried
 .TP
 .B \(dqcover\(dq
 the coverart of the currently playing album.
-.TP
-.B \(dqlist\(dq
-output of the last executed \fIlist\fP protocol command. This query returns an
-array of string values.
-.TP
-.B \(dqplaylists\(dq
-output of the last executed \fIlistplaylists\fP protocol command. This query
-returns an array of string values.
 .UNINDENT
 .SH Triggers
 .sp
@@ -115,19 +107,24 @@ Emitted when MPD server returns an error. An error string is provded in the
 string variable \fImessage\fP\&.
 .TP
 .B \(dqmpd\-list\(dq
-Emitted upon completion of the \fIlist\fP MPD protocol command.
+Emitted upon completion of the \fIlist\fP MPD protocol command. Results of the
+query are available in variable \fIlist\fP\&.
 .TP
-.B \(dqmpd\-playlists\(dq
-Emitted upon completion of the \fIlistplaylists\fP MPD protocol command.
+.B \(dqmpd\-listplaylists\(dq
+Emitted upon completion of the \fIlistplaylists\fP MPD protocol command. Results
+of the query are available in variable \fIlist\fP\&.
 .TP
 .B \(dqmpd\-search\(dq
 Emitted upon completion of the \fIsearch\fP or \fIfind\fP MPD protocol commands.
+Results of the query can be retrieved using \fIMpdList\fP function.
 .TP
-.B \(dqmpd\-queue\(dq
+.B \(dqmpd\-playlistinfo\(dq
 Emitted upon completion of the \fIplaylistinfo\fP MPD protocol command.
+Results of the query can be retrieved using \fIMpdList\fP function.
 .TP
-.B \(dqmpd\-playlist\(dq
+.B \(dqmpd\-listplaylistinfo\(dq
 Emitted upon completion of the \fIlistplaylistinfo\fP MPD protocol command.
+Results of the query can be retrieved using \fIMpdList\fP function.
 .UNINDENT
 .SH Copyright
 GPLv3+
