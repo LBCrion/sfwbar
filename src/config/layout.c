@@ -8,6 +8,7 @@
 #include "gui/bar.h"
 #include "gui/grid.h"
 #include "gui/popup.h"
+#include "gui/toplevel.h"
 #include "vm/vm.h"
 
 GdkRectangle *config_get_loc ( GScanner *scanner )
@@ -366,6 +367,22 @@ void config_popup ( GScanner *scanner )
 
   if(!scanner->max_parse_errors && id)
     config_widget(scanner, gtk_bin_get_child(GTK_BIN(popup_new(id))));
+
+  g_free(id);
+}
+
+void config_window ( GScanner *scanner )
+{
+  gchar *id;
+
+  config_parse_sequence(scanner,
+      SEQ_OPT, '(', NULL, NULL, NULL,
+      SEQ_REQ, G_TOKEN_STRING, NULL, &id, "Missing Window id",
+      SEQ_OPT, ')', NULL, NULL, NULL,
+      SEQ_END);
+
+  if(!scanner->max_parse_errors && id)
+    config_widget(scanner, gtk_bin_get_child(GTK_BIN(toplevel_new(id))));
 
   g_free(id);
 }

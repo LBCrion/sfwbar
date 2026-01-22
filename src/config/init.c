@@ -112,6 +112,7 @@ void config_init ( void )
   config_add_key(config_toplevel_keys, "Export", G_TOKEN_EXPORT);
   config_add_key(config_toplevel_keys, "Widget_grid", G_TOKEN_LAYOUT);
   config_add_key(config_toplevel_keys, "PopUp", G_TOKEN_POPUP);
+  config_add_key(config_toplevel_keys, "Window", G_TOKEN_WINDOW);
   config_add_key(config_toplevel_keys, "Placer", G_TOKEN_PLACER);
   config_add_key(config_toplevel_keys, "Switcher", G_TOKEN_SWITCHER);
   config_add_key(config_toplevel_keys, "Define", G_TOKEN_DEFINE);

@@ -216,6 +216,9 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
       case G_TOKEN_POPUP:
         config_popup(scanner);
         break;
+      case G_TOKEN_WINDOW:
+        config_window(scanner);
+        break;
       case G_TOKEN_PLACER:
         config_placer(scanner);
         break;

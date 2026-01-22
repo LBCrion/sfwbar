@@ -74,6 +74,7 @@ GtkWidget *config_layout ( GScanner *, GtkWidget * );
 gboolean config_widget_child ( GScanner *scanner, GtkWidget *container );
 GtkWidget *config_include ( GScanner *scanner, GtkWidget *container );
 void config_popup ( GScanner *scanner );
+void config_window ( GScanner *scanner );
 GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container );
 void config_menu_clear ( GScanner *scanner );
 GtkWidget *config_menu ( GScanner *scanner );
@@ -84,6 +85,7 @@ enum {
   G_TOKEN_LAYOUT,
   G_TOKEN_EXPORT,
   G_TOKEN_POPUP,
+  G_TOKEN_WINDOW,
   G_TOKEN_PLACER,
   G_TOKEN_SWITCHER,
   G_TOKEN_DEFINE,
