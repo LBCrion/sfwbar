@@ -108,6 +108,7 @@ libsrc = [
     'src/gui/taskbarpager.c',
     'src/gui/taskbarpopup.c',
     'src/gui/taskbarshell.c',
+    'src/gui/toplevel.c',
     'src/gui/tray.c',
     'src/gui/trayitem.c',
     'src/config/base.c',
