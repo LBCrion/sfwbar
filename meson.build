@@ -86,6 +86,7 @@ libsrc = [
     'src/gui/cchart.c',
     'src/gui/chart.c',
     'src/gui/css.c',
+    'src/gui/entry.c',
     'src/gui/filter.c',
     'src/gui/flowgrid.c',
     'src/gui/flowitem.c',

@@ -10,6 +10,7 @@
 #include "gui/pager.h"
 #include "gui/tray.h"
 #include "gui/grid.h"
+#include "gui/entry.h"
 #include "gui/label.h"
 #include "gui/image.h"
 #include "gui/scale.h"
@@ -185,6 +186,7 @@ void config_init ( void )
   g_hash_table_insert(config_widget_keys, "Button", button_get_type);
   g_hash_table_insert(config_widget_keys, "Image", image_get_type);
   g_hash_table_insert(config_widget_keys, "Chart", cchart_get_type);
+  g_hash_table_insert(config_widget_keys, "Entry", entry_get_type);
   g_hash_table_insert(config_widget_keys, "Taskbar", taskbar_shell_get_type);
   g_hash_table_insert(config_widget_keys, "Tray", tray_get_type);
   g_hash_table_insert(config_widget_keys, "Any", base_widget_get_type);
