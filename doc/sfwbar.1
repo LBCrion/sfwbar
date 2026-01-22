@@ -1,5 +1,6 @@
 '\" t
-.\" Man page generated from reStructuredText.
+.\" Man page generated from reStructuredText
+.\" by the Docutils 0.22.3 manpage writer.
 .
 .
 .nr rst2man-indent-level 0
@@ -28,8 +29,8 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "SFWBAR" "" "" ""
-.SH NAME
+.TH "SFWBar" "" "" ""
+.SH Name
 SFWBar \- S* Floating Window taskBar
 .sp
 test
@@ -100,8 +101,12 @@ Override a GTK theme to name specified.
 Override a GTK icon theme.
 .TP
 .B TriggerAction <trigger>, <action>
-execute an action when a trigger is emitted. Trigger is a string, an
+Execute an action when a trigger is emitted. Trigger is a string, an
 action is any valid action, as described in the Actions section.
+.TP
+.B Define <identifier> = <expression>
+Define an expression macro. Once declared, an <identifier> used in any
+expression will be expanded into an <expression>.
 .UNINDENT
 .SS bar
 .sp
@@ -163,6 +168,11 @@ specified by an expression and can change dynamically.
 .TP
 .B button
 add a clickable button with an icon/image.
+.TP
+.B entry
+display a text entry widget. This widget should not be added within popup
+windows as these are not guaranteed to be able to receive keyboard input.
+The current text from an entry can be obtained using \fIEntryText\fP function.
 .TP
 .B any
 special type used to address existing widgets, this can\(aqt be used to declare
@@ -458,11 +468,12 @@ exclusive zone setting in the layer shell protocol. Default value is \(dqauto\(d
 specify bar ID to listen on for mode and hidden_state signals. If no
 bar ID is specified, SfwBar will listen to signals on all IDs
 .UNINDENT
-.SS PopUps
+.SS PopUps and Windows
 .sp
-Popup windows can be defined the same way as bars. The only difference is
-that popup\(aqs are not part of a bar and will not be displayed by default.
-Instead they are displayed when a PopUp action is invoked on a widget. i.e.:
+Popup windows and toplevel windows can be defined the same way as bars.
+The only difference is that they are not part of a bar and will not be
+displayed by default.  Instead they are displayed when an action is invoked
+on a widget. i.e.:
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -492,6 +503,33 @@ down. As a result it should be safe to bind the PopUp to multiple widgets.
 specify whether the popup window should close if user clicks anywhere outside
 of the window.
 .UNINDENT
+.sp
+Toplevel windows can be defined using a \fIwindow\fP element and are controlled
+using \fIWindowOpen\fP and \fIWindowClose\fP actions. I.e.:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+window \(dqmywindow\(dq {
+  button {
+    value = \(dqclose\-icon\(dq;
+    action = WindowClose(\(dqmywindow\(dq);
+  }
+}
+
+bar {
+  button {
+   value = \(dqopen\-icon\(dq;
+   action = WindowOpen(\(dqmywindow\(dq);
+  }
+}
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+unlike popups, toplevel windows can\(aqt be placed in a specific location,
+compositors can place them anywhere on the desktop. They can receive focus
+and are useful for implementing dialogs.
 .SS Menus
 .sp
 User defined menus can be creating using a \fImenu\fP structure. The format is
@@ -816,6 +854,28 @@ TriggerAction \(dqsometrigger\(dq, my_func(1);
 .UNINDENT
 .UNINDENT
 .sp
+By default, all actions, functions and expressions share a single namespace, so
+any variable is visible to all code instances. Private scopes can be defined
+using a \fIPrivate\fP keyword. I.e.
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+Private {
+  Var X = 1;
+
+  export label \(dqmylabel\(dq {
+    value = Str(x);
+  }
+}
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+In the above example variable \fIX\fP can only be accessible within the scope. You
+can access it when addressing label \(dqmylabel\(dq outside of the private block as
+the label will inherit the scope it\(aqs defined in.
+.sp
 Function \(dqSfwBarInit\(dq is executed on startup. Use it set initial parameters for
 the bar, modules etc.
 .SS Expressions
@@ -906,7 +966,7 @@ Terminate SFWBar.
 Emit a trigger event. The string parameter specifies the name of a trigger.
 Returns n/a.
 .TP
-.B FileTrigger(< <file:string> >, <trigger:string>[, <timeout:numeric>])
+.B FileTrigger(<\%<file:string>>, <trigger:string>[, <timeout:numeric>])
 Setup a file monitor. Upon any changes to the file, a trigger will be
 emitted. If the timeout is specified, the trigger will be emitted at an
 interval specified by timeout value (in microseconds) until the first
@@ -1201,6 +1261,9 @@ specifies which axis to query. Possible values are \(dqx\(dq for horizontal,
 \(dqy for vertical or \(dqdir\(dq to use the direction property of a widget. The
 returned value is a fraction of a size of a widget. Returns <number>.
 .TP
+.B EntryText(<id:string>)
+Retrieve the current text in an entry widget identified by \fIid\fP\&.
+.TP
 .B CustomIPC()
 Returns a name of a custom IPC currently in use (if any). Returns <string>.
 .TP
@@ -1360,32 +1423,6 @@ a string value of the variable (can also be accessed by using $ prefix).
 .sp
 If a suffix is omitted for a scanner variable, the .val suffix is assumed.
 .sp
-User defined expression macros are supported via top\-level \fBdefine\fP
-keyword. I.e.
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.EX
-define MyExpr = VarA + VarB * VarC + Val($Complex)
-\&...
-value = Str(MyExpr,2)
-.EE
-.UNINDENT
-.UNINDENT
-.sp
-The above will expand the expression into:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.EX
-value = Str(VarA + VarB * VarC + Val($Complex),2)
-.EE
-.UNINDENT
-.UNINDENT
-.sp
-Macro\(aqs don\(aqt have types, as they perform substitution before the
-expression is evaluated.
-.sp
 Intermediate scanner variables can be declared using a toplevel \fBset\fP keyword
 I.e.
 .INDENT 0.0
@@ -1403,7 +1440,7 @@ In the above example, value of the MyExpr variable will be calculated and
 the result will be used in computing the value expression. Intermediate
 variables have type and have all of the fields of a scan variable (i.e. val,
 pval, time etc). They can be used the same way as scan variables.
-.SH MAPPING ICONS
+.SH Mapping icons
 .sp
 If the icon is missing for a specific program in the taskbar or switcher, it
 is likely due to an missing icon or application not setting app_id correctly.
@@ -1456,7 +1493,7 @@ MapAppId(\(dqfirefox\(dq, \(dq.*Mozilla Firefox\(dq);
 .sp
 If an \fIapp_id\fP is not set, and sway is being used, sfwbar will fallback to
 using the \fIinstance\fP in the \fIwindow\-properties\fP\&.
-.SH CSS STYLING
+.SH CSS Styling
 .sp
 SFWBar uses GTK+ widgets and can accept all css properties supported by GTK+.
 SFWBar widgets correspond to GTK+ widgets as following:
@@ -1609,7 +1646,7 @@ T}	T{
 Specify a color to repaint an image with. The image
 will be painted with this color using image\(aqs alpha
 channel as a mask. The color\(aqs own alpha value can
-be used to tint an image.
+be used to tint the image.
 T}
 _
 T{
@@ -1732,5 +1769,4 @@ T}
 .TE
 .sp
 For example you can style top level grid using \fBgrid#layout { }\fP\&.
-.\" Generated by docutils manpage writer.
-.
+.\" End of generated man page.

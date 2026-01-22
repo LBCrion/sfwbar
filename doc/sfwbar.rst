@@ -74,8 +74,12 @@ IconTheme <string>
   Override a GTK icon theme.
 
 TriggerAction <trigger>, <action>
-  execute an action when a trigger is emitted. Trigger is a string, an
+  Execute an action when a trigger is emitted. Trigger is a string, an
   action is any valid action, as described in the Actions section.
+
+Define <identifier> = <expression>
+  Define an expression macro. Once declared, an <identifier> used in any
+  expression will be expanded into an <expression>.
 
 bar
 ---
@@ -131,6 +135,11 @@ image
 
 button
   add a clickable button with an icon/image.
+
+entry
+  display a text entry widget. This widget should not be added within popup
+  windows as these are not guaranteed to be able to receive keyboard input.
+  The current text from an entry can be obtained using `EntryText` function.
 
 any
   special type used to address existing widgets, this can't be used to declare
@@ -398,12 +407,13 @@ bar_id = <string>
   specify bar ID to listen on for mode and hidden_state signals. If no
   bar ID is specified, SfwBar will listen to signals on all IDs
 
-PopUps
-------
+PopUps and Windows
+------------------
 
-Popup windows can be defined the same way as bars. The only difference is
-that popup's are not part of a bar and will not be displayed by default.
-Instead they are displayed when a PopUp action is invoked on a widget. i.e.: ::
+Popup windows and toplevel windows can be defined the same way as bars.
+The only difference is that they are not part of a bar and will not be
+displayed by default.  Instead they are displayed when an action is invoked
+on a widget. i.e.: ::
 
   popup "MyPopup" {
     label { value = "test"; }
@@ -425,6 +435,27 @@ down. As a result it should be safe to bind the PopUp to multiple widgets.
 AutoClose [true|false]
   specify whether the popup window should close if user clicks anywhere outside
   of the window.
+
+Toplevel windows can be defined using a `window` element and are controlled
+using `WindowOpen` and `WindowClose` actions. I.e.::
+
+  window "mywindow" {
+    button {
+      value = "close-icon";
+      action = WindowClose("mywindow");
+    }
+  }
+
+  bar {
+    button {
+     value = "open-icon";
+     action = WindowOpen("mywindow");
+    }
+  }
+
+unlike popups, toplevel windows can't be placed in a specific location,
+compositors can place them anywhere on the desktop. They can receive focus
+and are useful for implementing dialogs.
 
 Menus
 -----
@@ -665,6 +696,22 @@ For more complex actions, you can define your own functions using a toplevel
     Return x+1;
   }
   TriggerAction "sometrigger", my_func(1);
+
+By default, all actions, functions and expressions share a single namespace, so
+any variable is visible to all code instances. Private scopes can be defined
+using a `Private` keyword. I.e. ::
+
+  Private {
+    Var X = 1;
+
+    export label "mylabel" {
+      value = Str(x);
+    }
+  }
+
+In the above example variable `X` can only be accessible within the scope. You
+can access it when addressing label "mylabel" outside of the private block as
+the label will inherit the scope it's defined in.
 
 Function "SfwBarInit" is executed on startup. Use it set initial parameters for
 the bar, modules etc.
@@ -1040,6 +1087,9 @@ GtkEvent(<axis:string>)
   "y for vertical or "dir" to use the direction property of a widget. The
   returned value is a fraction of a size of a widget. Returns <number>.
 
+EntryText(<id:string>)
+  Retrieve the current text in an entry widget identified by `id`.
+
 CustomIPC()
   Returns a name of a custom IPC currently in use (if any). Returns <string>.
 
@@ -1180,20 +1230,6 @@ Each scanner variable holds the following information:
 
 If a suffix is omitted for a scanner variable, the .val suffix is assumed.
 
-User defined expression macros are supported via top-level ``define``
-keyword. I.e. ::
-
-  define MyExpr = VarA + VarB * VarC + Val($Complex)
-  ...
-  value = Str(MyExpr,2)
-
-The above will expand the expression into: ::
-
-  value = Str(VarA + VarB * VarC + Val($Complex),2)
-
-Macro's don't have types, as they perform substitution before the
-expression is evaluated.
-
 Intermediate scanner variables can be declared using a toplevel ``set`` keyword
 I.e. ::
 
@@ -1299,7 +1335,7 @@ property                    description
 -ScaleImage-color           Specify a color to repaint an image with. The image
                             will be painted with this color using image's alpha
                             channel as a mask. The color's own alpha value can
-                            be used to tint an image.
+                            be used to tint the image.
 -ScaleImage-symbolic        Render an image as a symbolic icon. If set to true,
                             the image will be re-colored to the gtk theme
                             foreground color, preserving the image alpha
