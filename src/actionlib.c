@@ -17,6 +17,7 @@
 #include "gui/pageritem.h"
 #include "gui/popup.h"
 #include "gui/taskbaritem.h"
+#include "gui/toplevel.h"
 #include "util/string.h"
 #include "vm/vm.h"
 
@@ -421,6 +422,26 @@ static value_t action_popup ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
+static value_t action_window_open ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "WindowOpen");
+  vm_param_check_string(vm, p, 0, "WindowOpen");
+
+  toplevel_show(value_get_string(p[0]));
+
+  return value_na;
+}
+
+static value_t action_window_close ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "WindowClose");
+  vm_param_check_string(vm, p, 0, "WindowClose");
+
+  toplevel_hide(value_get_string(p[0]));
+
+  return value_na;
+}
+
 static value_t action_client_send ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np(vm, np, 2, "ClientSend");
@@ -731,6 +752,8 @@ void action_lib_init ( void )
   vm_func_add("filterappid", action_filter_appid, TRUE, TRUE);
   vm_func_add("filtertitle", action_filter_title, TRUE, TRUE);
   vm_func_add("popup", action_popup, TRUE, FALSE);
+  vm_func_add("windowopen", action_window_open, TRUE, FALSE);
+  vm_func_add("windowclose", action_window_close, TRUE, FALSE);
   vm_func_add("setmonitor", action_setmonitor, TRUE, FALSE);
   vm_func_add("setlayer", action_setlayer, TRUE, FALSE);
   vm_func_add("setmirror", action_setmirror, TRUE, FALSE);
