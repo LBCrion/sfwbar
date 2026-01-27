@@ -76,16 +76,28 @@ void config_init ( void )
 
   config_events = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);
-  config_add_key(config_events, "Init", 0);
-  config_add_key(config_events, "LeftClick", 1);
-  config_add_key(config_events, "MiddleClick", 2);
-  config_add_key(config_events, "RightClick", 3);
-  config_add_key(config_events, "ScrollUp", 4);
-  config_add_key(config_events, "ScrollDown", 5);
-  config_add_key(config_events, "ScrollLeft", 6);
-  config_add_key(config_events, "ScrollRight", 7);
-  config_add_key(config_events, "Drag", 8);
-  config_add_key(config_events, "Configure", 9);
+  config_add_key(config_events, "Init",
+      BASE_WIDGET_ACTION_INIT);
+  config_add_key(config_events, "LeftClick",
+      BASE_WIDGET_ACTION_LEFTCLICK);
+  config_add_key(config_events, "MiddleClick",
+      BASE_WIDGET_ACTION_MIDDLECLICK);
+  config_add_key(config_events, "RightClick",
+      BASE_WIDGET_ACTION_RIGHTCLICK);
+  config_add_key(config_events, "ScrollUp",
+      BASE_WIDGET_ACTION_SCROLLUP);
+  config_add_key(config_events, "ScrollDown",
+      BASE_WIDGET_ACTION_SCROLLDOWN);
+  config_add_key(config_events, "ScrollLeft",
+      BASE_WIDGET_ACTION_SCROLLLEFT);
+  config_add_key(config_events, "ScrollRight",
+      BASE_WIDGET_ACTION_SCROLLRIGHT);
+  config_add_key(config_events, "Drag",
+      BASE_WIDGET_ACTION_DRAG);
+  config_add_key(config_events, "Configure",
+      BASE_WIDGET_ACTION_CONFIGURE);
+  config_add_key(config_events, "DoubleClick",
+      BASE_WIDGET_ACTION_DOUBLECLICK);
 
   config_var_types = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);

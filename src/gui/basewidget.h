@@ -56,6 +56,8 @@ struct _BaseWidgetPrivate
   GPtrArray *actions;
   GList *mirror_children;
   GtkWidget *mirror_parent;
+  GdkEvent *left_click;
+  guint click_timer;
   GMutex mutex;
   vm_store_t *store;
 };
@@ -79,6 +81,7 @@ enum {
   BASE_WIDGET_ACTION_SCROLLRIGHT = 7,
   BASE_WIDGET_ACTION_DRAG = 8,
   BASE_WIDGET_ACTION_CONFIGURE = 9,
+  BASE_WIDGET_ACTION_DOUBLECLICK = 10,
   BASE_WIDGET_ACTION_LAST
 };
 
