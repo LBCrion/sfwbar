@@ -56,8 +56,6 @@ struct _BaseWidgetPrivate
   GPtrArray *actions;
   GList *mirror_children;
   GtkWidget *mirror_parent;
-  GdkEvent *left_click;
-  guint click_timer;
   GMutex mutex;
   vm_store_t *store;
 };

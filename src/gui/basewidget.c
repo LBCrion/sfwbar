@@ -288,66 +288,27 @@ gboolean base_widget_check_action_slot ( GtkWidget *self, gint event )
         GINT_TO_POINTER(event), base_widget_attachment_event, NULL);
 }
 
-static gboolean base_widget_single_release ( GtkWidget *self )
-{
-  BaseWidgetPrivate *priv;
-
-  g_return_val_if_fail(IS_BASE_WIDGET(self), G_SOURCE_REMOVE);
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
-
-  base_widget_action_exec(self, 1, priv->left_click);
-  g_clear_pointer(&priv->left_click, gdk_event_free);
-  priv->click_timer = 0;
-
-  return G_SOURCE_REMOVE;
-}
-
 static gboolean base_widget_button_press_event ( GtkWidget *self,
     GdkEventButton *ev )
 {
-  BaseWidgetPrivate *priv;
-
   g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  if(ev->type ==  GDK_2BUTTON_PRESS)
-  {
-    if(priv->click_timer)
-      g_source_remove(priv->click_timer);
-    base_widget_action_exec(self, BASE_WIDGET_ACTION_DOUBLECLICK,
+  if(ev->type !=  GDK_2BUTTON_PRESS)
+    return FALSE;
+
+  return base_widget_action_exec(self, BASE_WIDGET_ACTION_DOUBLECLICK,
         (GdkEvent *)ev);
-    g_message("double");
-  }
-
-  return TRUE;
 }
 
 static gboolean base_widget_button_release_event ( GtkWidget *self,
     GdkEventButton *ev )
 {
-  BaseWidgetPrivate *priv;
-
   g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
 
   if(ev->type != GDK_BUTTON_RELEASE || ev->button < 1 || ev->button > 3 )
     return FALSE;
 
-  if(ev->button != 1 ||
-      !base_widget_check_action_slot(self, BASE_WIDGET_ACTION_DOUBLECLICK))
-    return base_widget_action_exec(self, ev->button, (GdkEvent *)ev);
-
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
-  g_clear_pointer(&priv->left_click, gdk_event_free);
-  if(!priv->click_timer)
-    priv->click_timer = g_timeout_add(base_widget_double_click_time,
-        (GSourceFunc)base_widget_single_release, self);
-  else
-  {
-    priv->click_timer = 0;
-    g_clear_pointer(&priv->left_click, gdk_event_free);
-  }
-
-  return TRUE;
+  return base_widget_action_exec(self, ev->button, (GdkEvent *)ev);
 }
 
 static gboolean base_widget_scroll_event ( GtkWidget *self,
@@ -854,7 +815,6 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
   base_widgets = g_ptr_array_new();
   g_object_get(G_OBJECT(gtk_settings_get_default()), "gtk-double-click-time",
       &base_widget_double_click_time, NULL);
-  g_message("%d", base_widget_double_click_time);
 }
 
 static void base_widget_init ( BaseWidget *self )

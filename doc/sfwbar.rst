@@ -235,11 +235,11 @@ action
   an action to execute upon interaction with a widget. Actions can be attached
   to any widget. Multiple actions can be attached to various pointer events.
   The notation is ``action[<event>] = <action>``.  Event values are
-  LeftClick, MiddleClick or RightClick, DOubleClick, ScrollUp, ScrollDown,
+  LeftClick, MiddleClick or RightClick, DoubleClick, ScrollUp, ScrollDown,
   ScrollLeft, ScrollRight and Drag respectively.
   Please note that if you add a DoubleClick event to a widget, the LeftClick
-  event will be slightly left responsive, since sfwbar will be waiting to
-  determine if a click is part of a double click sequence.
+  event will still be emitted for each click in addition to the DoubleClick
+  event.
   Additionally, modifiers can be specified using the notation of
   ``[Modifier+]<event>``. I.e. ``action[Ctrl+LeftClick]``. The following
   modifiers supported: Shift, Ctrl, Mod1, Mod2, Mod3, Mod4, Mod5, Super, Hyper,
