@@ -8,28 +8,20 @@ TriggerAction "mpd-playlistinfo", MpdUpdateQueue();
 TriggerAction "mpd-search", MpdUpdateSearch("search");
 TriggerAction "mpd-listplaylistinfo", MpdUpdateSearch("listplaylistinfo");
 
-Var MpdFilters = [ "artist", "album" ], MpdFilterVals = [];
-Var MpdSource, MpdFilterLevel = 0;
-Var MpdBrowser = 0;
-Var MpdQueueSelection = [], MpdDbSelection = [];
-Var MpdDbWidget = "", MpdDbSong = "";
+Var MpdFilters = [], MpdFilterVals = [], MpdFilterLevel = 0;
+Var MpdSource, MpdQueueSelection = [], MpdDbSelection = [];
 
 Var BrowserTmpl = "
-  grid 'mpd_%GRID%_grid_%ID%' {
-    style = 'mpd_browser_grid';
-    loc(1, %LINE%);
-    action = %ACTION%;
-    action[Shift+LeftClick] = {
-      If ArrayFind(WidgetId(), Mpd%GRID%Selection)
-        Mpd%GRID%Selection = Mpd%GRID%Selection - WidgetId();
-      Else
-        Mpd%GRID%Selection = Mpd%GRID%Selection + WidgetId();
-      EmitTrigger('mpd-browser-selection');
-    }
-    action[RightClick] = If('%GRID%' = 'db') MpdMenu('%TITLE%');
-    style = If(ArrayFind(WidgetId(), Mpd%GRID%Selection),
+  grid 'mpd_%GRID%_grid_%WID%' {
+    style =If(ArrayFind('%FILE%', Mpd%GRID%Selection),
         'mpd_browser_active', 'mpd_browser_grid');
     trigger = 'mpd-browser-selection';
+    loc(1, %LINE%);
+    action = Mpd%GRID%Selection = MpdAdd(Mpd%GRID%Selection, '%FILE%');
+    action[Ctrl+LeftClick] =
+      Mpd%GRID%Selection = MpdToggle(Mpd%GRID%Selection, '%FILE%');
+    action[DoubleClick] = if('%GRID%' = 'db' & \"%TITLE%\" = '..')
+      MpdDbRequest(%LEVEL%, '');
     label {
       value = '%TITLE%';
       style = 'mpd_browser_title';
@@ -44,46 +36,56 @@ Var BrowserTmpl = "
 
 Var CategoryTmpl = "
   label 'mpd_category_%ID%' {
-     value = '%TITLE%';
-    style = 'mpd_category_title';
+    value = '%TITLE%';
+    style = If(ArrayFind(\"%TITLE%\", MpdDbSelection),
+        'mpd_category_active', 'mpd_category_title');
+    trigger = 'mpd-browser-selection';
     loc(1, %LINE%);
-    action = %ACTION%;
+    action = if(\"%TITLE%\" != '..')
+      MpdDbSelection = MpdAdd(MpdDbSelection, \"%TITLE%\");
+    action[Ctrl+LeftClick] = If(\"%TITLE%\" != '..')
+      MpdDbSelection = MpdToggle(MpdDbSelection, \"%TITLE%\");
     action[RightClick] = MpdMenu('%TITLE%');
+    action[DoubleClick] = MpdDbRequest(%LEVEL%, \"%TITLE%\");
   }";
 
-
-Menu "MpdDbMenu" {
-  Item {
-    value = "Add " + MpdFilters[MpdFilterLevel];
-    action = MpdCmd("searchadd "+MpdFilter(MpdFilterLevel+1));
-  }
+Function MpdToggle ( arr, item )
+{
+  If ArrayFind(arr, item)
+    arr = arr - item;
+  Else
+    arr = arr + item;
+  EmitTrigger('mpd-browser-selection');
+  Return arr;
 }
 
-Function MpdMenu ( value )
+Function MpdAdd ( arr, item )
 {
-  MpdFilterVals[MpdFilterLevel] = value;
-  Menu("MpdDbMenu");
+  arr = [ item ];
+  EmitTrigger('mpd-browser-selection');
+  Return arr;
 }
 
 Function MpdQueueDelete () {
-  for(Var i=0; i < ArraySize(MpdQueueSelection); i=i+1) {
-    MpdCmd("deleteid " + Extract(MpdQueueSelection[i], "mpd_queue_grid_(.*)"));
-    ClearWidget(MpdQueueSelection[i]);
-  };
-  MpdQueueSelection = [];
+  for(Var i=0; i < ArraySize(MpdQueueSelection); i=i+1)
+    MpdCmd("deleteid " + MpdQueueSelection[i]);
+  MpdCmd("playlistinfo");
 }
 
-Function MpdQueueAdd () {
-  If MpdDbSong != "" {
-    MpdFilterVals[2] = MpdDbSong;
-    MpdCmd('searchadd ' + MpdFilter(3));
-    MpdCmd("playlistinfo");
-  }
+Function MpdQueueAdd ()
+  for(Var i=0; i < ArraySize(MpdDbSelection); i=i+1) {
+    If MpdFilterLevel+1 = ArraySize(MpdFilters)
+      MpdCmd('add "' + MpdDbSelection[i] + '"');
+    Else {
+      MpdFilterVals[MpdFilterLevel] = MpdDbSelection[i];
+      MpdCmd("searchadd " + MpdFilter(MpdFilterLevel+1));
+    }
+  MpdCmd("playlistinfo");
 }
 
 Function MpdQueueSwap ( Down )
 {
-  Var WidgetId = MpdQueueSelection[0];
+  Var WidgetId = "mpd_queue_grid_" + MpdQueueSelection[0];
   Var Children = WidgetChildren("mpd_playlist");
   Var i, j;
 
@@ -102,8 +104,7 @@ Function MpdQueueSwap ( Down )
 Function MpdFilter( level ) {
   Var i, Tag, Filter = "";
 
-  for(i=0; i<level; i=i+1) 
-  {
+  for(i=0; i<level; i=i+1) {
     Tag = "(" + MpdFilters[i] + " == \\\"" + Escape(MpdFilterVals[i]) + "\\\")";
     Filter = If(i=0, Tag, "(" + Filter + " AND " + Tag + ")");
   }
@@ -113,16 +114,18 @@ Function MpdFilter( level ) {
 Function MpdSourceSwitch() {
   If MpdSource = "db" {
     MpdSource = "playlist";
-    MpdFilters = [ "playlist" ];
+    MpdFilters = [ "playlist", "id" ];
     MpdCmd("listplaylists");
+    Config("Label 'mpd_browser_header' { value = GT('Playlists'); }");
   }
   Else {
     MpdSource = "db";
-    MpdFilters = [ "artist", "album" ];
+    MpdFilters = [ "artist", "album", "file" ];
     MpdCmd("list artist");
+    Config("Label 'mpd_browser_header' { value = GT('Database'); }");
   }
   MpdFilterLevel = 0;
-  MpdRequest(0, "");
+  MpdDbRequest(0, "");
 }
 
 Function MpdClearChildren ( parent ) {
@@ -133,7 +136,7 @@ Function MpdClearChildren ( parent ) {
 }
 
 Function MpdUpdateQueue() {
-  Var list=MpdList("queue", "track", "artist", "album", "title", "id");
+  Var list = MpdList("queue", "track", "artist", "album", "title", "id");
   Var i, CfgInfo = "grid 'mpd_playlist' {";
 
   MpdClearChildren("mpd_playlist");
@@ -141,19 +144,22 @@ Function MpdUpdateQueue() {
     CfgInfo = CfgInfo + ReplaceAll(BrowserTmpl,
           "%COMMENT%", Escape(list[i][1]) + " - " + Escape(list[i][2]),
           "%TITLE%", Str(list[i][0]) + " - " + Escape(list[i][3]),
-          "%ACTION%", "{ MpdQueueSelection = [ WidgetId() ]; EmitTrigger('mpd-browser-selection'); }",
           "%LINE%", Str(i),
-          "%ID%", Str(list[i][4]),
+          "%WID%", Str(list[i][4]),
+          "%FILE%", Str(list[i][4]),
+          "%LEVEL%", "0",
           "%GRID%", "queue"
           );
   Config(CfgInfo+"};");
+  MpdQueueSelection = [];
+  EmitTrigger("mpd-browser-selection");
 }
 
 Function MpdDbRequest ( level, value )
 {
   if level > MpdFilterLevel
     MpdFilterVals[level-1] = value;
-  if level < ArraySize(MpdFilters) {
+  if level+1 < ArraySize(MpdFilters) {
     if MpdSource = "db"
       MpdCmd("list " + MpdFilters[level] + " " + MpdFilter(level));
     else
@@ -165,21 +171,19 @@ Function MpdDbRequest ( level, value )
     else
       MpdCmd('listplaylistinfo "' + Escape(MpdFilterVals[0])+'"');
   }
-
-  MpdFilterLevel=level;
+  MpdFilterLevel = level;
 }
 
 Function MpdUpdateList() {
-  Var CfgInfo = "grid 'mpd_database' {";
-
   MpdClearChildren('mpd_database');
 
+  Var CfgInfo = "grid 'mpd_database' {";
   if(MpdFilterLevel>0)
     CfgInfo = CfgInfo + ReplaceAll(CategoryTmpl,
         "%TITLE%", "..",
         "%LINE%", "0",
         "%ID%", "0",
-        "%ACTION%", 'MpdDbRequest(' + Str(MpdFilterLevel-1) + ',"")'
+        "%LEVEL%", Str(MpdFilterLevel-1)
         );
   for(Var i=0; i<arraysize(list); i=i+1)
     If list[i]!=""
@@ -187,14 +191,16 @@ Function MpdUpdateList() {
           "%TITLE%", Escape(list[i]),
           "%LINE%", Str(i+1),
           "%ID%", Str(i+1),
-          "%ACTION%", 'MpdDbRequest('+Str(MpdFilterLevel+1)+',"'+Escape(list[i])+'")'
+          "%LEVEL%", Str(MpdFilterLevel+1)
           );
   Config(CfgInfo+"};");
+  MpdDbSelection = [];
+  EmitTrigger("mpd-browser-selection");
 }
 
 Function MpdUpdateSearch ( source ) {
   Var i, CfgInfo = "grid 'mpd_database' {";
-  Var list = MpdList(source, "track", "artist", "album", "title", "id");
+  Var list = MpdList(source, "track", "artist", "album", "title", "file");
 
   MpdClearChildren('mpd_database');
 
@@ -202,138 +208,153 @@ Function MpdUpdateSearch ( source ) {
     CfgInfo = CfgInfo + ReplaceAll(BrowserTmpl,
         "%TITLE%", "..",
         "%LINE%", "0",
-        "%ID%", "0",
+        "%FILE%", "",
+        "%WID%", "0",
         "%COMMENT%", "",
-        "%ACTION%", 'MpdDbRequest(' + Str(MpdFilterLevel-1) + ',"")',
+        "%LEVEL%", Str(MpdFilterLevel-1),
         "%GRID%", "db"
         );
   for(i=0; i<arraysize(list); i=i+1)
     CfgInfo = CfgInfo + ReplaceAll(BrowserTmpl,
-        "%TITLE%", Str(list[i][0]) + " - " + Escape(list[i][3]),
+        "%TITLE%", If(list[i][3]="", Escape(list[i][4]), Str(list[i][0]) + " - " + Escape(list[i][3])),
         "%COMMENT%", Escape(list[i][1]) + " - " +Escape(list[i][2]),
         "%LINE%", Str(i+1),
-        "%ID%", Str(i+1),
-        "%ACTION%", "{ MpdDbSelection = [ WidgetId() ]; EmitTrigger('mpd-browser-selection'); }",
+        "%WID%", Str(i+1),
+        "%FILE%", Escape(list[i][4]),
+        "%LEVEL%", Str(MpdFilterLevel+1),
         "%GRID%", "db"
         );
   Config(CfgInfo+"};");
+  MpdDbSelection = [];
+  EmitTrigger("mpd-browser-selection");
 }
 
-Function MpdBrowserSwitch(state) {
-  MpdBrowser = state;
-  if MpdBrowser {
-    MpdCmd("listplaylists");
-    MpdCmd("playlistinfo");
-    MpdSourceSwitch();
-  }
-  EmitTrigger("mpd-browser");
+Function MpdBrowserOpen() {
+  MpdCmd("playlistinfo");
+  MpdSource = "";
+  MpdSourceSwitch();
+  WindowOpen("XMpdBrowser");
 }
 
-PopUp "XMpdWindow" {
-  grid 'mpd_browser' {
-    style = If(MpdBrowser, "", "hidden");
-    trigger = "mpd-browser";
-    label 'mpd_browser_header' {
+Window "XMpdBrowser" {
+  style = "XMpdBrowser";
+  grid {
+    loc(1,1);
+    action = MpdSourceSwitch();
+    image {
       loc(1,1);
-      value = "Database";
-      style = "mpd_browser_header";
-      action = MpdSourceSwitch();
+      value = "rotation-allowed";
+      tooltip = GT("Toggle database/playlist browser");
+      style = "mpd_playlist_control";
       interval = 0;
     }
-    label {
-      loc(3,1);
-      value = "Queue";
+    label 'mpd_browser_header' {
+      loc(2,1);
+      value = GT("Database");
       style = "mpd_browser_header";
       interval = 0;
     }
-    grid {
-      style = "mpd_playlist_sizer";
-      loc(1,2);
-      grid "mpd_database" {
-        style = "mpd_playlist";
-        vscroll = TRUE;
-        hscroll = TRUE;
-      }
+  }
+  label {
+    loc(3,1);
+    value = GT("Queue");
+    style = "mpd_browser_header";
+    interval = 0;
+  }
+  grid {
+    style = "mpd_playlist_sizer";
+    loc(1,2);
+    grid "mpd_database" {
+      style = "mpd_playlist";
+      vscroll = TRUE;
+      hscroll = TRUE;
     }
-    grid "mpd_playlist_control_grid" {
-      style = "mpd_playlist_control_grid";
-      loc(2,2);
-      image {
-        value = "go-next";
-        style = "mpd_playlist_control";
-        interval = 0;
-        action = MpdQueueAdd();
-      }
-      image {
-        value = "go-previous";
-        style = "mpd_playlist_control";
-        interval = 0;
-        action = MpdQueueDelete();
-      }
-    }
-    grid {
-      style = "mpd_playlist_sizer";
-      loc(3,2);
-      grid "mpd_playlist" {
-        style = "mpd_playlist";
-        vscroll = TRUE;
-        hscroll = TRUE;
-      }
-    }
-    grid {
-      style = "mpd_playlist_control_grid";
-      loc(4,2);
-      image {
-        value = "go-up";
-        style = "mpd_playlist_control";
-        interval = 0;
-        action = MpdQueueSwap(0);
-      }
-      image {
-        value = "go-down";
-        style = "mpd_playlist_control";
-        interval = 0;
-        action = MpdQueueSwap(1);
-      }
-      image {
-        value = "edit-clear-all";
-        style = "mpd_playlist_control";
-        interval = 0;
-        action = { MpdCmd("clear"); MpdCmd("playlistinfo"); };
-      }
-      image {
-        value = "document-save";
-        style = "mpd_playlist_control";
-        interval = 0;
-        action = { MpdCmd("save newlist"); };
-      }
+  }
+  grid "mpd_playlist_control_grid" {
+    style = "mpd_playlist_control_grid";
+    loc(2,2);
+    image {
+      value = "go-next";
+      tooltip = GT("Add selected song(s) to queue");
+      style = "mpd_playlist_control";
+      interval = 0;
+      action = MpdQueueAdd();
     }
     image {
-      value = "application-exit";
+      value = "go-previous";
+      tooltip = GT("Delete selected song(s) from queue");
       style = "mpd_playlist_control";
-      loc(4,3);
       interval = 0;
-      action = MpdBrowserSwitch(0);
+      action = MpdQueueDelete();
     }
+  }
+  grid {
+    style = "mpd_playlist_sizer";
+    loc(3,2);
+    grid "mpd_playlist" {
+      style = "mpd_playlist";
+      vscroll = TRUE;
+      hscroll = TRUE;
+    }
+  }
+  grid {
+    style = "mpd_playlist_control_grid";
+    loc(4,2);
+    image {
+      value = "go-up";
+      tooltip = GT("Move song up");
+      style = "mpd_playlist_control";
+      interval = 0;
+      action = MpdQueueSwap(0);
+    }
+    image {
+      value = "go-down";
+      tooltip = GT("Move song down");
+      style = "mpd_playlist_control";
+      interval = 0;
+      action = MpdQueueSwap(1);
+    }
+    image {
+      value = "edit-clear-all";
+      tooltip = GT("Clear queue");
+      style = "mpd_playlist_control";
+      interval = 0;
+      action = { MpdCmd("clear"); MpdCmd("playlistinfo"); };
+    }
+  }
+  grid {
+    loc(3,3);
+    entry "mpd_save_entry" {
+      style = "mpd_save";
+      loc(2,1);
+    }
+    image {
+      value = "document-save";
+      tooltip = GT("Save queue to playlist");
+      style = "mpd_playlist_control";
+      loc(1,1);
+      interval = 0;
+      action = {
+        MpdCmd("save " + EntryText("mpd_save_entry"));
+        MpdCmd("listplaylists");
+      }
+    }
+  }
+  image {
+    value = "application-exit";
+    tooltip = "Exit MPD Browser";
+    style = "mpd_playlist_control";
+    loc(4,3);
+    interval = 0;
+    action = WindowClose("XMpdBrowser");
   }
 }
 
 #CSS
-window#XMpdPlaylist {
-  background-color: rgba(0,0,0,0);
-}
-
-grid#XMpdPlaylist {
-  margin: 10px;
-  border-radius: 10px;
-  border-image: none;
-  border-width: 1px;
-  border-style: solid;
-  border-color: @borders;
-  background-color: @theme_bg_color;
+grid#XMpdBrowser {
   padding: 10px;
 }
-
+        
 grid#mpd_playlist_control_grid {
   -GtkWidget-valign: center;
   -GtkWidget-vexpand: true;
@@ -341,7 +362,8 @@ grid#mpd_playlist_control_grid {
 }
 
 grid#mpd_playlist_sizer {
-  padding: 10px;
+  margin-bottom: 10px;
+  padding: 3px;
   border: solid 1px @theme_fg_color;
   border-radius: 5px;
   min-width: 200px;
@@ -359,9 +381,12 @@ image#mpd_playlist_control {
   padding: 8px;
 }
 
+label#mpd_category_active,
 label#mpd_category_title,
 label#mpd_browser_title {
-  -GtkWidget-halign: start;
+  -GtkWidget-hexpand: true;
+  -GtkWidget-halign: fill;
+  -GtkWidget-align: 0;
   font-size: 16px;
 }
 
@@ -377,12 +402,13 @@ image#mpd_browser_delete {
   -GtkWidget-halign: end;
 }
 
-grid#mpd_browser_grid {
+grid#mpd_browser_grid,
+grid#mpd_browser_active {
   -GtkWidget-hexpand: true;
 }
 
+label#mpd_category_active,
 grid#mpd_browser_active {
-  -GtkWidget-hexpand: true;
   background-color: red;
 }
 
@@ -390,4 +416,8 @@ label#mpd_browser_header {
   -GtkWidget-hexpand: true;
   -GtkWidget-halign: start;
   margin-bottom: 3px;
+}
+
+entry#mpd_save {
+  caret-color: @theme_fg_color;
 }

@@ -35,9 +35,9 @@ Private {
         Val(MpdInfo("age"))/1000000, 0))/Val(MpdInfo("duration"));
 
   PopUp "XMpdWindow" {
-    autoclose = true;
+#    autoclose = true;
     trigger = "mpd";
-    style = If(MpdInfo("State")="", "hidden", "XMpdPopup");
+    style = "XMpdPopup";
     grid 'mpd_player' {
       style = If(MpdBrowser, "hidden", "");
       trigger = "mpd-browser";
@@ -120,7 +120,7 @@ Private {
           }
           image {
             value = "view-list"
-            action = MpdBrowserSwitch(1);
+            action = MpdBrowserOpen();
             style = "mpd_icon"
           }
         }
