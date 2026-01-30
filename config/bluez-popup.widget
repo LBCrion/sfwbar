@@ -109,19 +109,23 @@ Private {
         value = GT("Bluetooth")
         style = "XBluezHeader"
       }
-      label {
-        value = GT("Paired devices")
-        style = "XBluezSeparator"
-      }
-      grid "XBluezGridPaired" {
-        style = "XBluezSection"
-      }
-      label {
-        value = GT("Available devices")
-        style = "XBluezSeparator"
-      }
-      grid "XBluezGridAvail" {
-        style = "XBluezSection"
+      grid "XBluezScroller" {
+        style = "XBluezScroller";
+        vscroll = true;
+        label {
+          value = GT("Paired devices")
+          style = "XBluezSeparator"
+        }
+        grid "XBluezGridPaired" {
+          style = "XBluezSection"
+        }
+        label {
+          value = GT("Available devices")
+          style = "XBluezSeparator"
+        }
+        grid "XBluezGridAvail" {
+          style = "XBluezSection"
+        }
       }
       label "XBluezScanButton" {
         value = If(BluezAdapter("Discovering"), GT("Scanning")+"...", GT("Scan"))
@@ -152,6 +156,7 @@ grid#XBluezPopup {
   background-color: @theme_bg_color;
 }
 
+grid#XBluezScroller,
 grid#XBluezFrame {
   -GtkWidget-direction: bottom;
   -GtkWidget-vexpand: true;
@@ -201,7 +206,7 @@ label#XBluezClass {
 }
 
 label#XBluezScan {
-  -GtkWidget-vexpand: true;
+  -GtkWidget-vexpand: false;
   -GtkWidget-hexpand: true;
   -GtkWidget-valign: end;
   -GtkLabel-align: 0.5;

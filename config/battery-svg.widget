@@ -6,12 +6,12 @@ Private {
 
   Var pretty_icon = TRUE;
 
-  Var Minus = '<path style="fill:#BB0000;stroke:none"
-    d="m 19 50 28 0 0 8 -28 0 z"/>';
-  Var Plus = '<path style="fill:#FFF152;stroke:#000"
-    d="m 27 23 25 0 -13 35 11 -4 -25 38 7 -38 -11 6 z"/>'
+  Var Minus = '<path style="fill:#BB0000; stroke:none"
+    d="m 51 50 28 0 0 8 -28 0 z"/>';
+  Var Plus = '<path style="fill:#FFF152; stroke:#000"
+    d="m 59 23 25 0 -13 35 11 -4 -25 38 7 -38 -11 6 z"/>'
   Var BatterySvg = '<?xml version="1.0" encoding="UTF-8"?>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 66 108">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 108">
         <defs>
           <linearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="@GRADIENT_START@%" style="stop-color:Rgba(0,0,0,0)"/>
@@ -19,10 +19,10 @@ Private {
               style="stop-color:Rgba(@RED_LEVEL@, @BLUE_LEVEL@,0, 0.7)"/>
           </linearGradient>
         </defs>
-        <path style="fill:@theme_fg_color" d="m 19 6 a 6 6 0 0 0 6 -6
+        <path style="fill:@theme_fg_color" d="m 51 6 a 6 6 0 0 0 6 -6
           l 16 0 a 6 6 0 0 0 6 6 z"/>
-        <path style="fill:url(#grad2);stroke:@theme_fg_color;stroke-width:10"
-          d="m 11 12 44 0 a 10 10 0 0 1 10 10 l 0 72 a 10 10 0 0 1 -10 10
+        <path style="fill:url(#grad2); stroke:@theme_fg_color; stroke-width:10"
+          d="m 43 12 44 0 a 10 10 0 0 1 10 10 l 0 72 a 10 10 0 0 1 -10 10
           l -44 0 a 10 10 0 0 1 -10 -10 l 0 -72  a 10 10 0 0 1 10 -10 z"/>
       @SIGN@
       </svg>'
@@ -40,16 +40,13 @@ Private {
         If(Discharging, "", "-charging");
   }
 
-  widget_grid {
-    style = "module"
-    button "XBatteryModule" {
-      action[0] = XBatteryInit()
-      value = BatteryIcon()
-      style = If(!Ident($XBatteryState) & !Ident(BSDCtl),"hidden","module")
-      tooltip = GT("Battery") + ": " + Str(Level) + "%" + If(Time, " " +
-            Str(Time/60 - Time%60/60) + GT("h") +
-            Str(Time%60) + GT("m"), "")
-      interval = 1000
-    }
+  export button "XBatteryModule" {
+    action[0] = XBatteryInit()
+    value = BatteryIcon()
+    style = If(!Ident($XBatteryState) & !Ident(BSDCtl),"hidden","module")
+    tooltip = GT("Battery") + ": " + Str(Level) + "%" + If(Time, " " +
+          Str(Time/60 - Time%60/60) + GT("h") +
+          Str(Time%60) + GT("m"), "")
+    interval = 1000
   }
 }

@@ -1,8 +1,11 @@
 #Api2
 
-include("mpd.source")
+Module("mpd");
 
 Private {
+
+  include("mpd-browser.widget");
+
   Var MpdIconStop = "<path d='m 3.5 2 h 9 c 0.828125 0 1.5 0.671875 1.5 1.5 v 9
     c 0 0.828125 -0.671875 1.5 -1.5 1.5 h -9 c -0.828125 0 -1.5 -0.671875 -1.5
     -1.5 v -9 c 0 -0.828125 0.671875 -1.5 1.5 -1.5 z m 0 0' fill='@theme_fg_color'/>";
@@ -16,111 +19,131 @@ Private {
     0.550781 -0.449219 1 -1 1 h -3 c -0.550781 0 -1 -0.449219 -1 -1 v -12 c 0
     -0.550781 0.449219 -1 1 -1 z m 0 0' fill='@theme_fg_color'/>
     <path d='m 10 1 h 3 c 0.550781 0 1 0.449219 1 1 v 12 c 0 0.550781 -0.449219
-    e -1 1 h -3 c -0.550781 0 -1 -0.449219 -1 -1 v -12 c 0 -0.550781 0.449219
+    1 -1 1 h -3 c -0.550781 0 -1 -0.449219 -1 -1 v -12 c 0 -0.550781 0.449219
     -1 1 -1 z m 0 0' fill='@theme_fg_color'/>";
 
   Var MpdIconTmpl='<?xml version="1.0" encoding="UTF-8"?>
     <svg viewBox="0 0 16 20" xmlns="http://www.w3.org/2000/svg">
     @MPD_ICON@
-    <path d="M1 19 H20 0" stroke-linecap="round" stroke-width="2"
+    <path d="M1 19 H16 0" stroke-linecap="round" stroke-width="2"
       stroke="@theme_fg_color" stroke-opacity="0.5"/>
     <path d="M1 19 H@MPD_PROGRESS@ 0" stroke-linecap="round" stroke-width="2"
       stroke="red"/>
     </svg>'
 
-  Set MpdProgress = (MpdElapsed +
-      If($MpdState="play", MpdElapsed.age/1000000, 0))/MpdDuration;
+  Set MpdProgress = (Val(MpdInfo("elapsed")) + If(MpdInfo("state")="play",
+        Val(MpdInfo("age"))/1000000, 0))/Val(MpdInfo("duration"));
 
   PopUp "XMpdWindow" {
-    autoclose = true
-    trigger = "mpd"
-    style = If($MpdState="","hidden","XMpdPopup")
-    css = "* { -GtkWidget-direction: bottom; }"
-    label {
-      value = "<b>"+$MpdTitle+"</b>";
-      trigger = "mpd"
-      style = "mpd_title"
-    }
-    label {
-      value = $MpdAlbum;
-      trigger = "mpd"
-      style = "mpd_album"
-    }
-    label {
-      value = $MpdArtist;
-      trigger = "mpd"
-      style = "mpd_artist"
-    }
-    scale {
-      value = (MpdElapsed + If($MpdState="play", MpdElapsed.age/1000000, 0))/
-        MpdDuration
-      style = "mpd_progress"
-      action = MpdCmd("seekcur " + Str(gtkevent("x") * MpdDuration))
-      interval = 1000
-    }
-    grid "XMpdPlayer" {
-      css = "* { -GtkWidget-direction: right; -GtkWidget-halign: center; -GtkWidget-hexpand: true; }"
-      image {
-        value = "media-playlist-repeat"
-        action = MpdCmd("repeat " + If(MpdRepeat,"0","1"))
-        style = If(MpdRepeat,"mpd_icon_red","mpd_icon")
-        trigger = "mpd"
-      }
-      image {
-        value = "media-playlist-shuffle"
-        action = MpdCmd("random " + If(MpdRandom,"0","1"))
-        style = If(MpdRandom,"mpd_icon_red","mpd_icon")
-        trigger = "mpd"
-      }
-      image {
-        value = "media-seek-backward"
-        action = MpdCmd("previous")
-        style = "mpd_icon"
-      }
-      image {
-        value = "media-playback-start"
-        action = MpdCmd("play")
-        style = If($MpdState="play","mpd_icon_red","mpd_icon")
-        trigger = "mpd"
-      }
-      image {
-        value = "media-playback-pause"
-        action = MpdCmd("pause")
-        style = If($MpdState="pause","mpd_icon_red","mpd_icon")
-        trigger = "mpd"
-      }
-      image {
-        value = "media-playback-stop"
-        action = MpdCmd("stop")
-        style = If($MpdState="stop","mpd_icon_red","mpd_icon")
-        trigger = "mpd"
-      }
-      image {
-        value = "media-seek-forward"
-        action = MpdCmd("next")
-        style = "mpd_icon"
+    autoclose = true;
+    trigger = "mpd";
+    style = If(MpdInfo("State")="", "hidden", "XMpdPopup");
+    grid 'mpd_player' {
+      style = If(MpdBrowser, "hidden", "");
+      trigger = "mpd-browser";
+      css = "* { -GtkWidget-direction: bottom; }"
+      grid {
+        image {
+          value = MpdInfo("cover");
+          trigger = "mpd-cover";
+          style = If(MpdInfo("cover")="", "hidden", "mpd_cover");
+          loc(1,1,1,5);
+        }
+        label {
+          value = "<b>"+MpdInfo("Title")+"</b>";
+          trigger = "mpd"
+          style = "mpd_title"
+          loc(2,1);
+        }
+        label {
+          value = MpdInfo("Album");
+          trigger = "mpd"
+            action = MpdCmd("list artist");
+          style = "mpd_album"
+          loc(2,2);
+        }
+        label {
+          value = MpdInfo("Artist");
+          trigger = "mpd"
+          style = "mpd_artist"
+          loc(2,3);
+        }
+        scale "mpd_progress" {
+          value = MpdProgress;
+          style = "mpd_progress"
+          action = MpdCmd("seekcur " + Str(gtkevent("x") * MpdInfo("Duration")))
+          interval = 1000
+          loc(2,4);
+        }
+        grid "XMpdPlayer" {
+          loc(2,5)
+          css = "* { -GtkWidget-direction: right; -GtkWidget-halign: center; -GtkWidget-hexpand: true; }"
+          image {
+            value = "media-playlist-repeat"
+            action = MpdCmd("repeat " + If(MpdInfo("Repeat"),"0","1"))
+            style = If(MpdInfo("repeat"),"mpd_icon_red","mpd_icon")
+            trigger = "mpd"
+          }
+          image {
+            value = "media-playlist-shuffle"
+            action = MpdCmd("random " + If(MpdInfo("Random"),"0","1"))
+            style = If(MpdInfo("random"),"mpd_icon_red","mpd_icon")
+            trigger = "mpd"
+          }
+          image {
+            value = "media-seek-backward"
+            action = MpdCmd("previous")
+            style = "mpd_icon"
+          }
+          image {
+            value = "media-playback-start"
+            action = MpdCmd("play")
+            style = If(MpdInfo("state")="play","mpd_icon_red","mpd_icon")
+            trigger = "mpd"
+          }
+          image {
+            value = "media-playback-pause"
+            action = MpdCmd("pause")
+            style = If(MpdInfo("State")="pause","mpd_icon_red","mpd_icon")
+            trigger = "mpd"
+          }
+          image {
+            value = "media-playback-stop"
+            action = MpdCmd("stop")
+            style = If(MpdInfo("state")="stop","mpd_icon_red","mpd_icon")
+            trigger = "mpd"
+          }
+          image {
+            value = "media-seek-forward"
+            action = MpdCmd("next")
+            style = "mpd_icon"
+          }
+          image {
+            value = "view-list"
+            action = MpdBrowserSwitch(1);
+            style = "mpd_icon"
+          }
+        }
       }
     }
   }
 
   TriggerAction "mpd", UpdateWidget("mpd_icon")
+  TriggerAction "mpd", UpdateWidget("mpd_progress")
 
-  layout {
-    style = "module"
-    button "mpd_icon" {
-      style = If($MpdState="", "hidden", "module")
-      value = ReplaceAll(MpdIconTmpl,
-          "@MPD_ICON@", Map($MpdState,
-            "play", MpdIconPlay,
-            "pause", MpdIconPause,
-            MpdIconStop),
-          "@MPD_PROGRESS@", Str(MpdProgress*20))
-      action = MpdCmd("pause");
-      action[RightClick] = PopUp("XMpdWindow");
-      action[ScrollUp] = MpdCmd("seekcur +5");
-      action[ScrollDown] = MpdCmd("seekcur -5");
-      interval = 1000
-    }
+  export button "mpd_icon" {
+    style = If(MpdInfo("State")="", "hidden", "module")
+    value = ReplaceAll(MpdIconTmpl,
+        "@MPD_ICON@", Map(MpdInfo("State"),
+          "play", MpdIconPlay,
+          "pause", MpdIconPause,
+          MpdIconStop),
+        "@MPD_PROGRESS@", Str(MpdProgress*16))
+    action = MpdCmd("pause");
+    action[RightClick] = PopUp("XMpdWindow");
+    action[ScrollUp] = MpdCmd("seekcur +5");
+    action[ScrollDown] = MpdCmd("seekcur -5");
+    interval = 1000
   }
 }
 
@@ -149,6 +172,13 @@ image#mpd_icon {
   color: @theme_fg_color;
 }
 
+image#mpd_cover {
+  min-height: 100px;
+  min-width: 100px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
 image#mpd_icon_red {
   -GtkWidget-hexpand: false;
   -GtkWidget-vexpand: false;
@@ -171,7 +201,10 @@ label#mpd_artist {
 #mpd_progress {
   margin-top: 3px;
   margin-bottom: 3px;
-  -GtkWidget-halign: center;
+  margin-left: 10px;
+  margin-right: 10px;
+  -GtkWidget-halign: fill;
+  -GtkWidget-hexpand: true;
 }
 
 #mpd_progress progress {

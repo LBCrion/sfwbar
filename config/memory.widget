@@ -6,8 +6,8 @@ widget_grid {
   scale {
     interval = 1000
     style = If(XMemPresent,"memory","hidden")
-    value = XMemUtilization
+    value = Str(XMemUtilization,1)
     tooltip = GT("Memory") + ": " + Str(XMemUtilization*100) + "%"
-    action = Exec($Term + " -e top -o %MEM")
+    action = ExecTerm("top -o %MEM")
   }
 }

@@ -1,9 +1,9 @@
-scanner {
-  ExecClient("stdbuf -oL amixer sevents","alsactl") {}
-  Exec("amixer sget Master") {
-    AlsaVolume = RegEx(".*[[](.[0-9]+)%")
-    AlsaMuted = RegEx(".*[[].*[[]([A-Za-z].*)[]]")
-  }
+#Api2
+
+ExecClient("stdbuf -oL amixer sevents","alsactl") {}
+Exec("amixer sget Master") {
+  AlsaVolume = RegEx(".*[[](.[0-9]+)%")
+  AlsaMuted = RegEx(".*[[].*[[]([A-Za-z].*)[]]")
 }
 
 set AlsaMutedIcon = "audio-volume-muted-symbolic"
@@ -14,16 +14,13 @@ set AlsaVolumeIcon = Lookup(AlsaVolume,
   $AlsaMutedIcon)
 set AlsaIcon = If($AlsaMuted = "off",$AlsaMutedIcon,$AlsaVolumeIcon)
 
-layout {
-  style = "module"
-  button {
-    value = $AlsaIcon
-    tooltip = GT("Volume") + ": " + Str(AlsaVolume,0) + "%" + If(AlsaMuted," (" + GT("muted") + ")","")
-    style = If(Ident($AlsaVolume),"module","hidden")
-    trigger = "alsactl"
-    action[LeftClick] = Exec "amixer sset Master toggle\n"
-    action[RightClick] = Exec $Term + " -e alsamixer"
-    action[ScrollUp] = Exec "amixer sset Master 5%+\n"
-    action[ScrollDown] = Exec "amixer sset Master 5%-\n"
-  }
+export button {
+  value = $AlsaIcon
+  tooltip = GT("Volume") + ": " + Str(AlsaVolume,0) + "%" + If(AlsaMuted," (" + GT("muted") + ")","")
+  style = If(Ident(AlsaVolume),"module","hidden")
+  trigger = "alsactl"
+  action[LeftClick] = Exec("amixer sset Master toggle\n")
+  action[RightClick] = ExecTerm(" -e alsamixer")
+  action[ScrollUp] = Exec("amixer sset Master 5%+\n")
+  action[ScrollDown] = Exec("amixer sset Master 5%-\n")
 }
