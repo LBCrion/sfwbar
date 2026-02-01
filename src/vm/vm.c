@@ -295,7 +295,9 @@ static void vm_variable ( vm_t *vm )
   g_debug("vm: heap lookup '%s' in %p", g_quark_to_string(quark), VM_STORE(vm));
   if( (var = vm_store_lookup(VM_STORE(vm), quark)) )
   {
+    g_mutex_lock(&var->mutex);
     value = value_dup(var->value);
+    g_mutex_unlock(&var->mutex);
     expr_dep_add(quark, vm->expr);
   }
   else
@@ -341,8 +343,10 @@ static void vm_heap_assign ( vm_t *vm )
   memcpy(&quark, vm->ip+1, sizeof(GQuark));
   if( (var = vm_store_lookup(VM_STORE(vm), quark)) )
   {
+    g_mutex_lock(&var->mutex);
     value_free(var->value);
     var->value = vm_pop(vm);
+    g_mutex_unlock(&var->mutex);
     expr_dep_trigger(quark);
   }
   else

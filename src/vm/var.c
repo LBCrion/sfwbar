@@ -15,6 +15,7 @@ vm_var_t *vm_var_new ( gchar *name )
   g_return_val_if_fail(name, NULL);
 
   var = g_malloc0(sizeof(vm_var_t));
+  g_mutex_init(&var->mutex);
   var->value = value_na;
   lower = g_ascii_strdown(name, -1);
   var->quark = g_quark_from_string(lower);

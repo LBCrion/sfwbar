@@ -191,7 +191,9 @@ static gboolean config_widget_variable ( GScanner *scanner, GtkWidget *widget )
           (gchar *)g_quark_to_string(var->quark))) )
     return FALSE;
 
+  g_mutex_lock(&var->mutex);
   var->value = vm_code_eval(code, widget);
+  g_mutex_unlock(&var->mutex);
   g_bytes_unref(code);
 
   return TRUE;

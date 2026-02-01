@@ -39,6 +39,7 @@ struct _vm_store_t {
 };
 
 typedef struct _vm_var {
+  GMutex mutex;
   value_t value;
   gchar *name;
   GQuark quark;

@@ -109,7 +109,9 @@ static void config_vars ( GScanner *scanner )
       vm_store_insert(SCANNER_STORE(scanner), var);
       if(config_check_and_consume(scanner, '=') && config_expr(scanner, &code))
       {
+        g_mutex_lock(&var->mutex);
         var->value = vm_code_eval(code, NULL);
+        g_mutex_unlock(&var->mutex);
         g_bytes_unref(code);
       }
     }
