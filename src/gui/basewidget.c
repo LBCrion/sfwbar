@@ -142,6 +142,8 @@ static gboolean base_widget_update ( GtkWidget *self )
   g_return_val_if_fail(IS_BASE_WIDGET(self), FALSE);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
+  g_debug("widget update: %s", priv->id);
+
   base_widget_eval_async(self, priv->value, (GSourceFunc)base_widget_update_value);
   base_widget_eval_async(self, priv->style, (GSourceFunc)base_widget_style);
   if(priv->local_state)
@@ -753,6 +755,17 @@ static void base_widget_set_property ( GObject *self, guint id,
   }
 }
 
+static void base_widget_map ( GtkWidget *self )
+{
+  g_return_if_fail(IS_BASE_WIDGET(self));
+
+  if(!BASE_WIDGET_GET_CLASS(self)->always_update &&
+      BASE_WIDGET_GET_CLASS(self)->update_value)
+    BASE_WIDGET_GET_CLASS(self)->update_value(self);
+
+  GTK_WIDGET_CLASS(base_widget_parent_class)->map(self);
+}
+
 static void base_widget_class_init ( BaseWidgetClass *kclass )
 {
   kclass->action_exec = base_widget_action_exec_impl;
@@ -773,6 +786,7 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
   GTK_WIDGET_CLASS(kclass)->drag_motion = base_widget_drag_motion;
   GTK_WIDGET_CLASS(kclass)->drag_leave = base_widget_drag_leave;
   GTK_WIDGET_CLASS(kclass)->query_tooltip = base_widget_query_tooltip;
+  GTK_WIDGET_CLASS(kclass)->map = base_widget_map;
 
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_STORE,
       g_param_spec_pointer("store", "store", "no_config", G_PARAM_READWRITE));
@@ -1077,7 +1091,9 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
     {
       if(base_widget_get_next_poll(iter->data) <= ctime)
       {
-        base_widget_update(iter->data);
+        if(BASE_WIDGET_GET_CLASS(iter->data)->always_update ||
+            gtk_widget_is_visible(iter->data))
+          base_widget_update(iter->data);
         priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
         if(!priv->trigger)
           priv->next_poll = ctime + priv->interval;
