@@ -1053,7 +1053,11 @@ GtkWidget *bar_new ( gchar *name )
   gtk_layer_init_for_window(GTK_WINDOW(self));
   gtk_widget_set_name(self, priv->name);
   gtk_layer_auto_exclusive_zone_enable (GTK_WINDOW(self));
+#if GTK_LAYER_VER_MINOR > 5
+  gtk_layer_set_keyboard_mode(GTK_WINDOW(self), GTK_LAYER_SHELL_KEYBOARD_MODE_NONE);
+#else
   gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self), FALSE);
+#endif
   gtk_layer_set_layer(GTK_WINDOW(self), GTK_LAYER_SHELL_LAYER_TOP);
   gtk_layer_set_monitor(GTK_WINDOW(self), priv->current_monitor);
   bar_style_updated(self);
