@@ -791,7 +791,7 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_STORE,
       g_param_spec_pointer("store", "store", "no_config", G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_ID,
-      g_param_spec_string("id", "id", "no_config", NULL, G_PARAM_READWRITE));
+      g_param_spec_string("id", "id", "sfwbar_config", NULL, G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_TOOLTIP,
       g_param_spec_boxed("tooltip", "tooltip", "sfwbar_config", G_TYPE_BYTES,
         G_PARAM_READWRITE));
