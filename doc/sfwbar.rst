@@ -1069,6 +1069,18 @@ WindowInfo([<id:string>,] <query:string>)
 WidgetId()
   Returns an ID of a widget invoking the action. Returns <string>.
 
+WidgetSetData([<id:string>], <name:string>, <value>)
+  Attach a named value to a widget. The optional parameter `id` specifies an
+  id of a widget, if omitted, the operation will apply to the current widget.
+  A value will be attached to a widget property `name` and can be later
+  retrieved using WIdgetGetData. Returns <n/a>.
+
+WidgetGetData([<id:string>], <name:string>)
+  Retrieves a named value from a widget.  The optional parameter `id` specifies
+  an id of a widget, if omitted, the operation will apply to the current widget.
+  This function returns a value previously attached to proeprty `name` of a
+  widget.
+
 WidgetState([<id:string>,] <stateid:number>)
   Returns a value of one of two widget `state` boolean. The optional parameter
   `id` specifies an id of a widget to query. If omitted, the state of a widget

@@ -50,6 +50,7 @@ extern const value_t value_na;
 
 void value_free ( value_t );
 void value_free_ptr ( value_t *v1 );
+void value_free_ptr_full ( value_t *v1 );
 value_t value_array_create ( gint size );
 void value_array_append ( value_t array, value_t v );
 value_t value_dup ( value_t );

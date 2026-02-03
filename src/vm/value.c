@@ -16,6 +16,12 @@ void value_free_ptr ( value_t *v1 )
     value_free(*v1);
 }
 
+void value_free_ptr_full ( value_t *v1 )
+{
+  value_free(*v1);
+  g_free(v1);
+}
+
 value_t value_array_concat ( value_t v1, value_t v2 )
 {
   value_t result, new;

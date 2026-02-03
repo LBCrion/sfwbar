@@ -1243,6 +1243,18 @@ to query. Valid values are:
 .B WidgetId()
 Returns an ID of a widget invoking the action. Returns <string>.
 .TP
+.B WidgetSetData([<id:string>], <name:string>, <value>)
+Attach a named value to a widget. The optional parameter \fIid\fP specifies an
+id of a widget, if omitted, the operation will apply to the current widget.
+A value will be attached to a widget property \fIname\fP and can be later
+retrieved using WIdgetGetData. Returns <n/a>.
+.TP
+.B WidgetGetData([<id:string>], <name:string>)
+Retrieves a named value from a widget.  The optional parameter \fIid\fP specifies
+an id of a widget, if omitted, the operation will apply to the current widget.
+This function returns a value previously attached to proeprty \fIname\fP of a
+widget.
+.TP
 .B WidgetState([<id:string>,] <stateid:number>)
 Returns a value of one of two widget \fIstate\fP boolean. The optional parameter
 \fIid\fP specifies an id of a widget to query. If omitted, the state of a widget

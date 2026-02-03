@@ -734,6 +734,26 @@ static value_t expr_layout_list ( vm_t *vm, value_t p[], gint np )
   return value_array_from_strv(input_layout_list_get());
 }
 
+static value_t expr_widget_get_data ( vm_t *vm, value_t p[], gint np )
+{
+  GtkWidget *widget;
+  value_t *vptr;
+
+  vm_param_check_np_range(vm, np, 1, 2, "WidgetrGetData");
+  vm_param_check_string(vm, p, 0, "WidgetGetData");
+  if(np==2)
+    vm_param_check_string(vm, p, 1, "WidgetGetData");
+
+  if( !(widget = vm_widget_get(vm, np==2? value_get_string(p[0]) : NULL)) )
+    return value_na;
+
+  if( !(vptr = g_object_get_data(G_OBJECT(widget),
+          value_get_string(p[np==2? 1: 0]))) )
+    return value_na;
+
+  return value_dup(*vptr);
+}
+
 void expr_lib_init ( void )
 {
   vm_func_init();
@@ -780,4 +800,5 @@ void expr_lib_init ( void )
   vm_func_add("customipc", expr_custom_ipc, FALSE, TRUE);
   vm_func_add("layout", expr_layout, FALSE, TRUE);
   vm_func_add("layoutlist", expr_layout_list, FALSE, TRUE);
+  vm_func_add("widgetgetdata", expr_widget_get_data, FALSE, FALSE);
 }

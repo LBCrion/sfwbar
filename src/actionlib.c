@@ -735,6 +735,26 @@ static value_t action_set_layout ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
+static value_t action_widget_set_data ( vm_t *vm, value_t p[], gint np )
+{
+  GtkWidget *widget;
+  value_t v1;
+
+  vm_param_check_np_range(vm, np, 2, 3, "WidgetSetData");
+  vm_param_check_string(vm, p, 0, "WidgetSetData");
+  if(np==3)
+    vm_param_check_string(vm, p, 1, "WidgetSetData");
+
+  if( !(widget = vm_widget_get(vm, np==3? value_get_string(p[0]) : NULL)) )
+    return value_na;
+
+  v1 = value_dup(p[np==2? 1 : 2]);
+  g_object_set_data_full(G_OBJECT(widget), value_get_string(p[np==2? 0 : 1]),
+      g_memdup2(&v1, sizeof(value_t)), (GDestroyNotify)value_free_ptr_full);
+
+  return value_na;
+}
+
 void action_lib_init ( void )
 {
   vm_func_add("exec", action_exec_impl, TRUE, TRUE);
@@ -787,6 +807,7 @@ void action_lib_init ( void )
   vm_func_add("Print", action_print, TRUE, TRUE);
   vm_func_add("uSleep", action_usleep, TRUE, TRUE);
   vm_func_add("SetLayout", action_set_layout, TRUE, TRUE);
+  vm_func_add("WidgetSetData", action_widget_set_data, TRUE, FALSE);
   config_parse_data("config string",
       "#Api2\n function function(x,y) { WidgetPush(x); Call(y); WidgetPop();}",
       NULL, NULL, 0);
