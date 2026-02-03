@@ -266,15 +266,15 @@ static gboolean app_menu_check_boolean ( GDesktopAppInfo *app, gchar *key )
 
 static gboolean app_menu_check_present ( GDesktopAppInfo *app, gchar *key )
 {
-gchar *value;
-gboolean result;
+  gchar *value;
+  gboolean result;
 
-if( !(value = g_desktop_app_info_get_string(app, key)) )
-  return FALSE;
+  if( !(value = g_desktop_app_info_get_string(app, key)) )
+    return FALSE;
 
-result = !!value;
-g_free(value);
-return result;
+  result = !!value;
+  g_free(value);
+  return result;
 }
 
 static gboolean app_menu_add ( gchar *id )
