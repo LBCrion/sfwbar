@@ -103,6 +103,7 @@ static void mpd_emit_with_array ( gchar *trigger, GList **list )
   vm_store_t *store;
   GList *iter;
 
+  *list = g_list_sort(*list, (GCompareFunc)g_ascii_strcasecmp);
   array = value_array_create(g_list_length(*list));
   for(iter=*list; iter; iter=g_list_next(iter))
     value_array_append(array, value_new_string(iter->data));
