@@ -370,12 +370,29 @@ static value_t expr_lib_lower ( vm_t *vm, value_t p[], gint np )
   return value_new_string(g_ascii_strdown(value_get_string(p[0]), -1));
 }
 
-static value_t expr_lib_escape ( vm_t *vm, value_t p[], gint np )
+static value_t expr_lib_markup  ( vm_t *vm, value_t p[], gint np )
 {
-  vm_param_check_np(vm, np, 1, "escape");
-  vm_param_check_string(vm, p, 0, "escape");
+  vm_param_check_np(vm, np, 1, "Markup");
+  vm_param_check_string(vm, p, 0, "Markup");
 
   return value_new_string(g_markup_escape_text(value_get_string(p[0]), -1));
+}
+
+static value_t expr_lib_escape ( vm_t *vm, value_t p[], gint np )
+{
+  gchar *ptr;
+  GString *str;
+
+  vm_param_check_np(vm, np, 1, "Escape");
+  vm_param_check_string(vm, p, 0, "Escape");
+  str = g_string_new(NULL);
+  for(ptr=value_get_string(p[0]); *ptr; ptr++)
+  {
+    if(*ptr == '"' || *ptr == '\\')
+      g_string_append_c(str, '\\');
+    g_string_append_c(str, *ptr);
+  }
+  return value_new_string(g_string_free(str, FALSE));
 }
 
 static value_t expr_lib_bardir ( vm_t *vm, value_t p[], gint np )
@@ -778,6 +795,7 @@ void expr_lib_init ( void )
   vm_func_add("str", expr_lib_str, TRUE, TRUE);
   vm_func_add("upper", expr_lib_upper, TRUE, TRUE);
   vm_func_add("lower", expr_lib_lower, TRUE, TRUE);
+  vm_func_add("markup", expr_lib_markup, TRUE, TRUE);
   vm_func_add("escape", expr_lib_escape, TRUE, TRUE);
   vm_func_add("bardir", expr_lib_bardir, FALSE, FALSE);
   vm_func_add("gtkevent", expr_lib_gtkevent, FALSE, FALSE);

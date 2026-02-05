@@ -29,7 +29,7 @@ Private {
           style = 'XWifiIcon@WIFI_CONNECTED@'
         }
         label '@WIFI_PATH@_label' {
-          value = Escape('@WIFI_SSID@')
+          value = Markup('@WIFI_SSID@')
           style = 'XWifiName'
         }
         label '@WIFI_PATH@_type' {
@@ -43,17 +43,17 @@ Private {
     If WifiGet(id, "SSID")+"" = ""
       Return;
     Config(ReplaceAll( XWifiNetTmpl,
-        "@WIFI_PATH@", Escape(WifiGet(id, "Path")),
+        "@WIFI_PATH@", Replace(id, "'", ""),
         "@WIFI_TYPE@", WifiGet(id, "Type"),
-        "@WIFI_SSID@", Replace(WifiGet(id, "SSID"),"'","\""),
-        "@WIFI_ICON@", ArrayLookup(Val(WifiGet(id, "strength")), wifi_thresholds, wifi_icons),
-        "@WIFI_KNOWN@",If(WifiGet(id, "Known")="","Other","Known"),
-        "@WIFI_CONNECTED@", If(WifiGet(id, "Connected")="1","Connected","")))
+        "@WIFI_SSID@", Replace(WifiGet(id, "SSID"), "'", "\""),
+        "@WIFI_ICON@", ArrayLookup(WifiGet(id, "Strength"), wifi_thresholds, wifi_icons),
+        "@WIFI_KNOWN@",If(WifiGet(id, "Known"), "Known", "Other"),
+        "@WIFI_CONNECTED@", If(WifiGet(id, "Connected"), "Connected", "")))
   }
 
   Function XWifiRemove() {
-    ClearWidget(Escape(id) + "_gridKnown")
-    ClearWidget(Escape(id) + "_gridOther")
+    ClearWidget(Replace(id, "'", "") + "_gridKnown")
+    ClearWidget(Replace(id, "'", "") + "_gridOther")
   }
 
   Function XWifiConnect() {
@@ -71,24 +71,30 @@ Private {
   PopUp "XWifiWindow" {
     style = "XWifiPopup"
     grid "XWifiFrame" {
+      style = "XWifiFrame"
       label {
         value = "Wifi"
         style = "XWifiHeader"
       }
-      style = "XWifiFrame"
-      label {
-        value = GT("Known networks")
-        style = "XWifiSeparator"
-      }
-      grid "XWifiGridKnown" {
-        style = "XWifiSection"
-      }
-      label {
-        value = GT("Other networks")
-        style = "XWifiSeparator"
-      }
-      grid "XWifiGridOther" {
-        style = "XWifiSection"
+      grid "XWifiScroller" {
+        vscroll = TRUE;
+        style = "XWifiScroller"
+        css = "* { -GtkWidget-valign: start; -GtkWidget-vexpand: true; }"
+
+        label {
+          value = GT("Known networks")
+          style = "XWifiSeparator"
+        }
+        grid "XWifiGridKnown" {
+          style = "XWifiSection"
+        }
+        label {
+          value = GT("Other networks")
+          style = "XWifiSeparator"
+        }
+        grid "XWifiGridOther" {
+          style = "XWifiSection"
+        }
       }
       label "XWifiScanButton" {
         value = GT("Scan")
@@ -110,7 +116,7 @@ window#XWifiWindow {
 grid#XWifiPopup {
   -GtkWidget-hexpand: true;
   min-width: 200px;
-  min-height: 100px;
+  min-height: 300px;
   margin: 5px;
   border-radius: 10px;
   border: 1px solid @borders;
@@ -118,6 +124,7 @@ grid#XWifiPopup {
   background-color: @theme_bg_color;
 }
 
+grid#XWifiScroller,
 grid#XWifiFrame {
   -GtkWidget-direction: bottom;
   -GtkWidget-vexpand: true;
@@ -135,6 +142,7 @@ grid#XWifiGrid {
   padding-bottom: 3px;
   -GtkWidget-hexpand: true;
   -GtkWidget-direction: right;
+  -GtkWidget-valign: start;
 }
 
 image#XWifiIcon,
@@ -167,7 +175,7 @@ label#XWifiType {
 }
 
 label#XWifiScan {
-  -GtkWidget-vexpand: true;
+  -GtkWidget-vexpand: false;
   -GtkWidget-hexpand: true;
   -GtkWidget-valign: end;
   -GtkLabel-align: 0.5;

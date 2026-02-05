@@ -1131,8 +1131,13 @@ Convert a string to uppercase. Returns <string>.
 Convert a string to lowercase. Returns <string>.
 .TP
 .B Escape(<string>)
-Escapes quotes and other special characters in a string making it suitable to
-be included as a substring within double quotes. Returns <string>.
+Escapes dobule quotes and other special characters in a string making it
+suitable to be included as a substring within double quotes.
+Returns <string>.
+.TP
+.B Markup(<string>)
+Convert any special characters into pango markup compatible sequences.
+Return <string>.
 .TP
 .B Replace(<string>, <old:string>, <new:string>)
 Replaces an \fIold\fP substring with a \fInew\fP substring within a string. Returns

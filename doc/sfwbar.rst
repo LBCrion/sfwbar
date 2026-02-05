@@ -957,8 +957,13 @@ Lower(<string>)
   Convert a string to lowercase. Returns <string>.
 
 Escape(<string>)
-  Escapes quotes and other special characters in a string making it suitable to
-  be included as a substring within double quotes. Returns <string>.
+  Escapes dobule quotes and other special characters in a string making it
+  suitable to be included as a substring within double quotes.
+  Returns <string>.
+
+Markup(<string>)
+  Convert any special characters into pango markup compatible sequences.
+  Return <string>.
 
 Replace(<string>, <old:string>, <new:string>)
   Replaces an `old` substring with a `new` substring within a string. Returns

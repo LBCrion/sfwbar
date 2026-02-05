@@ -124,8 +124,8 @@ Private {
     ClearWidget(id + "_grid")
     Config(ReplaceAll( XNotificationTmpl,
       "@NOTIF_ID@", id,
-      "@NOTIF_SUMMARY@", Escape(summary),
-      "@NOTIF_BODY@", Escape(body),
+      "@NOTIF_SUMMARY@", Markup(summary),
+      "@NOTIF_BODY@", Markup(body),
       "@NOTIF_ICON@", icon,
       "@NOTIF_APP@", app,
       "@NOTIF_TIME@", time));
