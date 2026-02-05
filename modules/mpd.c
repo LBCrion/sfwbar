@@ -29,6 +29,25 @@ static gsize mpd_cover_total, mpd_cover_received, mpd_cover_bufsize;
 static GdkPixbufLoader *mpd_cover_loader;
 static gpointer mpd_cover_buf;
 
+static gint mpd_cmd_cmp ( const void *data, const void *cmd )
+{
+  if(!data || !cmd)
+    return 0;
+
+  return strncmp(data, cmd, strlen(cmd));
+}
+
+static void mpd_cmd_remove ( const gchar *cmd )
+{
+  GList *iter;
+
+  while( (iter = g_list_find_custom(mpd_cmd_queue, cmd, mpd_cmd_cmp)) )
+  {
+    g_free(iter->data);
+    mpd_cmd_queue = g_list_delete_link(mpd_cmd_queue, iter);
+  }
+}
+
 static void mpd_cmd_append ( gchar *cmd, ... )
 {
   va_list args;
@@ -37,6 +56,7 @@ static void mpd_cmd_append ( gchar *cmd, ... )
     return;
 
   va_start(args, cmd);
+  mpd_cmd_remove(mpd_cmd_idle);
   mpd_cmd_queue = g_list_append(mpd_cmd_queue, g_strdup_vprintf(cmd, args));
   va_end(args);
   if(mpd_cmd_current == mpd_cmd_idle)
