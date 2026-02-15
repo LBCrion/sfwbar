@@ -37,6 +37,7 @@ guint16 sfwbar_module_version = MODULE_API_VERSION;
 guint32 seq = 1;
 GList *iface_list;
 gint qual, level, noise;
+guint net_timeout;
 
 static void net_update_essid ( gchar * );
 
@@ -270,6 +271,13 @@ static void net_rt_request ( gint sock )
     g_debug("network: failed to send a netlink request");
 }
 
+static gboolean net_rt_request_src ( void *sock )
+{
+  net_timeout = 0;
+  net_rt_request(GPOINTER_TO_INT(sock));
+  return G_SOURCE_REMOVE;
+}
+
 static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
 {
   struct nlmsghdr *hdr;
@@ -316,9 +324,13 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
             }
       }
       else if(hdr->nlmsg_type == RTM_NEWROUTE || hdr->nlmsg_type == RTM_DELROUTE)
-        net_rt_request(sock);
+      {
+        if(net_timeout)
+          g_source_remove(net_timeout);
+        net_timeout = g_timeout_add(100, net_rt_request_src, GINT_TO_POINTER(sock));
+      }
     }
-    else
+    else if(hdr->nlmsg_pid == getpid())
     {
       if(hdr->nlmsg_type!=RTM_NEWROUTE)
         continue; /* ignore anything but NEWROUTE */
@@ -355,6 +367,7 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
   }
   if(newroute && !routeset)
   {
+    g_debug("network: set interface: <none>");
     route = NULL;
     trigger_emit("network");
   }
