@@ -80,8 +80,8 @@ static gint sni_watcher_item_add ( sni_watcher_t *watcher, gchar *uid )
   item->watcher = watcher;
   item->uid = g_strdup(uid);
 
-  if(strchr(uid,'/'))
-    name = g_strndup(uid, strchr(uid,'/')-uid);
+  if(strchr(uid, '/'))
+    name = g_strndup(uid, strchr(uid, '/') - uid);
   else
     name = g_strdup(uid);
 

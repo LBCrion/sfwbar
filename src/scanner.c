@@ -474,7 +474,8 @@ void scanner_invalidate ( void )
 
 GQuark scanner_parse_identifier ( const gchar *id, guint8 *dtype )
 {
-  gchar *ptr, *lower, type;
+  const gchar *ptr;
+  gchar *lower, type;
   GQuark quark;
 
   if(!id)

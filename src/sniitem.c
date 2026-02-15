@@ -273,7 +273,7 @@ sni_item_t *sni_item_new (GDBusConnection *con, gchar *iface,
     const gchar *uid)
 {
   sni_item_t *sni;
-  gchar *path;
+  const gchar *path;
   guint i;
 
   sni = g_malloc0(sizeof(sni_item_t));

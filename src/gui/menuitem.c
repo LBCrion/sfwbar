@@ -300,7 +300,8 @@ gchar *menu_item_get_id ( GtkWidget *self )
 void menu_item_set_label ( GtkWidget *self, const gchar *label )
 {
   MenuItemPrivate *priv;
-  gchar *ptr, *text;
+  const gchar *ptr;
+  gchar *text;
 
   if(GTK_IS_SEPARATOR_MENU_ITEM(self))
     return;
