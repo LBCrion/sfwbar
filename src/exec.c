@@ -12,7 +12,7 @@ static const struct {
 } terms[] = {
   { "xdg-terminal-exec", " " },
   { "foot", " " },
-  { "ghostty", " " },
+  { "ghostty", " -e " },
   { "alacritty", " -e " },
   { "kitty", " " },
   { "xfce4-terminal", " -x " },
