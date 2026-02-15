@@ -141,6 +141,8 @@ gboolean value_compare ( value_t v1, value_t v2 )
         return FALSE;
     return TRUE;
   }
+  if(value_is_na(v1))
+    return TRUE;
   return FALSE;
 }
 
