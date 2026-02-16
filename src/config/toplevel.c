@@ -106,14 +106,12 @@ static void config_vars ( GScanner *scanner )
           scanner->value.v_identifier))
     {
       var = vm_var_new(scanner->value.v_identifier);
-      vm_store_insert(SCANNER_STORE(scanner), var);
       if(config_check_and_consume(scanner, '=') && config_expr(scanner, &code))
       {
-        g_mutex_lock(&var->mutex);
         var->value = vm_code_eval(code, NULL);
-        g_mutex_unlock(&var->mutex);
         g_bytes_unref(code);
       }
+      vm_store_insert(SCANNER_STORE(scanner), var);
     }
     else
       g_scanner_error(scanner, "duplicate declaration of variable '%s'",
