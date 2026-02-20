@@ -639,14 +639,13 @@ static value_t expr_array_assign ( vm_t *vm, value_t p[], gint np )
   vm_param_check_array(vm, p, 0, "ArrayAssign");
   vm_param_check_numeric(vm, p, 1, "ArrayAssign");
 
-  if(!value_is_array(p[0]))
+  n = (gint)value_get_numeric(p[1]);
+  if(!value_is_array(p[0]) || n<0)
     return value_na;
 
   arr = value_dup(p[0]);
-  n = (gint)value_get_numeric(p[1]);
-  if(n<0 || n>=arr.value.array->len)
+  if(n >= arr.value.array->len)
     g_array_set_size(arr.value.array, n+1);
-
   v1 = &g_array_index(arr.value.array, value_t, n);
   value_free(*v1);
   *v1 = value_dup(p[2]);
