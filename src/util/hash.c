@@ -46,7 +46,7 @@ gboolean hash_table_remove ( hash_table_t *hash, gconstpointer key )
 {
   gboolean result;
 
-  if(!hash)
+  if(!hash || !key)
     return FALSE;
 
   hash_table_lock(hash);
