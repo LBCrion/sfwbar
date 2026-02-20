@@ -358,14 +358,16 @@ static void mpd_connect_cb ( GSocketClient *client, GAsyncResult *res,
 static gboolean mpd_connect ( gpointer d )
 {
   GSocketClient *client;
+  gchar *str;
 
   if(!address_current)
     address_current = address_list;
 
   g_return_val_if_fail(address_current, G_SOURCE_REMOVE);
 
-  g_debug("mpd: connecting: %s",
-      g_socket_connectable_to_string(address_current->data));
+  str = g_socket_connectable_to_string(address_current->data);
+  g_debug("mpd: connecting: %s", str);
+  g_free(str);
   client = g_socket_client_new();
   g_socket_client_connect_async(client, address_current->data, NULL,
       (GAsyncReadyCallback)mpd_connect_cb, address_current->data);
