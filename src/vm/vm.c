@@ -534,6 +534,7 @@ gboolean vm_expr_run ( vm_t *vm )
 {
   value_t v1;
   expr_cache_t *expr = vm->expr;
+  gboolean update;
   gchar *eval;
 
   v1 = vm_run(vm);
@@ -553,8 +554,9 @@ gboolean vm_expr_run ( vm_t *vm )
   else
   {
     g_free(eval);
+    update = expr->always_update;
     vm_free(vm);
-    return expr->always_update;
+    return update;
   }
 }
 
