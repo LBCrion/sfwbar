@@ -4,17 +4,13 @@
  */
 
 #include <glib-unix.h>
-#include <gtk-layer-shell.h>
 #include "trigger.h"
 #include "wintree.h"
-#include "config/config.h"
 #include "gui/bar.h"
 #include "gui/css.h"
 #include "gui/filter.h"
-#include "gui/pager.h"
 #include "gui/switcher.h"
 #include "gui/switcheritem.h"
-#include "gui/taskbarshell.h"
 
 G_DEFINE_TYPE_WITH_CODE (Switcher, switcher, FLOW_GRID_TYPE,
     G_ADD_PRIVATE (Switcher))

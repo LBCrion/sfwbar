@@ -3,9 +3,9 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "css.h"
 #include "scanner.h"
 #include "window.h"
+#include "gui/css.h"
 #include "gui/basewidget.h"
 #include "util/file.h"
 #include "util/string.h"

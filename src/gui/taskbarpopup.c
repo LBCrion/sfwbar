@@ -3,17 +3,14 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "css.h"
-#include "flowgrid.h"
-#include "taskbarpopup.h"
-#include "taskbarshell.h"
-#include "taskbaritem.h"
-#include "scaleimage.h"
-#include "bar.h"
-#include "wintree.h"
-#include "menu.h"
-#include "popup.h"
 #include "window.h"
+#include "wintree.h"
+#include "gui/css.h"
+#include "gui/taskbarpopup.h"
+#include "gui/taskbarshell.h"
+#include "gui/taskbaritem.h"
+#include "gui/scaleimage.h"
+#include "gui/popup.h"
 #include "vm/vm.h"
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarPopup, taskbar_popup, FLOW_ITEM_TYPE,

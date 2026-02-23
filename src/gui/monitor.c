@@ -3,7 +3,6 @@
  * Copyright 2024- sfwbar maintainers
  */
 
-#include <gtk/gtk.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include "wayland.h"

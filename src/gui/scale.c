@@ -3,8 +3,7 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "basewidget.h"
-#include "scale.h"
+#include "gui/scale.h"
 
 G_DEFINE_TYPE_WITH_CODE (Scale, scale, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Scale))
 

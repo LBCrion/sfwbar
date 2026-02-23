@@ -3,8 +3,7 @@
  * Copyright 2026- sfwbar maintainers
  */
 
-#include "basewidget.h"
-#include "entry.h"
+#include "gui/entry.h"
 #include "vm/vm.h"
 
 G_DEFINE_TYPE_WITH_CODE (Entry, entry, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Entry))

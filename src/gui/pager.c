@@ -3,11 +3,10 @@
  * Copyright 2020- sfwbar maintainers
  */
 
-#include "css.h"
 #include "workspace.h"
-#include "pager.h"
-#include "pageritem.h"
-#include "taskbar.h"
+#include "gui/css.h"
+#include "gui/pager.h"
+#include "gui/pageritem.h"
 
 G_DEFINE_TYPE_WITH_CODE (Pager, pager, FLOW_GRID_TYPE, G_ADD_PRIVATE (Pager))
 

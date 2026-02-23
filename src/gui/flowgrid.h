@@ -1,8 +1,7 @@
 #ifndef __FLOWGRID_H__
 #define __FLOWGRID_H__
 
-#include <gtk/gtk.h>
-#include "flowitem.h"
+#include "gui/basewidget.h"
 
 #define FLOW_GRID_TYPE            (flow_grid_get_type())
 #define FLOW_GRID(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), FLOW_GRID_TYPE, FlowGrid))

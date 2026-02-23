@@ -3,10 +3,9 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "css.h"
-#include "bar.h"
-#include "pager.h"
-#include "pageritem.h"
+#include "gui/css.h"
+#include "gui/bar.h"
+#include "gui/pageritem.h"
 #include "util/string.h"
 #include "vm/vm.h"
 

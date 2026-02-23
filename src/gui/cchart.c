@@ -3,8 +3,8 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "cchart.h"
-#include "chart.h"
+#include "gui/cchart.h"
+#include "gui/chart.h"
 
 G_DEFINE_TYPE_WITH_CODE (CChart, cchart, BASE_WIDGET_TYPE,
     G_ADD_PRIVATE (CChart))

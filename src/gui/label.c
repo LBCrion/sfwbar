@@ -3,8 +3,7 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "basewidget.h"
-#include "label.h"
+#include "gui/label.h"
 
 G_DEFINE_TYPE_WITH_CODE (Label, label, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Label))
 

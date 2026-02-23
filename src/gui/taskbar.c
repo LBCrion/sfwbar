@@ -3,15 +3,7 @@
  * Copyright 2020- sfwbar maintainers
  */
 
-#include "flowgrid.h"
-#include "taskbaritem.h"
-#include "taskbarpopup.h"
-#include "taskbarpager.h"
-#include "taskbarshell.h"
-#include "taskbar.h"
-#include "wintree.h"
-#include "config/config.h"
-#include "vm/vm.h"
+#include "gui/taskbar.h"
 
 G_DEFINE_TYPE_WITH_CODE (Taskbar, taskbar, FLOW_GRID_TYPE,
     G_ADD_PRIVATE (Taskbar))

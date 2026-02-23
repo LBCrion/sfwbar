@@ -3,14 +3,8 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "wintree.h"
-#include "config/config.h"
-#include "gui/bar.h"
 #include "gui/css.h"
 #include "gui/filter.h"
-#include "gui/flowgrid.h"
-#include "gui/grid.h"
-#include "gui/pager.h"
 #include "gui/scaleimage.h"
 #include "gui/taskbaritem.h"
 #include "gui/taskbarshell.h"

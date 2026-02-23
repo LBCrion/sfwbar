@@ -3,9 +3,8 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "basewidget.h"
-#include "grid.h"
-#include "taskbarshell.h"
+#include "gui/basewidget.h"
+#include "gui/grid.h"
 
 G_DEFINE_TYPE_WITH_CODE (Grid, grid, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Grid))
 

@@ -5,9 +5,7 @@
 
 #include "menu.h"
 #include "window.h"
-#include "taskbarpopup.h"
-#include "scaleimage.h"
-#include "popup.h"
+#include "gui/popup.h"
 #include "gui/menuitem.h"
 #include "util/string.h"
 #include "vm/vm.h"

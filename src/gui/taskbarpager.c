@@ -3,19 +3,11 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "css.h"
-#include "flowgrid.h"
-#include "taskbarpager.h"
-#include "taskbarshell.h"
-#include "taskbaritem.h"
-#include "pager.h"
-#include "scaleimage.h"
-#include "bar.h"
 #include "wintree.h"
-#include "menu.h"
-#include "popup.h"
+#include "gui/css.h"
+#include "gui/taskbarpager.h"
+#include "gui/taskbarshell.h"
 #include "util/string.h"
-#include <gtk-layer-shell.h>
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarPager, taskbar_pager, FLOW_ITEM_TYPE,
     G_ADD_PRIVATE(TaskbarPager))

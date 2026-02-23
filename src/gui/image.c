@@ -3,9 +3,8 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "basewidget.h"
-#include "image.h"
-#include "scaleimage.h"
+#include "gui/image.h"
+#include "gui/scaleimage.h"
 
 G_DEFINE_TYPE_WITH_CODE (Image, image, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Image))
 

@@ -3,9 +3,8 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "flowitem.h"
-#include "basewidget.h"
-#include "flowgrid.h"
+#include "gui/flowitem.h"
+#include "gui/flowgrid.h"
 
 G_DEFINE_TYPE_WITH_CODE(FlowItem, flow_item, BASE_WIDGET_TYPE,
     G_ADD_PRIVATE(FlowItem))

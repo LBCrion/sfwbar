@@ -3,14 +3,12 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "util/string.h"
-#include <gtk-layer-shell.h>
 #include "window.h"
 #include "gui/bar.h"
-#include "gui/basewidget.h"
 #include "gui/css.h"
 #include "gui/grid.h"
 #include "gui/popup.h"
+#include "util/string.h"
 
 static GHashTable *popup_list;
 

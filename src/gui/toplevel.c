@@ -3,9 +3,8 @@
  * Copyright 2026- sfwbar maintainers
  */
 
-#include <gtk/gtk.h>
-#include "gui/grid.h"
 #include "gui/css.h"
+#include "gui/grid.h"
 #include "util/string.h"
 
 static GHashTable *toplevel_list;

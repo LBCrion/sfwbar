@@ -3,11 +3,11 @@
  * Copyright 2021- sfwbar maintainers
  */
 
-#include "css.h"
-#include "gui/flowgrid.h"
-#include "config/config.h"
 #include "window.h"
 #include "gui/bar.h"
+#include "gui/css.h"
+#include "gui/flowgrid.h"
+#include "gui/flowitem.h"
 
 G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, BASE_WIDGET_TYPE,
     G_ADD_PRIVATE(FlowGrid))

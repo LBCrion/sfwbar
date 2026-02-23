@@ -4,7 +4,6 @@
  */
 
 #include "gui/bar.h"
-#include "gui/basewidget.h"
 #include "gui/filter.h"
 
 static GEnumValue filter_enum[] = {

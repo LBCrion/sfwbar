@@ -3,15 +3,10 @@
  * Copyright 2024- sfwbar maintainers
  */
 
-#include "bar.h"
-#include "flowgrid.h"
-#include "taskbaritem.h"
-#include "taskbarpopup.h"
-#include "taskbarpager.h"
-#include "taskbarshell.h"
-#include "taskbar.h"
-#include "wintree.h"
-#include "config/config.h"
+#include "gui/taskbaritem.h"
+#include "gui/taskbarpopup.h"
+#include "gui/taskbarpager.h"
+#include "gui/taskbarshell.h"
 #include "gui/filter.h"
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarShell, taskbar_shell, TASKBAR_TYPE,

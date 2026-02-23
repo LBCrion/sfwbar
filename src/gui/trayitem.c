@@ -3,13 +3,13 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "monitor.h"
-#include "css.h"
-#include "bar.h"
-#include "trayitem.h"
-#include "flowgrid.h"
-#include "scaleimage.h"
-#include "menu.h"
+#include "gui/bar.h"
+#include "gui/css.h"
+#include "gui/flowgrid.h"
+#include "gui/menu.h"
+#include "gui/monitor.h"
+#include "gui/scaleimage.h"
+#include "gui/trayitem.h"
 
 G_DEFINE_TYPE_WITH_CODE (TrayItem, tray_item, FLOW_ITEM_TYPE,
     G_ADD_PRIVATE (TrayItem))

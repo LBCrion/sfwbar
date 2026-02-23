@@ -37,6 +37,6 @@ struct _TrayItemPrivate
 
 GType tray_item_get_type ( void );
 
-GtkWidget *tray_item_new( sni_item_t *win, GtkWidget *tray );
+GtkWidget *tray_item_new( sni_item_t *sni, GtkWidget *tray );
 
 #endif

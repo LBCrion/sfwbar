@@ -3,8 +3,8 @@
  * Copyright 2022- sfwbar maintainers
  */
 
-#include "chart.h"
-#include "basewidget.h"
+#include "gui/chart.h"
+#include "gui/basewidget.h"
 
 G_DEFINE_TYPE_WITH_CODE (Chart, chart, GTK_TYPE_BOX, G_ADD_PRIVATE (Chart))
 
