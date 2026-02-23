@@ -12,7 +12,7 @@ typedef struct _nm_ap_node nm_ap_node_t;
 typedef struct _nm_conn nm_conn_t;
 typedef struct _nm_device nm_device_t;
 typedef struct _nm_active nm_active_t;
-typedef struct _nm_dialog nm_dialog_t;
+typedef struct _nm_secret nm_secret_t;
 
 #define NM_APOINT(x) ((nm_apoint_t *)x)
 #define NM_AP_NODE(x) ((nm_ap_node_t *)x)
@@ -56,9 +56,8 @@ struct _nm_device {
   nm_active_t *active;
 };
 
-struct _nm_dialog {
-  GDBusMethodInvocation *invocation;
-  GtkWidget *win, *title, *user, *pass, *ok, *cancel;
+struct _nm_secret {
+  GDBusMethodInvocation *inv;
   gchar *path;
 };
 
@@ -115,14 +114,15 @@ static const gchar *nm_path_secret =
   "/org/freedesktop/NetworkManager/SecretAgent";
 
 static GDBusConnection *nm_con;
-static hash_table_t *ap_nodes, *dialog_list, *new_conns, *conn_list;
+static hash_table_t *ap_nodes, *new_conns, *conn_list;
 static hash_table_t *active_list, *apoint_list;
-static GList *devices;
+static GList *devices, *nm_secrets;
+static GDBusMethodInvocation *nm_secret_inv;
 static GMutex device_lock;
 static nm_device_t *default_dev;
 static guint sub_add, sub_del, sub_chg;
 static guint32 nm_strength_threshold;
-static gchar *nm_owner;
+static gchar *nm_owner, *nm_secret_path;
 
 static gboolean nm_device_name_cmp ( nm_device_t *device, gchar *name )
 {
@@ -213,135 +213,83 @@ static void nm_conn_connect ( gchar *path )
       G_VARIANT_TYPE("(o)"), G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
 }
 
-static void nm_passphrase_cb ( GtkEntry *entry, nm_dialog_t *dialog )
+static void nm_secret_agent_emit ( void )
 {
-  const gchar *pass;
-  GVariant *psk, *wsec;
-
-  if(gtk_entry_get_text_length(GTK_ENTRY(dialog->pass))<8 ||
-      (dialog->user && gtk_entry_get_text_length(GTK_ENTRY(dialog->user))<1))
-    return;
-  pass = gtk_entry_get_text(GTK_ENTRY(dialog->pass));
-  psk = g_variant_new_dict_entry(g_variant_new_string("psk"),
-      g_variant_new_variant(g_variant_new_string(pass)));
-  wsec = g_variant_new_dict_entry(
-      g_variant_new_string("802-11-wireless-security"),
-      g_variant_new_array( G_VARIANT_TYPE("{sv}"), &psk, 1));
-
-  g_dbus_method_invocation_return_value(dialog->invocation,
-      g_variant_new("(@a{sa{sv}})",
-        g_variant_new_array(G_VARIANT_TYPE("{sa{sv}}"), &wsec, 1)));
-  gtk_widget_destroy(dialog->win);
-  hash_table_remove(dialog_list, dialog->path);
-}
-
-static void nm_button_clicked ( GtkWidget *button, nm_dialog_t *dialog )
-{
-  if(button==dialog->ok)
-    nm_passphrase_cb(NULL, dialog);
-  else
-  {
-    g_dbus_method_invocation_return_dbus_error(dialog->invocation,
-        "org.freedesktop.NetworkManager.SecretAgent.UserCanceled", "");
-    gtk_widget_destroy(dialog->win);
-    hash_table_remove(dialog_list, dialog->path);
-  }
-}
-
-static void nm_passphrase_changed_cb ( gpointer *w, nm_dialog_t *dialog )
-{
-  gtk_widget_set_sensitive(dialog->ok,
-      gtk_entry_get_text_length(GTK_ENTRY(dialog->pass))>7 &&
-      (!dialog->user || gtk_entry_get_text_length(GTK_ENTRY(dialog->user))>0));
-}
-
-static gboolean nm_passphrase_delete_cb ( GtkWidget *w, GdkEvent *ev,
-    nm_dialog_t *dialog )
-{
-  g_dbus_method_invocation_return_dbus_error(dialog->invocation,
-      "org.freedesktop.NetworkManager.SecretAgent.UserCanceled", "");
-  hash_table_remove(dialog_list, dialog->path);
-  return FALSE;
-}
-
-static gboolean nm_passphrase_prompt ( GVariant *vconn, gpointer inv )
-{
-  nm_dialog_t *dialog;
+  nm_secret_t *secret;
+  vm_store_t *store = vm_store_new(NULL, TRUE);
   nm_conn_t *conn;
-  GtkWidget *grid, *label;
-  gchar *title, *path;
-  gboolean user = FALSE;
 
-  g_variant_get(vconn,"(@a{sa{sv}}&o&sasu)", NULL, &path, NULL, NULL, NULL);
+  if( !nm_secrets || !(secret = nm_secrets->data) )
+    return;
+
   hash_table_lock(conn_list);
-  if( (conn = hash_table_lookup(conn_list, path)) )
-    title = g_strdup_printf("Passphrase for network %s", conn->ssid);
-  else
-    title = NULL;
-  hash_table_unlock(conn_list);
-  if(!title)
-    return FALSE;
-  dialog = g_malloc0(sizeof(nm_dialog_t));
-
-  dialog->invocation = inv;
-  dialog->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_type_hint(GTK_WINDOW(dialog->win),
-      GDK_WINDOW_TYPE_HINT_DIALOG);
-  g_signal_connect(G_OBJECT(dialog->win), "delete-event",
-    G_CALLBACK(nm_passphrase_delete_cb), dialog);
-  grid = gtk_grid_new();
-  gtk_widget_set_name(grid, "wifi_dialog_grid");
-  gtk_container_add(GTK_CONTAINER(dialog->win), grid);
-  label = gtk_label_new(title);
-  g_free(title);
-  gtk_widget_set_name(label, "wifi_dialog_title");
-  gtk_grid_attach(GTK_GRID(grid), label, 1, 1, 2, 1);
-
-  if(user)
+  if( (conn = hash_table_lookup(conn_list, secret->path)) )
   {
-    label = gtk_label_new("Username:");
-    gtk_widget_set_name(label, "wifi_user_label");
-    gtk_grid_attach(GTK_GRID(grid),label, 1, 2, 1, 1);
-    dialog->user = gtk_entry_new();
-    gtk_widget_set_name(dialog->user, "iwd_user_entry");
-    gtk_grid_attach(GTK_GRID(grid), dialog->user, 2, 2, 1, 1);
-    g_signal_connect(G_OBJECT(dialog->user), "changed",
-        G_CALLBACK(nm_passphrase_changed_cb), dialog);
+    vm_store_insert_full(store, "type",
+        value_new_string(g_strdup("passphrase")));
+    vm_store_insert_full(store, "ssid",
+        value_new_string(g_strdup(conn->ssid)));
   }
+  hash_table_unlock(conn_list);
+  nm_secrets = g_list_remove(nm_secrets, secret);
+  g_clear_object(&nm_secret_inv);
+  nm_secret_inv = secret->inv;
+  str_assign(&nm_secret_path, secret->path);
+  g_free(secret);
 
-  label = gtk_label_new("Passphrase:");
-  gtk_widget_set_name(label, "wifi_passphrase_label");
-  gtk_grid_attach(GTK_GRID(grid), label, 1, 3, 1, 1);
-  dialog->pass = gtk_entry_new();
-  gtk_widget_set_name(dialog->pass, "wifi_passphrase_entry");
-  gtk_entry_set_visibility(GTK_ENTRY(dialog->pass), FALSE);
-  g_signal_connect(G_OBJECT(dialog->pass), "activate",
-      G_CALLBACK(nm_passphrase_cb), dialog);
-    g_signal_connect(G_OBJECT(dialog->pass), "changed",
-        G_CALLBACK(nm_passphrase_changed_cb), dialog);
-  gtk_grid_attach(GTK_GRID(grid), dialog->pass, 2, 3, 1, 1);
+  if(conn)
+    trigger_emit_with_data("wifi-secret", store);
+}
 
-  dialog->ok = gtk_button_new_with_label("Ok");
-  gtk_widget_set_name(dialog->ok, "wifi_button_ok");
-  gtk_grid_attach(GTK_GRID(grid), dialog->ok, 1, 4, 1, 1);
-  gtk_widget_set_sensitive(dialog->ok, FALSE);
-  g_signal_connect(G_OBJECT(dialog->ok), "clicked",
-      G_CALLBACK(nm_button_clicked), dialog);
+static void nm_secret_agent_new ( GDBusMethodInvocation *inv,
+    GVariant *params )
+{
+  nm_secret_t *secret = g_malloc0(sizeof(nm_secret_t));
 
-  dialog->cancel = gtk_button_new_with_label("Cancel");
-  gtk_widget_set_name(dialog->cancel, "wifi_button_cancel");
-  gtk_grid_attach(GTK_GRID(grid), dialog->cancel, 2, 4, 1, 1);
-  g_signal_connect(G_OBJECT(dialog->cancel), "clicked",
-      G_CALLBACK(nm_button_clicked), dialog);
+  secret->inv = g_object_ref(inv);
+  g_variant_get(params,"(@a{sa{sv}}o&sasu)", NULL, &secret->path, NULL, NULL,
+      NULL);
 
-  g_debug("nm: secrets dialog: %s", path);
-  g_object_ref_sink(G_OBJECT(dialog->win));
-  dialog->path = g_strdup(path);
-  hash_table_insert(dialog_list, dialog->path, dialog);
-  popup_popdown_autoclose();
-  gtk_widget_show_all(dialog->win);
+  nm_secrets = g_list_append(nm_secrets, secret);
+  if(!nm_secret_inv)
+    nm_secret_agent_emit();
+}
 
-  return TRUE;
+static void nm_secret_agent_cancel ( GVariant *params )
+{
+  gchar *opath;
+  GList *iter;
+  nm_secret_t *secret;
+
+  g_variant_get(params, "(&o&s)", &opath, NULL);
+  if(!g_strcmp0(opath, nm_secret_path))
+  {
+    g_clear_pointer(&nm_secret_path, g_free);
+    g_clear_object(&nm_secret_inv);
+  }
+  else
+    for(iter=nm_secrets; iter; iter=g_list_next(iter))
+      if(!g_strcmp0(opath, (secret = iter->data)->path))
+      {
+        nm_secrets = g_list_remove(nm_secrets, secret);
+        g_free(secret->path);
+        g_object_unref(secret->inv);
+        break;
+      }
+  trigger_emit("wifi-secret-cancel");
+}
+
+static void nm_secret_agent_method(GDBusConnection *con,
+    const gchar *sender, const gchar *path, const gchar *iface,
+    const gchar *method, GVariant *parameters,
+    GDBusMethodInvocation *inv, gpointer data)
+{
+  if(!g_strcmp0(method, "GetSecrets"))
+    nm_secret_agent_new(inv, parameters);
+  else if(!g_strcmp0(method, "CancelGetSecrets"))
+    nm_secret_agent_cancel(parameters);
+  else
+    g_dbus_method_invocation_return_value(inv, NULL);
 }
 
 static void nm_conn_new_cb ( GDBusConnection *con, GAsyncResult *res,
@@ -874,32 +822,6 @@ static void nm_name_disappeared_cb (GDBusConnection *con, const gchar *name,
   module_interface_deactivate(&sfwbar_interface);
 }
 
-static void nm_secret_agent_method(GDBusConnection *con,
-    const gchar *sender, const gchar *path, const gchar *iface,
-    const gchar *method, GVariant *parameters,
-    GDBusMethodInvocation *inv, gpointer data)
-{
-  nm_dialog_t *dialog;
-  gchar *opath;
-
-  if(!g_strcmp0(method, "GetSecrets") && nm_passphrase_prompt(parameters, inv))
-    return;
-  if(!g_strcmp0(method, "CancelGetSecrets"))
-  {
-    g_variant_get(parameters, "(&o&s)", &opath, NULL);
-    hash_table_lock(dialog_list);
-    if( (dialog = hash_table_lookup(dialog_list, opath)) )
-      nm_button_clicked(dialog->cancel, dialog);
-    hash_table_unlock(dialog_list);
-
-    if(dialog)
-      return;
-  }
-
-  g_dbus_method_invocation_return_dbus_error(inv,
-        "org.freedesktop.NetworkManager.SecretAgent.UserCanceled", "");
-}
-
 static value_t nm_ap_get_info ( nm_apoint_t *ap, gchar *prop )
 {
   if(!g_ascii_strcasecmp(prop, "ssid"))
@@ -1001,11 +923,37 @@ static value_t nm_action_forget ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
+static value_t nm_action_secret ( vm_t *vm, value_t p[], gint np )
+{
+  GVariant *psk, *wsec;
+
+  vm_param_check_np(vm, np, 1, "WifiSecret");
+
+  if(!value_is_string(p[0]) || !g_strcmp0(value_get_string(p[0]), ""))
+    g_dbus_method_invocation_return_dbus_error(nm_secret_inv,
+        "org.freedesktop.NetworkManager.SecretAgent.UserCanceled", "");
+  else
+  {
+    psk = g_variant_new_dict_entry(g_variant_new_string("psk"),
+        g_variant_new_variant(g_variant_new_string(value_get_string(p[0]))));
+    wsec = g_variant_new_dict_entry(
+        g_variant_new_string("802-11-wireless-security"),
+        g_variant_new_array( G_VARIANT_TYPE("{sv}"), &psk, 1));
+
+    g_dbus_method_invocation_return_value(nm_secret_inv,
+        g_variant_new("(@a{sa{sv}})",
+          g_variant_new_array(G_VARIANT_TYPE("{sa{sv}}"), &wsec, 1)));
+  }
+  g_clear_object(&nm_secret_inv);
+  g_clear_pointer(&nm_secret_path, g_free);
+  nm_secret_agent_emit();
+
+  return value_na;
+}
 static void nm_activate ( void )
 {
   ap_nodes = hash_table_new_full(g_str_hash, g_str_equal,
       NULL, (GDestroyNotify)nm_ap_node_free);
-  dialog_list = hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   new_conns = hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   conn_list = hash_table_new_full(g_str_hash, g_str_equal, NULL,
       (GDestroyNotify)nm_conn_free);
@@ -1019,6 +967,7 @@ static void nm_activate ( void )
   vm_func_add("wificonnect", nm_action_connect, FALSE, TRUE);
   vm_func_add("wifidisconnect", nm_action_disconnect, FALSE, TRUE);
   vm_func_add("wififorget", nm_action_forget, FALSE, TRUE);
+  vm_func_add("wifisecret", nm_action_secret, TRUE, TRUE);
   sub_add = g_dbus_connection_signal_subscribe(nm_con, nm_owner,
       nm_iface_objmgr, "InterfacesAdded", NULL, NULL,
       G_DBUS_SIGNAL_FLAGS_NONE, nm_object_new, NULL, NULL);
@@ -1042,7 +991,6 @@ static void nm_deactivate ( void )
   g_dbus_connection_signal_unsubscribe(nm_con, sub_add);
   g_dbus_connection_signal_unsubscribe(nm_con, sub_del);
   g_dbus_connection_signal_unsubscribe(nm_con, sub_chg);
-  g_clear_pointer(&dialog_list, hash_table_remove_all);
   g_clear_pointer(&new_conns, hash_table_remove_all);
   g_clear_pointer(&active_list, hash_table_remove_all);
   g_clear_pointer(&conn_list, hash_table_remove_all);
@@ -1060,6 +1008,7 @@ static void nm_finalize ( void )
   vm_func_remove("wificonnect");
   vm_func_remove("wifidisconnect");
   vm_func_remove("wififorget");
+  vm_func_remove("wifisecret");
 }
 
 gboolean sfwbar_module_init ( void )

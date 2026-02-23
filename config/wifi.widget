@@ -3,6 +3,8 @@
 module("wifi-nm")
 module("wifi-iwd")
 
+include("wifi-secret.widget");
+
 Private {
   TriggerAction "wifi-conf", XWifiUpdate()
   TriggerAction "wifi-conf-removed", XWifiRemove()
