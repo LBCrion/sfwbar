@@ -3,7 +3,6 @@
  * Copyright 2023- Sfwbar maintainers
  */
 
-#include <glib.h>
 #include <gio/gio.h>
 #include "module.h"
 #include "trigger.h"
@@ -664,7 +663,7 @@ static void bz_name_disappeared_cb (GDBusConnection *con, const gchar *name,
 static value_t bz_action_scan ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np_range(vm, np, 0, 1, "BluezScan");
-  bz_scan(bz_con, np? value_as_numeric(p[0])*1000 : 10000);
+  bz_scan(bz_con, np? value_as_numeric(p[0])*1000 : 20000);
 
   return value_na;
 }
