@@ -74,6 +74,7 @@ typedef struct {
   gchar *name;
   guint8 flags;
   guint8 arity;
+  GMainContext *context;
   union {
     vm_func_t function;
     GBytes *code;
@@ -138,6 +139,8 @@ void vm_target_pop ( vm_t *vm );
 GtkWidget *vm_widget_get ( vm_t *vm, gchar *override );
 
 void vm_func_init ( void );
+void vm_func_add_full ( gchar *name, vm_func_t func, gboolean det,
+    gboolean safe, GMainContext *ctx );
 void vm_func_add ( gchar *name, vm_func_t func, gboolean det, gboolean safe);
 void vm_func_add_user ( gchar *name, GBytes *code, guint8 arity );
 vm_function_t *vm_func_lookup ( gchar *name );

@@ -37,17 +37,24 @@ vm_function_t *vm_func_lookup ( gchar *name )
   return func;
 }
 
-void vm_func_add ( gchar *name, vm_func_t func, gboolean det, gboolean safe )
+void vm_func_add_full ( gchar *name, vm_func_t func, gboolean det,
+    gboolean safe, GMainContext *ctx )
 {
   vm_function_t *func_o;
 
   func_o = vm_func_lookup(name);
 
   func_o->ptr.function = func;
+  func_o->context = ctx;
   func_o->flags |= (det? VM_FUNC_DETERMINISTIC : 0);
   func_o->flags |= (safe? VM_FUNC_THREADSAFE : 0);
   expr_dep_trigger(g_quark_from_string(name));
   g_debug("function: registered '%s'", name);
+}
+
+void vm_func_add ( gchar *name, vm_func_t func, gboolean det, gboolean safe )
+{
+  vm_func_add_full(name, func, det, safe, g_main_context_get_thread_default());
 }
 
 void vm_func_add_user ( gchar *name, GBytes *code, guint8 arity )

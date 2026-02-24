@@ -182,9 +182,9 @@ static value_t vm_function_native ( vm_t *vm, vm_function_t *func, gint np )
   vm_call_t *call;
 
   if(func->flags & VM_FUNC_THREADSAFE ||
-        g_main_context_is_owner(g_main_context_default()))
-      return func->ptr.function(vm,
-          (value_t *)vm->stack->data + vm->stack->len - np, np);
+      g_main_context_is_owner(func->context))
+    return func->ptr.function(vm,
+        (value_t *)vm->stack->data + vm->stack->len - np, np);
   call = g_malloc0(sizeof(vm_call_t));
   call->func = func->ptr.function;
   call->vm = vm;
@@ -192,7 +192,7 @@ static value_t vm_function_native ( vm_t *vm, vm_function_t *func, gint np )
   call->np = np;
 
   g_mutex_lock(&call->mutex);
-  g_main_context_invoke(NULL, (GSourceFunc)vm_exec_sync_thread, call);
+  g_main_context_invoke(func->context, (GSourceFunc)vm_exec_sync_thread, call);
   while(!call->ready)
     g_cond_wait(&call->cond, &call->mutex);
   g_mutex_unlock(&call->mutex);
