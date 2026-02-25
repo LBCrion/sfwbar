@@ -531,9 +531,19 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
 
   scale_image_clear(self);
   priv->file = g_strdup(image);
-  priv->extra = extra? g_strdup(extra) :
-    value_get_string(scanner_get_value(g_quark_from_static_string("imagepath"),
-      SCANNER_TYPE_STR, TRUE, NULL));
+
+  if (extra) {
+    priv->extra = g_strdup(extra);
+  } else {
+    value_t maybe_string = scanner_get_value(g_quark_from_static_string("imagepath"),
+      SCANNER_TYPE_STR, TRUE, NULL);
+
+    if (value_is_string(maybe_string)) {
+      priv->extra = value_get_string(maybe_string);
+    } else {
+      priv->extra = g_strdup(NULL);
+    }
+  }
 
   return scale_image_set(self);
 }
