@@ -46,6 +46,7 @@ void vm_func_add_full ( gchar *name, vm_func_t func, gboolean det,
 
   func_o->ptr.function = func;
   func_o->context = ctx;
+  func_o->flags = 0;
   func_o->flags |= (det? VM_FUNC_DETERMINISTIC : 0);
   func_o->flags |= (safe? VM_FUNC_THREADSAFE : 0);
   expr_dep_trigger(g_quark_from_string(name));
@@ -62,9 +63,11 @@ void vm_func_add_user ( gchar *name, GBytes *code, guint8 arity )
   vm_function_t *func;
 
   func = vm_func_lookup(name);
+  g_mutex_lock(&func_mutex);
   func->ptr.code = code;
   func->flags = VM_FUNC_USERDEFINED;
   func->arity = arity;
+  g_mutex_unlock(&func_mutex);
   expr_dep_trigger(g_quark_from_string(name));
   g_debug("function: registered '%s'", name);
 }
@@ -74,9 +77,7 @@ void vm_func_remove ( gchar *name )
   vm_function_t *func;
 
   g_mutex_lock(&func_mutex);
-  func = g_hash_table_lookup(vm_func_table, name);
-  g_mutex_unlock(&func_mutex);
-
-  if(func)
+  if( (func = g_hash_table_lookup(vm_func_table, name)) )
     func->ptr.function = NULL;
+  g_mutex_unlock(&func_mutex);
 }
