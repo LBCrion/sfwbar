@@ -519,6 +519,7 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
     gchar *extra )
 {
   ScaleImagePrivate *priv;
+  value_t v1;
 
   g_return_val_if_fail(IS_SCALE_IMAGE(self), FALSE);
   priv = scale_image_get_instance_private( SCALE_IMAGE(self));
@@ -531,9 +532,10 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
 
   scale_image_clear(self);
   priv->file = g_strdup(image);
-  priv->extra = g_strdup(extra? extra : value_get_string(scanner_get_value(
-          g_quark_from_static_string("imagepath"), SCANNER_TYPE_STR, TRUE,
-          NULL)));
+  v1 = scanner_get_value(g_quark_from_static_string("imagepath"),
+      SCANNER_TYPE_STR, TRUE, NULL);
+  priv->extra = g_strdup(extra? extra : value_get_string(v1));
+  value_free(v1);
 
   return scale_image_set(self);
 }
