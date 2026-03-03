@@ -59,7 +59,7 @@ value_t value_array_create ( gint size )
 {
   GArray *array;
 
-  array = g_array_sized_new(FALSE, FALSE, sizeof(value_t), size);
+  array = g_array_sized_new(FALSE, TRUE, sizeof(value_t), size);
   g_array_set_clear_func(array, (GDestroyNotify)value_free_ptr);
 
   return value_new_array(array);

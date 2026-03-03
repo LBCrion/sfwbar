@@ -4,12 +4,12 @@
 #include "module.h"
 #include "trigger.h"
 #include "gui/popup.h"
-#include "util/hash.h"
 #include "util/string.h"
 #include "vm/vm.h"
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = MODULE_API_VERSION;
+module_thread_t sfwbar_module_thread = MODULE_THREAD_MODULE;
 
 extern ModuleInterfaceV1 sfwbar_interface;
 
@@ -20,8 +20,7 @@ static const gchar *iw_serv = "net.connman.iwd";
 static GDBusConnection *iw_con;
 static GDBusMethodInvocation *iw_secret_inv;
 static GList *iw_devices;
-static hash_table_t *iw_networks, *iw_known_networks;
-static GRecMutex device_mutex;
+static GHashTable *iw_networks, *iw_known_networks;
 static gint sub_add, sub_del, sub_chg;
 static gchar *iw_owner;
 
@@ -180,7 +179,7 @@ static iw_known_t *iw_known_network_get ( gchar *path, gboolean create )
   if(!path)
     return NULL;
 
-  if( (known = hash_table_lookup(iw_known_networks, path)) )
+  if( (known = g_hash_table_lookup(iw_known_networks, path)) )
     return known;
 
   if(!create)
@@ -189,7 +188,7 @@ static iw_known_t *iw_known_network_get ( gchar *path, gboolean create )
   known = g_malloc0(sizeof(iw_known_t));
   known->path = g_strdup(path);
 
-  hash_table_insert(iw_known_networks, known->path, known);
+  g_hash_table_insert(iw_known_networks, known->path, known);
   return known;
 }
 
@@ -217,14 +216,12 @@ static void iw_network_remove ( gchar *path )
 {
   iw_network_t *network;
 
-  hash_table_lock(iw_networks);
-  if( (network = hash_table_lookup(iw_networks, path)) )
-  {
-    g_debug("iwd: remove network: %s", network->ssid);
-    trigger_emit_with_string("wifi-conf-removed", "id", g_strdup(network->path));
-    hash_table_remove(iw_networks, network->path);
-  }
-  hash_table_unlock(iw_networks);
+  if( !(network = g_hash_table_lookup(iw_networks, path)) )
+    return;
+
+  g_debug("iwd: remove network: %s", network->ssid);
+  trigger_emit_with_string("wifi-conf-removed", "id", g_strdup(network->path));
+  g_hash_table_remove(iw_networks, network->path);
 }
 
 static iw_network_t *iw_network_get ( gchar *path, gboolean create )
@@ -234,13 +231,13 @@ static iw_network_t *iw_network_get ( gchar *path, gboolean create )
   if(!create && !path)
     return NULL;
 
-  if( (net = hash_table_lookup(iw_networks, path)) || !create )
+  if( (net = g_hash_table_lookup(iw_networks, path)) || !create )
     return net;
 
   net = g_malloc0(sizeof(iw_network_t));
   net->path = g_strdup(path);
 
-  hash_table_insert(iw_networks, net->path, net);
+  g_hash_table_insert(iw_networks, net->path, net);
   return net;
 }
 
@@ -249,14 +246,9 @@ static iw_device_t *iw_device_get ( gchar *path, gboolean create )
   iw_device_t *device;
   GList *iter;
 
-  g_rec_mutex_lock(&device_mutex);
   for(iter=iw_devices; iter; iter=g_list_next(iter))
     if(!g_strcmp0(((iw_device_t *)iter->data)->path, path))
-      break;
-  g_rec_mutex_unlock(&device_mutex);
-
-  if(iter)
-    return iter->data;
+      return iter->data;
 
   if(!create)
     return NULL;
@@ -265,9 +257,7 @@ static iw_device_t *iw_device_get ( gchar *path, gboolean create )
   iw_scan_start(path);
   device = g_malloc0(sizeof(iw_device_t));
   device->path = g_strdup(path);
-  g_rec_mutex_lock(&device_mutex);
   iw_devices = g_list_prepend(iw_devices, device);
-  g_rec_mutex_unlock(&device_mutex);
   return device;
 }
 
@@ -278,9 +268,7 @@ static void iw_device_free ( iw_device_t *device )
 
   g_debug("iwd: remove device: %s", device->name);
 
-  g_rec_mutex_lock(&device_mutex);
   iw_devices = g_list_remove(iw_devices, device);
-  g_rec_mutex_unlock(&device_mutex);
   g_free(device->path);
   g_free(device->name);
   g_free(device->state);
@@ -302,12 +290,10 @@ static void iw_signal_level_agent_method(GDBusConnection *con,
   else if(!g_strcmp0(method, "Changed"))
   {
     g_variant_get (parameters, "(&oy)", &object, &level);
-    g_rec_mutex_lock(&device_mutex);
     if( (device = iw_device_get(object, FALSE)) )
         device->strength = level;
     
-    g_debug("iwd: level %d on %s", level, device?device->name:object);
-    g_rec_mutex_unlock(&device_mutex);
+    g_debug("iwd: level %d on %s", level, device? device->name: object);
     trigger_emit("wifi-level");
     g_dbus_method_invocation_return_value(invocation, NULL);
   }
@@ -332,20 +318,20 @@ static void iw_signal_level_agent_init ( gchar *path )
 static void iw_secret_agent_new ( GDBusMethodInvocation *inv,
     const gchar *type, GVariant *params )
 {
-  vm_store_t *store = vm_store_new(NULL, TRUE);
+  vm_store_t *store;
   iw_network_t *net;
   gchar *object;
 
   g_variant_get(params, "(&o)", &object);
-  hash_table_lock(iw_networks);
-  if((net = iw_network_get(object, FALSE)))
-  {
-    iw_secret_inv = inv;
-    vm_store_insert_full(store, "type", value_new_string(g_strdup(type)));
-    vm_store_insert_full(store, "ssid", value_new_string(g_strdup(net->ssid)));
-    trigger_emit_with_data("wifi-secret", store);
-  }
-  hash_table_unlock(iw_networks);
+  if( !(net = iw_network_get(object, FALSE)) )
+    return;
+
+  iw_secret_inv = inv;
+  store = vm_store_new(NULL, TRUE);
+  vm_store_insert_full(store, "type", value_new_string(g_strdup(type)));
+  vm_store_insert_full(store, "ssid", value_new_string(g_strdup(net->ssid)));
+  trigger_emit_with_data("wifi-secret", store);
+  vm_store_unref(store);
 }
 
 static void iw_agent_method(GDBusConnection *con,
@@ -374,16 +360,13 @@ static void iw_scan_start ( gchar *path )
 {
   iw_device_t *device;
 
-  g_rec_mutex_lock(&device_mutex);
-  device = iw_device_get(path, FALSE);
-  if(device && !device->scanning)
-  {
-    g_debug("iwd: initiating scan");
-    trigger_emit("wifi-scan");
-    g_dbus_connection_call(iw_con, iw_serv, path, iw_iface_station, "Scan",
-      NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
-  }
-  g_rec_mutex_unlock(&device_mutex);
+  if( !(device = iw_device_get(path, FALSE)) || device->scanning)
+    return;
+
+  g_debug("iwd: initiating scan");
+  trigger_emit("wifi-scan");
+  g_dbus_connection_call(iw_con, iw_serv, path, iw_iface_station, "Scan", NULL,
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
 }
 
 static void iw_network_connect_cb ( GDBusConnection *con, GAsyncResult *res,
@@ -391,14 +374,10 @@ static void iw_network_connect_cb ( GDBusConnection *con, GAsyncResult *res,
 {
   GVariant *result;
 
-  result = g_dbus_connection_call_finish(con, res, NULL);
-  if(result)
+  if( (result = g_dbus_connection_call_finish(con, res, NULL)) )
     g_variant_unref(result);
 
-  hash_table_lock(iw_networks);
   iw_network_updated(iw_network_get(path, FALSE));
-  hash_table_unlock(iw_networks);
-  g_free(path);
 }
 
 static void iw_network_connect ( gchar *path )
@@ -416,7 +395,6 @@ static void iw_network_disconnect ( gchar *path )
   GList *iter;
   iw_device_t *device;
 
-  g_rec_mutex_lock(&device_mutex);
   for(iter=iw_devices; iter; iter=g_list_next(iter))
   {
     device = iter->data;
@@ -425,7 +403,6 @@ static void iw_network_disconnect ( gchar *path )
           "Disconnect", NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL,
           NULL);
   }
-  g_rec_mutex_unlock(&device_mutex);
 }
 
 static void iw_network_forget ( gchar *path )
@@ -457,14 +434,12 @@ static void iw_network_strength_cb ( GDBusConnection *con, GAsyncResult *res,
     return;
 
   g_variant_get(result, "(a(on))", &iter);
-  hash_table_lock(iw_networks);
   while(g_variant_iter_next(iter, "(&on)", &path, &strength))
-    if( (net = iw_network_get(path, FALSE)) && net->strength!=strength)
+    if( (net = iw_network_get(path, FALSE)) && net->strength != strength)
     {
       net->strength = strength;
       iw_network_updated(net);
     }
-  hash_table_unlock(iw_networks);
 
   g_variant_iter_free(iter);
   g_variant_unref(result);
@@ -475,13 +450,11 @@ static void iw_device_handle ( gchar *path, gchar *iface, GVariant *dict )
   iw_device_t *device;
   gboolean change = FALSE;
 
-  g_rec_mutex_lock(&device_mutex);
   device = iw_device_get(path, TRUE);
   change |= iw_string_from_dict( dict, "Name", "&s", &device->name);
 
   if(change)
     g_debug("iwd: device: %s, state: %s", device->name, device->state);
-  g_rec_mutex_unlock(&device_mutex);
 }
 
 static void iw_station_handle ( gchar *path, gchar *iface, GVariant *dict )
@@ -489,7 +462,6 @@ static void iw_station_handle ( gchar *path, gchar *iface, GVariant *dict )
   iw_device_t *device;
   gboolean change = FALSE, scan;
 
-  g_rec_mutex_lock(&device_mutex);
   device = iw_device_get(path, TRUE);
   change |= iw_string_from_dict(dict, "State", "&s", &device->state);
   change |= iw_string_from_dict(dict, "ConnectedNetwork", "&o",
@@ -507,7 +479,6 @@ static void iw_station_handle ( gchar *path, gchar *iface, GVariant *dict )
   if(change)
     g_debug("iwd: device: %s, state: %s, scanning: %d", device->name,
         device->state, device->scanning);
-  g_rec_mutex_unlock(&device_mutex);
 }
 
 static void iw_known_network_handle ( gchar *path, gchar *iface, GVariant *dict )
@@ -534,7 +505,6 @@ static void iw_network_handle ( gchar *path, gchar *iface, GVariant *dict )
   iw_network_t *net;
   gboolean change = FALSE;
 
-  hash_table_lock(iw_networks);
   net = iw_network_get(path, TRUE);
   change |= iw_string_from_dict(dict, "Name", "&s", &net->ssid);
   change |= iw_string_from_dict(dict, "Type", "&s", &net->type);
@@ -544,7 +514,6 @@ static void iw_network_handle ( gchar *path, gchar *iface, GVariant *dict )
 
   if(change)
     iw_network_updated(net);
-  hash_table_unlock(iw_networks);
 }
 
 static void iw_object_handle ( gchar *path, gchar *iface, GVariant *dict )
@@ -605,7 +574,7 @@ static void iw_object_removed_cb ( GDBusConnection *con, const gchar *sender,
     if(!g_strcmp0(iface, iw_iface_network))
       iw_network_remove(object);
     else if(!g_strcmp0(iface, iw_iface_known))
-      hash_table_remove(iw_known_networks, object);
+      g_hash_table_remove(iw_known_networks, object);
     else if(!g_strcmp0(iface, iw_iface_device))
       iw_device_free(iw_device_get(object, FALSE));
   }
@@ -659,7 +628,6 @@ static value_t iw_expr_get ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 1, "WifiGet");
 
-  hash_table_lock(iw_networks);
   if(np==2 && (net = iw_network_get(value_get_string(p[0]), FALSE)) )
   {
     prop = value_get_string(p[1]);
@@ -674,17 +642,14 @@ static value_t iw_expr_get ( vm_t *vm, value_t p[], gint np )
     if(!g_ascii_strcasecmp(prop, "connected"))
       val = value_new_numeric(!!net->connected);
   }
-  hash_table_unlock(iw_networks);
 
   if(value_is_na(val) &&
       !g_ascii_strcasecmp(value_get_string(p[0]), "DeviceStrength"))
   {
-    g_rec_mutex_lock(&device_mutex);
     device = value_get_string(p[1])?
       iw_device_get(value_get_string(p[1]), FALSE) : iw_devices->data;
     val = value_new_string(g_strdup_printf("%d",
         device? CLAMP((device->strength*-10+100), 0, 100) : 0));
-    g_rec_mutex_unlock(&device_mutex);
   }
 
   return val;
@@ -699,8 +664,6 @@ static value_t iw_action_scan ( vm_t *vm, value_t p[], gint np )
   if(np)
     vm_param_check_string(vm, p, 0, "WifiScan");
 
-  g_rec_mutex_lock(&device_mutex);
-
   if(np)
     for(iter=iw_devices; iter; iter=g_list_next(iter))
       if(!g_strcmp0(((iw_device_t *)iter->data)->name, value_get_string(p[0])))
@@ -711,11 +674,9 @@ static value_t iw_action_scan ( vm_t *vm, value_t p[], gint np )
   else if(iw_devices)
     device = iw_devices->data;
   else
-    device = NULL;
+    return value_na;
 
-  if(device)
-    iw_scan_start(device->path);
-  g_rec_mutex_unlock(&device_mutex);
+  iw_scan_start(device->path);
 
   return value_na;
 }
@@ -771,17 +732,17 @@ static value_t iw_action_secret ( vm_t *vm, value_t p[], gint np )
 
 static void iw_activate ( void )
 {
-  iw_networks = hash_table_new_full(g_str_hash, g_str_equal, NULL,
+  iw_networks = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
       (GDestroyNotify)iw_network_free);
-  iw_known_networks = hash_table_new_full(g_str_hash, g_str_equal, NULL,
+  iw_known_networks = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
       (GDestroyNotify)iw_known_network_free);
 
-  vm_func_add("wifiget", iw_expr_get, FALSE, TRUE);
-  vm_func_add("wifiscan", iw_action_scan, TRUE, TRUE);
-  vm_func_add("wificonnect", iw_action_connect, TRUE, TRUE);
-  vm_func_add("wifidisconnect", iw_action_disconnect, TRUE, TRUE);
-  vm_func_add("wififorget", iw_action_forget, TRUE, TRUE);
-  vm_func_add("wifisecret", iw_action_secret, TRUE, TRUE);
+  vm_func_add("wifiget", iw_expr_get, FALSE, FALSE);
+  vm_func_add("wifiscan", iw_action_scan, TRUE, FALSE);
+  vm_func_add("wificonnect", iw_action_connect, TRUE, FALSE);
+  vm_func_add("wifidisconnect", iw_action_disconnect, TRUE, FALSE);
+  vm_func_add("wififorget", iw_action_forget, TRUE, FALSE);
+  vm_func_add("wifisecret", iw_action_secret, TRUE, FALSE);
 
   sub_add = g_dbus_connection_signal_subscribe(iw_con, iw_owner,
       "org.freedesktop.DBus.ObjectManager", "InterfacesAdded", NULL, NULL,
@@ -803,26 +764,17 @@ static void iw_deactivate ( void )
 {
   g_debug("iwd: daemon disappeared");
 
-  g_rec_mutex_lock(&device_mutex);
   while(iw_devices)
     iw_device_free(iw_devices->data);
-  g_rec_mutex_unlock(&device_mutex);
-  g_clear_pointer(&iw_networks, hash_table_remove_all);
-  g_clear_pointer(&iw_known_networks, hash_table_remove_all);
+  g_clear_pointer(&iw_networks, g_hash_table_remove_all);
+  g_clear_pointer(&iw_known_networks, g_hash_table_remove_all);
 
-  sfwbar_interface.active = FALSE;
-}
-
-static void iw_finalize ( void )
-{
-  vm_func_remove("wifiget");
-  vm_func_remove("wifiack");
-  vm_func_remove("wifiackremoved");
-  vm_func_remove("wifiscan");
-  vm_func_remove("wificonnect");
-  vm_func_remove("wifidisconnect");
-  vm_func_remove("wififorget");
-  vm_func_remove("wifisecret");
+  vm_func_remove("wifiget", iw_expr_get);
+  vm_func_remove("wifiscan", iw_action_scan);
+  vm_func_remove("wificonnect", iw_action_connect);
+  vm_func_remove("wifidisconnect", iw_action_disconnect);
+  vm_func_remove("wififorget", iw_action_forget);
+  vm_func_remove("wifisecret", iw_action_secret);
 }
 
 gboolean sfwbar_module_init ( void )
@@ -858,5 +810,4 @@ ModuleInterfaceV1 sfwbar_interface = {
   .provider = "IWD",
   .activate = iw_activate,
   .deactivate = iw_deactivate,
-  .finalize = iw_finalize
 };

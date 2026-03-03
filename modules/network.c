@@ -20,7 +20,6 @@
 
 typedef struct _iface_info {
   gchar *name;
-  GMutex mutex;
   gboolean invalid;
   struct in_addr ip, mask, bcast, gateway;
   struct in6_addr ip6, mask6, bcast6, gateway6;
@@ -54,7 +53,6 @@ static iface_info *net_iface_get ( gchar *name, gboolean create )
     return NULL;
 
   iface = g_malloc0(sizeof(iface_info));
-  g_mutex_init(&iface->mutex);
   iface->name = g_strdup(name);
   iface_list = g_list_prepend(iface_list, iface);
   return iface;
@@ -121,10 +119,8 @@ static void net_iface_update ( gint32 iidx, struct in_addr gate,
     return;
 
   iface = net_iface_get(if_indextoname(iidx, ifname), TRUE);
-  g_mutex_lock(&iface->mutex);
   iface->gateway = gate;
   iface->gateway6 = gate6;
-  g_mutex_unlock(&iface->mutex);
   net_update_essid(ifname);
   net_update_ifaddrs();
   route = iface;
@@ -197,10 +193,8 @@ static void net_update_essid ( gchar *interface )
   if(sock >= 0 && ioctl(sock, SIOCGIWESSID, &wreq) >= 0)
   {
     diff = g_strcmp0(iface->essid, lessid);
-    g_mutex_lock(&iface->mutex);
     g_free(iface->essid);
     iface->essid = g_strdup(lessid);
-    g_mutex_unlock(&iface->mutex);
     if(diff)
       trigger_emit("network");
   }
@@ -440,17 +434,13 @@ static void net_update_essid ( char *interface )
   if(ioctl(sock, SIOCG80211, &req) >=0)
   {
     lessid[MIN(req.i_len, IEEE80211_NWID_LEN)]='\0';
-    g_mutex_lock(&iface->mutex);
     g_free(iface->essid);
     iface->essid = g_strdup(lessid);
-    g_mutex_unlock(&iface->mutex);
   }
   else
   {
-    g_mutex_lock(&iface->mutex);
     g_free(iface->essid);
     iface->essid = NULL;
-    g_mutex_unlock(&iface->mutex);
   }
   close(sock);
 }
@@ -528,12 +518,8 @@ static gdouble net_get_signal ( gchar *interface )
   memcpy(&(req.nr_macaddr), bssid.i_bssid, sizeof(req.nr_macaddr));
   if(ioctl(sock, SIOCG80211NODE, &req) >= 0)
   {
-    if(g_mutex_trylock(&mutex))
-    {
-      g_free(essid);
-      essid = g_strdup(req.nr_nwid);
-      g_mutex_unlock(&mutex);
-    }
+    g_free(essid);
+    essid = g_strdup(req.nr_nwid);
     if(req.nr_max_nssi)
       level = IEEE80211_NODEREQ_RSSI(&req);
     else
@@ -674,7 +660,6 @@ static value_t network_func_netstat ( vm_t *vm, value_t p[], gint np )
   if(!iface)
     return value_na;
 
-  g_mutex_lock(&iface->mutex);
   if(!g_ascii_strcasecmp(p[0].value.string, "signal"))
     result = net_get_signal(route?route->name:NULL);
   else if(!g_ascii_strcasecmp(p[0].value.string, "rxrate"))
@@ -689,7 +674,6 @@ static value_t network_func_netstat ( vm_t *vm, value_t p[], gint np )
     result = (gdouble)(iface->tx_bytes-iface->ptx_bytes)*
       1000000/iface->time_diff;
   }
-  g_mutex_unlock(&iface->mutex);
 
   return value_new_numeric(result);
 }
@@ -727,7 +711,6 @@ static value_t network_func_netinfo ( vm_t *vm, value_t p[], gint np )
   if(!iface)
     return value_na;
 
-  g_mutex_lock(&iface->mutex);
   if(!g_ascii_strcasecmp(p[0].value.string, "ip"))
     result = net_getaddr(&iface->ip, AF_INET);
   else if(!g_ascii_strcasecmp(p[0].value.string, "mask"))
@@ -748,7 +731,6 @@ static value_t network_func_netinfo ( vm_t *vm, value_t p[], gint np )
     result = g_strdup(iface->name);
   else
     result = g_strdup("invalid query");
-  g_mutex_unlock(&iface->mutex);
 
   return value_new_string(result);
 }
@@ -764,8 +746,8 @@ gboolean sfwbar_module_init ( void )
   g_debug("network: socket: %d", sock);
   if( (chan = g_io_channel_unix_new(sock)) )
   {
-    vm_func_add("netstat", network_func_netstat, FALSE, TRUE);
-    vm_func_add("netinfo", network_func_netinfo, FALSE, TRUE);
+    vm_func_add("netstat", network_func_netstat, FALSE, FALSE);
+    vm_func_add("netinfo", network_func_netinfo, FALSE, FALSE);
     g_io_add_watch(chan, G_IO_IN | G_IO_PRI |G_IO_ERR | G_IO_HUP,
         net_rt_parse, NULL);
     net_rt_request(sock);

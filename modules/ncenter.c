@@ -1,5 +1,8 @@
-#include <glib.h>
-#include <gio/gio.h>
+/* This entire file is licensed under GNU General Public License v3.0
+ *
+ * Copyright 2025- Sfwbar maintainers
+ */
+
 #include "module.h"
 #include "trigger.h"
 #include "gui/scaleimage.h"
@@ -18,7 +21,7 @@ typedef struct _dn_notification {
   guint32 id;
   gboolean action_icons, resident, transient, silent;
   gchar *category, *desktop, *image, *sound_file, *sound_name;
-  gint32 x,y;
+  gint32 x, y;
   gchar urgency;
   /* need image data */
   guint timeout_handle;
@@ -28,13 +31,13 @@ typedef struct _dn_notification {
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = MODULE_API_VERSION;
+gboolean sfwbar_module_own_thread = TRUE;
 
 static GDBusConnection *dn_con;
 static guint32 dn_id_counter = 1;
 static guint dn_pixbuf_counter;
 
 static GList *notif_list;
-static GRecMutex dn_mutex;
 static gchar *expanded_group;
 static gint32 default_timeout = 0;
 
@@ -123,7 +126,6 @@ static void dn_notification_close ( guint32 id, guchar reason )
 
   g_debug("ncenter: close event: %d", id);
 
-  g_rec_mutex_lock(&dn_mutex);
   if( (notif = dn_notification_lookup(id)) )
   {
     notif_list = g_list_remove(notif_list, notif);
@@ -141,7 +143,6 @@ static void dn_notification_close ( guint32 id, guchar reason )
     g_dbus_connection_emit_signal(dn_con, NULL, dn_path, dn_bus,
         "NotificationClosed", g_variant_new("(uu)", id, reason), NULL);
   }
-  g_rec_mutex_unlock(&dn_mutex);
 
   trigger_emit_with_string("notification-removed", "id",
       g_strdup_printf("%d", id));
@@ -152,24 +153,17 @@ static void dn_notification_expand ( guint32 id )
 {
   dn_notification *notif;
 
-  g_rec_mutex_lock(&dn_mutex);
-  if( (notif = dn_notification_lookup(id)) )
-  {
-    g_debug("ncenter: expand event: '%s'", notif->app_name);
-    str_assign(&expanded_group, g_strdup(notif->app_name));
-    trigger_emit("notification-group");
-  }
-  g_rec_mutex_unlock(&dn_mutex);
+  if( !(notif = dn_notification_lookup(id)) )
+    return;
+  g_debug("ncenter: expand event: '%s'", notif->app_name);
+  str_assign(&expanded_group, g_strdup(notif->app_name));
+  trigger_emit("notification-group");
 }
 
 static void dn_notification_collapse ( void )
 {
-  g_rec_mutex_lock(&dn_mutex);
   g_debug("ncenter: collapse event: '%s'", expanded_group);
-
   g_clear_pointer(&expanded_group, g_free);
-  g_rec_mutex_unlock(&dn_mutex);
-
   trigger_emit("notification-group");
 }
 
@@ -240,7 +234,6 @@ guint32 dn_notification_parse ( GVariant *params )
   g_variant_get(params, "(susssas@a{sv}i)", NULL, &id,
       NULL,NULL,NULL,NULL,NULL,NULL);
 
-  g_rec_mutex_lock(&dn_mutex);
   for(iter=notif_list; iter; iter=g_list_next(iter))
     if(DN_NOTIFICATION(iter->data)->id == id)
       break;
@@ -293,7 +286,7 @@ guint32 dn_notification_parse ( GVariant *params )
     notif->timeout = notif->resident?0:default_timeout;
   if(notif->timeout > 0)
     notif->timeout_handle =
-      g_timeout_add(notif->timeout, (GSourceFunc)dn_timeout, notif);
+      module_timeout_add(notif->timeout, (GSourceFunc)dn_timeout, notif);
 
   actions = value_array_create(g_variant_iter_n_children(aiter)/2);
   while(g_variant_iter_next(aiter, "&s", &action_id) &&
@@ -332,7 +325,6 @@ guint32 dn_notification_parse ( GVariant *params )
   g_debug("ncenter: app: '%s', id: %u, icon: '%s', summary '%s', body '%s', timeout: %d",
       notif->app_name, notif->id, notif->app_icon, notif->summary,
       notif->body, notif->timeout);
-  g_rec_mutex_unlock(&dn_mutex);
 
   return notif->id;
 }
@@ -410,7 +402,6 @@ static value_t dn_group_func ( vm_t *vm, value_t p[], gint np )
   dn_notification *notif;
   GList *iter;
   guint32 id, count = 0;
-  gchar *result = NULL;
   gboolean header = FALSE;
 
   if(np!=1 || !value_is_string(p[0]))
@@ -419,46 +410,38 @@ static value_t dn_group_func ( vm_t *vm, value_t p[], gint np )
   if( !(id = g_ascii_strtoull(p[0].value.string, NULL, 10)) )
     return value_na;
 
-  g_rec_mutex_lock(&dn_mutex);
   for(iter=notif_list; iter; iter=g_list_next(iter))
     if(DN_NOTIFICATION(iter->data)->id == id)
       break;
 
-  if(iter)
-  {
-    notif = iter->data;
+  if(!iter)
+    return value_na;
+  notif = iter->data;
 
-    if(expanded_group && !g_strcmp0(expanded_group, notif->app_name))
-      result = g_strdup("visible");
-    else
+  if(expanded_group && !g_strcmp0(expanded_group, notif->app_name))
+    return value_new_string(g_strdup("visible"));
+
+  for(iter=notif_list; iter; iter=g_list_next(iter))
+    if(!g_strcmp0(DN_NOTIFICATION(iter->data)->app_name, notif->app_name))
     {
-      for(iter=notif_list; iter; iter=g_list_next(iter))
-        if(!g_strcmp0(DN_NOTIFICATION(iter->data)->app_name, notif->app_name))
-        {
-          if(!count && iter->data==notif)
-            header = TRUE;
-          count++;
-        }
-
-      if(count==1)
-        result = g_strdup("sole");
-
-      if(count>1 && header)
-        result = g_strdup("header");
+      if(!count && iter->data==notif)
+        header = TRUE;
+      count++;
     }
-  }
-  g_rec_mutex_unlock(&dn_mutex);
+  if(count==1)
+    return value_new_string(g_strdup("sole"));
 
-  return value_new_string(result);
+  if(count>1 && header)
+    return value_new_string(g_strdup("header"));
+
+  return value_na;
 }
 
 static value_t dn_active_group_func ( vm_t *vm, value_t p[], gint np )
 {
   value_t v1;
 
-  g_rec_mutex_lock(&dn_mutex);
   v1 = value_new_string(g_strdup(expanded_group));
-  g_rec_mutex_unlock(&dn_mutex);
 
   return v1;
 }
@@ -470,15 +453,14 @@ static value_t dn_count_func ( vm_t *vm, value_t p[], gint np )
   gdouble result = 0;
   guint32 id;
 
-  g_rec_mutex_lock(&dn_mutex);
   if(np!=1 || !value_is_string(p[0]))
-    result = g_list_length(notif_list);
-  else if( (id=g_ascii_strtoull(p[0].value.string, NULL, 10)) &&
-      (notif=dn_notification_lookup(id)) )
-    for(iter=notif_list; iter; iter=g_list_next(iter))
-      if(!g_strcmp0(DN_NOTIFICATION(iter->data)->app_name, notif->app_name))
-        result++;
-  g_rec_mutex_unlock(&dn_mutex);
+    return value_new_numeric(g_list_length(notif_list));
+
+  if( (id=g_ascii_strtoull(p[0].value.string, NULL, 10)) &&
+    (notif=dn_notification_lookup(id)) )
+  for(iter=notif_list; iter; iter=g_list_next(iter))
+    if(!g_strcmp0(DN_NOTIFICATION(iter->data)->app_name, notif->app_name))
+      result++;
 
   return value_new_numeric(result);
 }
@@ -541,13 +523,13 @@ static value_t dn_action_action ( vm_t *vm, value_t p[], gint np )
 
 gboolean sfwbar_module_init ( void )
 {
-  vm_func_add("notificationgroup", dn_group_func, FALSE, TRUE);
-  vm_func_add("notificationactivegroup", dn_active_group_func, FALSE, TRUE);
-  vm_func_add("notificationcount", dn_count_func, FALSE, TRUE);
-  vm_func_add("notificationclose", dn_close_action, TRUE, TRUE);
-  vm_func_add("notificationaction", dn_action_action, TRUE, TRUE);
-  vm_func_add("notificationexpand", dn_expand_action, TRUE, TRUE);
-  vm_func_add("notificationcollapse", dn_collapse_action, TRUE, TRUE);
+  vm_func_add("notificationgroup", dn_group_func, FALSE, FALSE);
+  vm_func_add("notificationactivegroup", dn_active_group_func, FALSE, FALSE);
+  vm_func_add("notificationcount", dn_count_func, FALSE, FALSE);
+  vm_func_add("notificationclose", dn_close_action, TRUE, FALSE);
+  vm_func_add("notificationaction", dn_action_action, TRUE, FALSE);
+  vm_func_add("notificationexpand", dn_expand_action, TRUE, FALSE);
+  vm_func_add("notificationcollapse", dn_collapse_action, TRUE, FALSE);
 
   dn_con = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
   g_bus_own_name(G_BUS_TYPE_SESSION, dn_bus, G_BUS_NAME_OWNER_FLAGS_NONE,

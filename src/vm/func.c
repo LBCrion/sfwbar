@@ -72,12 +72,16 @@ void vm_func_add_user ( gchar *name, GBytes *code, guint8 arity )
   g_debug("function: registered '%s'", name);
 }
 
-void vm_func_remove ( gchar *name )
+void vm_func_remove ( gchar *name, vm_func_t ofunc )
 {
   vm_function_t *func;
 
   g_mutex_lock(&func_mutex);
-  if( (func = g_hash_table_lookup(vm_func_table, name)) )
+  if( (func = g_hash_table_lookup(vm_func_table, name)) &&
+      (!ofunc || func->ptr.function == ofunc) )
+  {
     func->ptr.function = NULL;
+    g_debug("function: removed '%s'", name);
+  }
   g_mutex_unlock(&func_mutex);
 }

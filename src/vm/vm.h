@@ -144,7 +144,7 @@ void vm_func_add_full ( gchar *name, vm_func_t func, gboolean det,
 void vm_func_add ( gchar *name, vm_func_t func, gboolean det, gboolean safe);
 void vm_func_add_user ( gchar *name, GBytes *code, guint8 arity );
 vm_function_t *vm_func_lookup ( gchar *name );
-void vm_func_remove ( gchar *name );
+void vm_func_remove ( gchar *name, vm_func_t func );
 
 vm_var_t *vm_var_new ( gchar *name );
 void vm_var_free ( vm_var_t *var );

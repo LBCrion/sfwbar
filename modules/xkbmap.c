@@ -24,6 +24,7 @@ static void handle_keymap(void *data, struct wl_keyboard *wl_keyboard,
   struct xkb_state *xkb_state;
   xkb_layout_index_t maxl, l;
 
+
   if(format==WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1)
   {
     xkb_string = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
@@ -118,7 +119,7 @@ gboolean sfwbar_module_init ( void )
 {
   if( !(ctx = rxkb_context_new(0)) )
     return FALSE;
-//  rxkb_context_include_path_append_default(ctx);
+  rxkb_context_include_path_append_default(ctx);
   rxkb_context_parse_default_ruleset(ctx);
   vm_func_add("xkbmap", xkb_map_expr_func, TRUE, TRUE);
 

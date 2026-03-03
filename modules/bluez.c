@@ -10,6 +10,7 @@
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = MODULE_API_VERSION;
+gboolean sfwbar_module_own_thread = TRUE;
 
 static GHashTable *devices;
 static GList *adapters;
@@ -131,7 +132,7 @@ static bz_minor_class_t bz_minor_class[] = {
 
 static gchar *bz_get_major_class ( guint class )
 {
-  guint i =(class>>8) & 0x1F;
+  guint i = (class>>8) & 0x1F;
 
   if(i<10)
     return bz_major_class[i];

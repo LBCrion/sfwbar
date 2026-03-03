@@ -29,7 +29,6 @@ typedef struct _pulse_interface {
   gchar *default_control;
   gboolean fixed;
   GList *list;
-  GMutex list_mutex;
   pa_operation *(*set_volume)(pa_context *, uint32_t, const pa_cvolume *,
       pa_context_success_cb_t, void *);
   pa_operation *(*set_mute)(pa_context *, uint32_t, int,
@@ -42,6 +41,7 @@ typedef struct _pulse_interface {
 pa_mainloop_api *papi;
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = MODULE_API_VERSION;
+module_thread_t sfwbar_module_thread = MODULE_THREAD_MODULE;
 extern ModuleInterfaceV1 sfwbar_interface;
 
 static pa_context *pctx;
@@ -53,25 +53,16 @@ static pulse_info *pulse_info_from_idx ( pulse_interface_t *iface, guint32 idx,
   GList *iter;
   pulse_info *info;
 
-  g_mutex_lock(&iface->list_mutex);
   for(iter=iface->list; iter; iter=g_list_next(iter))
     if(((pulse_info *)iter->data)->idx == idx)
-      break;
-  g_mutex_unlock(&iface->list_mutex);
-
-  if(iter)
       return iter->data;
 
-  if(new)
-  {
-    info = g_malloc0(sizeof(pulse_info));
-    g_mutex_lock(&iface->list_mutex);
-    iface->list = g_list_prepend(iface->list, info);
-    g_mutex_unlock(&iface->list_mutex);
-    return info;
-  }
-  else
+  if(!new)
     return NULL;
+
+  info = g_malloc0(sizeof(pulse_info));
+  iface->list = g_list_prepend(iface->list, info);
+  return info;
 }
 
 static pulse_interface_t pulse_interfaces[] = {
@@ -149,12 +140,10 @@ static pulse_info *pulse_addr_parse ( const gchar *addr,
   }
   else
   {
-    g_mutex_lock(&iface->list_mutex);
     for(iter=iface->list; iter; iter=g_list_next(iter))
       if(!g_strcmp0(((pulse_info *)iter->data)->name,
             device?device:iface->default_control))
         break;
-    g_mutex_unlock(&iface->list_mutex);
     info = iter? iter->data : NULL;
   }
 
@@ -227,29 +216,23 @@ static void pulse_remove_device ( pulse_interface_t *iface, guint32 idx )
   GList *iter;
   pulse_info *info;
 
-  g_mutex_lock(&iface->list_mutex);
   for(iter=iface->list; iter; iter=g_list_next(iter))
     if(((pulse_info *)iter->data)->idx == idx)
     {
       info = iter->data;
       iface->list = g_list_delete_link(iface->list, iter);
-      break;
+      if(info->name)
+        trigger_emit_with_string("volume-conf-removed", "device_id",
+            g_strdup_printf("@pulse-%s-%d", iface->prefix, idx));
+      g_free(info->name);
+      g_free(info->icon);
+      g_free(info->form);
+      g_free(info->port);
+      g_free(info->monitor);
+      g_free(info->description);
+      g_free(info);
+      return;
     }
-  g_mutex_unlock(&iface->list_mutex);
-
-  if(!iter)
-    return;
-
-  if(info->name)
-    trigger_emit_with_string("volume-conf-removed", "device_id",
-        g_strdup_printf("@pulse-%s-%d", iface->prefix, idx));
-  g_free(info->name);
-  g_free(info->icon);
-  g_free(info->form);
-  g_free(info->port);
-  g_free(info->monitor);
-  g_free(info->description);
-  g_free(info);
 }
 
 static void pulse_operation ( pa_operation *o, gchar *cmd )
@@ -337,7 +320,6 @@ static void pulse_client_cb ( pa_context *ctx, const pa_client_info *cinfo,
   if(!cinfo)
     return;
 
-  g_mutex_lock(&pulse_interfaces[2].list_mutex);
   for(iter=pulse_interfaces[2].list; iter; iter=g_list_next(iter))
   {
     info = iter->data;
@@ -348,7 +330,6 @@ static void pulse_client_cb ( pa_context *ctx, const pa_client_info *cinfo,
       change = TRUE;
     }
   }
-  g_mutex_unlock(&pulse_interfaces[2].list_mutex);
 
   if(change)
     trigger_emit("volume");
@@ -485,10 +466,10 @@ static void pulse_state_cb ( pa_context *ctx, gpointer data )
   if(state == PA_CONTEXT_FAILED || state == PA_CONTEXT_TERMINATED)
   {
     module_interface_deactivate(&sfwbar_interface);
-    g_timeout_add (1000, (GSourceFunc )pulse_connect_try, NULL);
+    module_timeout_add(1000, (GSourceFunc )pulse_connect_try, NULL);
     pa_context_disconnect(ctx);
     pa_context_unref(ctx);
-    module_interface_select(sfwbar_interface.interface);
+    module_interface_deactivate(&sfwbar_interface);
     trigger_emit("volume");
   }
   else if(state == PA_CONTEXT_READY)
@@ -504,6 +485,7 @@ static gboolean pulse_connect_try ( void *data )
   if(sfwbar_interface.active)
     return TRUE;
 
+  g_debug("pulse: connecting");
   pctx = pa_context_new(papi, "sfwbar");
   pa_context_set_state_callback(pctx, pulse_state_cb, NULL);
   pa_context_connect(pctx, NULL, PA_CONTEXT_NOFLAGS, NULL);
@@ -513,7 +495,7 @@ static gboolean pulse_connect_try ( void *data )
 
 static gint pulse_volume_get ( pulse_info *info, gint cidx )
 {
-  return cidx?info->cvol.values[cidx-1]:pa_cvolume_avg(&info->cvol);
+  return cidx? info->cvol.values[cidx-1] : pa_cvolume_avg(&info->cvol);
 }
 
 static void pulse_volume_adjust ( pulse_interface_t *iface, pulse_info *info,
@@ -582,15 +564,6 @@ static void pulse_client_set_sink ( pulse_info *info, gchar *dest )
         dinfo->idx, NULL, NULL), "pa_context_move_sink_input_by_index");
 }
 
-static gint pulse_iface_count ( pulse_interface_t *iface )
-{
-  gint count;
-  g_mutex_lock(&iface->list_mutex);
-  count = g_list_length(iface->list);
-  g_mutex_unlock(&iface->list_mutex);
-  return count;
-}
-
 static value_t pulse_volume_func ( vm_t *vm, value_t p[], gint np )
 {
   pulse_info *info;
@@ -607,7 +580,7 @@ static value_t pulse_volume_func ( vm_t *vm, value_t p[], gint np )
     return value_na;
 
   if(!g_ascii_strcasecmp(cmd, "count"))
-    return value_new_numeric(pulse_iface_count(iface));
+    return value_new_numeric(g_list_length(iface->list));
 
   if( !(info = pulse_addr_parse(np==2? value_get_string(p[1]) : NULL, iface,
           &cidx)) )
@@ -670,9 +643,10 @@ static value_t pulse_volume_ctl_action ( vm_t *vm, value_t p[], gint np )
 
 static void pulse_activate ( void )
 {
-  vm_func_add("volume", pulse_volume_func, FALSE, TRUE);
-  vm_func_add("volumeinfo", pulse_volume_func, FALSE, TRUE);
-  vm_func_add("volumectl", pulse_volume_ctl_action, TRUE, TRUE);
+  g_debug("pulse: activating");
+  vm_func_add("volume", pulse_volume_func, FALSE, FALSE);
+  vm_func_add("volumeinfo", pulse_volume_func, FALSE, FALSE);
+  vm_func_add("volumectl", pulse_volume_ctl_action, TRUE, FALSE);
   pa_context_set_subscribe_callback(pctx, pulse_subscribe_cb, NULL);
   pulse_operation(pa_context_subscribe(pctx, PA_SUBSCRIPTION_MASK_SERVER |
         PA_SUBSCRIPTION_MASK_SINK | PA_SUBSCRIPTION_MASK_SINK_INPUT |
@@ -691,21 +665,14 @@ static void pulse_deactivate ( void )
 
   for(i=0; i<3; i++)
   {
-    g_mutex_lock(&pulse_interfaces[i].list_mutex);
-      while(pulse_interfaces[i].list)
-        pulse_remove_device(&pulse_interfaces[i],
-            ((pulse_info *)pulse_interfaces[i].list->data)->idx);
-    g_mutex_unlock(&pulse_interfaces[i].list_mutex);
+    while(pulse_interfaces[i].list)
+      pulse_remove_device(&pulse_interfaces[i],
+          ((pulse_info *)pulse_interfaces[i].list->data)->idx);
   }
 
-  sfwbar_interface.active = FALSE;
-}
-
-static void pulse_finalize ( void )
-{
-  vm_func_remove("volume");
-  vm_func_remove("volumeinfo");
-  vm_func_remove("volumectl");
+  vm_func_remove("volume", pulse_volume_func);
+  vm_func_remove("volumeinfo", pulse_volume_func);
+  vm_func_remove("volumectl", pulse_volume_ctl_action);
 }
 
 gboolean sfwbar_module_init ( void )
@@ -714,7 +681,7 @@ gboolean sfwbar_module_init ( void )
 
   ploop = pa_glib_mainloop_new(g_main_context_get_thread_default());
   papi = pa_glib_mainloop_get_api(ploop);
-  g_timeout_add (1000,(GSourceFunc )pulse_connect_try, NULL);
+  module_timeout_add(1000, (GSourceFunc )pulse_connect_try, NULL);
 
   return TRUE;
 }
@@ -724,5 +691,4 @@ ModuleInterfaceV1 sfwbar_interface = {
   .provider = "pulse",
   .activate = pulse_activate,
   .deactivate = pulse_deactivate,
-  .finalize = pulse_finalize
 };

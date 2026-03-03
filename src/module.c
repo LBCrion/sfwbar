@@ -12,100 +12,178 @@
 #include "vm/expr.h"
 #include "vm/vm.h"
 
-static GList *module_list;
-static GHashTable *interfaces;
-static GList *invalidators;
+static GList *module_list, *iface_providers, *invalidators;
 
-void module_interface_select ( gchar *interface )
+static gint module_interface_active ( gconstpointer iface, gconstpointer d )
 {
-  ModuleInterfaceList *list;
-  ModuleInterfaceV1 *new;
-  GList *iter;
+  return !(!g_strcmp0(((ModuleInterfaceV1 *)iface)->interface, d) &&
+        ((ModuleInterfaceV1 *)iface)->active);
+}
 
-  if( !(list = g_hash_table_lookup(interfaces, interface)) )
-    return;
+static gint module_interface_ready ( gconstpointer iface, gconstpointer d )
+{
+  return !(!g_strcmp0(((ModuleInterfaceV1 *)iface)->interface, d) &&
+        ((ModuleInterfaceV1 *)iface)->ready);
+}
 
-  for(iter=list->list; iter; iter=g_list_next(iter))
-    if(((ModuleInterfaceV1 *)iter->data)->ready)
-      break;
+static gint module_invocation_run ( void (*func)(void) )
+{
+  func();
+  return G_SOURCE_REMOVE;
+}
 
-  new = iter?iter->data:NULL;
-  if(list->active == new)
-    return;
+static void module_interface_select ( gchar *iface )
+{
+  ModuleInterfaceV1 *new, *old;
+  GList *new_link, *old_link;
 
-  if(list->active && list->active->active)
+  new_link = g_list_find_custom(iface_providers, iface,
+      module_interface_ready);
+  old_link = g_list_find_custom(iface_providers, iface,
+      module_interface_active);
+
+  if(old_link && new_link != old_link)
   {
-    list->active->ready = FALSE;
-    list->active->deactivate();
-    if(list->active && !list->active->active)
-      module_interface_select(interface);
-    return;
+    old = old_link->data;
+    g_debug("module: deactivating '%s' provider '%s'", iface,
+        old->provider);
+    g_main_context_invoke(old->context, (GSourceFunc)module_invocation_run,
+        old->deactivate);
+    old->active = FALSE;
   }
 
-  g_debug("module: switching interface '%s' from '%s' to '%s'", interface,
-      list->active?list->active->provider:"none", new?new->provider:"none");
-
-  if(list->active && list->active->finalize)
-      list->active->finalize();
-
-  list->active = new;
-  if(new)
+  if(new_link && new_link != old_link)
   {
-    new->activate();
+    new = new_link->data;
+    g_debug("module: activating '%s' provider '%s'", iface, new->provider);
+    g_main_context_invoke(new->context, (GSourceFunc)module_invocation_run,
+        new->activate);
     new->active = TRUE;
   }
 }
 
-void module_interface_activate ( ModuleInterfaceV1 *iface )
+static gint module_interface_activate_impl ( ModuleInterfaceV1 *iface )
 {
   iface->ready = TRUE;
   module_interface_select(iface->interface);
+  return G_SOURCE_REMOVE;
+}
+
+void module_interface_activate ( ModuleInterfaceV1 *iface )
+{
+  g_main_context_invoke(NULL, (GSourceFunc)module_interface_activate_impl,
+      iface);
+}
+
+static gint module_interface_deactivate_impl ( ModuleInterfaceV1 *iface )
+{
+  iface->ready = FALSE;
+  module_interface_select(iface->interface);
+  return G_SOURCE_REMOVE;
 }
 
 void module_interface_deactivate ( ModuleInterfaceV1 *iface )
 {
-  iface->ready = FALSE;
-  module_interface_select(iface->interface);
+  g_main_context_invoke(NULL, (GSourceFunc)module_interface_deactivate_impl, iface);
 }
 
 static void module_interface_add ( ModuleInterfaceV1 *iface,
-    gchar *name )
+    gchar *name, GMainContext *context )
 {
-  ModuleInterfaceList *list;
-
   if(!iface || !iface->interface || !iface->activate || !iface->deactivate)
     return;
 
-  if(!interfaces)
-    interfaces = g_hash_table_new_full((GHashFunc)str_nhash,
-        (GEqualFunc)str_nequal, g_free, NULL);
-
-  if( !(list=g_hash_table_lookup(interfaces, iface->interface)) )
-  {
-    list = g_malloc0(sizeof(ModuleInterfaceList));
-    g_hash_table_insert(interfaces, g_strdup(iface->interface), list);
-  }
   g_debug("module: adding provider: '%s' for interface '%s'",
       iface->provider, iface->interface);
-  list->list = g_list_append(list->list, iface);
+  iface->context = context;
+  iface_providers = g_list_append(iface_providers, iface);
   module_interface_select(iface->interface);
 }
 
 gchar *module_interface_provider_get ( gchar *interface )
 {
-  ModuleInterfaceList *list;
+  GList *link;
 
-  if( !(list = g_hash_table_lookup(interfaces, interface)) || !list->active )
+  if( !(link = g_list_find_custom(iface_providers, interface, module_interface_active)) )
     return g_strdup("");
 
-  return g_strdup(list->active->provider);
+  return g_strdup(((ModuleInterfaceV1 *)(link->data))->provider);
+}
+
+static gint module_source_func ( module_init_closure_t *closure )
+{
+  if( !(closure->result = closure->func()) )
+    closure->context = NULL;
+  g_mutex_lock(&closure->mutex);
+  closure->ready = TRUE;
+  g_cond_signal(&closure->cond);
+  g_mutex_unlock(&closure->mutex);
+
+  return G_SOURCE_REMOVE;
+}
+
+static gpointer module_thread_func ( module_init_closure_t *closure )
+{
+  GMainLoop *loop;
+
+  closure->context = g_main_context_new();
+  g_main_context_push_thread_default(closure->context);
+  loop = g_main_loop_new(closure->context, FALSE);
+
+  module_source_func(closure);
+
+  if(closure->result)
+    g_main_loop_run(loop);
+  g_main_loop_unref(loop);
+
+  return NULL;
+}
+
+static gboolean module_init ( gchar *name, GModule *module, GMainContext **ctx )
+{
+  static GMainContext *module_context;
+  gboolean (*init)(void);
+  module_init_closure_t *closure;
+  module_thread_t thread, *tptr ;
+  gboolean result;
+
+  *ctx = NULL;
+  if(!g_module_symbol(module, "sfwbar_module_init", (void **)&init) || !init)
+    return FALSE;
+
+  thread = (g_module_symbol(module, "sfwbar_module_thread", (void **)&tptr) &&
+      tptr)? *tptr : MODULE_THREAD_MAIN;
+
+  if(thread == MODULE_THREAD_MAIN)
+    return init();
+
+  closure = g_malloc0(sizeof(module_init_closure_t));
+  closure->thread = thread;
+  closure->func = init;
+
+  g_mutex_lock(&closure->mutex);
+  if(thread == MODULE_THREAD_MODULE && module_context)
+    g_main_context_invoke(module_context, (GSourceFunc)module_source_func, closure);
+  else
+    g_thread_new(name, (GThreadFunc)module_thread_func, closure);
+  while(!closure->ready)
+    g_cond_wait(&closure->cond, &closure->mutex);
+  g_mutex_unlock(&closure->mutex);
+
+  if(thread == MODULE_THREAD_MODULE && !module_context)
+    module_context = closure->context;
+  *ctx = (thread == MODULE_THREAD_MODULE)? module_context : closure->context;
+  result = closure->result;
+  g_free(closure);
+
+  return result;
 }
 
 gboolean module_load ( gchar *name )
 {
   GModule *module;
+  GMainContext *context;
   ModuleInvalidator invalidator;
-  ModuleInitializer init;
   ModuleInterfaceV1 *iface;
   gint64 *sig;
   guint16 *ver;
@@ -113,51 +191,52 @@ gboolean module_load ( gchar *name )
 
   if(!name)
     return FALSE;
-  g_debug("module: %s", name);
 
-  if(g_list_find_custom(module_list,name,(GCompareFunc)g_strcmp0))
+  if(g_list_find_custom(module_list, name, (GCompareFunc)g_strcmp0))
     return FALSE;
 
-  fname = g_strconcat(name,".so",NULL);
+  fname = g_strconcat(name, ".so", NULL);
   path = g_build_filename(MODULE_DIR, fname, NULL);
   g_free(fname);
-  g_debug("module: %s --> %s",name,path);
+  g_debug("module: %s --> %s", name, path);
   module = g_module_open(path, G_MODULE_BIND_LOCAL);
   g_free(path);
 
   if(!module)
   {
-    g_debug("module: failed to load %s",name);
+    g_debug("module: failed to load %s", name);
     return FALSE;
   }
 
-  if(!g_module_symbol(module,"sfwbar_module_signature",(void **)&sig) ||
+  if(!g_module_symbol(module, "sfwbar_module_signature", (void **)&sig) ||
       !sig || *sig != 0x73f4d956a1 )
   {
-    g_debug("module: signature check failed for %s",name);
+    g_debug("module: signature check failed for %s", name);
+    g_module_close(module);
     return FALSE;
   }
-  if(!g_module_symbol(module,"sfwbar_module_version",(void **)&ver) ||
+  if(!g_module_symbol(module, "sfwbar_module_version", (void **)&ver) ||
       !ver || *ver != MODULE_API_VERSION )
   {
-    g_debug("module: invalid version for %s",name);
+    g_debug("module: invalid version for %s", name);
+    g_module_close(module);
     return FALSE;
   }
 
-  module_list = g_list_prepend(module_list,g_strdup(name));
+  module_list = g_list_prepend(module_list, g_strdup(name));
 
-  if(g_module_symbol(module,"sfwbar_module_init",(void **)&init) && init)
+  if(!module_init(name, module, &context))
   {
-    g_debug("module: calling init function for %s",name);
-    if(!init())
-      return FALSE;
+    g_debug("module: init failed for %s", name);
+    g_module_close(module);
+    return FALSE;
   }
 
-  if(g_module_symbol(module,"sfwbar_module_invalidate",(void **)&invalidator))
-    invalidators = g_list_prepend(invalidators,invalidator);
+  if(g_module_symbol(module, "sfwbar_module_invalidate", (void **)&invalidator))
+    invalidators = g_list_prepend(invalidators, invalidator);
 
-  if(g_module_symbol(module,"sfwbar_interface",(void **)&iface))
-    module_interface_add(iface, name);
+  if(g_module_symbol(module, "sfwbar_interface", (void **)&iface))
+    module_interface_add(iface, name, context);
 
   return TRUE;
 }
@@ -166,7 +245,16 @@ void module_invalidate_all ( void )
 {
   GList *iter;
 
-  for(iter=invalidators;iter;iter=g_list_next(iter))
+  for(iter=invalidators; iter; iter=g_list_next(iter))
     if(iter->data)
       ((ModuleInvalidator)(iter->data))();
 }
+
+guint module_timeout_add ( guint i, GSourceFunc func, gpointer d )
+{
+  GSource *src = g_timeout_source_new(i);
+
+  g_source_set_callback(src, func, d, NULL);
+  return g_source_attach(src, g_main_context_get_thread_default());
+}
+

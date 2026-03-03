@@ -3,7 +3,6 @@
 #include "module.h"
 #include "trigger.h"
 #include "gui/popup.h"
-#include "util/hash.h"
 #include "util/string.h"
 #include "vm/vm.h"
 
@@ -89,6 +88,7 @@ static const gchar nm_secret_agent_xml[] =
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = MODULE_API_VERSION;
+module_thread_t sfwbar_module_thread = MODULE_THREAD_MODULE;
 
 extern ModuleInterfaceV1 sfwbar_interface;
 
@@ -114,11 +114,10 @@ static const gchar *nm_path_secret =
   "/org/freedesktop/NetworkManager/SecretAgent";
 
 static GDBusConnection *nm_con;
-static hash_table_t *ap_nodes, *new_conns, *conn_list;
-static hash_table_t *active_list, *apoint_list;
+static GHashTable *ap_nodes, *new_conns, *conn_list;
+static GHashTable *active_list, *apoint_list;
 static GList *devices, *nm_secrets;
 static GDBusMethodInvocation *nm_secret_inv;
-static GMutex device_lock;
 static nm_device_t *default_dev;
 static guint sub_add, sub_del, sub_chg;
 static guint32 nm_strength_threshold;
@@ -191,14 +190,14 @@ static void nm_apoint_ssid_update ( gchar *key, nm_apoint_t *ap, gchar *ssid )
 {
   if(!g_strcmp0(ap->ssid, ssid))
   {
-    ap->conn = hash_table_find(conn_list, (GHRFunc)nm_conn_ssid_cmp, ssid);
+    ap->conn = g_hash_table_find(conn_list, (GHRFunc)nm_conn_ssid_cmp, ssid);
     nm_apoint_update(ap);
   }
 }
 
 static void nm_conn_free ( nm_conn_t *conn )
 {
-  hash_table_foreach(apoint_list, (GHFunc)nm_apoint_ssid_update, conn->ssid);
+  g_hash_table_foreach(apoint_list, (GHFunc)nm_apoint_ssid_update, conn->ssid);
 
   g_free(conn->ssid);
   g_free(conn->path);
@@ -216,29 +215,31 @@ static void nm_conn_connect ( gchar *path )
 static void nm_secret_agent_emit ( void )
 {
   nm_secret_t *secret;
-  vm_store_t *store = vm_store_new(NULL, TRUE);
+  vm_store_t *store;
   nm_conn_t *conn;
 
   if( !nm_secrets || !(secret = nm_secrets->data) )
     return;
 
-  hash_table_lock(conn_list);
-  if( (conn = hash_table_lookup(conn_list, secret->path)) )
-  {
-    vm_store_insert_full(store, "type",
-        value_new_string(g_strdup("passphrase")));
-    vm_store_insert_full(store, "ssid",
-        value_new_string(g_strdup(conn->ssid)));
-  }
-  hash_table_unlock(conn_list);
   nm_secrets = g_list_remove(nm_secrets, secret);
   g_clear_object(&nm_secret_inv);
   nm_secret_inv = secret->inv;
   str_assign(&nm_secret_path, secret->path);
   g_free(secret);
+  if( (conn = g_hash_table_lookup(conn_list, nm_secret_path)) )
+  {
+    store = vm_store_new(NULL, TRUE);
+    vm_store_insert_full(store, "type",
+        value_new_string(g_strdup("passphrase")));
+    vm_store_insert_full(store, "ssid",
+        value_new_string(g_strdup(conn->ssid)));
+  }
 
   if(conn)
+  {
     trigger_emit_with_data("wifi-secret", store);
+    vm_store_unref(store);
+  }
 }
 
 static void nm_secret_agent_new ( GDBusMethodInvocation *inv,
@@ -298,12 +299,11 @@ static void nm_conn_new_cb ( GDBusConnection *con, GAsyncResult *res,
   GVariant *result;
   gchar *path, *active_path;
 
-  if( (result = g_dbus_connection_call_finish(con, res, NULL)) )
-  {
-    g_variant_get(result, "(oo)", &path, &active_path);
-    hash_table_insert(new_conns, active_path, path);
-    g_variant_unref(result);
-  }
+  if( !(result = g_dbus_connection_call_finish(con, res, NULL)) )
+    return;
+  g_variant_get(result, "(oo)", &path, &active_path);
+  g_hash_table_insert(new_conns, active_path, path);
+  g_variant_unref(result);
 }
 
 static void nm_conn_new ( gchar *path )
@@ -312,20 +312,17 @@ static void nm_conn_new ( gchar *path )
   GVariant *dict, *ipv4_entry, *ipv6_entry;
   nm_apoint_t *ap;
 
-  hash_table_lock(apoint_list);
-  if( !(ap = hash_table_lookup(apoint_list, path)) ||
+  if( !(ap = g_hash_table_lookup(apoint_list, path)) ||
       (ap->rsn & 0x00000200) || (ap->wpa & 0x00000200))
   {
     if(ap)
       trigger_emit_with_string("wifi-conf", "id", g_strdup(ap->hash));
-    hash_table_unlock(apoint_list);
     return; // we don't support 802.11x
   }
 
   if(ap->conn)
   {
     nm_conn_connect(ap->conn->path);
-    hash_table_unlock(apoint_list);
     return;
   }
 
@@ -371,15 +368,12 @@ static void nm_conn_new ( gchar *path )
   dict = g_variant_new_array(G_VARIANT_TYPE("{sa{sv}}"), entry,
       (ap->rsn || ap->wpa)?5:4);
 
-  g_mutex_lock(&device_lock);
   if(default_dev)
     g_dbus_connection_call(nm_con, nm_iface, nm_path, nm_iface,
         "AddAndActivateConnection",
         g_variant_new("(@a{sa{sv}}oo)", dict, default_dev->path, "/"),
         NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
         (GAsyncReadyCallback)nm_conn_new_cb, NULL);
-  g_mutex_unlock(&device_lock);
-  hash_table_unlock(apoint_list);
 }
 
 static void nm_conn_handle_cb ( GDBusConnection *con, GAsyncResult *res,
@@ -399,8 +393,8 @@ static void nm_conn_handle_cb ( GDBusConnection *con, GAsyncResult *res,
         conn = g_malloc0(sizeof(nm_conn_t));
         conn->path = g_strdup(path);
         conn->ssid = ssid;
-        hash_table_insert(conn_list, conn->path, conn);
-        hash_table_foreach(apoint_list, (GHFunc)nm_apoint_ssid_update, ssid);
+        g_hash_table_insert(conn_list, conn->path, conn);
+        g_hash_table_foreach(apoint_list, (GHFunc)nm_apoint_ssid_update, ssid);
         g_debug("nm: connection: %s (%s)", ssid, path);
       }
       g_variant_unref(dict);
@@ -425,7 +419,7 @@ static void nm_ap_node_free ( nm_ap_node_t *node )
     {
       g_debug("nm: ap removed: %s", apoint->ssid);
       trigger_emit_with_string("wifi-conf-removed", "id", g_strdup(apoint->hash));
-      hash_table_remove(apoint_list, apoint->hash);
+      g_hash_table_remove(apoint_list, apoint->hash);
     }
 
   g_free(node->path);
@@ -438,10 +432,11 @@ static gboolean nm_ap_node_active_update ( const gchar *path )
   nm_active_t *active;
   gboolean change = FALSE;
 
-  if( !(node = hash_table_lookup(ap_nodes, path)) )
+  if( !(node = g_hash_table_lookup(ap_nodes, path)) )
     return FALSE;
 
-  active = hash_table_find(active_list, (GHRFunc)nm_active_ap_cmp, node->path);
+  active = g_hash_table_find(active_list, (GHRFunc)nm_active_ap_cmp,
+      node->path);
 
   if(node->active != active)
     change = TRUE;
@@ -472,7 +467,7 @@ static void nm_ap_node_handle ( const gchar *path, gchar *ifa, GVariant *dict )
   guint8 strength, ap_strength;
   gboolean visible, change = FALSE;
 
-  if( !(node = hash_table_lookup(ap_nodes, path)) )
+  if( !(node = g_hash_table_lookup(ap_nodes, path)) )
   {
     if( !(ssid = nm_ssid_get(dict, "Ssid")) )
       return;
@@ -485,7 +480,7 @@ static void nm_ap_node_handle ( const gchar *path, gchar *ifa, GVariant *dict )
     if(!g_variant_lookup(dict, "Mode", "u", &mode)) mode = 0;
 
     hash = g_strdup_printf("%s-%x-%x-%x-%x", ssid, flags, wpa, rsn, mode);
-    if( (apoint = hash_table_lookup(apoint_list, hash)) )
+    if( (apoint = g_hash_table_lookup(apoint_list, hash)) )
     {
       g_free(ssid);
       g_free(hash);
@@ -499,11 +494,11 @@ static void nm_ap_node_handle ( const gchar *path, gchar *ifa, GVariant *dict )
       apoint->flags = flags;
       apoint->mode = mode;
       apoint->hash = hash;
-      hash_table_insert(apoint_list, apoint->hash, apoint);
+      g_hash_table_insert(apoint_list, apoint->hash, apoint);
     }
     apoint->nodes = g_list_prepend(apoint->nodes, node);
     node->ap = apoint;
-    hash_table_insert(ap_nodes, node->path, node);
+    g_hash_table_insert(ap_nodes, node->path, node);
     nm_apoint_ssid_update(NULL, apoint, apoint->ssid);
     change = TRUE;
   }
@@ -539,31 +534,25 @@ static void nm_active_disconnect ( gchar *path )
 {
   nm_apoint_t *ap;
 
-  hash_table_lock(active_list);
-  hash_table_lock(apoint_list);
-  if( (ap = hash_table_lookup(apoint_list, path)) && ap->active_node)
-  {
-    g_debug("nm: deactivating: %s", ap->active_node->active->path);
-    g_dbus_connection_call(nm_con, nm_iface, nm_path, nm_iface,
-        "DeactivateConnection", g_variant_new("(o)", ap->active_node->active->path),
-        NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
-  }
-  hash_table_unlock(apoint_list);
-  hash_table_unlock(active_list);
+  if( !(ap = g_hash_table_lookup(apoint_list, path)) || !ap->active_node)
+    return;
+
+  g_debug("nm: deactivating: %s", ap->active_node->active->path);
+  g_dbus_connection_call(nm_con, nm_iface, nm_path, nm_iface,
+      "DeactivateConnection", g_variant_new("(o)", ap->active_node->active->path),
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
 }
 
 static void nm_conn_forget ( gchar *path )
 {
   nm_conn_t *conn;
 
-  hash_table_lock(conn_list);
-  if( (conn = hash_table_lookup(conn_list, path)) )
-  {
-    g_debug("nm: forgetting: %s", conn->path);
-    g_dbus_connection_call(nm_con, nm_iface, conn->path, nm_iface_conn,
-        "Delete", NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
-  }
-  hash_table_unlock(conn_list);
+  if( !(conn = g_hash_table_lookup(conn_list, path)) )
+    return;
+
+  g_debug("nm: forgetting: %s", conn->path);
+  g_dbus_connection_call(nm_con, nm_iface, conn->path, nm_iface_conn,
+      "Delete", NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
 }
 
 static void nm_conn_forget_each ( gchar *path, nm_conn_t *conn, gchar *ssid )
@@ -583,12 +572,11 @@ static void nm_active_handle ( const gchar *path, gchar *ifa, GVariant *dict )
       g_strcmp0(type, "802-11-wireless"))
     return;
 
-  hash_table_lock(active_list);
-  if( !(active = hash_table_lookup(active_list, path)) )
+  if( !(active = g_hash_table_lookup(active_list, path)) )
   {
     active = g_malloc0(sizeof(nm_active_t));
     active->path = g_strdup(path);
-    hash_table_insert(active_list, active->path, active);
+    g_hash_table_insert(active_list, active->path, active);
   }
   if(g_variant_lookup(dict, "SpecificObject", "&o", &ap_path) &&
       g_strcmp0(active->ap_path, ap_path))
@@ -600,7 +588,6 @@ static void nm_active_handle ( const gchar *path, gchar *ifa, GVariant *dict )
 
   if(g_variant_lookup(dict, "Devices", "ao", &iter))
   {
-    g_mutex_lock(&device_lock);
     while(g_variant_iter_next(iter, "&o", &dev_path))
       for(liter=devices; liter; liter=g_list_next(liter))
         if(!g_strcmp0(NM_DEVICE(liter->data)->path, dev_path))
@@ -608,10 +595,8 @@ static void nm_active_handle ( const gchar *path, gchar *ifa, GVariant *dict )
           NM_DEVICE(liter->data)->active = active;
           active->device = liter->data;
         }
-    g_mutex_unlock(&device_lock);
     g_variant_iter_free(iter);
   }
-  hash_table_unlock(active_list);
 
   g_debug("nm: connected to: %s", path);
 }
@@ -622,10 +607,8 @@ static void nm_active_free ( nm_active_t *active )
 
   if(active->device)
     active->device->active = NULL;
-  hash_table_lock(ap_nodes);
   if(active->ap && active->ap->active_node)
     active->ap->active_node->active = NULL;
-  hash_table_unlock(ap_nodes);
   if(active->ap)
     active->ap->active_node = NULL;
   g_free(active->path);
@@ -637,16 +620,13 @@ static void nm_device_free ( gchar *path )
   GList *iter;
   nm_device_t *device;
 
-  g_mutex_lock(&device_lock);
   for(iter=devices; iter; iter=g_list_next(iter))
     if(!g_strcmp0(path, NM_DEVICE(iter->data)->path))
       break;
 
   if(!iter)
-  {
-    g_mutex_unlock(&device_lock);
     return;
-  }
+
   device = iter->data;
   g_debug("nm: removing interface %s", device->name);
 
@@ -661,7 +641,6 @@ static void nm_device_free ( gchar *path )
   g_free(device->name);
   g_free(device->path);
   g_free(device);
-  g_mutex_unlock(&device_lock);
 }
 
 static void nm_device_handle ( const gchar *path, gchar *ifa, GVariant *dict )
@@ -676,7 +655,6 @@ static void nm_device_handle ( const gchar *path, gchar *ifa, GVariant *dict )
   if(!g_variant_lookup(dict, "Interface", "&s", &name))
     return;
 
-  g_mutex_lock(&device_lock);
   for(iter=devices; iter; iter=g_list_next(iter))
     if(!g_strcmp0(((nm_device_t *)iter->data)->path, path))
       break;
@@ -696,7 +674,6 @@ static void nm_device_handle ( const gchar *path, gchar *ifa, GVariant *dict )
     g_free(iface->name);
     iface->name = g_strdup(name);
   }
-  g_mutex_unlock(&device_lock);
 }
 
 static void nm_object_handle ( const gchar *path, GVariantIter *iter )
@@ -750,11 +727,11 @@ static void nm_object_removed ( GDBusConnection *con, const gchar *sender,
     if(!g_strcmp0(iface, nm_iface_device))
       nm_device_free(object);
     else if(!g_strcmp0(iface, nm_iface_apoint))
-      hash_table_remove(ap_nodes, object);
+      g_hash_table_remove(ap_nodes, object);
     else if(!g_strcmp0(iface, nm_iface_conn))
-      hash_table_remove(conn_list, object);
+      g_hash_table_remove(conn_list, object);
     else if(!g_strcmp0(iface, nm_iface_active))
-      hash_table_remove(active_list, object);
+      g_hash_table_remove(active_list, object);
   }
   g_variant_iter_free(iter);
 }
@@ -782,9 +759,9 @@ static void nm_object_changed ( GDBusConnection *con, const gchar *sender,
     if(g_variant_lookup(dict, "State", "u", &state))
     {
       if(state == 4)
-        nm_conn_forget(hash_table_lookup(new_conns, path));
+        nm_conn_forget(g_hash_table_lookup(new_conns, path));
       if(state == 2 || state == 4)
-        hash_table_remove(new_conns, path);
+        g_hash_table_remove(new_conns, path);
     }
   }
   g_variant_unref(dict);
@@ -850,24 +827,19 @@ static value_t nm_expr_get ( vm_t *vm, value_t p[], gint np )
   if(np==2)
     vm_param_check_string(vm, p, 1, "WifiGet");
 
-  hash_table_lock(apoint_list);
-  if(np==2 && (ap = hash_table_lookup(apoint_list, value_get_string(p[0]))) )
+  if(np==2 && (ap = g_hash_table_lookup(apoint_list, value_get_string(p[0]))) )
     v1 = nm_ap_get_info(ap, value_get_string(p[1]));
-  hash_table_unlock(apoint_list);
   if(!value_is_na(v1))
     return v1;
 
   if(!g_ascii_strcasecmp(value_get_string(p[0]), "DeviceStrength"))
   {
-    g_mutex_lock(&device_lock);
-    l = g_list_find_custom(devices,
-        np==2? value_get_string(p[1]) : NULL,
+    l = g_list_find_custom(devices, np==2? value_get_string(p[1]) : NULL,
         (GCompareFunc)nm_device_name_cmp);
     device = l? l->data : default_dev;
     v1 = (device && !device->active && !device->active->ap)?
       value_new_string(g_strdup_printf("%d", device->active->ap->strength)) :
       value_na;
-    g_mutex_unlock(&device_lock);
     return v1;
   }
   return value_na;
@@ -877,15 +849,13 @@ static value_t nm_action_scan ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np(vm, np, 0, "WifiScan");
 
-  g_mutex_lock(&device_lock);
-  if(default_dev)
-  {
-    trigger_emit("wifi-scan");
-    g_dbus_connection_call(nm_con, nm_iface, default_dev->path,
-        nm_iface_wireless, "RequestScan", g_variant_new("(a{sv})", NULL),
-        NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
-  }
-  g_mutex_unlock(&device_lock);
+  if(!default_dev)
+    return value_na;
+
+  trigger_emit("wifi-scan");
+  g_dbus_connection_call(nm_con, nm_iface, default_dev->path,
+      nm_iface_wireless, "RequestScan", g_variant_new("(a{sv})", NULL),
+      NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
 
   return value_na;
 }
@@ -917,8 +887,8 @@ static value_t nm_action_forget ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "WifiForget");
   vm_param_check_string(vm, p, 0, "WifiForget");
 
-  if( (ap = hash_table_lookup(apoint_list, value_get_string(p[0]))) )
-    hash_table_foreach(conn_list, (GHFunc)nm_conn_forget_each, ap->ssid);
+  if( (ap = g_hash_table_lookup(apoint_list, value_get_string(p[0]))) )
+    g_hash_table_foreach(conn_list, (GHFunc)nm_conn_forget_each, ap->ssid);
 
   return value_na;
 }
@@ -950,24 +920,25 @@ static value_t nm_action_secret ( vm_t *vm, value_t p[], gint np )
 
   return value_na;
 }
+
 static void nm_activate ( void )
 {
-  ap_nodes = hash_table_new_full(g_str_hash, g_str_equal,
+  ap_nodes = g_hash_table_new_full(g_str_hash, g_str_equal,
       NULL, (GDestroyNotify)nm_ap_node_free);
-  new_conns = hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
-  conn_list = hash_table_new_full(g_str_hash, g_str_equal, NULL,
+  new_conns = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+  conn_list = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
       (GDestroyNotify)nm_conn_free);
-  active_list = hash_table_new_full(g_str_hash, g_str_equal, NULL,
+  active_list = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
       (GDestroyNotify)nm_active_free);
-  apoint_list = hash_table_new_full(g_str_hash, g_str_equal, NULL,
+  apoint_list = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
       (GDestroyNotify)nm_apoint_free);
 
-  vm_func_add("wifiget", nm_expr_get, FALSE, TRUE);
-  vm_func_add("wifiscan", nm_action_scan, FALSE, TRUE);
-  vm_func_add("wificonnect", nm_action_connect, FALSE, TRUE);
-  vm_func_add("wifidisconnect", nm_action_disconnect, FALSE, TRUE);
-  vm_func_add("wififorget", nm_action_forget, FALSE, TRUE);
-  vm_func_add("wifisecret", nm_action_secret, TRUE, TRUE);
+  vm_func_add("wifiget", nm_expr_get, FALSE, FALSE);
+  vm_func_add("wifiscan", nm_action_scan, FALSE, FALSE);
+  vm_func_add("wificonnect", nm_action_connect, FALSE, FALSE);
+  vm_func_add("wifidisconnect", nm_action_disconnect, FALSE, FALSE);
+  vm_func_add("wififorget", nm_action_forget, FALSE, FALSE);
+  vm_func_add("wifisecret", nm_action_secret, TRUE, FALSE);
   sub_add = g_dbus_connection_signal_subscribe(nm_con, nm_owner,
       nm_iface_objmgr, "InterfacesAdded", NULL, NULL,
       G_DBUS_SIGNAL_FLAGS_NONE, nm_object_new, NULL, NULL);
@@ -991,24 +962,17 @@ static void nm_deactivate ( void )
   g_dbus_connection_signal_unsubscribe(nm_con, sub_add);
   g_dbus_connection_signal_unsubscribe(nm_con, sub_del);
   g_dbus_connection_signal_unsubscribe(nm_con, sub_chg);
-  g_clear_pointer(&new_conns, hash_table_remove_all);
-  g_clear_pointer(&active_list, hash_table_remove_all);
-  g_clear_pointer(&conn_list, hash_table_remove_all);
-  g_clear_pointer(&ap_nodes, hash_table_remove_all);
+  g_clear_pointer(&new_conns, g_hash_table_remove_all);
+  g_clear_pointer(&active_list, g_hash_table_remove_all);
+  g_clear_pointer(&conn_list, g_hash_table_remove_all);
+  g_clear_pointer(&ap_nodes, g_hash_table_remove_all);
 
-  sfwbar_interface.active = FALSE;
-}
-
-static void nm_finalize ( void )
-{
-  vm_func_remove("wifiget");
-  vm_func_remove("wifiack");
-  vm_func_remove("wifiackremoved");
-  vm_func_remove("wifiscan");
-  vm_func_remove("wificonnect");
-  vm_func_remove("wifidisconnect");
-  vm_func_remove("wififorget");
-  vm_func_remove("wifisecret");
+  vm_func_remove("wifiget", nm_expr_get);
+  vm_func_remove("wifiscan", nm_action_scan);
+  vm_func_remove("wificonnect", nm_action_connect);
+  vm_func_remove("wifidisconnect", nm_action_disconnect);
+  vm_func_remove("wififorget", nm_action_forget);
+  vm_func_remove("wifisecret", nm_action_secret);
 }
 
 gboolean sfwbar_module_init ( void )
@@ -1017,7 +981,9 @@ gboolean sfwbar_module_init ( void )
   static GDBusInterfaceVTable nm_secret_agent_vtable = {
     (GDBusInterfaceMethodCallFunc)nm_secret_agent_method, NULL, NULL };
 
-  nm_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
+  if( !(nm_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
+    return FALSE;
+
   node = g_dbus_node_info_new_for_xml(nm_secret_agent_xml, NULL);
   g_dbus_connection_register_object (nm_con, nm_path_secret,
       node->interfaces[0], &nm_secret_agent_vtable, NULL, NULL, NULL);
@@ -1025,6 +991,7 @@ gboolean sfwbar_module_init ( void )
 
   g_bus_watch_name(G_BUS_TYPE_SYSTEM, nm_iface, G_BUS_NAME_WATCHER_FLAGS_NONE,
       nm_name_appeared_cb, nm_name_disappeared_cb, NULL, NULL);
+
   return TRUE;
 }
 
@@ -1033,5 +1000,4 @@ ModuleInterfaceV1 sfwbar_interface = {
   .provider = "NetworkManager",
   .activate = nm_activate,
   .deactivate = nm_deactivate,
-  .finalize = nm_finalize
 };
