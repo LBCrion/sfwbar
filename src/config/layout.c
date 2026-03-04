@@ -77,40 +77,25 @@ static GPtrArray *config_action_attachment ( GScanner *scanner )
       SEQ_REQ, -2, config_action, &action, "missing action",
       SEQ_END);
 
-  if(!scanner->max_parse_errors && action)
-  {
-    attach = base_widget_attachment_new_array(action, slot, mod);
-    g_bytes_unref(action);
-    return attach;
-  }
+  attach = (!scanner->max_parse_errors && action)?
+    base_widget_attachment_new_array(action, slot, mod) : NULL;
 
   if(action)
     g_bytes_unref(action);
-
-  return NULL;
+  return attach;
 }
 
 GtkWidget *config_include ( GScanner *scanner, GtkWidget *container )
 {
   GtkWidget *widget;
-  gchar *fname;
+  gchar *id;
 
-  config_parse_sequence(scanner,
-      SEQ_OPT, '(', NULL, NULL, NULL,
-      SEQ_REQ, G_TOKEN_STRING, NULL, &fname, "Missing filename in include",
-      SEQ_OPT, ')', NULL, NULL, NULL,
-      SEQ_END);
+  id = config_get_id(scanner);
+  widget = id?  config_parse(id, container, SCANNER_STORE(scanner)) : NULL;
+  if(container && widget && !gtk_widget_get_parent(widget))
+    g_object_ref_sink(widget);
 
-  if(scanner->max_parse_errors)
-    widget = NULL;
-  else
-  {
-    widget = config_parse(fname, container, SCANNER_STORE(scanner));
-    if(container && widget && !gtk_widget_get_parent(widget))
-      g_object_ref_sink(widget);
-  }
-
-  g_free(fname);
+  g_free(id);
   return widget;
 }
 
@@ -361,15 +346,10 @@ void config_popup ( GScanner *scanner )
 {
   gchar *id;
 
-  config_parse_sequence(scanner,
-      SEQ_OPT, '(', NULL, NULL, NULL,
-      SEQ_REQ, G_TOKEN_STRING, NULL, &id, "Missing PopUp id",
-      SEQ_OPT, ')', NULL, NULL, NULL,
-      SEQ_END);
+  if( !(id = config_get_id(scanner)) )
+    return;
 
-  if(!scanner->max_parse_errors && id)
-    config_widget(scanner, gtk_bin_get_child(GTK_BIN(popup_new(id))));
-
+  config_widget(scanner, gtk_bin_get_child(GTK_BIN(popup_new(id))));
   g_free(id);
 }
 
@@ -377,14 +357,9 @@ void config_window ( GScanner *scanner )
 {
   gchar *id;
 
-  config_parse_sequence(scanner,
-      SEQ_OPT, '(', NULL, NULL, NULL,
-      SEQ_REQ, G_TOKEN_STRING, NULL, &id, "Missing Window id",
-      SEQ_OPT, ')', NULL, NULL, NULL,
-      SEQ_END);
+  if( !(id = config_get_id(scanner)) )
+    return;
 
-  if(!scanner->max_parse_errors && id)
-    config_widget(scanner, gtk_bin_get_child(GTK_BIN(toplevel_new(id))));
-
+  config_widget(scanner, gtk_bin_get_child(GTK_BIN(toplevel_new(id))));
   g_free(id);
 }

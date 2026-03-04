@@ -115,7 +115,7 @@ void config_parse_sequence ( GScanner *scanner, ... )
       if(req == SEQ_OPT || (req == SEQ_CON && !matched))
         matched = FALSE;
       else
-        g_scanner_error(scanner,"%s",err);
+        g_scanner_error(scanner, "%s", err);
     req = va_arg(args, gint );
   }
   va_end(args);
@@ -298,4 +298,20 @@ void config_skip_statement ( GScanner *scanner )
         return;
     }
   }
+}
+
+gchar *config_get_id ( GScanner *scanner )
+{
+  gchar *id = NULL;
+
+  config_parse_sequence(scanner,
+      SEQ_OPT, '(', NULL, NULL, NULL,
+      SEQ_REQ, G_TOKEN_STRING, NULL, &id, "Missing filename in include",
+      SEQ_OPT, ')', NULL, NULL, NULL,
+      SEQ_END);
+
+  if(scanner->max_parse_errors)
+    g_clear_pointer(&id, g_free);
+
+  return id;
 }

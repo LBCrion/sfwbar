@@ -104,7 +104,7 @@ void config_init ( void )
   config_add_key(config_var_types, "Sum", VT_SUM);
   config_add_key(config_var_types, "Product", VT_PROD);
   config_add_key(config_var_types, "Last", VT_LAST);
-  config_add_key(config_var_types, "FIrst", VT_FIRST);
+  config_add_key(config_var_types, "First", VT_FIRST);
 
   config_act_cond = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);

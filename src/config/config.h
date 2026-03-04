@@ -79,6 +79,7 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container );
 void config_menu_clear ( GScanner *scanner );
 GtkWidget *config_menu ( GScanner *scanner );
 void config_skip_statement ( GScanner *scanner );
+gchar *config_get_id ( GScanner *scanner );
 
 enum {
   G_TOKEN_SCANNER = G_TOKEN_LAST + 50,
