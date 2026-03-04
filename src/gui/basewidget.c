@@ -675,7 +675,7 @@ static void base_widget_set_store ( GtkWidget *self, vm_store_t *store )
   vm_store_unref(priv->store);
   priv->store = vm_store_ref(store);
   if(!vm_store_widget_insert(priv->store, priv->id, self))
-    g_message("widget id collision: '%s'", priv->id);
+    g_warning("widget id collision: '%s'", priv->id);
 }
 
 static void base_widget_set_id ( GtkWidget *self, const gchar *id )
@@ -691,7 +691,7 @@ static void base_widget_set_id ( GtkWidget *self, const gchar *id )
       (long long int)base_widget_default_id++);
 
   if(!vm_store_widget_insert(priv->store, priv->id, self))
-    g_message("widget id collision: '%s'", priv->id);
+    g_warning("widget id collision: '%s'", priv->id);
 }
 
 static void base_widget_set_property ( GObject *self, guint id,

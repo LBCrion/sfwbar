@@ -178,7 +178,7 @@ static value_t action_setmonitor ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *bar;
 
-  g_message("SetMonitor is deprecated, please use monitor property instead");
+  g_warning("SetMonitor is deprecated, please use monitor property instead");
   vm_param_check_np_range(vm, np, 1, 2, "SetMonitor");
   vm_param_check_string(vm, p, np-1, "SetMonitor");
 
@@ -194,7 +194,7 @@ static value_t action_setlayer ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *bar;
 
-  g_message("SetLayer is deprecated, please use layer property instead");
+  g_warning("SetLayer is deprecated, please use layer property instead");
 
   vm_param_check_np_range(vm, np, 1, 2, "SetLayer");
   vm_param_check_string(vm, p, np-1, "SetLayer");
@@ -211,7 +211,7 @@ static value_t action_setmirror ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *bar;
 
-  g_message("SetMirror is deprecated, please use mirror property instead");
+  g_warning("SetMirror is deprecated, please use mirror property instead");
 
   vm_param_check_np_range(vm, np, 1, 2, "SetMirror");
   vm_param_check_string(vm, p, np-1, "SetMirror");
@@ -228,7 +228,7 @@ static value_t action_setbarsize ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *bar;
 
-  g_message("SetBarSize is deprecated, please use size property instead");
+  g_warning("SetBarSize is deprecated, please use size property instead");
 
   vm_param_check_np_range(vm, np, 1, 2, "SetBarSize");
   vm_param_check_string(vm, p, np-1, "SetBarSize");
@@ -247,7 +247,7 @@ static value_t action_setbarmargin ( vm_t *vm, value_t p[], gint np )
   GHashTable *list;
   GHashTableIter iter;
 
-  g_message("SetBarMargin is deprecated, please use margin property instead");
+  g_warning("SetBarMargin is deprecated, please use margin property instead");
 
   vm_param_check_np_range(vm, np, 1, 2, "SetBarMargin");
   vm_param_check_string(vm, p, np-1, "SetBarMargin");
@@ -270,7 +270,7 @@ static value_t action_setbarid ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *bar;
 
-  g_message("SetBarID is deprecated, please use sway_bar_id property instead");
+  g_warning("SetBarID is deprecated, please use sway_bar_id property instead");
   vm_param_check_np_range(vm, np, 1, 2, "SetBarID");
   vm_param_check_string(vm, p, np-1, "SetBarID");
 
@@ -289,7 +289,7 @@ static value_t action_setbarsensor ( vm_t *vm, value_t p[], gint np )
   GHashTableIter iter;
   gint64 timeout;
 
-  g_message("SetBarSensor is deprecated, please use sensor property instead");
+  g_warning("SetBarSensor is deprecated, please use sensor property instead");
   vm_param_check_np_range(vm, np, 1, 2, "SetBarSensor");
   vm_param_check_string(vm, p, np-1, "SetBarSensor");
 
@@ -311,7 +311,7 @@ static value_t action_setexclusivezone ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *bar;
 
-  g_message("SetExclusiveSone is deprecated, please use"
+  g_warning("SetExclusiveSone is deprecated, please use"
      " exclusive_zone property instead");
   vm_param_check_np_range(vm, np, 1, 2, "SetExclusiveZone");
   vm_param_check_string(vm, p, np-1, "SetExclusiveZone");
@@ -326,7 +326,7 @@ static value_t action_setexclusivezone ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_setbarvisibility ( vm_t *vm, value_t p[], gint np )
 {
-  g_message("SetBarVisibility is deprecated, please use"
+  g_warning("SetBarVisibility is deprecated, please use"
      " exclusive_zone property instead");
   vm_param_check_np_range(vm, np, 1, 2, "SetBarVisibility");
   vm_param_check_string(vm, p, np-1, "SetBarVisibility");

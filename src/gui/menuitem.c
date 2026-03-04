@@ -375,8 +375,6 @@ void menu_item_set_sort_index ( GtkWidget *self, gint index )
   MenuItemPrivate *priv;
 
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
-  if(!priv)
-    g_message("%d", GTK_IS_SEPARATOR_MENU_ITEM(self));
   g_return_if_fail(priv);
 
   priv->sort_index = index;
@@ -387,8 +385,6 @@ gint menu_item_get_sort_index ( GtkWidget *self )
   MenuItemPrivate *priv;
 
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
-  if(!priv)
-    g_message("%p %d", self, GTK_IS_MENU_ITEM(self));
   g_return_val_if_fail(priv, 0);
 
   return priv->sort_index;

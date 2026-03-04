@@ -275,7 +275,7 @@ void config_log_error ( GScanner *scanner, gchar *message, gboolean error )
     scanner->max_parse_errors = TRUE;
   }
   else
-    g_message("%s:%d: %s", scanner->input_name, scanner->line, message);
+    g_warning("%s:%d: %s", scanner->input_name, scanner->line, message);
 }
 
 GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,

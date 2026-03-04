@@ -585,7 +585,7 @@ GtkWidget *bar_grid_from_name ( gchar *addr )
   }
   if(!g_ascii_strcasecmp(name, "*"))
   {
-    g_message(
+    g_warning(
         "invalid bar name '*' in grid address %s, defaulting to 'sfwbar'",
         addr);
     g_free(name);

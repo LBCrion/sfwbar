@@ -258,7 +258,7 @@ static gboolean vm_function ( vm_t *vm )
   {
     if(func->arity != np)
     {
-      g_message("invalid number of parameters in function '%s', expected %d",
+      g_warning("invalid number of parameters in function '%s', expected %d",
           func->name, func->arity);
       result = value_na;
     }

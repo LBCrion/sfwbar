@@ -115,11 +115,6 @@ static gboolean sfwbar_restart ( gpointer d )
   return FALSE;
 }
 
-static void print_store ( GQuark key, gpointer d, gpointer s)
-{
-  g_message("%s", g_quark_to_string(key));
-}
-
 static void activate (GtkApplication* app, gpointer data )
 {
   GtkWidget *panel;
@@ -169,7 +164,6 @@ static void activate (GtkApplication* app, gpointer data )
         (GThreadFunc)base_widget_scanner_thread,
         g_main_context_get_thread_default()));
 
-  g_dataset_foreach(base_widget_get_store(panel)->vars, print_store, NULL);
   vm_run_user_defined("SfwBarInit", NULL, NULL, NULL, NULL,
       base_widget_get_store(panel));
 

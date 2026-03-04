@@ -313,7 +313,7 @@ void wintree_appid_map_add ( gchar *pattern, gchar *appid )
     appid_map = g_list_prepend(appid_map, map);
   }
   else
-    g_message("MapAppId: invalid pattern '%s'",pattern);
+    g_warning("MapAppId: invalid pattern '%s'", pattern);
 }
 
 gchar *wintree_appid_map_lookup ( gchar *title )

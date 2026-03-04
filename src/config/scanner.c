@@ -138,6 +138,6 @@ void config_scanner ( GScanner *scanner )
   {
     g_scanner_get_next_token(scanner);
     if(!config_scanner_source(scanner))
-      g_message("Invalid source in scanner");
+      g_scanner_error(scanner, "Invalid source in scanner");
   }
 }
