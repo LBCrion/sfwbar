@@ -601,8 +601,8 @@ static void base_widget_attachments_merge ( GtkWidget *self, GPtrArray *new )
   for(i=0; i < new->len; i++)
   {
     item = g_ptr_array_index(new, i);
-    if(g_ptr_array_find_with_equal_func(priv->actions,
-          g_ptr_array_index(new, i), base_widget_attachment_comp, &index))
+    while(g_ptr_array_find_with_equal_func(priv->actions, item,
+          base_widget_attachment_comp, &index))
       g_ptr_array_remove_index_fast(priv->actions, index);
     g_ptr_array_add(priv->actions,
         base_widget_attachment_new(item->action, item->event, item->mods));
@@ -979,7 +979,7 @@ GBytes *base_widget_get_action ( GtkWidget *self, gint n,
 
   target.event = n;
   target.mods = mods;
-  if(g_ptr_array_find_with_equal_func(priv->actions, &target, 
+  if(g_ptr_array_find_with_equal_func(priv->actions, &target,
         base_widget_attachment_comp, &index))
   {
     if( (match = g_ptr_array_index(priv->actions, index)) )
@@ -1122,11 +1122,8 @@ void base_widget_autoexec ( GtkWidget *self, gpointer data )
 
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
   if( (action = base_widget_get_action(self, 0, 0)) )
-  {
-    g_bytes_ref(action);
     vm_run_action(action, self, NULL, wintree_from_id(wintree_get_focus()),
         NULL, priv->store, NULL);
-  }
 }
 
 gboolean base_widget_configure ( GtkWidget *self )
@@ -1138,11 +1135,8 @@ gboolean base_widget_configure ( GtkWidget *self )
 
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
   if( (action = base_widget_get_action(self, BASE_WIDGET_ACTION_CONFIGURE, 0)) )
-  {
-    g_bytes_ref(action);
     vm_run_action(action, self, NULL, wintree_from_id(wintree_get_focus()),
         NULL, priv->store, NULL);
-  }
 
   return G_SOURCE_REMOVE;
 }
