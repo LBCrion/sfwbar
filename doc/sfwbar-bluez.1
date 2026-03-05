@@ -1,4 +1,5 @@
-.\" Man page generated from reStructuredText.
+.\" Man page generated from reStructuredText
+.\" by the Docutils 0.22.3 manpage writer.
 .
 .
 .nr rst2man-indent-level 0
@@ -27,8 +28,8 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "SFWBAR-BLUEZ" "1" "" ""
-.SH NAME
+.TH "sfwbar-bluez" "1" "" ""
+.SH Name
 sfwbar-bluez \- Sfwbar Bluez module
 .sp
 Filename: bluez.so
@@ -38,117 +39,99 @@ Requires: none
 .sp
 The bluez module provides an interface to connect and disconnect bluetooth
 devices via the bluez server.
-.SH EXPRESSION FUNCTIONS
-.SS BluezGet(Property)
+.SH Triggers
 .sp
-function BluezGet fetches a property for a currently advertized bluez device.
-The supported properties are:
+The module defines the following triggers:
 .INDENT 0.0
 .TP
-.B \(dqPath\(dq
-an object path of the device, this is used as a unique id to provide
-notifivations of changes or destruction of the device.
+.B \(dqbluez\-adapter\(dq
+this trigger is emitted when state of one of the bluetooth adapters changes.
 .TP
-.B \(dqRemovedPath\(dq
-an object path of the most recently removed device. This is populated
-upon emission of the \(dqbluez_removed\(dq trigger.
+.B \(dqbluez\-conf\(dq
+this trigger is emitted when a new bluetooth device is discovered or
+properties of a device are changed. Functions handling this trigger can
+access variable \fIpath\fP containing an address of an updated device.
 .TP
-.B \(dqAddress\(dq
-a bluetooth address of the device
+.B \(dqbluez\-conf\-removed\(dq
+this trigger is emitted when a bluetooth device is no longer available
+and should be removed from the layout.  Functions handling this trigger can
+access variable \fIpath\fP containing an address of a removed device.
+.UNINDENT
+.SH Functions
+.SS BluezDevice(<path>, <property>)
+.sp
+function BluezGet fetches a property for a bluez device specified by \fIpath\fP\&.
+The supported \fIproperty\fP valued are:
+.INDENT 0.0
 .TP
 .B \(dqName\(dq
-a name of the device
+a name of the device. Returns <string>.
+.TP
+.B \(dqAddress\(dq
+a bluetooth address of the device. Returns <string>.
 .TP
 .B \(dqIcon\(dq
-an icon for the device type
+an icon for the device type. Returns <string>.
 .TP
 .B \(dqMajorClass\(dq
-a major class of the bluetooth device
+a major class of the bluetooth device. Returns <string>.
 .TP
 .B \(dqMinorClass\(dq
-a minor class of the bluetooth device
-.UNINDENT
-.SS BluezState(Property)
-.sp
-function BluezState fetches a boolean state property of the currently
-advertized bluez device. The supported properties are:
-.INDENT 0.0
+a minor class of the bluetooth device. Returns <string>.
 .TP
 .B \(dqPaired\(dq
-specifies whether the device is paired to the adapter
+specifies whether the device is paired to the adapter. Returns <boolean>.
 .TP
 .B \(dqTrusted\(dq
-specifies whether the device is trusted by the adapter
+specifies whether the device is trusted by the adapter. Returns <boolean>.
 .TP
 .B \(dqConnected\(dq
-specifies whether the device is connected to the adpater
+specifies whether the device is connected to the adpater. Returns <boolean>.
+.TP
+.B \(dqConnecting\(dq
+specifies whether the adapter is currently attempting to connect to the
+device. Returns <boolean>.
 .TP
 .B \(dqRunning\(dq
 queries the global state of the bluez module. If the module is connected
 to the server and sees at least one bluetooth adapter, this query will
 return true. Otherwise it will return false.
 .UNINDENT
-.SH ACTIONS
-.SS BluezScan <Duration>
+.SS BluezAdapter(<property>)
 .sp
-Initiate scan for the bluetooth devices. The scan will last for the duration
-specified in milliseconds.
-.SS BluezAck
-.sp
-Notify the module that all information for the currently advertized device has
-been processed. The module may then emit another bluez_changed event if further
-device updates are available.
-.SS BluezAckRemoved
-.sp
-Notify the module that all information for the currently advertized device
-removal has been processed. The module may then emit another bluez_removed
-event if further device removals are queued.
-.SS BluezConnect <path>
-.sp
-Attempt to connect to the bluetooth device specified by the path.
-.SS BluezPair <path>
-.sp
-Attempt to pair and connect to the bluetooth device specified by the path.
-.SS BluezDisconnect <path>
-.sp
-Attempt to diconnect from the bluetooth device specified by the path.
-.SS BluezRemove <path>
-.sp
-Attempt to remove  the bluetooth device specified by the path.
-.SH TRIGGERS
-.sp
-The module defines the following triggers:
+Function \fIBluezAdapter\fP queries the state of the default adapter. Valid
+\fIproperty\fP values are:
 .INDENT 0.0
 .TP
-.B \(dqbluez_running\(dq
-this trigger is emitted when connected to the first bluetooth adapter
-has been made or when connection to the last adapter is lost (i.e.
-when the value of BluezState(\(dqRunning\(dq) query has changed)
+.B \(dqCount\(dq
+count of bluetooth adapters present in the system. Returns <numeric>.
 .TP
-.B \(dqbluez_changed\(dq
-this trigger is emitted when a new bluetooth device is discovered or
-properties of a device are changed. Once the trigger is emitted, the
-information for the relevant device will be available via BluezGet and
-BluezState expression functions. Once the config finished handling the
-device update, it should call action BluezAck. Upon receipt of this
-action, the module may emit \(dqbluez_changed\(dq again if further device
-updates are queued.
+.B \(dqDiscovering\(dq
+check if the default adapter is currently scanning for devices.
+Returns <boolean>.
 .TP
-.B \(dqbluez_removed\(dq
-this trigger is emitted when a bluetooth device is no longer available
-and should be removed from the layout. The path of the removed device is
-available via BluezGet(\(dqRemovedPath\(dq). Once the config finished removing
-the device, it should call action BluezAckRemoved. Upon receipt of this
-action, the module may emit another \(dqbluez_removed\(dq trigger if further
-devices have been removed.
+.B \(dqDiscoverable\(dq
+check if the adapter is discoverable by other devices. Returns <boolean>.
 .TP
-.B \(dqbluez_scan\(dq
-this trigger is emitted when scan for bluetooth devices has been initiated.
-.TP
-.B \(dqbluez_scan_complete\(dq
-this trigger is emitted when scan for bluetooth devices is complete.
+.B \(dqPowered\(dq
+check if the device is powered. Returns <boolean>.
 .UNINDENT
-.SH COPYRIGHT
+.SS BluezScan(<Duration>)
+.sp
+Initiate scan for bluetooth devices. The scan will last for the \fIduration\fP
+specified in milliseconds.
+.SS BluezConnect(<path>)
+.sp
+Attempt to connect to the bluetooth device specified by \fIpath\fP\&.
+.SS BluezPair(<path>)
+.sp
+Attempt to pair and connect to the bluetooth device specified by \fIpath\fP\&.
+.SS BluezDisconnect(<path>)
+.sp
+Attempt to disconnect from the bluetooth device specified by \fIpath\fP\&.
+.SS BluezRemove(<path>)
+.sp
+Attempt to remove  the bluetooth device specified by \fIpath\fP\&.
+.SH Copyright
 GPLv3+
-.\" Generated by docutils manpage writer.
-.
+.\" End of generated man page.

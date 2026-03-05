@@ -13,6 +13,8 @@
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = MODULE_API_VERSION;
+module_thread_t sfwbar_module_thread = MODULE_THREAD_MAIN;
+
 static struct rxkb_context *ctx;
 
 static void handle_keymap(void *data, struct wl_keyboard *wl_keyboard,

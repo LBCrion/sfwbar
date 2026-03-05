@@ -1,4 +1,5 @@
-.\" Man page generated from reStructuredText.
+.\" Man page generated from reStructuredText
+.\" by the Docutils 0.22.3 manpage writer.
 .
 .
 .nr rst2man-indent-level 0
@@ -27,8 +28,8 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "SFWBAR-NCENTER" "1" "" ""
-.SH NAME
+.TH "sfwbar-ncenter" "1" "" ""
+.SH Name
 sfwbar-ncenter \- Sfwbar Notification center module
 .sp
 Filename: ncenter.so
@@ -36,42 +37,41 @@ Filename: ncenter.so
 Requires: none
 .SH SYNOPSIS
 .sp
-The notification center module provides desktop notification host.
-.SH EXPRESSION FUNCTIONS
+The notification center module provides a desktop notification host.
+.SH Triggers
+.sp
+The module defines the following triggers:
+.INDENT 0.0
+.TP
+.B \(dqnotification\-updated\(dq
+this trigger is emitted when a new notification has been received or
+properties of a notification are changed. Functions handling this trigger can
+access the following variables:
+\fIid\fP \- an id of a notification.
+\fIicon\fP \-  an icon associated with the notification.
+\fIapp\fP \- an app id of the program sending the notification.
+\fIsummary\fP \- a summary text of the notification.
+\fIbody\fP \- the body of the notification.
+\fItime\fP \- the time when the notification was generated.
+\fIcategory\fP \- a category of the notification.
+\fIactions\fP \- a list of actions. The first column contains action id\(aqs, the
+second column contains action titles.
+.TP
+.B \(dqnotification\-removed\(dq
+this trigger is emitted when a notification is no longer available and should
+be removed from the layout. The id of a removed notification is stored in
+variable \fIid\fP\&.
+.TP
+.B \(dqnotification\-group\(dq
+this trigger is emitted when grouping state of notifications changes. I.e.
+when any group is expanded or collapsed.
+.UNINDENT
+.SH Functions
 .SS NotificationGet(Property)
 .sp
 function NotificationGet fetches a property for a currently advertised
 notification.  The supported properties are:
 .INDENT 0.0
-.TP
-.B \(dqid\(dq
-an id of a notification, this is used as a unique id to track changes to or
-destruction of the notification.
-.TP
-.B \(dqremoved\-id\(dq
-an id of the most recently removed notification. This is populated
-upon emission of the \(dqnotification\-removed\(dq trigger.
-.TP
-.B \(dqicon\(dq
-an icon associated with the notification.
-.TP
-.B \(dqapp\(dq
-an app id of the program sending the notification.
-.TP
-.B \(dqsummary\(dq
-a summary text of the notification.
-.TP
-.B \(dqbody\(dq
-the body of the notification.
-.TP
-.B \(dqtime\(dq
-the time when the notification was generated.
-.TP
-.B \(dqcategory\(dq
-a category of the notification.
-.TP
-.B \(dqaction_id\(dq
-an id of the currently exposed action.
 .TP
 .B \(dqaction_title\(dq
 the title of the currently exposed action.
@@ -90,57 +90,18 @@ Query the app_id of the currently expanded notification group.
 Get count of the notifications. If the \fIid\fP is specified, this function returns
 the number of notification for the app id of the notification referenced by the
 \fIid\fP, otherwise it will return the total count of notifications.
-.SH ACTIONS
-.SS NotificationAck
-.sp
-Notify the module that all information for the currently advertised
-notification has been processed. The module may then emit another
-\fInotification\-updated\fP event if further notification updates are available.
-.SS NotificationAckRemoved
-.sp
-Notify the module that all information for the currently advertised
-notification removal has been processed. The module may then emit another
-\fInotification\-removed\fP event if further notification removals are queued.
-.SS NotificationClose <id>
+.SS NotificationClose(<id>)
 .sp
 Close a notification with a specified id
-.SS NotificationExpand <id>
+.SS NotificationExpand(<id>)
 .sp
 Expand a notification group to which notification referenced by \fIid\fP belongs.
-.SS NotificationCollapse
+.SS NotificationCollapse()
 .sp
 Collapse the currently expanded notification group.
-.SS NotificationAction <id>, <action_id>
+.SS NotificationAction(<id>, <action_id>)
 .sp
 Activate an action \fIaction_id\fP for notification \fIid\fP\&.
-.SH TRIGGERS
-.sp
-The module defines the following triggers:
-.INDENT 0.0
-.TP
-.B \(dqnotification\-updated\(dq
-this trigger is emitted when a new notification has been received or
-properties of a notification are changed. For a notification with
-multiple actions, this trigger is emitted once for every action.
-Once the trigger is emitted, the information for the relevant notification
-will be available via NotificationGet expression function. Once the config
-finished handling the notification update, it should call action
-NotificationAck. Upon receipt of this action, the module may emit
-\(dqnotification\-updated\(dq again if further notification updates are queued.
-.TP
-.B \(dqnotification\-removed\(dq
-this trigger is emitted when a notification is no longer available and should
-be removed from the layout. The id of the removed notification is available
-via NotificationGet(\(dqremoved\-id\(dq). Once the config finished removing the
-notification, it should call action NotificationAckRemoved. Upon receipt of
-this action, the module may emit another \(dqnotification\-removed\(dq trigger if
-further notifications have been removed.
-.TP
-.B \(dqnotification\-group\(dq
-this trigger is emitted when grouping state of notifications changes. I.e.
-when any group is expanded or collapsed.
-.UNINDENT
-.SH COPYRIGHT
+.SH Copyright
 GPLv3+
-.\" Generated by docutils manpage writer.
-.
+.\" End of generated man page.

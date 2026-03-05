@@ -1,4 +1,5 @@
-.\" Man page generated from reStructuredText.
+.\" Man page generated from reStructuredText
+.\" by the Docutils 0.22.3 manpage writer.
 .
 .
 .nr rst2man-indent-level 0
@@ -27,8 +28,8 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "SFWBAR-WIFI" "1" "" ""
-.SH NAME
+.TH "sfwbar-wifi" "1" "" ""
+.SH Name
 sfwbar-wifi \- Sfwbar Wifi interface
 .sp
 Filename: wifi\-iwd.so
@@ -37,100 +38,76 @@ Filename: wifi\-nm.so
 Requires: none
 .SH SYNOPSIS
 .sp
-Wifi module interface provides means to query and control the wifi network.
-There are currently two modules providing this interface: wifi\-iwd provides
-support for IWD daemon and wifi\-nm provides support for NetworkManager.
+Wifi module interface provides means to query and control the wifi network
+connections.  There are currently two modules providing this interface:
+wifi\-iwd provides support for IWD daemon and wifi\-nm provides support for
+NetworkManager.
 .sp
 \fB* In order to use wifi\-iwd module, the user must have permission to control
 iwd daemon. Usually permissions are granted by adding the user to \(ganetdev\(ga or
 \(gawheel\(ga user group *\fP
-.SH EXPRESSION FUNCTIONS
-.SS WifiGet(Property)
-.sp
-function WifiGet queries a property for a currently advertized iwd network.
-The supported properties are:
-.INDENT 0.0
-.TP
-.B \(dqPath\(dq
-an object path of the device, this is used as a unique id to provide
-notifications of changes or destruction of the device and to control
-the device. This property is valid upon receipt of \fIwifi_updated\fP trigger.
-.TP
-.B \(dqRemovedPath\(dq
-an object path of the most recently removed device. This is populated
-upon emission of the \fIwifi_removed\fP trigger.
-.TP
-.B \(dqSSID\(dq
-an SSID of the network.
-.TP
-.B \(dqType\(dq
-a Type of the network (\(aqopen\(aq, \(aqwep\(aq, \(aqpsk\(aq or \(aq8021x\(aq)
-.TP
-.B \(dqKnown\(dq
-an indcator of whether this is a known network (\(dq1\(dq = known, \(dq0\(dq = new)
-.TP
-.B \(dqStrength\(dq
-signal strength of the network (a string containing a number in range 1\-100 )
-.TP
-.B \(dqConnected\(dq
-an indicator of whether the daemon is connected to the network
-(\(dq1\(dq = connected, \(dq0\(dq = not connected)
-.UNINDENT
-.SH ACTIONS
-.SS WifiScan <Duration>
-.sp
-Initiate scan for wireless networks.
-.SS WifiAck
-.sp
-Notify the module that all information for the currently advertized network has
-been processed. The module may then emit another \fIwifi_updated\fP event if further
-network updates are available.
-.SS WifiAckRemoved
-.sp
-Notify the module that all information for the currently advertized network
-removal has been processed. The module may then emit another \fIwifi_removed\fP
-event if further network removals are queued.
-.SS WifiConnect <path>
-.sp
-Attempt to connect to a network specified by the path.
-.SS WifiDisconnect <path>
-.sp
-Disconnect from a network specified by the path.
-.SS WifiForget <path>
-.sp
-Forget a known network specified by the path.
-.SH TRIGGERS
+.SH Triggers
 .sp
 The module defines the following triggers:
 .INDENT 0.0
 .TP
-.B \(dqwifi_level\(dq
+.B wifi\-level
 This signal is emitted when signal strength for the current connection
 changes.
 .TP
-.B \(dqwifi_updated\(dq
-this trigger is emitted when a new network is discovered or properties of
-a network are changed. Once the trigger is emitted, the information for the
-relevant network will be available via \fIWifiGet\fP expression function. Once
-the config finished handling the network update, it should call action
-\fIWifiAck\fP\&.  Upon receipt of this action, the module may emit \fIwifi_updated\fP
-again if further network updates are queued.
+.B wifi\-conf
+this trigger is emitted when a new wireless network is discovered or
+properties of a network have changed. Once the trigger is emitted.
+Functions handling this trigger can access variable \fIid\fP containing the id
+of the network.
 .TP
-.B \(dqwifi_removed\(dq
+.B wifi\-conf\-removed
 this trigger is emitted when a network is no longer available and should be
-removed from the layout. The path of the removed network is available via
-\fIWifiGet(\(dqRemovedPath\(dq)\fP\&. Once the config finished removing the netowrk, it
-should call action \fIWifiAckRemoved\fP\&. Upon receipt of this action, the module
-may emit another \fIwifi_removed\fP trigger if further networks have been
-removed.
+removed from the layout.  Functions handling this trigger can access variable
+\fIid\fP containing the id of the network.
 .TP
-.B \(dqwifi_scan\(dq
+.B \(dqwifi\-scan\(dq
 this trigger is emitted when scan for networks has been initiated.
 .TP
-.B \(dqwifi_scan_complete\(dq
+.B \(dqwifi\-scan\-complete\(dq
 this trigger is emitted when scan for networks is complete.
 .UNINDENT
-.SH COPYRIGHT
+.SH Functions
+.SS WifiGet(ID, Property)
+.sp
+Function WifiGet queries a property of a network specified by parameter \fIID\fP
+The supported properties are:
+.INDENT 0.0
+.TP
+.B \(dqSSID\(dq
+an SSID of the network. Returns <string>
+.TP
+.B \(dqType\(dq
+a Type of the network. Returns <string> (\(aqopen\(aq, \(aqwep\(aq, \(aqpsk\(aq or \(aq8021x\(aq)
+.TP
+.B \(dqKnown\(dq
+an indcator of whether this is a known network. Returns <boolean>.
+.TP
+.B \(dqStrength\(dq
+signal strength of the network. Returns <numeric> (0..100)
+.TP
+.B \(dqConnected\(dq
+an indicator of whether the daemon is connected to the network.
+Returns <boolean>
+.UNINDENT
+.SS WifiScan([<Duration>])
+.sp
+Initiate scan for wireless networks. An optional <numeric> parameter specifies
+duration of a scan in seconds.
+.SS WifiConnect(<ID>)
+.sp
+Attempt to connect to a network specified by the \fIID\fP\&.
+.SS WifiDisconnect(<ID>)
+.sp
+Disconnect from a network specified by the \fIID\fP\&.
+.SS WifiForget(<ID>)
+.sp
+Forget a known network specified by the \fIID\fP\&.
+.SH Copyright
 GPLv3+
-.\" Generated by docutils manpage writer.
-.
+.\" End of generated man page.

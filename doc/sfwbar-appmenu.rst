@@ -41,3 +41,9 @@ AppMenuItemBottom Title, Command
 
 Add a custom item to the bottom of the application menu. The parameters are
 the same as for AppMenuItemTop action.
+
+AppMenuSetFlat Boolean
+----------------------
+
+Specify whether applications should be listed in the main application menu
+rather than in category submenus.

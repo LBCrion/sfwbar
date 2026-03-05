@@ -10,7 +10,7 @@
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = MODULE_API_VERSION;
-gboolean sfwbar_module_own_thread = TRUE;
+module_thread_t sfwbar_module_thread = MODULE_THREAD_MODULE;
 
 static GHashTable *devices;
 static GList *adapters;

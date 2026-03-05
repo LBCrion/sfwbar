@@ -33,6 +33,8 @@ iface_info *route;
 
 gint64 sfwbar_module_signature = 0x73f4d956a1;
 guint16 sfwbar_module_version = MODULE_API_VERSION;
+module_thread_t sfwbar_module_thread = MODULE_THREAD_MODULE;
+
 guint32 seq = 1;
 GList *iface_list;
 gint qual, level, noise;

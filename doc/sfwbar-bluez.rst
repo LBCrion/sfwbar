@@ -18,130 +18,100 @@ SYNOPSIS
 The bluez module provides an interface to connect and disconnect bluetooth
 devices via the bluez server.
 
-Expression Functions
-====================
+Triggers
+========
 
-BluezGet(Property)
-------------------
+The module defines the following triggers:
 
-function BluezGet fetches a property for a currently advertized bluez device.
-The supported properties are:
+"bluez-adapter"
+  this trigger is emitted when state of one of the bluetooth adapters changes.
 
-"Path"
-  an object path of the device, this is used as a unique id to provide
-  notifivations of changes or destruction of the device.
+"bluez-conf"
+  this trigger is emitted when a new bluetooth device is discovered or
+  properties of a device are changed. Functions handling this trigger can
+  access variable `path` containing an address of an updated device.
 
-"RemovedPath"
-  an object path of the most recently removed device. This is populated
-  upon emission of the "bluez_removed" trigger.
+"bluez-conf-removed"
+  this trigger is emitted when a bluetooth device is no longer available
+  and should be removed from the layout.  Functions handling this trigger can
+  access variable `path` containing an address of a removed device.
 
-"Address"
-  a bluetooth address of the device
+Functions
+=========
+
+BluezDevice(<path>, <property>)
+-------------------------------
+function BluezGet fetches a property for a bluez device specified by `path`.
+The supported `property` valued are:
 
 "Name"
-  a name of the device
+  a name of the device. Returns <string>.
+
+"Address"
+  a bluetooth address of the device. Returns <string>.
 
 "Icon"
-  an icon for the device type
+  an icon for the device type. Returns <string>.
 
 "MajorClass"
-  a major class of the bluetooth device
+  a major class of the bluetooth device. Returns <string>.
 
 "MinorClass"
-  a minor class of the bluetooth device
-
-BluezState(Property)
---------------------
-
-function BluezState fetches a boolean state property of the currently
-advertized bluez device. The supported properties are:
+  a minor class of the bluetooth device. Returns <string>.
 
 "Paired"
-  specifies whether the device is paired to the adapter
+  specifies whether the device is paired to the adapter. Returns <boolean>.
 
 "Trusted"
-  specifies whether the device is trusted by the adapter
+  specifies whether the device is trusted by the adapter. Returns <boolean>.
 
 "Connected"
-  specifies whether the device is connected to the adpater
+  specifies whether the device is connected to the adpater. Returns <boolean>.
+
+"Connecting"
+  specifies whether the adapter is currently attempting to connect to the
+  device. Returns <boolean>.
 
 "Running"
   queries the global state of the bluez module. If the module is connected
   to the server and sees at least one bluetooth adapter, this query will
   return true. Otherwise it will return false.
 
-Actions
-=======
+BluezAdapter(<property>)
+------------------------
+Function `BluezAdapter` queries the state of the default adapter. Valid
+`property` values are:
 
-BluezScan <Duration>
---------------------
+"Count"
+  count of bluetooth adapters present in the system. Returns <numeric>.
 
-Initiate scan for the bluetooth devices. The scan will last for the duration
+"Discovering"
+  check if the default adapter is currently scanning for devices.
+  Returns <boolean>.
+
+"Discoverable"
+  check if the adapter is discoverable by other devices. Returns <boolean>.
+
+"Powered"
+  check if the device is powered. Returns <boolean>.
+
+BluezScan(<Duration>)
+---------------------
+Initiate scan for bluetooth devices. The scan will last for the `duration`
 specified in milliseconds.
 
-BluezAck
---------
+BluezConnect(<path>)
+--------------------
+Attempt to connect to the bluetooth device specified by `path`.
 
-Notify the module that all information for the currently advertized device has
-been processed. The module may then emit another bluez_changed event if further
-device updates are available.
+BluezPair(<path>)
+-----------------
+Attempt to pair and connect to the bluetooth device specified by `path`.
 
-BluezAckRemoved
----------------
+BluezDisconnect(<path>)
+-----------------------
+Attempt to disconnect from the bluetooth device specified by `path`.
 
-Notify the module that all information for the currently advertized device
-removal has been processed. The module may then emit another bluez_removed
-event if further device removals are queued.
-
-BluezConnect <path>
+BluezRemove(<path>)
 -------------------
-
-Attempt to connect to the bluetooth device specified by the path.
-
-BluezPair <path>
-----------------
-
-Attempt to pair and connect to the bluetooth device specified by the path.
-
-BluezDisconnect <path>
-----------------------
-
-Attempt to diconnect from the bluetooth device specified by the path.
-
-BluezRemove <path>
-------------------
-
-Attempt to remove  the bluetooth device specified by the path.
-
-Triggers
-========
-
-The module defines the following triggers:
-
-"bluez_running"
-  this trigger is emitted when connected to the first bluetooth adapter
-  has been made or when connection to the last adapter is lost (i.e. 
-  when the value of BluezState("Running") query has changed)
-
-"bluez_changed"
-  this trigger is emitted when a new bluetooth device is discovered or
-  properties of a device are changed. Once the trigger is emitted, the
-  information for the relevant device will be available via BluezGet and
-  BluezState expression functions. Once the config finished handling the
-  device update, it should call action BluezAck. Upon receipt of this
-  action, the module may emit "bluez_changed" again if further device
-  updates are queued.
-
-"bluez_removed"
-  this trigger is emitted when a bluetooth device is no longer available
-  and should be removed from the layout. The path of the removed device is
-  available via BluezGet("RemovedPath"). Once the config finished removing
-  the device, it should call action BluezAckRemoved. Upon receipt of this
-  action, the module may emit another "bluez_removed" trigger if further
-  devices have been removed.
-
-"bluez_scan"
-  this trigger is emitted when scan for bluetooth devices has been initiated.
-
-"bluez_scan_complete"
-  this trigger is emitted when scan for bluetooth devices is complete.
+Attempt to remove  the bluetooth device specified by `path`.
