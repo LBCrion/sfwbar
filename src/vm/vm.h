@@ -71,6 +71,7 @@ typedef struct {
 typedef value_t (*vm_func_t)(vm_t *vm, value_t params[], gint np);
 
 typedef struct {
+  gint seq;
   gchar *name;
   guint8 flags;
   guint8 arity;
@@ -125,7 +126,7 @@ value_t vm_code_eval ( GBytes *code, GtkWidget *widget );
 vm_t *vm_expr_prep ( expr_cache_t *expr );
 gboolean vm_expr_run ( vm_t *vm );
 gboolean vm_expr_eval ( expr_cache_t *expr );
-value_t vm_function_user ( vm_t *vm, GBytes *code, guint8 np );
+value_t vm_function_user ( vm_t *vm, vm_function_t *func, guint8 np );
 GThreadPool *vm_pool_new ( gint num );
 void vm_run_action ( GBytes *code, GtkWidget *w, GdkEvent *e,
     window_t *win, guint16 *s, vm_store_t *store, GThreadPool *pool);
@@ -145,6 +146,7 @@ void vm_func_add ( gchar *name, vm_func_t func, gboolean det, gboolean safe);
 void vm_func_add_user ( gchar *name, GBytes *code, guint8 arity );
 vm_function_t *vm_func_lookup ( gchar *name );
 void vm_func_remove ( gchar *name, vm_func_t func );
+vm_function_t *vm_func_copy ( vm_function_t *dest, vm_function_t *src );
 
 vm_var_t *vm_var_new ( gchar *name );
 void vm_var_free ( vm_var_t *var );

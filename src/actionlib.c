@@ -54,14 +54,14 @@ static value_t action_widget_pop ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_call ( vm_t *vm, value_t p[], gint np )
 {
-  vm_function_t *func;
+  vm_function_t func;
 
   vm_param_check_np(vm, np, 1, "Call");
   vm_param_check_string(vm, p, 0, "Call");
 
-  if( (func = vm_func_lookup(value_get_string(p[0]))) &&
-      (func->flags & VM_FUNC_USERDEFINED) )
-    value_free(vm_function_user(vm, func->ptr.code, 0));
+  if(vm_func_copy(&func, vm_func_lookup(value_get_string(p[0]))) &&
+      (func.flags & VM_FUNC_USERDEFINED))
+    value_free(vm_function_user(vm, &func, 0));
 
   return value_na;
 }

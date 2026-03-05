@@ -181,6 +181,7 @@ static value_t vm_function_native ( vm_t *vm, vm_function_t *func, gint np )
   value_t v1;
   vm_call_t *call;
 
+  vm->vstate |= !(func->flags & VM_FUNC_DETERMINISTIC);
   if(func->flags & VM_FUNC_THREADSAFE ||
       g_main_context_is_owner(func->context))
     return func->ptr.function(vm,
@@ -203,22 +204,28 @@ static value_t vm_function_native ( vm_t *vm, vm_function_t *func, gint np )
   return v1;
 }
 
-value_t vm_function_user ( vm_t *vm, GBytes *code, guint8 np )
+value_t vm_function_user ( vm_t *vm, vm_function_t *func, guint8 np )
 {
   value_t v1;
   guint8 *saved_ip;
   gsize saved_stack, saved_fp;
   GBytes *saved_bytes;
 
-  if(!code)
+  if(!func->ptr.code)
     return value_na;
+  if(func->arity != np)
+  {
+    g_warning("invalid number of parameters in function '%s', expected %d",
+        func->name, func->arity);
+    return value_na;
+  }
 
   saved_ip = vm->ip;
   saved_stack = vm->stack->len;
   saved_fp = vm->fp;
   saved_bytes = vm->bytes;
 
-  vm->bytes = g_bytes_ref(code);
+  vm->bytes = g_bytes_ref(func->ptr.code);
   vm->fp = vm->stack->len - np;
   v1 = vm_run(vm);
 
@@ -234,41 +241,29 @@ value_t vm_function_user ( vm_t *vm, GBytes *code, guint8 np )
 
 static gboolean vm_function ( vm_t *vm )
 {
-  vm_function_t *func;
+  vm_function_t *fptr, func;
   value_t result;
   guint8 np;
   gint i;
 
   np = *(vm->ip+1);
-  memcpy(&func, vm->ip+2, sizeof(gpointer));
+  memcpy(&fptr, vm->ip+2, sizeof(gpointer));
+  vm_func_copy(&func, fptr);
   if(np>vm->stack->len)
   {
-    g_warning("vm: not enough parameters in call to '%s'", func->name);
+    g_warning("vm: not enough parameters in call to '%s'", func.name);
     return FALSE;
   }
 
   result = value_na;
-  if(!(func->flags & VM_FUNC_USERDEFINED) && func->ptr.function)
-  {
-    result = vm_function_native(vm, func, np);
-    if(vm->expr)
-      vm->vstate |= !(func->flags & VM_FUNC_DETERMINISTIC);
-  }
-  else if(func->flags & VM_FUNC_USERDEFINED)
-  {
-    if(func->arity != np)
-    {
-      g_warning("invalid number of parameters in function '%s', expected %d",
-          func->name, func->arity);
-      result = value_na;
-    }
-    else
-      result = vm_function_user(vm, func->ptr.code, np);
-  }
+  if(!(func.flags & VM_FUNC_USERDEFINED) && func.ptr.function)
+    result = vm_function_native(vm, &func, np);
+  else if(func.flags & VM_FUNC_USERDEFINED)
+    result = vm_function_user(vm, &func, np);
   else
     result = value_na;
 
-  expr_dep_add(g_quark_from_string(func->name), vm->expr);
+  expr_dep_add(g_quark_from_string(func.name), vm->expr);
   if(np>1 && vm->pstack->len>np-1)
     g_ptr_array_remove_range(vm->pstack, vm->pstack->len-np+1, np-1);
   else if(!np)
@@ -612,8 +607,9 @@ void vm_run_action ( GBytes *code, GtkWidget *widget, GdkEvent *event,
 void vm_run_user_defined ( gchar *name, GtkWidget *widget, GdkEvent *event,
     window_t *win, guint16 *state, vm_store_t *store )
 {
-  vm_function_t *func;
+  vm_function_t func;
 
-  if( (func = vm_func_lookup(name)) && (func->flags & VM_FUNC_USERDEFINED))
-    vm_run_action(func->ptr.code, widget, event, win, state, store, NULL);
+  if(vm_func_copy(&func, vm_func_lookup(name)) &&
+      (func.flags & VM_FUNC_USERDEFINED))
+    vm_run_action(func.ptr.code, widget, event, win, state, store, NULL);
 }

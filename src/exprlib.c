@@ -573,16 +573,16 @@ static value_t expr_iface_provider ( vm_t *vm, value_t p[], int np )
 static value_t expr_ident ( vm_t *vm, value_t p[], int np )
 {
   value_t result;
-  vm_function_t *func;
+  vm_function_t func;
 
   vm_param_check_np(vm, np, 1, "Ident");
   vm_param_check_string(vm, p, 0, "Ident");
   if(!value_get_string(p[0]))
     return value_na;
 
-  func = vm_func_lookup(value_get_string(p[0]));
-  result = value_new_numeric((func && func->ptr.function) ||
-      scanner_is_variable(value_get_string(p[0])));
+  result = value_new_numeric(
+      (vm_func_copy(&func, vm_func_lookup(value_get_string(p[0]))) &&
+       func.ptr.function) || scanner_is_variable(value_get_string(p[0])));
 
   if(!result.value.numeric)
     expr_dep_add(scanner_parse_identifier(value_get_string(p[0]), NULL), vm->expr);
