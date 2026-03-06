@@ -26,34 +26,35 @@ extern GtkApplication *application;
 static gchar *cssname;
 static gchar *monitor;
 static gchar *bar_id;
-static gchar *dfilter;
 static GRegex *rfilter;
 static gboolean debug = FALSE;
-static gchar **sargv;
-
-static GOptionEntry entries[] = {
-  {"config", 'f', 0, G_OPTION_ARG_FILENAME, &confname, "Specify config file"},
-  {"css",'c', 0, G_OPTION_ARG_FILENAME, &cssname, "Specify css file"},
-  {"socket", 's', 0, G_OPTION_ARG_FILENAME, &sockname,
-    "Specify compositor IPC socket file"},
-  {"debug", 'd',0, G_OPTION_ARG_NONE, &debug, "Display debug info"},
-  {"debug-filter", 'g', 0, G_OPTION_ARG_STRING, &dfilter,
-    "Filter debug output for a pattern"},
-  {"monitor",'m',0, G_OPTION_ARG_STRING, &monitor,
-    "Monitor to display the panel on (use \"-m list\" to list monitors`"},
-  {"bar_id",'b',0, G_OPTION_ARG_STRING, &bar_id,
-    "default sway bar_id to listen on for sway events"},
-  {NULL}};
 
 void parse_command_line ( gint argc, gchar **argv)
 {
   GOptionContext *optc;
+  static gchar *dfilter;
+  static GOptionEntry entries[] = {
+    {"config", 'f', 0, G_OPTION_ARG_FILENAME, &confname, "Specify config file"},
+    {"css",'c', 0, G_OPTION_ARG_FILENAME, &cssname, "Specify css file"},
+    {"socket", 's', 0, G_OPTION_ARG_FILENAME, &sockname,
+      "Specify compositor IPC socket file"},
+    {"debug", 'd',0, G_OPTION_ARG_NONE, &debug, "Display debug info"},
+    {"debug-filter", 'g', 0, G_OPTION_ARG_STRING, &dfilter,
+      "Filter debug output for a pattern"},
+    {"monitor",'m',0, G_OPTION_ARG_STRING, &monitor,
+      "Monitor to display the panel on (use \"-m list\" to list monitors`"},
+    {"bar_id",'b',0, G_OPTION_ARG_STRING, &bar_id,
+      "default sway bar_id to listen on for sway events"},
+    {NULL}};
 
   optc = g_option_context_new(" - S* Floating Window Bar");
-  g_option_context_add_main_entries(optc,entries,NULL);
+  g_option_context_add_main_entries(optc, entries, NULL);
   g_option_context_add_group(optc, gtk_get_option_group(TRUE));
-  g_option_context_parse(optc,&argc,&argv,NULL);
+  g_option_context_parse(optc, &argc, &argv, NULL);
   g_option_context_free(optc);
+
+  if(dfilter)
+    rfilter = g_regex_new(dfilter, 0, 0, NULL);
 }
 
 static const gchar *log_colors[] = {
@@ -100,7 +101,7 @@ void log_print ( const gchar *log_domain, GLogLevelFlags log_level,
   g_date_time_unref(now);
 }
 
-static gboolean sfwbar_restart ( gpointer d )
+static gboolean sfwbar_restart ( gchar **sargv )
 {
   gint i, fdlimit;
 
@@ -131,7 +132,7 @@ static void activate (GtkApplication* app, gpointer data )
   action_lib_init();
   wayland_init();
   css_init(cssname);
-  monitor_init( monitor );
+  monitor_init(monitor);
   sway_ipc_init();
   hypr_ipc_init();
   wayfire_ipc_init();
@@ -166,26 +167,18 @@ static void activate (GtkApplication* app, gpointer data )
 
   vm_run_user_defined("SfwBarInit", NULL, NULL, NULL, NULL,
       base_widget_get_store(panel));
-
-  g_unix_signal_add(SIGHUP, (GSourceFunc)sfwbar_restart, NULL);
 }
 
 int main (int argc, gchar **argv)
 {
   GtkApplication *app;
-  gint status, i;
+  gint status;
 
-  sargv = g_malloc0(sizeof(gchar *)*(argc+1));
-  for(i=0; i<argc; i++)
-    sargv[i] = argv[i];
-
+  g_unix_signal_add(SIGHUP, (GSourceFunc)sfwbar_restart,
+      g_memdup2(argv, sizeof(gchar *)*(argc+1)));
   signal_subscribe();
   g_log_set_handler(NULL, G_LOG_LEVEL_MASK, log_print, NULL);
-
   parse_command_line(argc, argv);
-
-  if(dfilter)
-    rfilter = g_regex_new(dfilter, 0, 0, NULL);
 
   app = gtk_application_new ("org.hosers.sfwbar", G_APPLICATION_NON_UNIQUE);
   g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);
