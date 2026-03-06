@@ -323,10 +323,10 @@ static void mpd_reconnect ( void )
   if( !(address_current = g_list_next(address_current)) )
   {
     address_current = address_list;
-    g_timeout_add(1000, mpd_connect, NULL);
+    module_timeout_add(1000, mpd_connect, NULL);
   }
   else
-    g_idle_add(mpd_connect, NULL);
+    module_idle_add(mpd_connect, NULL);
 }
 
 static void mpd_connect_cb ( GSocketClient *client, GAsyncResult *res,
@@ -348,7 +348,7 @@ static void mpd_connect_cb ( GSocketClient *client, GAsyncResult *res,
     mpd_cmd_append("status");
     mpd_cmd_append("currentsong");
     mpd_cmd_current = mpd_cmd_init;
-    g_io_add_watch_full(chan, G_PRIORITY_DEFAULT,
+    module_channel_watch_add(chan, G_PRIORITY_DEFAULT,
         G_IO_IN | G_IO_PRI | G_IO_HUP | G_IO_ERR,
         (GIOFunc)mpd_event, NULL, (GDestroyNotify)mpd_reconnect);
   }
@@ -520,7 +520,7 @@ gboolean sfwbar_module_init ( void )
   port = g_getenv("MPD_PORT");
   mpd_address_new(g_getenv("MPD_HOST"), port? g_ascii_strtoll(port, NULL, 10) : 0);
 
-  g_idle_add(mpd_connect, NULL);
+  module_idle_add(mpd_connect, NULL);
 
   return TRUE;
 }

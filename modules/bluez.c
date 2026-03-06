@@ -216,7 +216,7 @@ static void bz_scan_cb ( GDBusConnection *con, GAsyncResult *res,
   g_variant_unref(result);
 
   if(adapter->scan_timeout)
-    adapter->timeout_handle = g_timeout_add(adapter->scan_timeout,
+    adapter->timeout_handle = module_timeout_add(adapter->scan_timeout,
         (GSourceFunc)bz_scan_stop, adapter);
 }
 

@@ -258,3 +258,20 @@ guint module_timeout_add ( guint i, GSourceFunc func, gpointer d )
   return g_source_attach(src, g_main_context_get_thread_default());
 }
 
+guint module_idle_add ( GSourceFunc func, gpointer d )
+{
+  GSource *src = g_idle_source_new();
+
+  g_source_set_callback(src, func, d, NULL);
+  return g_source_attach(src, g_main_context_get_thread_default());
+}
+
+guint module_channel_watch_add ( GIOChannel *chan, gint pri, GIOCondition cond,
+    GIOFunc func, gpointer d, GDestroyNotify free_func )
+{
+  GSource *src = g_io_create_watch(chan, cond);
+
+  g_source_set_priority(src, pri);
+  g_source_set_callback(src, (GSourceFunc)func, d, free_func);
+  return g_source_attach(src, g_main_context_get_thread_default());
+}

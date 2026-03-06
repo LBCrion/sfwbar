@@ -534,7 +534,7 @@ void alsa_activate ( void )
   vm_func_add("volume", alsa_func_volume, FALSE, FALSE);
   vm_func_add("volumeinfo", alsa_func_volume, FALSE, FALSE);
   vm_func_add("volumectl", alsa_action_volumectl, TRUE, FALSE);
-  g_idle_add((GSourceFunc)alsa_source_subscribe_all, NULL);
+  module_idle_add((GSourceFunc)alsa_source_subscribe_all, NULL);
 }
 
 void alsa_deactivate ( void )

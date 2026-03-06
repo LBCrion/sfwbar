@@ -39,5 +39,8 @@ void module_interface_activate ( ModuleInterfaceV1 *iface );
 void module_interface_deactivate ( ModuleInterfaceV1 *iface );
 gchar *module_interface_provider_get ( gchar *interface );
 guint module_timeout_add ( guint i, GSourceFunc func, gpointer d );
+guint module_idle_add ( GSourceFunc func, gpointer d );
+guint module_channel_watch_add ( GIOChannel *chan, gint pri, GIOCondition cond,
+    GIOFunc func, gpointer d, GDestroyNotify free_func );
 
 #endif
