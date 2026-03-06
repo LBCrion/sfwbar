@@ -234,7 +234,7 @@ static value_t dbus_action_call (vm_t *vm, value_t p[], gint np)
 
   if(err)
   {
-    g_message("err: %s", err->message);
+    g_warning("dbus: call error: %s", err->message);
     g_error_free(err);
     return value_na;
   }

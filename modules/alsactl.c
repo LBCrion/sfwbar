@@ -531,9 +531,9 @@ static value_t alsa_action_volumectl ( vm_t *vm, value_t p[], gint np )
 void alsa_activate ( void )
 {
   g_debug("alsactl: activating");
-  vm_func_add("volume", alsa_func_volume, FALSE, TRUE);
-  vm_func_add("volumeinfo", alsa_func_volume, FALSE, TRUE);
-  vm_func_add("volumectl", alsa_action_volumectl, TRUE, TRUE);
+  vm_func_add("volume", alsa_func_volume, FALSE, FALSE);
+  vm_func_add("volumeinfo", alsa_func_volume, FALSE, FALSE);
+  vm_func_add("volumectl", alsa_action_volumectl, TRUE, FALSE);
   g_idle_add((GSourceFunc)alsa_source_subscribe_all, NULL);
 }
 
