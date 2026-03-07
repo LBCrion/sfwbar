@@ -745,20 +745,19 @@ gboolean sfwbar_module_init ( void )
   if( (sock = net_rt_connect()) <0 )
     return FALSE;
 
-  g_debug("network: socket: %d", sock);
-  if( (chan = g_io_channel_unix_new(sock)) )
+  if( !(chan = g_io_channel_unix_new(sock)) )
   {
-    vm_func_add("netstat", network_func_netstat, FALSE, FALSE);
-    vm_func_add("netinfo", network_func_netinfo, FALSE, FALSE);
-    g_io_add_watch(chan, G_IO_IN | G_IO_PRI |G_IO_ERR | G_IO_HUP,
-        net_rt_parse, NULL);
-    net_rt_request(sock);
-    return TRUE;
-  }
-  else
     close(sock);
+    return FALSE;
+  }
 
-  return FALSE;
+  g_debug("network: socket: %d", sock);
+  vm_func_add("netstat", network_func_netstat, FALSE, FALSE);
+  vm_func_add("netinfo", network_func_netinfo, FALSE, FALSE);
+  module_channel_watch_add(chan, G_PRIORITY_DEFAULT,
+      G_IO_IN | G_IO_PRI |G_IO_ERR | G_IO_HUP, net_rt_parse, NULL, NULL);
+  net_rt_request(sock);
+  return TRUE;
 }
 
 void sfwbar_module_invalidate ( void )
