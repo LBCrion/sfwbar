@@ -21,7 +21,7 @@ static struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
 
 static value_t idle_inhibit_state ( vm_t *vm, value_t p[], gint np )
 {
-  GtkWidget *widget = vm_widget_get(vm, NULL);
+  GtkWidget *widget = vm_widget_get(vm, np==1? value_get_string(p[0]) : NULL);
   return value_new_string(g_strdup((widget && g_object_get_data(
             G_OBJECT(widget), "inhibitor"))? "on" : "off"));
 }
@@ -33,16 +33,21 @@ static value_t idle_inhibitor_action ( vm_t *vm, value_t p[], gint np )
   struct zwp_idle_inhibitor_v1 *inhibitor;
   gboolean inhibit;
 
-  vm_param_check_np(vm, np, 1, "SetIdleInhibitor");
+  vm_param_check_np_range(vm, np, 1, 2, "SetIdleInhibitor");
   vm_param_check_string(vm, p, 0, "SetIdleInhibitor");
+  if(np==2)
+    vm_param_check_string(vm, p, 1, "SetIdleInhibitor");
+
+  if( !(widget = vm_widget_get(vm, np==2? value_get_string(p[0]) : NULL)) )
+    return value_na;
 
   inhibitor = g_object_get_data(G_OBJECT(widget), "inhibitor");
 
-  if(!g_ascii_strcasecmp(value_get_string(p[0]), "on"))
+  if(!g_ascii_strcasecmp(value_get_string(p[np-1]), "on"))
     inhibit = TRUE;
-  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "off"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[np-1]), "off"))
     inhibit = FALSE;
-  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "toggle"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[np-1]), "toggle"))
     inhibit = !inhibitor;
   else
     return value_na;
