@@ -1,3 +1,15 @@
+1.0beta17
+  - Implement ext-workspaces protocol.
+  - Add localization support.
+  - Implement vm based code interpreter.
+  - Support multithreaded execution of user functions.
+  - Implement dbus module.
+  - Rewrite mpd module as a primary implementation of the interface.
+  - Implement for pipewire privacy monitor.
+
+1.0beta16.1
+  - Fix linking with newer version of gtk-layer-shell.
+
 1.0beta16
   - Implement notification center
   - Add support for cosmic-workspaces protocol

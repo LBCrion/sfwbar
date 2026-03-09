@@ -20,24 +20,28 @@ taskbar. If an idle inhibitor is active on a visible widget, it will prevent
 the compositor to going into an idle state (i.e. blanking a screen,
 going into a suspend mode or activating a screensaver)
 
-Expression Functions
-====================
+Triggers
+========
 
-IdleInhibitState()
-------------------------
+The module defines trigger `IdleInhibitor` which is emitted whenever the
+state of any idle inhibitor changes.
 
-Query an idle inhibitor state on a calling widget. It return a string with
-possible values of "On", if an idle inhibitor is set on the widget or "Off"
-if it isn't. If the function is called from an expression which isn't attached
-to a widget, the returned value will be "Off".
+Functions
+=========
 
-Actions
-=======
-
-SetIdleInhibitor Command
+IdleInhibitState([id:string])
 -----------------------------
 
-Set idle inhibitor state for a widget. The possible command values are:
+Query an idle inhibitor state of a widget specified by `id`. If omitted, the
+state of a widget calling the function will be returned. Returns a string
+containing a value `On` or `Off`.
+
+SetIdleInhibitor([id:string,] state:string)
+-------------------------------------------
+
+Set idle inhibitor state for a widget. If parameter `id` is specified, the
+function will set inhibitor state for a specified widget, otherwise it will be
+set for the current widget.  The possible `state` values are:
 
 "On"
   turn on an idle inhibitor
@@ -45,9 +49,3 @@ Set idle inhibitor state for a widget. The possible command values are:
   turn off an idle inhibitor
 "Toggle" 
   toggle the state of an idle inhibitor
-
-Triggers
-========
-
-The module defines one trigger "IdleInhibitor" which is emitted whenever the
-state of any idle inhibitor changes.

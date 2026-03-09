@@ -17,20 +17,15 @@ SYNOPSIS
 
 The BSDCtl module provides an interface to query BSD sysctl values
 
-Expression Functions
-====================
+Functions
+=========
 
 BSDCtl(Query)
 -------------
 
-function BSDCtl queries the value of a sysctl variable. It's equivalent to
-calling sysctl program on BSD system. Please note that you can only query
-individual nodes rather than groups.
-
-Actions
-=======
-
-None
+Queries the value of a sysctl variable. It's equivalent to calling sysctl
+program on a BSD system. Please note that you can only query individual nodes
+rather than groups.
 
 Triggers
 ========

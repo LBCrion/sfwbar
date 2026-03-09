@@ -1,0 +1,107 @@
+.\" Man page generated from reStructuredText
+.\" by the Docutils 0.22.3 manpage writer.
+.
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.TH "sfwbar-dbus" "1" "" ""
+.SH Name
+sfwbar-dbus \- Sfwbar DBus interface module
+.sp
+Filename: dbus.so
+.sp
+Requires: none
+.SH SYNOPSIS
+.sp
+The DBus interface module provides means for invocation of DBus calls and
+monitoring DBus names and listening to DBus signals.
+.SH Triggers
+.sp
+This module does not have emit triggers with pre\-defined names, it does emit
+triggers defined by the user when calling \fIDBusSubscribe\fP and \fIDBusWatch\fP
+functions.
+.SH Functions
+.SS DBusCall(Address, Method [, ParamType, Param])
+.sp
+Call a DBus method. \fIAddress\fP is an array of 4 strings, the first string is
+bus, which can be \(dqsystem\(dq or \(dquser\(dq, the second string is the bus name, the
+third is the object path and the fourth is the interface name.
+\fIMethod\fP is a string specifying the name of the method to call. Optionally,
+\fIParamType\fP and \fIParam\fP can be specified, providing a DBus type string of the
+method parameters and an array containing the parameter data. This function
+returns any data returned by the call. See DBus type conversion for information
+on constructing the \fIParam\fP parameter and parsing the return value.
+.SS DBusSubscribe(Address, Signal, Trigger [, Arg0])
+.sp
+Subscribe to a DBus signal.  \fIAddress\fP is an array of 4 strings, the first
+string is bus, which can be \(dqsystem\(dq or \(dquser\(dq, the second string is the bus
+name, the third is the object path and the fourth is the interface name.
+\fISignal\fP is the name of a signal to subscribe to. \fITrigger\fP is a name of a
+trigger to emit upon receipt of the signal. An optional parameter \fIArg0\fP
+allows filtering the first string of the signal parameters. If specified, any
+message where the first string parameter doesn\(aqt match \fIArg0\fP will be ignored.
+Triggers called by \fIDBusSubscribe\fP exposer a variable \fIDBusSignal\fP containing
+the parameters for the signal. See \fIDBus type conversion\fP section for
+information on parsing this variable. Retuns n/a.
+.SS DBusWatch(Bus, Name, Trigger)
+.sp
+Watch a name on a bus. Parameter \fIBus\fP specifies the type of a bus to watch a
+name on. It can be either \(dqsystem\(dq or \(dquser\(dq. \fIName\fP is the name to watch and
+\fITrigger\fP is the name of a trigger to emit when the name appears or disappears.
+Triggers called in response to \fIDBusWatch\fP supply a variable \fIDBusStatus\fP which
+may contain one of two values, \(dqappeared\(dq and \(dqvanished\(dq, corresponding to the
+state of the DBus name being watched. Returns n/a.
+.SH DBus type conversion
+.sp
+DBus uses a complex type system for serializing multiple values. Data supplied
+to DBus function and received from the comes in this form. Sfwbar uses a much
+simpler type system, which needs to be mapped to and from the DBus types.
+.sp
+DBus types map to Sfwbar types as following:
+DBus types \fIString\fP, \fIObject path\fP and \fISignature\fP correspond to sfwbar
+\fIString\fP type.
+DBus types \fIBoolean\fP, \fIBytes\fP, \fIInt16\fP, \fIUint16\fP, \fIInt32\fP, \fIUint32\fP, \fIInt64\fP,
+\fIUint64\fP, \fIHandle\fP and \fIDouble\fP correspond to sfwbar \fINumberic\fP type.
+DBus \fITuples\fP\&. \fIArrays\fP and \fIDictionary entries\fP correspond to sfwbar \fIArray\fP
+type.
+.sp
+This means that DBus type \fI(ss)\fP corresponds to an sfwbar variable
+\fI[\(dqstring\(dq, \(dqstring\(dq]\fP
+.sp
+Complex DBus data structures would be parsed into sfwbar arrays, with nested
+arrays where necessary. I.e. \fI(sas)\fP would become \fI[\(dqString\(dq, [\(dqstring\(dq... ]]\fP
+When parsing data received from DBus, it may be helpful to use Print on the
+received data to check the system of the nested arrays it\(aqs mapped to.
+.sp
+When encoding DBus data, there is an important diversion from the standard DBus
+type convention. When encoding a variant value \fIv\fP, you need to supply a hint
+for the underlying type. I.e. you can\(aqt just supply \fI(v)\fP, you need to tell
+sfwbar what type the variant will take. I.e. \fI(vs)\fP to supply a variant holding
+a string or \fI(v(ss))\fP for a variant holding a tuple of two strings.
+.SH Copyright
+GPLv3+
+.\" End of generated man page.

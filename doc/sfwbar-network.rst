@@ -17,57 +17,52 @@ SYNOPSIS
 
 The network module tracks the state of the current network connection.
 
-Expression Functions
-====================
+Triggers
+========
+The module defines trigger `network` which is emitted whenever the interface
+properies change (i.e. ip, netmask, default gateway or wifi essid).
 
-NetInfo(Query[,Interface])
---------------------------
+Functions
+=========
 
-Function NetInfo queries the parameter of the connection on the network
-interface specified. If Interface is not specified, NetInfo will query the
-interface of the default gateway (if one exists). The queries supported are:
+NetInfo(Query [,Interface])
+---------------------------
 
-"ip"
+Function NetInfo queries a proeprty of the the network interface specified.
+If `Interface` is not specified, NetInfo will query the interface of the
+default gateway (if one exists). The queries supported are:
+
+`ip`
   IP address of the interface.
-"mask"
+`mask`
   Net mask of the interface.
-"cidr"
+`cidr`
   Net mask in the CIDR notation.
-"gateway"
+`gateway`
   The default gateway (not necessarily associated with the interface).
-"ip6"
+`ip6`
   IPv6 IP address of the interface.
-"mask6"
+`mask6`
   IPv6 netmask of the interfce.
-"gateway6"
+`gateway6`
   The default IPv6 gateway.
-"essid"
+`essid`
   ESSID of the wireless connection (if applicable for the interface).
 
 NetInfo returns a string value.
 
-NetStat(Query[,Interface])
---------------------------
+NetStat(Query [,Interface])
+---------------------------
 
-Function NetStat queries statistics of the interface. If the interface 
-isn't specified, it will be applied to the interface of the default gateway.
+Function NetStat queries statistics of the interface. If the interface isn't
+specified, it will be applied to the interface of the default gateway.
 The queries supported are:
 
-"rxrate"
+`rxrate`
   Receive data rate on the interface (in bps).
-"txrate"
+`txrate`
   Transmit data rate on the interface (in bps).
-"signal"
+`signal`
   Signal strength of the wifi connection (if applicable).
 
 NetState returns a numeric value.
-
-
-Actions
-=======
-None
-
-Triggers
-========
-The module defines one trigger "network" which is emitted whenever the interface
-data is changes (i.e. ip, netmask, default gateway, wifi essid).

@@ -166,7 +166,7 @@ if get_option('dbus').enabled() or get_option('dbus').auto()
       include_directories: headers,
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
-#  doc_list += 'sfwbar-bluez'
+  doc_list += 'sfwbar-dbus'
 endif
 
 if get_option('iwd').enabled() or get_option('iwd').auto()
@@ -208,6 +208,7 @@ if pipe.found()
       include_directories: headers,
       dependencies: [deps, pipe],name_prefix: '',
       install: true, install_dir: get_option('libdir') / 'sfwbar' )
+  doc_list += 'sfwbar-pipewire'
 endif
 
 if get_option('mpd').enabled() or get_option('mpd').auto()

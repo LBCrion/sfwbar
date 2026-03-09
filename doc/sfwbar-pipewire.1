@@ -28,26 +28,38 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "sfwbar-xkbmap" "1" "" ""
+.TH "sfwbar-pipewire" "1" "" ""
 .SH Name
-sfwbar-xkbmap \- Sfwbar xkbcommon layout module
+sfwbar-pipewire \- Sfwbar Pipewire module
 .sp
-Filename: xkbmap.so
+Filename: pipewire.so
 .sp
-Requires: libxkbregistry
+Requires: none
 .SH SYNOPSIS
 .sp
-The XkbMap module provides an interface to convert between xkb keyboard layout
-types.
-.SH Functions
-.SS XkbMap(Name, SourceType, DestType)
-.sp
-Convert between various name types for an XkbLayout. The function converts
-layout \fIName\fP from \fISourceType\fP to \fIDestType\fP\&. The supported types are:
-\fI\(dqdescription\(dq\fP, \fI\(dqname\(dq\fP, \fI\(dqvariant\(dq\fP and \fI\(dqbrief\(dq\fP\&.
+Pipewire module exposes basic information about pipewire connections.
+Currently, the support is limited to counting various connection types to
+allow implementation of the privacy notifier.
 .SH Triggers
 .sp
-None
+The module defines trigger \fIpipewire\fP which is emitted whenever a pipewire
+connection is created or destroyed.
+.SH Functions
+.SS PipewireCOunt([type:string])
+.sp
+Request the count of pipewire connections of a given type. The supported
+types are:
+.INDENT 0.0
+.TP
+.B \fIAudioOut\fP
+Audio output connections
+.TP
+.B \fIAudioIn\fP
+Audio input connections
+.TP
+.B \fIVideoIn\fP
+Video input connections
+.UNINDENT
 .SH Copyright
 GPLv3+
 .\" End of generated man page.
