@@ -416,6 +416,9 @@ static void hypr_ipc_workspace_new ( gchar *data )
   if(!eptr || *eptr!=',')
     return;
 
+  if(((gssize)GPOINTER_TO_SIZE(id))<0)
+    return;
+
   ws = workspace_new(id);
   workspace_set_name(ws, eptr+1);
 }
@@ -496,7 +499,7 @@ static void hypr_ipc_unminimize ( gpointer id )
 
 static void hypr_ipc_close ( gpointer id )
 {
-  hypr_ipc_command("dispatch closewindow address:0x%lx",GPOINTER_TO_SIZE(id));
+  hypr_ipc_command("dispatch closewindow address:0x%lx", GPOINTER_TO_SIZE(id));
 }
 
 static void hypr_ipc_focus ( gpointer id )
