@@ -163,9 +163,11 @@ static gboolean module_init ( gchar *name, GModule *module, GMainContext **ctx )
 
   g_mutex_lock(&closure->mutex);
   if(thread == MODULE_THREAD_MODULE && module_context)
-    g_main_context_invoke(module_context, (GSourceFunc)module_source_func, closure);
+    g_main_context_invoke(module_context, (GSourceFunc)module_source_func,
+        closure);
   else
-    g_thread_new(name, (GThreadFunc)module_thread_func, closure);
+    g_thread_unref(g_thread_new(name, (GThreadFunc)module_thread_func,
+          closure));
   while(!closure->ready)
     g_cond_wait(&closure->cond, &closure->mutex);
   g_mutex_unlock(&closure->mutex);
