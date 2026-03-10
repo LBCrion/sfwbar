@@ -103,7 +103,10 @@ void exec_cmd_in_term ( const gchar *cmd )
   if(!terms[i].exec)
     return;
 
-  exec = g_strconcat(term, terms[i].arg, cmd, NULL);
+  if(cmd && *cmd)
+    exec = g_strconcat(term, terms[i].arg, cmd, NULL);
+  else
+    exec = g_strdup(term);
   g_free(term);
   exec_cmd(exec);
   g_free(exec);

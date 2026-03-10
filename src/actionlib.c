@@ -31,8 +31,8 @@ static value_t action_exec_impl ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_exec_term ( vm_t *vm, value_t p[], gint np )
 {
-  if(np==1 && value_is_string(p[0]) && p[0].value.string)
-    exec_cmd_in_term(value_get_string(p[0]));
+  vm_param_check_np_range(vm, np, 0, 1, "ExecTerm");
+  exec_cmd_in_term(value_get_string(p[0]));
 
   return value_na;
 }
