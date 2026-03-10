@@ -76,6 +76,21 @@ void exec_cmd ( const gchar *cmd )
   g_free(clean_cmd);
 }
 
+const gchar *exec_term_get ( void )
+{
+  gchar *term;
+  gint i;
+
+  for(i=0; terms[i].exec; i++)
+    if( (term = g_find_program_in_path(terms[i].exec)) )
+      break;
+
+  if(terms[i].exec)
+    g_free(term);
+
+  return terms[i].exec;
+}
+
 void exec_cmd_in_term ( const gchar *cmd )
 {
   gchar *term, *exec;

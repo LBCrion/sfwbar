@@ -4,6 +4,7 @@
  */
 
 #include <sys/statvfs.h>
+#include <exec.h>
 #include <locale.h>
 #include "input.h"
 #include "module.h"
@@ -770,6 +771,13 @@ static value_t expr_widget_get_data ( vm_t *vm, value_t p[], gint np )
   return value_dup(*vptr);
 }
 
+static value_t expr_get_term ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 0, "GetTerm");
+
+  return value_new_string(g_strdup(exec_term_get()));
+}
+
 static value_t expr_na ( vm_t *vm, value_t p[], gint np )
 {
   return value_na;
@@ -823,5 +831,6 @@ void expr_lib_init ( void )
   vm_func_add("layout", expr_layout, FALSE, TRUE);
   vm_func_add("layoutlist", expr_layout_list, FALSE, TRUE);
   vm_func_add("widgetgetdata", expr_widget_get_data, FALSE, FALSE);
+  vm_func_add("getterm", expr_get_term, TRUE, TRUE);
   vm_func_add("na", expr_na, TRUE, TRUE);
 }

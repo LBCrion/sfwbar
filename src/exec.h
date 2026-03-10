@@ -3,6 +3,7 @@
 
 #include <gio/gdesktopappinfo.h>
 
+const gchar *exec_term_get ( void );
 void exec_cmd ( const gchar *cmd );
 void exec_cmd_in_term ( const gchar *cmd );
 void exec_launch ( GDesktopAppInfo *info );
