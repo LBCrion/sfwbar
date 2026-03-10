@@ -779,6 +779,12 @@ PipeRead(<string>)
 Exec(<string>)
   Execute a shell command. Returns n/a.
 
+ExecTerm(<string>)
+  Execute a shell command in a terminal. Returns n/a.
+
+GetTerm()
+  Get the autodetected terminal executable name. Returns <string>.
+
 Print(<string>)
   Print a string to standard output. Useful for debugging user functions.
   Returns n/a.
