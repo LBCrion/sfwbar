@@ -98,7 +98,7 @@ Function `BluezAdapter` queries the state of the default adapter. Valid
 BluezScan(<Duration>)
 ---------------------
 Initiate scan for bluetooth devices. The scan will last for the `duration`
-specified in milliseconds.
+specified in seconds.
 
 BluezConnect(<path>)
 --------------------
