@@ -483,7 +483,7 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
   vm_function_t *ptr;
   gboolean neg;
   static guint8 discard = EXPR_OP_DISCARD;
-  /* initialize alen to 0 to suppress liner warning */
+  /* initialize alen to 0 to suppress linter warning */
   gint alen = 0, flag, cond = 0, np = 0;
 
   if(config_check_and_consume(scanner, '['))

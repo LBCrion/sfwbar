@@ -47,9 +47,9 @@ static gboolean chart_draw ( GtkWidget *self, cairo_t *cr )
   extents.top = border.top + margin.top + padding.top;
   extents.bottom = border.bottom + margin.bottom + padding.bottom;
 
-  gtk_render_background(context,cr, extents.left, extents.top, width -
+  gtk_render_background(context, cr, extents.left, extents.top, width -
       extents.left - extents.right, height - extents.top - extents.bottom);
-  gtk_render_frame(context,cr,margin.left, margin.top, width - margin.left -
+  gtk_render_frame(context, cr, margin.left, margin.top, width - margin.left -
       margin.right, height - margin.top - margin.bottom);
 
   width = width - extents.left - extents.right;
@@ -65,7 +65,7 @@ static gboolean chart_draw ( GtkWidget *self, cairo_t *cr )
   x_offset = width + extents.left - len + 0.5;
   y_offset = height + extents.top + 0.5;
 
-  gtk_style_context_get_color (context,flags, &fg);
+  gtk_style_context_get_color(context, flags, &fg);
   cairo_set_source_rgba(cr, fg.red, fg.green, fg.blue, fg.alpha);
   cairo_set_line_width(cr, 1);
   cairo_move_to(cr, x_offset, y_offset);
