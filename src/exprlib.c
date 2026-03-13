@@ -778,6 +778,35 @@ static value_t expr_get_term ( vm_t *vm, value_t p[], gint np )
   return value_new_string(g_strdup(exec_term_get()));
 }
 
+static value_t expr_exec_read ( vm_t *vm, value_t p[], gint np )
+{
+  value_t res;
+  GIOChannel *chan;
+  gint out;
+  gchar **argv, *str;
+
+  vm_param_check_np(vm, np, 1, "ExecRead");
+  vm_param_check_string(vm, p, 0, "ExecRead");
+
+  if(!g_shell_parse_argv(value_get_string(p[0]), NULL, &argv, NULL))
+    return value_na;
+
+  if(!g_spawn_async_with_pipes(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL,
+        NULL, NULL, &out, NULL, NULL))
+    return value_na;
+
+  if( (chan = g_io_channel_unix_new(out)) )
+  {
+    g_debug("execread: '%s'", value_get_string(p[0]));
+    g_io_channel_read_to_end(chan, &str, NULL, NULL);
+    res = str? value_new_string(str) : value_na;
+    g_io_channel_unref(chan);
+  }
+  close(out);
+
+  return res;
+}
+
 static value_t expr_na ( vm_t *vm, value_t p[], gint np )
 {
   return value_na;
@@ -832,5 +861,6 @@ void expr_lib_init ( void )
   vm_func_add("layoutlist", expr_layout_list, FALSE, TRUE);
   vm_func_add("widgetgetdata", expr_widget_get_data, FALSE, FALSE);
   vm_func_add("getterm", expr_get_term, TRUE, TRUE);
+  vm_func_add("execread", expr_exec_read, TRUE, TRUE);
   vm_func_add("na", expr_na, TRUE, TRUE);
 }

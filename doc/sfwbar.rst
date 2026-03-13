@@ -782,6 +782,9 @@ Exec(<string>)
 ExecTerm(<string>)
   Execute a shell command in a terminal. Returns n/a.
 
+ExecRead(<string>)
+  Execute a shell command and return it's output as a string.
+
 GetTerm()
   Get the autodetected terminal executable name. Returns <string>.
 
