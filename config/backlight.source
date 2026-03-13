@@ -4,11 +4,14 @@ module("dbus")
 module("bsdctl")
 
 Var BacklightSrc, BacklightMax, BacklightName;
+Var min_brightness = 30;
+Var max_brightness = 100;
+Var step = 5;
 
 Set BacklightPresent = (ident(DbusCall) & BacklightSrc!='') |
     (ident(BSDCtl) & BSDCtl("hw.acpi.video.lcd0.brightness")!='');
 
-Set BacklightPct = Val(Read(BacklightSrc))/BacklightMax;
+Set BacklightPct = Val(Read(BacklightSrc))/BacklightMax*100;
 
 Function BacklightInit() {
   Var base = "/sys/class/backlight";
@@ -24,7 +27,7 @@ Function BacklightInit() {
         BacklightSrc = base+"/"+BacklightName+"/actual_brightness"
         BacklightMax = Val(Read(base+"/"+BacklightName+"/max_brightness"))
         FileTrigger(BacklightSrc, "backlight", 1000)
-        SetBacklight(Val(Read(BacklightSrc))/BacklightMax)
+        SetBacklight(Val(Read(BacklightSrc))/BacklightMax*100)
         EmitTrigger( "backlight")
       }
 }
@@ -37,8 +40,8 @@ Function SetBacklight ( pct )
       "org.freedesktop.login1.Session"];
   If BacklightMax > 0 {
     DBusCall(SessionInterface, "SetBrightness", "(ssu)",
-           ["backlight", BacklightName,
-           BacklightMax * Min(1, Max(0.3, pct ))])
+           ["backlight", BacklightName, BacklightMax * 0.01 *
+           Max(10, Min(max_brightness, Max(min_brightness, pct )))])
     EmitTrigger("backlight")
   }
 }

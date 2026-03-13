@@ -138,7 +138,7 @@ Private {
             );
     Config(CfgInfo+"};");
     for(Var j=i; j<=MpdQueueMax; j=j+1)
-      ClearWidget("mpd_queue_grid" + Str(j));
+      ClearWidget("mpd_queue_grid_" + Str(j));
     MpdQueueMax = i;
     MpdQueueSelection = [];
     EmitTrigger("mpd-browser-selection");
@@ -158,7 +158,7 @@ Private {
       if(MpdSource = "db")
         MpdCmd("search " + MpdFilter(level) + " sort -track");
       else
-        MpdCmd('listplaylistinfo "' + Escape(MpdFilterVals[0])+'"');
+        MpdCmd('listplaylistinfo "' + Escape(MpdFilterVals[0]) + '"');
     }
     MpdFilterLevel = level;
   }
@@ -378,8 +378,6 @@ image#mpd_playlist_control {
   padding: 8px;
 }
 
-label#mpd_category_active,
-label#mpd_category_title,
 label#mpd_browser_title {
   -GtkWidget-hexpand: true;
   -GtkWidget-halign: fill;
@@ -404,7 +402,6 @@ grid#mpd_browser_active {
   -GtkWidget-hexpand: true;
 }
 
-label#mpd_category_active,
 grid#mpd_browser_active {
   background-color: red;
 }

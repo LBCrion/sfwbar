@@ -6,6 +6,15 @@ Private {
 
   include("mpd-browser.widget");
 
+  Var icon_play = "media-playback-start";
+  Var icon_stop = "media-playback-stop";
+  Var icon_pause = "media-playback-pause";
+  Var icon_ffwd = "media-seek-forward";
+  Var icon_back = "media-seek-backward";
+  Var icon_repeat = "media-playlist-repeat";
+  Var icon_shuffle = "media-playlist-shuffle";
+  Var icon_browse = "view-list";
+
   Var MpdIconStop = "<path d='m 3.5 2 h 9 c 0.828125 0 1.5 0.671875 1.5 1.5 v 9
     c 0 0.828125 -0.671875 1.5 -1.5 1.5 h -9 c -0.828125 0 -1.5 -0.671875 -1.5
     -1.5 v -9 c 0 -0.828125 0.671875 -1.5 1.5 -1.5 z m 0 0' fill='@theme_fg_color'/>";
@@ -79,48 +88,48 @@ Private {
           loc(2,5)
           css = "* { -GtkWidget-direction: right; -GtkWidget-halign: center; -GtkWidget-hexpand: true; }"
           image {
-            value = "media-playlist-repeat"
+            value = icon_repeat;
             action = MpdCmd("repeat " + If(Val(MpdInfo("Repeat")),"0","1"))
             style = If(Val(MpdInfo("repeat")),"mpd_icon_red","mpd_icon")
             trigger = "mpd"
           }
           image {
-            value = "media-playlist-shuffle"
+            value = icon_shuffle;
             action = MpdCmd("random " + If(Val(MpdInfo("Random")),"0","1"))
             style = If(Val(MpdInfo("random")),"mpd_icon_red","mpd_icon")
             trigger = "mpd"
           }
           image {
-            value = "media-seek-backward"
+            value = icon_back;
             action = MpdCmd("previous")
             style = "mpd_icon"
           }
           image {
-            value = "media-playback-start"
+            value = icon_play;
             action = MpdCmd("play")
             style = If(MpdInfo("state")="play","mpd_icon_red","mpd_icon")
             trigger = "mpd"
           }
           image {
-            value = "media-playback-pause"
+            value = icon_pause;
             action = MpdCmd("pause")
             style = If(MpdInfo("State")="pause","mpd_icon_red","mpd_icon")
             trigger = "mpd"
           }
           image {
-            value = "media-playback-stop"
+            value = icon_stop;
             action = MpdCmd("stop")
             style = If(MpdInfo("state")="stop","mpd_icon_red","mpd_icon")
             trigger = "mpd"
           }
           image {
-            value = "media-seek-forward"
+            value = icon_ffwd;
             action = MpdCmd("next")
             style = "mpd_icon"
           }
           image {
-            value = "view-list"
-            action = MpdBrowserOpen();
+            value = icon_browse;
+            action = EmitTrigger("mpd-browser-open");
             style = "mpd_icon"
           }
         }

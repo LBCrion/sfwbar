@@ -1,15 +1,15 @@
 #Api2
 
-Var session_actions = [
-  ["icons/misc/hibernate-symbolic", "Hibernate", "systemctl hibernate"],
-  ["icons/misc/suspend", "Suspend", "systemctl suspend"],
-  ["system-lock-screen", "Lock", "loginctl lock-session"],
-  ["system-log-out", "Logout", "loginctl terminate-user $USER"],
-  ["system-reboot", "Reboot", "systemctl reboot"],
-  ["system-shutdown", "Shutdown", "systemctl poweroff"]
-];
-
 Private {
+
+  Var session_actions = [
+    ["icons/misc/hibernate-symbolic", "Hibernate", "systemctl hibernate"],
+    ["icons/misc/suspend", "Suspend", "systemctl suspend"],
+    ["system-lock-screen", "Lock", "loginctl lock-session"],
+    ["system-log-out", "Logout", "loginctl terminate-user $USER"],
+    ["system-reboot", "Reboot", "systemctl reboot"],
+    ["system-shutdown", "Shutdown", "systemctl poweroff"]
+  ];
 
   Var conf_id;
 
@@ -18,10 +18,11 @@ Private {
       grid {
         style = 'session_grid';
         action = {
-          Config('grid \"session_@LOC@\" {style = \"session_conf\"}');
-          if conf_id!='' & conf_id!='@LOC@'
-            Config('grid \"session_' + conf_id +'\" {style = \"hidden\"}');
-          conf_id = '@LOC@';
+          if conf_id != ''
+            Config('grid \"session_' + conf_id +'\" { style = \"hidden\" }');
+          if conf_id != '@LOC@'
+            Config('grid \"session_@LOC@\" { style = \"session_conf\" }');
+          conf_id = if(conf_id='@LOC@', '', '@LOC@');
         }
         loc(0,@LOC@);
         image {
@@ -39,8 +40,8 @@ Private {
         grid 'session_@LOC@' {
           loc(0,1,2,1);
           style = 'hidden';
-          label {
-            value = 'Confirm';
+          image {
+            value = 'dialog-ok';
             action = {
               PopUp('SessionPopup');
               Config('grid \"session_@LOC@\" {style = \"hidden\"}');
@@ -48,8 +49,8 @@ Private {
             }
             loc(0,0,1,1);
           }
-          label {
-            value = 'Cancel';
+          image {
+            value = 'dialog-cancel';
             action = Config('grid \"session_@LOC@\" {style = \"hidden\"}');
             loc(1,0,1,1);
           }
@@ -67,13 +68,12 @@ Private {
     grid "session_container" {}
   }
 
-  widget_grid {
-    button {
-      style = "module";
-      value = "system-shutdown";
-      action[0] = SessionInit();
-      action = PopUp("SessionPopup");
-    }
+  export button {
+    style = "module";
+    value = "system-shutdown-symbolic";
+    tooltip = "Session manager";
+    action[0] = SessionInit();
+    action = PopUp("SessionPopup");
   }
 }
 
@@ -114,19 +114,19 @@ grid#session_grid {
 }
 
 grid#session_conf {
+  margin-top: 2px;
   border: solid 1px;
   border-radius: 5px;
   -GtkWidget-hexpand: true;
   -GtkWidget-halign: fill;
 }
 
-grid#sesion_conf label {
-  padding-left: 5px;
-  padding-right: 5px;
+grid#session_conf image {
+  margin: 5px;
   -GtkWidget-hexpand: true;
-  -GtkWidget-halign: center;
+  -GtkWidget-halign: fill;
 }
 
-grid#session_conf :not(:last-child) label {
+grid#session_conf :not(:last-child) image {
   border-right: solid 1px;
 }

@@ -6,18 +6,15 @@ Private {
 
   Var format = "{percent}% {icon}";
   Var icon = "";
-  Var Step = 0.005;
 
-  widget_grid {
-    label {
-      style = if(BacklightPresent, "backlight", "hidden")
-      action[0] = BacklightInit()
-      action[ScrollUp] = SetBacklight(BacklightPct+Step)
-      action[ScrollDown] = SetBacklight(BacklightPct-Step)
-      action[LeftClick] = PopUp("BacklightPopup")
-      value = ReplaceAll(format, "{percent}", Str(BacklightPct *100), "{icon}", icon);
-      tooltip = ReplaceAll(format, "{percent}", Str(BacklightPct *100), "{icon}", icon);
-      trigger = "backlight"
-    }
+  export label {
+    style = if(BacklightPresent, "backlight", "hidden")
+    action[0] = BacklightInit()
+    action[ScrollUp] = SetBacklight(BacklightPct+step)
+    action[ScrollDown] = SetBacklight(BacklightPct-step)
+    action[LeftClick] = PopUp("BacklightPopup")
+    value = ReplaceAll(format, "{percent}", Str(BacklightPct), "{icon}", icon);
+    tooltip = ReplaceAll(format, "{percent}", Str(BacklightPct), "{icon}", icon);
+    trigger = "backlight"
   }
 }

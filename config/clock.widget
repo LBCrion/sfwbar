@@ -9,16 +9,14 @@ Private {
   Var tooltip_format = "%k:%M\n%x"
   Var reset_on_popup = TRUE;
 
-  widget_grid {
-    label {
-      value = Time(time_format)
-      style ="clock"
-      tooltip = Time(tooltip_format)
-      action = {
-        If reset_on_popup
-          EmitTrigger("calendar-reset")
-        PopUp("Xcal")
-      }
+  export label 'clock' {
+    value = Time(time_format)
+    style ="clock"
+    tooltip = Time(tooltip_format)
+    action = {
+      If reset_on_popup
+        EmitTrigger("calendar-reset")
+      PopUp("Xcal")
     }
   }
 }
@@ -31,4 +29,3 @@ label#clock {
   -GtkWidget-vexpand: true;
   -GtkWidget-valign: center;
 }
-

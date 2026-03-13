@@ -1,19 +1,19 @@
 #Api2
 
-Var UPowerPropInterface = ["system",
-  "org.freedesktop.UPower.PowerProfiles",
-  "/org/freedesktop/UPower/PowerProfiles",
-  "org.freedesktop.DBus.Properties"];
-
-Var UPowerMenuTmpl = "Menu 'power-profile-selector' {
-  item {
-    value = '@PROFILE_NAME@';
-    icon = 'power-profile-@PROFILE_NAME@';
-    action = UPowerSetProfile('@PROFILE_NAME@');
-  }
-}"
-
 Private {
+
+  Var UPowerPropInterface = ["system",
+    "org.freedesktop.UPower.PowerProfiles",
+    "/org/freedesktop/UPower/PowerProfiles",
+    "org.freedesktop.DBus.Properties"];
+
+  Var UPowerMenuTmpl = "Menu 'power-profile-selector' {
+    item {
+      value = '@PROFILE_NAME@';
+      icon = 'power-profile-@PROFILE_NAME@';
+      action = UPowerSetProfile('@PROFILE_NAME@');
+    }
+  }"
 
   TriggerAction "power_event", PowerEventHandle();
   TriggerAction "power_appeared", PowerProfilesInit();

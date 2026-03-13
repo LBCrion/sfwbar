@@ -52,7 +52,7 @@ Function XBatteryInit() {
             { XBatteryCurrent = Grab(First) };")
         if file_uevent != ""
         {
-          FileTrigger(file, "battery-event", 1000);
+          FileTrigger(file, "battery-event", 10000);
           Config("button 'XBatteryModule' { trigger = 'battery-event' }")
           EmitTrigger("battery-event")
         }

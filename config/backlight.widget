@@ -4,8 +4,6 @@ Private {
 
   include("backlight.source")
 
-  Var Step = 0.05;
-
   Var BacklightTmpl = '<?xml version="1.0" encoding="utf-8"?>
     <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 612">
       <circle cx="256" cy="256" r="106" stroke="@theme_fg_color"
@@ -29,18 +27,15 @@ Private {
         stroke-linecap="round" stroke-width="40" stroke="black"/>
     </svg>'
 
-  widget_grid {
-    style = "module"
-    button {
-      style = if(BacklightPresent, "module", "hidden");
-      value = Replace(BacklightTmpl, "@BRIGHTNESS@", Str(BacklightPct*492));
-      tooltip = "Backlight: " + Str(BacklightPct*100) + "%";
-      action[ScrollUp] = SetBacklight(BacklightPct+Step);
-      action[ScrollDown] = SetBacklight(BacklightPct-Step);
-      action[LeftClick] = PopUp("BacklightPopup");
-      action[0] = BacklightInit();
-      trigger = "backlight";
-    }
+  export button {
+    style = if(BacklightPresent, "module", "hidden");
+    value = Replace(BacklightTmpl, "@BRIGHTNESS@", Str(BacklightPct*492));
+    tooltip = "Backlight: " + Str(BacklightPct) + "%";
+    action[ScrollUp] = SetBacklight(BacklightPct+step);
+    action[ScrollDown] = SetBacklight(BacklightPct-step);
+    action[LeftClick] = PopUp("BacklightPopup");
+    action[0] = BacklightInit();
+    trigger = "backlight";
   }
 }
 

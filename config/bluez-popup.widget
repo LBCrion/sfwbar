@@ -77,7 +77,7 @@ Private {
     }
     Item "bluez_scan" {
       value = GT("Scan");
-      action = BluezScan();
+      action = BluezScan(scan_timeout);
       index = 3;
     }
   }
@@ -95,7 +95,7 @@ Private {
 
   Function XBluezPop() {
     If !WidgetState(1)
-      BluezScan();
+      BluezScan(scan_timeout);
 
     UserState(If(WidgetState(1),"off","on"))
     PopUp("XBluezWindow");
@@ -131,7 +131,7 @@ Private {
         value = If(BluezAdapter("Discovering"), GT("Scanning")+"...", GT("Scan"))
         trigger = "bluez-adapter"
         style = "XBluezScan"
-        action = BluezScan()
+        action = BluezScan(scan_timeout)
       }
     }
   }

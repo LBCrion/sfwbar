@@ -4,14 +4,6 @@ module("xkbmap")
 
 TriggerAction "language-list", LayoutMenuBuild();
 
-Var LayoutMenuTmpl = "
-  Menu('LayoutList') {
-    Item {
-      value = '%NAME%';
-      action = SetLayout('%LAYOUT%');
-    }
-  }"
-
 Function LayoutName ( lang )
 {
   if(CustomIPC() = "hyprland")
@@ -32,6 +24,14 @@ Function LayoutMenuBuild()
 }
 
 Private {
+
+  Var LayoutMenuTmpl = "
+    Menu('LayoutList') {
+      Item {
+        value = '%NAME%';
+        action = SetLayout('%LAYOUT%');
+      }
+    }"
 
   export label {
     style = If(Layout()!="", "language", "hidden");

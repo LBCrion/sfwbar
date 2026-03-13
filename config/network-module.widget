@@ -1,60 +1,76 @@
+#Api2
+
 module("network")
-include("wifi.widget")
 
-Var XNetworkWifiSvg = '<?xml version="1.0" encoding="UTF-8"?>
-  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <style type="text/css">
-    .st0{fill:@theme_fg_color;opacity:1.0;}
-    .st1{fill:@theme_fg_color;opacity:0.33;}
-  </style>
-  <g>
-    <path class="st%LOW%" d="M255.977,376.774c-12.118,0-23.098,4.918-31.043,
-      12.867c-7.95,7.949-12.867,18.926-12.867,31.043 c0,12.117,4.918,23.098,
-      12.867,31.042c7.946,7.95,18.926,12.867,31.043,12.867c12.117,
-      0,23.098-4.918,31.042-12.867 c7.95-7.945,12.867-18.926,12.867-31.042
-      c0-12.118-4.918-23.094-12.867-31.043C279.074,381.691,268.094,376.774,
-      255.977,376.774z"/>
-    <path class="st%MID%" d="M155.371,304.555l38.934,39.015c17.562-14.082,
-      39.082-21.73,61.641-21.73c22.648,0,44.179,7.598,61.691,21.582
-      l38.875-38.879c-27.969-24.317-63.282-37.59-100.566-37.59C218.652,266.954,
-      183.34,280.23,155.371,304.555z"/>
-    <path class="st%HIGH%" d="M77.645,226.836l38.828,38.902c38.496-34.691,
-      87.61-53.672,139.473-53.672 c51.961,0,101.098,18.922,139.531,
-      53.516l38.855-38.856C385.5,181.793,322.578,157.18,255.946,157.18
-      C189.344,157.18,126.453,181.832,77.645,226.836z"/>
-    <path class="st%VHIGH%" d="M255.946,47.406C160.137,47.406,69.676,83.469,0,
-      149.18l38.785,38.871 c59.203-55.387,135.895-85.758,217.161-85.758c81.273,
-      0,157.984,30.317,217.21,85.606L512,149.062 C442.484,83.422,351.988,
-      47.406,255.946,47.406z"/>
-  </g></svg>'
+Private {
 
-  Var icon_error= "network-error";
-  Var icon_wired = "network-wired";
+  include("wifi.widget")
 
-  function buildsvg() {
-    If NetInfo("interface")=""
-      Return icon_error;
-    If NetInfo("essid")=""
-      Return icon_wired;
+  Var XNetworkWifiSvg = '<?xml version="1.0" encoding="UTF-8"?>
+    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <style type="text/css">
+      .st0{fill:@theme_fg_color;opacity:1.0;}
+      .st1{fill:@theme_fg_color;opacity:0.33;}
+    </style>
+    <g>
+      <path class="st%LOW%" d="M255.977,376.774c-12.118,0-23.098,4.918-31.043,
+        12.867c-7.95,7.949-12.867,18.926-12.867,31.043 c0,12.117,4.918,23.098,
+        12.867,31.042c7.946,7.95,18.926,12.867,31.043,12.867c12.117,
+        0,23.098-4.918,31.042-12.867 c7.95-7.945,12.867-18.926,12.867-31.042
+        c0-12.118-4.918-23.094-12.867-31.043C279.074,381.691,268.094,376.774,
+        255.977,376.774z"/>
+      <path class="st%MID%" d="M155.371,304.555l38.934,39.015c17.562-14.082,
+        39.082-21.73,61.641-21.73c22.648,0,44.179,7.598,61.691,21.582
+        l38.875-38.879c-27.969-24.317-63.282-37.59-100.566-37.59C218.652,266.954,
+        183.34,280.23,155.371,304.555z"/>
+      <path class="st%HIGH%" d="M77.645,226.836l38.828,38.902c38.496-34.691,
+        87.61-53.672,139.473-53.672 c51.961,0,101.098,18.922,139.531,
+        53.516l38.855-38.856C385.5,181.793,322.578,157.18,255.946,157.18
+        C189.344,157.18,126.453,181.832,77.645,226.836z"/>
+      <path class="st%VHIGH%" d="M255.946,47.406C160.137,47.406,69.676,83.469,0,
+        149.18l38.785,38.871 c59.203-55.387,135.895-85.758,217.161-85.758c81.273,
+        0,157.984,30.317,217.21,85.606L512,149.062 C442.484,83.422,351.988,
+        47.406,255.946,47.406z"/>
+    </g></svg>'
 
-    Return ReplaceAll(XNetworkWifiSvg, "%LOW%", Str(NetStat("signal")<30),
-        "%MID%", Str(NetStat("signal")<50),
-        "%HIGH%", Str(NetStat("signal")<70),
-        "%VHIGH%", Str(NetStat("signal")<90));
+    Var simple_icon = False;
+    Var icon_error= "network-error";
+    Var icon_wired = "network-wired";
+    Var wifi_thresholds = [80, 60, 40, 20];
+    Var wifi_icons = [
+      "network-wireless-signal-excellent",
+      "network-wireless-signal-good",
+      "network-wireless-signal-ok",
+      "network-wireless-signal-weak",
+      "network-wireless-signal-none"
+    ];
+
+    function NetworkSvg() {
+      If NetInfo("interface")=na() | NetInfo("interface")=""
+        Return icon_error;
+      If NetInfo("essid")=""
+        Return icon_wired;
+
+      Return ReplaceAll(XNetworkWifiSvg,
+          "%LOW%", Str(NetStat("signal")<wifi_thresholds[3]),
+          "%MID%", Str(NetStat("signal")<wifi_thresholds[2]),
+          "%HIGH%", Str(NetStat("signal")<wifi_thresholds[1]),
+          "%VHIGH%", Str(NetStat("signal")<wifi_thresholds[0]));
+    }
+
+  export button {
+    value = NetworkSvg();
+    trigger = "network"
+    action = PopUp("XWifiWindow");
+    tooltip = "<span face='Monospace'>" +
+              "interface: " + Pad("'"+NetInfo("interface")+"'", 20) + "\n" +
+              "ip:        " + Pad(NetInfo("ip") + "/" + NetInfo("cidr"), 20) +
+                "\n" +
+              "netmask:   " + Pad(NetInfo("mask"), 20) + "\n" +
+              "gateway:   " + Pad(NetInfo("gateway"), 20) + "\n" +
+              "essid:     " + Pad("'"+NetInfo("essid")+"'", 20) + "\n" +
+              "signal:    " + Pad(Str(NetStat("signal")) + "%", 20) +
+              "</span>"
+    style = If(Ident(NetInfo),"module","hidden")
   }
-
-export button {
-  value = buildsvg();
-  trigger = "network"
-  action = PopUp "XWifiWindow"
-  tooltip = "<span face='Monospace'>" +
-            "interface: " + Pad(NetInfo("interface"),20) + "\n" +
-            "ip:        " + Pad(NetInfo("ip") + "/" + NetInfo("cidr"),20) +
-              "\n" +
-            "netmask:   " + Pad(NetInfo("mask"),20) + "\n" +
-            "gateway:   " + Pad(NetInfo("gateway"),20) + "\n" +
-            "essid:     " + Pad(NetInfo("essid"),20) + "\n" +
-            "signal:    " + Pad(Str(NetStat("signal")) + "%",20) +
-            "</span>"
-  style = If(Ident(NetInfo),"module","hidden")
 }

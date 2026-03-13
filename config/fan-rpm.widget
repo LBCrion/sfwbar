@@ -1,16 +1,14 @@
-scanner {
 # Poll CPU fan rpm
-  file("/sys/devices/platform/it87*/hwmon/hwmon2/fan2_input") {
-    CPUFan = Grab()
-  }
-
-# Poll MB fan rpm
-  file("/sys/devices/platform/it87*/hwmon/hwmon2/fan1_input") {
-    MBFan = Grab()
-  }
+file("/sys/devices/platform/it87*/hwmon/hwmon2/fan2_input") {
+  CPUFan = Grab()
 }
 
-layout {
+# Poll MB fan rpm
+file("/sys/devices/platform/it87*/hwmon/hwmon2/fan1_input") {
+  MBFan = Grab()
+}
+
+export grid {
   css = "* { -GtkWidget-direction: right; -GtkWidget-vexpand: true; -GtkWidget-hexpand: true; }"
   image {
     style = "value_icon"

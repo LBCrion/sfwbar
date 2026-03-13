@@ -11,15 +11,6 @@ Private {
   TriggerAction "wifi-scan", Config("label 'XWifiScanButton' { value = GT('Scanning') + ' ...' }")
   TriggerAction "wifi-scan-complete", Config("label 'XWifiScanButton' { value = GT('Scan') }")
 
-  Var wifi_thresholds = [80, 60, 40, 20];
-  Var wifi_icons = [
-    "network-wireless-signal-excellent",
-    "network-wireless-signal-good",
-    "network-wireless-signal-ok",
-    "network-wireless-signal-weak",
-    "network-wireless-signal-none"
-  ];
-
   Var XWifiNetTmpl = "
     Grid 'XWifiGrid@WIFI_KNOWN@' {
       grid '@WIFI_PATH@_grid@WIFI_KNOWN@' {
