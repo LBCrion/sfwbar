@@ -215,6 +215,9 @@ tooltip = <expression>
   expression. In case of the latter, the tooltip will be dynamically
   updated every time it pops up.
 
+class <string>
+  set a CSS class for a widget. Currently only one class can be set a time.
+
 interval = <number>
   widget update frequency in milliseconds.
 

@@ -39,6 +39,7 @@ struct _BaseWidgetPrivate
 {
   gchar *id;
   gchar *css;
+  gchar *class;
   expr_cache_t *style;
   expr_cache_t *value;
   expr_cache_t *tooltip;

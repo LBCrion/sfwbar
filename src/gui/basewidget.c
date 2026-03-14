@@ -30,6 +30,7 @@ enum {
   BASE_WIDGET_TRIGGER,
   BASE_WIDGET_INTERVAL,
   BASE_WIDGET_ACTION,
+  BASE_WIDGET_CLASS,
   BASE_WIDGET_DISABLE,
 };
 
@@ -474,6 +475,8 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
       G_OBJECT(dest), "has-tooltip", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "local",
       G_OBJECT(dest), "local", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "class",
+      G_OBJECT(dest), "class", G_BINDING_SYNC_CREATE);
 }
 
 static gboolean base_widget_query_tooltip ( GtkWidget *self, gint x, gint y,
@@ -654,6 +657,9 @@ static void base_widget_get_property ( GObject *self, guint id, GValue *value,
     case BASE_WIDGET_CSS:
       g_value_set_string(value, priv->css);
       break;
+    case BASE_WIDGET_CLASS:
+      g_value_set_string(value, priv->class);
+      break;
     case BASE_WIDGET_DISABLE:
       g_value_set_boolean(value, priv->disabled);
       break;
@@ -747,6 +753,17 @@ static void base_widget_set_property ( GObject *self, guint id,
             base_widget_get_child(GTK_WIDGET(self)), priv->css);
       }
       break;
+    case BASE_WIDGET_CLASS:
+      if(!g_strcmp0(g_value_get_string(value), priv->class))
+        break;
+      if(priv->class)
+        css_set_class(base_widget_get_child(GTK_WIDGET(self)), priv->class,
+            FALSE);
+      str_assign(&priv->class, g_strdup(g_value_get_string(value)));
+      if(priv->class)
+        css_set_class(base_widget_get_child(GTK_WIDGET(self)), priv->class,
+            TRUE);
+      break;
     case BASE_WIDGET_DISABLE:
       priv->disabled = g_value_get_boolean(value);
       break;
@@ -822,6 +839,9 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_INTERVAL,
       g_param_spec_int64("interval", "interval", "sfwbar_config",
         0, INT64_MAX, 0, G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_CLASS,
+      g_param_spec_string("class", "class", "sfwbar_config", NULL,
+        G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass),
       BASE_WIDGET_USER_STATE, g_param_spec_uint("user-state",
         "user-state", "no_config", 0, UINT_MAX, 0, G_PARAM_READWRITE));
