@@ -6,9 +6,10 @@ Private {
   include("bluez-popup.widget")
 
   export button "XBluezWidget" {
-    style = If(BluezAdapter("Count"), "module", "hidden")
     value = If(!BluezAdapter("Powered"), "bluetooth-disabled",
         if(BluezAdapter("Discovering"), "bluetooth-acquiring", "bluetooth-active"))
+    style = If(BluezAdapter("Count"), "bluez", "hidden");
+    class = "module";
     action = XBluezPop()
     action[RightClick] = Menu("XBluezAdapter")
     tooltip = GT("Bluetooth")

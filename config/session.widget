@@ -69,8 +69,9 @@ Private {
   }
 
   export button {
-    style = "module";
     value = "system-shutdown-symbolic";
+    style = "session";
+    class = "module";
     tooltip = "Session manager";
     action[0] = SessionInit();
     action = PopUp("SessionPopup");

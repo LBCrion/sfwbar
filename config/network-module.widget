@@ -60,7 +60,9 @@ Private {
 
   export button {
     value = NetworkSvg();
-    trigger = "network"
+    style = If(Ident(NetInfo),"network","hidden");
+    class = "module";
+    trigger = "network";
     action = PopUp("XWifiWindow");
     tooltip = "<span face='Monospace'>" +
               "interface: " + Pad("'"+NetInfo("interface")+"'", 20) + "\n" +
@@ -70,7 +72,6 @@ Private {
               "gateway:   " + Pad(NetInfo("gateway"), 20) + "\n" +
               "essid:     " + Pad("'"+NetInfo("essid")+"'", 20) + "\n" +
               "signal:    " + Pad(Str(NetStat("signal")) + "%", 20) +
-              "</span>"
-    style = If(Ident(NetInfo),"module","hidden")
+              "</span>";
   }
 }

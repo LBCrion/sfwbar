@@ -17,7 +17,8 @@ set AlsaIcon = If($AlsaMuted = "off",$AlsaMutedIcon,$AlsaVolumeIcon)
 export button {
   value = $AlsaIcon
   tooltip = GT("Volume") + ": " + Str(AlsaVolume,0) + "%" + If(AlsaMuted," (" + GT("muted") + ")","")
-  style = If(Ident(AlsaVolume),"module","hidden")
+  style = If(Ident(AlsaVolume), "alsa", "hidden")
+  class = "module";
   trigger = "alsactl"
   action[LeftClick] = Exec("amixer sset Master toggle\n")
   action[RightClick] = ExecTerm(" -e alsamixer")

@@ -1,14 +1,13 @@
 include("rfkill.source")
 
-layout {
-  button {
-    style = If(!XRfKillWifiPresent, "hidden","module")
-    value = If(XRfKillWifiSoft = 1,
-        "network-wireless-hardware-disabled",
-        "network-wireless-connected")
-    tooltip = "WiFi: Soft" + If(XRfKillWifiSoft,"","Un")+"blocked" +
-              ", Hard" + If(XRfKillWifiHard,"","Un")+"blocked"
-    trigger = "rfkill"
-    action = Exec "rfkill " + If(XRfKillWifiSoft,"un","") + "block wifi"
-  }
+export button {
+  value = If(XRfKillWifiSoft = 1,
+      "network-wireless-hardware-disabled",
+      "network-wireless-connected");
+  style = If(!XRfKillWifiPresent, "hidden","rfkill"):
+  class = "module";
+  tooltip = "WiFi: Soft" + If(XRfKillWifiSoft,"","Un")+"blocked" +
+            ", Hard" + If(XRfKillWifiHard,"","Un")+"blocked";
+  trigger = "rfkill";
+  action = Exec "rfkill " + If(XRfKillWifiSoft,"un","") + "block wifi";
 }

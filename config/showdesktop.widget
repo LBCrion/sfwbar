@@ -38,7 +38,8 @@ Private {
   layout {
     button "showdesktop" {
       value = "user-desktop"
-      style = "module"
+      style = "showdesktop"
+      class = "module";
       tooltip = GT("Show Desktop")
       action = {
         if WidgetState(1)

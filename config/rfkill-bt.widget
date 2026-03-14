@@ -1,15 +1,13 @@
 include("rfkill.source")
 
-
-layout {
-  button {
-    style = If(!XRfKillBTPresent, "hidden","module")
-    value = If(XRfKillBTSoft = 1,
-        "bluetooth-disabled",
-        "bluetooth-active")
-    tooltip = "Bluetooth: Soft" + If(XRfKillBTSoft,"","Un")+"blocked" +
-              ", Hard" + If(XRfKillBTHard,"","Un")+"blocked"
-    trigger = "rfkill"
-    action = Exec "rfkill " + If(XRfKillBTSoft,"un","") + "block bluetooth"
-  }
+export button {
+  value = If(XRfKillBTSoft = 1,
+      "bluetooth-disabled",
+      "bluetooth-active");
+  style = If(!XRfKillBTPresent, "hidden","rfkill");
+  class = "module";
+  tooltip = "Bluetooth: Soft" + If(XRfKillBTSoft,"","Un")+"blocked" +
+            ", Hard" + If(XRfKillBTHard,"","Un")+"blocked";
+  trigger = "rfkill";
+  action = Exec "rfkill " + If(XRfKillBTSoft,"un","") + "block bluetooth";
 }

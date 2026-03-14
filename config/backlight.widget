@@ -28,8 +28,9 @@ Private {
     </svg>'
 
   export button {
-    style = if(BacklightPresent, "module", "hidden");
     value = Replace(BacklightTmpl, "@BRIGHTNESS@", Str(BacklightPct*492));
+    style = if(BacklightPresent, "backlight", "hidden");
+    class = "module";
     tooltip = "Backlight: " + Str(BacklightPct) + "%";
     action[ScrollUp] = SetBacklight(BacklightPct+step);
     action[ScrollDown] = SetBacklight(BacklightPct-step);

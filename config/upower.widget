@@ -58,7 +58,8 @@ Private {
 
 export button {
   value = "power-profile-" + ActiveProfile;
-  style = if(ActiveProfile!="", "module", "hidden");
+  style = if(ActiveProfile!="", "upower", "hidden");
+  class = "module";
   tooltip = "Power profile: " + ActiveProfile;
   trigger = "upower";
   action[0] = DbusWatch("system",

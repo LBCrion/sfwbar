@@ -4,16 +4,14 @@ Private {
 
   include("battery.source")
 
-  widget_grid {
-    style = "module"
-    button "battery" {
-      action[0] = XBatteryInit()
-      style = If(!Ident($XBatteryState) & !Ident(BSDCtl), "hidden", "module")
-      tooltip = GT("Battery") + ": " + Str(Level) + "%" + If(Time, " " +
-            Str(Time/60 - Time%60/60) + GT("h") +
-            Str(Time%60) + GT("m"), "")
-      value = "battery-level-" + Str(Level/10,0) + "0" + 
-            If($XBatteryState = "Discharging","","-charging")
-    }
+  export button "battery" {
+    action[0] = XBatteryInit()
+    style = If(!Ident($XBatteryState) & !Ident(BSDCtl), "hidden", "battery")
+    class = "module";
+    tooltip = GT("Battery") + ": " + Str(Level) + "%" + If(Time, " " +
+          Str(Time/60 - Time%60/60) + GT("h") +
+          Str(Time%60) + GT("m"), "")
+    value = "battery-level-" + Str(Level/10,0) + "0" + 
+          If($XBatteryState = "Discharging","","-charging")
   }
 }

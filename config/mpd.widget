@@ -141,18 +141,19 @@ Private {
   TriggerAction "mpd", UpdateWidget("mpd_progress")
 
   export button "mpd_icon" {
-    style = If(MpdInfo("State")="", "hidden", "module")
     value = ReplaceAll(MpdIconTmpl,
         "@MPD_ICON@", Map(MpdInfo("State"),
           "play", MpdIconPlay,
           "pause", MpdIconPause,
           MpdIconStop),
-        "@MPD_PROGRESS@", Str(MpdProgress*16))
+        "@MPD_PROGRESS@", Str(MpdProgress*16));
+    style = If(MpdInfo("State")="", "hidden", "mpd");
+    class = "module";
     action = MpdCmd("pause");
     action[RightClick] = PopUp("XMpdWindow");
     action[ScrollUp] = MpdCmd("seekcur +5");
     action[ScrollDown] = MpdCmd("seekcur -5");
-    interval = 1000
+    interval = 1000;
   }
 }
 

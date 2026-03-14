@@ -9,16 +9,18 @@ Private {
 
   export grid {
     button{
-      style = if(PipewireCount("AudioIn"), "module", "hidden")
-      trigger = "pipewire"
       value = audio_icon;
-      css = "* { color: red; }"
+      style = if(PipewireCount("AudioIn"), "privacy", "hidden");
+      class = "module";
+      trigger = "pipewire";
+      css = "* { color: red; }";
     }
     button{
-      style = if(PipewireCount("VideoIn"), "module", "hidden")
-      trigger = "pipewire"
       value = video_icon;
-      css = "* { color: red; }"
+      style = if(PipewireCount("VideoIn"), "privacy", "hidden");
+      class = "module";
+      trigger = "pipewire";
+      css = "* { color: red; }";
     }
   }
 }

@@ -7,8 +7,9 @@ Private {
   Var icon_inactive = "icons/misc/unlock-symbolic";
 
   export button {
-    style = If(Ident(IdleInhibitState), "module", "hidden");
     value = If(IdleInhibitState()="on", icon_active, icon_inactive);
+    style = If(Ident(IdleInhibitState), "idleinhibit", "hidden");
+    class = "module";
     tooltip = "Idle inhibitor: " + IdleInhibitState();
     local = true;
     trigger = "idleinhibitor";

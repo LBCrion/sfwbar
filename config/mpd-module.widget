@@ -87,13 +87,11 @@ PopUp "XMpdWindow" {
   }
 }
 
-layout {
-  style = "module"
-  button {
-    value = "icons/misc/music-player"
-    action = PopUp "XMpdWindow"
-    style = If(!Ident(mpd),"hidden","module")
-  }
+button {
+  value = "icons/misc/music-player";
+  style = If(!Ident(mpd),"hidden","mpd");
+  class = "module"
+  action = PopUp "XMpdWindow";
 }
 
 #CSS

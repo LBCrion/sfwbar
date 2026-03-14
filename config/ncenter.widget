@@ -171,12 +171,13 @@ Private {
   }
 
   export button "notification_widget" {
-    style = "module"
-    value = XNotificationIcon()
-    tooltip = "Notification center"
-    trigger = "notification-group"
-    css = "* { -ScaleImage-symbolic: false; }"
-    action = PopUp("XNotificationWindow")
+    value = XNotificationIcon();
+    style = "ncenter";
+    class = "module";
+    tooltip = "Notification center";
+    trigger = "notification-group";
+    css = "* { -ScaleImage-symbolic: false; }";
+    action = PopUp("XNotificationWindow");
   }
 }
 
