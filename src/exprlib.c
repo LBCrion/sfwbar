@@ -780,7 +780,7 @@ static value_t expr_get_term ( vm_t *vm, value_t p[], gint np )
 
 static value_t expr_exec_read ( vm_t *vm, value_t p[], gint np )
 {
-  value_t res;
+  value_t res = value_na;
   GIOChannel *chan;
   gint out;
   gchar **argv, *str;
@@ -798,8 +798,8 @@ static value_t expr_exec_read ( vm_t *vm, value_t p[], gint np )
   if( (chan = g_io_channel_unix_new(out)) )
   {
     g_debug("execread: '%s'", value_get_string(p[0]));
-    g_io_channel_read_to_end(chan, &str, NULL, NULL);
-    res = str? value_new_string(str) : value_na;
+    if(g_io_channel_read_to_end(chan, &str, NULL, NULL) == G_IO_STATUS_NORMAL)
+      res = value_new_string(str);
     g_io_channel_unref(chan);
   }
   close(out);
