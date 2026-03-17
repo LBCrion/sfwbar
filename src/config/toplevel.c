@@ -45,8 +45,8 @@ static void config_mappid_map ( GScanner *scanner )
 
 static void config_trigger_action ( GScanner *scanner )
 {
-  gchar *trigger;
-  GBytes *action;
+  gchar *trigger =  NULL;
+  GBytes *action = NULL;
 
   config_parse_sequence(scanner,
       SEQ_REQ, G_TOKEN_STRING, NULL, &trigger,
@@ -58,6 +58,10 @@ static void config_trigger_action ( GScanner *scanner )
   if(!scanner->max_parse_errors)
     trigger_add(trigger, (trigger_func_t)trigger_action_cb,
         vm_closure_new(action, SCANNER_STORE(scanner)));
+  else if(action)
+    g_bytes_unref(action);
+
+  g_free(trigger);
 }
 
 static void config_module ( GScanner *scanner )
@@ -281,11 +285,12 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
               "DisownMinimized"));
         break;
       default:
-        if(config_widget_child(scanner, NULL))
-          break;
         if(config_scanner_source(scanner))
           break;
-        g_scanner_error(scanner, "Unexpected toplevel token");
+        if(!config_lookup_ptr(scanner, config_widget_keys))
+          g_scanner_error(scanner, "Unexpected toplevel token");
+        else if(!config_widget_child(scanner, NULL))
+            g_scanner_error(scanner, "Unidentified widget selected");
         break;
     }
   }

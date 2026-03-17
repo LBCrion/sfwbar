@@ -48,13 +48,13 @@ Function XBatteryInit() {
             "%file_charge%", file_charge,
             "%file_status%", file_status));
         if file_current != ""
-          Config( "file('" + file_current + "')
-            { XBatteryCurrent = Grab(First) };")
+          Config( "file('" + file_current +
+              "') { XBatteryCurrent = Grab(First) };");
         if file_uevent != ""
         {
           FileTrigger(file, "battery-event", 10000);
-          Config("button 'XBatteryModule' { trigger = 'battery-event' }")
-          EmitTrigger("battery-event")
+          Config("button '" + WidgetId() + "' { trigger = 'battery-event' }");
+          EmitTrigger("battery-event");
         }
       }
     }
