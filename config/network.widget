@@ -58,7 +58,7 @@ Private {
           "%VHIGH%", Str(NetStat("signal")<wifi_thresholds[0]));
     }
 
-  export button {
+  export button "network" {
     value = NetworkSvg();
     style = If(Ident(NetInfo),"network","hidden");
     class = "module";

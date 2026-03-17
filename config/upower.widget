@@ -56,7 +56,7 @@ Private {
         "org.freedesktop.UPower.PowerProfiles");
   }
 
-export button {
+export button "upower" {
   value = "power-profile-" + ActiveProfile;
   style = if(ActiveProfile!="", "upower", "hidden");
   class = "module";

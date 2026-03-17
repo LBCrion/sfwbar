@@ -2,7 +2,7 @@
 
 include("cpu.source")
 
-export chart "cpu_chart" {
+export chart "cpu" {
   interval = 1000
   style = If(XCpuPresent, "cpu_chart", "hidden")
   value = XCpuUtilization

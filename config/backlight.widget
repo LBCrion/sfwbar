@@ -27,7 +27,7 @@ Private {
         stroke-linecap="round" stroke-width="40" stroke="black"/>
     </svg>'
 
-  export button {
+  export button "backlight" {
     value = Replace(BacklightTmpl, "@BRIGHTNESS@", Str(BacklightPct*492));
     style = if(BacklightPresent, "backlight", "hidden");
     class = "module";

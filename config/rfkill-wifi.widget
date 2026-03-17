@@ -1,6 +1,6 @@
 include("rfkill.source")
 
-export button {
+export button "rfkill-wifi" {
   value = If(XRfKillWifiSoft = 1,
       "network-wireless-hardware-disabled",
       "network-wireless-connected");

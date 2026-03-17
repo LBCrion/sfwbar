@@ -14,6 +14,7 @@ Private {
   Var icon_repeat = "media-playlist-repeat";
   Var icon_shuffle = "media-playlist-shuffle";
   Var icon_browse = "view-list";
+  Var simple_icon = False;
 
   Var MpdIconStop = "<path d='m 3.5 2 h 9 c 0.828125 0 1.5 0.671875 1.5 1.5 v 9
     c 0 0.828125 -0.671875 1.5 -1.5 1.5 h -9 c -0.828125 0 -1.5 -0.671875 -1.5
@@ -137,22 +138,32 @@ Private {
     }
   }
 
-  TriggerAction "mpd", UpdateWidget("mpd_icon")
+  Function BuildSvg() {
+    if !simple_icon
+      Return ReplaceAll(MpdIconTmpl,
+          "@MPD_ICON@", Map(MpdInfo("State"),
+            "play", MpdIconPlay,
+            "pause", MpdIconPause,
+            MpdIconStop),
+          "@MPD_PROGRESS@", Str(MpdProgress*16));
+    Return Map(MpdInfo("State"),
+        "play", icon_play,
+        "pause", icon_pause,
+        icon_stop);
+  }
+
   TriggerAction "mpd", UpdateWidget("mpd_progress")
 
-  export button "mpd_icon" {
-    value = ReplaceAll(MpdIconTmpl,
-        "@MPD_ICON@", Map(MpdInfo("State"),
-          "play", MpdIconPlay,
-          "pause", MpdIconPause,
-          MpdIconStop),
-        "@MPD_PROGRESS@", Str(MpdProgress*16));
+  export button "mpd" {
+    value = BuildSvg();
     style = If(MpdInfo("State")="", "hidden", "mpd");
     class = "module";
     action = MpdCmd("pause");
     action[RightClick] = PopUp("XMpdWindow");
     action[ScrollUp] = MpdCmd("seekcur +5");
     action[ScrollDown] = MpdCmd("seekcur -5");
+    action[Configure] =
+      Config("TriggerAction 'mpd', UpdateWidget('" + WidgetId() + "')");
     interval = 1000;
   }
 }

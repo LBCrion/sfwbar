@@ -33,7 +33,7 @@ Private {
       }
     }"
 
-  export label {
+  export label "language" {
     style = If(Layout()!="", "language", "hidden");
     value = Upper(XkbMap(Layout(), "description", "name"));
     tooltip = "Language: " + Layout();

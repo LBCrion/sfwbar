@@ -7,7 +7,7 @@ Private {
   Var audio_icon = "audio-input-microphone";
   Var video_icon = "camera-web";
 
-  export grid {
+  export grid "privacy" {
     button{
       value = audio_icon;
       style = if(PipewireCount("AudioIn"), "privacy", "hidden");

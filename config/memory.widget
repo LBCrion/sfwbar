@@ -2,7 +2,7 @@
 
 include("memory.source")
 
-export scale "memory_meter" {
+export scale "memory" {
   interval = 1000
   style = If(XMemPresent, "memory", "hidden")
   value = Str(XMemUtilization, 1)

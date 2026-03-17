@@ -170,7 +170,7 @@ Private {
     }
   }
 
-  export button "notification_widget" {
+  export button "ncenter" {
     value = XNotificationIcon();
     style = "ncenter";
     class = "module";

@@ -5,7 +5,7 @@ Private {
   Var scan_timeout = 20;
   include("bluez-popup.widget")
 
-  export button "XBluezWidget" {
+  export button "bluez" {
     value = If(!BluezAdapter("Powered"), "bluetooth-disabled",
         if(BluezAdapter("Discovering"), "bluetooth-acquiring", "bluetooth-active"))
     style = If(BluezAdapter("Count"), "bluez", "hidden");

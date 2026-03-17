@@ -1,6 +1,6 @@
 include("rfkill.source")
 
-export button {
+export button "rfkill-bt" {
   value = If(XRfKillBTSoft = 1,
       "bluetooth-disabled",
       "bluetooth-active");

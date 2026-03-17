@@ -68,7 +68,7 @@ Private {
     grid "session_container" {}
   }
 
-  export button {
+  export button "session" {
     value = "system-shutdown-symbolic";
     style = "session";
     class = "module";

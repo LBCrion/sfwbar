@@ -62,7 +62,7 @@ Private {
     <path stroke="@ICON_COLOR@" @ICON_FORM@/></svg>
     </svg>'
 
-  export button {
+  export button "volume" {
     value = VolumeSvg();
     trigger = "volume"
     tooltip = GT("Volume") + ": " + Str(Volume("sink-volume"),0) + "%" +
