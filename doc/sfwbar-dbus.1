@@ -1,5 +1,5 @@
 .\" Man page generated from reStructuredText
-.\" by the Docutils 0.22.3 manpage writer.
+.\" by the Docutils 0.22.4 manpage writer.
 .
 .
 .nr rst2man-indent-level 0
@@ -64,9 +64,9 @@ name, the third is the object path and the fourth is the interface name.
 trigger to emit upon receipt of the signal. An optional parameter \fIArg0\fP
 allows filtering the first string of the signal parameters. If specified, any
 message where the first string parameter doesn\(aqt match \fIArg0\fP will be ignored.
-Triggers called by \fIDBusSubscribe\fP exposer a variable \fIDBusSignal\fP containing
+Triggers called by \fIDBusSubscribe\fP exposes a variable \fIDBusSignal\fP containing
 the parameters for the signal. See \fIDBus type conversion\fP section for
-information on parsing this variable. Retuns n/a.
+information on parsing this variable. Returns n/a.
 .SS DBusWatch(Bus, Name, Trigger)
 .sp
 Watch a name on a bus. Parameter \fIBus\fP specifies the type of a bus to watch a
@@ -77,7 +77,7 @@ may contain one of two values, \(dqappeared\(dq and \(dqvanished\(dq, correspond
 state of the DBus name being watched. Returns n/a.
 .SH DBus type conversion
 .sp
-DBus uses a complex type system for serializing multiple values. Data supplied
+DBus uses a complex type system for serialising multiple values. Data supplied
 to DBus function and received from the comes in this form. Sfwbar uses a much
 simpler type system, which needs to be mapped to and from the DBus types.
 .sp
@@ -85,7 +85,7 @@ DBus types map to Sfwbar types as following:
 DBus types \fIString\fP, \fIObject path\fP and \fISignature\fP correspond to sfwbar
 \fIString\fP type.
 DBus types \fIBoolean\fP, \fIBytes\fP, \fIInt16\fP, \fIUint16\fP, \fIInt32\fP, \fIUint32\fP, \fIInt64\fP,
-\fIUint64\fP, \fIHandle\fP and \fIDouble\fP correspond to sfwbar \fINumberic\fP type.
+\fIUint64\fP, \fIHandle\fP and \fIDouble\fP correspond to sfwbar \fINumeric\fP type.
 DBus \fITuples\fP\&. \fIArrays\fP and \fIDictionary entries\fP correspond to sfwbar \fIArray\fP
 type.
 .sp

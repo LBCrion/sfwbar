@@ -1,5 +1,5 @@
 .\" Man page generated from reStructuredText
-.\" by the Docutils 0.22.3 manpage writer.
+.\" by the Docutils 0.22.4 manpage writer.
 .
 .
 .nr rst2man-indent-level 0
@@ -48,7 +48,7 @@ settings.
 A signal emitted upon change of the state of the sound server.
 .TP
 .B \(dqvolume\-conf\(dq
-Emitted when a new or updaded volume control element information is
+Emitted when a new or updated volume control element information is
 available. Functions handling this trigger can access the following
 variables:
 \fIdevice_id\fP \- an id of a device.
@@ -73,7 +73,7 @@ The ids are server specific. Pulse address is specified in a format
 \fIvolume\-conf\fP trigger and shouldn\(aqt be used directly.  ALSA interface is
 specified as \fIDevice[:Element][:Channel]\fP\&.
 .sp
-This function returns a <numberic> value.
+This function returns a <numeric> value.
 .sp
 The supported queries are:
 .INDENT 0.0
@@ -192,12 +192,6 @@ Set a client as a default client.
 .B \(dqclient\-set\-sink\(dq
 Redirect a client to a specified sink.
 .UNINDENT
-.SS VolumeAck Type
-.sp
-Notify the module that all information for the currently advertised element
-been processed. The Type corresponds to a trigger event ack\(aqed, i.e.
-\fIvolume\-conf\fP or \fIvolume\-conf\-removed\fP\&.  The module may then emit another
-conf event if further updates are available.
 .SH Copyright
 GPLv3+
 .\" End of generated man page.

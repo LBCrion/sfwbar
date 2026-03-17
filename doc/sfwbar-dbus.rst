@@ -50,9 +50,9 @@ name, the third is the object path and the fourth is the interface name.
 trigger to emit upon receipt of the signal. An optional parameter `Arg0`
 allows filtering the first string of the signal parameters. If specified, any
 message where the first string parameter doesn't match `Arg0` will be ignored.
-Triggers called by `DBusSubscribe` exposer a variable `DBusSignal` containing
+Triggers called by `DBusSubscribe` exposes a variable `DBusSignal` containing
 the parameters for the signal. See `DBus type conversion` section for
-information on parsing this variable. Retuns n/a.
+information on parsing this variable. Returns n/a.
 
 DBusWatch(Bus, Name, Trigger)
 -----------------------------
@@ -67,7 +67,7 @@ state of the DBus name being watched. Returns n/a.
 DBus type conversion
 ====================
 
-DBus uses a complex type system for serializing multiple values. Data supplied
+DBus uses a complex type system for serialising multiple values. Data supplied
 to DBus function and received from the comes in this form. Sfwbar uses a much
 simpler type system, which needs to be mapped to and from the DBus types.
 
@@ -75,7 +75,7 @@ DBus types map to Sfwbar types as following:
 DBus types `String`, `Object path` and `Signature` correspond to sfwbar
 `String` type.
 DBus types `Boolean`, `Bytes`, `Int16`, `Uint16`, `Int32`, `Uint32`, `Int64`,
-`Uint64`, `Handle` and `Double` correspond to sfwbar `Numberic` type.
+`Uint64`, `Handle` and `Double` correspond to sfwbar `Numeric` type.
 DBus `Tuples`. `Arrays` and `Dictionary entries` correspond to sfwbar `Array`
 type.
 

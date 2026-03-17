@@ -46,4 +46,4 @@ AppMenuSetFlat Boolean
 ----------------------
 
 Specify whether applications should be listed in the main application menu
-rather than in category submenus.
+rather than in category sub-menus.

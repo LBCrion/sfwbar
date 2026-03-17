@@ -66,7 +66,7 @@ The supported `property` valued are:
   specifies whether the device is trusted by the adapter. Returns <boolean>.
 
 "Connected"
-  specifies whether the device is connected to the adpater. Returns <boolean>.
+  specifies whether the device is connected to the adapter. Returns <boolean>.
 
 "Connecting"
   specifies whether the adapter is currently attempting to connect to the

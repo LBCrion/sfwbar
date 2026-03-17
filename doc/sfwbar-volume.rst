@@ -27,7 +27,7 @@ Triggers
   A signal emitted upon change of the state of the sound server.
 
 "volume-conf"
-  Emitted when a new or updaded volume control element information is
+  Emitted when a new or updated volume control element information is
   available. Functions handling this trigger can access the following
   variables:
   `device_id` - an id of a device.
@@ -55,7 +55,7 @@ The ids are server specific. Pulse address is specified in a format
 `volume-conf` trigger and shouldn't be used directly.  ALSA interface is
 specified as `Device[:Element][:Channel]`.
 
-This function returns a <numberic> value.
+This function returns a <numeric> value.
 
 The supported queries are:
 
@@ -143,12 +143,3 @@ the command will be applied to the default device for the interface.
   Set a client as a default client.
 "client-set-sink"
   Redirect a client to a specified sink.
-
-VolumeAck Type
---------------
-
-Notify the module that all information for the currently advertised element
-been processed. The Type corresponds to a trigger event ack'ed, i.e.
-`volume-conf` or `volume-conf-removed`.  The module may then emit another
-conf event if further updates are available.
-

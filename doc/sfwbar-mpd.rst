@@ -34,7 +34,7 @@ MpdCmd(<command>)
 
 Send a command to the MPD server. You can send any command supported by an MPD
 protocol. Output of some MPD commands is processed by the module and made
-available to the configuation layer. (Please note that while you can send
+available to the configuration layer. (Please note that while you can send
 command lists, the output of a command list will not be processed). The output
 of the following commands is processed:
 
@@ -71,11 +71,11 @@ interface to query the current value of any tag of the `status` and
 addition, MpdInfo supports a few additional query values:
 
 "age"
-  time (in microseconds) ellapsed since the MPD server state was last queried
+  time (in microseconds) elapsed since the MPD server state was last queried
   (this is useful in computing the progress of the current song playback).
 
 "cover"
-  the coverart of the currently playing album.
+  the cover art of the currently playing album.
 
 Triggers
 ========
@@ -85,7 +85,7 @@ The module defines two triggers:
 "mpd"
   Emitted whenever the state of the MPD server changes.
 "mpd-error"
-  Emitted when MPD server returns an error. An error string is provded in the
+  Emitted when MPD server returns an error. An error string is provided in the
   string variable `message`.
 "mpd-list"
   Emitted upon completion of the `list` MPD protocol command. Results of the

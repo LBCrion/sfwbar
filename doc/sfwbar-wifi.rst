@@ -67,7 +67,7 @@ The supported properties are:
   a Type of the network. Returns <string> ('open', 'wep', 'psk' or '8021x')
 
 "Known"
-  an indcator of whether this is a known network. Returns <boolean>.
+  an indicator of whether this is a known network. Returns <boolean>.
 
 "Strength"
   signal strength of the network. Returns <numeric> (0..100)

@@ -703,7 +703,7 @@ For more complex actions, you can define your own functions using a toplevel
   }
   TriggerAction "sometrigger", my_func(1);
 
-By default, all actions, functions and expressions share a single namespace, so
+By default, all actions, functions and expressions share a single name space, so
 any variable is visible to all code instances. Private scopes can be defined
 using a `Private` keyword. I.e. ::
 
@@ -789,7 +789,7 @@ ExecRead(<string>)
   Execute a shell command and return it's output as a string.
 
 GetTerm()
-  Get the autodetected terminal executable name. Returns <string>.
+  Get the auto detected terminal executable name. Returns <string>.
 
 Print(<string>)
   Print a string to standard output. Useful for debugging user functions.
@@ -969,7 +969,7 @@ Lower(<string>)
   Convert a string to lowercase. Returns <string>.
 
 Escape(<string>)
-  Escapes dobule quotes and other special characters in a string making it
+  Escapes double quotes and other special characters in a string making it
   suitable to be included as a substring within double quotes.
   Returns <string>.
 
@@ -1090,12 +1090,12 @@ WidgetSetData([<id:string>], <name:string>, <value>)
   Attach a named value to a widget. The optional parameter `id` specifies an
   id of a widget, if omitted, the operation will apply to the current widget.
   A value will be attached to a widget property `name` and can be later
-  retrieved using WIdgetGetData. Returns <n/a>.
+  retrieved using WidgetSetData. Returns <n/a>.
 
 WidgetGetData([<id:string>], <name:string>)
   Retrieves a named value from a widget.  The optional parameter `id` specifies
   an id of a widget, if omitted, the operation will apply to the current widget.
-  This function returns a value previously attached to proeprty `name` of a
+  This function returns a value previously attached to property `name` of a
   widget.
 
 WidgetState([<id:string>,] <stateid:number>)

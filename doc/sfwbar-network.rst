@@ -20,7 +20,7 @@ The network module tracks the state of the current network connection.
 Triggers
 ========
 The module defines trigger `network` which is emitted whenever the interface
-properies change (i.e. ip, netmask, default gateway or wifi essid).
+properties change (i.e. ip, netmask, default gateway or wifi essid).
 
 Functions
 =========
@@ -28,7 +28,7 @@ Functions
 NetInfo(Query [,Interface])
 ---------------------------
 
-Function NetInfo queries a proeprty of the the network interface specified.
+Function NetInfo queries a property of the the network interface specified.
 If `Interface` is not specified, NetInfo will query the interface of the
 default gateway (if one exists). The queries supported are:
 
@@ -43,7 +43,7 @@ default gateway (if one exists). The queries supported are:
 `ip6`
   IPv6 IP address of the interface.
 `mask6`
-  IPv6 netmask of the interfce.
+  IPv6 netmask of the interface.
 `gateway6`
   The default IPv6 gateway.
 `essid`

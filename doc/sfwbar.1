@@ -1,6 +1,6 @@
 '\" t
 .\" Man page generated from reStructuredText
-.\" by the Docutils 0.22.3 manpage writer.
+.\" by the Docutils 0.22.4 manpage writer.
 .
 .
 .nr rst2man-indent-level 0
@@ -860,7 +860,7 @@ TriggerAction \(dqsometrigger\(dq, my_func(1);
 .UNINDENT
 .UNINDENT
 .sp
-By default, all actions, functions and expressions share a single namespace, so
+By default, all actions, functions and expressions share a single name space, so
 any variable is visible to all code instances. Private scopes can be defined
 using a \fIPrivate\fP keyword. I.e.
 .INDENT 0.0
@@ -963,7 +963,7 @@ Execute a shell command in a terminal. Returns n/a.
 Execute a shell command and return it\(aqs output as a string.
 .TP
 .B GetTerm()
-Get the autodetected terminal executable name. Returns <string>.
+Get the auto detected terminal executable name. Returns <string>.
 .TP
 .B Print(<string>)
 Print a string to standard output. Useful for debugging user functions.
@@ -1143,7 +1143,7 @@ Convert a string to uppercase. Returns <string>.
 Convert a string to lowercase. Returns <string>.
 .TP
 .B Escape(<string>)
-Escapes dobule quotes and other special characters in a string making it
+Escapes double quotes and other special characters in a string making it
 suitable to be included as a substring within double quotes.
 Returns <string>.
 .TP
@@ -1264,12 +1264,12 @@ Returns an ID of a widget invoking the action. Returns <string>.
 Attach a named value to a widget. The optional parameter \fIid\fP specifies an
 id of a widget, if omitted, the operation will apply to the current widget.
 A value will be attached to a widget property \fIname\fP and can be later
-retrieved using WIdgetGetData. Returns <n/a>.
+retrieved using WidgetSetData. Returns <n/a>.
 .TP
 .B WidgetGetData([<id:string>], <name:string>)
 Retrieves a named value from a widget.  The optional parameter \fIid\fP specifies
 an id of a widget, if omitted, the operation will apply to the current widget.
-This function returns a value previously attached to proeprty \fIname\fP of a
+This function returns a value previously attached to property \fIname\fP of a
 widget.
 .TP
 .B WidgetState([<id:string>,] <stateid:number>)
