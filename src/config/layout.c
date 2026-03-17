@@ -257,7 +257,10 @@ GtkWidget *config_widget_build ( GScanner *scanner, GtkWidget *container )
     return FALSE;
   if(!g_ascii_strcasecmp(scanner->value.v_identifier, "include") ||
      !g_ascii_strcasecmp(scanner->value.v_identifier, "widget") )
+  {
     widget = config_include(scanner, container);
+    base_widget_set_parent(widget, container);
+  }
   else if( (type_get = config_lookup_ptr(scanner, config_widget_keys)) )
     widget = config_widget_get(scanner, container, type_get);
   else

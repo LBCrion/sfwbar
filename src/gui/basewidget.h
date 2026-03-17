@@ -58,7 +58,7 @@ struct _BaseWidgetPrivate
   GList *mirror_children;
   GtkWidget *mirror_parent;
   GMutex mutex;
-  vm_store_t *store;
+  vm_store_t *store, *pstore;
 };
 
 typedef struct _base_widget_attachment {
@@ -108,5 +108,6 @@ gboolean base_widget_update_expressions ( GtkWidget *self );
 GPtrArray *base_widget_attachment_new_array ( GBytes *code, gint ev,
     GdkModifierType mods );
 gboolean base_widget_configure ( GtkWidget *self );
+void base_widget_set_parent ( GtkWidget *self, GtkWidget *parent );
 
 #endif

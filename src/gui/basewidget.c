@@ -166,6 +166,7 @@ static void base_widget_destroy ( GtkWidget *self )
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
+  g_debug("widget destroyed: '%s'", priv->id);
   g_ptr_array_remove(base_widgets, self);
   trigger_remove((gchar *)(priv->trigger),
       (trigger_func_t)base_widget_update_expressions, self);
@@ -184,9 +185,11 @@ static void base_widget_destroy ( GtkWidget *self )
   }
 
   vm_store_widget_remove(priv->store, priv->id);
-  g_clear_pointer(&priv->css, g_free);
-  priv->css = NULL;
+  vm_store_widget_remove(priv->pstore, priv->id);
+  g_clear_pointer(&priv->store, vm_store_unref);
+  g_clear_pointer(&priv->pstore, vm_store_unref);
   g_clear_pointer(&priv->id, g_free);
+  g_clear_pointer(&priv->css, g_free);
   g_clear_pointer(&priv->value, expr_cache_unref);
   g_clear_pointer(&priv->style, expr_cache_unref);
   g_clear_pointer(&priv->tooltip, expr_cache_unref);
@@ -684,6 +687,26 @@ static void base_widget_set_store ( GtkWidget *self, vm_store_t *store )
     g_warning("widget id collision: '%s'", priv->id);
 }
 
+void base_widget_set_parent ( GtkWidget *self, GtkWidget *parent )
+{
+  BaseWidgetPrivate *priv;
+  vm_store_t *pstore;
+
+  g_return_if_fail(IS_BASE_WIDGET(self));
+  g_return_if_fail(IS_BASE_WIDGET(parent));
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  g_object_get(G_OBJECT(parent), "store", &pstore, NULL);
+  if(priv->pstore == pstore)
+    return;
+
+  vm_store_widget_remove(priv->pstore, priv->id);
+  vm_store_unref(priv->pstore);
+  priv->pstore = vm_store_ref(pstore);
+  if(!vm_store_widget_insert(priv->pstore, priv->id, self))
+    g_warning("widget id collision: '%s'", priv->id);
+}
+
 static void base_widget_set_id ( GtkWidget *self, const gchar *id )
 {
   BaseWidgetPrivate *priv;
@@ -692,11 +715,14 @@ static void base_widget_set_id ( GtkWidget *self, const gchar *id )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   vm_store_widget_remove(priv->store, priv->id);
+  vm_store_widget_remove(priv->pstore, priv->id);
   g_free(priv->id);
   priv->id = id? g_strdup(id): g_strdup_printf("_w%lld",
       (long long int)base_widget_default_id++);
 
   if(!vm_store_widget_insert(priv->store, priv->id, self))
+    g_warning("widget id collision: '%s'", priv->id);
+  if(!vm_store_widget_insert(priv->pstore, priv->id, self))
     g_warning("widget id collision: '%s'", priv->id);
 }
 
