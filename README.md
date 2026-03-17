@@ -10,25 +10,37 @@
 ### SFWBar
 
 SFWBar (S\* Floating Window Bar) is a flexible taskbar application for
-wayland compositors, designed with a stacking layout in mind. 
-Originally developed for [Sway](https://github.com/swaywm/sway), SFWBar
-will work with any wayland compositor supporting layer shell protocol,
-the taskbar and window switcher functionality shall work with any compositor
-supportinig foreign toplevel protocol, but the pager, and window placement
-functionality require sway (or at least i3 IPC support).
+wayland compositors, designed with a stacking layout in mind. It supports
+the following features:
+  - Taskbar (including windows style or tint2 style groupings).
+  - Pager
+  - Window switcher (i.e. alt-tab support).
+  - Window placement engine.
+  - Tray (using system notification protocol).
+  - Volume control (using PulseAudio or ALSA).
+  - Keyboard layout notification and control.
+  - Start menu implementation.
+  - Network status monitoring (using netlink / AF_ROUTE).
+  - Wifi configuration (using NetworkManager or IWD).
+  - Bluetooth management (using bluez).
+  - Desktop notifications.
+  - MPD control (playback and playlist management).
+  - Privacy notification (using Pipewire).
+  - Clock / calendar.
+  - Session management control panel.
+  - Power management control (using UPower interface).
+  - Idle inhibitor.
+  - Idle monitoring support.
 
-# If you're getting expression errors when upgrading from version 1.0_beta9 or earlier, please check your data types. The expression parser now applies strict type checks.
+In addition SFWBar implements a flexible control language for construction of
+complex user defined widgets.
+
+# Configuration format has changed significantly between 1.0beta16 and beta17.
+# Most old configuration file should still be supported. But it's recommended
+# to migrate configs to a new format.
 
 SFWBar is licensed under GNU GPL.
 Weather icons are from yr.no and are licensed under MIT license 
-
-## SFWBar implements the following features:
-1. Taskbar - to control floating windows
-1. Task Switcher - to allow switching active window (Alt-Tab)
-1. Pager - to allow switching between workspaces
-1. Tray - a system tray using status notification item protocol
-1. Window placement engine - to open new windows in more logical locations
-1. A simple widget set to display information from system files
 
 ## Compiling from Source
 
@@ -51,6 +63,7 @@ sudo ninja -C build install
 ## Install packages
 
 * [Fedora](https://src.fedoraproject.org/rpms/sfwbar): `sudo dnf install sfwbar`
+* [ArchLinux](https://aur.archlinux.org/packages/sfwbar): `yay -S sfwbar`
 * [Debian](https://tracker.debian.org/pkg/sfwbar): `sudo apt install sfwbar`
 
 ## Configuration
@@ -62,16 +75,3 @@ instead. If you want something like waybar, you can copy
 darker side, [w10.config](config/w10.config) could be for you.
 For more information on the format of configuration file, please see the
 [man page](doc/sfwbar.rst)
-
-If you're using sway, you may want to add the following lines to your sway
-config file to open windows as floating by default:
-
-```no-highlight
-# open new windows as floating by default
-for_window [app_id="[.]*"] floating enable
-# set Alt-tab as a task switcher combo
-bindsym Alt+Tab bar hidden_state toggle 
-# set $mod+c to hide/unhide taskbar 
-bindsym $mod+c bar mode toggle
-```
-
