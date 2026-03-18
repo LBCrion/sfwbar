@@ -3,8 +3,8 @@
 Private {
 
   Var session_actions = [
-    ["icons/misc/hibernate-symbolic", "Hibernate", "systemctl hibernate"],
-    ["icons/misc/suspend", "Suspend", "systemctl suspend"],
+    ["hibernate", "Hibernate", "systemctl hibernate"],
+    ["suspend", "Suspend", "systemctl suspend"],
     ["system-lock-screen", "Lock", "loginctl lock-session"],
     ["system-log-out", "Logout", "loginctl terminate-user $USER"],
     ["system-reboot", "Reboot", "systemctl reboot"],

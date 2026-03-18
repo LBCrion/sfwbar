@@ -4,7 +4,7 @@ include("cpu.source")
 
 export chart "cpu" {
   interval = 1000
-  style = If(XCpuPresent, "cpu_chart", "hidden")
+  style = If(XCpuPresent, "cpu", "hidden")
   value = XCpuUtilization
   tooltip = "CPU: " + Str(XCpuUtilization*100) + '%'
   action = ExecTerm("top")
