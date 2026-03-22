@@ -21,10 +21,11 @@ static GSocketConnection *mpd_connection;
 static GIOChannel *chan;
 static GHashTable *mpd_state, *mpd_song_current;
 static gchar *mpd_error, *mpd_cover;
-static const gchar *mpd_cmd_current, *mpd_cmd_currentsong, *mpd_cmd_albumart,
-             *mpd_cmd_playlistinfo, *mpd_cmd_status, *mpd_cmd_idle,
+static const gchar *mpd_cmd_readpicture, *mpd_cmd_currentsong, *mpd_cmd_idle,
+             *mpd_cmd_albumart, *mpd_cmd_playlistinfo, *mpd_cmd_status,
              *mpd_cmd_init, *mpd_cmd_list, *mpd_cmd_search, *mpd_cmd_find,
              *mpd_cmd_listplaylistinfo, *mpd_cmd_listplaylists;
+static const gchar *mpd_cmd_current, *mpd_art_cmd;
 static gint64 mpd_time, mpd_pb_counter;
 static gsize mpd_cover_total, mpd_cover_received, mpd_cover_bufsize;
 static GdkPixbufLoader *mpd_cover_loader;
@@ -67,10 +68,11 @@ static void mpd_cmd_append ( gchar *cmd, ... )
   }
 }
 
-static void mpd_cmd_cover ( gsize offset )
+static void mpd_cmd_cover ( gsize offset, const gchar *cmd )
 {
   gchar *file;
 
+  mpd_art_cmd = cmd;
   if(!offset)
   {
     mpd_cover_total = 0;
@@ -83,7 +85,7 @@ static void mpd_cmd_cover ( gsize offset )
     mpd_cover_loader = gdk_pixbuf_loader_new();
   }
   if( (file = g_hash_table_lookup(mpd_song_current, "file")) && *file)
-    mpd_cmd_append("albumart \"%s\" %d", file, offset);
+    mpd_cmd_append("%s \"%s\" %d", cmd, file, offset);
 }
 
 static gboolean mpd_idle_handle ( gchar *str )
@@ -155,6 +157,8 @@ static gboolean mpd_ok_handle ( gchar *str )
     mpd_emit_with_array("mpd-list", &mpd_db_list);
   else if(mpd_cmd_current == mpd_cmd_listplaylists)
     mpd_emit_with_array("mpd-list", &mpd_playlist_list);
+  else if(mpd_cmd_current == mpd_cmd_readpicture && !mpd_cover_received)
+    mpd_cmd_cover(0, mpd_cmd_albumart);
   else
     trigger_emit("mpd");
   mpd_cmd_current = NULL;
@@ -212,7 +216,7 @@ static gboolean mpd_tag_handle ( gchar *str, GHashTable *hash )
 
   g_hash_table_insert(hash, g_strdup(str), g_strdup(g_strstrip(ptr+1)));
   if(hash == mpd_song_current && !g_ascii_strcasecmp(str, "file"))
-    mpd_cmd_cover(0);
+    mpd_cmd_cover(0, mpd_cmd_readpicture);
 
   return TRUE;
 }
@@ -227,7 +231,7 @@ static gboolean mpd_cover_handle ( gchar *str )
   {
     newtotal = g_ascii_strtoull(g_strstrip(str+5), NULL, 10);
     if(mpd_cover_total && mpd_cover_total!=newtotal)
-      mpd_cmd_cover(0);
+      mpd_cmd_cover(0, mpd_art_cmd);
     else
       mpd_cover_total = newtotal;
   }
@@ -257,7 +261,7 @@ static gboolean mpd_cover_handle ( gchar *str )
         trigger_emit("mpd-cover");
       }
       else
-        mpd_cmd_cover(mpd_cover_received);
+        mpd_cmd_cover(mpd_cover_received, mpd_art_cmd);
     }
   }
 
@@ -292,7 +296,7 @@ static gboolean mpd_event ( GIOChannel *chan, GIOCondition cond, void *d )
       mpd_tag_handle(str, mpd_state);
     else if(mpd_cmd_current == mpd_cmd_currentsong)
       mpd_tag_handle(str, mpd_song_current);
-    else if(mpd_cmd_current == mpd_cmd_albumart)
+    else if(mpd_cmd_current == mpd_cmd_albumart || mpd_cmd_current == mpd_cmd_readpicture)
       mpd_cover_handle(str);
     else if(mpd_cmd_current == mpd_cmd_playlistinfo)
       mpd_playlist_handle(str, &mpd_queue);
@@ -491,6 +495,7 @@ gboolean sfwbar_module_init ( void )
   mpd_cmd_status = g_intern_static_string("status");
   mpd_cmd_playlistinfo = g_intern_static_string("playlistinfo");
   mpd_cmd_albumart = g_intern_static_string("albumart");
+  mpd_cmd_readpicture = g_intern_static_string("readpicture");
   mpd_cmd_list = g_intern_static_string("list");
   mpd_cmd_search = g_intern_static_string("search");
   mpd_cmd_find = g_intern_static_string("find");
