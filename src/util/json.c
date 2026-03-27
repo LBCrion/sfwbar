@@ -60,6 +60,23 @@ json_object *recv_json ( gint sock, gssize len )
   return json;
 }
 
+json_object *json_recv_channel ( GIOChannel *chan )
+{
+  gchar *buf;
+  gsize len;
+  json_tokener *tok;
+  json_object *obj;
+
+  if(g_io_channel_read_line(chan, &buf, &len, NULL, NULL)!=G_IO_STATUS_NORMAL)
+    return NULL;
+  tok = json_tokener_new();
+  obj = json_tokener_parse_ex(tok, buf, len);
+  json_tokener_free(tok);
+  g_free(buf);
+
+  return obj;
+}
+
 /* get string value from an object within current object */
 const gchar *json_string_by_name ( struct json_object *obj, gchar *name )
 {
@@ -120,6 +137,18 @@ struct json_object *json_node_by_name ( struct json_object *json, gchar *key )
   if(json_object_object_get_ex(json, key, &ptr))
     return ptr;
   return NULL;
+}
+
+void json_foreach ( struct json_object *json,
+    void (*func)(struct json_object *, gpointer data), gpointer data )
+{
+  gint i;
+
+  if(!json || !func || !json_object_is_type(json, json_type_array))
+    return;
+
+  for(i=0; i<json_object_array_length(json); i++)
+    func(json_object_array_get_idx(json, i), data);
 }
 
 gboolean json_array_to_strv ( struct json_object *json, gchar ***strv )
