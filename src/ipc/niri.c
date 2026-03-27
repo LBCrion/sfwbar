@@ -23,7 +23,6 @@ static void niri_ipc_action ( char *cmd, ... )
   va_start(args, cmd);
   buf = g_strdup_vprintf(cmd, args);
   g_debug("niri request: %s", buf);
-  g_message("niri request: %s", buf);
   g_io_channel_write_chars(niri_command_ipc, "{\"Action\":{", 11, NULL, NULL);
   g_io_channel_write_chars(niri_command_ipc, buf, -1, NULL, NULL);
   g_io_channel_write_chars(niri_command_ipc, "}}\n", 3, NULL, NULL);
@@ -70,11 +69,11 @@ static struct wintree_api niri_wintree_api = {
 };
 
 /* workspace API */
-static guint niri_ipc_get_geom ( gpointer wid, GdkRectangle *place,
+/*static guint niri_ipc_get_geom ( gpointer wid, GdkRectangle *place,
     gpointer wsid, GdkRectangle **wins, GdkRectangle *space, gint *focus )
 {
   return 0;
-}
+}*/
 
 static void niri_ipc_set_workspace ( workspace_t *ws )
 {
@@ -211,9 +210,8 @@ static gboolean niri_ipc_event ( GIOChannel *chan, GIOCondition cond,
   else if(json_object_object_get_ex(obj, "WorkspaceActivated", &data))
     niri_ipc_workspace_activated(data);
 
+  g_message("%s", json_object_to_json_string(obj));
   json_object_put(obj);
-
-//  g_message("%s", json_object_to_json_string(obj));
 
   return TRUE;
 }
