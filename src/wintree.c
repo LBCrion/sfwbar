@@ -224,6 +224,18 @@ void wintree_set_app_id ( gpointer wid, const gchar *app_id)
   wintree_commit(win);
 }
 
+void wintree_set_stable_id ( gpointer wid, const gchar *stable_id )
+{
+  window_t *win;
+
+  if(!stable_id || !( win=wintree_from_id(wid)) ||
+      !g_strcmp0(win->stable_id, stable_id))
+    return;
+  str_assign(&win->stable_id, g_strdup(stable_id));
+
+  wintree_commit(win);
+}
+
 void wintree_set_workspace ( gpointer wid, gpointer wsid )
 {
   window_t *win;
