@@ -13,6 +13,7 @@
 #include "ipc/sway.h"
 #include "gui/bar.h"
 #include "gui/basewidget.h"
+#include "gui/capture.h"
 #include "gui/css.h"
 #include "gui/menuitem.h"
 #include "gui/monitor.h"
@@ -133,6 +134,8 @@ static void activate (GtkApplication* app, gpointer data )
   wayland_init();
   css_init(cssname);
   monitor_init(monitor);
+  capture_init();
+  ext_ftl_init();
   sway_ipc_init();
   hypr_ipc_init();
   wayfire_ipc_init();

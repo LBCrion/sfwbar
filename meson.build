@@ -35,6 +35,9 @@ wayland_scanner = find_program('wayland-scanner')
 wayland_protodir = wayp.get_variable(pkgconfig: 'pkgdatadir')
 wayland_protos = [
   [wayland_protodir, 'stable/xdg-shell/xdg-shell'],
+  [wayland_protodir, 'staging/ext-image-capture-source/ext-image-capture-source-v1'],
+  [wayland_protodir, 'staging/ext-image-copy-capture/ext-image-copy-capture-v1'],
+  [wayland_protodir, 'staging/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1'],
   ['protocols/wlr-foreign-toplevel-management-unstable-v1'],
   ['protocols/xdg-output-unstable-v1'],
   ['protocols/wlr-layer-shell-unstable-v1'],
@@ -83,6 +86,7 @@ libsrc = [
     'src/gui/bar.c',
     'src/gui/basewidget.c',
     'src/gui/button.c',
+    'src/gui/capture.c',
     'src/gui/cchart.c',
     'src/gui/chart.c',
     'src/gui/css.c',
@@ -118,6 +122,7 @@ libsrc = [
     'src/config/scanner.c',
     'src/config/toplevel.c',
     'src/ipc/cosmic-workspaces.c',
+    'src/ipc/ext-ftl.c',
     'src/ipc/ext-workspace.c',
     'src/ipc/foreign-toplevel.c',
     'src/ipc/hyprland.c',
