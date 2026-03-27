@@ -136,6 +136,8 @@ static void sway_window_handle ( struct json_object *container,
     wintree_window_append(win);
     wintree_set_app_id(wid, app_id);
     wintree_set_title(wid, json_string_by_name(container, "name"));
+    wintree_set_stable_id(wid, json_string_by_name(container,
+          "foreign_toplevel_identifier"));
     wintree_set_float(wid,
         !g_strcmp0(json_string_by_name(container, "type"), "floating_con"));
     wintree_log(wid);
