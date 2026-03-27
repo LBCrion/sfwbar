@@ -86,6 +86,10 @@ void workspace_unref ( gpointer id )
   if(ws == focus)
     focus = NULL;
 
+  if(ws->data && api->free_data)
+    g_clear_pointer(&ws->data, api->free_data);
+  else
+    g_nullify_pointer(&ws->data);
   if(g_list_find_custom(global_pins, ws->name, (GCompareFunc)g_strcmp0))
   {
     g_debug("Workspace: workspace returned to a pin: '%s'", str_get(ws->name));
@@ -219,11 +223,6 @@ gpointer workspace_get_active ( GtkWidget *widget )
 
 void workspace_set_active ( workspace_t *ws, const gchar *output )
 {
-  GdkDisplay *gdisp;
-  GdkMonitor *gmon;
-  gchar *name;
-  gint i;
-
   if(!output || !ws)
     return;
 
@@ -231,14 +230,8 @@ void workspace_set_active ( workspace_t *ws, const gchar *output )
     actives = g_hash_table_new_full((GHashFunc)str_nhash,
         (GEqualFunc)str_nequal, g_free, NULL);
 
-  gdisp = gdk_display_get_default();
-  for(i=gdk_display_get_n_monitors(gdisp)-1; i>=0; i--)
-  {
-    gmon = gdk_display_get_monitor(gdisp, i);
-    name = monitor_get_name(gmon);
-    if(name && !g_strcmp0(name, output))
-      g_hash_table_insert(actives, g_strdup(name), ws->id);
-  }
+  if(monitor_from_name(output))
+    g_hash_table_insert(actives, g_strdup(output), ws->id);
 }
 
 gpointer workspace_get_focused ( void )

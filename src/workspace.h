@@ -19,7 +19,7 @@ typedef struct workspace_s {
   gchar *name;
   guint32 state;
   gint refcount;
-  void *data;
+  gpointer data;
 } workspace_t;
 
 struct workspace_api {
@@ -28,6 +28,7 @@ struct workspace_api {
       GdkRectangle *, gint * );
   gboolean (*get_can_create) ( void );
   gboolean (*check_monitor) ( gpointer, gchar * );
+  void (*free_data) ( void * );
 };
 
 typedef struct _workspace_listener {
