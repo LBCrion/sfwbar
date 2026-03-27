@@ -3,6 +3,8 @@
  * Copyright 2023- sfwbar maintainers
  */
 
+#include <sys/mman.h>
+#include <fcntl.h>
 #include <gdk/gdkwayland.h>
 #include "wayland.h"
 #include "gui/monitor.h"
@@ -13,6 +15,58 @@
 static GList *wayland_ifaces;
 static struct wl_registry *wayland_registry;
 static gboolean wayland_init_complete;
+struct wl_shm *shm;
+
+wayland_buffer_t *wayland_buffer_new ( guint32 w, guint32 h, guint32 f )
+{
+  wayland_buffer_t *buff;
+  struct wl_shm_pool *pool;
+  void *shm_data = NULL;
+  gchar *name;
+  gint fd, retries = 100, stride, size;
+
+  if(!shm || f != WL_SHM_FORMAT_ARGB8888 || w==0 || h==0)
+    return NULL;
+
+  do
+  {
+    name = g_strdup_printf("/sfwbar-%ld", (long int)g_get_monotonic_time());
+    if( (fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0600))>=0 )
+      shm_unlink(name);
+    g_free(name);
+  } while (--retries > 0 && errno == EEXIST && fd < 0 );
+
+  if(fd<0)
+    return NULL;
+
+  stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, w);
+  size = stride * h;
+
+  if( (ftruncate(fd, size) >= 0) &&
+      (shm_data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0))
+      != MAP_FAILED)
+  {
+    buff = g_malloc0(sizeof(wayland_buffer_t));
+    pool = wl_shm_create_pool(shm, fd, size);
+    buff->buffer = wl_shm_pool_create_buffer(pool, 0, w, h, stride, f);
+    buff->data = shm_data;
+    buff->size = size;
+    wl_shm_pool_destroy(pool);
+  }
+  else
+    buff = NULL;
+
+  close(fd);
+
+  return buff;
+}
+
+void wayland_buffer_free ( wayland_buffer_t *buff )
+{
+  wl_buffer_destroy(buff->buffer);
+  munmap(buff->data, buff->size);
+  g_free(buff);
+}
 
 static void handle_global(void *data, struct wl_registry *registry,
                 uint32_t name, const gchar *interface, uint32_t version)
@@ -69,4 +123,6 @@ void wayland_init ( void )
 
   wl_display_roundtrip(wdisp);
   wl_display_roundtrip(wdisp);
+
+  shm = wayland_iface_register(wl_shm_interface.name, 1, 1, &wl_shm_interface);
 }

@@ -3,8 +3,6 @@
  * Copyright 2024- sfwbar maintainers
  */
 
-#include <sys/mman.h>
-#include <fcntl.h>
 #include "wayland.h"
 #include "gui/bar.h"
 #include "gui/monitor.h"
@@ -69,57 +67,29 @@ struct zwlr_layer_surface_v1_listener monitor_layer_surface_listener = {
 
 void monitor_default_probe ( void )
 {
-  struct wl_shm *shm;
   struct zwlr_layer_shell_v1 *layer_shell;
   struct zwlr_layer_surface_v1 *layer_surface;
   struct wl_compositor *compositor;
   struct wl_display *display;
   struct wl_surface *surface;
-  struct wl_buffer *buffer;
-  struct wl_shm_pool *pool;
-  void *shm_data = NULL;
-  gchar *name;
-  gint fd, retries = 100, size = 4, configured = 0, i;
+  wayland_buffer_t *buff;
+  gint configured = 0, i;
 
   display = gdk_wayland_display_get_wl_display(gdk_display_get_default());
   compositor = gdk_wayland_display_get_wl_compositor(gdk_display_get_default());
-  shm = wayland_iface_register(wl_shm_interface.name, 1, 1, &wl_shm_interface);
-  if(!display || !compositor || !shm)
+  if(!display || !compositor)
     return;
 
   if( !(layer_shell = wayland_iface_register(
           zwlr_layer_shell_v1_interface.name, 3, 3,
           &zwlr_layer_shell_v1_interface)) )
-  {
-    wl_shm_destroy(shm);
     return;
-  }
 
-  do
+  if( !(buff = wayland_buffer_new(1, 1, WL_SHM_FORMAT_ARGB8888)) )
   {
-    name = g_strdup_printf("/sfwbar-probe-%lld",
-      (long long int)g_get_monotonic_time());
-    if( (fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0600))>=0 )
-      shm_unlink(name);
-    g_free(name);
-  } while (--retries > 0 && errno == EEXIST && fd < 0 );
-
-  if((fd <= 0) || (ftruncate(fd, size) < 0) ||
-    (shm_data = mmap(NULL, 4, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) ==
-    MAP_FAILED)
-  {
-    if(fd>0)
-      close(fd);
-    wl_shm_destroy(shm);
     zwlr_layer_shell_v1_destroy(layer_shell);
     return;
   }
-
-  pool = wl_shm_create_pool(shm, fd, size);
-  buffer = wl_shm_pool_create_buffer(pool, 0, 1, 1, 4, WL_SHM_FORMAT_ARGB8888);
-  wl_shm_pool_destroy(pool);
-
-  memset(shm_data, 0, size);
 
   surface = wl_compositor_create_surface(compositor);
   wl_surface_add_listener(surface, &monitor_surface_listener, NULL);
@@ -135,17 +105,17 @@ void monitor_default_probe ( void )
   for(i=0; i<1000 && !configured; i++)
     wl_display_roundtrip(display);
 
-  wl_surface_attach(surface, buffer, 0, 0);
+  wl_surface_attach(surface, buff->buffer, 0, 0);
   wl_surface_commit(surface);
   wl_display_roundtrip(display);
 
   zwlr_layer_surface_v1_destroy(layer_surface);
   wl_surface_destroy(surface);
-  wl_buffer_destroy(buffer);
-  munmap(shm_data, size);
-  close(fd);
+  wayland_buffer_free(buff);
   zwlr_layer_shell_v1_destroy(layer_shell);
-  wl_shm_destroy(shm);
+
+  if(!default_monitor)
+    g_warning("Failed to detect default layer surface output");
 }
 
 static void monitor_handle_name ( void *monitor,
@@ -277,7 +247,7 @@ static void monitor_list_print ( void )
   exit(0);
 }
 
-GdkMonitor *monitor_from_name ( gchar *name )
+GdkMonitor *monitor_from_name ( const gchar *name )
 {
   GdkDisplay *disp;
   gint i;
