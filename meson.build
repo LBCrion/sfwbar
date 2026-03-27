@@ -126,6 +126,7 @@ libsrc = [
     'src/ipc/ext-workspace.c',
     'src/ipc/foreign-toplevel.c',
     'src/ipc/hyprland.c',
+    'src/ipc/niri.c',
     'src/ipc/sway.c',
     'src/ipc/wayfire.c',
     'src/util/datalist.c',
