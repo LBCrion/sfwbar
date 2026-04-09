@@ -1021,11 +1021,53 @@ static gboolean bar_on_delete ( GtkWidget *self )
   return TRUE;
 }
 
+static gboolean on_drag_motion(GtkWidget *widget,
+ GdkDragContext *context,
+ gint x, gint y,
+ guint time,
+ gpointer data)
+{
+  BarPrivate *priv = bar_get_instance_private(BAR(widget));
+  bar_sensor_show_bar(widget);
+  gdk_drag_status(context, GDK_ACTION_COPY, time);
+  return TRUE;
+}
+
+static gboolean on_drag_drop(GtkWidget *widget,
+  GdkDragContext *context,
+  gint x, gint y,
+  guint time,
+  gpointer data)
+{
+  gtk_drag_get_data(widget, context, gdk_atom_intern("text/uri-list", FALSE), time);
+  return TRUE;
+}
+
+static void on_drag_data_received(GtkWidget *widget,
+  GdkDragContext *context,
+  gint x, gint y,
+  GtkSelectionData *data,
+  guint info,
+  guint time,
+  gpointer user_data)
+{
+  gtk_drag_finish(context, TRUE, FALSE, time);
+}
+
 GtkWidget *bar_new ( gchar *name )
 {
   GtkWidget *self;
   BarPrivate *priv;
   gchar *tmp;
+
+  static const GtkTargetEntry dnd_targets[] =
+  {
+    { "text/uri-list", 0, 0 },
+    { "text/plain", 0, 1 },
+    { "text/plain;charset=utf-8", 0, 2 },
+    { "UTF8_STRING", 0, 3 },
+    { "STRING", 0, 4 },
+  };
 
   self = GTK_WIDGET(g_object_new(bar_get_type(), NULL));
   g_signal_connect(G_OBJECT(self), "delete-event",
@@ -1051,6 +1093,14 @@ GtkWidget *bar_new ( gchar *name )
   gtk_container_add(GTK_CONTAINER(priv->ebox), GTK_WIDGET(priv->revealer));
   g_object_set_data(G_OBJECT(priv->box), "parent_window", self);
   gtk_layer_init_for_window(GTK_WINDOW(self));
+
+  gtk_drag_dest_set(self, GTK_DEST_DEFAULT_ALL, dnd_targets, G_N_ELEMENTS(dnd_targets), 
+    GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_LINK);
+  g_signal_connect(self, "drag-motion", G_CALLBACK(on_drag_motion), NULL);
+  g_signal_connect(self, "drag-leave", G_CALLBACK(bar_leave_notify_event), NULL);
+  g_signal_connect(self, "drag-drop", G_CALLBACK(on_drag_drop), NULL);
+  g_signal_connect(self, "drag-data-received", G_CALLBACK(on_drag_data_received), NULL);
+
   gtk_widget_set_name(self, priv->name);
   gtk_layer_auto_exclusive_zone_enable (GTK_WINDOW(self));
 #if GTK_LAYER_VER_MINOR > 5
