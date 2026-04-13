@@ -52,10 +52,10 @@ PopUp("BacklightPopup") {
     value = "display-brightness"
   }
   scale {
-    style = 'volume_scale'
-    value = Val(Read(BacklightSrc))/BacklightMax
-    trigger = "backlight"
-    action[LeftClick] = SetBacklight(GtkEvent("dir"))
+    style = 'volume_scale';
+    value = Val(Read(BacklightSrc))/BacklightMax;
+    trigger = "backlight";
+    action[LeftClick] = SetBacklight(GtkEvent("dir")*100);
   }
 }
 
