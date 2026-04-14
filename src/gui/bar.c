@@ -156,16 +156,12 @@ static void bar_sensor_unref_event ( GtkWidget *self )
         (GSourceFunc)bar_sensor_hide, self);
 }
 
-static gboolean bar_leave_notify_event ( GtkWidget *self,
-    GdkEventCrossing *event )
+static gboolean bar_leave_handle ( GtkWidget *self )
 {
   BarPrivate *priv;
 
-  g_return_val_if_fail(IS_BAR(self), TRUE);
+  g_return_val_if_fail(IS_BAR(self), G_SOURCE_REMOVE);
   priv = bar_get_instance_private(BAR(self));
-
-  if(event->detail==GDK_NOTIFY_INFERIOR)
-    return TRUE;
 
 #if GTK_LAYER_VER_MINOR > 5
   gtk_layer_set_keyboard_mode(GTK_WINDOW(self),
@@ -181,7 +177,40 @@ static gboolean bar_leave_notify_event ( GtkWidget *self,
   }
 
   bar_sensor_unref_event(self);
+
+  return G_SOURCE_REMOVE;
+}
+
+static gboolean bar_leave_notify_event ( GtkWidget *self,
+    GdkEventCrossing *event )
+{
+  if(event->detail!=GDK_NOTIFY_INFERIOR)
+    bar_leave_handle(self);
+
   return TRUE;
+}
+
+void bar_drag_unref ( GtkWidget *self )
+{
+  BarPrivate *priv;
+
+  g_return_if_fail(IS_BAR(self));
+  priv = bar_get_instance_private(BAR(self));
+
+  priv->sensor_refs--;
+  if(!priv->sensor_refs)
+    g_idle_add((GSourceFunc)bar_leave_handle ,self);
+}
+
+static void bar_drag_leave ( GtkWidget *self, GdkDragContext *ctx, guint time )
+{
+  BarPrivate *priv;
+
+  g_return_if_fail(IS_BAR(self));
+  priv = bar_get_instance_private(BAR(self));
+
+  priv->sensor_drag_enter = FALSE;
+  bar_drag_unref(self);
 }
 
 static void bar_sensor_show_bar ( GtkWidget *self )
@@ -205,7 +234,6 @@ static void bar_sensor_show_bar ( GtkWidget *self )
     gtk_container_remove(GTK_CONTAINER(self), gtk_bin_get_child(GTK_BIN(self)));
     gtk_container_add(GTK_CONTAINER(self), GTK_WIDGET(priv->ebox));
   }
-  
   bar_reveal(self);
 }
 
@@ -230,6 +258,33 @@ static gboolean bar_enter_notify_event ( GtkWidget *self,
   if(!priv->show_handle)
     priv->show_handle = g_timeout_add(priv->show_timeout,
         (GSourceFunc)bar_sensor_show_bar, self);
+  return TRUE;
+}
+
+void bar_drag_ref ( GtkWidget *self )
+{
+  BarPrivate *priv;
+
+  g_return_if_fail(IS_BAR(self));
+  priv = bar_get_instance_private(BAR(self));
+
+  if(!priv->sensor_refs)
+    bar_enter_notify_event(self, NULL);
+
+  priv->sensor_refs++;
+}
+
+static gboolean bar_drag_motion ( GtkWidget *self, GdkDragContext *ctx,
+    gint x, gint y, guint time )
+{
+  BarPrivate *priv;
+
+  priv = bar_get_instance_private(BAR(self));
+
+  if(priv->sensor_drag_enter)
+    return TRUE;
+  priv->sensor_drag_enter = TRUE;
+  bar_drag_ref(self);
   return TRUE;
 }
 
@@ -497,6 +552,8 @@ static void bar_class_init ( BarClass *kclass )
   GTK_WIDGET_CLASS(kclass)->destroy = bar_destroy;
   GTK_WIDGET_CLASS(kclass)->enter_notify_event = bar_enter_notify_event;
   GTK_WIDGET_CLASS(kclass)->leave_notify_event = bar_leave_notify_event;
+  GTK_WIDGET_CLASS(kclass)->drag_motion = bar_drag_motion;
+  GTK_WIDGET_CLASS(kclass)->drag_leave = bar_drag_leave;
   GTK_WIDGET_CLASS(kclass)->style_updated = bar_style_updated;
   GTK_WIDGET_CLASS(kclass)->map = bar_map;
 
@@ -1051,6 +1108,10 @@ GtkWidget *bar_new ( gchar *name )
   gtk_container_add(GTK_CONTAINER(priv->ebox), GTK_WIDGET(priv->revealer));
   g_object_set_data(G_OBJECT(priv->box), "parent_window", self);
   gtk_layer_init_for_window(GTK_WINDOW(self));
+
+  gtk_drag_dest_set(self, GTK_DEST_DEFAULT_ALL, NULL, 0, GDK_ACTION_MOVE);
+  gtk_drag_dest_set_track_motion(self, TRUE);
+
   gtk_widget_set_name(self, priv->name);
   gtk_layer_auto_exclusive_zone_enable (GTK_WINDOW(self));
 #if GTK_LAYER_VER_MINOR > 5

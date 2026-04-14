@@ -50,6 +50,7 @@ struct _BaseWidgetPrivate
   gint dir;
   gboolean local_state;
   gboolean is_drag_dest;
+  gboolean drag_enter;
   gboolean disabled;
   guint user_state;
   GdkRectangle rect;

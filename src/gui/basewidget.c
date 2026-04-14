@@ -8,10 +8,9 @@
 #include "meson.h"
 #include "scanner.h"
 #include "gui/basewidget.h"
+#include "gui/bar.h"
 #include "gui/css.h"
 #include "gui/grid.h"
-#include "gui/flowgrid.h"
-#include "gui/bar.h"
 #include "util/string.h"
 
 G_DEFINE_TYPE_WITH_CODE (BaseWidget, base_widget, GTK_TYPE_EVENT_BOX,
@@ -367,8 +366,6 @@ static gboolean base_widget_drag_motion( GtkWidget *self, GdkDragContext *ctx,
     gint x, gint y, guint time )
 {
   BaseWidgetPrivate *priv;
-  GList *target;
-  gchar *name;
 
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
@@ -377,15 +374,13 @@ static gboolean base_widget_drag_motion( GtkWidget *self, GdkDragContext *ctx,
 
   priv->is_drag_dest = TRUE;
 
-  for(target=gdk_drag_context_list_targets(ctx); target; target=target->next)
+  if(gtk_drag_get_source_widget(ctx))
+    return TRUE;
+
+  if(!priv->drag_enter)
   {
-    name = gdk_atom_name(target->data);
-    if(g_str_has_prefix(name, "flow-item-"))
-    {
-      g_free(name);
-      return TRUE;
-    }
-    g_free(name);
+    priv->drag_enter = TRUE;
+    bar_drag_ref(gtk_widget_get_ancestor(self, BAR_TYPE));
   }
 
   base_widget_action_exec(self, 8, NULL);
@@ -393,12 +388,17 @@ static gboolean base_widget_drag_motion( GtkWidget *self, GdkDragContext *ctx,
 }
 
 static void base_widget_drag_leave (GtkWidget *self,
-    GdkDragContext *context, guint time )
+    GdkDragContext *ctx, guint time )
 {
   BaseWidgetPrivate *priv;
 
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
   priv->is_drag_dest = FALSE;
+
+  if(gtk_drag_get_source_widget(ctx))
+    return;
+  priv->drag_enter = FALSE;
+  bar_drag_unref(gtk_widget_get_ancestor(self, BAR_TYPE));
 }
 
 static void base_widget_set_trigger ( GtkWidget *self, gchar *trigger )

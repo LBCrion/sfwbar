@@ -44,9 +44,8 @@ struct _BarPrivate {
   GtkWidget *box, *sensor, *ebox;
   GtkRevealer *revealer;
   gint64 sensor_timeout, show_timeout, sensor_transition;
-  gboolean sensor_state, sensor_block;
-  guint sensor_handle, show_handle;
-  GList *sensor_refs;
+  gboolean sensor_state, sensor_block, sensor_drag_enter;
+  guint sensor_handle, show_handle, sensor_refs;
   gboolean hidden;
   gboolean jump;
   gboolean visible, visible_by_mod;
@@ -91,5 +90,7 @@ void bar_set_icon_theme ( gchar *new_theme );
 GtkWidget *bar_mirror ( GtkWidget *, GdkMonitor * );
 void bar_handle_direction ( GtkWidget *self );
 void bar_sensor_cancel_hide ( GtkWidget *self );
+void bar_drag_ref ( GtkWidget *self );
+void bar_drag_unref ( GtkWidget *self );
 
 #endif
