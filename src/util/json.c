@@ -67,11 +67,14 @@ json_object *json_recv_channel ( GIOChannel *chan )
   json_tokener *tok;
   json_object *obj;
 
-  if(g_io_channel_read_line(chan, &buf, &len, NULL, NULL)!=G_IO_STATUS_NORMAL)
-    return NULL;
-  tok = json_tokener_new();
-  obj = json_tokener_parse_ex(tok, buf, len);
-  json_tokener_free(tok);
+  if(g_io_channel_read_line(chan, &buf, &len, NULL, NULL)==G_IO_STATUS_NORMAL)
+  {
+    tok = json_tokener_new();
+    obj = json_tokener_parse_ex(tok, buf, len);
+    json_tokener_free(tok);
+  }
+  else
+    obj = NULL;
   g_free(buf);
 
   return obj;
@@ -180,11 +183,12 @@ gboolean json_array_to_strv ( struct json_object *json, gchar ***strv )
   {
     ptr = json_object_array_get_idx(json, i);
     if(json_object_is_type(ptr, json_type_string))
-      g_strv_builder_add(builder, g_strdup(json_object_get_string(ptr)));
+      g_strv_builder_add(builder, json_object_get_string(ptr));
   }
   
   g_strfreev(*strv);
   *strv = g_strv_builder_end(builder);
+  g_strv_builder_unref(builder);
   return TRUE;
 }
 
