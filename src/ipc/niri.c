@@ -3,6 +3,7 @@
  * Copyright 2026- sfwbar maintainers
  */
 
+#include "exec.h"
 #include "input.h"
 #include "wintree.h"
 #include "workspace.h"
@@ -196,6 +197,36 @@ static struct input_api niri_input_api = {
   .layout_next = niri_ipc_layout_next,
   .layout_set = niri_ipc_layout_set,
 };
+
+static void niri_ipc_exec ( const gchar *cmd )
+{
+  gchar **argv, *params, *ptr;
+  gint argc, i;
+  gsize len = 0;
+
+  if(!g_shell_parse_argv(cmd, &argc, &argv, NULL))
+    return;
+
+  for(i=0; i<argc; i++)
+    len+=strlen(argv[i])+3;
+
+  ptr = params = g_malloc0(len);
+
+  for(i=0; i<argc; i++)
+  {
+    if(i)
+      *(ptr++) = ',';
+    *(ptr++) = '"';
+    ptr = g_stpcpy(ptr, argv[i]);
+    *(ptr++) = '"';
+  }
+
+  niri_ipc_action("\"Spawn\":{\"command\":[%s]}", params);
+
+  g_free(params);
+  g_strfreev(argv);
+}
+
 static void niri_ipc_window_handle ( struct json_object *json, gpointer d)
 {
   GdkRectangle place;
@@ -401,5 +432,6 @@ void niri_ipc_init ( void )
   wintree_api_register(&niri_wintree_api);
   workspace_api_register(&niri_workspace_api);
   input_api_register(&niri_input_api);
+  exec_api_set(niri_ipc_exec);
   g_free(r);
 }
