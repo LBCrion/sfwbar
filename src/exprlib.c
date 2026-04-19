@@ -798,8 +798,8 @@ static value_t expr_exec_read ( vm_t *vm, value_t p[], gint np )
   if( (chan = g_io_channel_unix_new(out)) )
   {
     g_debug("execread: '%s'", value_get_string(p[0]));
-    if(g_io_channel_read_to_end(chan, &str, NULL, NULL) == G_IO_STATUS_NORMAL)
-      res = value_new_string(str);
+    g_io_channel_read_to_end(chan, &str, NULL, NULL);
+    res = value_new_string(str);
     g_io_channel_unref(chan);
   }
   close(out);
