@@ -305,10 +305,8 @@ void workspace_set_name ( workspace_t *ws, const gchar *name )
 
 void workspace_set_caps ( workspace_t *ws, guint32 caps )
 {
-  if(!ws)
-    return;
-
-  ws->state = (ws->state & WS_STATE_ALL) | caps | WS_STATE_INVALID;
+  if(ws)
+    ws->state = (ws->state & WS_STATE_ALL) | caps | WS_STATE_INVALID;
 }
 
 workspace_t *workspace_new ( gpointer id )
