@@ -327,7 +327,7 @@ static void niri_ipc_layout_switched_handle ( struct json_object *json )
 {
   if(niri_layouts)
     input_layout_set(niri_layouts[CLAMP(json_int_by_name(json, "idx", 0),
-          0, MAX(0, g_strv_length(niri_layouts)-1))]);
+          0, MAX(1, g_strv_length(niri_layouts))-1)]);
 }
 
 static void niri_ipc_layouts_changed_handle ( struct json_object *json )
