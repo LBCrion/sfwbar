@@ -7,6 +7,7 @@
 #include "trigger.h"
 #include "wintree.h"
 #include "gui/bar.h"
+#include "gui/capture.h"
 #include "gui/css.h"
 #include "gui/filter.h"
 #include "gui/switcher.h"
@@ -17,6 +18,7 @@ G_DEFINE_TYPE_WITH_CODE (Switcher, switcher, FLOW_GRID_TYPE,
 
 enum {
   SWITCHER_FILTER = 1,
+  SWITCHER_PREVIEW = 2,
 };
 
 static GtkWidget *switcher_win;
@@ -42,7 +44,11 @@ static gboolean switcher_update ( GtkWidget *self )
   if(counter > 0)
   {
     for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
+    {
+      if(!gtk_widget_is_visible(switcher_win))
+        capture_window(((window_t *)(iter->data))->uid);
       flow_item_invalidate(flow_grid_find_child(switcher_grid, iter->data));
+    }
     flow_grid_update(switcher_grid);
     css_widget_cascade(switcher_win, NULL);
   }
@@ -94,6 +100,8 @@ static void switcher_get_property ( GObject *self, guint id,
   priv = switcher_get_instance_private(SWITCHER(self));
   if(id == SWITCHER_FILTER)
     g_value_set_enum(value, priv->filter);
+  else if(id == SWITCHER_PREVIEW)
+    g_value_set_boolean(value, priv->preview);
   else
     G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
 }
@@ -106,6 +114,8 @@ static void switcher_set_property ( GObject *self, guint id,
   priv = switcher_get_instance_private(SWITCHER(self));
   if(id == SWITCHER_FILTER)
     priv->filter |= g_value_get_enum(value);
+  else if(id == SWITCHER_PREVIEW)
+    priv->preview = g_value_get_boolean(value);
   else
     G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
 }
@@ -152,9 +162,13 @@ static void switcher_class_init ( SwitcherClass *kclass )
   trigger_add("switcher_forward", (trigger_func_t)switcher_event, NULL);
   trigger_add("switcher_back", (trigger_func_t)switcher_event, (void *)1);
   FLOW_GRID_CLASS(kclass)->limit = FALSE;
+  FLOW_GRID_CLASS(kclass)->fill = FALSE;
   g_object_class_install_property(G_OBJECT_CLASS(kclass), SWITCHER_FILTER,
       g_param_spec_enum("filter", "filter", "sfwbar_config", filter_type_get(),
         0, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), SWITCHER_PREVIEW,
+      g_param_spec_boolean("preview", "preview", "sfwbar_config",
+        TRUE, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 }
 
 static void switcher_init ( Switcher *self )
@@ -174,11 +188,11 @@ static void switcher_init ( Switcher *self )
 
 GtkWidget *switcher_new ( void )
 {
-  return switcher_grid?switcher_grid:
+  return switcher_grid? switcher_grid :
     (switcher_grid = GTK_WIDGET(g_object_new(switcher_get_type(), NULL)));
 }
 
 gboolean switcher_is_focused ( gpointer uid )
 {
-  return focus?uid==focus->uid:FALSE;
+  return focus? uid==focus->uid : FALSE;
 }

@@ -28,6 +28,7 @@ struct _SwitcherPrivate
 {
   GtkWidget *switcher;
   gint filter;
+  gboolean preview;
 };
 
 GType switcher_get_type ( void );

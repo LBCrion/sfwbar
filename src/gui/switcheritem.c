@@ -18,14 +18,14 @@ static void switcher_item_decorate ( GtkWidget *parent, GParamSpec *spec,
     GtkWidget *self )
 {
   SwitcherItemPrivate *priv;
-  gboolean labels, icons;
+  gboolean labels, icons, preview;
   gint dir, title_width;
 
   g_return_if_fail(IS_SWITCHER_ITEM(self));
   priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
 
   g_object_get(G_OBJECT(parent), "labels", &labels, "icons", &icons,
-      "title-width", &title_width, NULL);
+      "title-width", &title_width, "preview", &preview, NULL);
 
   if(!labels && !icons)
     labels = TRUE;
@@ -49,7 +49,8 @@ static void switcher_item_decorate ( GtkWidget *parent, GParamSpec *spec,
       priv->icon = scale_image_new();
       gtk_grid_attach_next_to(GTK_GRID(priv->grid), priv->icon, NULL, dir, 1,1);
       if(priv->win)
-        scale_image_set_image(priv->icon, priv->win->appid, NULL);
+        scale_image_set_image(priv->icon,
+            priv->win->image && preview ? priv->win->image : priv->win->appid, NULL);
     }
     if(labels)
     {
@@ -76,6 +77,7 @@ void switcher_item_destroy ( GtkWidget *self )
 void switcher_item_update ( GtkWidget *self )
 {
   SwitcherItemPrivate *priv;
+  gboolean preview;
 
   g_return_if_fail(IS_SWITCHER_ITEM(self));
   priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
@@ -83,12 +85,15 @@ void switcher_item_update ( GtkWidget *self )
   if(!priv->invalid)
     return;
 
+  g_object_get(G_OBJECT(flow_item_get_parent(self)), "preview", &preview, NULL);
+
   if(priv->label)
     if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)), priv->win->title))
       gtk_label_set_text(GTK_LABEL(priv->label), priv->win->title);
 
   if(priv->icon)
-    scale_image_set_image(priv->icon, priv->win->appid, NULL);
+    scale_image_set_image(priv->icon, (priv->win->image && preview)?
+        priv->win->image : priv->win->appid, NULL);
 
   css_set_class(base_widget_get_child(self), "minimized",
       priv->win->state & WS_MINIMIZED);
@@ -100,6 +105,8 @@ void switcher_item_update ( GtkWidget *self )
       priv->win->state & WS_URGENT);
   css_set_class(base_widget_get_child(self), "focused",
       switcher_is_focused(priv->win->uid));
+  css_set_class(base_widget_get_child(self), "preview",
+      preview && priv->win->image);
   gtk_widget_unset_state_flags(base_widget_get_child(self),
       GTK_STATE_FLAG_PRELIGHT);
 
