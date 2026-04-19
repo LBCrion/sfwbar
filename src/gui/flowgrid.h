@@ -35,6 +35,7 @@ struct _FlowGridClass
   BaseWidgetClass parent_class;
 
   gboolean limit;
+  gboolean fill;
 };
 
 typedef struct _FlowGridPrivate FlowGridPrivate;

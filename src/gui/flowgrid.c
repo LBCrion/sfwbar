@@ -215,6 +215,7 @@ static void flow_grid_class_init ( FlowGridClass *kclass )
   widget_class->style_updated = flow_grid_style_updated;
 
   kclass->limit = TRUE;
+  kclass->fill = TRUE;
 
   G_OBJECT_CLASS(kclass)->get_property = flow_grid_get_property;
   G_OBJECT_CLASS(kclass)->set_property = flow_grid_set_property;
@@ -405,9 +406,10 @@ gboolean flow_grid_update ( GtkWidget *self )
     else if(gtk_widget_get_parent(iter->data) == priv->grid)
       gtk_container_remove(GTK_CONTAINER(priv->grid), iter->data);
 
-  for(;i<dim; i++)
-    gtk_grid_attach(GTK_GRID(priv->grid), gtk_label_new(""),
-        axis_cols? 0 : i, axis_cols? i : 0, 1, 1);
+  if(FLOW_GRID_GET_CLASS(self)->fill)
+    for(;i<dim; i++)
+      gtk_grid_attach(GTK_GRID(priv->grid), gtk_label_new(""),
+          axis_cols? 0 : i, axis_cols? i : 0, 1, 1);
   css_widget_cascade(self, NULL);
 
   return TRUE;
@@ -488,7 +490,7 @@ static void flow_grid_dnd_enter_cb ( GtkWidget *widget, GdkEventCrossing *ev,
 static void flow_grid_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
     gpointer data )
 {
-  g_signal_handlers_unblock_matched(widget, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,
+  g_signal_handlers_unblock_matched(widget, G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
       (GFunc)flow_grid_dnd_enter_cb, NULL);
   gtk_grab_add(widget);
   window_ref(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW), widget);
@@ -497,8 +499,8 @@ static void flow_grid_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
 static void flow_grid_dnd_end_cb ( GtkWidget *widget, GdkDragContext *ctx,
     gpointer data )
 {
-  g_signal_handlers_block_matched(widget, G_SIGNAL_MATCH_FUNC, 0,0 ,NULL,
-      (GFunc)flow_grid_dnd_enter_cb,NULL);
+  g_signal_handlers_block_matched(widget, G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
+      (GFunc)flow_grid_dnd_enter_cb, NULL);
   gtk_grab_remove(widget);
   window_unref(widget, gtk_widget_get_ancestor(data, GTK_TYPE_WINDOW));
 }
@@ -506,8 +508,8 @@ static void flow_grid_dnd_end_cb ( GtkWidget *widget, GdkDragContext *ctx,
 static void flow_grid_dnd_data_get_cb ( GtkWidget *widget, GdkDragContext *ctx,
     GtkSelectionData *sel, guint info, guint time, gpointer *data )
 {
-  gtk_selection_data_set(sel, gdk_atom_intern_static_string("gpointer"),
-      8, (const guchar *)&data, sizeof(gpointer));
+  gtk_selection_data_set(sel, gdk_atom_intern_static_string("gpointer"), 8,
+      (const guchar *)&data, sizeof(gpointer));
 }
 
 void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
@@ -533,14 +535,14 @@ void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
     gtk_drag_source_set(src, GDK_BUTTON1_MASK, priv->dnd_target, 1,
         GDK_ACTION_MOVE);
     g_signal_connect(G_OBJECT(src),"drag-data-get",
-        G_CALLBACK(flow_grid_dnd_data_get_cb),child);
+        G_CALLBACK(flow_grid_dnd_data_get_cb), child);
     g_signal_connect(G_OBJECT(src), "drag-begin",
         G_CALLBACK(flow_grid_dnd_begin_cb), self);
     g_signal_connect(G_OBJECT(src), "drag-end",
         G_CALLBACK(flow_grid_dnd_end_cb), self);
     g_signal_connect(G_OBJECT(src), "enter-notify-event",
         G_CALLBACK(flow_grid_dnd_enter_cb), NULL);
-    g_signal_handlers_block_matched(src, G_SIGNAL_MATCH_FUNC, 0, 0 ,NULL,
+    g_signal_handlers_block_matched(src, G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
         (GFunc)flow_grid_dnd_enter_cb, NULL);
   }
 }
