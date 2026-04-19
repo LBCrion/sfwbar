@@ -216,7 +216,6 @@ static void capture_toplevel_cb ( gpointer data, gchar *name )
   wintree_commit(win);
 }
 
-extern GHashTable *ext_ftl_map;
 void capture_window ( gpointer wid )
 {
   window_t *win;
@@ -226,9 +225,6 @@ void capture_window ( gpointer wid )
     return;
   if( !(win = wintree_from_id(wid)) )
     return;
-  GList *vals = g_hash_table_get_keys(ext_ftl_map);
-  win->stable_id = vals->data;
-  g_list_free(vals);
   if( (toplevel = ext_ftl_lookup(win->stable_id)) )
     capture_from_source(
         ext_foreign_toplevel_image_capture_source_manager_v1_create_source(
