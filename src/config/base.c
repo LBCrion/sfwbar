@@ -287,7 +287,8 @@ void config_skip_statement ( GScanner *scanner )
   gint c = 0;
 
   scanner->max_parse_errors = FALSE;
-  while(g_scanner_get_next_token(scanner) != ';' || c)
+  while( (c>0 || g_scanner_peek_next_token(scanner) != '}') &&
+      (g_scanner_get_next_token(scanner) != ';' || c))
   {
     if(scanner->token == '{')
       c++;
