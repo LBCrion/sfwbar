@@ -312,7 +312,7 @@ sort = [true|false]
   sorted, user can sort them manually via drag-and-drop mechanism.
   Items are sorted by default, set this to false to enable drag-and-drop.
 
-primary_axis = [rows|columns]
+primary_axis = [rows|cols]
   specifies a primary axis for sorting items, i.e. will the next item be placed
   to the right or below it's sibling.
 
