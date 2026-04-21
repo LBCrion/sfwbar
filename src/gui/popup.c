@@ -11,6 +11,8 @@
 #include "util/string.h"
 
 static GHashTable *popup_list;
+static const GdkSeatCapabilities grab_caps = GDK_SEAT_CAPABILITY_KEYBOARD |
+  GDK_SEAT_CAPABILITY_POINTER | GDK_SEAT_CAPABILITY_TABLET_STYLUS;
 
 G_DEFINE_FINAL_TYPE(PopupWindow, popup_window, GTK_TYPE_WINDOW)
 
@@ -73,7 +75,7 @@ static void popup_popdown ( GtkWidget *widget )
     return;
   window_collapse_popups(widget);
   gtk_widget_hide(widget);
-  if( (seat=g_object_get_data(G_OBJECT(widget), "seat")) )
+  if( (seat = g_object_get_data(G_OBJECT(widget), "seat")) )
       gdk_seat_ungrab(seat);
   gtk_grab_remove(gtk_bin_get_child(GTK_BIN(widget)));
 }
@@ -92,20 +94,9 @@ void popup_popdown_autoclose ( void )
 }
 
 static gboolean popup_button_cb ( GtkWidget *widget, GdkEventButton *ev,
-    void *d )
+    void *popup )
 {
-  GdkWindow *window, *wparent;
-
-  wparent = gtk_widget_get_window(d);
-  window = ev->window;
-
-  while(window && window != wparent)
-    window = gdk_window_get_parent(window);
-
-  if(window == wparent)
-    return FALSE;
-
-  popup_popdown(gtk_widget_get_ancestor(d, GTK_TYPE_WINDOW));
+  popup_popdown(popup);
 
   return TRUE;
 }
@@ -126,8 +117,6 @@ static void popup_transfer_window_grab (GtkWidget *widget, GdkSeat *seat)
   GdkWindowAttr attributes;
   gint attributes_mask;
   GdkWindow *parent;
-  static const GdkSeatCapabilities grab_caps = GDK_SEAT_CAPABILITY_KEYBOARD |
-    GDK_SEAT_CAPABILITY_POINTER | GDK_SEAT_CAPABILITY_TABLET_STYLUS;
 
   if(gtk_window_get_type_hint(GTK_WINDOW(widget)) !=
       GDK_WINDOW_TYPE_HINT_POPUP_MENU)
@@ -150,8 +139,6 @@ static void popup_transfer_window_grab (GtkWidget *widget, GdkSeat *seat)
 
   gdk_window_show (window);
   gdk_seat_grab(seat, window, grab_caps, TRUE, NULL, NULL, NULL, NULL);
-  gdk_seat_ungrab(seat);
-  gdk_seat_grab(seat, window, grab_caps, TRUE, NULL, NULL, NULL, NULL);
   g_object_set_data (G_OBJECT (gtk_widget_get_window(widget)),
       "gdk-attached-grab-window", window);
 }
@@ -164,8 +151,7 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkSeat *seat )
   GdkGravity wanchor, panchor;
   GHashTableIter iter;
 
-  child = gtk_bin_get_child(GTK_BIN(popup));
-  if(!child)
+  if( !(child = gtk_bin_get_child(GTK_BIN(popup))) )
     return;
 
   g_hash_table_iter_init(&iter, popup_list);
@@ -207,7 +193,7 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkSeat *seat )
   transfer = g_object_get_data(G_OBJECT(gpopup), "gdk-attached-grab-window");
   if(transfer)
   {
-    gdk_seat_ungrab(seat);
+    gdk_seat_grab(seat, gtk_widget_get_window(child), grab_caps, TRUE, NULL, NULL, NULL, NULL);
     gtk_widget_unregister_window(popup, transfer);
     gdk_window_destroy(transfer);
     g_object_set_data (G_OBJECT (gpopup), "gdk-attached-grab-window", NULL);
