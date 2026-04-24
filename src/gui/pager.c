@@ -11,8 +11,7 @@
 G_DEFINE_TYPE_WITH_CODE (Pager, pager, FLOW_GRID_TYPE, G_ADD_PRIVATE (Pager))
 
 enum {
-  PAGER_PREVIEW = 1,
-  PAGER_PINS,
+  PAGER_PINS = 1,
 };
 
 static void pager_mirror ( GtkWidget *self, GtkWidget *src )
@@ -21,8 +20,6 @@ static void pager_mirror ( GtkWidget *self, GtkWidget *src )
   g_return_if_fail(IS_PAGER(src));
 
   BASE_WIDGET_CLASS(pager_parent_class)->mirror(self, src);
-  g_object_bind_property(G_OBJECT(src), "preview", G_OBJECT(self), "preview",
-      G_BINDING_SYNC_CREATE);
 }
 
 static void pager_destroy ( GtkWidget *self )
@@ -66,9 +63,6 @@ static void pager_get_property ( GObject *self, guint id, GValue *value,
   priv = pager_get_instance_private(PAGER(self));
   switch(id)
   {
-    case PAGER_PREVIEW:
-      g_value_set_boolean(value, priv->preview);
-      break;
     case PAGER_PINS:
       g_value_set_boxed(value, priv->pins);
       break;
@@ -80,14 +74,8 @@ static void pager_get_property ( GObject *self, guint id, GValue *value,
 static void pager_set_property ( GObject *self, guint id,
     const GValue *value, GParamSpec *spec )
 {
-  PagerPrivate *priv;
-
-  priv = pager_get_instance_private(PAGER(self));
   switch(id)
   {
-    case PAGER_PREVIEW:
-      priv->preview = g_value_get_boolean(value);
-      break;
     case PAGER_PINS:
       pager_add_pins(GTK_WIDGET(self), g_value_get_boxed(value));
       break;
@@ -106,9 +94,6 @@ static void pager_class_init ( PagerClass *kclass )
   G_OBJECT_CLASS(kclass)->get_property = pager_get_property;
   G_OBJECT_CLASS(kclass)->set_property = pager_set_property;
 
-  g_object_class_install_property(G_OBJECT_CLASS(kclass), PAGER_PREVIEW,
-      g_param_spec_boolean("preview", "preview", "sfwbar_config", FALSE,
-        G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), PAGER_PINS,
       g_param_spec_boxed("pins", "pins", "sfwbar_config", G_TYPE_PTR_ARRAY,
         G_PARAM_READWRITE));

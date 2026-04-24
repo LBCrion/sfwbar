@@ -3,6 +3,7 @@
  * Copyright 2022- sfwbar maintainers
  */
 
+#include "gui/capture.h"
 #include "gui/css.h"
 #include "gui/filter.h"
 #include "gui/flowgrid.h"
@@ -14,64 +15,29 @@
 G_DEFINE_TYPE_WITH_CODE (SwitcherItem, switcher_item, FLOW_ITEM_TYPE,
     G_ADD_PRIVATE (SwitcherItem))
 
-static void switcher_item_decorate ( GtkWidget *parent, GParamSpec *spec,
-    GtkWidget *self )
+static void switcher_item_style_updated ( GtkWidget *w, GtkWidget *self )
 {
   SwitcherItemPrivate *priv;
-  gboolean labels, icons, preview;
-  gint dir, title_width;
+  gint dir;
 
   g_return_if_fail(IS_SWITCHER_ITEM(self));
   priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
 
-  g_object_get(G_OBJECT(parent), "labels", &labels, "icons", &icons,
-      "title-width", &title_width, "preview", &preview, NULL);
+  gtk_widget_style_get(base_widget_get_child(self), "direction", &dir, NULL);
 
-  if(!labels && !icons)
-    labels = TRUE;
+  if(dir==priv->dir)
+    return;
+  priv->dir = dir;
 
-  if(!!priv->icon != icons || !!priv->label != labels)
-  {
-    if(priv->label)
-    {
-      gtk_container_remove(GTK_CONTAINER(priv->grid), priv->label);
-      priv->label = NULL;
-    }
-    if(priv->icon)
-    {
-      gtk_container_remove(GTK_CONTAINER(priv->grid), priv->icon);
-      priv->icon = NULL;
-    }
-    gtk_widget_style_get(base_widget_get_child(self), "direction", &dir, NULL);
-
-    if(icons)
-    {
-      priv->icon = scale_image_new();
-      gtk_grid_attach_next_to(GTK_GRID(priv->grid), priv->icon, NULL, dir, 1,1);
-      if(priv->win)
-        scale_image_set_image(priv->icon,
-            priv->win->image && preview ? priv->win->image : priv->win->appid, NULL);
-    }
-    if(labels)
-    {
-      priv->label = gtk_label_new(priv->win?priv->win->title:"");
-      gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
-      gtk_grid_attach_next_to(GTK_GRID(priv->grid), priv->label, priv->icon,
-          dir, 1,1);
-    }
-  }
-  if(priv->label)
-    gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
-}
-
-void switcher_item_destroy ( GtkWidget *self )
-{
-  SwitcherItemPrivate *priv;
-
-  g_return_if_fail(IS_SWITCHER_ITEM(self));
-  priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
-  g_signal_handlers_disconnect_by_data(priv->switcher, self);
-  GTK_WIDGET_CLASS(switcher_item_parent_class)->destroy(self);
+  if(!priv->label)
+    return;
+  g_object_ref(priv->label);
+  gtk_container_remove(GTK_CONTAINER(priv->grid), priv->label);
+  gtk_grid_attach(GTK_GRID(priv->grid), priv->label,
+      dir==GTK_POS_LEFT? 0 : dir==GTK_POS_RIGHT? 2 : 1,
+      dir==GTK_POS_TOP? 0 : dir==GTK_POS_BOTTOM? 2 : 1,
+      1, 1);
+  g_object_unref(priv->label);
 }
 
 void switcher_item_update ( GtkWidget *self )
@@ -92,8 +58,7 @@ void switcher_item_update ( GtkWidget *self )
       gtk_label_set_text(GTK_LABEL(priv->label), priv->win->title);
 
   if(priv->icon)
-    scale_image_set_image(priv->icon, (priv->win->image && preview)?
-        priv->win->image : priv->win->appid, NULL);
+    capture_window_image_set(priv->icon, priv->win, preview);
 
   css_set_class(base_widget_get_child(self), "minimized",
       priv->win->state & WS_MINIMIZED);
@@ -111,8 +76,66 @@ void switcher_item_update ( GtkWidget *self )
       GTK_STATE_FLAG_PRELIGHT);
 
   flow_item_set_active(self, filter_window_check(priv->switcher, priv->win));
+  switcher_item_style_updated(NULL, self);
 
   priv->invalid = FALSE;
+}
+
+static void switcher_item_icons_handle ( GtkWidget *parent, GParamSpec *spec,
+    GtkWidget *self )
+{
+  SwitcherItemPrivate *priv;
+  gboolean icons, preview;
+
+  g_return_if_fail(IS_SWITCHER_ITEM(self));
+  priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
+
+  g_object_get(G_OBJECT(parent), "icons", &icons, "preview", &preview, NULL);
+
+  if(priv->icon && !icons)
+    g_clear_pointer(&priv->icon, gtk_widget_destroy);
+  else if(icons && !priv->icon)
+  {
+    priv->icon = scale_image_new();
+    gtk_grid_attach(GTK_GRID(priv->grid), priv->icon, 1, 1, 1, 1);
+    switcher_item_update(self);
+  }
+}
+
+static void switcher_item_labels_handle ( GtkWidget *parent, GParamSpec *spec,
+    GtkWidget *self )
+{
+  SwitcherItemPrivate *priv;
+  gboolean labels;
+  gint title_width;
+
+  g_return_if_fail(IS_SWITCHER_ITEM(self));
+  priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
+
+  g_object_get(G_OBJECT(parent), "labels", &labels,
+      "title-width", &title_width, NULL);
+
+  if(priv->label && !labels)
+    g_clear_pointer(&priv->label, gtk_widget_destroy);
+  else if(!priv->label && labels)
+  {
+    priv->label = gtk_label_new(priv->win? priv->win->title : "");
+    gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
+    gtk_grid_attach(GTK_GRID(priv->grid), priv->label, 1, 2, 1, 1);
+    switcher_item_style_updated(NULL, self);
+  }
+  if(priv->label)
+    gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
+}
+
+void switcher_item_destroy ( GtkWidget *self )
+{
+  SwitcherItemPrivate *priv;
+
+  g_return_if_fail(IS_SWITCHER_ITEM(self));
+  priv = switcher_item_get_instance_private(SWITCHER_ITEM(self));
+  g_signal_handlers_disconnect_by_data(priv->switcher, self);
+  GTK_WIDGET_CLASS(switcher_item_parent_class)->destroy(self);
 }
 
 window_t *switcher_item_get_window ( GtkWidget *self )
@@ -141,8 +164,8 @@ static gint switcher_item_compare ( GtkWidget *a, GtkWidget *b,
 {
   SwitcherItemPrivate *p1,*p2;
 
-  g_return_val_if_fail(IS_SWITCHER_ITEM(a),0);
-  g_return_val_if_fail(IS_SWITCHER_ITEM(b),0);
+  g_return_val_if_fail(IS_SWITCHER_ITEM(a), 0);
+  g_return_val_if_fail(IS_SWITCHER_ITEM(b), 0);
 
   p1 = switcher_item_get_instance_private(SWITCHER_ITEM(a));
   p2 = switcher_item_get_instance_private(SWITCHER_ITEM(b));
@@ -187,12 +210,15 @@ GtkWidget *switcher_item_new( window_t *win, GtkWidget *switcher )
   g_object_ref_sink(G_OBJECT(self));
 
   g_signal_connect(G_OBJECT(switcher), "notify::labels",
-      G_CALLBACK(switcher_item_decorate), self);
+      G_CALLBACK(switcher_item_labels_handle), self);
   g_signal_connect(G_OBJECT(switcher), "notify::icons",
-      G_CALLBACK(switcher_item_decorate), self);
+      G_CALLBACK(switcher_item_icons_handle), self);
   g_signal_connect(G_OBJECT(switcher), "notify::title-width",
-      G_CALLBACK(switcher_item_decorate), self);
-  switcher_item_decorate(switcher, NULL, self);
+      G_CALLBACK(switcher_item_labels_handle), self);
+  g_signal_connect(G_OBJECT(priv->grid), "style-updated",
+      G_CALLBACK(switcher_item_style_updated), self);
+  switcher_item_labels_handle(switcher, NULL, self);
+  switcher_item_icons_handle(switcher, NULL, self);
 
   flow_item_invalidate(self);
 

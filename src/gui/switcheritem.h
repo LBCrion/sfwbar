@@ -33,6 +33,7 @@ struct _SwitcherItemPrivate
   GtkWidget *switcher;
   window_t *win;
   gboolean invalid;
+  gboolean dir;
 };
 
 GType switcher_item_get_type ( void );

@@ -16,6 +16,7 @@ enum {
   TASKBAR_SHELL_API = 1,
   TASKBAR_SHELL_LABELS,
   TASKBAR_SHELL_ICONS,
+  TASKBAR_SHELL_PREVIEW,
   TASKBAR_SHELL_TITLE_WIDTH,
   TASKBAR_SHELL_SORT,
   TASKBAR_SHELL_COLS,
@@ -190,6 +191,9 @@ static void taskbar_shell_get_property ( GObject *self, guint id,
     case TASKBAR_SHELL_ICONS:
       g_value_set_boolean(value, priv->icons);
       break;
+    case TASKBAR_SHELL_PREVIEW:
+      g_value_set_boolean(value, priv->preview);
+      break;
     case TASKBAR_SHELL_TITLE_WIDTH:
       g_value_set_int(value, priv->title_width);
       break;
@@ -235,6 +239,9 @@ static void taskbar_shell_set_property ( GObject *self, guint id,
       break;
     case TASKBAR_SHELL_ICONS:
       priv->icons = g_value_get_boolean(value);
+      break;
+    case TASKBAR_SHELL_PREVIEW:
+      priv->preview = g_value_get_boolean(value);
       break;
     case TASKBAR_SHELL_TITLE_WIDTH:
       priv->title_width = g_value_get_int(value);
@@ -286,6 +293,9 @@ static void taskbar_shell_class_init ( TaskbarShellClass *kclass )
         G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_ICONS,
       g_param_spec_boolean("group_icons", "icons", "sfwbar_config", FALSE,
+        G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_PREVIEW,
+      g_param_spec_boolean("group_preview", "preview", "sfwbar_config", TRUE,
         G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass),
       TASKBAR_SHELL_TITLE_WIDTH, g_param_spec_int("group_title_width",
@@ -342,6 +352,8 @@ void taskbar_shell_init_child ( GtkWidget *self, GtkWidget *child )
       G_OBJECT(child), "labels", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(self), "group_icons",
       G_OBJECT(child), "icons", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(self), "group_preview",
+      G_OBJECT(child), "preview", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(self), "tooltips",
       G_OBJECT(child), "tooltips", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(self), "title_width",

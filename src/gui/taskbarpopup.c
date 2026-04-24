@@ -291,6 +291,7 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *shell )
 
   priv->shell = shell;
   priv->tgroup = taskbar_new(self);
+  g_object_set(G_OBJECT(priv->tgroup), "preview", TRUE, NULL);
   g_object_bind_property(G_OBJECT(priv->shell), "store",
       G_OBJECT(priv->tgroup), "store", G_BINDING_SYNC_CREATE);
   taskbar_shell_init_child(shell, priv->tgroup);

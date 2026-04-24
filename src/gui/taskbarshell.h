@@ -29,7 +29,7 @@ typedef struct _TaskbarShellPrivate TaskbarShellPrivate;
 struct _TaskbarShellPrivate
 {
   GtkWidget *(*get_taskbar)(GtkWidget *, window_t *, gboolean);
-  gboolean icons, labels, sort, floating_filter;
+  gboolean icons, labels, sort, floating_filter, preview;
   gint rows, cols, filter, title_width, primary_axis, api_id;
   gboolean tooltips;
   guint timer_h;

@@ -28,7 +28,6 @@ struct _PagerPrivate
 {
   GPtrArray *pins;
   guint timer_h;
-  gboolean preview;
 };
 
 GType pager_get_type ( void );

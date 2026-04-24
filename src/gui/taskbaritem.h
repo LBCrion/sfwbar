@@ -32,6 +32,7 @@ struct _TaskbarItemPrivate
   GtkWidget *taskbar;
   window_t *win;
   gboolean invalid;
+  gboolean dir;
   GdkModifierType saved_modifiers;
 };
 

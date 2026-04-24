@@ -334,6 +334,7 @@ gchar *wintree_appid_map_lookup ( gchar *title )
     if(g_regex_match (((struct appid_mapper *)iter->data)->regex,
           title, 0, NULL))
       return ((struct appid_mapper *)iter->data)->app_id;
+
   return NULL;
 }
 

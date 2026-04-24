@@ -44,7 +44,7 @@ struct _FlowGridPrivate
 {
   gint cols,rows;
   gint primary_axis;
-  gboolean icons, labels, tooltips;
+  gboolean icons, labels, tooltips, preview;
   gint title_width;
   gboolean invalid;
   gboolean sort;

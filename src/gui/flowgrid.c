@@ -15,6 +15,7 @@ G_DEFINE_TYPE_WITH_CODE (FlowGrid, flow_grid, BASE_WIDGET_TYPE,
 enum {
   FLOW_GRID_LABELS = 1,
   FLOW_GRID_ICONS,
+  FLOW_GRID_PREVIEW,
   FLOW_GRID_TOOLTIPS,
   FLOW_GRID_TITLE_WIDTH,
   FLOW_GRID_SORT,
@@ -105,6 +106,9 @@ static void flow_grid_get_property ( GObject *self, guint id, GValue *value,
     case FLOW_GRID_ICONS:
       g_value_set_boolean(value, priv->icons);
       break;
+    case FLOW_GRID_PREVIEW:
+      g_value_set_boolean(value, priv->preview);
+      break;
     case FLOW_GRID_TOOLTIPS:
       g_value_set_boolean(value, priv->tooltips);
       break;
@@ -145,6 +149,9 @@ static void flow_grid_set_property ( GObject *self, guint id,
       break;
     case FLOW_GRID_ICONS:
       priv->icons = g_value_get_boolean(value);
+      break;
+    case FLOW_GRID_PREVIEW:
+      priv->preview = g_value_get_boolean(value);
       break;
     case FLOW_GRID_TOOLTIPS:
       priv->tooltips = g_value_get_boolean(value);
@@ -192,6 +199,8 @@ static void flow_grid_mirror ( GtkWidget *dest, GtkWidget *src )
       G_OBJECT(dest), "labels", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "icons",
       G_OBJECT(dest), "icons", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "preview",
+      G_OBJECT(dest), "preview", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "tooltips",
       G_OBJECT(dest), "tooltips", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "title_width",
@@ -226,6 +235,9 @@ static void flow_grid_class_init ( FlowGridClass *kclass )
         G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_ICONS,
       g_param_spec_boolean("icons", "icons", "sfwbar_config", FALSE,
+        G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_PREVIEW,
+      g_param_spec_boolean("preview", "preview", "sfwbar_config", FALSE,
         G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_TOOLTIPS,
       g_param_spec_boolean("tooltips", "tooltips", "sfwbar_config", FALSE,

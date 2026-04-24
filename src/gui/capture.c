@@ -5,10 +5,10 @@
 
 #include "ext-image-capture-source-v1.h"
 #include "ext-image-copy-capture-v1.h"
-#include "capture.h"
 #include "trigger.h"
 #include "wayland.h"
 #include "wintree.h"
+#include "gui/capture.h"
 #include "gui/monitor.h"
 #include "gui/scaleimage.h"
 #include "util/string.h"
@@ -216,19 +216,47 @@ static void capture_toplevel_cb ( gpointer data, gchar *name )
   wintree_commit(win);
 }
 
-void capture_window ( gpointer wid )
+void capture_window ( window_t *win )
 {
-  window_t *win;
   gpointer toplevel;
- 
+
   if(!capture_support_check(CAPTURE_TYPE_WINDOW)) 
-    return;
-  if( !(win = wintree_from_id(wid)) )
     return;
   if( (toplevel = ext_ftl_lookup(win->stable_id)) )
     capture_from_source(
         ext_foreign_toplevel_image_capture_source_manager_v1_create_source(
           capture_toplevel_source, toplevel), capture_toplevel_cb, win->uid);
+}
+
+void capture_window_image_set ( GtkWidget *image, window_t *win,
+    gboolean preview )
+{
+  gchar *ptr, *tmp;
+
+  if(capture_support_check(CAPTURE_TYPE_WINDOW) &&
+      win->stable_id && !win->image)
+    capture_window(win);
+
+  if(win->image && scale_image_set_image(image, win->image, NULL))
+    return;
+
+  if(!win->appid || !*(win->appid))
+  {
+    scale_image_set_image(image, wintree_appid_map_lookup(win->title), NULL);
+    return;
+  }
+
+  if(scale_image_set_image(image, win->appid, NULL))
+    return;
+  if( (ptr = strrchr(win->appid, '.')) &&
+      scale_image_set_image(image, ptr+1, NULL))
+    return;
+  if( (ptr = strchr(win->appid, ' ')) )
+  {
+    tmp = g_strndup(win->appid, ptr - win->appid);
+    scale_image_set_image(image, tmp, NULL);
+    g_free(tmp);
+  }
 }
 
 gboolean capture_support_check ( capture_type_t type )
@@ -252,6 +280,15 @@ static value_t capture_screenshot ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
+static void capture_window_new_handle ( window_t *win, gpointer d )
+{
+  capture_window(win);
+}
+
+static window_listener_t capture_window_listener = {
+  .window_new = capture_window_new_handle,
+};
+
 void capture_init ( void )
 {
   capture_toplevel_source = wayland_iface_register(
@@ -268,4 +305,6 @@ void capture_init ( void )
       &ext_image_copy_capture_manager_v1_interface);
   if(capture_support_check(CAPTURE_TYPE_OUTPUT))
     vm_func_add("Screenshot", capture_screenshot, TRUE, FALSE);
+  if(capture_support_check(CAPTURE_TYPE_WINDOW))
+    wintree_listener_register(&capture_window_listener, NULL);
 }

@@ -4,6 +4,8 @@
  */
 
 #include "wayland.h"
+#include "wintree.h"
+#include "gui/capture.h"
 #include "ext-foreign-toplevel-list-v1.h"
 
 #define EXT_FOREIGN_TOPLEVEL_LIST_VERSION 1
@@ -52,7 +54,13 @@ static void ext_ftl_handle_identifier ( void *data,
     struct ext_foreign_toplevel_handle_v1 *toplevel,
     const char *id )
 {
+  GList *iter;
+
   g_hash_table_insert(ext_ftl_map, g_strdup(id), toplevel);
+
+  for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
+    if(!g_strcmp0(((window_t *)(iter->data))->stable_id, id))
+      capture_window(iter->data);
 }
 
 static struct ext_foreign_toplevel_handle_v1_listener ext_ftl_handle_impl = {
