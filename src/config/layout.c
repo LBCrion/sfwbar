@@ -112,9 +112,9 @@ gboolean config_widget_set_property ( GScanner *scanner, gchar *prefix,
       g_scanner_peek_next_token(scanner) == G_TOKEN_IDENTIFIER)
    return FALSE; 
 
-  prop_name = g_string_ascii_down(g_string_append(g_string_new(prefix),
-        scanner->value.v_identifier));
-  g_string_replace(prop_name, ".", "_", 0);
+  prop_name = g_string_append(g_string_new(prefix),
+      scanner->value.v_identifier);
+  g_string_replace(g_string_ascii_down(prop_name), ".", "_", 0);
   spec = g_object_class_find_property(G_OBJECT_GET_CLASS(widget),
       prop_name->str);
   g_string_free(prop_name, TRUE);

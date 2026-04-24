@@ -186,10 +186,8 @@ window_t *wintree_from_pid ( gint64 pid )
 
 void wintree_commit ( window_t *win )
 {
-  if(!win)
-    return;
-
-  LISTENER_CALL(window_invalidate, win);
+  if(win)
+    LISTENER_CALL(window_invalidate, win);
 }
 
 void wintree_set_title ( gpointer wid, const gchar *title )

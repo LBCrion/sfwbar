@@ -5,6 +5,7 @@
 
 #include "wintree.h"
 #include "gui/css.h"
+#include "gui/taskbaritem.h"
 #include "gui/taskbarpager.h"
 #include "gui/taskbarshell.h"
 #include "util/string.h"
@@ -160,9 +161,8 @@ static void taskbar_pager_dnd_dest ( GtkWidget *dest, GtkWidget *src,
   window_t *win;
 
   g_return_if_fail(IS_TASKBAR_PAGER(dest));
-  ws = flow_item_get_source(dest);
-  win = flow_item_get_source(src);
-  if(win && ws)
+  g_return_if_fail(IS_TASKBAR_ITEM(src));
+  if( (ws = flow_item_get_source(dest)) && (win = flow_item_get_source(src)) )
     wintree_move_to(win->uid, ws->id);
 }
 
