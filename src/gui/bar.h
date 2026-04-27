@@ -36,6 +36,7 @@ struct _BarPrivate {
   GtkLayerShellLayer layer;
   gchar *bar_id;
   gint dir;
+  gint background;
   GtkAlign halign, valign;
   guint8 overrides;
   GtkAlign override_halign, override_valign;
@@ -55,6 +56,7 @@ struct _BarPrivate {
   GPtrArray *mirror_targets;
   GList *mirror_children;
   GtkWidget *mirror_parent;
+  struct ext_background_effect_surface_v1 *effect;
 };
 
 enum {
@@ -62,6 +64,11 @@ enum {
   BAR_OVERRIDE_HALIGN = 2,
   BAR_OVERRIDE_VALIGN = 4
 };
+
+typedef enum {
+  BAR_BACKGROUND_EFFECT_NONE = 1,
+  BAR_BACKGROUND_EFFECT_BLUR = 2
+} bar_background_effect_t;
 
 GtkWidget *bar_new ( gchar * );
 gboolean bar_address_all ( GtkWidget *self, gchar *value,

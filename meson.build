@@ -38,6 +38,7 @@ wayland_protos = [
   [wayland_protodir, 'staging/ext-image-capture-source/ext-image-capture-source-v1'],
   [wayland_protodir, 'staging/ext-image-copy-capture/ext-image-copy-capture-v1'],
   [wayland_protodir, 'staging/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1'],
+  [wayland_protodir, 'staging/ext-background-effect/ext-background-effect-v1'],
   ['protocols/wlr-foreign-toplevel-management-unstable-v1'],
   ['protocols/xdg-output-unstable-v1'],
   ['protocols/wlr-layer-shell-unstable-v1'],
