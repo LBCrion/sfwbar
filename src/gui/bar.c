@@ -320,7 +320,7 @@ static void bar_style_updated ( GtkWidget *self )
   BarPrivate *priv;
   GtkAlign halign, valign;
   GdkRectangle rect;
-  gint dir, size;
+  gint dir, size, msize;
   gboolean horizontal, full_size;
   gchar *end;
 
@@ -347,6 +347,13 @@ static void bar_style_updated ( GtkWidget *self )
     gdk_monitor_get_geometry(priv->current_monitor, &rect);
     if(!priv->size)
       size = horizontal? rect.width : rect.height;
+    else if(!g_strcmp0(priv->size, "auto"))
+    {
+      if(horizontal)
+        gtk_widget_get_preferred_width(priv->box, &msize, &size);
+      else
+        gtk_widget_get_preferred_height(priv->box, &msize, &size);
+    }
     else
     {
       size = g_ascii_strtod(priv->size, &end);
@@ -365,7 +372,6 @@ static void bar_style_updated ( GtkWidget *self )
   if(priv->dir == dir && priv->halign == halign && priv->valign == valign &&
       priv->full_size == full_size)
     return;
-
 
   gtk_layer_set_anchor(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_TOP,
       (dir == GTK_POS_TOP || ((full_size || valign == GTK_ALIGN_START) &&

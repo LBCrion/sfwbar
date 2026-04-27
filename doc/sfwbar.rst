@@ -355,8 +355,9 @@ edge = <direction>
 
 size = <number|string>
   set size of the bar (width for top or bottom bar, height for left or right
-  bar). The argument is a number, specifying the size in pixels or a string.
-  I.e. "800" for 800 pixels or "50%" for 50% of screen size
+  bar). The argument is a number, specifying the size in pixels or a string
+  (I.e. "800" for 800 pixels or "50%" for 50% of screen size) or "auto" for
+  a bar dynamically sized to accommodate its contents.
 
 halign = <alignment>
   specified horizontal alignment of the bar if the bar occupies less than 100%
