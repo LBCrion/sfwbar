@@ -84,6 +84,7 @@ libsrc = [
     'src/vm/value.c',
     'src/vm/var.c',
     'src/vm/vm.c',
+    'src/gui/background.c',
     'src/gui/bar.c',
     'src/gui/basewidget.c',
     'src/gui/button.c',

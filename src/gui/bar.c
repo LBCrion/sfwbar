@@ -8,15 +8,13 @@
 #include "meson.h"
 #include "trigger.h"
 #include "wayland.h"
-#include "ext-background-effect-v1.h"
 #include "gui/css.h"
+#include "gui/background.h"
 #include "gui/bar.h"
 #include "gui/monitor.h"
 #include "gui/grid.h"
 #include "gui/taskbarshell.h"
 #include "util/string.h"
-
-#define EXT_BACKGROUND_EFFECT_VERSION 1
 
 G_DEFINE_TYPE_WITH_CODE (Bar, bar, GTK_TYPE_WINDOW, G_ADD_PRIVATE (Bar))
 
@@ -47,15 +45,14 @@ GEnumValue bar_layers[] = {
 };
 
 GEnumValue bar_background[] = {
-  { BAR_BACKGROUND_EFFECT_NONE, "none", "none" },
-  { BAR_BACKGROUND_EFFECT_BLUR, "blur", "blur" },
+  { BACKGROUND_EFFECT_NONE, "none", "none" },
+  { BACKGROUND_EFFECT_BLUR, "blur", "blur" },
   { 0, NULL, NULL },
 };
 
 static GHashTable *bar_list;
 static gint bar_count;
 extern GtkApplication *application;
-static struct ext_background_effect_manager_v1 *bar_effect_manager;
 
 static void bar_revealer_notify ( GtkRevealer *revealer, GParamSpec *spec,
     GtkWidget *self )
@@ -327,42 +324,6 @@ static void bar_destroy ( GtkWidget *self )
   GTK_WIDGET_CLASS(bar_parent_class)->destroy(self);
 }
 
-void bar_effect_handle ( GtkWidget *self )
-{
-  BarPrivate *priv;
-  struct wl_compositor *compositor;
-  struct wl_surface *surface;
-  struct wl_region *region;
-  GdkWindow *gwin;
-
-  priv = bar_get_instance_private(BAR(self));
-
-  if(!bar_effect_manager || !(gwin = gtk_widget_get_window(self)) ||
-      !(surface = gdk_wayland_window_get_wl_surface(gwin)) )
-    return;
-
-  if(!priv->effect)
-    priv->effect = ext_background_effect_manager_v1_get_background_effect(
-        bar_effect_manager, surface);
-
-  compositor = gdk_wayland_display_get_wl_compositor(
-      gdk_display_get_default());
-  region = wl_compositor_create_region(compositor);
-  if(priv->background == BAR_BACKGROUND_EFFECT_BLUR)
-    wl_region_add(region, 0, 0,
-        gdk_window_get_width(gwin),
-        gdk_window_get_height(gwin));
-  ext_background_effect_surface_v1_set_blur_region(priv->effect, region);
-  wl_region_destroy(region);
-
-}
-
-static void bar_size_allocate ( GtkWidget *self, GdkRectangle *allocation )
-{
-  GTK_WIDGET_CLASS(bar_parent_class)->size_allocate(self, allocation);
-  bar_effect_handle(self);
-}
-
 static void bar_style_updated ( GtkWidget *self )
 {
   BarPrivate *priv;
@@ -453,7 +414,6 @@ static void bar_map ( GtkWidget *self )
 {
   GTK_WIDGET_CLASS(bar_parent_class)->map(self);
   bar_style_updated(self);
-  bar_effect_handle(self);
 }
 
 static void bar_init ( Bar *self )
@@ -523,7 +483,7 @@ static void bar_get_property ( GObject *self, guint id, GValue *value,
           (priv->overrides & BAR_OVERRIDE_VALIGN)? priv->override_valign : -1);
       break;
     case BAR_BACKGROUND:
-      g_value_set_enum(value, priv->background);
+      g_value_set_enum(value, background_effect_get(GTK_WIDGET(self)));
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
@@ -601,8 +561,7 @@ static void bar_set_property ( GObject *self, guint id,
       bar_style_updated(GTK_WIDGET(self));
       break;
     case BAR_BACKGROUND:
-      priv->background = g_value_get_enum(value);
-      bar_effect_handle(GTK_WIDGET(self));
+      background_effect_set(GTK_WIDGET(self), g_value_get_enum(value));
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
@@ -617,16 +576,12 @@ static void bar_class_init ( BarClass *kclass )
   GTK_WIDGET_CLASS(kclass)->drag_motion = bar_drag_motion;
   GTK_WIDGET_CLASS(kclass)->drag_leave = bar_drag_leave;
   GTK_WIDGET_CLASS(kclass)->style_updated = bar_style_updated;
-  GTK_WIDGET_CLASS(kclass)->size_allocate = bar_size_allocate;
   GTK_WIDGET_CLASS(kclass)->map = bar_map;
 
   G_OBJECT_CLASS(kclass)->get_property = bar_get_property;
   G_OBJECT_CLASS(kclass)->set_property = bar_set_property;
 
-  bar_effect_manager = wayland_iface_register(
-      ext_background_effect_manager_v1_interface.name,
-      EXT_BACKGROUND_EFFECT_VERSION, EXT_BACKGROUND_EFFECT_VERSION,
-      &ext_background_effect_manager_v1_interface);
+  background_effect_init();
   g_unix_signal_add(SIGUSR2, (GSourceFunc)bar_visibility_toggle_all, NULL);
   g_object_set(G_OBJECT(gtk_settings_get_default()), "gtk-enable-animations",
         TRUE, NULL);
@@ -638,7 +593,7 @@ static void bar_class_init ( BarClass *kclass )
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BAR_BACKGROUND,
       g_param_spec_enum("background", "background", "sfwbar_config",
         g_enum_register_static("bar_background", bar_background),
-        BAR_BACKGROUND_EFFECT_NONE, G_PARAM_READWRITE));
+        BACKGROUND_EFFECT_NONE, G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BAR_MARGIN,
       g_param_spec_int("margin", "margin", "sfwbar_config",
         0, INT_MAX, 0, G_PARAM_READWRITE));
