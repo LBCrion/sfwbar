@@ -324,7 +324,7 @@ static void bar_destroy ( GtkWidget *self )
   GTK_WIDGET_CLASS(bar_parent_class)->destroy(self);
 }
 
-static void bar_style_updated ( GtkWidget *self )
+static gboolean bar_resize ( GtkWidget *self )
 {
   BarPrivate *priv;
   GtkAlign halign, valign;
@@ -333,7 +333,7 @@ static void bar_style_updated ( GtkWidget *self )
   gboolean horizontal, full_size;
   gchar *end;
 
-  g_return_if_fail(IS_BAR(self));
+  g_return_val_if_fail(IS_BAR(self), G_SOURCE_REMOVE);
   priv = bar_get_instance_private(BAR(self));
   GTK_WIDGET_CLASS(bar_parent_class)->style_updated(self);
 
@@ -362,6 +362,7 @@ static void bar_style_updated ( GtkWidget *self )
         gtk_widget_get_preferred_width(priv->box, &msize, &size);
       else
         gtk_widget_get_preferred_height(priv->box, &msize, &size);
+      size+= priv->margin * 2;
     }
     else
     {
@@ -369,7 +370,7 @@ static void bar_style_updated ( GtkWidget *self )
       if(*end=='%')
         size = (horizontal?  rect.width : rect.height) * size / 100;
     }
-    size -= priv->margin*2;
+    size = MIN(size, horizontal? rect.width : rect.height) - priv->margin * 2;
     gtk_widget_set_size_request(GTK_WIDGET(priv->revealer),
         horizontal? size : 1, horizontal? 1 : size);
     gtk_widget_set_size_request(self,
@@ -380,7 +381,7 @@ static void bar_style_updated ( GtkWidget *self )
 
   if(priv->dir == dir && priv->halign == halign && priv->valign == valign &&
       priv->full_size == full_size)
-    return;
+    return G_SOURCE_REMOVE;
 
   gtk_layer_set_anchor(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_TOP,
       (dir == GTK_POS_TOP || ((full_size || valign == GTK_ALIGN_START) &&
@@ -398,8 +399,7 @@ static void bar_style_updated ( GtkWidget *self )
   if(priv->dir != dir)
   {
     gtk_orientable_set_orientation(GTK_ORIENTABLE(priv->box),
-        (dir==GTK_POS_TOP || dir==GTK_POS_BOTTOM)?
-        GTK_ORIENTATION_HORIZONTAL:GTK_ORIENTATION_VERTICAL);
+        horizontal?  GTK_ORIENTATION_HORIZONTAL : GTK_ORIENTATION_VERTICAL);
     priv->dir = dir;
     trigger_emit("bar-direction");
   }
@@ -407,13 +407,29 @@ static void bar_style_updated ( GtkWidget *self )
   priv->valign = valign;
   priv->full_size = full_size;
 
-  g_return_if_fail(IS_BAR(self));
+  return G_SOURCE_REMOVE;
+}
+
+static void bar_style_updated ( GtkWidget *self )
+{
+  bar_resize(self);
+}
+
+static void bar_size_allocate ( GtkWidget *self, GtkAllocation *alloc )
+{
+  BarPrivate *priv;
+
+  GTK_WIDGET_CLASS(bar_parent_class)->size_allocate(self, alloc);
+
+  priv = bar_get_instance_private(BAR(self));
+  if(!g_strcmp0(priv->size, "auto"))
+    g_idle_add((GSourceFunc)bar_resize, self);
 }
 
 static void bar_map ( GtkWidget *self )
 {
   GTK_WIDGET_CLASS(bar_parent_class)->map(self);
-  bar_style_updated(self);
+  bar_resize(self);
 }
 
 static void bar_init ( Bar *self )
@@ -428,7 +444,7 @@ static void bar_margin_update ( GtkWidget *self, gint margin )
   gtk_layer_set_margin(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_LEFT, margin);
   gtk_layer_set_margin(GTK_WINDOW(self), GTK_LAYER_SHELL_EDGE_RIGHT, margin);
 #endif
-  bar_style_updated(self);
+  bar_resize(self);
 }
 
 static void bar_get_property ( GObject *self, guint id, GValue *value,
@@ -522,7 +538,7 @@ static void bar_set_property ( GObject *self, guint id,
     case BAR_SIZE:
       g_clear_pointer(&priv->size, g_free);
       priv->size = g_strdup(g_value_get_string(value));
-      bar_style_updated(GTK_WIDGET(self));
+      bar_resize(GTK_WIDGET(self));
       break;
     case BAR_EXCLUSIVE_ZONE:
       bar_set_exclusive_zone(GTK_WIDGET(self), g_value_get_string(value));
@@ -544,21 +560,21 @@ static void bar_set_property ( GObject *self, guint id,
         break;
       priv->override_edge = g_value_get_enum(value);
       priv->overrides |= BAR_OVERRIDE_EDGE;
-      bar_style_updated(GTK_WIDGET(self));
+      bar_resize(GTK_WIDGET(self));
       break;
     case BAR_HALIGN:
       if(g_value_get_enum(value)==-1)
         break;
       priv->override_halign = g_value_get_enum(value);
       priv->overrides |= BAR_OVERRIDE_HALIGN;
-      bar_style_updated(GTK_WIDGET(self));
+      bar_resize(GTK_WIDGET(self));
       break;
     case BAR_VALIGN:
       if(g_value_get_enum(value)==-1)
         break;
       priv->override_valign = g_value_get_enum(value);
       priv->overrides |= BAR_OVERRIDE_VALIGN;
-      bar_style_updated(GTK_WIDGET(self));
+      bar_resize(GTK_WIDGET(self));
       break;
     case BAR_BACKGROUND:
       background_effect_set(GTK_WIDGET(self), g_value_get_enum(value));
@@ -576,6 +592,7 @@ static void bar_class_init ( BarClass *kclass )
   GTK_WIDGET_CLASS(kclass)->drag_motion = bar_drag_motion;
   GTK_WIDGET_CLASS(kclass)->drag_leave = bar_drag_leave;
   GTK_WIDGET_CLASS(kclass)->style_updated = bar_style_updated;
+  GTK_WIDGET_CLASS(kclass)->size_allocate = bar_size_allocate;
   GTK_WIDGET_CLASS(kclass)->map = bar_map;
 
   G_OBJECT_CLASS(kclass)->get_property = bar_get_property;
@@ -893,7 +910,7 @@ void bar_set_exclusive_zone ( GtkWidget *self, const gchar *zone )
   g_free(priv->ezone);
   priv->ezone = g_strdup(zone);
 
-  if(!zone || !g_ascii_strcasecmp(zone,"auto"))
+  if(!zone || !g_ascii_strcasecmp(zone, "auto"))
     gtk_layer_auto_exclusive_zone_enable(GTK_WINDOW(self));
   else
     gtk_layer_set_exclusive_zone(GTK_WINDOW(self),
@@ -1022,7 +1039,7 @@ void bar_set_size ( GtkWidget *self, const gchar *size )
   priv = bar_get_instance_private(BAR(self));
   g_free(priv->size);
   priv->size = g_strdup(size);
-  bar_style_updated(self);
+  bar_resize(self);
 }
 
 void bar_sensor_cancel_hide( GtkWidget *self )
@@ -1088,7 +1105,7 @@ void bar_set_transition ( GtkWidget *self, guint duration )
 
   priv->sensor_transition = duration;
   gtk_revealer_set_transition_duration(priv->revealer, duration);
-  bar_style_updated(self);
+  bar_resize(self);
   for(iter = priv->mirror_children; iter; iter=g_list_next(iter))
     bar_set_transition(iter->data, duration);
 }
@@ -1147,7 +1164,7 @@ GtkWidget *bar_new ( gchar *name )
 #endif
   gtk_layer_set_layer(GTK_WINDOW(self), GTK_LAYER_SHELL_LAYER_TOP);
   gtk_layer_set_monitor(GTK_WINDOW(self), priv->current_monitor);
-  bar_style_updated(self);
+  bar_resize(self);
   gtk_widget_show(priv->box);
   gtk_widget_show(priv->ebox);
   gtk_widget_show(GTK_WIDGET(priv->revealer));

@@ -223,7 +223,7 @@ static void flow_grid_class_init ( FlowGridClass *kclass )
   widget_class->destroy = flow_grid_destroy;
   widget_class->style_updated = flow_grid_style_updated;
 
-  kclass->limit = TRUE;
+  kclass->limit = FALSE;
   kclass->fill = TRUE;
 
   G_OBJECT_CLASS(kclass)->get_property = flow_grid_get_property;
