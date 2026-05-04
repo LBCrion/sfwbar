@@ -67,17 +67,19 @@ void popup_get_gravity ( GtkWidget *widget, GdkGravity *wanchor,
   }
 }
 
-static void popup_popdown ( GtkWidget *widget )
+static void popup_popdown ( GtkWidget *popup )
 {
   GdkSeat *seat;
 
-  if(window_ref_check(widget))
+  if(window_ref_check(popup))
     return;
-  window_collapse_popups(widget);
-  gtk_widget_hide(widget);
-  if( (seat = g_object_get_data(G_OBJECT(widget), "seat")) )
+  window_collapse_popups(popup);
+  gtk_widget_hide(popup);
+  gtk_window_set_transient_for(GTK_WINDOW(popup), NULL);
+  if( (seat = g_object_get_data(G_OBJECT(popup), "seat")) )
       gdk_seat_ungrab(seat);
-  gtk_grab_remove(gtk_bin_get_child(GTK_BIN(widget)));
+  gtk_widget_hide(gtk_bin_get_child(GTK_BIN(popup)));
+  gtk_grab_remove(gtk_bin_get_child(GTK_BIN(popup)));
 }
 
 void popup_popdown_autoclose ( void )
@@ -133,11 +135,11 @@ static void popup_transfer_window_grab (GtkWidget *widget, GdkSeat *seat)
 
   attributes_mask = GDK_WA_X | GDK_WA_Y | GDK_WA_NOREDIR;
 
-  parent = gdk_screen_get_root_window (gtk_widget_get_screen (widget));
-  window = gdk_window_new (parent, &attributes, attributes_mask);
-  gtk_widget_register_window (widget, window);
+  parent = gdk_screen_get_root_window(gtk_widget_get_screen (widget));
+  window = gdk_window_new(parent, &attributes, attributes_mask);
+  gtk_widget_register_window(gtk_bin_get_child(GTK_BIN(widget)), window);
 
-  gdk_window_show (window);
+  gdk_window_show(window);
   gdk_seat_grab(seat, window, grab_caps, TRUE, NULL, NULL, NULL, NULL);
   g_object_set_data (G_OBJECT (gtk_widget_get_window(widget)),
       "gdk-attached-grab-window", window);
@@ -170,7 +172,7 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkSeat *seat )
   rect.y = 0;
   rect.width = gdk_window_get_width(gparent);
   rect.height = gdk_window_get_height(gparent);
-  popup_get_gravity(parent,&wanchor,&panchor);
+  popup_get_gravity(parent, &wanchor, &panchor);
   window_ref(gtk_widget_get_ancestor(parent, GTK_TYPE_WINDOW), popup);
 
   if(!seat)
@@ -193,8 +195,9 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkSeat *seat )
   transfer = g_object_get_data(G_OBJECT(gpopup), "gdk-attached-grab-window");
   if(transfer)
   {
-    gdk_seat_grab(seat, gtk_widget_get_window(child), grab_caps, TRUE, NULL, NULL, NULL, NULL);
-    gtk_widget_unregister_window(popup, transfer);
+    gdk_seat_grab(seat, gtk_widget_get_window(child), grab_caps, TRUE, NULL,
+        NULL, NULL, NULL);
+    gtk_widget_unregister_window(child, transfer);
     gdk_window_destroy(transfer);
     g_object_set_data (G_OBJECT (gpopup), "gdk-attached-grab-window", NULL);
     gtk_grab_add(child);
