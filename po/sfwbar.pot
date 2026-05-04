@@ -207,3 +207,6 @@ msgstr ""
 
 msgid  "Connecting ..."
 msgstr ""
+
+msgid  "Name"
+msgstr ""

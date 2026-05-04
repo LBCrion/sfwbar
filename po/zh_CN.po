@@ -207,3 +207,6 @@ msgstr "蓝牙"
 
 msgid  "Connecting ..."
 msgstr "连结中"
+
+msgid  "Name"
+msgstr "设备名"
