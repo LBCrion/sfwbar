@@ -304,6 +304,11 @@ and Meta. Multiple modifiers can be added, i.e.
 can use this action to set initial configuration for a widget.  See
 \fBActions\fP section for more details on how actions are specified.
 .TP
+.B background_effect = [blur|none]
+request compositor to apply a background effect underneath the widget.
+Currently background effect protocol only allows for blue effect or no
+effect.
+.TP
 .B disable = [true|false]
 can be sued to disable a widget without commenting out the entire section.
 I.e. setting \fIdisable = true;\fP will discard the widget definition.

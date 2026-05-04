@@ -251,6 +251,11 @@ action
   can use this action to set initial configuration for a widget.  See
   ``Actions`` section for more details on how actions are specified.
 
+background_effect = [blur|none]
+  request compositor to apply a background effect underneath the widget.
+  Currently background effect protocol only allows for blue effect or no
+  effect.
+
 disable = [true|false]
   can be sued to disable a widget without commenting out the entire section.
   I.e. setting `disable = true;` will discard the widget definition.
