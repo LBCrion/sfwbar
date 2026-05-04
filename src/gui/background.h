@@ -15,6 +15,8 @@ typedef struct _background_effect_priv {
   struct ext_background_effect_surface_v1 *effect;
 } background_effect_priv_t;
 
+extern GType background_effect_enum;
+
 void background_effect_init ( void );
 void background_effect_set ( GtkWidget *widget, background_effect_t type );
 background_effect_t background_effect_get ( GtkWidget *widget );

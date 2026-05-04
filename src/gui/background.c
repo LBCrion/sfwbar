@@ -6,10 +6,18 @@
 #include <gdk/gdkwayland.h>
 #include "wayland.h"
 #include "gui/background.h"
+#include "gui/basewidget.h"
 
 #define EXT_BACKGROUND_EFFECT_VERSION 1
 
 static struct ext_background_effect_manager_v1 *background_effect_manager;
+GType background_effect_enum;
+
+GEnumValue background_effect_enum_defs[] = {
+  { BACKGROUND_EFFECT_NONE, "none", "none" },
+  { BACKGROUND_EFFECT_BLUR, "blur", "blur" },
+  { 0, NULL, NULL },
+};
 
 static void background_effect_region_calc ( GtkWidget *widget,
     struct wl_region *region )
@@ -18,39 +26,42 @@ static void background_effect_region_calc ( GtkWidget *widget,
   GtkStateFlags flags;
   GtkBorder margin;
   GtkAllocation alloc;
-  gint radius, sx, sy, w, h, x, y, t;
+  gint x, y, w, h, r, dx, dy, t;
 
   style = gtk_widget_get_style_context(widget);
   flags = gtk_style_context_get_state(style);
-  gtk_style_context_get_margin(style, flags, &margin);
   gtk_widget_get_allocation(widget, &alloc);
   gtk_style_context_get(style, flags,
-      GTK_STYLE_PROPERTY_BORDER_RADIUS, &radius, NULL);
+      GTK_STYLE_PROPERTY_BORDER_RADIUS, &r, NULL);
 
-  sx = margin.left;
-  sy = margin.top;
-  w = alloc.width - margin.left - margin.right;
-  h = alloc.height - margin.top - margin.bottom;
-  wl_region_add(region, sx, sy + radius, w, h - radius*2);
+  if(GTK_IS_MENU(widget))
+    margin.left = margin.right = margin.top = margin.bottom = 0;
+  else
+    gtk_style_context_get_margin(style, flags, &margin);
 
-  t = radius / 16;
-  x = radius;
-  y = 0;
+  gtk_widget_translate_coordinates(widget, gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW),
+      margin.left + r, margin.right + r, &x, &y);
+  w = alloc.width - margin.left - margin.right - 2*r;
+  h = alloc.height - margin.top - margin.bottom - 2*r;
+  wl_region_add(region, x - r, y, w + r*2, h);
+
+  t = r  / 16;
+  dx = r;
+  dy = 0;
   do {
-    wl_region_add(region, sx + x, sy + y, w - 2*x, 1);
-    wl_region_add(region, sx + x, sy + h - 1 - y, w - 2*x, 1);
+    wl_region_add(region, x - dx, y - dy, w + 2*dx, 1);
+    wl_region_add(region, x - dx, y + h - 1 + dy, w + 2*dx, 1);
+    dy++;
+    t += dy;
 
-    y = y + 1;
-    t = t + y;
-
-    if(t-x >= 0)
+    if(t-dx >= 0)
     {
-      wl_region_add(region, sx + y-1, sy + x, w - 2*y - 2, 1);
-      wl_region_add(region, sx + y-1, sy + h - 1 - x, w - 2*y - 2, 1);
-      t = t - x;
-      x = x - 1;
+      wl_region_add(region, x - dy + 1, y - dx, w + 2*dy - 2, 1);
+      wl_region_add(region, x - dy + 1, y + h - 1 + dx, w + 2*dy - 2, 1);
+      t -= dx;
+      dx--;
     }
-  } while(x>=y);
+  } while(dx>=dy);
 }
 
 void background_effect_apply ( GtkWidget *widget )
@@ -70,7 +81,9 @@ void background_effect_apply ( GtkWidget *widget )
   if(!priv->invalid)
     return;
 
-  if( !(gwin = gtk_widget_get_window(widget)) ||
+  if(IS_BASE_WIDGET(widget))
+    widget = base_widget_get_child(widget);
+  if(!(gwin = gtk_widget_get_window(widget)) ||
       !gdk_window_is_visible(gwin) ||
       !(surface = gdk_wayland_window_get_wl_surface(gwin)) )
     return;
@@ -113,10 +126,16 @@ static void background_effect_map ( GtkWidget *self, gpointer d )
 
 void background_effect_init ( void )
 {
+  if(background_effect_manager)
+    return;
+
   background_effect_manager = wayland_iface_register(
       ext_background_effect_manager_v1_interface.name,
       EXT_BACKGROUND_EFFECT_VERSION, EXT_BACKGROUND_EFFECT_VERSION,
       &ext_background_effect_manager_v1_interface);
+
+  background_effect_enum = g_enum_register_static("background_effect",
+      background_effect_enum_defs);
 }
 
 background_effect_t background_effect_get ( GtkWidget *widget )
@@ -149,7 +168,7 @@ void background_effect_set ( GtkWidget *widget, background_effect_t type )
 
   priv->type = type;
   background_effect_apply(widget);
-  g_signal_connect(G_OBJECT(widget), "map",
+  g_signal_connect(G_OBJECT(widget), "map-event",
       G_CALLBACK(background_effect_map), NULL);
   g_signal_connect(G_OBJECT(widget), "size-allocate",
       G_CALLBACK(background_effect_size_allocate), NULL);

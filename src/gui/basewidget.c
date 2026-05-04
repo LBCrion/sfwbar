@@ -7,6 +7,7 @@
 #include "module.h"
 #include "meson.h"
 #include "scanner.h"
+#include "gui/background.h"
 #include "gui/basewidget.h"
 #include "gui/bar.h"
 #include "gui/css.h"
@@ -30,6 +31,7 @@ enum {
   BASE_WIDGET_INTERVAL,
   BASE_WIDGET_ACTION,
   BASE_WIDGET_CLASS,
+  BASE_WIDGET_EFFECT,
   BASE_WIDGET_DISABLE,
 };
 
@@ -480,6 +482,8 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
       G_OBJECT(dest), "local", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "class",
       G_OBJECT(dest), "class", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "background_effect",
+      G_OBJECT(dest), "background_effect", G_BINDING_SYNC_CREATE);
 }
 
 static gboolean base_widget_query_tooltip ( GtkWidget *self, gint x, gint y,
@@ -663,6 +667,9 @@ static void base_widget_get_property ( GObject *self, guint id, GValue *value,
     case BASE_WIDGET_CLASS:
       g_value_set_string(value, priv->class);
       break;
+    case BASE_WIDGET_EFFECT:
+      g_value_set_enum(value, background_effect_get(GTK_WIDGET(self)));
+      break;
     case BASE_WIDGET_DISABLE:
       g_value_set_boolean(value, priv->disabled);
       break;
@@ -790,6 +797,9 @@ static void base_widget_set_property ( GObject *self, guint id,
         css_set_class(base_widget_get_child(GTK_WIDGET(self)), priv->class,
             TRUE);
       break;
+    case BASE_WIDGET_EFFECT:
+      background_effect_set(GTK_WIDGET(self), g_value_get_enum(value));
+      break;
     case BASE_WIDGET_DISABLE:
       priv->disabled = g_value_get_boolean(value);
       break;
@@ -831,6 +841,7 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
   GTK_WIDGET_CLASS(kclass)->query_tooltip = base_widget_query_tooltip;
   GTK_WIDGET_CLASS(kclass)->map = base_widget_map;
 
+  background_effect_init();
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_STORE,
       g_param_spec_pointer("store", "store", "no_config", G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_ID,
@@ -871,6 +882,10 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
   g_object_class_install_property(G_OBJECT_CLASS(kclass),
       BASE_WIDGET_USER_STATE, g_param_spec_uint("user-state",
         "user-state", "no_config", 0, UINT_MAX, 0, G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass),BASE_WIDGET_EFFECT,
+      g_param_spec_enum("background_effect", "background effect",
+        "sfwbar_config", background_effect_enum, BACKGROUND_EFFECT_NONE,
+        G_PARAM_READWRITE));
 
   base_widgets = g_ptr_array_new();
   g_object_get(G_OBJECT(gtk_settings_get_default()), "gtk-double-click-time",

@@ -9,7 +9,6 @@
 #include "trigger.h"
 #include "wayland.h"
 #include "gui/css.h"
-#include "gui/background.h"
 #include "gui/bar.h"
 #include "gui/monitor.h"
 #include "gui/grid.h"
@@ -32,7 +31,6 @@ enum {
   BAR_EDGE,
   BAR_HALIGN,
   BAR_VALIGN,
-  BAR_BACKGROUND,
   BAR_N_PROPERTIES,
 };
 
@@ -41,12 +39,6 @@ GEnumValue bar_layers[] = {
   { GTK_LAYER_SHELL_LAYER_BOTTOM, "bottom", "bottom" },
   { GTK_LAYER_SHELL_LAYER_TOP, "top", "top" },
   { GTK_LAYER_SHELL_LAYER_OVERLAY, "overlay", "overlay" },
-  { 0, NULL, NULL },
-};
-
-GEnumValue bar_background[] = {
-  { BACKGROUND_EFFECT_NONE, "none", "none" },
-  { BACKGROUND_EFFECT_BLUR, "blur", "blur" },
   { 0, NULL, NULL },
 };
 
@@ -498,9 +490,6 @@ static void bar_get_property ( GObject *self, guint id, GValue *value,
       g_value_set_enum(value,
           (priv->overrides & BAR_OVERRIDE_VALIGN)? priv->override_valign : -1);
       break;
-    case BAR_BACKGROUND:
-      g_value_set_enum(value, background_effect_get(GTK_WIDGET(self)));
-      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
   }
@@ -576,9 +565,6 @@ static void bar_set_property ( GObject *self, guint id,
       priv->overrides |= BAR_OVERRIDE_VALIGN;
       bar_resize(GTK_WIDGET(self));
       break;
-    case BAR_BACKGROUND:
-      background_effect_set(GTK_WIDGET(self), g_value_get_enum(value));
-      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
   }
@@ -598,7 +584,6 @@ static void bar_class_init ( BarClass *kclass )
   G_OBJECT_CLASS(kclass)->get_property = bar_get_property;
   G_OBJECT_CLASS(kclass)->set_property = bar_set_property;
 
-  background_effect_init();
   g_unix_signal_add(SIGUSR2, (GSourceFunc)bar_visibility_toggle_all, NULL);
   g_object_set(G_OBJECT(gtk_settings_get_default()), "gtk-enable-animations",
         TRUE, NULL);
@@ -607,10 +592,6 @@ static void bar_class_init ( BarClass *kclass )
       g_param_spec_enum("layer", "layer", "sfwbar_config",
         g_enum_register_static("bar_layer", bar_layers),
         GTK_LAYER_SHELL_LAYER_TOP, G_PARAM_READWRITE));
-  g_object_class_install_property(G_OBJECT_CLASS(kclass), BAR_BACKGROUND,
-      g_param_spec_enum("background", "background", "sfwbar_config",
-        g_enum_register_static("bar_background", bar_background),
-        BACKGROUND_EFFECT_NONE, G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BAR_MARGIN,
       g_param_spec_int("margin", "margin", "sfwbar_config",
         0, INT_MAX, 0, G_PARAM_READWRITE));
@@ -1234,8 +1215,8 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
       G_OBJECT(self), "size", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "layer",
       G_OBJECT(self), "layer", G_BINDING_SYNC_CREATE);
-  g_object_bind_property(G_OBJECT(src), "background",
-      G_OBJECT(self), "background", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "background_effect",
+      G_OBJECT(self), "background_effect", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "exclusive_zone",
       G_OBJECT(self), "exclusive_zone", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "bar_id",
