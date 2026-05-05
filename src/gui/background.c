@@ -12,6 +12,7 @@
 
 static struct ext_background_effect_manager_v1 *background_effect_manager;
 GType background_effect_enum;
+GQuark background_effect_effect_q, background_effect_tag_q;
 
 GEnumValue background_effect_enum_defs[] = {
   { BACKGROUND_EFFECT_NONE, "none", "none" },
@@ -28,78 +29,79 @@ static void background_effect_region_calc ( GtkWidget *widget,
   GtkAllocation alloc;
   gint x, y, w, h, r, dx, dy, t;
 
-  style = gtk_widget_get_style_context(widget);
-  flags = gtk_style_context_get_state(style);
-  gtk_widget_get_allocation(widget, &alloc);
-  gtk_style_context_get(style, flags,
-      GTK_STYLE_PROPERTY_BORDER_RADIUS, &r, NULL);
+  if(background_effect_get(widget) == BACKGROUND_EFFECT_BLUR)
+  {
+    style = gtk_widget_get_style_context(widget);
+    flags = gtk_style_context_get_state(style);
+    gtk_widget_get_allocation(widget, &alloc);
+    gtk_style_context_get(style, flags,
+        GTK_STYLE_PROPERTY_BORDER_RADIUS, &r, NULL);
 
-  if(GTK_IS_MENU(widget))
-    margin.left = margin.right = margin.top = margin.bottom = 0;
-  else
-    gtk_style_context_get_margin(style, flags, &margin);
+    if(GTK_IS_MENU(widget))
+      margin.left = margin.right = margin.top = margin.bottom = 0;
+    else
+      gtk_style_context_get_margin(style, flags, &margin);
 
-  gtk_widget_translate_coordinates(widget, gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW),
-      margin.left + r, margin.right + r, &x, &y);
-  w = alloc.width - margin.left - margin.right - 2*r;
-  h = alloc.height - margin.top - margin.bottom - 2*r;
-  wl_region_add(region, x - r, y, w + r*2, h);
+    gtk_widget_translate_coordinates(widget, gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW),
+        margin.left + r, margin.right + r, &x, &y);
+    w = alloc.width - margin.left - margin.right - 2*r;
+    h = alloc.height - margin.top - margin.bottom - 2*r;
+    wl_region_add(region, x - r, y, w + r*2, h);
 
-  t = r  / 16;
-  dx = r;
-  dy = 0;
-  do {
-    wl_region_add(region, x - dx, y - dy, w + 2*dx, 1);
-    wl_region_add(region, x - dx, y + h - 1 + dy, w + 2*dx, 1);
-    dy++;
-    t += dy;
+    t = r  / 16;
+    dx = r;
+    dy = 0;
+    do {
+      wl_region_add(region, x - dx, y - dy, w + 2*dx, 1);
+      wl_region_add(region, x - dx, y + h - 1 + dy, w + 2*dx, 1);
+      dy++;
+      t += dy;
 
-    if(t-dx >= 0)
-    {
-      wl_region_add(region, x - dy + 1, y - dx, w + 2*dy - 2, 1);
-      wl_region_add(region, x - dy + 1, y + h - 1 + dx, w + 2*dy - 2, 1);
-      t -= dx;
-      dx--;
-    }
-  } while(dx>=dy);
+      if(t-dx >= 0)
+      {
+        wl_region_add(region, x - dy + 1, y - dx, w + 2*dy - 2, 1);
+        wl_region_add(region, x - dy + 1, y + h - 1 + dx, w + 2*dy - 2, 1);
+        t -= dx;
+        dx--;
+      }
+    } while(dx>=dy);
+  }
+  if(GTK_IS_CONTAINER(widget))
+    gtk_container_foreach(GTK_CONTAINER(widget),
+        (GtkCallback)background_effect_region_calc, region);
 }
 
-void background_effect_apply ( GtkWidget *widget )
+void background_effect_apply ( GtkWidget *self )
 {
-  background_effect_priv_t *priv;
+  struct ext_background_effect_surface_v1 *effect;
   struct wl_compositor *compositor;
-  struct wl_surface *surface;
   struct wl_region *region;
+  struct wl_surface *surface;
   GdkWindow *gwin;
 
   if(!background_effect_manager)
     return;
 
-  if( !(priv = g_object_get_data(G_OBJECT(widget), "background_effect_priv")) )
-    return;
-
-  if(!priv->invalid)
-    return;
-
-  if(IS_BASE_WIDGET(widget))
-    widget = base_widget_get_child(widget);
-  if(!(gwin = gtk_widget_get_window(widget)) ||
+  if( !(gwin = gtk_widget_get_window(self)) ||
       !gdk_window_is_visible(gwin) ||
       !(surface = gdk_wayland_window_get_wl_surface(gwin)) )
     return;
 
-  if(!priv->effect)
-    priv->effect = ext_background_effect_manager_v1_get_background_effect(
+  if( !(effect = g_object_get_qdata(G_OBJECT(self),
+          background_effect_effect_q)) )
+  {
+    effect = ext_background_effect_manager_v1_get_background_effect(
         background_effect_manager, surface);
+    g_object_set_qdata(G_OBJECT(self), background_effect_effect_q,
+        effect);
+  }
 
   compositor = gdk_wayland_display_get_wl_compositor(
       gdk_display_get_default());
   region = wl_compositor_create_region(compositor);
+  background_effect_region_calc(self, region);
 
-  if(priv->type == BACKGROUND_EFFECT_BLUR)
-    background_effect_region_calc(widget, region);
-
-  ext_background_effect_surface_v1_set_blur_region(priv->effect, region);
+  ext_background_effect_surface_v1_set_blur_region(effect, region);
   wl_region_destroy(region);
 }
 
@@ -111,17 +113,13 @@ static void background_effect_size_allocate ( GtkWidget *self,
 
 static void background_effect_unmap ( GtkWidget *self, gpointer d )
 {
-  background_effect_priv_t *priv;
+  struct ext_background_effect_surface_v1 *effect;
 
-  if( !(priv = g_object_get_data(G_OBJECT(self), "background_effect_priv")) )
-    return;
-
-  g_clear_pointer(&priv->effect, ext_background_effect_surface_v1_destroy);
-}
-
-static void background_effect_map ( GtkWidget *self, gpointer d )
-{
-  background_effect_apply(self);
+  if((effect = g_object_get_qdata(G_OBJECT(self), background_effect_effect_q)))
+  {
+    g_object_set_qdata(G_OBJECT(self), background_effect_effect_q, NULL);
+    ext_background_effect_surface_v1_destroy(effect);
+  }
 }
 
 void background_effect_init ( void )
@@ -136,42 +134,57 @@ void background_effect_init ( void )
 
   background_effect_enum = g_enum_register_static("background_effect",
       background_effect_enum_defs);
+  background_effect_effect_q =
+    g_quark_from_static_string("background_effect_priv");
+  background_effect_tag_q =
+    g_quark_from_static_string("background_effect_tag");
 }
 
-background_effect_t background_effect_get ( GtkWidget *widget )
+background_effect_t background_effect_get ( GtkWidget *self )
 {
-  background_effect_priv_t *priv;
-
-  if( !(priv = g_object_get_data(G_OBJECT(widget), "background_effect_priv")) )
-    return BACKGROUND_EFFECT_NONE;
-
-  return priv->type;
+  return GPOINTER_TO_INT(g_object_get_qdata(G_OBJECT(self),
+        background_effect_tag_q));
 }
 
-void background_effect_set ( GtkWidget *widget, background_effect_t type )
+void background_effect_surface_init ( GtkWidget *self )
 {
-  background_effect_priv_t *priv;
+  GtkWidget *surface_widget;
 
   if(!background_effect_manager)
     return;
 
-  g_return_if_fail(GTK_IS_WIDGET(widget));
-  if( !(priv = g_object_get_data(G_OBJECT(widget), "background_effect_priv")) )
-  {
-    priv = g_malloc0(sizeof(background_effect_priv_t));
-    priv->invalid = TRUE;
-    g_object_set_data(G_OBJECT(widget), "background_effect_priv", priv);
-  }
-
-  if(!priv->invalid)
+  if( !(surface_widget = gtk_widget_get_ancestor(self, GTK_TYPE_WINDOW)) )
     return;
 
-  priv->type = type;
-  background_effect_apply(widget);
-  g_signal_connect(G_OBJECT(widget), "map-event",
-      G_CALLBACK(background_effect_map), NULL);
-  g_signal_connect(G_OBJECT(widget), "size-allocate",
-      G_CALLBACK(background_effect_size_allocate), NULL);
-  g_signal_connect(G_OBJECT(widget), "unmap",
-      G_CALLBACK(background_effect_unmap), NULL);
+  if(!g_signal_handler_find(surface_widget, G_SIGNAL_MATCH_FUNC,
+      0, 0, NULL, background_effect_apply, NULL))
+    g_signal_connect(G_OBJECT(surface_widget), "map-event",
+        G_CALLBACK(background_effect_apply), NULL);
+  if(!g_signal_handler_find(surface_widget, G_SIGNAL_MATCH_FUNC,
+      0, 0, NULL, background_effect_size_allocate, NULL))
+    g_signal_connect(G_OBJECT(surface_widget), "size-allocate",
+        G_CALLBACK(background_effect_size_allocate), NULL);
+  if(!g_signal_handler_find(surface_widget, G_SIGNAL_MATCH_FUNC,
+      0, 0, NULL, background_effect_unmap, NULL))
+    g_signal_connect(G_OBJECT(surface_widget), "unmap",
+        G_CALLBACK(background_effect_unmap), NULL);
+
+  background_effect_apply(surface_widget);
+}
+
+void background_effect_set ( GtkWidget *self, background_effect_t type )
+{
+  if(!background_effect_manager)
+    return;
+
+  g_return_if_fail(GTK_IS_WIDGET(self));
+
+  g_object_set_qdata(G_OBJECT(self), background_effect_tag_q,
+      GINT_TO_POINTER(type));
+
+  if(!g_signal_handler_find(self, G_SIGNAL_MATCH_FUNC,
+      0, 0, NULL, background_effect_surface_init, NULL))
+    g_signal_connect(G_OBJECT(self), "hierarchy_changed",
+        G_CALLBACK(background_effect_surface_init), NULL);
+  background_effect_surface_init(self);
 }

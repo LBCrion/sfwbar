@@ -9,12 +9,6 @@ typedef enum {
   BACKGROUND_EFFECT_BLUR = 2
 } background_effect_t;
 
-typedef struct _background_effect_priv {
-  gboolean invalid;
-  background_effect_t type;
-  struct ext_background_effect_surface_v1 *effect;
-} background_effect_priv_t;
-
 extern GType background_effect_enum;
 
 void background_effect_init ( void );
