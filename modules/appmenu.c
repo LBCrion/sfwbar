@@ -60,7 +60,6 @@ app_menu_dir_t app_menu_map[] = {
   {"Office", "Office", "applications-office"},
   {"System", "System Tools", "applications-system"},
   {"Utility", "Accessories", "applications-accessories"},
-  {"Core", "Accessories", "applications-accessories"},
   {NULL, NULL}
 };
 
@@ -174,8 +173,9 @@ app_menu_map_entry_t app_menu_additional[] = {
   {"Monitor", "System", TRUE},
   {"Security", "System", TRUE},
   {"Calculator", "Utility", TRUE},
-  {"Clock", "Utility"},
-  {"TextEditor", "Utility"},
+  {"Clock", "Utility", FALSE},
+  {"TextEditor", "Utility", FALSE},
+  {"Core", "Utility", TRUE},
   {NULL, NULL, FALSE}
 };
 
@@ -226,7 +226,7 @@ static app_menu_dir_t *app_menu_cat_lookup ( const gchar *cats )
           }
     }
   }
-  return result?result:&app_menu_map[CATEGORY_DEFAULT];
+  return result? result : &app_menu_map[CATEGORY_DEFAULT];
 }
 
 static void app_menu_item_free ( app_menu_item_t *item )
@@ -323,7 +323,7 @@ static gboolean app_menu_add ( gchar *id )
           cat->local_title? cat->local_title : cat->title);
       menu_item_set_icon(cat->widget, cat->icon);
       menu_item_set_sort_index(cat->widget, 500);
-      submenu = gtk_menu_new();
+      submenu = menu_new(cat->title);
       g_object_set_data(G_OBJECT(submenu), "sort", GINT_TO_POINTER(TRUE));
       gtk_menu_set_reserve_toggle_size(GTK_MENU(submenu), FALSE);
       gtk_menu_item_set_submenu(GTK_MENU_ITEM(cat->widget), submenu);
