@@ -668,7 +668,8 @@ static void base_widget_get_property ( GObject *self, guint id, GValue *value,
       g_value_set_string(value, priv->class);
       break;
     case BASE_WIDGET_EFFECT:
-      g_value_set_enum(value, background_effect_get(GTK_WIDGET(self)));
+      g_value_set_enum(value,
+          background_effect_get(base_widget_get_child(GTK_WIDGET(self))));
       break;
     case BASE_WIDGET_DISABLE:
       g_value_set_boolean(value, priv->disabled);
@@ -798,7 +799,8 @@ static void base_widget_set_property ( GObject *self, guint id,
             TRUE);
       break;
     case BASE_WIDGET_EFFECT:
-      background_effect_set(GTK_WIDGET(self), g_value_get_enum(value));
+      background_effect_set(base_widget_get_child(GTK_WIDGET(self)),
+          g_value_get_enum(value));
       break;
     case BASE_WIDGET_DISABLE:
       priv->disabled = g_value_get_boolean(value);
