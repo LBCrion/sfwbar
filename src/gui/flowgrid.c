@@ -5,6 +5,7 @@
 
 #include "window.h"
 #include "gui/bar.h"
+#include "gui/capture.h"
 #include "gui/css.h"
 #include "gui/flowgrid.h"
 #include "gui/flowitem.h"
@@ -152,6 +153,8 @@ static void flow_grid_set_property ( GObject *self, guint id,
       break;
     case FLOW_GRID_PREVIEW:
       priv->preview = g_value_get_boolean(value);
+      css_set_class(base_widget_get_child(GTK_WIDGET(self)), "preview",
+          priv->preview & capture_support_check(CAPTURE_TYPE_WINDOW));
       break;
     case FLOW_GRID_TOOLTIPS:
       priv->tooltips = g_value_get_boolean(value);
@@ -167,7 +170,6 @@ static void flow_grid_set_property ( GObject *self, guint id,
       if(g_value_get_int(value)>=0)
       {
         priv->cols = g_value_get_int(value);
-        priv->rows = (priv->cols<1);
         flow_grid_invalidate(GTK_WIDGET(self));
       }
       break;
@@ -175,7 +177,6 @@ static void flow_grid_set_property ( GObject *self, guint id,
       if(g_value_get_int(value)>=0)
       {
         priv->rows = g_value_get_int(value);
-        priv->cols = (priv->rows<1);
         flow_grid_invalidate(GTK_WIDGET(self));
       }
       break;
@@ -375,7 +376,7 @@ gboolean flow_grid_update ( GtkWidget *self )
 {
   FlowGridPrivate *priv;
   GList *iter;
-  gint count, i, dim, axis_cols;
+  gint count, i, dim, axis_cols, rows, cols, dir;
 
   g_return_val_if_fail(IS_FLOW_GRID(self), FALSE);
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
@@ -384,6 +385,16 @@ gboolean flow_grid_update ( GtkWidget *self )
     return TRUE;
   priv->invalid = FALSE;
 
+  cols = priv->cols;
+  rows = priv->rows;
+  if(cols<1 && rows<1)
+  {
+    gtk_widget_style_get(priv->grid, "direction", &dir, NULL);
+    if(dir == GTK_POS_LEFT || dir == GTK_POS_RIGHT)
+      rows = 1;
+    else
+      cols = 1;
+  }
   gtk_container_foreach(GTK_CONTAINER(priv->grid),
       (GtkCallback)flow_grid_remove_widget_maybe, self);
 
@@ -400,12 +411,12 @@ gboolean flow_grid_update ( GtkWidget *self )
   }
 
   axis_cols = (priv->primary_axis == FLOW_GRID_AXIS_COLS ||
-     (priv->primary_axis == FLOW_GRID_AXIS_DEFAULT && priv->rows>0));
+     (priv->primary_axis == FLOW_GRID_AXIS_DEFAULT && rows>0));
 
   if(axis_cols)
-    dim = priv->rows>0? priv->rows : (count/priv->cols) + !!(count%priv->cols);
+    dim = rows>0? rows : (count/cols) + !!(count%cols);
   else
-    dim = priv->cols>0? priv->cols : (count/priv->rows) + !!(count%priv->rows);
+    dim = cols>0? cols : (count/rows) + !!(count%rows);
 
   i = 0;
   for(iter=priv->children; iter; iter=g_list_next(iter))
