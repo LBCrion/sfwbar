@@ -114,7 +114,7 @@ static gchar *taskbar_popup_get_appid ( GtkWidget *self )
 {
   TaskbarPopupPrivate *priv;
 
-  g_return_val_if_fail(IS_TASKBAR_POPUP(self),NULL);
+  g_return_val_if_fail(IS_TASKBAR_POPUP(self), NULL);
   priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
 
   return priv->appid;
@@ -291,6 +291,7 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *shell )
 
   priv->shell = shell;
   priv->tgroup = taskbar_new(self);
+  gtk_widget_set_name(base_widget_get_child(priv->tgroup), "taskbar_popup_grid");
   g_object_set(G_OBJECT(priv->tgroup), "preview", TRUE, NULL);
   g_object_bind_property(G_OBJECT(priv->shell), "store",
       G_OBJECT(priv->tgroup), "store", G_BINDING_SYNC_CREATE);

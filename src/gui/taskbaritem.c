@@ -130,7 +130,7 @@ static void taskbar_item_update ( GtkWidget *self )
   css_set_class(base_widget_get_child(self), "focused",
       wintree_is_focused(priv->win->uid));
   css_set_class(base_widget_get_child(self), "preview",
-      preview && priv->win->image);
+      preview && capture_support_check(CAPTURE_TYPE_WINDOW));
 
   if(priv->label && g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)),
         priv->win->title))
