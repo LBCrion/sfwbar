@@ -127,13 +127,15 @@ void background_effect_init ( void )
   if(background_effect_manager)
     return;
 
+  if(!background_effect_enum)
+    background_effect_enum = g_enum_register_static("background_effect",
+        background_effect_enum_defs);
+
   background_effect_manager = wayland_iface_register(
       ext_background_effect_manager_v1_interface.name,
       EXT_BACKGROUND_EFFECT_VERSION, EXT_BACKGROUND_EFFECT_VERSION,
       &ext_background_effect_manager_v1_interface);
 
-  background_effect_enum = g_enum_register_static("background_effect",
-      background_effect_enum_defs);
   background_effect_effect_q =
     g_quark_from_static_string("background_effect_priv");
   background_effect_tag_q =
