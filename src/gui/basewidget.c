@@ -32,7 +32,16 @@ enum {
   BASE_WIDGET_ACTION,
   BASE_WIDGET_CLASS,
   BASE_WIDGET_EFFECT,
+  BASE_WIDGET_HEXPAND,
+  BASE_WIDGET_VEXPAND,
   BASE_WIDGET_DISABLE,
+};
+
+GEnumValue tristate_defs[] = {
+  { TRISTATE_UNINIT, "default", "default" },
+  { TRISTATE_TRUE, "true", "true" },
+  { TRISTATE_FALSE, "false", "false" },
+  { 0, NULL, NULL },
 };
 
 static GList *widgets_scan;
@@ -484,6 +493,10 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
       G_OBJECT(dest), "class", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "background_effect",
       G_OBJECT(dest), "background_effect", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "hexpand",
+      G_OBJECT(dest), "hexpand", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "vexpand",
+      G_OBJECT(dest), "vexpand", G_BINDING_SYNC_CREATE);
 }
 
 static gboolean base_widget_query_tooltip ( GtkWidget *self, gint x, gint y,
@@ -671,6 +684,12 @@ static void base_widget_get_property ( GObject *self, guint id, GValue *value,
       g_value_set_enum(value,
           background_effect_get(base_widget_get_child(GTK_WIDGET(self))));
       break;
+    case BASE_WIDGET_HEXPAND:
+      g_value_set_enum(value, priv->hexpand);
+      break;
+    case BASE_WIDGET_VEXPAND:
+      g_value_set_enum(value, priv->vexpand);
+      break;
     case BASE_WIDGET_DISABLE:
       g_value_set_boolean(value, priv->disabled);
       break;
@@ -802,6 +821,18 @@ static void base_widget_set_property ( GObject *self, guint id,
       background_effect_set(base_widget_get_child(GTK_WIDGET(self)),
           g_value_get_enum(value));
       break;
+    case BASE_WIDGET_HEXPAND:
+      priv->hexpand = g_value_get_enum(value);
+      if(priv->hexpand != TRISTATE_UNINIT)
+        gtk_widget_set_hexpand(base_widget_get_child(GTK_WIDGET(self)),
+            priv->hexpand);
+      break;
+    case BASE_WIDGET_VEXPAND:
+      priv->vexpand = g_value_get_enum(value);
+      if(priv->vexpand != TRISTATE_UNINIT)
+        gtk_widget_set_vexpand(base_widget_get_child(GTK_WIDGET(self)),
+            priv->vexpand);
+      break;
     case BASE_WIDGET_DISABLE:
       priv->disabled = g_value_get_boolean(value);
       break;
@@ -823,6 +854,7 @@ static void base_widget_map ( GtkWidget *self )
 
 static void base_widget_class_init ( BaseWidgetClass *kclass )
 {
+  GType tristate_enum;
   kclass->action_exec = base_widget_action_exec_impl;
   kclass->mirror = base_widget_mirror_impl;
 
@@ -843,7 +875,7 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
   GTK_WIDGET_CLASS(kclass)->query_tooltip = base_widget_query_tooltip;
   GTK_WIDGET_CLASS(kclass)->map = base_widget_map;
 
-  background_effect_init();
+  tristate_enum = g_enum_register_static("tristate", tristate_defs);
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_STORE,
       g_param_spec_pointer("store", "store", "no_config", G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_ID,
@@ -888,6 +920,12 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
       g_param_spec_enum("background_effect", "background effect",
         "sfwbar_config", background_effect_enum, BACKGROUND_EFFECT_NONE,
         G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_HEXPAND,
+      g_param_spec_enum("hexpand", "horizontal expand", "sfwbar_config",
+        tristate_enum, TRISTATE_UNINIT, G_PARAM_READWRITE));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_VEXPAND,
+      g_param_spec_enum("vexpand", "vertical expand", "sfwbar_config",
+        tristate_enum, TRISTATE_UNINIT, G_PARAM_READWRITE));
 
   base_widgets = g_ptr_array_new();
   g_object_get(G_OBJECT(gtk_settings_get_default()), "gtk-double-click-time",
@@ -912,6 +950,8 @@ static void base_widget_init ( BaseWidget *self )
   priv->rect.y = -1;
   priv->rect.width = 1;
   priv->rect.height = 1;
+  priv->hexpand = TRISTATE_UNINIT;
+  priv->vexpand = TRISTATE_UNINIT;
   base_widget_set_id(GTK_WIDGET(self), NULL);
   g_ptr_array_add(base_widgets, self);
 

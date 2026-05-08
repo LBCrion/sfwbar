@@ -4,7 +4,6 @@
 #include "vm/expr.h"
 #include "vm/vm.h"
 
-
 #define BASE_WIDGET_TYPE            (base_widget_get_type())
 #define BASE_WIDGET_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST((klass), BASE_WIDGET_TYPE, BaseWidgetClass))
 #define BASE_WIDGET(obj)            (G_TYPE_CHECK_INSTANCE_CAST((obj), BASE_WIDGET_TYPE, BaseWidget))
@@ -14,6 +13,12 @@
 
 typedef struct _BaseWidgetClass BaseWidgetClass;
 typedef struct _BaseWidget BaseWidget;
+
+typedef enum {
+  TRISTATE_UNINIT = 2,
+  TRISTATE_TRUE = TRUE,
+  TRISTATE_FALSE = FALSE
+} tristate_t;
 
 struct _BaseWidget
 {
@@ -60,6 +65,7 @@ struct _BaseWidgetPrivate
   GtkWidget *mirror_parent;
   GMutex mutex;
   vm_store_t *store, *pstore;
+  tristate_t hexpand, vexpand;
 };
 
 typedef struct _base_widget_attachment {
