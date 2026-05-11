@@ -37,5 +37,7 @@ void tray_item_init_for_all ( sni_item_t *sni );
 void tray_item_destroy ( sni_item_t *sni );
 void tray_update ( void );
 void tray_invalidate_all ( sni_item_t *sni );
+void tray_order_set ( const gchar *sni_id, const gchar *sort_key );
+const gchar *tray_get_sort_key ( const gchar *sni_id );
 
 #endif

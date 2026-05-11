@@ -9,6 +9,7 @@
 #include "gui/menu.h"
 #include "gui/monitor.h"
 #include "gui/scaleimage.h"
+#include "gui/tray.h"
 #include "gui/trayitem.h"
 
 G_DEFINE_TYPE_WITH_CODE (TrayItem, tray_item, FLOW_ITEM_TYPE,
@@ -163,15 +164,24 @@ static gboolean tray_item_action_exec ( GtkWidget *self, gint slot,
 
 static gint tray_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
 {
-  TrayItemPrivate *p1,*p2;
+  TrayItemPrivate *p1, *p2;
+  const gchar *k1, *k2;
+  gint cmp;
 
   g_return_val_if_fail(IS_TRAY_ITEM(a), 0);
   g_return_val_if_fail(IS_TRAY_ITEM(b), 0);
 
   p1 = tray_item_get_instance_private(TRAY_ITEM(a));
   p2 = tray_item_get_instance_private(TRAY_ITEM(b));
-  return g_strcmp0(p1->sni->string[SNI_PROP_TITLE],
-      p2->sni->string[SNI_PROP_TITLE]);
+
+  k1 = tray_get_sort_key(p1->sni->string[SNI_PROP_ID]);
+  k2 = tray_get_sort_key(p2->sni->string[SNI_PROP_ID]);
+
+  cmp = g_strcmp0(
+      k1 ? k1 : p1->sni->string[SNI_PROP_TITLE],
+      k2 ? k2 : p2->sni->string[SNI_PROP_TITLE]);
+
+  return flow_grid_is_sort_reverse(parent) ? -cmp : cmp;
 }
 
 static void tray_item_invalidate ( GtkWidget *self )

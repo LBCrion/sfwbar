@@ -48,6 +48,7 @@ struct _FlowGridPrivate
   gint title_width;
   gboolean invalid;
   gboolean sort;
+  gboolean sort_reverse;
   GList *children;
   gint (*comp)( GtkWidget *, GtkWidget *, GtkWidget * );
   GtkTargetEntry *dnd_target;
@@ -70,5 +71,6 @@ void flow_grid_set_dnd_target ( GtkWidget *self, GtkTargetEntry *target );
 GtkTargetEntry  *flow_grid_get_dnd_target ( GtkWidget *self );
 void flow_grid_children_order ( GtkWidget *self, GtkWidget *ref,
     GtkWidget *child, gboolean after );
+gboolean flow_grid_is_sort_reverse ( GtkWidget *self );
 
 #endif

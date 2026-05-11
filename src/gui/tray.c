@@ -8,6 +8,23 @@
 
 G_DEFINE_TYPE_WITH_CODE (Tray, tray, FLOW_GRID_TYPE, G_ADD_PRIVATE (Tray))
 
+static GHashTable *tray_sort_keys = NULL;
+
+void tray_order_set ( const gchar *sni_id, const gchar *sort_key )
+{
+  if(!tray_sort_keys)
+    tray_sort_keys = g_hash_table_new_full(g_str_hash, g_str_equal,
+        g_free, g_free);
+  g_hash_table_insert(tray_sort_keys, g_strdup(sni_id), g_strdup(sort_key));
+}
+
+const gchar *tray_get_sort_key ( const gchar *sni_id )
+{
+  if(!tray_sort_keys || !sni_id)
+    return NULL;
+  return g_hash_table_lookup(tray_sort_keys, sni_id);
+}
+
 static void tray_destroy ( GtkWidget *self )
 {
   TrayPrivate *priv;

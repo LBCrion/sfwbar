@@ -352,6 +352,10 @@ primary_axis = [rows|columns]
   specifies a primary axis for sorting items, i.e. will the next item be placed
   to the right or below it's sibling.
 
+sort_reverse = [true|false]
+  if set to true, tray items are sorted in reverse order. This applies to both
+  the default title-based sort and any sort keys configured via ``TrayOrder``.
+
 ``bar`` objects may have the following options
 
 edge = <direction>
@@ -585,6 +589,24 @@ I.e.::
     ystep = 5
     children = false
   }
+
+TrayOrder
+---------
+``TrayOrder`` assigns explicit sort keys to system tray items, allowing you to
+control the order in which they appear regardless of their title. Items not
+listed here fall back to sorting by title.
+
+The block contains one assignment per item::
+
+  TrayOrder {
+    "KeePassXC" = "a_keepass";
+    "nm-applet" = "b_network";
+    "blueman"   = "c_bluetooth";
+  }
+
+The left-hand string is the SNI item ID as reported by the application. The
+right-hand string is the sort key that will be used in place of the title.
+Combine with ``sort_reverse = true`` on the ``tray`` widget to reverse the order.
 
 Task Switcher
 -------------
