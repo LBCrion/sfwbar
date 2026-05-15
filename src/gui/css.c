@@ -78,6 +78,8 @@ static void css_custom_handle ( GtkWidget *widget )
       !GTK_IS_EVENT_BOX(widget))
   {
     parent = gtk_widget_get_parent(widget);
+    while(GTK_IS_VIEWPORT(parent) || GTK_IS_SCROLLED_WINDOW(parent))
+      parent = gtk_widget_get_parent(parent);
     if(parent && IS_BASE_WIDGET(parent))
       g_object_get(G_OBJECT(parent), "hexpand", &state, NULL);
     else
