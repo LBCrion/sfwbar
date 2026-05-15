@@ -6,6 +6,7 @@
 #include "scanner.h"
 #include "window.h"
 #include "gui/css.h"
+#include "gui/background.h"
 #include "gui/basewidget.h"
 #include "util/file.h"
 #include "util/string.h"
@@ -58,6 +59,7 @@ void css_file_load ( gchar *name )
 static void css_custom_handle ( GtkWidget *widget )
 {
   GtkWidget *parent;
+  background_effect_t effect;
   gboolean state, change = FALSE;
   gdouble xalign;
   GtkAlign align;
@@ -98,6 +100,8 @@ static void css_custom_handle ( GtkWidget *widget )
     }
     if(change && gtk_widget_get_ancestor(widget, GTK_TYPE_GRID))
       gtk_widget_queue_allocate(gtk_widget_get_ancestor(widget, GTK_TYPE_GRID));
+    gtk_widget_style_get(widget, "background-effect", &effect, NULL);
+    background_effect_set(widget, effect);
     gtk_widget_style_get(widget, "halign", &align, NULL);
     gtk_widget_set_halign(widget, align);
     gtk_widget_style_get(widget, "valign", &align, NULL);
@@ -134,6 +138,7 @@ void css_init ( gchar *cssname )
   gchar *css_str;
   GtkWidgetClass *widget_class = g_type_class_ref(GTK_TYPE_WIDGET);
 
+  background_effect_init();
   gtk_widget_class_install_style_property(widget_class,
     g_param_spec_double("align","text alignment","text alignment",
       0.0,1.0,0.5, G_PARAM_READABLE));
@@ -153,6 +158,10 @@ void css_init ( gchar *cssname )
   gtk_widget_class_install_style_property(widget_class,
     g_param_spec_boolean("visible","show/hide a widget","show/hide a widget",
       TRUE, G_PARAM_READABLE));
+  gtk_widget_class_install_style_property(widget_class,
+      g_param_spec_enum("background-effect", "background effect",
+        "background_effect", background_effect_enum, BACKGROUND_EFFECT_NONE,
+        G_PARAM_READWRITE));
   gtk_widget_class_install_style_property(widget_class,
     g_param_spec_int("icon-size","icon size","icon size",
       0,500,48, G_PARAM_READABLE));

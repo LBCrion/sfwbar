@@ -12,7 +12,6 @@
 #include "config/config.h"
 #include "ipc/sway.h"
 #include "gui/bar.h"
-#include "gui/background.h"
 #include "gui/basewidget.h"
 #include "gui/capture.h"
 #include "gui/css.h"
@@ -133,7 +132,6 @@ static void activate (GtkApplication* app, gpointer data )
   expr_lib_init();
   action_lib_init();
   wayland_init();
-  background_effect_init();
   css_init(cssname);
   monitor_init(monitor);
   capture_init();

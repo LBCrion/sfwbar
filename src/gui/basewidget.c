@@ -7,7 +7,6 @@
 #include "module.h"
 #include "meson.h"
 #include "scanner.h"
-#include "gui/background.h"
 #include "gui/basewidget.h"
 #include "gui/bar.h"
 #include "gui/css.h"
@@ -31,7 +30,6 @@ enum {
   BASE_WIDGET_INTERVAL,
   BASE_WIDGET_ACTION,
   BASE_WIDGET_CLASS,
-  BASE_WIDGET_EFFECT,
   BASE_WIDGET_HEXPAND,
   BASE_WIDGET_VEXPAND,
   BASE_WIDGET_DISABLE,
@@ -491,8 +489,6 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
       G_OBJECT(dest), "local", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "class",
       G_OBJECT(dest), "class", G_BINDING_SYNC_CREATE);
-  g_object_bind_property(G_OBJECT(src), "background_effect",
-      G_OBJECT(dest), "background_effect", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "hexpand",
       G_OBJECT(dest), "hexpand", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "vexpand",
@@ -680,10 +676,6 @@ static void base_widget_get_property ( GObject *self, guint id, GValue *value,
     case BASE_WIDGET_CLASS:
       g_value_set_string(value, priv->class);
       break;
-    case BASE_WIDGET_EFFECT:
-      g_value_set_enum(value,
-          background_effect_get(base_widget_get_child(GTK_WIDGET(self))));
-      break;
     case BASE_WIDGET_HEXPAND:
       g_value_set_enum(value, priv->hexpand);
       break;
@@ -817,10 +809,6 @@ static void base_widget_set_property ( GObject *self, guint id,
         css_set_class(base_widget_get_child(GTK_WIDGET(self)), priv->class,
             TRUE);
       break;
-    case BASE_WIDGET_EFFECT:
-      background_effect_set(base_widget_get_child(GTK_WIDGET(self)),
-          g_value_get_enum(value));
-      break;
     case BASE_WIDGET_HEXPAND:
       priv->hexpand = g_value_get_enum(value);
       if(priv->hexpand != TRISTATE_UNINIT)
@@ -916,10 +904,6 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
   g_object_class_install_property(G_OBJECT_CLASS(kclass),
       BASE_WIDGET_USER_STATE, g_param_spec_uint("user-state",
         "user-state", "no_config", 0, UINT_MAX, 0, G_PARAM_READWRITE));
-  g_object_class_install_property(G_OBJECT_CLASS(kclass),BASE_WIDGET_EFFECT,
-      g_param_spec_enum("background_effect", "background effect",
-        "sfwbar_config", background_effect_enum, BACKGROUND_EFFECT_NONE,
-        G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_HEXPAND,
       g_param_spec_enum("hexpand", "horizontal expand", "sfwbar_config",
         tristate_enum, TRISTATE_UNINIT, G_PARAM_READWRITE));
