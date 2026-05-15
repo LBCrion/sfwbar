@@ -92,7 +92,11 @@ static gboolean base_widget_update_value ( GtkWidget *self )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(BASE_WIDGET_GET_CLASS(self)->update_value)
+  {
+    g_mutex_lock(&priv->mutex);
     BASE_WIDGET_GET_CLASS(self)->update_value(self);
+    g_mutex_unlock(&priv->mutex);
+  }
   priv->value->invalid = TRUE;
 
   if(!priv->local_state)
@@ -546,8 +550,14 @@ static void base_widget_set_value ( GtkWidget *self, GBytes *code )
   priv->value->invalid = !!code;
   priv->value->always_update = BASE_WIDGET_GET_CLASS(self)->always_update;
 
+  g_mutex_lock(&priv->mutex);
   if(vm_expr_eval(priv->value))
+  {
+    g_mutex_unlock(&priv->mutex);
     base_widget_update_value(self);
+  }
+  else
+    g_mutex_unlock(&priv->mutex);
 
   g_mutex_lock(&widget_mutex);
   if(!g_list_find(widgets_scan, self))
@@ -831,11 +841,18 @@ static void base_widget_set_property ( GObject *self, guint id,
 
 static void base_widget_map ( GtkWidget *self )
 {
+  BaseWidgetPrivate *priv;
+
   g_return_if_fail(IS_BASE_WIDGET(self));
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   if(!BASE_WIDGET_GET_CLASS(self)->always_update &&
       BASE_WIDGET_GET_CLASS(self)->update_value)
+  {
+    g_mutex_lock(&priv->mutex);
     BASE_WIDGET_GET_CLASS(self)->update_value(self);
+    g_mutex_unlock(&priv->mutex);
+  }
 
   GTK_WIDGET_CLASS(base_widget_parent_class)->map(self);
 }
