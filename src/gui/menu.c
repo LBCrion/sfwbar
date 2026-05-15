@@ -5,6 +5,7 @@
 
 #include "menu.h"
 #include "window.h"
+#include "gui/css.h"
 #include "gui/popup.h"
 #include "gui/menuitem.h"
 #include "util/string.h"
@@ -68,6 +69,8 @@ GtkWidget *menu_new ( gchar *name )
       return menu;
 
   menu = gtk_menu_new();
+  g_signal_connect(G_OBJECT(menu), "popped-up", G_CALLBACK(css_widget_cascade),
+      NULL);
   if( (window = gtk_widget_get_ancestor(menu, GTK_TYPE_WINDOW)) )
     gtk_widget_set_name(window, name);
   gtk_widget_set_name(menu, name);
