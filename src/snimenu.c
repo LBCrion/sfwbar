@@ -152,7 +152,7 @@ static void sni_menu_item_update ( GtkWidget *item, GVariant *dict,
     }
     if(!submenu && has_submenu)
     {
-      submenu = gtk_menu_new();
+      submenu = menu_new(NULL);
       g_signal_connect(G_OBJECT(submenu), "map",
           G_CALLBACK(sni_menu_map_cb), sni_menu_item_get_sni_item(item));
       gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), submenu);
@@ -360,7 +360,7 @@ void sni_menu_init ( sni_item_t *sni )
   if(sni->menu_obj)
     gtk_widget_destroy(sni->menu_obj);
 
-  sni->menu_obj = gtk_menu_new();
+  sni->menu_obj = menu_new(NULL);
   g_signal_connect(G_OBJECT(sni->menu_obj), "destroy",
       G_CALLBACK(g_source_remove_by_user_data), NULL);
   g_signal_connect(G_OBJECT(sni->menu_obj), "map",
