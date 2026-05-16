@@ -56,7 +56,7 @@ void css_file_load ( gchar *name )
   g_free(fname);
 }
 
-static void css_custom_handle ( GtkWidget *widget )
+void css_custom_handle ( GtkWidget *widget )
 {
   GtkWidget *parent;
   background_effect_t effect;

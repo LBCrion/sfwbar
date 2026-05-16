@@ -69,7 +69,7 @@ GtkWidget *menu_new ( gchar *name )
       return menu;
 
   menu = gtk_menu_new();
-  g_signal_connect(G_OBJECT(menu), "popped-up", G_CALLBACK(css_widget_cascade),
+  g_signal_connect(G_OBJECT(menu), "popped-up", G_CALLBACK(css_custom_handle),
       NULL);
   if( (window = gtk_widget_get_ancestor(menu, GTK_TYPE_WINDOW)) )
     gtk_widget_set_name(window, name);

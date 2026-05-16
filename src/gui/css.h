@@ -7,6 +7,7 @@ void css_init ( gchar * );
 void css_file_load ( gchar * );
 GtkCssProvider *css_widget_apply ( GtkWidget *widget, gchar *css );
 void css_widget_cascade ( GtkWidget *widget, gpointer data );
+void css_custom_handle ( GtkWidget *widget );
 void css_add_class ( GtkWidget *widget, gchar *css_class );
 void css_remove_class ( GtkWidget *widget, gchar *css_class );
 void css_set_class ( GtkWidget *widget, gchar *css_class, gboolean state );
