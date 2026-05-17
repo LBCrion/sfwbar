@@ -473,15 +473,13 @@ gboolean flow_grid_update ( GtkWidget *self )
 
       if(axis_cols)
       {
-        /* sort_reverse: start from top-right, filling columns right-to-left */
-        col = priv->sort_reverse ? span - 1 - pri : pri;
+        col = pri;
         row = sec;
       }
       else
       {
-        /* sort_reverse: start from top-right, filling each row right-to-left */
         row = pri;
-        col = priv->sort_reverse ? first_count - 1 - sec : sec;
+        col = sec;
       }
 
       flow_grid_child_position(GTK_GRID(priv->grid), iter->data, col, row);

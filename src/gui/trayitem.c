@@ -181,7 +181,7 @@ static gint tray_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
       k1 ? k1 : p1->sni->string[SNI_PROP_TITLE],
       k2 ? k2 : p2->sni->string[SNI_PROP_TITLE]);
 
-  return flow_grid_is_sort_reverse(parent) ? -cmp : cmp;
+  return cmp;
 }
 
 static void tray_item_invalidate ( GtkWidget *self )
