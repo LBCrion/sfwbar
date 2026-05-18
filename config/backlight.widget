@@ -28,7 +28,7 @@ Private {
     </svg>'
 
   export button "backlight" {
-    value = Replace(BacklightTmpl, "@BRIGHTNESS@", Str(BacklightPct*492));
+    value = Replace(BacklightTmpl, "@BRIGHTNESS@", Str(BacklightPct*4.92));
     style = if(BacklightPresent, "backlight", "hidden");
     class = "module";
     tooltip = "Backlight: " + Str(BacklightPct) + "%";

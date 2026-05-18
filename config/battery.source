@@ -53,7 +53,7 @@ Function XBatteryInit() {
         if file_uevent != ""
         {
           FileTrigger(file, "battery-event", 10000);
-          Config("button '" + WidgetId() + "' { trigger = 'battery-event' }");
+          Config("any '" + WidgetId() + "' { trigger = 'battery-event' }");
           EmitTrigger("battery-event");
         }
       }

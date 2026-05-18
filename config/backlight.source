@@ -20,11 +20,11 @@ Function BacklightInit() {
 
   BacklightSrc=''
   for(i=0; i<ArraySize(dirs) & Backlightsrc=''; i=i+1)
-    if testfile(base+"/"+dirs[i]+"/actual_brightness") &
+    if testfile(base+"/"+dirs[i]+"/brightness") &
       testfile(base+"/"+dirs[i]+"/max_brightness")
       {
         BacklightName = dirs[i]
-        BacklightSrc = base+"/"+BacklightName+"/actual_brightness"
+        BacklightSrc = base+"/"+BacklightName+"/brightness"
         BacklightMax = Val(Read(base+"/"+BacklightName+"/max_brightness"))
         FileTrigger(BacklightSrc, "backlight", 1000)
         SetBacklight(Val(Read(BacklightSrc))/BacklightMax*100)
