@@ -8,21 +8,42 @@
 
 G_DEFINE_TYPE_WITH_CODE (Tray, tray, FLOW_GRID_TYPE, G_ADD_PRIVATE (Tray))
 
-static GHashTable *tray_sort_keys = NULL;
+enum {
+  TRAY_ORDER = 1,
+};
 
-void tray_order_set ( const gchar *sni_id, const gchar *sort_key )
+static void tray_get_property ( GObject *self, guint id, GValue *value,
+    GParamSpec *spec )
 {
-  if(!tray_sort_keys)
-    tray_sort_keys = g_hash_table_new_full(g_str_hash, g_str_equal,
-        g_free, g_free);
-  g_hash_table_insert(tray_sort_keys, g_strdup(sni_id), g_strdup(sort_key));
+  TrayPrivate *priv;
+
+  priv = tray_get_instance_private(TRAY(self));
+  switch(id)
+  {
+    case TRAY_ORDER:
+      g_value_set_boxed(value, priv->order);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
+  }
 }
 
-const gchar *tray_get_sort_key ( const gchar *sni_id )
+static void tray_set_property ( GObject *self, guint id, const GValue *value,
+    GParamSpec *spec )
 {
-  if(!tray_sort_keys || !sni_id)
-    return NULL;
-  return g_hash_table_lookup(tray_sort_keys, sni_id);
+  TrayPrivate *priv;
+
+  priv = tray_get_instance_private(TRAY(self));
+  switch(id)
+  {
+    case TRAY_ORDER:
+      g_clear_pointer(&priv->order, g_ptr_array_unref);
+      priv->order = g_value_dup_boxed(value);
+      flow_grid_invalidate(GTK_WIDGET(self));
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
+  }
 }
 
 static void tray_destroy ( GtkWidget *self )
@@ -36,6 +57,7 @@ static void tray_destroy ( GtkWidget *self )
     g_source_remove(priv->timer_h);
     priv->timer_h = 0;
   }
+  g_clear_pointer(&priv->order, g_ptr_array_unref);
   GTK_WIDGET_CLASS(tray_parent_class)->destroy(self);
 }
 
@@ -43,6 +65,11 @@ static void tray_class_init ( TrayClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = tray_destroy;
   BASE_WIDGET_CLASS(kclass)->action_exec = NULL;
+  G_OBJECT_CLASS(kclass)->get_property = tray_get_property;
+  G_OBJECT_CLASS(kclass)->set_property = tray_set_property;
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), TRAY_ORDER,
+      g_param_spec_boxed("order", "order", "sfwbar_config", G_TYPE_PTR_ARRAY,
+        G_PARAM_READWRITE));
   sni_init();
 }
 

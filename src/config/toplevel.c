@@ -10,7 +10,6 @@
 #include "gui/bar.h"
 #include "gui/css.h"
 #include "gui/switcher.h"
-#include "gui/tray.h"
 
 static void config_set ( GScanner *scanner )
 {
@@ -195,28 +194,6 @@ static void config_placer ( GScanner *scanner )
     wintree_placer_conf(wp_x, wp_y, wo_x, wo_y, pid);
 }
 
-static void config_tray_order ( GScanner *scanner )
-{
-  gchar *id = NULL, *key = NULL;
-
-  if(!config_expect_token(scanner, '{', "Missing '{' after 'TrayOrder'"))
-    return;
-
-  while(!config_is_section_end(scanner))
-  {
-    id = key = NULL;
-    config_parse_sequence(scanner,
-        SEQ_REQ, G_TOKEN_STRING, NULL, &id,  "missing item id in TrayOrder",
-        SEQ_REQ, '=',            NULL, NULL, "missing '=' in TrayOrder",
-        SEQ_REQ, G_TOKEN_STRING, NULL, &key, "missing sort key in TrayOrder",
-        SEQ_OPT, ';',            NULL, NULL, NULL,
-        SEQ_END);
-    if(!scanner->max_parse_errors && id && key)
-      tray_order_set(id, key);
-    g_free(id);
-    g_free(key);
-  }
-}
 
 GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
 {
@@ -303,9 +280,6 @@ GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
         break;
       case G_TOKEN_MODULE:
         config_module(scanner);
-        break;
-      case G_TOKEN_TRAYORDER:
-        config_tray_order(scanner);
         break;
       case G_TOKEN_DISOWNMINIMIZED:
         wintree_set_disown(config_assign_boolean(scanner, FALSE,

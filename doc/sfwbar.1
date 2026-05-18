@@ -413,7 +413,14 @@ to the right or below it\(aqs sibling.
 .TP
 .B sort_reverse = [true|false]
 if set to true, tray items are sorted in reverse order. This applies to both
-the default title\-based sort and any sort keys configured via \fBTrayOrder\fP\&.
+the default title\-based sort and any explicit order configured via \fBorder\fP\&.
+.TP
+.B order = <string> [, <string> ...]
+a list of tray item SNI IDs specifying the order in which they should appear.
+Items whose ID matches an entry in the list are sorted by their position
+in that list; items not listed are sorted alphabetically by ID and placed
+after all explicitly ordered items.  SNI IDs are used since they should be
+stable long\-term.
 .UNINDENT
 .sp
 \fBbar\fP objects may have the following options
@@ -680,29 +687,6 @@ placer {
 .EE
 .UNINDENT
 .UNINDENT
-.SS TrayOrder
-.sp
-\fBTrayOrder\fP assigns explicit sort keys to system tray items, allowing you to
-control the order in which they appear regardless of their title. Items not
-listed here fall back to sorting by title.
-.sp
-The block contains one assignment per item:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.EX
-TrayOrder {
-  \(dqKeePassXC\(dq = \(dqa_keepass\(dq;
-  \(dqnm\-applet\(dq = \(dqb_network\(dq;
-  \(dqblueman\(dq   = \(dqc_bluetooth\(dq;
-}
-.EE
-.UNINDENT
-.UNINDENT
-.sp
-The left\-hand string is the SNI item ID as reported by the application. The
-right\-hand string is the sort key that will be used in place of the title.
-Combine with \fBsort_reverse = true\fP on the \fBtray\fP widget to reverse the order.
 .SS Task Switcher
 .sp
 Task switcher cycles the focus across windows (i.e. Alt\-Tab function). Switcher

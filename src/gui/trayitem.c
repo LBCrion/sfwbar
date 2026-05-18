@@ -165,7 +165,8 @@ static gboolean tray_item_action_exec ( GtkWidget *self, gint slot,
 static gint tray_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
 {
   TrayItemPrivate *p1, *p2;
-  const gchar *k1, *k2;
+  GPtrArray *order;
+  guint i1, i2;
   gint cmp;
 
   g_return_val_if_fail(IS_TRAY_ITEM(a), 0);
@@ -174,13 +175,23 @@ static gint tray_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
   p1 = tray_item_get_instance_private(TRAY_ITEM(a));
   p2 = tray_item_get_instance_private(TRAY_ITEM(b));
 
-  k1 = tray_get_sort_key(p1->sni->string[SNI_PROP_ID]);
-  k2 = tray_get_sort_key(p2->sni->string[SNI_PROP_ID]);
+  g_object_get(flow_item_get_parent(a), "order", &order, NULL);
+  i1 = i2 = G_MAXUINT;
+  if(order)
+    for(guint i = 0; i < order->len; i++)
+    {
+      if(!g_strcmp0(order->pdata[i], p1->sni->string[SNI_PROP_ID]))
+        i1 = i;
+      if(!g_strcmp0(order->pdata[i], p2->sni->string[SNI_PROP_ID]))
+        i2 = i;
+    }
+  g_clear_pointer(&order, g_ptr_array_unref);
 
-  cmp = g_strcmp0(
-      k1 ? k1 : p1->sni->string[SNI_PROP_TITLE],
-      k2 ? k2 : p2->sni->string[SNI_PROP_TITLE]);
+  if(i1 != i2)
+    return i1 < i2 ? -1 : 1;
 
+  cmp = g_strcmp0(p1->sni->string[SNI_PROP_ID],
+      p2->sni->string[SNI_PROP_ID]);
   return cmp;
 }
 

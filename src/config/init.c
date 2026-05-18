@@ -144,7 +144,6 @@ void config_init ( void )
   config_add_key(config_toplevel_keys, "MenuClear", G_TOKEN_MENUCLEAR);
   config_add_key(config_toplevel_keys, "Menu", G_TOKEN_MENU);
   config_add_key(config_toplevel_keys, "Include", G_TOKEN_INCLUDE);
-  config_add_key(config_toplevel_keys, "TrayOrder", G_TOKEN_TRAYORDER);
 
   config_menu_keys = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);

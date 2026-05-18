@@ -354,7 +354,14 @@ primary_axis = [rows|columns]
 
 sort_reverse = [true|false]
   if set to true, tray items are sorted in reverse order. This applies to both
-  the default title-based sort and any sort keys configured via ``TrayOrder``.
+  the default title-based sort and any explicit order configured via ``order``.
+
+order = <string> [, <string> ...]
+  a list of tray item SNI IDs specifying the order in which they should appear.
+  Items whose ID matches an entry in the list are sorted by their position
+  in that list; items not listed are sorted alphabetically by ID and placed
+  after all explicitly ordered items.  SNI IDs are used since they should be
+  stable long-term.
 
 ``bar`` objects may have the following options
 
@@ -589,24 +596,6 @@ I.e.::
     ystep = 5
     children = false
   }
-
-TrayOrder
----------
-``TrayOrder`` assigns explicit sort keys to system tray items, allowing you to
-control the order in which they appear regardless of their title. Items not
-listed here fall back to sorting by title.
-
-The block contains one assignment per item::
-
-  TrayOrder {
-    "KeePassXC" = "a_keepass";
-    "nm-applet" = "b_network";
-    "blueman"   = "c_bluetooth";
-  }
-
-The left-hand string is the SNI item ID as reported by the application. The
-right-hand string is the sort key that will be used in place of the title.
-Combine with ``sort_reverse = true`` on the ``tray`` widget to reverse the order.
 
 Task Switcher
 -------------
