@@ -176,15 +176,12 @@ static gint tray_item_compare ( GtkWidget *a, GtkWidget *b, GtkWidget *parent )
   p2 = tray_item_get_instance_private(TRAY_ITEM(b));
 
   g_object_get(flow_item_get_parent(a), "order", &order, NULL);
-  i1 = i2 = G_MAXUINT;
-  if(order)
-    for(guint i = 0; i < order->len; i++)
-    {
-      if(!g_strcmp0(order->pdata[i], p1->sni->string[SNI_PROP_ID]))
-        i1 = i;
-      if(!g_strcmp0(order->pdata[i], p2->sni->string[SNI_PROP_ID]))
-        i2 = i;
-    }
+  if(!order || !g_ptr_array_find_with_equal_func(order,
+        p1->sni->string[SNI_PROP_ID], g_str_equal, &i1))
+    i1 = G_MAXUINT;
+  if(!order || !g_ptr_array_find_with_equal_func(order,
+        p2->sni->string[SNI_PROP_ID], g_str_equal, &i2))
+    i2 = G_MAXUINT;
   g_clear_pointer(&order, g_ptr_array_unref);
 
   if(i1 != i2)
