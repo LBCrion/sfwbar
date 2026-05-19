@@ -41,7 +41,7 @@ Function SetBacklight ( pct )
   If BacklightMax > 0 {
     DBusCall(SessionInterface, "SetBrightness", "(ssu)",
            ["backlight", BacklightName, BacklightMax * 0.01 *
-           Max(10, Min(max_brightness, Max(min_brightness, pct )))])
+           Max(5, Min(max_brightness, Max(min_brightness, pct )))])
     EmitTrigger("backlight")
   }
 }
