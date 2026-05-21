@@ -416,12 +416,11 @@ static value_t expr_lib_bardir ( vm_t *vm, value_t p[], gint np )
 static value_t expr_lib_gtkevent ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *base, *widget;
-  GdkEventButton  *ev = (GdkEventButton *)vm->event;
   GtkAllocation alloc;
   GtkStyleContext *style;
   GtkBorder margin, padding, border;
   gint x,y,w,h,dir;
-  gdouble result;
+  gdouble result, rawx, rawy;
 
   vm_param_check_np(vm, np, 1, "GtkEvent");
   vm_param_check_string(vm, p, 0, "GtkEvent");
@@ -429,17 +428,18 @@ static value_t expr_lib_gtkevent ( vm_t *vm, value_t p[], gint np )
   if( !(base = vm_widget_get(vm, NULL)) )
     return value_na;
 
+  gdk_event_get_coords(vm->event, &rawx, &rawy);
+
   if(GTK_IS_BIN(base))
   {
     widget = gtk_bin_get_child(GTK_BIN(base));
-    gtk_widget_translate_coordinates(base, widget,
-        ev->x, ev->y, &x, &y);
+    gtk_widget_translate_coordinates(base, widget, rawx, rawy, &x, &y);
   }
   else
   {
     widget = base;
-    x = ev->x;
-    y = ev->y;
+    x = rawx;
+    y = rawy;
   }
 
   if(!g_ascii_strcasecmp(value_get_string(p[0]), "x"))
