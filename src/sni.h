@@ -73,9 +73,7 @@ typedef struct _sni_listener_t {
 void sni_init ( void );
 void sni_listener_register ( sni_listener_t *listener, void *data );
 void sni_listener_remove ( void * );
-void sni_update ( void );
 GDBusConnection *sni_get_connection ( void );
-void sni_get_menu ( GtkWidget *widget, GdkEvent *event );
 sni_item_t *sni_item_new (GDBusConnection *, gchar *, const gchar *);
 void sni_item_free ( sni_item_t *sni );
 GList *sni_item_get_list ( void );
