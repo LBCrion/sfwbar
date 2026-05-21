@@ -257,8 +257,13 @@ background_effect = [blur|none]
   effect.
 
 disable = [true|false]
-  can be sued to disable a widget without commenting out the entire section.
+  disables a widget without commenting out the entire section.
   I.e. setting `disable = true;` will discard the widget definition.
+
+``Button`` widget may contain the following property
+
+type = [image|label]
+  controls whether the widget value is displayed as an image or text.
 
 ``Taskbar`` widget may contain the following options
 

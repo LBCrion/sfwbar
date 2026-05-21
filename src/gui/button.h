@@ -27,7 +27,7 @@ typedef struct _ButtonPrivate ButtonPrivate;
 struct _ButtonPrivate
 {
   GtkWidget *button;
-  GtkWidget *image;
+  GtkWidget *widget;
 };
 
 GType button_get_type ( void );
