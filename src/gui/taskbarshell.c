@@ -85,6 +85,8 @@ static void taskbar_shell_mirror ( GtkWidget *self, GtkWidget *src )
       G_OBJECT(self), "group_css", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "tooltips",
       G_OBJECT(self), "tooltips", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "filter",
+      G_OBJECT(self), "filter", G_BINDING_SYNC_CREATE);
 }
 
 static void taskbar_shell_item_init ( window_t *win, GtkWidget *self )
