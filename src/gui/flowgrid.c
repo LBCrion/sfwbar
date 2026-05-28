@@ -450,25 +450,20 @@ gboolean flow_grid_update ( GtkWidget *self )
   for(iter=priv->children; iter; iter=g_list_next(iter))
     if(flow_item_get_active(iter->data))
     {
-      gint col, row, pri, sec;
+      gint col, row, pri, sec, i2;
 
-      /* pri = index along primary axis, sec = position within that division.
-       * The first primary division gets base+1 items when count isn't evenly
-       * divisible; subsequent divisions get base items each. */
-      if(!base)
+      /* Distribute extras across the first `extra` divisions (base+1 items each),
+       * then fill the remaining divisions with `base` items each. */
+      if(i < extra * (base + 1))
       {
-        pri = i;
-        sec = 0;
-      }
-      else if(i < first_count)
-      {
-        pri = 0;
-        sec = i;
+        pri = i / (base + 1);
+        sec = i % (base + 1);
       }
       else
       {
-        pri = 1 + (i - first_count) / base;
-        sec = (i - first_count) % base;
+        i2 = i - extra * (base + 1);
+        pri = extra + i2 / base;
+        sec = i2 % base;
       }
 
       if(axis_cols)
