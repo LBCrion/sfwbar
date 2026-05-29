@@ -283,6 +283,9 @@ sort = [true|false]
   sorted, user can sort them manually via drag-and-drop mechanism.
   Items are sorted by default, set this to false to enable drag-and-drop.
 
+sort_reverse = [true|false]
+  if set to true, taskbar items are sorted in reverse order.
+
 rows = <number>
   a number of rows in a taskbar.
 
@@ -642,6 +645,9 @@ cols = <number>
 
 sort = [true|false]
   controls whether the items in the switcher should be sorted.
+
+sort_reverse = [true|false]
+  if set to true, taskbar items are sorted in reverse order.
 
 primary_axis = [rows|columns]
   specifies a primary axis for sorting items, i.e. will the next item be placed
