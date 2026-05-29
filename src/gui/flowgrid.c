@@ -542,15 +542,6 @@ void flow_grid_children_order ( GtkWidget *self, GtkWidget *ref,
   flow_item_invalidate(ref);
 }
 
-gboolean flow_grid_is_sort_reverse ( GtkWidget *self )
-{
-  FlowGridPrivate *priv;
-
-  g_return_val_if_fail(IS_FLOW_GRID(self), FALSE);
-  priv = flow_grid_get_instance_private(FLOW_GRID(self));
-  return priv->sort_reverse;
-}
-
 static void flow_grid_dnd_data_rec_cb ( GtkWidget *dest, GdkDragContext *ctx,
     gint x, gint y, GtkSelectionData *sel, guint info, guint time,
     gpointer parent )

@@ -71,6 +71,5 @@ void flow_grid_set_dnd_target ( GtkWidget *self, GtkTargetEntry *target );
 GtkTargetEntry  *flow_grid_get_dnd_target ( GtkWidget *self );
 void flow_grid_children_order ( GtkWidget *self, GtkWidget *ref,
     GtkWidget *child, gboolean after );
-gboolean flow_grid_is_sort_reverse ( GtkWidget *self );
 
 #endif
