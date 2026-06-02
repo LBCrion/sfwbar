@@ -64,7 +64,6 @@ sudo ninja -C build install
 
 * [Fedora](https://src.fedoraproject.org/rpms/sfwbar): `sudo dnf install sfwbar`
 * [ArchLinux](https://aur.archlinux.org/packages/sfwbar): `yay -S sfwbar`
-* [Debian](https://tracker.debian.org/pkg/sfwbar): `sudo apt install sfwbar`
 
 ## Configuration
 Copy sfwbar.config from /usr/share/sfwbar/ to ~/.config/sfwbar/
