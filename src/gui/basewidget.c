@@ -471,6 +471,8 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
 
   g_object_bind_property(G_OBJECT(src), "user-state",
       G_OBJECT(dest), "user-state", G_BINDING_BIDIRECTIONAL | G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "interval",
+      G_OBJECT(dest), "interval", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "tooltip",
       G_OBJECT(dest), "tooltip", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "value",
