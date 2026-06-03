@@ -465,6 +465,7 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
   if(!g_list_find(spriv->mirror_children, dest))
   {
     spriv->mirror_children = g_list_prepend(spriv->mirror_children, dest);
+    dpriv->next_poll = spriv->next_poll;
     base_widget_style(dest);
     base_widget_update_value(dest);
   }
