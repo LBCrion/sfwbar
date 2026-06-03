@@ -53,13 +53,16 @@ static void button_set_property ( GObject *self, guint id,
 
   priv = button_get_instance_private(BUTTON(self));
 
-  if(id == BUTTON_WTYPE && g_value_get_enum(value) != GTK_IS_LABEL(priv->widget))
+  if(id == BUTTON_WTYPE)
   {
-    gtk_widget_destroy(priv->widget);
-    priv->widget = g_value_get_enum(value)? gtk_label_new("") :
-      scale_image_new();
-    gtk_container_add(GTK_CONTAINER(priv->button), priv->widget);
-    gtk_widget_show(priv->widget);
+    if(g_value_get_enum(value) != GTK_IS_LABEL(priv->widget))
+    {
+      gtk_widget_destroy(priv->widget);
+      priv->widget = g_value_get_enum(value)? gtk_label_new("") :
+        scale_image_new();
+      gtk_container_add(GTK_CONTAINER(priv->button), priv->widget);
+      gtk_widget_show(priv->widget);
+    }
   }
   else
     G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
