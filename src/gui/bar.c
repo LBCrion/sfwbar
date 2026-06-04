@@ -182,15 +182,6 @@ static gboolean bar_leave_handle ( GtkWidget *self )
   return G_SOURCE_REMOVE;
 }
 
-static gboolean bar_leave_notify_event ( GtkWidget *self,
-    GdkEventCrossing *event )
-{
-  if(event->detail!=GDK_NOTIFY_INFERIOR)
-    bar_leave_handle(self);
-
-  return TRUE;
-}
-
 void bar_drag_unref ( GtkWidget *self )
 {
   BarPrivate *priv;
@@ -200,7 +191,7 @@ void bar_drag_unref ( GtkWidget *self )
 
   priv->sensor_refs--;
   if(!priv->sensor_refs)
-    g_idle_add((GSourceFunc)bar_leave_handle ,self);
+    g_idle_add((GSourceFunc)bar_leave_handle, self);
 }
 
 static void bar_drag_leave ( GtkWidget *self, GdkDragContext *ctx, guint time )
@@ -238,8 +229,7 @@ static void bar_sensor_show_bar ( GtkWidget *self )
   bar_reveal(self);
 }
 
-static gboolean bar_enter_notify_event ( GtkWidget *self,
-    GdkEventCrossing *event )
+static gboolean bar_enter_handle ( GtkWidget *self, gpointer m )
 {
   BarPrivate *priv;
 
@@ -270,7 +260,7 @@ void bar_drag_ref ( GtkWidget *self )
   priv = bar_get_instance_private(BAR(self));
 
   if(!priv->sensor_refs)
-    bar_enter_notify_event(self, NULL);
+    bar_enter_handle(self, NULL);
 
   priv->sensor_refs++;
 }
@@ -426,6 +416,14 @@ static void bar_map ( GtkWidget *self )
 
 static void bar_init ( Bar *self )
 {
+  GtkEventController *motion;
+
+  motion = gtk_event_controller_motion_new(GTK_WIDGET(self));
+
+  g_signal_connect_swapped(G_OBJECT(motion), "enter",
+      G_CALLBACK(bar_enter_handle), self);
+  g_signal_connect_swapped(G_OBJECT(motion), "leave",
+      G_CALLBACK(bar_leave_handle), self);
 }
 
 static void bar_margin_update ( GtkWidget *self, gint margin )
@@ -573,8 +571,6 @@ static void bar_set_property ( GObject *self, guint id,
 static void bar_class_init ( BarClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = bar_destroy;
-  GTK_WIDGET_CLASS(kclass)->enter_notify_event = bar_enter_notify_event;
-  GTK_WIDGET_CLASS(kclass)->leave_notify_event = bar_leave_notify_event;
   GTK_WIDGET_CLASS(kclass)->drag_motion = bar_drag_motion;
   GTK_WIDGET_CLASS(kclass)->drag_leave = bar_drag_leave;
   GTK_WIDGET_CLASS(kclass)->style_updated = bar_style_updated;
