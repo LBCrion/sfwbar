@@ -476,10 +476,6 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
       G_OBJECT(dest), "interval", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "tooltip",
       G_OBJECT(dest), "tooltip", G_BINDING_SYNC_CREATE);
-  g_object_bind_property(G_OBJECT(src), "value",
-      G_OBJECT(dest), "value", G_BINDING_SYNC_CREATE);
-  g_object_bind_property(G_OBJECT(src), "style",
-      G_OBJECT(dest), "style", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "action",
       G_OBJECT(dest), "action", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "css",
@@ -500,6 +496,10 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
       G_OBJECT(dest), "hexpand", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "vexpand",
       G_OBJECT(dest), "vexpand", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "value",
+      G_OBJECT(dest), "value", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "style",
+      G_OBJECT(dest), "style", G_BINDING_SYNC_CREATE);
 }
 
 static gboolean base_widget_query_tooltip ( GtkWidget *self, gint x, gint y,
