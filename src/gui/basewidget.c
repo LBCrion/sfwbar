@@ -309,7 +309,7 @@ gboolean base_widget_check_action_slot ( GtkWidget *self, gint event )
 static gboolean base_widget_button_press_event ( GtkWidget *self,
     GdkEventButton *ev )
 {
-  g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
+  g_return_val_if_fail(IS_BASE_WIDGET(self), FALSE);
 
   if(ev->type !=  GDK_2BUTTON_PRESS)
     return FALSE;
@@ -321,7 +321,7 @@ static gboolean base_widget_button_press_event ( GtkWidget *self,
 static gboolean base_widget_button_release_event ( GtkWidget *self,
     GdkEventButton *ev )
 {
-  g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
+  g_return_val_if_fail(IS_BASE_WIDGET(self), FALSE);
 
   if(ev->type != GDK_BUTTON_RELEASE || ev->button < 1 || ev->button > 3 )
     return FALSE;
@@ -334,7 +334,7 @@ static gboolean base_widget_scroll_event ( GtkWidget *self,
 {
   gint slot;
 
-  g_return_val_if_fail(IS_BASE_WIDGET(self),FALSE);
+  g_return_val_if_fail(IS_BASE_WIDGET(self), FALSE);
 
   switch(ev->direction)
   {
@@ -553,14 +553,18 @@ static void base_widget_set_value ( GtkWidget *self, GBytes *code )
   priv->value->invalid = !!code;
   priv->value->always_update = BASE_WIDGET_GET_CLASS(self)->always_update;
 
-  g_mutex_lock(&priv->mutex);
-  if(vm_expr_eval(priv->value))
+
+  if(!priv->mirror_parent || priv->local_state)
   {
-    g_mutex_unlock(&priv->mutex);
-    base_widget_update_value(self);
+    g_mutex_lock(&priv->mutex);
+    if(vm_expr_eval(priv->value))
+    {
+      g_mutex_unlock(&priv->mutex);
+      base_widget_update_value(self);
+    }
+    else
+      g_mutex_unlock(&priv->mutex);
   }
-  else
-    g_mutex_unlock(&priv->mutex);
 
   g_mutex_lock(&widget_mutex);
   if(!g_list_find(widgets_scan, self))
@@ -961,6 +965,7 @@ static void base_widget_init ( BaseWidget *self )
 
   gtk_widget_add_events(GTK_WIDGET(self),
       GDK_BUTTON_RELEASE_MASK | GDK_SCROLL_MASK);
+
   if(!gtk_drag_dest_get_target_list(GTK_WIDGET(self)))
     gtk_drag_dest_set(GTK_WIDGET(self), GTK_DEST_DEFAULT_ALL, NULL, 0,
         GDK_ACTION_MOVE);
