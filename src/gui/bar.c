@@ -1211,8 +1211,6 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
       G_OBJECT(self), "size", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "layer",
       G_OBJECT(self), "layer", G_BINDING_SYNC_CREATE);
-  g_object_bind_property(G_OBJECT(src), "background_effect",
-      G_OBJECT(self), "background_effect", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "exclusive_zone",
       G_OBJECT(self), "exclusive_zone", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "bar_id",

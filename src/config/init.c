@@ -151,8 +151,6 @@ void config_init ( void )
   config_add_key(config_menu_keys, "Separator", G_TOKEN_SEPARATOR);
   config_add_key(config_menu_keys, "SubMenu", G_TOKEN_SUBMENU);
   config_add_key(config_menu_keys, "Sort", G_TOKEN_SORT);
-  config_add_key(config_menu_keys, "background_effect",
-      G_TOKEN_BACKGROUNDEFFECT);
 
   config_scanner_keys = g_hash_table_new((GHashFunc)str_nhash,
       (GEqualFunc)str_nequal);

@@ -132,11 +132,6 @@ void config_menu_items ( GScanner *scanner, GtkWidget *menu )
         g_object_set_data(G_OBJECT(menu), "sort",
             GINT_TO_POINTER(config_assign_boolean(scanner, FALSE, "sort")));
         break;
-      case G_TOKEN_BACKGROUNDEFFECT:
-        background_effect_set(menu, g_enum_get_value_by_name(
-              G_ENUM_CLASS(g_type_class_ref(background_effect_enum)),
-              config_assign_enum(scanner, "background_effect"))->value);
-        break;
       default:
         item = NULL;
         g_scanner_error(scanner,

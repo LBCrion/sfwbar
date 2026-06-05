@@ -56,7 +56,6 @@ struct _BarPrivate {
   GPtrArray *mirror_targets;
   GList *mirror_children;
   GtkWidget *mirror_parent;
-  struct ext_background_effect_surface_v1 *effect;
 };
 
 enum {
