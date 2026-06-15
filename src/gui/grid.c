@@ -66,6 +66,8 @@ static void grid_style_updated ( GtkWidget *grid, GtkWidget *self )
     grid_attach(self, iter->data);
     g_object_unref(iter->data);
   }
+  for(iter=base_widget_get_mirror_children(self); iter; iter=g_list_next(iter))
+    grid_style_updated(base_widget_get_child(iter->data), iter->data);
 }
 
 static void grid_remove ( GtkWidget *grid, GtkWidget *child, GtkWidget *self )
@@ -252,7 +254,6 @@ gboolean grid_attach ( GtkWidget *self, GtkWidget *child )
 {
   GridPrivate *priv;
   GdkRectangle *rect;
-  gint dir;
 
   g_return_val_if_fail(g_main_context_is_owner(g_main_context_default()), TRUE);
   g_return_val_if_fail(IS_GRID(self), FALSE);
@@ -261,10 +262,9 @@ gboolean grid_attach ( GtkWidget *self, GtkWidget *child )
   priv = grid_get_instance_private(GRID(self));
 
   g_object_get(G_OBJECT(child), "loc", &rect, NULL);
-  gtk_widget_style_get(priv->grid, "direction", &dir, NULL);
   if(rect->x < 0 || rect->y < 0)
     gtk_grid_attach_next_to(GTK_GRID(priv->grid), child,
-        priv->last? priv->last->data : NULL, dir, 1, 1);
+        priv->last? priv->last->data : NULL, priv->dir, 1, 1);
   else
     gtk_grid_attach(GTK_GRID(priv->grid), child,
         rect->x, rect->y, rect->width, rect->height);
