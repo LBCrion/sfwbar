@@ -87,6 +87,9 @@ void popup_popdown_autoclose ( void )
   GHashTableIter iter;
   GtkWidget *popup;
 
+  if(!popup_list)
+    return;
+
   g_hash_table_iter_init(&iter, popup_list);
   while(g_hash_table_iter_next(&iter, NULL, (gpointer *)&popup))
     if(gtk_widget_get_visible(popup) &&
@@ -156,10 +159,13 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkSeat *seat )
   if( !(child = gtk_bin_get_child(GTK_BIN(popup))) )
     return;
 
-  g_hash_table_iter_init(&iter, popup_list);
-  while(g_hash_table_iter_next(&iter, NULL, (gpointer *)&old_popup))
-    if(old_popup != popup && gtk_widget_get_visible(old_popup))
-      popup_popdown(old_popup);
+  if(popup_list)
+  {
+    g_hash_table_iter_init(&iter, popup_list);
+    while(g_hash_table_iter_next(&iter, NULL, (gpointer *)&old_popup))
+      if(old_popup != popup && gtk_widget_get_visible(old_popup))
+        popup_popdown(old_popup);
+  }
 
   css_widget_cascade(child, NULL);
   gtk_widget_unrealize(popup);
