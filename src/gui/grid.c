@@ -42,7 +42,7 @@ static void grid_mirror ( GtkWidget *self, GtkWidget *src )
     grid_attach(self, base_widget_mirror(iter->data));
 }
 
-static void grid_style_updated ( GtkWidget *grid, GtkWidget *self )
+void grid_style_updated ( GtkWidget *grid, GtkWidget *self )
 {
   GridPrivate *priv;
   gint dir;
@@ -66,8 +66,6 @@ static void grid_style_updated ( GtkWidget *grid, GtkWidget *self )
     grid_attach(self, iter->data);
     g_object_unref(iter->data);
   }
-  for(iter=base_widget_get_mirror_children(self); iter; iter=g_list_next(iter))
-    grid_style_updated(base_widget_get_child(iter->data), iter->data);
 }
 
 static void grid_remove ( GtkWidget *grid, GtkWidget *child, GtkWidget *self )

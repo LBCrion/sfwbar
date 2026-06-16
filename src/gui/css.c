@@ -8,6 +8,7 @@
 #include "gui/css.h"
 #include "gui/background.h"
 #include "gui/basewidget.h"
+#include "gui/grid.h"
 #include "util/file.h"
 #include "util/string.h"
 
@@ -34,6 +35,7 @@ void css_provider_add ( gchar *css )
   gtk_css_provider_load_from_data(provider, combined ,strlen(combined), NULL);
   gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
     GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+  gtk_style_context_reset_widgets(gdk_screen_get_default());
 }
 
 void css_file_load ( gchar *name )
@@ -109,6 +111,8 @@ void css_custom_handle ( GtkWidget *widget )
     gtk_widget_style_get(widget, "valign", &align, NULL);
     gtk_widget_set_valign(widget, align);
   }
+  if(IS_GRID(widget))
+    grid_style_updated(base_widget_get_child(widget), widget);
   if(GTK_IS_LABEL(widget))
   {
     gtk_widget_style_get(widget, "align", &xalign, NULL);

@@ -1215,6 +1215,12 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
       G_OBJECT(self), "exclusive_zone", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "bar_id",
       G_OBJECT(self), "bar_id", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "edge",
+      G_OBJECT(self), "edge", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "halign",
+      G_OBJECT(self), "halign", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "valign",
+      G_OBJECT(self), "valign", G_BINDING_SYNC_CREATE);
 
   return self;
 }
