@@ -54,6 +54,9 @@ static void bar_revealer_notify ( GtkRevealer *revealer, GParamSpec *spec,
   g_return_if_fail(IS_BAR(self));
   priv = bar_get_instance_private(BAR(self));
 
+  if(gtk_revealer_get_child_revealed(revealer))
+    window_ref(self, self);
+
   if(!gtk_revealer_get_child_revealed(revealer) && !priv->visible)
     gtk_widget_hide(self);
   else if(gtk_revealer_get_child_revealed(revealer) && !priv->visible &&
@@ -177,7 +180,7 @@ static gboolean bar_leave_handle ( GtkWidget *self )
     priv->show_handle = 0;
   }
 
-  bar_sensor_unref_event(self);
+  window_unref(self, self);
 
   return G_SOURCE_REMOVE;
 }
@@ -205,11 +208,11 @@ static void bar_drag_leave ( GtkWidget *self, GdkDragContext *ctx, guint time )
   bar_drag_unref(self);
 }
 
-static void bar_sensor_show_bar ( GtkWidget *self )
+static gboolean bar_sensor_show_bar ( GtkWidget *self )
 {
   BarPrivate *priv;
 
-  g_return_if_fail(IS_BAR(self));
+  g_return_val_if_fail(IS_BAR(self), G_SOURCE_REMOVE);
   priv = bar_get_instance_private(BAR(self));
 
   priv->show_handle = 0;
@@ -227,6 +230,8 @@ static void bar_sensor_show_bar ( GtkWidget *self )
     gtk_container_add(GTK_CONTAINER(self), GTK_WIDGET(priv->ebox));
   }
   bar_reveal(self);
+
+  return G_SOURCE_REMOVE;
 }
 
 static gboolean bar_enter_handle ( GtkWidget *self, gpointer m )
@@ -1045,7 +1050,7 @@ void bar_set_sensor ( GtkWidget *self, gint64 timeout )
   {
     if(!priv->sensor)
     {
-      window_set_unref_func(self, (void *)(void *)bar_sensor_unref_event);
+      window_set_unref_func(self, (void *)bar_sensor_unref_event);
       priv->sensor = gtk_grid_new();
       g_object_ref_sink(priv->sensor);
       css_add_class(priv->sensor,"sensor");
@@ -1053,6 +1058,7 @@ void bar_set_sensor ( GtkWidget *self, gint64 timeout )
       gtk_widget_add_events(priv->box, GDK_STRUCTURE_MASK);
       gtk_widget_show(priv->sensor);
     }
+    window_unref(self, self);
     bar_sensor_hide(self);
     priv->sensor_block = FALSE;
   }
