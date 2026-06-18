@@ -407,8 +407,13 @@ static void bar_size_allocate ( GtkWidget *self, GtkAllocation *alloc )
   BarPrivate *priv;
 
   GTK_WIDGET_CLASS(bar_parent_class)->size_allocate(self, alloc);
-
   priv = bar_get_instance_private(BAR(self));
+
+  if(alloc->width == priv->width && alloc->height == priv->height)
+    return;
+  priv->width = alloc->width;
+  priv->height = alloc->height;
+
   if(!g_strcmp0(priv->size, "auto"))
     g_idle_add((GSourceFunc)bar_resize, self);
 }

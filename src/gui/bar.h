@@ -36,6 +36,7 @@ struct _BarPrivate {
   GtkLayerShellLayer layer;
   gchar *bar_id;
   gint dir;
+  gint width, height;
   gint background;
   GtkAlign halign, valign;
   guint8 overrides;
