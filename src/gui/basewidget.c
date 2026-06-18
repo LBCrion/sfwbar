@@ -541,6 +541,7 @@ static void base_widget_set_tooltip ( GtkWidget *self, GBytes *code )
 static void base_widget_set_value ( GtkWidget *self, GBytes *code )
 {
   BaseWidgetPrivate *priv;
+  gboolean update;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
@@ -554,17 +555,12 @@ static void base_widget_set_value ( GtkWidget *self, GBytes *code )
   priv->value->always_update = BASE_WIDGET_GET_CLASS(self)->always_update;
 
 
-  if(!priv->mirror_parent || priv->local_state)
-  {
-    g_mutex_lock(&priv->mutex);
-    if(vm_expr_eval(priv->value))
-    {
-      g_mutex_unlock(&priv->mutex);
-      base_widget_update_value(self);
-    }
-    else
-      g_mutex_unlock(&priv->mutex);
-  }
+  g_mutex_lock(&priv->mutex);
+  update = (!priv->mirror_parent || priv->local_state) &&
+    vm_expr_eval(priv->value);
+  g_mutex_unlock(&priv->mutex);
+  if(update)
+    base_widget_update_value(self);
 
   g_mutex_lock(&widget_mutex);
   if(!g_list_find(widgets_scan, self))

@@ -16,7 +16,7 @@ static void image_update_value ( GtkWidget *self )
   priv = image_get_instance_private(IMAGE(self));
 
   scale_image_set_image(GTK_WIDGET(priv->image),
-      base_widget_get_value(self),NULL);
+      base_widget_get_value(self), NULL);
 }
 
 static void image_class_init ( ImageClass *kclass )

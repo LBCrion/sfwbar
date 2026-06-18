@@ -22,15 +22,16 @@ GEnumValue button_types[] = {
 static void button_update_value ( GtkWidget *self )
 {
   ButtonPrivate *priv;
+  gchar *value;
 
   g_return_if_fail(IS_BUTTON(self));
   priv = button_get_instance_private(BUTTON(self));
 
+  value = base_widget_get_value(self);
   if(GTK_IS_LABEL(priv->widget))
-    gtk_label_set_markup(GTK_LABEL(priv->widget), base_widget_get_value(self));
+    gtk_label_set_markup(GTK_LABEL(priv->widget), value);
   else
-    scale_image_set_image(GTK_WIDGET(priv->widget),
-        base_widget_get_value(self), NULL);
+    scale_image_set_image(GTK_WIDGET(priv->widget), value, NULL);
 }
 
 static void button_get_property ( GObject *self, guint id, GValue *value,
