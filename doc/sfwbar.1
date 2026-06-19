@@ -304,11 +304,6 @@ and Meta. Multiple modifiers can be added, i.e.
 can use this action to set initial configuration for a widget.  See
 \fBActions\fP section for more details on how actions are specified.
 .TP
-.B background_effect = [blur|none]
-request compositor to apply a background effect underneath the widget.
-Currently background effect protocol only allows for blue effect or no
-effect.
-.TP
 .B disable = [true|false]
 disables a widget without commenting out the entire section.
 I.e. setting \fIdisable = true;\fP will discard the widget definition.
@@ -329,6 +324,10 @@ an indicator whether to display application icons within the taskbar
 .TP
 .B labels = [true|false]
 an indicator whether to display an application title within the taskbar
+.TP
+.B tooltips = [true|false]
+specifies whether taskbar items display a window titles as tooltips when a
+pointer hovers over an item.
 .TP
 .B title_width = <number>
 set maximum width of an application title in characters
@@ -365,7 +364,7 @@ one workspace to another moves it to a destination workspace. (currently
 this is only supported with sway and hyprland compositors, support for
 other compositors requires adoption of new wayland protocols).
 You can specify taskbar parameters for the group taskbars using group
-prefix, i.e. \fBgroup cols = 1\fP\&. The properties supported for groups
+prefix, i.e. \fBgroup.cols = 1\fP\&. The properties supported for groups
 are cols, rows, style, css, title_width, labels, icons.
 .UNINDENT
 .sp
