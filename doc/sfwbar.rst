@@ -1405,14 +1405,30 @@ style name            description
 ===================== =============
 sfwbar                toplevel bar window
 layout                top level layout grid
-taskbar_item          taskbar button for a window (supports class .active)
-takbar_popup          taskbar popup button (supports class .active)
+taskbar_item          taskbar button for a window
+taskbar_popup         taskbar popup button for an application group
+taskbar_popup_grid    a grid for popped up taskbar group in a popup taskbar
 taskbar_pager         taskbar pager grid (supports class .active)
-pager_item            pager button for a workspace (supports classes .focused and .visible)
-switcher_item         switcher window and top level grid (supports class .active)
+pager_item            pager button for a workspace
+pager_preview         a desktop preview tooltip for a pager item
+switcher              switcher window and top level grid
+switcher_item         a switcher item grid for a window
 tray                  tray menus and menu items
-tray_item             tray item icon (supports classes .passive and .attention)
+tray_item             tray item icon
 menu_item             menu items (each contains an image and a label)
 ===================== =============
+
+pager_item may have one or more of the following classes set: `focused` and
+`visible`;
+
+tray_item may have one of more of the following classes set: `passive` and
+`attention`.
+
+taskbar_item and switcher_item may have one or more of additional classes set,
+reflecting the state of a window: `focused`, `maximized`, `minimized`,
+`fullscreen`, `urgent` and `preview`.
+
+The `preview` class is set when the compositor supports window previews and the
+taskbar or switcher is configured to display window previews instead of icons.
 
 For example you can style top level grid using ``grid#layout { }``.

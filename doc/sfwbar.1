@@ -1767,13 +1767,19 @@ _
 T{
 taskbar_item
 T}	T{
-taskbar button for a window (supports class .active)
+taskbar button for a window
 T}
 _
 T{
-takbar_popup
+taskbar_popup
 T}	T{
-taskbar popup button (supports class .active)
+taskbar popup button for an application group
+T}
+_
+T{
+taskbar_popup_grid
+T}	T{
+a grid for popped up taskbar group in a popup taskbar
 T}
 _
 T{
@@ -1785,13 +1791,25 @@ _
 T{
 pager_item
 T}	T{
-pager button for a workspace (supports classes .focused and .visible)
+pager button for a workspace
+T}
+_
+T{
+pager_preview
+T}	T{
+a desktop preview tooltip for a pager item
+T}
+_
+T{
+switcher
+T}	T{
+switcher window and top level grid
 T}
 _
 T{
 switcher_item
 T}	T{
-switcher window and top level grid (supports class .active)
+a switcher item grid for a window
 T}
 _
 T{
@@ -1803,7 +1821,7 @@ _
 T{
 tray_item
 T}	T{
-tray item icon (supports classes .passive and .attention)
+tray item icon
 T}
 _
 T{
@@ -1812,6 +1830,19 @@ T}	T{
 menu items (each contains an image and a label)
 T}
 .TE
+.sp
+pager_item may have one or more of the following classes set: \fIfocused\fP and
+\fIvisible\fP;
+.sp
+tray_item may have one of more of the following classes set: \fIpassive\fP and
+\fIattention\fP\&.
+.sp
+taskbar_item and switcher_item may have one or more of additional classes set,
+reflecting the state of a window: \fIfocused\fP, \fImaximized\fP, \fIminimized\fP,
+\fIfullscreen\fP, \fIurgent\fP and \fIpreview\fP\&.
+.sp
+The \fIpreview\fP class is set when the compositor supports window previews and the
+taskbar or switcher is configured to display window previews instead of icons.
 .sp
 For example you can style top level grid using \fBgrid#layout { }\fP\&.
 .\" End of generated man page.
