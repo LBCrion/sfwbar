@@ -178,6 +178,8 @@ static void flow_grid_set_property ( GObject *self, guint id,
       if(g_value_get_int(value)>=0)
       {
         priv->cols = g_value_get_int(value);
+        if(priv->cols>0)
+          priv->rows = 0;
         flow_grid_invalidate(GTK_WIDGET(self));
       }
       break;
@@ -185,6 +187,8 @@ static void flow_grid_set_property ( GObject *self, guint id,
       if(g_value_get_int(value)>=0)
       {
         priv->rows = g_value_get_int(value);
+        if(priv->rows>0)
+          priv->cols = 0;
         flow_grid_invalidate(GTK_WIDGET(self));
       }
       break;
@@ -389,7 +393,7 @@ gboolean flow_grid_update ( GtkWidget *self )
 {
   FlowGridPrivate *priv;
   GList *iter;
-  gint count, i, dim, span, base, extra, first_count, rows, cols, dir;
+  gint count, i, span, rows, cols, dir;
   gboolean axis_cols;
 
   g_return_val_if_fail(IS_FLOW_GRID(self), FALSE);
@@ -431,60 +435,24 @@ gboolean flow_grid_update ( GtkWidget *self )
   axis_cols = (priv->primary_axis == FLOW_GRID_AXIS_COLS ||
      (priv->primary_axis == FLOW_GRID_AXIS_DEFAULT && rows>0));
 
-  /* span = number of primary-axis divisions (cols for axis_cols, rows otherwise) */
   if(axis_cols)
-    span = cols>0 ? cols :
-        (count>0 ? (count/rows) + !!(count%rows) : 1);
+    span = rows>0? rows : (count/cols) + !!(count%cols);
   else
-    span = rows>0 ? rows :
-        (count>0 ? (count/cols) + !!(count%cols) : 1);
-  if(span < 1)
-    span = 1;
-
-  base = count / span;
-  extra = count % span;
-  first_count = base + !!extra;
-  dim = first_count;
+    span = cols>0? cols : (count/rows) + !!(count%rows);
 
   i = 0;
   for(iter=priv->children; iter; iter=g_list_next(iter))
     if(flow_item_get_active(iter->data))
     {
-      gint col, row, pri, sec, i2;
-
-      /* Distribute extras across the first `extra` divisions (base+1 items each),
-       * then fill the remaining divisions with `base` items each. */
-      if(i < extra * (base + 1))
-      {
-        pri = i / (base + 1);
-        sec = i % (base + 1);
-      }
-      else
-      {
-        i2 = i - extra * (base + 1);
-        pri = extra + i2 / base;
-        sec = i2 % base;
-      }
-
-      if(axis_cols)
-      {
-        col = pri;
-        row = sec;
-      }
-      else
-      {
-        row = pri;
-        col = sec;
-      }
-
-      flow_grid_child_position(GTK_GRID(priv->grid), iter->data, col, row);
-      i++;
+      flow_grid_child_position(GTK_GRID(priv->grid), iter->data,
+          axis_cols? i/span : i%span, axis_cols? i%span : i/span);
+      i += 1 + (i%span==span-2 && i/span>=count%span && axis_cols^(rows>0));
     }
     else if(gtk_widget_get_parent(iter->data) == priv->grid)
       gtk_container_remove(GTK_CONTAINER(priv->grid), iter->data);
 
   if(FLOW_GRID_GET_CLASS(self)->fill)
-    for(;i<dim; i++)
+    for(;i<span; i++)
       gtk_grid_attach(GTK_GRID(priv->grid), gtk_label_new(""),
           axis_cols? 0 : i, axis_cols? i : 0, 1, 1);
   css_widget_cascade(self, NULL);
