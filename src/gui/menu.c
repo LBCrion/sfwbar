@@ -112,6 +112,13 @@ static void menu_set_names ( GtkWidget *menu )
   gtk_container_foreach(GTK_CONTAINER(menu), menu_item_set_name, NULL);
 }
 
+void menu_unmap_cb (GtkWidget *self, GtkWidget *window )
+{
+  window_unref(self, window);
+  // remove window's own ref as the leave event will be missed due to a grab
+  window_unref(window, window);
+}
+
 void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
     gpointer wid, guint16 *state )
 {
@@ -128,12 +135,11 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
   g_object_set_data(G_OBJECT(menu), "wid", wid);
   g_object_set_data(G_OBJECT(menu), "caller", widget);
 
-  window = gtk_widget_get_ancestor(widget,GTK_TYPE_WINDOW);
+  window = gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW);
   g_signal_handlers_disconnect_matched(G_OBJECT(menu), G_SIGNAL_MATCH_FUNC,
-      0, 0, NULL, G_CALLBACK(window_unref), NULL);
-  if(gtk_window_get_window_type(GTK_WINDOW(window)) == GTK_WINDOW_POPUP)
-    g_signal_connect(G_OBJECT(menu), "unmap",
-        G_CALLBACK(window_unref), window);
+      0, 0, NULL, G_CALLBACK(menu_unmap_cb), NULL);
+  g_signal_connect(G_OBJECT(menu), "unmap",
+      G_CALLBACK(menu_unmap_cb), window);
 
   widget = GTK_IS_BIN(widget)?gtk_bin_get_child(GTK_BIN(widget)):widget;
   gtk_widget_unset_state_flags(widget, GTK_STATE_FLAG_PRELIGHT);

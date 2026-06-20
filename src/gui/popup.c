@@ -70,6 +70,7 @@ void popup_get_gravity ( GtkWidget *widget, GdkGravity *wanchor,
 static void popup_popdown ( GtkWidget *popup )
 {
   GdkSeat *seat;
+  GtkWidget *window;
 
   if(window_ref_check(popup))
     return;
@@ -80,6 +81,13 @@ static void popup_popdown ( GtkWidget *popup )
       gdk_seat_ungrab(seat);
   gtk_widget_hide(gtk_bin_get_child(GTK_BIN(popup)));
   gtk_grab_remove(gtk_bin_get_child(GTK_BIN(popup)));
+
+  if( (window = g_object_get_data(G_OBJECT(popup), "parent_window")) )
+    window_unref(popup, window);
+  if(gtk_window_get_type_hint(GTK_WINDOW(popup)) ==
+      GDK_WINDOW_TYPE_HINT_POPUP_MENU)
+    window_unref(window, window);
+
 }
 
 void popup_popdown_autoclose ( void )
