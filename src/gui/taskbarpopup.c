@@ -302,6 +302,7 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *shell )
   gtk_widget_set_name(priv->button, "taskbar_popup");
   box = gtk_grid_new();
   gtk_container_add(GTK_CONTAINER(priv->button), box);
+  flow_grid_child_dnd_enable(shell, self, priv->button);
 
   priv->popover = gtk_window_new(GTK_WINDOW_POPUP);
   gtk_widget_set_name(priv->popover, "taskbar_popup");
