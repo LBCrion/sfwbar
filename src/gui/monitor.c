@@ -224,7 +224,17 @@ static void monitor_added_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 
 static void monitor_removed_cb ( GdkDisplay *gdisp, GdkMonitor *gmon )
 {
+  GHashTable *bar_list;
+  GHashTableIter iter;
+  void *key, *bar;
   static char trigger[256];
+
+  if((bar_list = bar_get_list()))
+  {
+    g_hash_table_iter_init(&iter, bar_list);
+    while(g_hash_table_iter_next(&iter, &key, &bar))
+      g_idle_add((GSourceFunc)bar_update_monitor, bar);
+  }
 
   g_snprintf(trigger, 255, "%s_disconnected", monitor_get_name(gmon));
   trigger_emit(trigger);
