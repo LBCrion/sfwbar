@@ -170,28 +170,6 @@ static void taskbar_popup_decorate ( GtkWidget *parent, GParamSpec *spec,
     gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
 }
 
-static window_t *taskbar_popup_get_sole_source ( GtkWidget *self )
-{
-  TaskbarPopupPrivate *priv;
-  GList *children, *iter;
-  window_t *source = NULL;
-
-  g_return_val_if_fail(IS_TASKBAR_POPUP(self), NULL);
-  priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
-
-  if(flow_grid_n_children(priv->tgroup)!=1)
-    return NULL;
-
-  children = gtk_container_get_children(GTK_CONTAINER(
-        base_widget_get_child(priv->tgroup)));
-  for(iter=children; iter; iter=g_list_next(iter))
-    if(flow_item_get_active(iter->data))
-      source = flow_item_get_source(iter->data);
-  g_list_free(children);
-
-  return source;
-}
-
 static void taskbar_popup_update ( GtkWidget *self )
 {
   TaskbarPopupPrivate *priv;
@@ -225,7 +203,7 @@ static void taskbar_popup_update ( GtkWidget *self )
   gtk_widget_set_has_tooltip(priv->button, tooltips);
   if(tooltips)
   {
-    if( (win = taskbar_popup_get_sole_source(self)) )
+    if( (win = flow_grid_get_sole_source(self)) )
       gtk_widget_set_tooltip_text(priv->button, win->title);
     else
       gtk_widget_set_tooltip_text(priv->button,
@@ -259,12 +237,11 @@ static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
   g_return_val_if_fail(IS_TASKBAR_POPUP(self),FALSE);
   priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
 
-  if( (win = taskbar_popup_get_sole_source(self)) &&
+  if( (win = flow_grid_get_sole_source(self)) &&
       (action = base_widget_get_action(priv->shell, slot,
                                        base_widget_get_modifiers(self))) )
       vm_run_action(action, self, (GdkEvent *)ev,
-          win?win:wintree_from_id(wintree_get_focus()), NULL,
-          base_widget_get_store(priv->shell), NULL);
+          win, NULL, base_widget_get_store(priv->shell), NULL);
 
   return TRUE;
 }

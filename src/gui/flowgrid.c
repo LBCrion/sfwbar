@@ -476,7 +476,28 @@ guint flow_grid_n_children ( GtkWidget *self )
   return n;
 }
 
-gpointer flow_grid_find_child ( GtkWidget *self, gconstpointer source )
+gpointer flow_grid_get_sole_source ( GtkWidget *self )
+{
+  FlowGridPrivate *priv;
+  GList *iter;
+  gpointer source = NULL;
+
+  g_return_val_if_fail(IS_FLOW_GRID(self), NULL);
+  priv = flow_grid_get_instance_private(FLOW_GRID(self));
+
+  for(iter=priv->children; iter; iter=g_list_next(iter))
+    if(flow_item_get_active(iter->data))
+    {
+      if(source)
+        return NULL;
+      else
+        source = flow_item_get_source(iter->data);
+    }
+
+  return source;
+}
+
+GtkWidget *flow_grid_find_child ( GtkWidget *self, gconstpointer source )
 {
   FlowGridPrivate *priv;
   GList *iter;
