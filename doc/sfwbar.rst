@@ -251,11 +251,6 @@ action
   can use this action to set initial configuration for a widget.  See
   ``Actions`` section for more details on how actions are specified.
 
-background_effect = [blur|none]
-  request compositor to apply a background effect underneath the widget.
-  Currently background effect protocol only allows for blue effect or no
-  effect.
-
 disable = [true|false]
   disables a widget without commenting out the entire section.
   I.e. setting `disable = true;` will discard the widget definition.
@@ -272,6 +267,10 @@ icons = [true|false]
 
 labels = [true|false]
   an indicator whether to display an application title within the taskbar
+
+tooltips = [true|false]
+  specifies whether taskbar items display a window titles as tooltips when a
+  pointer hovers over an item.
 
 title_width = <number>
   set maximum width of an application title in characters
@@ -308,7 +307,7 @@ group = [popup|pager|false]
   this is only supported with sway and hyprland compositors, support for
   other compositors requires adoption of new wayland protocols).
   You can specify taskbar parameters for the group taskbars using group
-  prefix, i.e. ``group cols = 1``. The properties supported for groups 
+  prefix, i.e. ``group.cols = 1``. The properties supported for groups
   are cols, rows, style, css, title_width, labels, icons.
 
 ``pager`` widget may contain the following options
@@ -1406,9 +1405,9 @@ style name            description
 sfwbar                toplevel bar window
 layout                top level layout grid
 taskbar_item          taskbar button for a window
-taskbar_popup         taskbar popup button for an application group
+taskbar_popup         taskbar popup button for an application group (supports class .focused)
 taskbar_popup_grid    a grid for popped up taskbar group in a popup taskbar
-taskbar_pager         taskbar pager grid (supports class .active)
+taskbar_pager         taskbar pager grid (supports class .focused)
 pager_item            pager button for a workspace
 pager_preview         a desktop preview tooltip for a pager item
 switcher              switcher window and top level grid
