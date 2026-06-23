@@ -560,6 +560,7 @@ static void flow_grid_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
     gpointer data )
 {
   gtk_drag_set_icon_default(ctx);
+  g_message("unblock");
   g_signal_handlers_unblock_matched(widget, G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
       (GFunc)flow_grid_dnd_enter_cb, NULL);
   gtk_grab_add(widget);
@@ -569,6 +570,7 @@ static void flow_grid_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
 static void flow_grid_dnd_end_cb ( GtkWidget *widget, GdkDragContext *ctx,
     gpointer data )
 {
+  g_message("block");
   g_signal_handlers_block_matched(widget, G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
       (GFunc)flow_grid_dnd_enter_cb, NULL);
   gtk_grab_remove(widget);
@@ -609,6 +611,8 @@ void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
     g_signal_connect(G_OBJECT(src), "drag-begin",
         G_CALLBACK(flow_grid_dnd_begin_cb), self);
     g_signal_connect(G_OBJECT(src), "drag-end",
+        G_CALLBACK(flow_grid_dnd_end_cb), self);
+    g_signal_connect(G_OBJECT(src), "drag-drop",
         G_CALLBACK(flow_grid_dnd_end_cb), self);
     g_signal_connect(G_OBJECT(src), "enter-notify-event",
         G_CALLBACK(flow_grid_dnd_enter_cb), NULL);
