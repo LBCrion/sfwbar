@@ -48,6 +48,7 @@ struct _FlowGridPrivate
   gint title_width;
   gboolean invalid;
   gboolean sort;
+  gboolean sort_reverse;
   GList *children;
   gint (*comp)( GtkWidget *, GtkWidget *, GtkWidget * );
   GtkTargetEntry *dnd_target;
