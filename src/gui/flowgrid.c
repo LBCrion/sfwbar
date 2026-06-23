@@ -440,6 +440,9 @@ gboolean flow_grid_update ( GtkWidget *self )
   else
     span = cols>0? cols : (count/rows) + !!(count%rows);
 
+  if(!span)
+    return TRUE;
+
   i = 0;
   for(iter=priv->children; iter; iter=g_list_next(iter))
     if(flow_item_get_active(iter->data))
