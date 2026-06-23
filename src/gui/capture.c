@@ -237,7 +237,7 @@ void capture_window_image_set ( GtkWidget *image, window_t *win,
       win->stable_id && !win->image)
     capture_window(win);
 
-  if(win->image && scale_image_set_image(image, win->image, NULL))
+  if(preview && win->image && scale_image_set_image(image, win->image, NULL))
     return;
 
   if(!win->appid || !*(win->appid))
