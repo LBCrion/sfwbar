@@ -203,7 +203,7 @@ static void taskbar_popup_update ( GtkWidget *self )
   gtk_widget_set_has_tooltip(priv->button, tooltips);
   if(tooltips)
   {
-    if( (win = flow_grid_get_sole_source(self)) )
+    if( (win = flow_grid_get_sole_source(priv->tgroup)) )
       gtk_widget_set_tooltip_text(priv->button, win->title);
     else
       gtk_widget_set_tooltip_text(priv->button,
@@ -237,7 +237,7 @@ static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
   g_return_val_if_fail(IS_TASKBAR_POPUP(self),FALSE);
   priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
 
-  if( (win = flow_grid_get_sole_source(self)) &&
+  if( (win = flow_grid_get_sole_source(priv->tgroup)) &&
       (action = base_widget_get_action(priv->shell, slot,
                                        base_widget_get_modifiers(self))) )
       vm_run_action(action, self, (GdkEvent *)ev,
