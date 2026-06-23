@@ -25,6 +25,21 @@ void app_icon_map_add ( gchar *appid, gchar *icon )
   g_mutex_unlock(&icon_map_mutex);
 }
 
+GDesktopAppInfo *app_info_from_id ( const gchar *desktop_id )
+{
+  GDesktopAppInfo *app;
+  gchar *desktop_file;
+
+  if(g_str_has_suffix(desktop_id, ".desktop"))
+    desktop_file = g_strdup(desktop_id);
+  else
+    desktop_file = g_strconcat(desktop_id, ".desktop", NULL);
+
+  app = g_desktop_app_info_new(desktop_file);
+  g_free(desktop_file);
+
+  return app;
+}
 void app_info_add_handlers ( AppInfoHandler add, AppInfoHandler del )
 {
   GList *iter;
@@ -168,17 +183,8 @@ gchar *app_info_icon_get ( const gchar *app_id, gboolean symbolic_pref )
 {
   GDesktopAppInfo *app;
   char *icon, *icon_name;
-  gchar *file;
 
-  if(g_str_has_suffix(app_id, ".desktop"))
-    file = g_strdup(app_id);
-  else
-    file = g_strconcat(app_id, ".desktop", NULL);
-
-  app = g_desktop_app_info_new(file);
-  g_free(file);
-
-  if(!app)
+  if( !(app = app_info_from_id(app_id)) )
     return NULL;
 
   if(g_desktop_app_info_get_nodisplay(app))

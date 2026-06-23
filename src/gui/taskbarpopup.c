@@ -3,9 +3,11 @@
  * Copyright 2022- sfwbar maintainers
  */
 
+#include "appinfo.h"
 #include "window.h"
 #include "wintree.h"
 #include "gui/css.h"
+#include "gui/flowgrid.h"
 #include "gui/taskbarpopup.h"
 #include "gui/taskbarshell.h"
 #include "gui/taskbaritem.h"
@@ -168,9 +170,32 @@ static void taskbar_popup_decorate ( GtkWidget *parent, GParamSpec *spec,
     gtk_label_set_max_width_chars(GTK_LABEL(priv->label), title_width);
 }
 
+static window_t *taskbar_popup_get_sole_source ( GtkWidget *self )
+{
+  TaskbarPopupPrivate *priv;
+  GList *children, *iter;
+  window_t *source = NULL;
+
+  g_return_val_if_fail(IS_TASKBAR_POPUP(self), NULL);
+  priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
+
+  if(flow_grid_n_children(priv->tgroup)!=1)
+    return NULL;
+
+  children = gtk_container_get_children(GTK_CONTAINER(
+        base_widget_get_child(priv->tgroup)));
+  for(iter=children; iter; iter=g_list_next(iter))
+    if(flow_item_get_active(iter->data))
+      source = flow_item_get_source(iter->data);
+  g_list_free(children);
+
+  return source;
+}
+
 static void taskbar_popup_update ( GtkWidget *self )
 {
   TaskbarPopupPrivate *priv;
+  window_t *win;
   gboolean tooltips;
 
   g_return_if_fail(IS_TASKBAR_POPUP(self));
@@ -196,12 +221,15 @@ static void taskbar_popup_update ( GtkWidget *self )
   window_collapse_popups(priv->popover);
   gtk_widget_hide(priv->popover);
 
-  if(flow_grid_n_children(priv->tgroup)<2)
+  g_object_get(G_OBJECT(priv->shell), "tooltips", &tooltips, NULL);
+  gtk_widget_set_has_tooltip(priv->button, tooltips);
+  if(tooltips)
   {
-    g_object_get(G_OBJECT(priv->shell), "tooltips", &tooltips, NULL);
-    gtk_widget_set_has_tooltip(self, tooltips);
-    if(tooltips)
-      gtk_widget_set_tooltip_text(self, priv->appid);
+    if( (win = taskbar_popup_get_sole_source(self)) )
+      gtk_widget_set_tooltip_text(priv->button, win->title);
+    else
+      gtk_widget_set_tooltip_text(priv->button,
+          priv->appname? priv->appname : priv->appid);
   }
 
   priv->invalid = FALSE;
@@ -225,26 +253,18 @@ static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
     GdkEvent *ev )
 {
   TaskbarPopupPrivate *priv;
-  GList *children;
   window_t *win;
   GBytes *action;
 
   g_return_val_if_fail(IS_TASKBAR_POPUP(self),FALSE);
   priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
 
-  children = gtk_container_get_children(GTK_CONTAINER(
-        base_widget_get_child(priv->tgroup)));
-  if(children && !g_list_next(children) &&
-      base_widget_check_action_slot(priv->shell, slot))
-  {
-    win = flow_item_get_source(children->data);
-    if( (action = base_widget_get_action(priv->shell, slot,
-        base_widget_get_modifiers(self))) )
+  if( (win = taskbar_popup_get_sole_source(self)) &&
+      (action = base_widget_get_action(priv->shell, slot,
+                                       base_widget_get_modifiers(self))) )
       vm_run_action(action, self, (GdkEvent *)ev,
           win?win:wintree_from_id(wintree_get_focus()), NULL,
           base_widget_get_store(priv->shell), NULL);
-  }
-  g_list_free(children);
 
   return TRUE;
 }
@@ -282,6 +302,7 @@ static void taskbar_popup_init ( TaskbarPopup *self )
 GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *shell )
 {
   TaskbarPopupPrivate *priv;
+  GDesktopAppInfo *app;
   GtkWidget *self, *box;
 
   g_return_val_if_fail(IS_TASKBAR_SHELL(shell), NULL);
@@ -303,6 +324,12 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *shell )
   box = gtk_grid_new();
   gtk_container_add(GTK_CONTAINER(priv->button), box);
   flow_grid_child_dnd_enable(shell, self, priv->button);
+
+  if( (app = app_info_from_id(appid)) )
+  {
+    priv->appname = strdup(g_app_info_get_display_name((GAppInfo *)app));
+    g_object_unref(G_OBJECT(app));
+  }
 
   priv->popover = gtk_window_new(GTK_WINDOW_POPUP);
   gtk_widget_set_name(priv->popover, "taskbar_popup");

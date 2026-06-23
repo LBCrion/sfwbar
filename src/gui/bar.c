@@ -1058,7 +1058,7 @@ void bar_set_sensor ( GtkWidget *self, gint64 timeout )
       window_set_unref_func(self, (void *)bar_sensor_unref_event);
       priv->sensor = gtk_grid_new();
       g_object_ref_sink(priv->sensor);
-      css_add_class(priv->sensor,"sensor");
+      css_add_class(priv->sensor, "sensor");
       gtk_widget_add_events(priv->sensor, GDK_STRUCTURE_MASK);
       gtk_widget_add_events(priv->box, GDK_STRUCTURE_MASK);
       gtk_widget_show(priv->sensor);
