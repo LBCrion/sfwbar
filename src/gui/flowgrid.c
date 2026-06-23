@@ -535,6 +535,7 @@ static void flow_grid_dnd_enter_cb ( GtkWidget *widget, GdkEventCrossing *ev,
 static void flow_grid_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
     gpointer data )
 {
+  gtk_drag_set_icon_default(ctx);
   g_signal_handlers_unblock_matched(widget, G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
       (GFunc)flow_grid_dnd_enter_cb, NULL);
   gtk_grab_add(widget);
