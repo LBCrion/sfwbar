@@ -287,6 +287,9 @@ sort = [true|false]
   sorted, user can sort them manually via drag-and-drop mechanism.
   Items are sorted by default, set this to false to enable drag-and-drop.
 
+sort_reverse = [true|false]
+  if set to true, taskbar items are sorted in reverse order.
+
 rows = <number>
   a number of rows in a taskbar.
 
@@ -355,6 +358,17 @@ sort = [true|false]
 primary_axis = [rows|columns]
   specifies a primary axis for sorting items, i.e. will the next item be placed
   to the right or below it's sibling.
+
+sort_reverse = [true|false]
+  if set to true, tray items are sorted in reverse order. This applies to both
+  the default title-based sort and any explicit order configured via ``order``.
+
+order = <string> [, <string> ...]
+  a list of tray item SNI IDs specifying the order in which they should appear.
+  Items whose ID matches an entry in the list are sorted by their position
+  in that list; items not listed are sorted alphabetically by ID and placed
+  after all explicitly ordered items.  SNI IDs are used since they should be
+  stable long-term.
 
 ``bar`` objects may have the following options
 
@@ -635,6 +649,9 @@ cols = <number>
 
 sort = [true|false]
   controls whether the items in the switcher should be sorted.
+
+sort_reverse = [true|false]
+  if set to true, taskbar items are sorted in reverse order.
 
 primary_axis = [rows|columns]
   specifies a primary axis for sorting items, i.e. will the next item be placed

@@ -25,6 +25,7 @@ enum {
   FLOW_GRID_PRIMARY_AXIS,
   FLOW_GRID_VALUE_OVERRIDE,
   FLOW_GRID_TOOLTIP_OVERRIDE,
+  FLOW_GRID_SORT_REVERSE,
 };
 
 GEnumValue flow_grid_axis[] = {
@@ -119,6 +120,9 @@ static void flow_grid_get_property ( GObject *self, guint id, GValue *value,
     case FLOW_GRID_SORT:
       g_value_set_boolean(value, priv->sort);
       break;
+    case FLOW_GRID_SORT_REVERSE:
+      g_value_set_boolean(value, priv->sort_reverse);
+      break;
     case FLOW_GRID_COLS:
       g_value_set_int(value, priv->cols);
       break;
@@ -166,10 +170,16 @@ static void flow_grid_set_property ( GObject *self, guint id,
       priv->sort = g_value_get_boolean(value);
       flow_grid_invalidate(GTK_WIDGET(self));
       break;
+    case FLOW_GRID_SORT_REVERSE:
+      priv->sort_reverse = g_value_get_boolean(value);
+      flow_grid_invalidate(GTK_WIDGET(self));
+      break;
     case FLOW_GRID_COLS:
       if(g_value_get_int(value)>=0)
       {
         priv->cols = g_value_get_int(value);
+        if(priv->cols>0)
+          priv->rows = 0;
         flow_grid_invalidate(GTK_WIDGET(self));
       }
       break;
@@ -177,6 +187,8 @@ static void flow_grid_set_property ( GObject *self, guint id,
       if(g_value_get_int(value)>=0)
       {
         priv->rows = g_value_get_int(value);
+        if(priv->rows>0)
+          priv->cols = 0;
         flow_grid_invalidate(GTK_WIDGET(self));
       }
       break;
@@ -208,6 +220,8 @@ static void flow_grid_mirror ( GtkWidget *dest, GtkWidget *src )
       G_OBJECT(dest), "title_width", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "sort",
       G_OBJECT(dest), "sort", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "sort_reverse",
+      G_OBJECT(dest), "sort_reverse", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "cols",
       G_OBJECT(dest), "cols", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "rows",
@@ -249,6 +263,9 @@ static void flow_grid_class_init ( FlowGridClass *kclass )
         G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_SORT,
       g_param_spec_boolean("sort", "sort", "sfwbar_config", TRUE,
+        G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_SORT_REVERSE,
+      g_param_spec_boolean("sort_reverse", "sort_reverse", "sfwbar_config", FALSE,
         G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), FLOW_GRID_COLS,
     g_param_spec_int("cols", "cols", "sfwbar_config", -1, INT_MAX, 0,
@@ -376,7 +393,8 @@ gboolean flow_grid_update ( GtkWidget *self )
 {
   FlowGridPrivate *priv;
   GList *iter;
-  gint count, i, dim, axis_cols, rows, cols, dir;
+  gint count, i, span, rows, cols, dir;
+  gboolean axis_cols;
 
   g_return_val_if_fail(IS_FLOW_GRID(self), FALSE);
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
@@ -399,8 +417,12 @@ gboolean flow_grid_update ( GtkWidget *self )
       (GtkCallback)flow_grid_remove_widget_maybe, self);
 
   if(priv->sort)
+  {
     priv->children = g_list_sort_with_data(priv->children,
         (GCompareDataFunc)flow_item_compare, self);
+    if(priv->sort_reverse)
+      priv->children = g_list_reverse(priv->children);
+  }
 
   count = 0;
   for(iter=priv->children; iter; iter=g_list_next(iter))
@@ -414,23 +436,23 @@ gboolean flow_grid_update ( GtkWidget *self )
      (priv->primary_axis == FLOW_GRID_AXIS_DEFAULT && rows>0));
 
   if(axis_cols)
-    dim = rows>0? rows : (count/cols) + !!(count%cols);
+    span = rows>0? rows : (count/cols) + !!(count%cols);
   else
-    dim = cols>0? cols : (count/rows) + !!(count%rows);
+    span = cols>0? cols : (count/rows) + !!(count%rows);
 
   i = 0;
   for(iter=priv->children; iter; iter=g_list_next(iter))
     if(flow_item_get_active(iter->data))
     {
       flow_grid_child_position(GTK_GRID(priv->grid), iter->data,
-          axis_cols? i/dim : i%dim, axis_cols? i%dim : i/dim);
-      i++;
+          axis_cols? i/span : i%span, axis_cols? i%span : i/span);
+      i += 1 + (i%span==span-2 && i/span>=count%span && axis_cols^(rows>0));
     }
     else if(gtk_widget_get_parent(iter->data) == priv->grid)
       gtk_container_remove(GTK_CONTAINER(priv->grid), iter->data);
 
   if(FLOW_GRID_GET_CLASS(self)->fill)
-    for(;i<dim; i++)
+    for(;i<span; i++)
       gtk_grid_attach(GTK_GRID(priv->grid), gtk_label_new(""),
           axis_cols? 0 : i, axis_cols? i : 0, 1, 1);
   css_widget_cascade(self, NULL);

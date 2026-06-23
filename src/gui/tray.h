@@ -28,6 +28,7 @@ typedef struct _TrayPrivate TrayPrivate;
 struct _TrayPrivate
 {
   guint timer_h;
+  GPtrArray *order;
 };
 
 GType tray_get_type ( void );

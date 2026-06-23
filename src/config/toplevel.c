@@ -194,6 +194,7 @@ static void config_placer ( GScanner *scanner )
     wintree_placer_conf(wp_x, wp_y, wo_x, wo_y, pid);
 }
 
+
 GtkWidget *config_parse_toplevel ( GScanner *scanner, GtkWidget *container )
 {
   GtkWidget *layout = NULL;
