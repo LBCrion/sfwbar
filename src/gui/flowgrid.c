@@ -624,8 +624,6 @@ void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
         G_CALLBACK(flow_grid_dnd_begin_cb), self);
     g_signal_connect(G_OBJECT(src), "drag-end",
         G_CALLBACK(flow_grid_dnd_end_cb), self);
-    g_signal_connect(G_OBJECT(src), "drag-failed",
-        G_CALLBACK(flow_grid_dnd_end_cb), self);
     g_signal_connect(G_OBJECT(src), "enter-notify-event",
         G_CALLBACK(flow_grid_dnd_enter_cb), NULL);
     g_signal_connect(G_OBJECT(child), "drag-leave",
