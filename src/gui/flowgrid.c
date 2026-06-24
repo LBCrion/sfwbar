@@ -556,11 +556,24 @@ static void flow_grid_dnd_enter_cb ( GtkWidget *widget, GdkEventCrossing *ev,
   bar_sensor_cancel_hide(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW));
 }
 
+static gboolean flow_grid_dnd_motion_cb ( GtkWidget *widget,  GdkDragContext *ctx,
+    gint x, gint y, gpointer data )
+{
+  css_add_class(widget, "drop_target"); 
+
+  return TRUE;
+}
+
+static void flow_grid_dnd_leave_cb ( GtkWidget *widget, GdkDragContext *ctx,
+    guint time, gpointer data )
+{
+  css_remove_class(widget, "drop_target");
+}
+
 static void flow_grid_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
     gpointer data )
 {
   gtk_drag_set_icon_default(ctx);
-  g_message("unblock");
   g_signal_handlers_unblock_matched(widget, G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
       (GFunc)flow_grid_dnd_enter_cb, NULL);
   gtk_grab_add(widget);
@@ -570,7 +583,6 @@ static void flow_grid_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
 static void flow_grid_dnd_end_cb ( GtkWidget *widget, GdkDragContext *ctx,
     gpointer data )
 {
-  g_message("block");
   g_signal_handlers_block_matched(widget, G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
       (GFunc)flow_grid_dnd_enter_cb, NULL);
   gtk_grab_remove(widget);
@@ -612,10 +624,14 @@ void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
         G_CALLBACK(flow_grid_dnd_begin_cb), self);
     g_signal_connect(G_OBJECT(src), "drag-end",
         G_CALLBACK(flow_grid_dnd_end_cb), self);
-    g_signal_connect(G_OBJECT(src), "drag-drop",
+    g_signal_connect(G_OBJECT(src), "drag-failed",
         G_CALLBACK(flow_grid_dnd_end_cb), self);
     g_signal_connect(G_OBJECT(src), "enter-notify-event",
         G_CALLBACK(flow_grid_dnd_enter_cb), NULL);
+    g_signal_connect(G_OBJECT(child), "drag-leave",
+        G_CALLBACK(flow_grid_dnd_leave_cb), NULL);
+    g_signal_connect(G_OBJECT(child), "drag-motion",
+        G_CALLBACK(flow_grid_dnd_motion_cb), NULL);
     g_signal_handlers_block_matched(src, G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
         (GFunc)flow_grid_dnd_enter_cb, NULL);
   }
