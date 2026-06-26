@@ -2,15 +2,19 @@
 #define __WINTREE_H__
 
 #include <gtk/gtk.h>
+#include <gio/gdesktopappinfo.h>
 #include "workspace.h"
 
 #define set_bit(var, mask, state) { var = state?var|(mask):var&(~mask); }
+
+#define WINTREE_PIN_ID GSIZE_TO_POINTER(G_MAXSIZE)
 
 typedef struct wt_window {
   gchar *title;
   gchar *appid;
   gchar *stable_id;
   gchar *image;
+  GDesktopAppInfo *pin;
   GList *outputs;
   workspace_t *workspace;
   gint64 pid;
@@ -45,6 +49,7 @@ gboolean wintree_api_check ( void );
 gchar *wintree_get_custom_ipc ( void );
 void wintree_listener_register ( window_listener_t *, void *);
 void wintree_listener_remove ( void *data );
+void wintree_pin_add ( gchar *pin );
 window_t *wintree_window_init ( void );
 window_t *wintree_from_id ( gpointer id );
 window_t *wintree_from_pid ( gint64 pid );

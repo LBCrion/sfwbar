@@ -3,7 +3,7 @@
  * Copyright 2020- sfwbar maintainers
  */
 
-#include "wintree.h"
+#include "appinfo.h"
 #include "trigger.h"
 #include "util/string.h"
 
@@ -77,6 +77,40 @@ void wintree_listener_remove ( void *data )
       break;
   if(iter)
     wintree_listeners = g_list_remove(wintree_listeners, iter->data);
+}
+
+void wintree_pin_add ( gchar *pin )
+{
+  GDesktopAppInfo *app;
+  window_t *win;
+  GList *iter;
+  const gchar *appid;
+
+  for(iter=wt_list; iter; iter=g_list_next(iter))
+  {
+    win = iter->data;
+    if(win->uid == WINTREE_PIN_ID && !g_strcmp0(pin, win->appid))
+      return;
+  }
+
+  if( !(app = app_info_from_id(pin)) )
+    return;
+
+  win = wintree_window_init();
+  win->uid = WINTREE_PIN_ID;
+  win->pin = app;
+  if(g_str_has_suffix(appid = g_app_info_get_id((GAppInfo *)app), ".desktop"))
+    win->appid = g_strndup(appid, strlen(appid)-8);
+  else
+    win->appid = g_strdup(appid);
+  wintree_set_title(win, g_app_info_get_display_name((GAppInfo *)app));
+  wintree_window_append(win);
+}
+
+static void wintree_pin_invalidate ( window_t *win, gchar *pin )
+{
+  if(win->uid == WINTREE_PIN_ID && !g_strcmp0(win->appid, pin))
+    wintree_commit(win);
 }
 
 void wintree_move_to ( gpointer id, gpointer wsid )
@@ -213,6 +247,7 @@ void wintree_set_app_id ( gpointer wid, const gchar *app_id)
 
   if(!app_id || !( win=wintree_from_id(wid)) || !g_strcmp0(win->appid, app_id))
     return;
+
   LISTENER_CALL(window_destroy, win);
   str_assign(&win->appid, g_strdup(app_id));
   if(!win->title)
@@ -220,6 +255,7 @@ void wintree_set_app_id ( gpointer wid, const gchar *app_id)
   LISTENER_CALL(window_new, win);
 
   wintree_commit(win);
+  g_list_foreach(wt_list, (GFunc)wintree_pin_invalidate, (void*)app_id);
 }
 
 void wintree_set_stable_id ( gpointer wid, const gchar *stable_id )
@@ -290,6 +326,7 @@ void wintree_window_delete ( gpointer id )
   LISTENER_CALL(window_destroy, win);
   if(win->workspace)
     workspace_unref(win->workspace->id);
+  g_list_foreach(wt_list, (GFunc)wintree_pin_invalidate, win->appid);
   g_free(win->appid);
   g_free(win->title);
   g_list_free_full(win->outputs, g_free);
