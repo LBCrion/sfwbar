@@ -28,14 +28,25 @@ void app_icon_map_add ( gchar *appid, gchar *icon )
 GDesktopAppInfo *app_info_from_id ( const gchar *desktop_id )
 {
   GDesktopAppInfo *app;
-  gchar *desktop_file;
+  gchar *desktop_file, ***desktop;
+  gint j;
 
   if(g_str_has_suffix(desktop_id, ".desktop"))
     desktop_file = g_strdup(desktop_id);
   else
     desktop_file = g_strconcat(desktop_id, ".desktop", NULL);
 
-  app = g_desktop_app_info_new(desktop_file);
+  if( !(app = g_desktop_app_info_new(desktop_file)) )
+  {
+    if( (desktop = g_desktop_app_info_search(desktop_id)) )
+    {
+      if(desktop[0] && desktop[0][0])
+        app = g_desktop_app_info_new(desktop[0][0]);
+      for(j=0; desktop[j]; j++)
+        g_strfreev(desktop[j]);
+      g_free(desktop);
+    }
+  }
   g_free(desktop_file);
 
   return app;
