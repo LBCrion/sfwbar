@@ -4,6 +4,7 @@
  */
 
 #include "appinfo.h"
+#include "exec.h"
 #include "window.h"
 #include "wintree.h"
 #include "gui/css.h"
@@ -240,8 +241,13 @@ static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
   if( (win = flow_grid_get_sole_source(priv->tgroup)) &&
       (action = base_widget_get_action(priv->shell, slot,
                                        base_widget_get_modifiers(self))) )
+  {
+    if(win->pin && slot==1)
+      exec_launch(win->pin);
+    else
       vm_run_action(action, self, (GdkEvent *)ev,
           win, NULL, base_widget_get_store(priv->shell), NULL);
+  }
 
   return TRUE;
 }
