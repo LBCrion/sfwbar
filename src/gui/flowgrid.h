@@ -62,7 +62,7 @@ void flow_grid_add_child ( GtkWidget *self, GtkWidget *child );
 gboolean flow_grid_update ( GtkWidget *self );
 void flow_grid_invalidate ( GtkWidget *self );
 void flow_grid_delete_child ( GtkWidget *, void *parent );
-guint flow_grid_n_children ( GtkWidget *self );
+guint flow_grid_n_children ( GtkWidget *self, gboolean active );
 gpointer flow_grid_get_sole_source ( GtkWidget *self );
 GtkWidget *flow_grid_find_child ( GtkWidget *, gconstpointer parent );
 void flow_grid_child_dnd_enable ( GtkWidget *, GtkWidget *, GtkWidget *);

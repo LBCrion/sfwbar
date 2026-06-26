@@ -91,7 +91,7 @@ static void taskbar_pager_update ( GtkWidget *self )
       GTK_STATE_FLAG_PRELIGHT);
 
   flow_grid_update(priv->taskbar);
-  flow_item_set_active(self, flow_grid_n_children(priv->taskbar)>0 );
+  flow_item_set_active(self, flow_grid_n_children(priv->taskbar, TRUE)>0 );
 
   priv->invalid = FALSE;
 }

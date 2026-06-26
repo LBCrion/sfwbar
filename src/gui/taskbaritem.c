@@ -95,6 +95,9 @@ static gboolean taskbar_item_check ( GtkWidget *self )
 {
   TaskbarItemPrivate *priv;
   GtkWidget *taskbar, *holder;
+  GList *iter;
+  window_t *win;
+  gint group;
 
   g_return_val_if_fail(IS_TASKBAR_ITEM(self), FALSE);
   priv = taskbar_item_get_instance_private(TASKBAR_ITEM(self));
@@ -103,6 +106,22 @@ static gboolean taskbar_item_check ( GtkWidget *self )
     taskbar = flow_item_get_parent(holder);
   else
     taskbar = priv->taskbar;
+
+  if(priv->win->pin)
+  {
+    g_object_get(G_OBJECT(taskbar), "group", &group, NULL);
+    if(group != TASKBAR_SHELL_API_POPUP && group != TASKBAR_SHELL_API_DEFAULT)
+      return FALSE;
+    for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
+    {
+      win = iter->data;
+      if(win != priv->win && !g_strcmp0(win->appid, priv->win->appid) &&
+          filter_window_check(taskbar, win) )
+        return FALSE;
+    }
+    return TRUE;
+  }
+
   return filter_window_check(taskbar, priv->win);
 }
 

@@ -3,6 +3,7 @@
  * Copyright 2024- sfwbar maintainers
  */
 
+#include "wintree.h"
 #include "gui/taskbaritem.h"
 #include "gui/taskbarpopup.h"
 #include "gui/taskbarpager.h"
@@ -25,20 +26,14 @@ enum {
   TASKBAR_SHELL_FILTER,
   TASKBAR_SHELL_STYLE,
   TASKBAR_SHELL_CSS,
-};
-
-enum TaskbarShellApi {
-  API_NONE,
-  API_DEFAULT,
-  API_POPUP,
-  API_PAGER,
+  TASKBAR_SHELL_PINS,
 };
 
 GEnumValue taskbar_shell_api[] = {
-  { API_NONE, "false", "none" },
-  { API_DEFAULT, "true", "default" },
-  { API_POPUP, "popup", "popup" },
-  { API_PAGER, "pager", "pager" },
+  { TASKBAR_SHELL_API_NONE, "false", "none" },
+  { TASKBAR_SHELL_API_DEFAULT, "true", "default" },
+  { TASKBAR_SHELL_API_POPUP, "popup", "popup" },
+  { TASKBAR_SHELL_API_PAGER, "pager", "pager" },
 };
 
 static void taskbar_shell_destroy ( GtkWidget *self )
@@ -49,6 +44,7 @@ static void taskbar_shell_destroy ( GtkWidget *self )
 
   wintree_listener_remove(self);
   workspace_listener_remove(self);
+  g_clear_pointer(&priv->pins, g_ptr_array_unref);
   if(priv->timer_h)
   {
     g_source_remove(priv->timer_h);
@@ -87,6 +83,8 @@ static void taskbar_shell_mirror ( GtkWidget *self, GtkWidget *src )
       G_OBJECT(self), "tooltips", G_BINDING_SYNC_CREATE);
   g_object_bind_property(G_OBJECT(src), "filter",
       G_OBJECT(self), "filter", G_BINDING_SYNC_CREATE);
+  g_object_bind_property(G_OBJECT(src), "pins",
+      G_OBJECT(self), "pins", G_BINDING_SYNC_CREATE);
 }
 
 static void taskbar_shell_item_init ( window_t *win, GtkWidget *self )
@@ -121,7 +119,7 @@ static void taskbar_shell_item_destroy ( window_t *win, GtkWidget *self )
   if( (taskbar = priv->get_taskbar(self, win, FALSE)) )
   {
     flow_grid_delete_child(taskbar, win);
-    if(!flow_grid_n_children(taskbar) && taskbar != self)
+    if(!flow_grid_n_children(taskbar, FALSE) && taskbar != self)
       flow_grid_delete_child(self,
           flow_item_get_source(taskbar_get_parent(taskbar)));
     else if( (parent = taskbar_get_parent(taskbar)) )
@@ -153,11 +151,11 @@ static void taskbar_shell_set_api ( GtkWidget *self, gint id)
   g_return_if_fail(IS_TASKBAR_SHELL(self));
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
 
-  if(id == API_NONE)
+  if(id == TASKBAR_SHELL_API_NONE)
     get_taskbar = taskbar_get_taskbar;
-  else if(id == API_DEFAULT || id == API_POPUP)
+  else if(id == TASKBAR_SHELL_API_DEFAULT || id == TASKBAR_SHELL_API_POPUP)
     get_taskbar = taskbar_popup_get_taskbar;
-  else if(id == API_PAGER)
+  else if(id == TASKBAR_SHELL_API_PAGER)
     get_taskbar = taskbar_pager_get_taskbar;
   else
     return;
@@ -173,6 +171,27 @@ static void taskbar_shell_set_api ( GtkWidget *self, gint id)
   
   for(iter=wintree_get_list(); iter; iter=g_list_next(iter))
     taskbar_shell_item_init(iter->data, self);
+}
+
+static void taskbar_shell_add_pins ( GtkWidget *self, GPtrArray *pins )
+{
+  TaskbarShellPrivate *priv;
+  guint i;
+
+  g_return_if_fail(IS_TASKBAR_SHELL(self));
+  priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
+
+  if(wintree_api_check())
+  {
+    for(i=0; i<pins->len; i++)
+      if(!g_ptr_array_find_with_equal_func(priv->pins, pins->pdata[i],
+            g_str_equal, NULL))
+      {
+        g_ptr_array_add(priv->pins, g_strdup(pins->pdata[i]));
+        wintree_pin_add(pins->pdata[i]);
+      }
+  }
+  g_ptr_array_unref(pins);
 }
 
 static void taskbar_shell_get_property ( GObject *self, guint id,
@@ -219,6 +238,9 @@ static void taskbar_shell_get_property ( GObject *self, guint id,
       break;
     case TASKBAR_SHELL_FILTER:
       g_value_set_enum(value, priv->filter);
+      break;
+    case TASKBAR_SHELL_PINS:
+      g_value_set_boxed(value, priv->pins);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
@@ -274,6 +296,9 @@ static void taskbar_shell_set_property ( GObject *self, guint id,
     case TASKBAR_SHELL_FILTER:
       priv->filter |= g_value_get_enum(value);
       break;
+    case TASKBAR_SHELL_PINS:
+      taskbar_shell_add_pins(GTK_WIDGET(self), g_value_get_boxed(value));
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);
   }
@@ -289,7 +314,7 @@ static void taskbar_shell_class_init ( TaskbarShellClass *kclass )
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_API,
       g_param_spec_enum("group", "group", "sfwbar_config",
         g_enum_register_static("taskbar_shell_api", taskbar_shell_api),
-        API_NONE, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+        TASKBAR_SHELL_API_NONE, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_LABELS,
       g_param_spec_boolean("group_labels", "labels", "sfwbar_config", FALSE,
         G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
@@ -325,6 +350,9 @@ static void taskbar_shell_class_init ( TaskbarShellClass *kclass )
   g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_FILTER,
       g_param_spec_enum("filter", "filter", "sfwbar_config", filter_type_get(),
         0, G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+  g_object_class_install_property(G_OBJECT_CLASS(kclass), TASKBAR_SHELL_PINS,
+      g_param_spec_boxed("pins", "pins", "sfwbar_config", G_TYPE_PTR_ARRAY,
+        G_PARAM_READWRITE));
 }
 
 static void taskbar_shell_init ( TaskbarShell *self )
@@ -335,6 +363,7 @@ static void taskbar_shell_init ( TaskbarShell *self )
   priv->get_taskbar = taskbar_get_taskbar;
   priv->timer_h = g_timeout_add(100, (GSourceFunc)flow_grid_update, self);
   priv->title_width = -1;
+  priv->pins = g_ptr_array_new();
   wintree_listener_register(&taskbar_shell_window_listener, self);
   workspace_listener_register(&taskbar_shell_workspace_listener, self);
 }

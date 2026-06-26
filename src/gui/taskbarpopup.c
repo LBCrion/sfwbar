@@ -194,8 +194,8 @@ static void taskbar_popup_update ( GtkWidget *self )
   gtk_widget_unset_state_flags(priv->button, GTK_STATE_FLAG_PRELIGHT);
 
   flow_grid_update(priv->tgroup);
-  flow_item_set_active(self, flow_grid_n_children(priv->tgroup)>0);
-  priv->single = (flow_grid_n_children(priv->tgroup)==1);
+  flow_item_set_active(self, flow_grid_n_children(priv->tgroup, TRUE)>0);
+  priv->single = (flow_grid_n_children(priv->tgroup, TRUE)==1);
   window_collapse_popups(priv->popover);
   gtk_widget_hide(priv->popover);
 

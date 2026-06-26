@@ -463,7 +463,7 @@ gboolean flow_grid_update ( GtkWidget *self )
   return TRUE;
 }
 
-guint flow_grid_n_children ( GtkWidget *self )
+guint flow_grid_n_children ( GtkWidget *self, gboolean active )
 {
   FlowGridPrivate *priv;
   GList *iter;
@@ -473,7 +473,7 @@ guint flow_grid_n_children ( GtkWidget *self )
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   for(iter=priv->children; iter; iter=g_list_next(iter))
-    if(flow_item_get_active(iter->data))
+    if(!active || flow_item_get_active(iter->data))
       n++;
 
   return n;

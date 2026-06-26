@@ -14,6 +14,13 @@ typedef struct _TaskbarShellClass TaskbarShellClass;
 
 extern GEnumValue taskbar_shell_filter[];
 
+enum TaskbarShellApi {
+  TASKBAR_SHELL_API_NONE,
+  TASKBAR_SHELL_API_DEFAULT,
+  TASKBAR_SHELL_API_POPUP,
+  TASKBAR_SHELL_API_PAGER,
+};
+
 struct _TaskbarShell
 {
   Taskbar item;
@@ -33,6 +40,7 @@ struct _TaskbarShellPrivate
   gint rows, cols, filter, title_width, primary_axis, api_id;
   gboolean tooltips;
   guint timer_h;
+  GPtrArray *pins;
   GBytes *style;
   gchar *css;
 };
