@@ -113,11 +113,6 @@ static void pager_init ( Pager *self )
   workspace_listener_register(&pager_listener, self);
 }
 
-static gboolean pager_pin_cmp ( gconstpointer p1, gconstpointer p2 )
-{
-  return !g_strcmp0(p1, p2);
-}
-
 void pager_add_pins ( GtkWidget *self, GPtrArray *pins )
 {
   PagerPrivate *priv;
@@ -130,7 +125,7 @@ void pager_add_pins ( GtkWidget *self, GPtrArray *pins )
   {
     for(i=0; i<pins->len; i++)
       if(!g_ptr_array_find_with_equal_func(priv->pins, pins->pdata[i],
-            pager_pin_cmp, NULL))
+            g_str_equal, NULL))
       {
         g_ptr_array_add(priv->pins, g_strdup(pins->pdata[i]));
         workspace_pin_add(pins->pdata[i]);
@@ -147,5 +142,5 @@ gboolean pager_check_pins ( GtkWidget *self, gchar *pin )
   priv = pager_get_instance_private(PAGER(base_widget_get_mirror_parent(self)));
 
   return priv->pins && g_ptr_array_find_with_equal_func(priv->pins, pin,
-      pager_pin_cmp, NULL);
+      g_str_equal, NULL);
 }
