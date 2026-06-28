@@ -238,15 +238,19 @@ static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
   g_return_val_if_fail(IS_TASKBAR_POPUP(self),FALSE);
   priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
 
-  if( (win = flow_grid_get_sole_source(priv->tgroup)) &&
-      (action = base_widget_get_action(priv->shell, slot,
-                                       base_widget_get_modifiers(self))) )
+  if((action = base_widget_get_action(priv->shell, slot,
+          base_widget_get_modifiers(self))) )
   {
-    if(win->pin && slot==1)
+    if( slot==2 && (win = wintree_pin_get(priv->appid)) )
       exec_launch(win->pin);
-    else
-      vm_run_action(action, self, (GdkEvent *)ev,
-          win, NULL, base_widget_get_store(priv->shell), NULL);
+    else if((win = flow_grid_get_sole_source(priv->tgroup)) && win->pin)
+    {
+      if(slot==1)
+        exec_launch(win->pin);
+      else
+        vm_run_action(action, self, (GdkEvent *)ev, win, NULL,
+            base_widget_get_store(priv->shell), NULL);
+    }
   }
 
   return TRUE;
