@@ -79,19 +79,27 @@ void wintree_listener_remove ( void *data )
     wintree_listeners = g_list_remove(wintree_listeners, iter->data);
 }
 
+static gboolean wintree_pin_cmp ( window_t *win, gchar *pin )
+{
+  return !(win->pin && !g_strcmp0(pin, win->appid));
+}
+
+window_t *wintree_pin_get ( gchar *pin )
+{
+  GList *l;
+
+  return (l = g_list_find_custom(wt_list, pin, (GCompareFunc)wintree_pin_cmp))?
+    l->data : NULL;
+}
+
 void wintree_pin_add ( gchar *pin )
 {
   GDesktopAppInfo *app;
   window_t *win;
-  GList *iter;
   const gchar *appid;
 
-  for(iter=wt_list; iter; iter=g_list_next(iter))
-  {
-    win = iter->data;
-    if(win->uid == WINTREE_PIN_ID && !g_strcmp0(pin, win->appid))
-      return;
-  }
+  if(wintree_pin_get(pin))
+    return;
 
   if( !(app = app_info_from_id(pin)) )
     return;
@@ -109,7 +117,7 @@ void wintree_pin_add ( gchar *pin )
 
 static void wintree_pin_invalidate ( window_t *win, gchar *pin )
 {
-  if(win->uid == WINTREE_PIN_ID && !g_strcmp0(win->appid, pin))
+  if(win->pin && !g_strcmp0(win->appid, pin))
     wintree_commit(win);
 }
 
@@ -174,7 +182,7 @@ void wintree_set_focus ( gpointer id )
   wintree_commit(wintree_from_id(wt_focus));
   wt_focus = id;
   for(iter=wt_list; iter; iter=g_list_next(iter) )
-    if (((window_t *)(iter->data))->uid == id)
+    if(((window_t *)(iter->data))->uid==id && !((window_t *)(iter->data))->pin)
       break;
   if(!iter)
     return;
@@ -203,7 +211,8 @@ window_t *wintree_from_id ( gpointer id )
   GList *iter;
 
   for(iter = wt_list; iter; iter=g_list_next(iter) )
-    if ( ((window_t *)(iter->data))->uid == id )
+    if ( ((window_t *)(iter->data))->uid == id &&
+        !((window_t *)(iter->data))->pin )
       break;
   return iter? iter->data : NULL;
 }
@@ -312,16 +321,12 @@ void wintree_window_append ( window_t *win )
 
 void wintree_window_delete ( gpointer id )
 {
-  GList *iter;
   window_t *win;
 
-  for(iter=wt_list; iter; iter=g_list_next(iter) )
-    if ( ((window_t *)(iter->data))->uid == id )
-      break;
-  if(!iter || !iter->data)
+  if( !(win = wintree_from_id(id)) )
     return;
-  win = iter->data;
-  wt_list = g_list_delete_link(wt_list, iter);
+
+  wt_list = g_list_remove(wt_list, win);
 
   LISTENER_CALL(window_destroy, win);
   if(win->workspace)
@@ -426,7 +431,8 @@ gboolean wintree_placer_calc ( gpointer wid, GdkRectangle *place )
   if(check_pid)
     for(iter=wt_list; iter; iter=g_list_next(iter))
       if( ((window_t *)(iter->data))->pid == win->pid &&
-          ((window_t *)(iter->data))->uid != wid )
+          ((window_t *)(iter->data))->uid != wid &&
+          !((window_t *)(iter->data))->pin )
         return FALSE;
 
   place->width = place->height = 0;

@@ -50,6 +50,7 @@ gchar *wintree_get_custom_ipc ( void );
 void wintree_listener_register ( window_listener_t *, void *);
 void wintree_listener_remove ( void *data );
 void wintree_pin_add ( gchar *pin );
+window_t *wintree_pin_get ( gchar *pin );
 window_t *wintree_window_init ( void );
 window_t *wintree_from_id ( gpointer id );
 window_t *wintree_from_pid ( gint64 pid );
