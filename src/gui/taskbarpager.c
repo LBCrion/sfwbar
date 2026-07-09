@@ -154,26 +154,61 @@ static void taskbar_pager_invalidate ( GtkWidget *self )
   priv->invalid = TRUE;
 }
 
-static void taskbar_pager_dnd_dest ( GtkWidget *dest, GtkWidget *src,
-    gint x, gint y )
+static gboolean taskbar_pager_drag_drop ( GtkWidget *self, GdkDragContext *ctx,
+    gint x, gint y, guint time )
 {
+  GtkWidget *src;
   workspace_t *ws;
   window_t *win;
 
-  g_return_if_fail(IS_TASKBAR_PAGER(dest));
-  g_return_if_fail(IS_TASKBAR_ITEM(src));
-  if( (ws = flow_item_get_source(dest)) && (win = flow_item_get_source(src)) )
+  if( (src = gtk_drag_get_source_widget(ctx)) &&
+      (src = base_widget_get_parent(src)) &&
+      IS_TASKBAR_PAGER(self) && IS_FLOW_ITEM(src) &&
+      (ws = flow_item_get_source(self)) && (win = flow_item_get_source(src)) )
+  {
     wintree_move_to(win->uid, ws->id);
+    gtk_drag_finish(ctx, TRUE, FALSE, time);
+    return TRUE;
+  }
+  return GTK_WIDGET_CLASS(taskbar_pager_parent_class)->drag_drop(self, ctx,
+      x, y, time);
+}
+
+static gboolean taskbar_pager_drag_motion ( GtkWidget *self,
+    GdkDragContext *ctx, gint x, gint y, guint time )
+{
+  TaskbarPagerPrivate *priv;
+  GtkWidget *src;
+  gboolean drop_zone;
+
+  if( (src = gtk_drag_get_source_widget(ctx)) &&
+      (src = gtk_widget_get_ancestor(src, FLOW_ITEM_TYPE)) )
+  {
+    g_return_val_if_fail(IS_TASKBAR_PAGER(self), FALSE);
+    g_return_val_if_fail(IS_TASKBAR_ITEM(src), FALSE);
+    priv = taskbar_pager_get_instance_private(TASKBAR_PAGER(self));
+    drop_zone = !g_list_find(flow_grid_children_get(priv->taskbar), src);
+  }
+
+  if(drop_zone)
+    css_add_class(self, "drop_target");
+  else
+    css_remove_class(self, "drop_target");
+
+  return drop_zone ||
+    GTK_WIDGET_CLASS(taskbar_pager_parent_class)->drag_motion(self, ctx, x, y,
+        time);
 }
 
 static void taskbar_pager_class_init ( TaskbarPagerClass *kclass )
 {
+  GTK_WIDGET_CLASS(kclass)->drag_drop = taskbar_pager_drag_drop;
+  GTK_WIDGET_CLASS(kclass)->drag_motion = taskbar_pager_drag_motion;
   BASE_WIDGET_CLASS(kclass)->action_exec = taskbar_pager_action_exec;
   FLOW_ITEM_CLASS(kclass)->update = taskbar_pager_update;
   FLOW_ITEM_CLASS(kclass)->invalidate = taskbar_pager_invalidate;
   FLOW_ITEM_CLASS(kclass)->get_source = taskbar_pager_get_ws;
   FLOW_ITEM_CLASS(kclass)->compare = taskbar_pager_compare;
-  FLOW_ITEM_CLASS(kclass)->dnd_dest = taskbar_pager_dnd_dest;
 }
 
 static void taskbar_pager_init ( TaskbarPager *self )
@@ -193,13 +228,13 @@ GtkWidget *taskbar_pager_new( workspace_t *ws, GtkWidget *shell )
   priv->shell = shell;
   priv->taskbar = taskbar_new(self);
   taskbar_shell_init_child(shell, priv->taskbar);
-  flow_grid_set_dnd_target(priv->taskbar, flow_grid_get_dnd_target(shell));
-  flow_grid_child_dnd_enable(shell, self, NULL);
   priv->ws = ws;
   priv->grid = gtk_grid_new();
   gtk_widget_set_name(GTK_WIDGET(priv->grid), "taskbar_pager");
   gtk_container_add(GTK_CONTAINER(self), priv->grid);
   gtk_container_add(GTK_CONTAINER(priv->grid), priv->taskbar);
+  flow_grid_set_dnd_target(priv->taskbar, flow_grid_get_dnd_target(shell));
+  flow_item_dnd_enable(shell, self, priv->grid);
   gtk_widget_show_all(self);
 
   g_object_ref_sink(G_OBJECT(self));

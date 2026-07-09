@@ -237,7 +237,7 @@ GtkWidget *tray_item_new( sni_item_t *sni, GtkWidget *tray )
   gtk_widget_style_get(priv->button, "direction", &dir, NULL);
   box = gtk_grid_new();
   gtk_container_add(GTK_CONTAINER(priv->button), box);
-  flow_grid_child_dnd_enable(tray, self, priv->button);
+  flow_item_dnd_enable(tray, self, priv->button);
 
   priv->icon = scale_image_new();
   priv->label = gtk_label_new("");

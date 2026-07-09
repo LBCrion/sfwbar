@@ -3,8 +3,11 @@
  * Copyright 2022- sfwbar maintainers
  */
 
+#include "gui/bar.h"
+#include "gui/css.h"
 #include "gui/flowitem.h"
 #include "gui/flowgrid.h"
+#include "window.h"
 
 G_DEFINE_TYPE_WITH_CODE(FlowItem, flow_item, BASE_WIDGET_TYPE,
     G_ADD_PRIVATE(FlowItem))
@@ -22,43 +25,84 @@ static void flow_item_destroy ( GtkWidget *self )
   GTK_WIDGET_CLASS(flow_item_parent_class)->destroy(self);
 }
 
-static void flow_item_dnd_dest_impl ( GtkWidget *dest, GtkWidget *src,
-    gint x, gint y )
+static gboolean flow_item_drag_drop ( GtkWidget *self, GdkDragContext *ctx,
+    gint x, gint y, guint time )
 {
-  FlowItemPrivate *priv, *spriv;
-  window_t *swin, *dwin;
+  GtkWidget *src;
   GtkAllocation alloc;
   gint prows, pcols;
 
-  if(src==dest)
-    return;
+  g_return_val_if_fail(IS_FLOW_ITEM(self), FALSE);
 
-  g_return_if_fail(IS_FLOW_ITEM(dest));
-  g_return_if_fail(IS_FLOW_ITEM(src));
-  priv = flow_item_get_instance_private(FLOW_ITEM(dest));
-  spriv = flow_item_get_instance_private(FLOW_ITEM(src));
-
-  g_object_get(G_OBJECT(priv->parent), "cols", &pcols, "rows", &prows, NULL);
-
-  if(priv->parent == spriv->parent)
+  if( (src = base_widget_get_parent(gtk_drag_get_source_widget(ctx))) &&
+      src != self && IS_FLOW_ITEM(src) && 
+      flow_item_get_parent(src) == flow_item_get_parent(self) )
   {
-    gtk_widget_get_allocation( dest, &alloc );
-    flow_grid_children_order(priv->parent, dest, src,
+    g_object_get(G_OBJECT(flow_item_get_parent(self)),
+      "cols", &pcols, "rows", &prows, NULL);
+    gtk_widget_get_allocation(self, &alloc);
+    flow_grid_children_order(flow_item_get_parent(self), self, src,
         (pcols>0 && y>alloc.height/2) || (prows>0 && x>alloc.width/2));
+    gtk_drag_finish(ctx, TRUE, FALSE, time);
+    return TRUE;
   }
-  else
+
+  return GTK_WIDGET_CLASS(flow_item_parent_class)->drag_drop(self, ctx, x, y,
+      time);
+}
+
+static gboolean flow_item_drag_motion ( GtkWidget *self,  GdkDragContext *ctx,
+    gint x, gint y, guint time )
+{
+  gboolean subsequent, drop_zone = FALSE;
+  GtkAllocation alloc;
+  GtkWidget *c1, *c2, *src;
+  GList *l;
+  gint prows, pcols;
+
+  g_return_val_if_fail(IS_FLOW_ITEM(self), FALSE);
+
+  if( (src = base_widget_get_parent(gtk_drag_get_source_widget(ctx))) &&
+      src != self && IS_FLOW_ITEM(src) &&
+      flow_item_get_parent(src) == flow_item_get_parent(self) )
   {
-    swin = flow_item_get_source(src);
-    dwin = flow_item_get_source(dest);
-    if(swin && dwin && dwin->workspace)
-      wintree_move_to(swin->uid, dwin->workspace->id);
+    g_object_get(G_OBJECT(flow_item_get_parent(self)),
+        "cols", &pcols, "rows", &prows, NULL);
+    gtk_widget_get_allocation(self, &alloc);
+    subsequent = (pcols>0 && y>alloc.height/2) || (prows>0 && x>alloc.width/2);
+    c1 = subsequent? self : src;
+    c2 = subsequent? src : self;
+
+    if(flow_item_get_active(c1) &&
+        (l=g_list_find(flow_grid_children_get(flow_item_get_parent(self)),c1)))
+    {
+      for(l=l->next; l && !flow_item_get_active(l->data); l=l->next);
+      drop_zone = !l || !(l->data == c2);
+    }
   }
+
+  if(drop_zone)
+    css_add_class(self, "drop_target");
+  else
+    css_remove_class(self, "drop_target");
+
+  return drop_zone ||
+    GTK_WIDGET_CLASS(flow_item_parent_class)->drag_motion(self, ctx, x, y,
+        time);
+}
+
+static void flow_item_dnd_leave ( GtkWidget *self, GdkDragContext *ctx,
+    guint time )
+{
+  css_remove_class(self, "drop_target");
 }
 
 static void flow_item_class_init ( FlowItemClass *kclass )
 {
   GTK_WIDGET_CLASS(kclass)->destroy = flow_item_destroy;
-  FLOW_ITEM_CLASS(kclass)->dnd_dest = flow_item_dnd_dest_impl;
+  GTK_WIDGET_CLASS(kclass)->drag_drop = flow_item_drag_drop;
+  GTK_WIDGET_CLASS(kclass)->drag_motion = flow_item_drag_motion;
+  BASE_WIDGET_CLASS(kclass)->dnd_leave = flow_item_dnd_leave;
 }
 
 void flow_item_set_parent ( GtkWidget *self, GtkWidget *parent )
@@ -109,7 +153,7 @@ gboolean flow_item_get_active ( GtkWidget *self )
 
 static void flow_item_init ( FlowItem *self )
 {
-  flow_item_set_active(GTK_WIDGET(self),TRUE);
+  flow_item_set_active(GTK_WIDGET(self), TRUE);
 }
 
 void flow_item_update ( GtkWidget *self )
@@ -162,9 +206,50 @@ gint flow_item_compare ( GtkWidget *p1, GtkWidget *p2, GtkWidget *parent )
   return FLOW_ITEM_GET_CLASS(p1)->compare(p1,p2,parent);
 }
 
-void flow_item_dnd_dest ( GtkWidget *self, GtkWidget *src, gint x, gint y )
+static void flow_item_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
+    gpointer *d )
 {
+  cairo_surface_t *cursor;
+  cairo_t *cr;
+
+  cursor = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+      gtk_widget_get_allocated_width(widget),
+      gtk_widget_get_allocated_height(widget));
+  cr = cairo_create(cursor);
+  gtk_widget_draw(widget, cr);
+  gtk_drag_set_icon_surface(ctx, cursor);
+  cairo_destroy(cr);
+  cairo_surface_destroy(cursor);
+
+  gtk_grab_add(widget);
+  window_ref(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW), widget);
+}
+
+static void flow_item_dnd_end_cb ( GtkWidget *widget, GdkDragContext *ctx,
+    gpointer d )
+{
+  gtk_grab_remove(widget);
+  window_unref(widget, gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW));
+}
+
+void flow_item_dnd_enable ( GtkWidget *grid, GtkWidget *self, GtkWidget *src )
+{
+  GtkTargetEntry *target;
+
   g_return_if_fail(IS_FLOW_ITEM(self));
-  if(FLOW_ITEM_GET_CLASS(self)->dnd_dest)
-    FLOW_ITEM_GET_CLASS(self)->dnd_dest(self, src, x, y);
+
+  if( !(target = flow_grid_get_dnd_target(grid)) )
+    return;
+
+  gtk_drag_dest_set(self, 0, target, 1, GDK_ACTION_MOVE);
+  gtk_drag_dest_set_track_motion(self, TRUE);
+
+  if(src)
+  {
+    gtk_drag_source_set(src, GDK_BUTTON1_MASK, target, 1, GDK_ACTION_MOVE);
+    g_signal_connect(G_OBJECT(src), "drag-begin",
+        G_CALLBACK(flow_item_dnd_begin_cb), NULL);
+    g_signal_connect(G_OBJECT(src), "drag-end",
+        G_CALLBACK(flow_item_dnd_end_cb), NULL);
+  }
 }

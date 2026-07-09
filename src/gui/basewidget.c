@@ -375,10 +375,26 @@ static gboolean base_widget_action_exec_impl ( GtkWidget *self, gint slot,
   return !!action;
 }
 
+static gboolean base_widget_drag_drop ( GtkWidget *self, GdkDragContext *ctx,
+    gint x, gint y, guint time )
+{
+  GtkWidget *parent;
+
+  if( (parent = base_widget_get_parent(self)) )
+      return GTK_WIDGET_GET_CLASS(parent)->drag_drop(parent, ctx, x, y, time);
+  return FALSE;
+}
+
 static gboolean base_widget_drag_motion( GtkWidget *self, GdkDragContext *ctx,
     gint x, gint y, guint time )
 {
   BaseWidgetPrivate *priv;
+  GtkWidget *parent;
+
+  g_return_val_if_fail(IS_BASE_WIDGET(self), FALSE);
+
+  if( (parent = base_widget_get_parent(self)) )
+    GTK_WIDGET_GET_CLASS(parent)->drag_motion(parent, ctx, x, y, time);
 
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
@@ -404,6 +420,11 @@ static void base_widget_drag_leave (GtkWidget *self,
     GdkDragContext *ctx, guint time )
 {
   BaseWidgetPrivate *priv;
+  GtkWidget *iter;
+
+  for(iter=self; iter; iter=base_widget_get_parent(iter))
+    if(BASE_WIDGET_GET_CLASS(iter)->dnd_leave)
+      BASE_WIDGET_GET_CLASS(iter)->dnd_leave(iter, ctx, time);
 
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
   priv->is_drag_dest = FALSE;
@@ -880,6 +901,7 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
   GTK_WIDGET_CLASS(kclass)->scroll_event = base_widget_scroll_event;
   GTK_WIDGET_CLASS(kclass)->drag_motion = base_widget_drag_motion;
   GTK_WIDGET_CLASS(kclass)->drag_leave = base_widget_drag_leave;
+  GTK_WIDGET_CLASS(kclass)->drag_drop = base_widget_drag_drop;
   GTK_WIDGET_CLASS(kclass)->query_tooltip = base_widget_query_tooltip;
   GTK_WIDGET_CLASS(kclass)->map = base_widget_map;
 
@@ -984,11 +1006,10 @@ GtkWidget *base_widget_get_parent ( GtkWidget *self )
 {
   GtkWidget *parent;
 
-  parent = gtk_widget_get_parent(self);
-  while(parent && !IS_BASE_WIDGET(parent))
-    parent = gtk_widget_get_parent(parent);
+  if(!self || !(parent = gtk_widget_get_parent(self)) )
+    return NULL;
 
-  return parent;
+  return gtk_widget_get_ancestor(parent, BASE_WIDGET_TYPE);
 }
 
 gboolean base_widget_get_local_state ( GtkWidget *self )

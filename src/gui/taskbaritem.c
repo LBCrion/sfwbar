@@ -282,7 +282,7 @@ GtkWidget *taskbar_item_new( window_t *win, GtkWidget *taskbar )
   gtk_widget_set_name(button, "taskbar_item");
   priv->box = gtk_grid_new();
   gtk_container_add(GTK_CONTAINER(button), priv->box);
-  flow_grid_child_dnd_enable(taskbar, self, button);
+  flow_item_dnd_enable(taskbar, self, button);
 
   g_object_ref_sink(G_OBJECT(self));
   flow_grid_add_child(taskbar, self);

@@ -71,7 +71,6 @@ static void flow_grid_destroy( GtkWidget *self )
   g_return_if_fail(IS_FLOW_GRID(self));
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
-  g_clear_pointer(&priv->dnd_target, gtk_target_entry_free);
   g_list_free_full(g_steal_pointer(&priv->children),
       (GDestroyNotify)gtk_widget_destroy);
   GTK_WIDGET_CLASS(flow_grid_parent_class)->destroy(self);
@@ -308,8 +307,8 @@ void flow_grid_set_dnd_target ( GtkWidget *self, GtkTargetEntry *target )
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
   g_clear_pointer(&priv->dnd_target, gtk_target_entry_free);
-  if(target)
-    priv->dnd_target = gtk_target_entry_copy(target);
+  priv->dnd_target = gtk_target_entry_copy(target);
+
 }
 
 GtkTargetEntry *flow_grid_get_dnd_target ( GtkWidget *self )
@@ -534,103 +533,12 @@ void flow_grid_children_order ( GtkWidget *self, GtkWidget *ref,
   flow_item_invalidate(ref);
 }
 
-static void flow_grid_dnd_data_rec_cb ( GtkWidget *dest, GdkDragContext *ctx,
-    gint x, gint y, GtkSelectionData *sel, guint info, guint time,
-    gpointer parent )
-{
-  GtkWidget *src;
-
-  if(info == SFWB_DND_TARGET_FLOW_ITEM)
-  {
-    g_return_if_fail(IS_FLOW_GRID(parent));
-
-    src = *(GtkWidget **)gtk_selection_data_get_data(sel);
-    flow_item_dnd_dest(dest, src, x, y);
-  }
-  gtk_drag_finish(ctx, TRUE, FALSE, time);
-}
-
-static void flow_grid_dnd_enter_cb ( GtkWidget *widget, GdkEventCrossing *ev,
-    gpointer data )
-{
-  bar_sensor_cancel_hide(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW));
-}
-
-static gboolean flow_grid_dnd_motion_cb ( GtkWidget *widget,  GdkDragContext *ctx,
-    gint x, gint y, gpointer data )
-{
-  css_add_class(widget, "drop_target"); 
-
-  return TRUE;
-}
-
-static void flow_grid_dnd_leave_cb ( GtkWidget *widget, GdkDragContext *ctx,
-    guint time, gpointer data )
-{
-  css_remove_class(widget, "drop_target");
-}
-
-static void flow_grid_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,
-    gpointer data )
-{
-  gtk_drag_set_icon_default(ctx);
-  g_signal_handlers_unblock_matched(widget, G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
-      (GFunc)flow_grid_dnd_enter_cb, NULL);
-  gtk_grab_add(widget);
-  window_ref(gtk_widget_get_ancestor(widget, GTK_TYPE_WINDOW), widget);
-}
-
-static void flow_grid_dnd_end_cb ( GtkWidget *widget, GdkDragContext *ctx,
-    gpointer data )
-{
-  g_signal_handlers_block_matched(widget, G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
-      (GFunc)flow_grid_dnd_enter_cb, NULL);
-  gtk_grab_remove(widget);
-  window_unref(widget, gtk_widget_get_ancestor(data, GTK_TYPE_WINDOW));
-}
-
-static void flow_grid_dnd_data_get_cb ( GtkWidget *widget, GdkDragContext *ctx,
-    GtkSelectionData *sel, guint info, guint time, gpointer *data )
-{
-  gtk_selection_data_set(sel, gdk_atom_intern_static_string("gpointer"), 8,
-      (const guchar *)&data, sizeof(gpointer));
-}
-
-void flow_grid_child_dnd_enable ( GtkWidget *self, GtkWidget *child,
-    GtkWidget *src )
+GList *flow_grid_children_get ( GtkWidget *self )
 {
   FlowGridPrivate *priv;
 
-  g_return_if_fail(IS_FLOW_ITEM(child));
-
-  g_return_if_fail(IS_FLOW_GRID(self));
+  g_return_val_if_fail(IS_FLOW_GRID(self), NULL);
   priv = flow_grid_get_instance_private(FLOW_GRID(self));
 
-  if(!priv->dnd_target)
-    return;
-  gtk_drag_dest_set(child, GTK_DEST_DEFAULT_ALL, priv->dnd_target, 1,
-      GDK_ACTION_MOVE);
-  g_signal_connect(G_OBJECT(child), "drag-data-received",
-      G_CALLBACK(flow_grid_dnd_data_rec_cb), self);
-  gtk_drag_dest_set_track_motion(child, TRUE);
-
-  if(src)
-  {
-    gtk_drag_source_set(src, GDK_BUTTON1_MASK, priv->dnd_target, 1,
-        GDK_ACTION_MOVE);
-    g_signal_connect(G_OBJECT(src),"drag-data-get",
-        G_CALLBACK(flow_grid_dnd_data_get_cb), child);
-    g_signal_connect(G_OBJECT(src), "drag-begin",
-        G_CALLBACK(flow_grid_dnd_begin_cb), self);
-    g_signal_connect(G_OBJECT(src), "drag-end",
-        G_CALLBACK(flow_grid_dnd_end_cb), self);
-    g_signal_connect(G_OBJECT(src), "enter-notify-event",
-        G_CALLBACK(flow_grid_dnd_enter_cb), NULL);
-    g_signal_connect(G_OBJECT(child), "drag-leave",
-        G_CALLBACK(flow_grid_dnd_leave_cb), NULL);
-    g_signal_connect(G_OBJECT(child), "drag-motion",
-        G_CALLBACK(flow_grid_dnd_motion_cb), NULL);
-    g_signal_handlers_block_matched(src, G_SIGNAL_MATCH_FUNC, 0, 0, NULL,
-        (GFunc)flow_grid_dnd_enter_cb, NULL);
-  }
+  return priv->children;
 }

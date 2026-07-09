@@ -33,6 +33,8 @@ struct _BaseWidgetClass
   void (*mirror)(GtkWidget *self, GtkWidget *src);
   gboolean (*action_exec)( GtkWidget *self, gint slot, GdkEvent *ev );
   void (*action_configure)( GtkWidget *self, gint slot );
+  gboolean (*dnd_motion)(GtkWidget *, GdkDragContext *, gint, gint, guint);
+  void (*dnd_leave)(GtkWidget *, GdkDragContext *, guint);
 
   gboolean always_update;
   gboolean custom_tooltip;

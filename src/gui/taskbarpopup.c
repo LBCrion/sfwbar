@@ -247,7 +247,7 @@ static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
     {
       if(slot==1)
         exec_launch(win->pin);
-      else
+      else if(!wintree_pin_get(priv->appid))
         vm_run_action(action, self, (GdkEvent *)ev, win, NULL,
             base_widget_get_store(priv->shell), NULL);
     }
@@ -310,7 +310,7 @@ GtkWidget *taskbar_popup_new( const gchar *appid, GtkWidget *shell )
   gtk_widget_set_name(priv->button, "taskbar_popup");
   box = gtk_grid_new();
   gtk_container_add(GTK_CONTAINER(priv->button), box);
-  flow_grid_child_dnd_enable(shell, self, priv->button);
+  flow_item_dnd_enable(shell, self, priv->button);
 
   if( (app = app_info_from_id(appid)) )
   {
