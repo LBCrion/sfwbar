@@ -111,7 +111,8 @@ void wintree_pin_add ( gchar *pin )
     win->appid = g_strndup(appid, strlen(appid)-8);
   else
     win->appid = g_strdup(appid);
-  wintree_set_title(win, g_app_info_get_display_name((GAppInfo *)app));
+  str_assign(&win->title,
+      g_strdup(g_app_info_get_display_name((GAppInfo *)app)));
   wintree_window_append(win);
 }
 
