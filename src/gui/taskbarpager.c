@@ -179,23 +179,21 @@ static gboolean taskbar_pager_drag_motion ( GtkWidget *self,
 {
   TaskbarPagerPrivate *priv;
   GtkWidget *src;
-  gboolean drop_zone;
+  gboolean zone;
 
-  if( (src = gtk_drag_get_source_widget(ctx)) &&
-      (src = gtk_widget_get_ancestor(src, FLOW_ITEM_TYPE)) )
-  {
-    g_return_val_if_fail(IS_TASKBAR_PAGER(self), FALSE);
-    g_return_val_if_fail(IS_TASKBAR_ITEM(src), FALSE);
-    priv = taskbar_pager_get_instance_private(TASKBAR_PAGER(self));
-    drop_zone = !g_list_find(flow_grid_children_get(priv->taskbar), src);
-  }
+  g_return_val_if_fail(IS_TASKBAR_PAGER(self), FALSE);
 
-  if(drop_zone)
+  zone = (src = base_widget_get_parent(gtk_drag_get_source_widget(ctx))) &&
+      IS_FLOW_ITEM(src) &&
+      (priv = taskbar_pager_get_instance_private(TASKBAR_PAGER(self))) &&
+      !g_list_find(flow_grid_children_get(priv->taskbar), src);
+
+  if(zone)
     css_add_class(self, "drop_target");
   else
     css_remove_class(self, "drop_target");
 
-  return drop_zone ||
+  return zone ||
     GTK_WIDGET_CLASS(taskbar_pager_parent_class)->drag_motion(self, ctx, x, y,
         time);
 }
