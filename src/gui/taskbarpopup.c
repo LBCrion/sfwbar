@@ -241,13 +241,13 @@ static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
   if((action = base_widget_get_action(priv->shell, slot,
           base_widget_get_modifiers(self))) )
   {
-    if( slot==2 && (win = wintree_pin_get(priv->appid)) )
+    if(slot==2 && (win = wintree_pin_get(priv->appid)) )
       exec_launch(win->pin);
-    else if((win = flow_grid_get_sole_source(priv->tgroup)) && win->pin)
+    else if((win = flow_grid_get_sole_source(priv->tgroup)))
     {
-      if(slot==1)
+      if(win->pin && slot==1)
         exec_launch(win->pin);
-      else if(!wintree_pin_get(priv->appid))
+      else if(!win->pin)
         vm_run_action(action, self, (GdkEvent *)ev, win, NULL,
             base_widget_get_store(priv->shell), NULL);
     }
