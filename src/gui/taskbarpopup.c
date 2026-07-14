@@ -217,15 +217,15 @@ static void taskbar_popup_update ( GtkWidget *self )
 static gint taskbar_popup_compare ( GtkWidget *a, GtkWidget *b,
     GtkWidget *parent )
 {
-  TaskbarPopupPrivate *p1,*p2;
+  TaskbarPopupPrivate *p1, *p2;
 
-  g_return_val_if_fail(IS_TASKBAR_POPUP(a),0);
-  g_return_val_if_fail(IS_TASKBAR_POPUP(b),0);
+  g_return_val_if_fail(IS_TASKBAR_POPUP(a), 0);
+  g_return_val_if_fail(IS_TASKBAR_POPUP(b), 0);
 
   p1 = taskbar_popup_get_instance_private(TASKBAR_POPUP(a));
   p2 = taskbar_popup_get_instance_private(TASKBAR_POPUP(b));
 
-  return g_strcmp0(p1->appid,p2->appid);
+  return g_strcmp0(p1->appid, p2->appid);
 }
 
 static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
