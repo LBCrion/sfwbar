@@ -29,8 +29,6 @@ static gboolean flow_item_drag_drop ( GtkWidget *self, GdkDragContext *ctx,
     gint x, gint y, guint time )
 {
   GtkWidget *src;
-  GtkAllocation alloc;
-  gint prows, pcols;
 
   g_return_val_if_fail(IS_FLOW_ITEM(self), FALSE);
 
@@ -38,57 +36,37 @@ static gboolean flow_item_drag_drop ( GtkWidget *self, GdkDragContext *ctx,
       src != self && IS_FLOW_ITEM(src) && 
       flow_item_get_parent(src) == flow_item_get_parent(self) )
   {
-    g_object_get(G_OBJECT(flow_item_get_parent(self)),
-      "cols", &pcols, "rows", &prows, NULL);
-    gtk_widget_get_allocation(self, &alloc);
     flow_grid_children_order(flow_item_get_parent(self), self, src,
-        (pcols>0 && y>alloc.height/2) || (prows>0 && x>alloc.width/2));
+        !!g_list_find(g_list_find(
+            flow_grid_children_get(flow_item_get_parent(self)), src), self));
     gtk_drag_finish(ctx, TRUE, FALSE, time);
     return TRUE;
   }
 
-  return GTK_WIDGET_CLASS(flow_item_parent_class)->drag_drop(self, ctx, x, y,
-      time);
+  return
+    GTK_WIDGET_CLASS(flow_item_parent_class)->drag_drop(self, ctx, x, y, time);
 }
 
 static gboolean flow_item_drag_motion ( GtkWidget *self,  GdkDragContext *ctx,
     gint x, gint y, guint time )
 {
-  gboolean subsequent, drop_zone = FALSE;
-  GtkAllocation alloc;
-  GtkWidget *c1, *c2, *src;
-  GList *l;
-  gint prows, pcols;
+  gboolean zone;
+  GtkWidget *src;
 
   g_return_val_if_fail(IS_FLOW_ITEM(self), FALSE);
 
-  if( (src = base_widget_get_parent(gtk_drag_get_source_widget(ctx))) &&
+  zone = (src = base_widget_get_parent(gtk_drag_get_source_widget(ctx))) &&
       src != self && IS_FLOW_ITEM(src) &&
-      flow_item_get_parent(src) == flow_item_get_parent(self) )
-  {
-    g_object_get(G_OBJECT(flow_item_get_parent(self)),
-        "cols", &pcols, "rows", &prows, NULL);
-    gtk_widget_get_allocation(self, &alloc);
-    subsequent = (pcols>0 && y>alloc.height/2) || (prows>0 && x>alloc.width/2);
-    c1 = subsequent? self : src;
-    c2 = subsequent? src : self;
+      flow_item_get_parent(src) == flow_item_get_parent(self);
 
-    if(flow_item_get_active(c1) &&
-        (l=g_list_find(flow_grid_children_get(flow_item_get_parent(self)),c1)))
-    {
-      for(l=l->next; l && !flow_item_get_active(l->data); l=l->next);
-      drop_zone = !l || !(l->data == c2);
-    }
-  }
-
-  if(drop_zone)
+  if(zone)
     css_add_class(self, "drop_target");
   else
     css_remove_class(self, "drop_target");
 
-  return drop_zone ||
-    GTK_WIDGET_CLASS(flow_item_parent_class)->drag_motion(self, ctx, x, y,
-        time);
+  return
+    GTK_WIDGET_CLASS(flow_item_parent_class)->drag_motion(self, ctx, x, y, time)
+    || zone;
 }
 
 static void flow_item_dnd_leave ( GtkWidget *self, GdkDragContext *ctx,
