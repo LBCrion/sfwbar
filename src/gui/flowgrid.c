@@ -392,7 +392,7 @@ gboolean flow_grid_update ( GtkWidget *self )
 {
   FlowGridPrivate *priv;
   GList *iter;
-  gint count, i, span, rows, cols, dir;
+  gint count, i, span, dir, xadjust;
   gboolean axis_cols;
 
   g_return_val_if_fail(IS_FLOW_GRID(self), FALSE);
@@ -402,16 +402,18 @@ gboolean flow_grid_update ( GtkWidget *self )
     return TRUE;
   priv->invalid = FALSE;
 
-  cols = priv->cols;
-  rows = priv->rows;
-  if(cols<1 && rows<1)
+  if(priv->primary_axis != FLOW_GRID_AXIS_DEFAULT)
+    axis_cols = priv->primary_axis == FLOW_GRID_AXIS_COLS;
+  else if(priv->cols > 0)
+    axis_cols = TRUE;
+  else if(priv->rows > 0)
+    axis_cols = FALSE;
+  else
   {
     gtk_widget_style_get(priv->grid, "direction", &dir, NULL);
-    if(dir == GTK_POS_LEFT || dir == GTK_POS_RIGHT)
-      rows = 1;
-    else
-      cols = 1;
+    axis_cols = (dir == GTK_POS_TOP || dir == GTK_POS_BOTTOM);
   }
+
   gtk_container_foreach(GTK_CONTAINER(priv->grid),
       (GtkCallback)flow_grid_remove_widget_maybe, self);
 
@@ -431,24 +433,43 @@ gboolean flow_grid_update ( GtkWidget *self )
       count++;
   }
 
-  axis_cols = (priv->primary_axis == FLOW_GRID_AXIS_COLS ||
-     (priv->primary_axis == FLOW_GRID_AXIS_DEFAULT && rows>0));
+  gtk_container_foreach(GTK_CONTAINER(priv->grid),
+      (GtkCallback)flow_grid_remove_widget_maybe, self);
+
+  if(priv->sort)
+  {
+    priv->children = g_list_sort_with_data(priv->children,
+        (GCompareDataFunc)flow_item_compare, self);
+    if(priv->sort_reverse)
+      priv->children = g_list_reverse(priv->children);
+  }
+
+  count = 0;
+  for(iter=priv->children; iter; iter=g_list_next(iter))
+  {
+    flow_item_update(iter->data);
+    if(flow_item_get_active(iter->data))
+      count++;
+  }
 
   if(axis_cols)
-    span = rows>0? rows : (count/cols) + !!(count%cols);
+    span = priv->rows>0? priv->rows :
+      (count/MAX(priv->cols, 1)) + !!(count%MAX(priv->cols, 1));
   else
-    span = cols>0? cols : (count/rows) + !!(count%rows);
+    span = priv->cols>0? priv->cols :
+      (count/MAX(priv->rows, 1)) + !!(count%MAX(priv->rows, 1));
 
   if(!span)
     return TRUE;
 
   i = 0;
+  xadjust = count%span && axis_cols^(priv->rows>0);
   for(iter=priv->children; iter; iter=g_list_next(iter))
     if(flow_item_get_active(iter->data))
     {
       flow_grid_child_position(GTK_GRID(priv->grid), iter->data,
           axis_cols? i/span : i%span, axis_cols? i%span : i/span);
-      i += 1 + (i%span==span-2 && i/span>=count%span && axis_cols^(rows>0));
+      i += 1 + (xadjust && i%span==span-2 && i/span>=count%span);
     }
     else if(gtk_widget_get_parent(iter->data) == priv->grid)
       gtk_container_remove(GTK_CONTAINER(priv->grid), iter->data);
