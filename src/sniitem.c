@@ -4,8 +4,10 @@
  */
 
 #include <gio/gio.h>
-#include "gui/scaleimage.h"
+#include <gtk/gtk.h>
 #include "sni.h"
+#include "gui/scaleimage.h"
+#include "util/string.h"
 
 struct sni_prop_wrapper {
   guint prop;
@@ -169,46 +171,45 @@ void sni_item_prop_cb ( GDBusConnection *con, GAsyncResult *res,
   }
 
   if(wrap->prop<=SNI_PROP_THEME &&
-      g_variant_is_of_type(inner,G_VARIANT_TYPE_STRING))
+      g_variant_is_of_type(inner, G_VARIANT_TYPE_STRING))
   {
-    g_free(wrap->sni->string[wrap->prop]);
-    g_variant_get(inner, "s", &(wrap->sni->string[wrap->prop]));
+    str_assign(&wrap->sni->string[wrap->prop],
+        g_variant_dup_string(inner, NULL));
     g_debug("sni %s: property %s = %s", wrap->sni->dest,
         sni_properties[wrap->prop], wrap->sni->string[wrap->prop]);
   }
   else if(wrap->prop>=SNI_PROP_ICONPIX && wrap->prop<=SNI_PROP_ATTNPIX)
   {
     scale_image_cache_remove(wrap->sni->string[wrap->prop]);
-    g_clear_pointer(&(wrap->sni->string[wrap->prop]), g_free);
-    wrap->sni->string[wrap->prop] = sni_item_get_pixbuf(inner);
+    str_assign(&wrap->sni->string[wrap->prop], sni_item_get_pixbuf(inner));
     g_debug("sni %s: property %s received", wrap->sni->dest,
         sni_properties[wrap->prop]);
   }
   else if(wrap->prop == SNI_PROP_MENU &&
-      g_variant_is_of_type(inner,G_VARIANT_TYPE_OBJECT_PATH))
+      g_variant_is_of_type(inner, G_VARIANT_TYPE_OBJECT_PATH))
   {
-    g_free(wrap->sni->menu_path);
-    g_variant_get(inner, "o", &(wrap->sni->menu_path));
+    str_assign(&wrap->sni->menu_path, g_variant_dup_string(inner, NULL));
     sni_menu_init(wrap->sni);
     g_debug("sni %s: property %s = %s", wrap->sni->dest,
         sni_properties[wrap->prop], wrap->sni->menu_path);
   }
-  else if(wrap->prop == SNI_PROP_ISMENU)
+  else if(wrap->prop == SNI_PROP_ISMENU &&
+      g_variant_is_of_type(inner, G_VARIANT_TYPE_BOOLEAN))
   {
-    g_variant_get(inner, "b", &(wrap->sni->menu));
+    wrap->sni->menu = g_variant_get_boolean(inner);
     g_debug("sni %s: property %s = %d", wrap->sni->dest,
         sni_properties[wrap->prop], wrap->sni->menu);
   }
-  else if(wrap->prop == SNI_PROP_ORDER)
+  else if(wrap->prop == SNI_PROP_ORDER &&
+      g_variant_is_of_type(inner, G_VARIANT_TYPE_UINT32))
   {
-    g_variant_get(inner, "u", &(wrap->sni->order));
+    wrap->sni->order = g_variant_get_uint32(inner);
     g_debug("sni %s: property %s = %u", wrap->sni->dest,
         sni_properties[wrap->prop], wrap->sni->order);
   }
   else if(wrap->prop == SNI_PROP_TOOLTIP)
   {
-    g_free(wrap->sni->tooltip);
-    wrap->sni->tooltip = sni_item_get_tooltip(inner);
+    str_assign(&wrap->sni->tooltip, sni_item_get_tooltip(inner));
     g_debug("sni %s: property %s = %s", wrap->sni->dest,
         sni_properties[wrap->prop], wrap->sni->tooltip);
   }
@@ -281,7 +282,7 @@ sni_item_t *sni_item_new (GDBusConnection *con, gchar *iface,
   sni->cancel = g_cancellable_new();
   sni->menu = TRUE;
   path = strchr(uid,'/');
-  if(path!=NULL)
+  if(path)
   {
     sni->dest = g_strndup(uid, path-uid);
     sni->path = g_strdup(path);
