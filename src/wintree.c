@@ -241,9 +241,7 @@ void wintree_set_title ( gpointer wid, const gchar *title )
     return;
 
   win = wintree_from_id(wid);
-  if(!win)
-    return;
-  if(!g_strcmp0(win->title,title))
+  if(!win || !g_strcmp0(win->title, title))
     return;
 
   str_assign(&win->title, g_strdup(title));
@@ -309,13 +307,20 @@ void wintree_set_float ( gpointer wid, gboolean floating )
 
 void wintree_window_append ( window_t *win )
 {
+  GList *l;
+
   if(!win)
     return;
 
   if(win->title || win->appid)
     LISTENER_CALL(window_new, win);
   if(!g_list_find(wt_list, win))
-    wt_list = g_list_append (wt_list, win);
+  {
+    for(l=wt_list; l; l=g_list_next(l))
+      if(win->pin && !((window_t *)l->data)->pin)
+        break;
+    wt_list = g_list_insert_before(wt_list, l, win);
+  }
   wintree_commit(win);
 }
 
