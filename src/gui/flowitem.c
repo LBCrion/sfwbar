@@ -181,7 +181,7 @@ gint flow_item_compare ( GtkWidget *p1, GtkWidget *p2, GtkWidget *parent )
   if(!FLOW_ITEM_GET_CLASS(p1)->compare)
     return 0;
 
-  return FLOW_ITEM_GET_CLASS(p1)->compare(p1,p2,parent);
+  return FLOW_ITEM_GET_CLASS(p1)->compare(p1, p2, parent);
 }
 
 static void flow_item_dnd_begin_cb ( GtkWidget *widget, GdkDragContext *ctx,

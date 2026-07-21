@@ -174,6 +174,7 @@ static void taskbar_popup_decorate ( GtkWidget *parent, GParamSpec *spec,
 static void taskbar_popup_update ( GtkWidget *self )
 {
   TaskbarPopupPrivate *priv;
+  GPtrArray *pins;
   window_t *win;
   gboolean tooltips;
 
@@ -197,10 +198,12 @@ static void taskbar_popup_update ( GtkWidget *self )
   flow_grid_update(priv->tgroup);
   flow_item_set_active(self, flow_grid_n_children(priv->tgroup, TRUE)>0);
   priv->single = (flow_grid_n_children(priv->tgroup, TRUE)==1);
+
   window_collapse_popups(priv->popover);
   gtk_widget_hide(priv->popover);
 
-  g_object_get(G_OBJECT(priv->shell), "tooltips", &tooltips, NULL);
+  g_object_get(G_OBJECT(priv->shell), "tooltips", &tooltips, "pins",
+      &pins, NULL);
   gtk_widget_set_has_tooltip(priv->button, tooltips);
   if(tooltips)
   {
@@ -210,6 +213,14 @@ static void taskbar_popup_update ( GtkWidget *self )
       gtk_widget_set_tooltip_text(priv->button,
           priv->appname? priv->appname : priv->appid);
   }
+
+  if(g_ptr_array_find_with_equal_func(pins, priv->appid, g_str_equal, NULL))
+  {
+    gtk_drag_dest_unset(self);
+    gtk_drag_source_unset(priv->button);
+  }
+  else
+    flow_item_dnd_enable(priv->shell, self, priv->button);
 
   priv->invalid = FALSE;
 }
@@ -261,19 +272,16 @@ static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
   g_return_val_if_fail(IS_TASKBAR_POPUP(self),FALSE);
   priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
 
-  if((action = base_widget_get_action(priv->shell, slot,
-          base_widget_get_modifiers(self))) )
+  if(slot==2 && (win = wintree_pin_get(priv->appid)) )
+    exec_launch(win->pin);
+  else if((win = flow_grid_get_sole_source(priv->tgroup)))
   {
-    if(slot==2 && (win = wintree_pin_get(priv->appid)) )
+    if(!win->pin && (action = base_widget_get_action(priv->shell, slot,
+            base_widget_get_modifiers(self))))
+      vm_run_action(action, self, (GdkEvent *)ev, win, NULL,
+          base_widget_get_store(priv->shell), NULL);
+    else if(win->pin && slot==1)
       exec_launch(win->pin);
-    else if((win = flow_grid_get_sole_source(priv->tgroup)))
-    {
-      if(win->pin && slot==1)
-        exec_launch(win->pin);
-      else if(!win->pin)
-        vm_run_action(action, self, (GdkEvent *)ev, win, NULL,
-            base_widget_get_store(priv->shell), NULL);
-    }
   }
 
   return TRUE;
