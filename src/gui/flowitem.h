@@ -30,6 +30,7 @@ struct _FlowItemClass
   gboolean (*dnd_dest) ( GtkWidget *self, GtkWidget *src, gint x, gint y );
   gboolean (*dnd_target_check) ( GtkWidget *self, GtkWidget *src, gint x, gint y );
   GCompareFunc comp_source;
+  GCompareDataFunc alt_cmp;
 };
 
 typedef struct _FlowItemPrivate FlowItemPrivate;

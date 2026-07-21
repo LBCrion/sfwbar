@@ -424,6 +424,10 @@ gboolean flow_grid_update ( GtkWidget *self )
     if(priv->sort_reverse)
       priv->children = g_list_reverse(priv->children);
   }
+  else if(priv->children &&
+      FLOW_ITEM_GET_CLASS((GList *)(priv->children)->data)->alt_cmp)
+    priv->children = g_list_sort_with_data(priv->children,
+        FLOW_ITEM_GET_CLASS((GList *)(priv->children)->data)->alt_cmp, self);
 
   count = 0;
   for(iter=priv->children; iter; iter=g_list_next(iter))

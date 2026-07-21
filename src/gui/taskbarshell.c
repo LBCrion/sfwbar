@@ -173,25 +173,19 @@ static void taskbar_shell_set_api ( GtkWidget *self, gint id)
     taskbar_shell_item_init(iter->data, self);
 }
 
-static void taskbar_shell_add_pins ( GtkWidget *self, GPtrArray *pins )
+static void taskbar_shell_add_pin ( char *pin, GtkWidget *self )
 {
   TaskbarShellPrivate *priv;
-  guint i;
+  gchar *appid;
 
   g_return_if_fail(IS_TASKBAR_SHELL(self));
   priv = taskbar_shell_get_instance_private(TASKBAR_SHELL(self));
 
-  if(wintree_api_check())
-  {
-    for(i=0; i<pins->len; i++)
-      if(!g_ptr_array_find_with_equal_func(priv->pins, pins->pdata[i],
-            g_str_equal, NULL))
-      {
-        g_ptr_array_add(priv->pins, g_strdup(pins->pdata[i]));
-        wintree_pin_add(pins->pdata[i]);
-      }
-  }
-  g_ptr_array_unref(pins);
+  if(!wintree_api_check() || !(appid = wintree_pin_add(pin)))
+    return;
+
+  if(!g_ptr_array_find_with_equal_func(priv->pins, appid, g_str_equal, NULL))
+    g_ptr_array_add(priv->pins, g_strdup(appid));
 }
 
 static void taskbar_shell_get_property ( GObject *self, guint id,
@@ -297,7 +291,9 @@ static void taskbar_shell_set_property ( GObject *self, guint id,
       priv->filter |= g_value_get_enum(value);
       break;
     case TASKBAR_SHELL_PINS:
-      taskbar_shell_add_pins(GTK_WIDGET(self), g_value_get_boxed(value));
+      g_ptr_array_foreach(g_value_get_boxed(value),
+          (GFunc)taskbar_shell_add_pin, self);
+      taskbar_shell_invalidate(GTK_WIDGET(self));
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);

@@ -228,6 +228,29 @@ static gint taskbar_popup_compare ( GtkWidget *a, GtkWidget *b,
   return g_strcmp0(p1->appid, p2->appid);
 }
 
+static gint taskbar_popup_alt_cmp ( GtkWidget *i1, GtkWidget *i2,
+    GtkWidget *parent )
+{
+  TaskbarPopupPrivate *p1, *p2;
+  GPtrArray *pins;
+  guint n1, n2;
+
+  g_return_val_if_fail(IS_TASKBAR_POPUP(i1), 0);
+  g_return_val_if_fail(IS_TASKBAR_POPUP(i2), 0);
+
+  p1 = taskbar_popup_get_instance_private(TASKBAR_POPUP(i1));
+  p2 = taskbar_popup_get_instance_private(TASKBAR_POPUP(i2));
+
+  g_object_get(G_OBJECT(parent), "pins", &pins, NULL);
+
+  if(!g_ptr_array_find_with_equal_func(pins, p1->appid, g_str_equal, &n1))
+    n1 = G_MAXINT;
+  if(!g_ptr_array_find_with_equal_func(pins, p2->appid, g_str_equal, &n2))
+    n2 = G_MAXINT;
+
+  return n1 - n2;
+}
+
 static gboolean taskbar_popup_action_exec ( GtkWidget *self, gint slot,
     GdkEvent *ev )
 {
@@ -280,6 +303,7 @@ static void taskbar_popup_class_init ( TaskbarPopupClass *kclass )
   FLOW_ITEM_CLASS(kclass)->compare = taskbar_popup_compare;
   FLOW_ITEM_CLASS(kclass)->get_source =
     (void * (*)(GtkWidget *))taskbar_popup_get_appid;
+  FLOW_ITEM_CLASS(kclass)->alt_cmp = (GCompareDataFunc)taskbar_popup_alt_cmp;
 }
 
 static void taskbar_popup_init ( TaskbarPopup *self )

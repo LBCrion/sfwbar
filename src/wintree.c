@@ -92,27 +92,29 @@ window_t *wintree_pin_get ( gchar *pin )
     l->data : NULL;
 }
 
-void wintree_pin_add ( gchar *pin )
+gchar *wintree_pin_add ( gchar *pin )
 {
   GDesktopAppInfo *app;
   window_t *win;
   const gchar *appid;
 
-  if(wintree_pin_get(pin))
-    return;
+  if( (win = wintree_pin_get(pin)) )
+    return win->appid;
 
   if( !(app = app_info_from_id(pin)) )
-    return;
+    return NULL;
 
   win = wintree_window_init();
   win->uid = WINTREE_PIN_ID;
-  win->pin = app;
   if(g_str_has_suffix(appid = g_app_info_get_id((GAppInfo *)app), ".desktop"))
     win->appid = g_strndup(appid, strlen(appid)-8);
   else
     win->appid = g_strdup(appid);
+  win->pin = app;
   win->title = g_strdup(g_app_info_get_display_name((GAppInfo *)app));
   wintree_window_append(win);
+
+  return win->appid;
 }
 
 static void wintree_pin_invalidate ( window_t *win, gchar *pin )
@@ -307,20 +309,13 @@ void wintree_set_float ( gpointer wid, gboolean floating )
 
 void wintree_window_append ( window_t *win )
 {
-  GList *l;
-
   if(!win)
     return;
 
   if(win->title || win->appid)
     LISTENER_CALL(window_new, win);
   if(!g_list_find(wt_list, win))
-  {
-    for(l=wt_list; l; l=g_list_next(l))
-      if(win->pin && !((window_t *)l->data)->pin)
-        break;
-    wt_list = g_list_insert_before(wt_list, l, win);
-  }
+    wt_list = g_list_append(wt_list, win);
   wintree_commit(win);
 }
 
