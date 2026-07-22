@@ -224,6 +224,10 @@ static void taskbar_popup_update ( GtkWidget *self )
     flow_item_dnd_enable(priv->shell, self, priv->button);
     css_remove_class(self, "pin");
   }
+  if(g_str_equal(priv->appid, pins->pdata[pins->len-1]))
+    css_add_class(self, "last-pin");
+  else
+    css_remove_class(self, "last-pin");
 
   priv->invalid = FALSE;
 }

@@ -1453,7 +1453,8 @@ reflecting the state of a window: `focused`, `maximized`, `minimized`,
 `fullscreen`, `urgent` and `preview`.
 
 a group item in a popup taskbar can have a `pin` class set if the item is
-pinned in the taskbar config.
+pinned in the taskbar config. The last pinned item in the taskbar has a 
+further class `last-pin` set.
 
 The `preview` class is set when the compositor supports window previews and the
 taskbar or switcher is configured to display window previews instead of icons.
