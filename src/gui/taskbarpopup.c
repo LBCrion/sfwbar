@@ -8,7 +8,6 @@
 #include "window.h"
 #include "wintree.h"
 #include "gui/css.h"
-#include "gui/flowgrid.h"
 #include "gui/taskbarpopup.h"
 #include "gui/taskbarshell.h"
 #include "gui/taskbaritem.h"
@@ -218,9 +217,13 @@ static void taskbar_popup_update ( GtkWidget *self )
   {
     gtk_drag_dest_unset(self);
     gtk_drag_source_unset(priv->button);
+    css_add_class(self, "pin");
   }
   else
+  {
     flow_item_dnd_enable(priv->shell, self, priv->button);
+    css_remove_class(self, "pin");
+  }
 
   priv->invalid = FALSE;
 }

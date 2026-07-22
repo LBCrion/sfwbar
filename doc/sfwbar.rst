@@ -313,6 +313,14 @@ group = [popup|pager|false]
   prefix, i.e. ``group.cols = 1``. The properties supported for groups
   are cols, rows, style, css, title_width, labels, icons.
 
+pins = <string list>
+  a list of pinned applications. This property is only supported for taskbars
+  with `group = popup` property set. The taskbar will list pinned applications
+  in the order they are listed in the property definition. If a specified
+  application isn't running, the pin will still be created and will launch
+  the application on the first left-click. The application will also always
+  launch on a middle click on the pin.
+
 ``pager`` widget may contain the following options
 
 preview = [true|false]
@@ -1443,6 +1451,9 @@ tray_item may have one of more of the following classes set: `passive` and
 taskbar_item and switcher_item may have one or more of additional classes set,
 reflecting the state of a window: `focused`, `maximized`, `minimized`,
 `fullscreen`, `urgent` and `preview`.
+
+a group item in a popup taskbar can have a `pin` class set if the item is
+pinned in the taskbar config.
 
 The `preview` class is set when the compositor supports window previews and the
 taskbar or switcher is configured to display window previews instead of icons.
