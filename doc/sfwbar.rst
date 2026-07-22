@@ -1447,4 +1447,9 @@ reflecting the state of a window: `focused`, `maximized`, `minimized`,
 The `preview` class is set when the compositor supports window previews and the
 taskbar or switcher is configured to display window previews instead of icons.
 
+The `drop_target` class is set for an item if it can accept the drop from the
+drag occuring over it. This is equivalent to :drop(active) pseudo-class, but
+unlike the psudo-class it doesn't have to apply to the last element of the CSS
+node (i.e. you can theme children of .drop_target widget).
+
 For example you can style top level grid using ``grid#layout { }``.

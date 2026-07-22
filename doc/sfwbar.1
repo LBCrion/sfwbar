@@ -1860,5 +1860,10 @@ reflecting the state of a window: \fIfocused\fP, \fImaximized\fP, \fIminimized\f
 The \fIpreview\fP class is set when the compositor supports window previews and the
 taskbar or switcher is configured to display window previews instead of icons.
 .sp
+The \fIdrop_target\fP class is set for an item if it can accept the drop from the
+drag occuring over it. This is equivalent to :drop(active) pseudo\-class, but
+unlike the psudo\-class it doesn\(aqt have to apply to the last element of the CSS
+node (i.e. you can theme children of .drop_target widget).
+.sp
 For example you can style top level grid using \fBgrid#layout { }\fP\&.
 .\" End of generated man page.
