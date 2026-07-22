@@ -321,9 +321,17 @@ static gboolean base_widget_button_press_event ( GtkWidget *self,
 static gboolean base_widget_button_release_event ( GtkWidget *self,
     GdkEventButton *ev )
 {
+  GtkAllocation alloc;
+  gdouble x, y;
+
   g_return_val_if_fail(IS_BASE_WIDGET(self), FALSE);
 
   if(ev->type != GDK_BUTTON_RELEASE || ev->button < 1 || ev->button > 3 )
+    return FALSE;
+
+  gdk_event_get_coords((GdkEvent *)ev, &x, &y);
+  gtk_widget_get_allocation(self, &alloc);
+  if(x<0 || y<0 || x>alloc.width || y>alloc.height)
     return FALSE;
 
   return base_widget_action_exec(self, ev->button, (GdkEvent *)ev);
