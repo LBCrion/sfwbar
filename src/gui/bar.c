@@ -170,6 +170,8 @@ static gboolean bar_leave_handle ( GtkWidget *self )
 #if GTK_LAYER_VER_MINOR <= 5
   gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self), FALSE);
 #endif
+  if(gtk_layer_get_protocol_version() < 3)
+    gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self), FALSE);
 
   if(priv->show_handle)
   {
@@ -241,6 +243,9 @@ static gboolean bar_enter_handle ( GtkWidget *self, gpointer m )
 #if GTK_LAYER_VER_MINOR <= 5
   gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self), TRUE);
 #endif
+  if(gtk_layer_get_protocol_version() < 3)
+    gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self), TRUE);
+
   if(!priv->sensor_timeout || priv->sensor_block)
     return TRUE;
 
