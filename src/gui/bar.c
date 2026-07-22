@@ -167,10 +167,7 @@ static gboolean bar_leave_handle ( GtkWidget *self )
   g_return_val_if_fail(IS_BAR(self), G_SOURCE_REMOVE);
   priv = bar_get_instance_private(BAR(self));
 
-#if GTK_LAYER_VER_MINOR > 5
-  gtk_layer_set_keyboard_mode(GTK_WINDOW(self),
-      GTK_LAYER_SHELL_KEYBOARD_MODE_NONE);
-#else
+#if GTK_LAYER_VER_MINOR <= 5
   gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self), FALSE);
 #endif
 
@@ -241,10 +238,7 @@ static gboolean bar_enter_handle ( GtkWidget *self, gpointer m )
   g_return_val_if_fail(IS_BAR(self),FALSE);
   priv = bar_get_instance_private(BAR(self));
 
-#if GTK_LAYER_VER_MINOR > 5
-  gtk_layer_set_keyboard_mode(GTK_WINDOW(self),
-      GTK_LAYER_SHELL_KEYBOARD_MODE_ON_DEMAND);
-#else
+#if GTK_LAYER_VER_MINOR <= 5
   gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self), TRUE);
 #endif
   if(!priv->sensor_timeout || priv->sensor_block)
@@ -1146,7 +1140,8 @@ GtkWidget *bar_new ( gchar *name )
   gtk_widget_set_name(self, priv->name);
   gtk_layer_auto_exclusive_zone_enable (GTK_WINDOW(self));
 #if GTK_LAYER_VER_MINOR > 5
-  gtk_layer_set_keyboard_mode(GTK_WINDOW(self), GTK_LAYER_SHELL_KEYBOARD_MODE_NONE);
+  gtk_layer_set_keyboard_mode(GTK_WINDOW(self),
+      GTK_LAYER_SHELL_KEYBOARD_MODE_ON_DEMAND);
 #else
   gtk_layer_set_keyboard_interactivity(GTK_WINDOW(self), FALSE);
 #endif
