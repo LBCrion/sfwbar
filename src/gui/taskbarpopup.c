@@ -7,10 +7,10 @@
 #include "exec.h"
 #include "window.h"
 #include "wintree.h"
+#include "gui/capture.h"
 #include "gui/css.h"
 #include "gui/taskbarpopup.h"
 #include "gui/taskbarshell.h"
-#include "gui/taskbaritem.h"
 #include "gui/scaleimage.h"
 #include "gui/popup.h"
 #include "vm/vm.h"
@@ -142,24 +142,24 @@ static void taskbar_popup_decorate ( GtkWidget *parent, GParamSpec *spec,
   if(!!priv->icon != icons || !!priv->label != labels)
   {
     box = gtk_bin_get_child(GTK_BIN(priv->button));
-    if(priv->label)
+    if(!labels && priv->label)
     {
       gtk_container_remove(GTK_CONTAINER(box), priv->label);
       priv->label = NULL;
     }
-    if(priv->icon)
+    if(!icons && priv->icon)
     {
       gtk_container_remove(GTK_CONTAINER(box), priv->icon);
       priv->icon = NULL;
     }
     gtk_widget_style_get(priv->button, "direction", &dir, NULL);
-    if(icons)
+    if(icons && !priv->icon)
     {
       priv->icon = scale_image_new();
       gtk_grid_attach_next_to(GTK_GRID(box), priv->icon, NULL, dir, 1, 1);
-      taskbar_item_set_image(priv->icon, priv->appid);
+      capture_window_image_set_appid(priv->icon, priv->appid);
     }
-    if(labels)
+    if(labels && !priv->label)
     {
       priv->label = gtk_label_new(priv->appid);
       gtk_label_set_ellipsize (GTK_LABEL(priv->label), PANGO_ELLIPSIZE_END);
@@ -186,7 +186,7 @@ static void taskbar_popup_update ( GtkWidget *self )
         priv->tgroup, wintree_from_id(wintree_get_focus())));
 
   if(priv->icon)
-    taskbar_item_set_image(priv->icon, priv->appid);
+    capture_window_image_set_appid(priv->icon, priv->appid);
 
   if(priv->label)
     if(g_strcmp0(gtk_label_get_text(GTK_LABEL(priv->label)), priv->appid))

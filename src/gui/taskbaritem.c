@@ -64,23 +64,6 @@ static void taskbar_item_style_updated ( GtkWidget *w, GtkWidget *self )
   g_object_unref(priv->label);
 }
 
-void taskbar_item_set_image ( GtkWidget *icon, gchar *appid )
-{
-  gchar *ptr, *tmp;
-
-  if(!appid || scale_image_set_image(icon, appid, NULL))
-    return;
-  if( (ptr = strrchr(appid, '.')) &&
-    scale_image_set_image(icon, ptr+1, NULL))
-    return;
-  if( (ptr = strchr(appid, ' ')) )
-  {
-    tmp = g_strndup(appid, ptr - appid);
-    scale_image_set_image(icon, tmp, NULL);
-    g_free(tmp);
-  }
-}
-
 window_t *taskbar_item_get_window ( GtkWidget *self )
 {
   TaskbarItemPrivate *priv;

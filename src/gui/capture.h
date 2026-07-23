@@ -13,6 +13,7 @@ typedef enum {
 void capture_init ( void );
 void capture_output ( gchar *name );
 void capture_window ( window_t *win );
+void capture_window_image_set_appid ( GtkWidget *image, gchar *appid );
 void capture_window_image_set ( GtkWidget *image, window_t *win,
     gboolean preview );
 gboolean capture_support_check ( capture_type_t type );

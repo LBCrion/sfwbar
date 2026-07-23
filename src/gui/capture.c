@@ -228,11 +228,26 @@ void capture_window ( window_t *win )
           capture_toplevel_source, toplevel), capture_toplevel_cb, win->uid);
 }
 
-void capture_window_image_set ( GtkWidget *image, window_t *win,
-    gboolean preview )
+void capture_window_image_set_appid ( GtkWidget *image, gchar *appid )
 {
   gchar *ptr, *tmp;
 
+  if(scale_image_set_image(image, appid, NULL))
+    return;
+  if( (ptr = strrchr(appid, '.')) &&
+      scale_image_set_image(image, ptr+1, NULL))
+    return;
+  if( (ptr = strchr(appid, ' ')) )
+  {
+    tmp = g_strndup(appid, ptr - appid);
+    scale_image_set_image(image, tmp, NULL);
+    g_free(tmp);
+  }
+}
+
+void capture_window_image_set ( GtkWidget *image, window_t *win,
+    gboolean preview )
+{
   if(capture_support_check(CAPTURE_TYPE_WINDOW) &&
       win->stable_id && !win->image)
     capture_window(win);
@@ -241,22 +256,10 @@ void capture_window_image_set ( GtkWidget *image, window_t *win,
     return;
 
   if(!win->appid || !*(win->appid))
-  {
     scale_image_set_image(image, wintree_appid_map_lookup(win->title), NULL);
-    return;
-  }
+  else
+    capture_window_image_set_appid (image, win->appid);
 
-  if(scale_image_set_image(image, win->appid, NULL))
-    return;
-  if( (ptr = strrchr(win->appid, '.')) &&
-      scale_image_set_image(image, ptr+1, NULL))
-    return;
-  if( (ptr = strchr(win->appid, ' ')) )
-  {
-    tmp = g_strndup(win->appid, ptr - win->appid);
-    scale_image_set_image(image, tmp, NULL);
-    g_free(tmp);
-  }
 }
 
 gboolean capture_support_check ( capture_type_t type )
