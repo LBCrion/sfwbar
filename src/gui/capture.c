@@ -186,7 +186,7 @@ static void capture_output_cb ( gpointer data, gchar *name )
   trigger_emit_with_string("screenshot", "image", name);
 }
 
-void capture_output ( gchar *name )
+void capture_output ( gchar *name, gpointer data )
 {
   struct wl_output *output;
   GdkMonitor *mon;
@@ -201,7 +201,7 @@ void capture_output ( gchar *name )
     return;
   capture_from_source(
       ext_output_image_capture_source_manager_v1_create_source(
-        capture_output_source, output), capture_output_cb, NULL);
+        capture_output_source, output), capture_output_cb, data);
 }
 
 static void capture_toplevel_cb ( gpointer data, gchar *name )
@@ -253,7 +253,11 @@ void capture_window_image_set ( GtkWidget *image, window_t *win,
     capture_window(win);
 
   if(preview && win->image && scale_image_set_image(image, win->image, NULL))
+  {
+    scale_image_set_keep_aspect(image, TRUE);
     return;
+  }
+  scale_image_set_keep_aspect(image, FALSE);
 
   if(!win->appid || !*(win->appid))
     scale_image_set_image(image, wintree_appid_map_lookup(win->title), NULL);
@@ -278,7 +282,7 @@ static value_t capture_screenshot ( vm_t *vm, value_t p[], gint np )
     vm_param_check_string(vm, p, 0, "Screenshot");
 
   capture_output(monitor_get_name(monitor_from_widget(
-          vm_widget_get(vm, np? value_get_string(p[0]) : NULL))));
+          vm_widget_get(vm, np? value_get_string(p[0]) : NULL))), NULL);
 
   return value_na;
 }

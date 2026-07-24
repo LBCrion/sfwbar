@@ -35,6 +35,8 @@ struct _ScaleImagePrivate
   gboolean fallback;
   gboolean symbolic;
   gboolean symbolic_pref;
+  gboolean keep_aspect;
+  gdouble aspect;
   gchar *file;
   gchar *extra;
   gchar *fname;
@@ -52,9 +54,10 @@ enum {
 };
 
 GType scale_image_get_type ( void );
-gboolean scale_image_set_image ( GtkWidget *, const gchar *, gchar *);
+
 GtkWidget *scale_image_new();
-int scale_image_update ( GtkWidget *widget );
+gboolean scale_image_set_image ( GtkWidget *, const gchar *, gchar *);
+void scale_image_set_keep_aspect ( GtkWidget *self, gboolean keep );
 gboolean scale_image_cache_insert ( gchar *name, GdkPixbuf *pb );
 gboolean scale_image_cache_remove ( gchar *name );
 

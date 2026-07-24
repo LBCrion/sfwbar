@@ -32,42 +32,54 @@ gboolean scale_image_cache_remove ( gchar *name )
 static void scale_image_get_preferred_width ( GtkWidget *self, gint *m,
     gint *n )
 {
+  ScaleImagePrivate *priv;
   GtkStyleContext *style;
   GtkStateFlags flags;
   GtkBorder border, padding, margin;
-  gint w;
+  gint w, h;
 
   g_return_if_fail(IS_SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
 
   style = gtk_widget_get_style_context(self);
   flags = gtk_style_context_get_state(style);
   gtk_style_context_get_border(style, flags, &border);
   gtk_style_context_get_padding(style, flags, &padding);
   gtk_style_context_get_margin(style, flags, &margin);
-  gtk_style_context_get(style, flags, "min-width", &w, NULL);
+  gtk_style_context_get(style, flags, "min-width", &w,
+      "min-height", &h, NULL);
 
-  *n = *m = (w?w:16) + border.left + border.right + padding.left +
+  if(priv->keep_aspect && priv->aspect)
+    w = MIN(w, h * priv->aspect);
+
+  *n = *m = (w? w : 16) + border.left + border.right + padding.left +
     padding.right + margin.left + margin.right;
 }
 
 static void scale_image_get_preferred_height ( GtkWidget *self, gint *m,
     gint *n )
 {
+  ScaleImagePrivate *priv;
   GtkStyleContext *style;
   GtkStateFlags flags;
   GtkBorder border, padding, margin;
-  gint h;
+  gint w, h;
 
   g_return_if_fail(IS_SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private(SCALE_IMAGE(self));
 
   style = gtk_widget_get_style_context(self);
   flags = gtk_style_context_get_state(style);
   gtk_style_context_get_border(style, flags, &border);
   gtk_style_context_get_padding(style, flags, &padding);
   gtk_style_context_get_margin(style, flags, &margin);
-  gtk_style_context_get(style, flags, "min-height", &h, NULL);
+  gtk_style_context_get(style, flags, "min-width", &w,
+      "min-height", &h, NULL);
 
-  *n = *m = (h?h:16) + border.top + border.bottom + padding.top +
+  if(priv->keep_aspect && priv->aspect)
+    h = MIN(h, w / priv->aspect);
+
+  *n = *m = (h? h : 16) + border.top + border.bottom + padding.top +
       padding.bottom + margin.top + margin.bottom;
 }
 
@@ -155,8 +167,8 @@ static void scale_image_surface_update ( GtkWidget *self, gint w, gint h )
   GdkPixbuf *buf, *tmp;
   GdkPixbufLoader *loader;
   GdkRGBA col;
-  gchar *fallback, *svg, *rgba, alpha[8];
   gdouble aspect;
+  gchar *fallback, *svg, *rgba, alpha[8];
 
   priv = scale_image_get_instance_private(SCALE_IMAGE(self));
   priv->fallback = FALSE;
@@ -464,6 +476,7 @@ static gboolean scale_image_set ( GtkWidget *self )
   if(!g_ascii_strncasecmp(priv->file, "<?xml", 5))
   {
     priv->ftype = SI_DATA;
+    priv->aspect = 0.0;
     return TRUE;
   }
 
@@ -471,6 +484,8 @@ static gboolean scale_image_set ( GtkWidget *self )
       (buf = g_hash_table_lookup(scaleimage_cache, priv->file)) )
   {
     priv->pixbuf = g_object_ref(buf);
+    priv->aspect = (gdouble)gdk_pixbuf_get_width(buf) /
+      (gdouble)gdk_pixbuf_get_height(buf);
     priv->ftype = SI_BUFF;
     return TRUE;
   }
@@ -479,6 +494,7 @@ static gboolean scale_image_set ( GtkWidget *self )
   if( (priv->fname = app_info_icon_lookup(priv->file, priv->symbolic_pref)) )
   {
     priv->ftype = SI_ICON;
+    priv->aspect = 0.0;
     priv->symbolic = g_str_has_suffix(priv->fname, "-symbolic");
     return TRUE;
   }
@@ -500,6 +516,8 @@ static gboolean scale_image_set ( GtkWidget *self )
     {
       if( (buf = gdk_pixbuf_new_from_file_at_scale(temp, 10, 10, TRUE, NULL)) )
       {
+        priv->aspect = (gdouble)gdk_pixbuf_get_width(buf) /
+          (gdouble)gdk_pixbuf_get_height(buf);
         g_object_unref(G_OBJECT(buf));
         g_free(priv->fname);
         priv->fname = temp;
@@ -540,6 +558,17 @@ gboolean scale_image_set_image ( GtkWidget *self, const gchar *image,
   return scale_image_set(self);
 }
 
+void scale_image_set_keep_aspect ( GtkWidget *self, gboolean keep )
+{
+  ScaleImagePrivate *priv;
+
+  g_return_if_fail(IS_SCALE_IMAGE(self));
+  priv = scale_image_get_instance_private( SCALE_IMAGE(self));
+
+  priv->keep_aspect = keep;
+  scale_image_set(self);
+}
+
 static void scale_image_init ( ScaleImage *self )
 {
   ScaleImagePrivate *priv;
@@ -552,6 +581,7 @@ static void scale_image_init ( ScaleImage *self )
   priv->cs = NULL;
   priv->width = 0;
   priv->height = 0;
+  priv->keep_aspect = 0;
   priv->fallback = FALSE;
   priv->ftype = SI_NONE;
 
