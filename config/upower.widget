@@ -1,5 +1,7 @@
 #Api2
 
+module("dbus")
+
 Private {
 
   Var UPowerPropInterface = ["system",
