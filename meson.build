@@ -1,5 +1,6 @@
 project('sfwbar','c')
 cc = meson.get_compiler('c')
+fs = import('fs')
 lbrt = cc.find_library('rt', required: false)
 gtk3 = dependency('gtk+-3.0')
 glib = dependency('glib-2.0')
@@ -9,7 +10,7 @@ gmod = dependency('gmodule-2.0')
 json  = dependency('json-c')
 glsh = dependency('gtk-layer-shell-0')
 wayl = dependency('wayland-client')
-wayp = dependency('wayland-protocols', version: '>=1.17')
+wayp = dependency('wayland-protocols', version: '>=1.32')
 puls = dependency('libpulse', required: get_option('pulse'))
 pulg = dependency('libpulse-mainloop-glib', required: get_option('pulse'))
 xkbr = dependency('xkbregistry', required: get_option('xkb'))
@@ -34,25 +35,31 @@ configure_file(input: 'meson.h.meson', output: 'meson.h',
 wayland_scanner = find_program('wayland-scanner')
 wayland_protodir = wayp.get_variable(pkgconfig: 'pkgdatadir')
 wayland_protos = [
-  [wayland_protodir, 'stable/xdg-shell/xdg-shell'],
-  [wayland_protodir, 'staging/ext-image-capture-source/ext-image-capture-source-v1'],
-  [wayland_protodir, 'staging/ext-image-copy-capture/ext-image-copy-capture-v1'],
-  [wayland_protodir, 'staging/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1'],
-  [wayland_protodir, 'staging/ext-background-effect/ext-background-effect-v1'],
+  ['stable/xdg-shell/xdg-shell'],
+  ['staging/ext-image-capture-source/ext-image-capture-source-v1'],
+  ['staging/ext-image-copy-capture/ext-image-copy-capture-v1'],
+  ['staging/ext-foreign-toplevel-list/ext-foreign-toplevel-list-v1'],
+  ['staging/ext-background-effect/ext-background-effect-v1'],
+  ['staging/ext-workspace/ext-workspace-v1'],
+  ['unstable/xdg-output/xdg-output-unstable-v1'],
   ['protocols/wlr-foreign-toplevel-management-unstable-v1'],
-  ['protocols/xdg-output-unstable-v1'],
   ['protocols/wlr-layer-shell-unstable-v1'],
   ['protocols/cosmic-workspace-unstable-v1'],
-  ['protocols/ext-workspace-v1']
 ]
 wayland_targets=[]
 
 foreach proto : wayland_protos
+  if fs.exists(join_paths(wayland_protodir, proto) + '.xml')
+    target = join_paths(wayland_protodir, proto)
+  else
+    target = join_paths('protocols', fs.stem(proto)) 
+  endif
+
   wayland_targets += custom_target(
-      input: join_paths(proto) + '.xml', output:  '@BASENAME@.h',
+      input: join_paths(target) + '.xml', output:  '@BASENAME@.h',
       command: [ wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@' ])
   wayland_targets += custom_target(
-      input: join_paths(proto) + '.xml', output:  '@BASENAME@.c',
+      input: join_paths(target) + '.xml', output:  '@BASENAME@.c',
       command: [ wayland_scanner, 'public-code', '@INPUT@', '@OUTPUT@' ])
 endforeach
 
@@ -303,9 +310,6 @@ endif
 
 executable ('sfwbar', sources: 'src/sfwbar.c',
     include_directories: headers,
-    c_args: ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
-    '-DGDK_DISABLE_DEPRECATED',
-    '-DGTK_DISABLE_DEPRECATED'],
     install_rpath: get_option('prefix') / get_option('libdir') / 'sfwbar',
     dependencies: [deps], install: true)
 
