@@ -284,16 +284,11 @@ static void sni_menu_get_layout_cb ( GObject *src, GAsyncResult *res,
 
   g_variant_get(result, "(u(i@a{sv}av))", &rev, &id, &dict, &iter);
 
-  if(!rev || (rev > GPOINTER_TO_INT(g_object_get_data(
-            G_OBJECT(sni->menu_obj), "rev"))))
-  {
-    menu = sni_menu_item_find(sni->menu_obj, id);
-    if( (parent = gtk_menu_get_attach_widget(GTK_MENU(menu))) )
-      sni_menu_item_update(parent, dict, iter);
-    else
-      sni_menu_parse(menu, iter);
-    g_object_set_data(G_OBJECT(sni->menu_obj), "rev", GINT_TO_POINTER(rev));
-  }
+  menu = sni_menu_item_find(sni->menu_obj, id);
+  if( (parent = gtk_menu_get_attach_widget(GTK_MENU(menu))) )
+    sni_menu_item_update(parent, dict, iter);
+  else
+    sni_menu_parse(menu, iter);
 
   g_variant_iter_free(iter);
   g_variant_unref(dict);
