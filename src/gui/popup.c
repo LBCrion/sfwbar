@@ -202,8 +202,8 @@ void popup_show ( GtkWidget *parent, GtkWidget *popup, GdkSeat *seat )
       GTK_WINDOW(gtk_widget_get_ancestor(parent, GTK_TYPE_WINDOW)));
 
   gdk_window_set_transient_for(gpopup, gparent);
-  gdk_window_move_to_rect(gpopup, &rect, wanchor, panchor,
-      GDK_ANCHOR_FLIP_X | GDK_ANCHOR_FLIP_Y, 0, 0);
+  gdk_window_move_to_rect(gpopup, &rect, wanchor, panchor, GDK_ANCHOR_FLIP_X |
+      GDK_ANCHOR_FLIP_Y | GDK_ANCHOR_SLIDE_X | GDK_ANCHOR_SLIDE_Y, 0, 0);
   css_widget_cascade(popup, NULL);
 
   transfer = g_object_get_data(G_OBJECT(gpopup), "gdk-attached-grab-window");
