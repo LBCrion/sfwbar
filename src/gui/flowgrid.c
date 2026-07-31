@@ -308,7 +308,6 @@ void flow_grid_set_dnd_target ( GtkWidget *self, GtkTargetEntry *target )
 
   g_clear_pointer(&priv->dnd_target, gtk_target_entry_free);
   priv->dnd_target = gtk_target_entry_copy(target);
-
 }
 
 GtkTargetEntry *flow_grid_get_dnd_target ( GtkWidget *self )

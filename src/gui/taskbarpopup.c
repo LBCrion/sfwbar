@@ -9,10 +9,11 @@
 #include "wintree.h"
 #include "gui/capture.h"
 #include "gui/css.h"
+#include "gui/monitor.h"
+#include "gui/popup.h"
+#include "gui/scaleimage.h"
 #include "gui/taskbarpopup.h"
 #include "gui/taskbarshell.h"
-#include "gui/scaleimage.h"
-#include "gui/popup.h"
 #include "vm/vm.h"
 
 G_DEFINE_TYPE_WITH_CODE (TaskbarPopup, taskbar_popup, FLOW_ITEM_TYPE,
@@ -37,6 +38,49 @@ GtkWidget *taskbar_popup_get_taskbar ( GtkWidget *shell, window_t *win,
   return priv->tgroup;
 }
 
+static void taskbar_popup_dimensions_set ( GtkWidget *self )
+{
+  TaskbarPopupPrivate *priv;
+  GdkRectangle space;
+  GtkRequisition minimum, natural;
+  GdkMonitor *mon;
+  GList *l;
+  gint max_span, span, dir, count;
+  gboolean homogeneous, horizontal;
+
+  g_return_if_fail(IS_TASKBAR_POPUP(self));
+  priv = taskbar_popup_get_instance_private(TASKBAR_POPUP(self));
+
+  if( !(mon = monitor_from_widget(self)) )
+    return;
+
+  gdk_monitor_get_workarea(mon, &space);
+  gtk_widget_style_get(base_widget_get_child(priv->tgroup),
+      "direction", &dir, NULL);
+  horizontal = (dir == GTK_POS_LEFT || dir == GTK_POS_RIGHT);
+
+  homogeneous = horizontal?
+    gtk_grid_get_column_homogeneous(GTK_GRID(base_widget_get_child(priv->tgroup))) :
+    gtk_grid_get_row_homogeneous(GTK_GRID(base_widget_get_child(priv->tgroup)));
+
+  count = 0;
+  max_span = 1;
+  for(l=flow_grid_children_get(priv->tgroup); l; l=g_list_next(l))
+    if(flow_item_get_active(l->data))
+    {
+      gtk_widget_get_preferred_size(l->data, &minimum, &natural);
+      if(homogeneous)
+        max_span = MAX(max_span, horizontal? natural.width : natural.height);
+      else /* need to calculate non-homogeneous size correctly */
+        max_span = MAX(max_span, horizontal? natural.width : natural.height);
+      count++;
+    }
+  span = MAX(1, MIN(count, (horizontal? space.width : space.height)/max_span));
+  g_object_set(G_OBJECT(priv->tgroup), horizontal? "rows" : "cols",
+      count/span + !!(count%span), NULL);
+  flow_grid_update(priv->tgroup);
+}
+
 static gboolean taskbar_popup_enter_cb ( GtkWidget *widget,
     GdkEventCrossing *event, gpointer self )
 {
@@ -55,6 +99,7 @@ static gboolean taskbar_popup_enter_cb ( GtkWidget *widget,
   window_ref(priv->popover, widget);
 
   flow_grid_update(priv->tgroup);
+  taskbar_popup_dimensions_set(self);
 
   popup_show(priv->button, priv->popover,
       gdk_device_get_seat(gdk_event_get_device((GdkEvent *)event)));
