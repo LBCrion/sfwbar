@@ -17,7 +17,7 @@ static void scale_update_value ( GtkWidget *self )
 
   value = base_widget_get_value(self);
 
-  if(!g_strrstr(value, "nan"))
+  if(value && !g_strrstr(value, "nan"))
       gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(priv->scale),
           g_ascii_strtod(value, NULL));
 }

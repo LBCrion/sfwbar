@@ -9,6 +9,7 @@ typedef struct _expr_cache {
   gchar *definition;
   gchar *cache;
   GBytes *code;
+  GMutex mutex;
   gboolean always_update;
   GtkWidget *widget;
   GdkEvent *event;

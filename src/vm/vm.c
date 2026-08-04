@@ -542,7 +542,9 @@ gboolean vm_expr_run ( vm_t *vm )
 
   if(g_strcmp0(eval, expr->cache))
   {
+    g_mutex_lock(&expr->mutex);
     str_assign(&expr->cache, eval);
+    g_mutex_unlock(&expr->mutex);
     vm_free(vm);
     return TRUE;
   }

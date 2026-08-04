@@ -44,10 +44,11 @@ GEnumValue tristate_defs[] = {
 
 static GList *widgets_scan;
 static GMutex widget_mutex;
+static GCond scanner_thread_cond;
 static gint64 base_widget_default_id = 0;
+static gint64 next_poll = 0;
 static GPtrArray *base_widgets;
 static GThreadPool *pool;
-static gint base_widget_double_click_time;
 
 static base_widget_attachment_t *base_widget_attachment_new ( GBytes *code, gint ev,
     GdkModifierType mods )
@@ -91,17 +92,16 @@ static gboolean base_widget_update_value ( GtkWidget *self )
     return FALSE;
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
+  g_mutex_lock(&priv->value->mutex);
   if(BASE_WIDGET_GET_CLASS(self)->update_value)
   {
-    g_mutex_lock(&priv->mutex);
     BASE_WIDGET_GET_CLASS(self)->update_value(self);
-    g_mutex_unlock(&priv->mutex);
+    if(!priv->local_state)
+      g_list_foreach(priv->mirror_children,
+          (GFunc)BASE_WIDGET_GET_CLASS(self)->update_value, NULL);
   }
   priv->value->invalid = TRUE;
-
-  if(!priv->local_state)
-    g_list_foreach(base_widget_get_mirror_children(self),
-        (GFunc)base_widget_update_value, NULL);
+  g_mutex_unlock(&priv->value->mutex);
 
   return FALSE;
 }
@@ -114,7 +114,9 @@ static gboolean base_widget_style ( GtkWidget *self )
     return FALSE;
   priv = base_widget_get_instance_private(
       BASE_WIDGET(base_widget_get_mirror_parent(self)));
+  g_mutex_lock(&priv->style->mutex);
   gtk_widget_set_name(base_widget_get_child(self), priv->style->cache);
+  g_mutex_unlock(&priv->style->mutex);
   css_widget_cascade(self, NULL);
 
   if(!priv->local_state)
@@ -443,6 +445,28 @@ static void base_widget_drag_leave (GtkWidget *self,
   bar_drag_unref(gtk_widget_get_ancestor(self, BAR_TYPE));
 }
 
+static void base_widget_update_list ( GtkWidget *self )
+{
+  BaseWidgetPrivate *priv;
+  gboolean signal = FALSE;
+
+  g_return_if_fail(IS_BASE_WIDGET(self));
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  g_mutex_lock(&widget_mutex);
+  if(!priv->interval || (!priv->value->code && !priv->style->code))
+    widgets_scan = g_list_remove(widgets_scan, self);
+  else if(!g_list_find(widgets_scan, self))
+  {
+    widgets_scan = g_list_append(widgets_scan, self);
+    priv->next_poll = next_poll;
+    signal = TRUE;
+  }
+  g_mutex_unlock(&widget_mutex);
+  if(signal)
+    g_cond_signal(&scanner_thread_cond);
+}
+
 static void base_widget_set_trigger ( GtkWidget *self, gchar *trigger )
 {
   BaseWidgetPrivate *priv;
@@ -462,6 +486,7 @@ static void base_widget_set_trigger ( GtkWidget *self, gchar *trigger )
     priv->interval = 0;
     priv->trigger = trigger_add(trigger,
         (trigger_func_t)base_widget_update_expressions, self);
+    base_widget_update_list(self);
   }
 }
 
@@ -570,7 +595,6 @@ static void base_widget_set_tooltip ( GtkWidget *self, GBytes *code )
 static void base_widget_set_value ( GtkWidget *self, GBytes *code )
 {
   BaseWidgetPrivate *priv;
-  gboolean update;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
@@ -583,18 +607,11 @@ static void base_widget_set_value ( GtkWidget *self, GBytes *code )
   priv->value->invalid = !!code;
   priv->value->always_update = BASE_WIDGET_GET_CLASS(self)->always_update;
 
+  if(!priv->mirror_parent || priv->local_state)
+    base_widget_eval_async(self, priv->value,
+        (GSourceFunc)base_widget_update_value);
 
-  g_mutex_lock(&priv->mutex);
-  update = (!priv->mirror_parent || priv->local_state) &&
-    vm_expr_eval(priv->value);
-  g_mutex_unlock(&priv->mutex);
-  if(update)
-    base_widget_update_value(self);
-
-  g_mutex_lock(&widget_mutex);
-  if(!g_list_find(widgets_scan, self))
-    widgets_scan = g_list_append(widgets_scan, self);
-  g_mutex_unlock(&widget_mutex);
+  base_widget_update_list(self);
 }
 
 static void base_widget_set_style ( GtkWidget *self, GBytes *code )
@@ -613,14 +630,11 @@ static void base_widget_set_style ( GtkWidget *self, GBytes *code )
   priv->style->invalid = !!code;
   priv->style->always_update = BASE_WIDGET_GET_CLASS(self)->always_update;
 
-  if((priv->mirror_parent && !priv->local_state) ||
-      vm_expr_eval(priv->style))
-    base_widget_style(self);
+  if(!priv->mirror_parent || priv->local_state)
+    base_widget_eval_async(self, priv->style,
+        (GSourceFunc)base_widget_style);
 
-  g_mutex_lock(&widget_mutex);
-  if(!g_list_find(widgets_scan, self))
-    widgets_scan = g_list_append(widgets_scan, self);
-  g_mutex_unlock(&widget_mutex);
+  base_widget_update_list(self);
 }
 
 static void base_widget_set_rect ( GtkWidget *self, GdkRectangle *rect )
@@ -827,6 +841,8 @@ static void base_widget_set_property ( GObject *self, guint id,
       break;
     case BASE_WIDGET_INTERVAL:
       priv->interval = g_value_get_int64(value)*1000;
+      priv->next_poll = next_poll;
+      base_widget_update_list(GTK_WIDGET(self));
       break;
     case BASE_WIDGET_CSS:
       if(g_strcmp0(priv->css, g_value_get_string(value)))
@@ -881,9 +897,9 @@ static void base_widget_map ( GtkWidget *self )
   if(!BASE_WIDGET_GET_CLASS(self)->always_update &&
       BASE_WIDGET_GET_CLASS(self)->update_value)
   {
-    g_mutex_lock(&priv->mutex);
+    g_mutex_lock(&priv->value->mutex);
     BASE_WIDGET_GET_CLASS(self)->update_value(self);
-    g_mutex_unlock(&priv->mutex);
+    g_mutex_unlock(&priv->value->mutex);
   }
 
   GTK_WIDGET_CLASS(base_widget_parent_class)->map(self);
@@ -962,8 +978,6 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
         tristate_enum, TRISTATE_UNINIT, G_PARAM_READWRITE));
 
   base_widgets = g_ptr_array_new();
-  g_object_get(G_OBJECT(gtk_settings_get_default()), "gtk-double-click-time",
-      &base_widget_double_click_time, NULL);
 }
 
 static void base_widget_init ( BaseWidget *self )
@@ -1087,22 +1101,6 @@ gchar *base_widget_get_id ( GtkWidget *self )
   return priv->id;
 }
 
-gint64 base_widget_get_next_poll ( GtkWidget *self )
-{
-  BaseWidgetPrivate *priv;
-
-  g_return_val_if_fail(IS_BASE_WIDGET(self), G_MAXINT64);
-  priv = base_widget_get_instance_private(BASE_WIDGET(self));
-
-  if(priv->trigger || !priv->interval)
-    return G_MAXINT64;
-
-  if(!priv->value->invalid && !priv->style->invalid)
-    return G_MAXINT64;
-
-  return priv->next_poll;
-}
-
 GBytes *base_widget_get_action ( GtkWidget *self, gint n,
     GdkModifierType mods )
 {
@@ -1215,6 +1213,7 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
 
   pool = g_thread_pool_new((GFunc)base_widget_eval_finish, NULL, 1, TRUE,
       NULL);
+  g_mutex_lock(&widget_mutex);
 
   while ( TRUE )
   {
@@ -1222,27 +1221,22 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
     module_invalidate_all();
     timer = G_MAXINT64;
     ctime = g_get_monotonic_time();
-   
-    g_mutex_lock(&widget_mutex);
-    for(iter=widgets_scan; iter!=NULL; iter=g_list_next(iter))
+
+    for(iter=widgets_scan; iter; iter=g_list_next(iter))
     {
-      if(base_widget_get_next_poll(iter->data) <= ctime)
+      priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
+      if(priv->next_poll <= ctime)
       {
         if(BASE_WIDGET_GET_CLASS(iter->data)->always_update ||
             gtk_widget_is_visible(iter->data))
           base_widget_update(iter->data);
-        priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
-        if(!priv->trigger)
-          priv->next_poll = ctime + priv->interval;
+        priv->next_poll = ctime + priv->interval;
       }
-      timer = MIN(timer, base_widget_get_next_poll(iter->data));
+      timer = MIN(timer, priv->next_poll);
     }
-    g_mutex_unlock(&widget_mutex);
-
-    timer -= g_get_monotonic_time();
-
-    if(timer > 0)
-      g_usleep(timer);
+    if(timer != G_MAXINT64)
+      next_poll = timer;
+    g_cond_wait_until(&scanner_thread_cond, &widget_mutex, timer);
   }
 }
 

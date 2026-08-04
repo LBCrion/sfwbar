@@ -126,6 +126,11 @@ static void activate (GtkApplication* app, gpointer data )
   bindtextdomain("sfwbar", LOCALE_DIR);
   bind_textdomain_codeset("sfwbar", "UTF-8");
   textdomain("sfwbar");
+
+  g_thread_unref(g_thread_new("scanner",
+        (GThreadFunc)base_widget_scanner_thread,
+        g_main_context_get_thread_default()));
+
   expr_init();
   scanner_init();
   config_init();
@@ -164,10 +169,6 @@ static void activate (GtkApplication* app, gpointer data )
         g_object_set(G_OBJECT(iter->data), monitor, NULL);
     }
   g_list_free(clist);
-
-  g_thread_unref(g_thread_new("scanner",
-        (GThreadFunc)base_widget_scanner_thread,
-        g_main_context_get_thread_default()));
 
   vm_run_user_defined("SfwBarInit", NULL, NULL, NULL, NULL,
       base_widget_get_store(panel));
