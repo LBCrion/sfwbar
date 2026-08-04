@@ -134,7 +134,7 @@ static value_t action_config ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_map_appid ( vm_t *vm, value_t p[], gint np )
 {
-  vm_param_check_np(vm, np, 1, "MapAppId");
+  vm_param_check_np(vm, np, 2, "MapAppId");
   vm_param_check_string(vm, p, 0, "MapAppId");
   vm_param_check_string(vm, p, 1, "MapAppId");
 
@@ -145,7 +145,7 @@ static value_t action_map_appid ( vm_t *vm, value_t p[], gint np )
 
 static value_t action_map_icon ( vm_t *vm, value_t p[], gint np )
 {
-  vm_param_check_np(vm, np, 1, "MapIcon");
+  vm_param_check_np(vm, np, 2, "MapIcon");
   vm_param_check_string(vm, p, 0, "MapIcon");
   vm_param_check_string(vm, p, 1, "MapIcon");
 
