@@ -116,7 +116,7 @@ static gboolean vm_op_binary ( vm_t *vm )
   else if(value_like_string(v1) && value_like_string(v2))
   {
     if(op == '+')
-      result = value_new_string(
+      result = value_take_string(
           g_strconcat(value_get_string(v1), value_get_string(v2), NULL));
   }
 
@@ -361,7 +361,7 @@ static void vm_immediate ( vm_t *vm )
   }
   else
   {
-    v1 = value_new_string(g_strdup((gchar *)vm->ip+2));
+    v1 = value_new_string((gchar *)vm->ip+2);
     vm->ip += strlen(value_get_string(v1))+2;
   }
   vm_push(vm, v1);
@@ -530,27 +530,25 @@ gboolean vm_expr_run ( vm_t *vm )
   value_t v1;
   expr_cache_t *expr = vm->expr;
   gboolean update;
-  gchar *eval;
 
   v1 = vm_run(vm);
   expr->invalid = vm->vstate;
-  eval = value_to_string(v1, -1);
-  value_free(v1);
 
-  g_debug("expr: '%s' = '%s', vstate: %d", expr->definition, eval,
-      vm->vstate);
+//  g_debug("expr: '%s' = '%s', vstate: %d", expr->definition, eval,
+//      vm->vstate);
 
-  if(g_strcmp0(eval, expr->cache))
+  if(!value_compare(v1, expr->cache))
   {
     g_mutex_lock(&expr->mutex);
-    str_assign(&expr->cache, eval);
+    value_free(expr->cache);
+    expr->cache = v1;
     g_mutex_unlock(&expr->mutex);
     vm_free(vm);
     return TRUE;
   }
   else
   {
-    g_free(eval);
+    value_free(v1);
     update = expr->always_update;
     vm_free(vm);
     return update;

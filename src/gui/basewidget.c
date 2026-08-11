@@ -114,14 +114,20 @@ static gboolean base_widget_style ( GtkWidget *self )
     return FALSE;
   priv = base_widget_get_instance_private(
       BASE_WIDGET(base_widget_get_mirror_parent(self)));
+  if(!value_is_string(priv->style->cache))
+    return FALSE;
+
   g_mutex_lock(&priv->style->mutex);
-  gtk_widget_set_name(base_widget_get_child(self), priv->style->cache);
+  gtk_widget_set_name(base_widget_get_child(self),
+      value_get_string(priv->style->cache));
+  if(!priv->local_state)
+    g_list_foreach(priv->mirror_children,
+        (GFunc)gtk_widget_set_name, value_get_string(priv->style->cache));
   g_mutex_unlock(&priv->style->mutex);
   css_widget_cascade(self, NULL);
-
   if(!priv->local_state)
-    g_list_foreach(base_widget_get_mirror_children(self),
-        (GFunc)base_widget_style, NULL);
+    g_list_foreach(priv->mirror_children,
+        (GFunc)css_widget_cascade, NULL);
 
   return FALSE;
 }
@@ -568,9 +574,11 @@ static gboolean base_widget_query_tooltip ( GtkWidget *self, gint x, gint y,
       BASE_WIDGET(base_widget_get_mirror_parent(self)));
 
   (void)vm_expr_eval(priv->tooltip);
-  gtk_tooltip_set_markup(tooltip, priv->tooltip->cache);
+  if(value_is_string(priv->tooltip->cache))
+    gtk_tooltip_set_markup(tooltip, value_get_string(priv->tooltip->cache));
 
-  return priv->tooltip->cache && *(priv->tooltip->cache);
+  return value_get_string(priv->tooltip->cache) &&
+    *(value_get_string(priv->tooltip->cache));
 }
 
 static void base_widget_set_tooltip ( GtkWidget *self, GBytes *code )
@@ -1134,17 +1142,17 @@ gboolean base_widget_action_exec ( GtkWidget *self, gint slot,
   return BASE_WIDGET_GET_CLASS(self)->action_exec(self, slot, ev);
 }
 
-gchar *base_widget_get_value ( GtkWidget *self )
+value_t base_widget_get_value ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
 
-  g_return_val_if_fail(IS_BASE_WIDGET(self), NULL);
+  g_return_val_if_fail(IS_BASE_WIDGET(self), value_na);
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
   if(!priv->local_state)
     priv = base_widget_get_instance_private(
         BASE_WIDGET(base_widget_get_mirror_parent(self)));
 
-  return g_atomic_pointer_get(&priv->value->cache);
+  return priv->value->cache;
 }
 
 guint16 base_widget_state_build ( GtkWidget *self, window_t *win )

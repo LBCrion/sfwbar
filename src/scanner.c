@@ -179,7 +179,8 @@ static gboolean scanner_expr_update ( source_t *source )
   EXPR_SOURCE(source)->updating = TRUE;
   (void)vm_expr_eval(EXPR_SOURCE(source)->expr);
   var->vstate = EXPR_SOURCE(source)->expr->invalid;
-  scanner_var_values_update(var, g_strdup(EXPR_SOURCE(source)->expr->cache));
+  scanner_var_values_update(var,
+      value_to_string(EXPR_SOURCE(source)->expr->cache, -1));
   var->invalid = FALSE;
   var->src->invalid = TRUE;
   EXPR_SOURCE(source)->updating = FALSE;
@@ -412,6 +413,7 @@ scan_var_t *scanner_var_new_calc ( gchar *name, source_t *src, gpointer code,
 
   expr_cache_unref(EXPR_SOURCE(var->src)->expr);
   EXPR_SOURCE(var->src)->expr = expr_cache_new_with_code((GBytes *)code);
+  EXPR_SOURCE(var->src)->expr->quark = var->id;
   EXPR_SOURCE(var->src)->expr->store = store;
   g_debug("scanner: new set: '%s' in %p", g_quark_to_string(var->id),
       EXPR_SOURCE(var->src)->expr->store);
@@ -537,7 +539,7 @@ value_t scanner_get_value ( GQuark id, gchar ftype, gboolean update,
     *vstate = *vstate || var->vstate;
 
   if(ftype == SCANNER_TYPE_STR)
-    result = value_new_string(g_strdup(var->str));
+    result = value_new_string(var->str);
   else if(ftype == SCANNER_TYPE_VAL)
     result = value_new_numeric(var->val);
   else if(ftype == SCANNER_TYPE_PVAL)
@@ -556,7 +558,7 @@ value_t scanner_get_value ( GQuark id, gchar ftype, gboolean update,
         result.value.numeric, vstate? *vstate: 0);
   else if(result.type == EXPR_TYPE_STRING)
     g_debug("scanner: %s = %s (vstate: %d)", g_quark_to_string(id),
-        result.value.string, vstate? *vstate: 0);
+        value_get_string(result), vstate? *vstate: 0);
   return result;
 }
 

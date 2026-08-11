@@ -491,6 +491,7 @@ static gboolean scale_image_set ( GtkWidget *self )
   }
 
   gtk_widget_style_get(self, "symbolic", &priv->symbolic_pref, NULL);
+  g_free(priv->fname);
   if( (priv->fname = app_info_icon_lookup(priv->file, priv->symbolic_pref)) )
   {
     priv->ftype = SI_ICON;

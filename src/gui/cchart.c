@@ -12,15 +12,12 @@ G_DEFINE_TYPE_WITH_CODE (CChart, cchart, BASE_WIDGET_TYPE,
 static void cchart_update_value ( GtkWidget *self )
 {
   CChartPrivate *priv;
-  gchar *value;
 
   g_return_if_fail(IS_CCHART(self));
   priv = cchart_get_instance_private(CCHART(self));
 
-  value = base_widget_get_value(self);
-
-  if(value && !g_strrstr(value, "nan"))
-    chart_update(priv->chart, g_ascii_strtod(value, NULL));
+  chart_update(priv->chart,
+      value_as_numeric(base_widget_get_value(self)));
 }
 
 static void cchart_class_init ( CChartClass *kclass )

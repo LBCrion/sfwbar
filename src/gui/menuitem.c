@@ -462,12 +462,16 @@ void menu_item_update ( GtkWidget *self )
   g_return_if_fail(priv);
 
   scanner_invalidate();
-  if(vm_expr_eval(priv->label_expr))
-    menu_item_set_label(self, priv->label_expr->cache);
-  if(vm_expr_eval(priv->style_expr))
-    gtk_widget_set_name(self, priv->style_expr->cache);
-  if(vm_expr_eval(priv->tooltip_expr))
-    gtk_widget_set_tooltip_text(self, priv->tooltip_expr->cache);
+  if(vm_expr_eval(priv->label_expr) &&
+      value_is_string(priv->label_expr->cache))
+    menu_item_set_label(self, value_get_string(priv->label_expr->cache));
+  if(vm_expr_eval(priv->style_expr) &&
+      value_is_string(priv->style_expr->cache))
+    gtk_widget_set_name(self, value_get_string(priv->style_expr->cache));
+  if(vm_expr_eval(priv->tooltip_expr) &&
+      value_is_string(priv->tooltip_expr->cache))
+    gtk_widget_set_tooltip_text(self,
+        value_get_string(priv->tooltip_expr->cache));
 }
 
 void menu_item_set_store ( GtkWidget *self, vm_store_t *store )

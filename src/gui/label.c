@@ -10,16 +10,19 @@ G_DEFINE_TYPE_WITH_CODE (Label, label, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Label))
 static void label_update_value ( GtkWidget *self )
 {
   LabelPrivate *priv;
-  gchar *value;
+  value_t value;
 
   g_return_if_fail(IS_LABEL(self));
   priv = label_get_instance_private(LABEL(self));
 
-  value = base_widget_get_value(self);
-  if(value && pango_parse_markup(value, -1, 0, NULL, NULL, NULL, NULL))
-    gtk_label_set_markup(GTK_LABEL(priv->label), value);
+  if(!value_is_string(value = base_widget_get_value(self)))
+    return;
+  if(value_get_string(value) && *(value_get_string(value)) &&
+      pango_parse_markup(value_get_string(value), -1, 0, NULL, NULL, NULL,
+        NULL))
+    gtk_label_set_markup(GTK_LABEL(priv->label), value_get_string(value));
   else
-    gtk_label_set_text(GTK_LABEL(priv->label), value);
+    gtk_label_set_text(GTK_LABEL(priv->label), value_get_string(value));
 }
 
 static void label_class_init ( LabelClass *kclass )

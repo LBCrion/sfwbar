@@ -86,7 +86,7 @@ value_t value_dup_array ( value_t v1 )
 value_t value_dup ( value_t v1 )
 {
   if(value_is_string(v1))
-    return value_new_string(g_strdup(v1.value.string));
+    return value_new_string(v1.value.string);
   if(value_is_array(v1))
     return value_dup_array(v1);
   return v1;
@@ -196,13 +196,13 @@ value_t value_from_string ( gchar *str, gint type )
   value_t array;
 
   if(type == EXPR_TYPE_STRING)
-    return value_new_string(g_strdup(str));
+    return value_new_string(str);
   if(type == EXPR_TYPE_NUMERIC)
     return value_new_numeric(str? g_ascii_strtod(str, NULL) : 0);
   if(type == EXPR_TYPE_ARRAY)
   {
     array = value_array_create(1);
-    value_array_append(array, value_new_string(g_strdup(str)));
+    value_array_append(array, value_new_string(str));
     return array;
   }
 
@@ -220,7 +220,7 @@ value_t value_array_from_strv ( gchar **strv )
   array = value_array_create(l);
 
   for(i=0; i<l; i++)
-    value_array_append(array, value_new_string(g_strdup(strv[i])));
+    value_array_append(array, value_new_string(strv[i]));
 
   return array;
 }

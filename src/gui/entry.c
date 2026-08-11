@@ -18,8 +18,7 @@ static value_t entry_entry_text ( vm_t *vm, value_t p[], gint np )
   if(!IS_ENTRY(widget) || !(priv = entry_get_instance_private(ENTRY(widget))))
     return value_na;
 
-  return value_new_string(g_strdup(
-        gtk_entry_get_text(GTK_ENTRY(priv->entry))));
+  return value_new_string(gtk_entry_get_text(GTK_ENTRY(priv->entry)));
 }
 
 static void entry_class_init ( EntryClass *kclass )

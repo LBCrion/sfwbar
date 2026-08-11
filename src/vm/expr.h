@@ -2,12 +2,12 @@
 #define __EXPR_H__
 
 #include <gtk/gtk.h>
+#include "vm/value.h"
 
 typedef struct _expr_cache {
   gint refcount;
   gboolean invalid;
-  gchar *definition;
-  gchar *cache;
+  value_t cache;
   GBytes *code;
   GMutex mutex;
   gboolean always_update;

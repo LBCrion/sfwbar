@@ -23,8 +23,10 @@ typedef struct {
 
 extern const value_t value_na;
 
-#define value_new_string(v) \
+#define value_take_string(v) \
   ((value_t){.type=EXPR_TYPE_STRING, .value.string=(v)})
+#define value_new_string(v) \
+  ((value_t){.type=EXPR_TYPE_STRING, .value.string=g_strdup(v)})
 #define value_new_numeric(v) \
   ((value_t){.type=EXPR_TYPE_NUMERIC, .value.numeric=(v)})
 #define value_new_array(v) \

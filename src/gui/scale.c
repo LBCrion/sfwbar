@@ -10,16 +10,12 @@ G_DEFINE_TYPE_WITH_CODE (Scale, scale, BASE_WIDGET_TYPE, G_ADD_PRIVATE (Scale))
 static void scale_update_value ( GtkWidget *self )
 {
   ScalePrivate *priv;
-  gchar *value;
 
   g_return_if_fail(IS_SCALE(self));
   priv = scale_get_instance_private(SCALE(self));
 
-  value = base_widget_get_value(self);
-
-  if(value && !g_strrstr(value, "nan"))
-      gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(priv->scale),
-          g_ascii_strtod(value, NULL));
+  gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(priv->scale),
+      value_as_numeric(base_widget_get_value(self)));
 }
 
 static void scale_style_updated ( GtkWidget *widget, GtkWidget *self )

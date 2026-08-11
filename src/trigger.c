@@ -135,7 +135,7 @@ void trigger_emit_with_string ( gchar *name, gchar *var, gchar *val )
   vm_store_t *store;
 
   store = vm_store_new(NULL, TRUE);
-  vm_store_insert_full(store, var, value_new_string(val));
+  vm_store_insert_full(store, var, value_take_string(val));
   trigger_emit_with_data(name, store);
   vm_store_unref(store);
 }

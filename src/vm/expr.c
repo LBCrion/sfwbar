@@ -50,8 +50,8 @@ void expr_cache_unref ( expr_cache_t *expr )
   if(!g_atomic_int_dec_and_test(&expr->refcount))
     return;
   expr_dep_remove(expr);
-  g_free(expr->definition);
-  g_free(expr->cache);
+//  g_free(expr->definition);
+  value_free(expr->cache);
   g_bytes_unref(expr->code);
   g_free(expr);
 }
@@ -116,7 +116,7 @@ static void expr_dep_dump_each ( GQuark key, void *value, void *d )
   g_mutex_lock(&dep->mutex);
   for(iter=dep->list; iter; iter=g_list_next(iter))
     g_message("%s: %s", g_quark_to_string(key),
-        EXPR_CACHE(iter->data)->definition);
+        g_quark_to_string(EXPR_CACHE(iter->data)->quark));
   g_mutex_unlock(&dep->mutex);
 }
 
