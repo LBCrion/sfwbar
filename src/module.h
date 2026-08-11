@@ -28,6 +28,7 @@ typedef struct {
   GMutex mutex;
   GCond cond;
   GMainContext *context;
+  GMainLoop *loop;
   gboolean result, ready;
   module_thread_t thread;
   gboolean (*func)(void);

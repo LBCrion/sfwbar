@@ -124,17 +124,19 @@ static gint module_source_func ( module_init_closure_t *closure )
 
 static gpointer module_thread_func ( module_init_closure_t *closure )
 {
-  GMainLoop *loop;
+  GSource *src;
 
   closure->context = g_main_context_new();
   g_main_context_push_thread_default(closure->context);
-  loop = g_main_loop_new(closure->context, FALSE);
+  closure->loop = g_main_loop_new(closure->context, FALSE);
 
-  module_source_func(closure);
+  src = g_idle_source_new();
+  g_source_set_callback(src, (GSourceFunc)module_source_func, closure,
+      NULL);
+  g_source_attach(src, closure->context);
+  g_source_unref(src);
 
-  if(closure->result)
-    g_main_loop_run(loop);
-  g_main_loop_unref(loop);
+  g_main_loop_run(closure->loop);
 
   return NULL;
 }
@@ -172,7 +174,9 @@ static gboolean module_init ( gchar *name, GModule *module, GMainContext **ctx )
     g_cond_wait(&closure->cond, &closure->mutex);
   g_mutex_unlock(&closure->mutex);
 
-  if(thread == MODULE_THREAD_MODULE && !module_context)
+  if(!closure->result && thread == MODULE_THREAD_MODULE && !module_context)
+    g_main_loop_quit(closure->loop);
+  else if(closure->result && thread == MODULE_THREAD_MODULE && !module_context)
     module_context = closure->context;
   *ctx = (thread == MODULE_THREAD_MODULE)? module_context : closure->context;
   result = closure->result;
