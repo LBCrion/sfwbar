@@ -230,9 +230,9 @@ static void nm_secret_agent_emit ( void )
   {
     store = vm_store_new(NULL, TRUE);
     vm_store_insert_full(store, "type",
-        value_new_string(g_strdup("passphrase")));
+        value_new_string("passphrase"));
     vm_store_insert_full(store, "ssid",
-        value_new_string(g_strdup(conn->ssid)));
+        value_new_string(conn->ssid));
   }
 
   if(conn)
@@ -802,9 +802,9 @@ static void nm_name_disappeared_cb (GDBusConnection *con, const gchar *name,
 static value_t nm_ap_get_info ( nm_apoint_t *ap, gchar *prop )
 {
   if(!g_ascii_strcasecmp(prop, "ssid"))
-    return value_new_string(g_strdup(ap->ssid? ap->ssid: ""));
+    return value_new_string(ap->ssid? ap->ssid: "");
   if(!g_ascii_strcasecmp(prop, "type"))
-    return value_new_string(g_strdup(nm_apoint_get_type(ap)));
+    return value_new_string(nm_apoint_get_type(ap));
   if(!g_ascii_strcasecmp(prop, "known"))
     return value_new_numeric(!!ap->conn);
   if(!g_ascii_strcasecmp(prop, "strength"))
@@ -838,7 +838,7 @@ static value_t nm_expr_get ( vm_t *vm, value_t p[], gint np )
         (GCompareFunc)nm_device_name_cmp);
     device = l? l->data : default_dev;
     v1 = (device && !device->active && !device->active->ap)?
-      value_new_string(g_strdup_printf("%d", device->active->ap->strength)) :
+      value_take_string(g_strdup_printf("%d", device->active->ap->strength)) :
       value_na;
     return v1;
   }

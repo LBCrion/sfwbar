@@ -257,15 +257,15 @@ static void pulse_device_advertise ( gint iface_idx,
   for(i=0; i<cmap->channels; i++)
   {
     row = value_array_create(2);
-    value_array_append(row, value_new_string(g_strdup_printf("%d", i)));
-    value_array_append(row,  value_new_string(g_strdup(
-            pa_channel_position_to_string(cmap->map[i]))));
+    value_array_append(row, value_take_string(g_strdup_printf("%d", i)));
+    value_array_append(row,  value_new_string(
+            pa_channel_position_to_string(cmap->map[i])));
     value_array_append(channels, row);
   }
   store = vm_store_new(NULL, TRUE);
-  vm_store_insert_full(store, "interface", value_new_string(g_strdup(
-          pulse_interfaces[iface_idx].prefix)));
-  vm_store_insert_full(store, "device_id", value_new_string(
+  vm_store_insert_full(store, "interface", value_new_string(
+          pulse_interfaces[iface_idx].prefix));
+  vm_store_insert_full(store, "device_id", value_take_string(
         g_strdup_printf("@pulse-%s-%d",
           pulse_interfaces[iface_idx].prefix, idx)));
   vm_store_insert_full(store, "channels", channels);
@@ -597,17 +597,17 @@ static value_t pulse_volume_func ( vm_t *vm, value_t p[], gint np )
   if(info && !g_ascii_strcasecmp(cmd, "is-default"))
     return value_new_numeric(!g_strcmp0(info->name, iface->default_control));
   if(!g_ascii_strcasecmp(cmd, "icon"))
-    return value_new_string(g_strdup(info->icon? info->icon : ""));
+    return value_new_string(info->icon? info->icon : "");
   if(!g_ascii_strcasecmp(cmd, "form"))
-    return value_new_string(g_strdup(info->form? info->form : ""));
+    return value_new_string(info->form? info->form : "");
   if(!g_ascii_strcasecmp(cmd, "port"))
-    return value_new_string(g_strdup(info->port? info->port : ""));
+    return value_new_string(info->port? info->port : "");
   if(!g_ascii_strcasecmp(cmd, "monitor"))
-    return value_new_string(g_strdup(info->monitor? info->monitor : ""));
+    return value_new_string(info->monitor? info->monitor : "");
   if(!g_ascii_strcasecmp(cmd, "description"))
-    return value_new_string(g_strdup(info->description? info->description:""));
+    return value_new_string(info->description? info->description:"");
 
-  return value_new_string(g_strdup_printf("pulse: invalid property: %s", cmd));
+  return value_take_string(g_strdup_printf("pulse: invalid property: %s", cmd));
 }
 
 static value_t pulse_volume_ctl_action ( vm_t *vm, value_t p[], gint np )

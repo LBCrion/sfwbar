@@ -103,17 +103,16 @@ static value_t xkb_map_expr_func ( vm_t *vm, value_t p[], gint np )
 
   if(np!=3 || !value_is_string(p[0]) || !value_is_string(p[1]) ||
       !value_is_string(p[2]))
-    return value_new_string(g_strdup("XkbMap: missing parameter(s)"));
+    return value_new_string("XkbMap: missing parameter(s)");
 
   for(layout=rxkb_layout_first(ctx); layout; layout=rxkb_layout_next(layout))
   {
     if(!g_strcmp0(value_get_string(p[0]),
           xkb_get_value(layout, value_get_string(p[1]))))
-      return value_new_string(g_strdup(
-            xkb_get_value(layout, value_get_string(p[2]))));
+      return value_new_string(xkb_get_value(layout, value_get_string(p[2])));
   }
 
-  return value_new_string(g_strdup_printf("XkbMap: Unknown layout: %s",
+  return value_take_string(g_strdup_printf("XkbMap: Unknown layout: %s",
       value_get_string(p[0])));
 }
 

@@ -159,9 +159,9 @@ static void alsa_iface_advertise ( mixer_api_t *api, alsa_source_t *src )
         {
           row = value_array_create(2);
           value_array_append(row,
-              value_new_string(g_strdup_printf("%d", cnum++)));
+              value_take_string(g_strdup_printf("%d", cnum++)));
           value_array_append(row,
-              value_new_string(g_strdup_printf("%s:%s",
+              value_take_string(g_strdup_printf("%s:%s",
                   snd_mixer_selem_get_name(elem),
                   snd_mixer_selem_is_playback_mono(elem)?  "Mono":
                   snd_mixer_selem_channel_name(i))));
@@ -169,9 +169,9 @@ static void alsa_iface_advertise ( mixer_api_t *api, alsa_source_t *src )
         }
       store = vm_store_new(NULL, TRUE);
       vm_store_insert_full(store, "interface",
-          value_new_string(g_strdup(api->prefix)));
+          value_new_string(api->prefix));
       vm_store_insert_full(store, "device_id",
-          value_new_string(g_strdup(src->name)));
+          value_new_string(src->name));
       vm_store_insert_full(store, "channels", channels);
       trigger_emit_with_data("volume-conf", store);
       vm_store_unref(store);
@@ -397,7 +397,7 @@ static value_t alsa_func_volume ( vm_t *vm, value_t p[], gint np )
     return value_new_numeric(!g_strcmp0(
           api->default_name? api->default_name : "default", src->name));
   if(!g_ascii_strcasecmp(verb, "description"))
-    return value_new_string(g_strdup(src->desc));
+    return value_new_string(src->desc);
 
   return value_na;
 }

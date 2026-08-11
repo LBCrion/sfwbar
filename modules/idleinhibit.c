@@ -22,8 +22,8 @@ static struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
 static value_t idle_inhibit_state ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *widget = vm_widget_get(vm, np==1? value_get_string(p[0]) : NULL);
-  return value_new_string(g_strdup((widget && g_object_get_data(
-            G_OBJECT(widget), "inhibitor"))? "on" : "off"));
+  return value_new_string((widget && g_object_get_data(
+            G_OBJECT(widget), "inhibitor"))? "on" : "off");
 }
 
 static value_t idle_inhibitor_action ( vm_t *vm, value_t p[], gint np )

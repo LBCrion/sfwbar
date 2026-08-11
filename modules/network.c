@@ -656,21 +656,21 @@ static value_t network_func_netstat ( vm_t *vm, value_t p[], gint np )
     return value_na;
 
   if(np==2 && value_is_string(p[1]))
-    iface = net_iface_get(p[1].value.string, FALSE);
+    iface = net_iface_get(value_get_string(p[1]), FALSE);
   else
     iface = route;
   if(!iface)
     return value_na;
 
-  if(!g_ascii_strcasecmp(p[0].value.string, "signal"))
+  if(!g_ascii_strcasecmp(value_get_string(p[0]), "signal"))
     result = net_get_signal(route?route->name:NULL);
-  else if(!g_ascii_strcasecmp(p[0].value.string, "rxrate"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "rxrate"))
   {
     net_update_traffic(iface->name);
     result = (gdouble)(iface->rx_bytes-iface->prx_bytes)*
         1000000/iface->time_diff;
   }
-  else if(!g_ascii_strcasecmp(p[0].value.string, "txrate"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "txrate"))
   {
     net_update_traffic(iface->name);
     result = (gdouble)(iface->tx_bytes-iface->ptx_bytes)*
@@ -707,34 +707,34 @@ static value_t network_func_netinfo ( vm_t *vm, value_t p[], gint np )
     return value_na;
 
   if(np==2 && value_is_string(p[1]))
-    iface = net_iface_get(p[1].value.string, FALSE);
+    iface = net_iface_get(value_get_string(p[1]), FALSE);
   else
     iface = route;
   if(!iface)
     return value_na;
 
-  if(!g_ascii_strcasecmp(p[0].value.string, "ip"))
+  if(!g_ascii_strcasecmp(value_get_string(p[0]), "ip"))
     result = net_getaddr(&iface->ip, AF_INET);
-  else if(!g_ascii_strcasecmp(p[0].value.string, "mask"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "mask"))
     result = net_getaddr(&iface->mask, AF_INET);
-  else if(!g_ascii_strcasecmp(p[0].value.string, "cidr"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "cidr"))
     result = net_get_cidr(iface->mask.s_addr);
-  else if(!g_ascii_strcasecmp(p[0].value.string, "ip6"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "ip6"))
     result = net_getaddr(&iface->ip6, AF_INET6);
-  else if(!g_ascii_strcasecmp(p[0].value.string, "mask6"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "mask6"))
     result = net_getaddr(&iface->mask6, AF_INET6);
-  else if(!g_ascii_strcasecmp(p[0].value.string, "gateway"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "gateway"))
     result = net_getaddr(&iface->gateway, AF_INET);
-  else if(!g_ascii_strcasecmp(p[0].value.string, "gateway6"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "gateway6"))
     result = net_getaddr(&iface->gateway6, AF_INET6);
-  else if(!g_ascii_strcasecmp(p[0].value.string, "essid"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "essid"))
     result = g_strdup(iface->essid?iface->essid:"");
-  else if(!g_ascii_strcasecmp(p[0].value.string, "interface"))
+  else if(!g_ascii_strcasecmp(value_get_string(p[0]), "interface"))
     result = g_strdup(iface->name);
   else
     result = g_strdup("invalid query");
 
-  return value_new_string(result);
+  return value_take_string(result);
 }
 
 gboolean sfwbar_module_init ( void )

@@ -176,11 +176,11 @@ static value_t dbus_variant2value_basic ( GVariant *variant )
   if(g_variant_type_equal(type, G_VARIANT_TYPE_DOUBLE))
     return value_new_numeric(g_variant_get_double(variant));
   if(g_variant_type_equal(type, G_VARIANT_TYPE_STRING))
-    return value_new_string(g_strdup(g_variant_get_string(variant, NULL)));
+    return value_new_string(g_variant_get_string(variant, NULL));
   if(g_variant_type_equal(type, G_VARIANT_TYPE_OBJECT_PATH))
-    return value_new_string(g_strdup(g_variant_get_string(variant, NULL)));
+    return value_new_string(g_variant_get_string(variant, NULL));
   if(g_variant_type_equal(type, G_VARIANT_TYPE_SIGNATURE))
-    return value_new_string(g_strdup(g_variant_get_string(variant, NULL)));
+    return value_new_string(g_variant_get_string(variant, NULL));
   return value_na;
 }
 

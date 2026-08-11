@@ -129,7 +129,7 @@ static void mpd_emit_with_array ( gchar *trigger, GList **list )
   *list = g_list_sort(*list, (GCompareFunc)g_ascii_strcasecmp);
   array = value_array_create(g_list_length(*list));
   for(iter=*list; iter; iter=g_list_next(iter))
-    value_array_append(array, value_new_string(iter->data));
+    value_array_append(array, value_take_string(iter->data));
   g_list_free(g_steal_pointer(list));
 
   store = vm_store_new(NULL, TRUE);
@@ -435,8 +435,8 @@ static value_t mpd_func_list ( vm_t *vm, value_t p[], gint np )
   {
     row = value_array_create(np-1);
     for(i=1; i<np; i++)
-      value_array_append(row, value_new_string(g_strdup(
-              g_hash_table_lookup(iter->data, value_get_string(p[i])))));
+      value_array_append(row, value_new_string(
+              g_hash_table_lookup(iter->data, value_get_string(p[i]))));
     value_array_append(result, row);
   }
 
@@ -451,13 +451,14 @@ static value_t mpd_func_info ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, 0, "MpdInfo");
 
   if(!g_ascii_strcasecmp(value_get_string(p[0]), "age"))
-    return value_new_string(g_strdup_printf("%ld", g_get_monotonic_time() - mpd_time));
+    return value_take_string(
+        g_strdup_printf("%ld", g_get_monotonic_time() - mpd_time));
   if(!g_ascii_strcasecmp(value_get_string(p[0]), "cover"))
-    return value_new_string(g_strdup(mpd_cover));
+    return value_new_string(mpd_cover);
 
   if((val = g_hash_table_lookup(mpd_state, value_get_string(p[0]))) ||
       (val = g_hash_table_lookup(mpd_song_current, value_get_string(p[0]))))
-      return value_new_string(g_strdup(val));
+      return value_new_string(val);
 
   return value_na;
 }

@@ -293,7 +293,7 @@ static value_t bsdctl_func ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, 0, "BSDCtl");
 
   var = sysctl_var_get(value_get_string(p[0]));
-  return value_new_string(sysctl_query(var));
+  return value_take_string(sysctl_query(var));
 }
 
 gboolean sfwbar_module_init ( void )

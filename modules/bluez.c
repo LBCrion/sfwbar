@@ -776,17 +776,17 @@ static value_t bz_expr_device ( vm_t *vm, value_t p[], gint np )
     return value_na;
 
   if(!g_ascii_strcasecmp(value_get_string(p[1]), "Name"))
-    return value_new_string(g_strdup(device->name));
+    return value_new_string(device->name);
   if(!g_ascii_strcasecmp(value_get_string(p[1]), "Address"))
-    return value_new_string(g_strdup(device->addr));
+    return value_new_string(device->addr);
   if(!g_ascii_strcasecmp(value_get_string(p[1]), "Icon"))
-    return value_new_string(g_strdup(device->icon));
+    return value_new_string(device->icon);
   if(!g_ascii_strcasecmp(value_get_string(p[1]), "Path"))
-    return value_new_string(g_strdup(device->path));
+    return value_new_string(device->path);
   if(!g_ascii_strcasecmp(value_get_string(p[1]), "MajorClass"))
-    return value_new_string(g_strdup(bz_get_major_class(device->class)));
+    return value_new_string(bz_get_major_class(device->class));
   if(!g_ascii_strcasecmp(value_get_string(p[1]), "MinorClass"))
-    return value_new_string(g_strdup(bz_get_minor_class(device->class)));
+    return value_new_string(bz_get_minor_class(device->class));
   if(!g_ascii_strcasecmp(value_get_string(p[1]), "Paired"))
     return value_new_numeric(device->paired);
   if(!g_ascii_strcasecmp(value_get_string(p[1]), "Connected"))

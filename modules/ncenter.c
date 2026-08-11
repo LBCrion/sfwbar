@@ -293,8 +293,8 @@ guint32 dn_notification_parse ( GVariant *params )
     g_variant_iter_next(aiter, "&s", &action_title))
   {
     row = value_array_create(2);
-    value_array_append(row, value_new_string(g_strdup(action_id)));
-    value_array_append(row, value_new_string(g_strdup(action_title)));
+    value_array_append(row, value_new_string(action_id));
+    value_array_append(row, value_new_string(action_title));
     value_array_append(actions, row);
     g_debug("ncenter: app: %u, action: %s: '%s'", notif->id, action_id,
         action_title);
@@ -303,19 +303,19 @@ guint32 dn_notification_parse ( GVariant *params )
 
   store = vm_store_new(NULL, TRUE);
   vm_store_insert_full(store, "id",
-      value_new_string(g_strdup_printf("%d", notif->id)));
+      value_take_string(g_strdup_printf("%d", notif->id)));
   vm_store_insert_full(store, "icon", value_new_string(
-        g_strdup(notif->image? notif->image : notif->app_icon)));
+        notif->image? notif->image : notif->app_icon));
   vm_store_insert_full(store, "app",
-      value_new_string(g_strdup(notif->app_name)));
+      value_new_string(notif->app_name));
   vm_store_insert_full(store, "summary",
-      value_new_string(g_strdup(notif->summary)));
+      value_new_string(notif->summary));
   vm_store_insert_full(store, "body",
-      value_new_string(g_strdup(notif->body)));
+      value_new_string(notif->body));
   vm_store_insert_full(store, "time",
-      value_new_string(g_date_time_format(notif->time, "%s")));
+      value_take_string(g_date_time_format(notif->time, "%s")));
   vm_store_insert_full(store, "category",
-      value_new_string(g_strdup(notif->category)));
+      value_new_string(notif->category));
   vm_store_insert_full(store, "actions", actions);
 
   trigger_emit_with_data("notification-updated", store);
@@ -407,7 +407,7 @@ static value_t dn_group_func ( vm_t *vm, value_t p[], gint np )
   if(np!=1 || !value_is_string(p[0]))
     return value_na;
 
-  if( !(id = g_ascii_strtoull(p[0].value.string, NULL, 10)) )
+  if( !(id = g_ascii_strtoull(value_get_string(p[0]), NULL, 10)) )
     return value_na;
 
   for(iter=notif_list; iter; iter=g_list_next(iter))
@@ -419,7 +419,7 @@ static value_t dn_group_func ( vm_t *vm, value_t p[], gint np )
   notif = iter->data;
 
   if(expanded_group && !g_strcmp0(expanded_group, notif->app_name))
-    return value_new_string(g_strdup("visible"));
+    return value_new_string("visible");
 
   for(iter=notif_list; iter; iter=g_list_next(iter))
     if(!g_strcmp0(DN_NOTIFICATION(iter->data)->app_name, notif->app_name))
@@ -429,10 +429,10 @@ static value_t dn_group_func ( vm_t *vm, value_t p[], gint np )
       count++;
     }
   if(count==1)
-    return value_new_string(g_strdup("sole"));
+    return value_new_string("sole");
 
   if(count>1 && header)
-    return value_new_string(g_strdup("header"));
+    return value_new_string("header");
 
   return value_na;
 }
@@ -441,7 +441,7 @@ static value_t dn_active_group_func ( vm_t *vm, value_t p[], gint np )
 {
   value_t v1;
 
-  v1 = value_new_string(g_strdup(expanded_group));
+  v1 = value_new_string(expanded_group);
 
   return v1;
 }
@@ -456,7 +456,7 @@ static value_t dn_count_func ( vm_t *vm, value_t p[], gint np )
   if(np!=1 || !value_is_string(p[0]))
     return value_new_numeric(g_list_length(notif_list));
 
-  if( (id=g_ascii_strtoull(p[0].value.string, NULL, 10)) &&
+  if( (id=g_ascii_strtoull(value_get_string(p[0]), NULL, 10)) &&
     (notif=dn_notification_lookup(id)) )
   for(iter=notif_list; iter; iter=g_list_next(iter))
     if(!g_strcmp0(DN_NOTIFICATION(iter->data)->app_name, notif->app_name))
@@ -473,8 +473,8 @@ static value_t dn_expand_action ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "NotificationExpand");
   vm_param_check_string(vm, p, 0, "NotificationExpand");
 
-  if(value_is_string(p[0]) && p[0].value.string &&
-      (id = g_ascii_strtoull(p[0].value.string, &end, 10)) &&
+  if(value_is_string(p[0]) && value_get_string(p[0]) &&
+      (id = g_ascii_strtoull(value_get_string(p[0]), &end, 10)) &&
       !(end && *end) && id <= G_MAXUINT32)
     dn_notification_expand(id);
 
@@ -496,8 +496,8 @@ static value_t dn_close_action ( vm_t *vm, value_t p[], gint np )
   vm_param_check_np(vm, np, 1, "NotificationClose");
   vm_param_check_string(vm, p, 0, "NotificationClose");
 
-  if(value_is_string(p[0]) && p[0].value.string &&
-      (id = g_ascii_strtoull(p[0].value.string, &end, 10)) &&
+  if(value_is_string(p[0]) && value_get_string(p[0]) &&
+      (id = g_ascii_strtoull(value_get_string(p[0]), &end, 10)) &&
       !(end && *end) && id <= G_MAXUINT32)
     dn_notification_close(id, 2);
 
@@ -513,8 +513,8 @@ static value_t dn_action_action ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, 0, "NotificationAction");
   vm_param_check_string(vm, p, 1, "NotificationAction");
 
-  if(value_is_string(p[0]) && p[0].value.string &&
-      (id = g_ascii_strtoull(p[0].value.string, &end, 10)) &&
+  if(value_is_string(p[0]) && value_get_string(p[0]) &&
+      (id = g_ascii_strtoull(value_get_string(p[0]), &end, 10)) &&
       !(end && *end) && id <= G_MAXUINT32)
     dn_notification_action(id, value_get_string(p[1]));
 
