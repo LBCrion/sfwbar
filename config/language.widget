@@ -2,28 +2,28 @@
 
 module("xkbmap")
 
-TriggerAction "language-list", LayoutMenuBuild();
-
-Function LayoutName ( lang )
-{
-  if(CustomIPC() = "hyprland")
-    Return XkbMap(lang, "name", "description");
-  Else
-    Return lang;
-}
-
-Function LayoutMenuBuild()
-{
-  Var i, l = LayoutList();
-
-  MenuClear("LayoutList");
-  for(i = 0; i<ArraySize(l); i=i+1)
-    Config(ReplaceAll(LayoutMenuTmpl,
-          "%NAME%", LayoutName(l[i]),
-          "%LAYOUT%", l[i]));
-}
-
 Private {
+
+  TriggerAction "language-list", LayoutMenuBuild();
+
+  Function LayoutName ( lang )
+  {
+    if(CustomIPC() = "hyprland")
+      Return XkbMap(lang, "name", "description");
+    Else
+      Return lang;
+  }
+
+  Function LayoutMenuBuild()
+  {
+    Var i, l = LayoutList();
+
+    MenuClear("LayoutList");
+    for(i = 0; i<ArraySize(l); i=i+1)
+      Config(ReplaceAll(LayoutMenuTmpl,
+            "%NAME%", LayoutName(l[i]),
+            "%LAYOUT%", l[i]));
+  }
 
   Var LayoutMenuTmpl = "
     Menu('LayoutList') {
@@ -38,8 +38,8 @@ Private {
     value = Upper(XkbMap(Layout(), "description", "name"));
     tooltip = "Language: " + Layout();
     action[0] = LayoutMenuBuild();
-    action[1] = SetLayout("next");
-    action[3] = Menu("LayoutList");
+    action[LeftClick] = SetLayout("next");
+    action[RightClick] = Menu("LayoutList");
     trigger = "language";
   }
 }

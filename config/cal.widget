@@ -127,6 +127,7 @@ Private {
   }
 
   TriggerAction "calendar-reset", XCalInit()
+  TriggerAction "calendar-open", XCalBuild(YearMonth)
 
   Popup("XCal") {
     style = "cal_popup_grid"

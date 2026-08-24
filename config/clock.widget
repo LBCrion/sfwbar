@@ -16,6 +16,8 @@ Private {
     action = {
       If reset_on_popup
         EmitTrigger("calendar-reset")
+      else
+        EmitTrigger("calendar-open")
       PopUp("Xcal")
     }
   }
