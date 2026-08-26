@@ -1093,6 +1093,14 @@ Time(<format:string> [, <tz:string>])
   argument is supplied, returns time corresponding to a supplied time zone.
   Returns <string>.
 
+Schedule(<start:string>, <interval:numeric>, <trigger:string>)
+  emit a `trigger` at a time specified by `start` parameter in ISO 8601 format.
+  if `interval` parameter is not zero, the `trigger` will be emitted repeatedly
+  every `interval` milliseconds. You can specify `start` in the past to serve
+  as an anchor to `interval`. I.e. if you want to emit a `trigger` every hour
+  on the hour, you can specify `start` as "1970-01-01 00:00:00" and `interval`
+  as 360000.
+
 Disk(<fs:string>, <info:string>)
   queries disk information for a disk. `fs` specifies a mount point to query.
   `info` specifies desired information. Available options are:

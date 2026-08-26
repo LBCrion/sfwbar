@@ -720,6 +720,69 @@ static value_t action_usleep ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
+typedef struct _schedule_t {
+  gchar *trigger;
+  gint64 time;
+  gint64 interval;
+} schedule_t;
+
+static gboolean action_schedule_cb ( schedule_t *sched );
+
+static void action_schedule_schedule ( schedule_t *sched )
+{
+  gint64 span;
+
+  span = sched->time - g_get_real_time() / 1000;
+  if(span<0 && sched->interval)
+    span += sched->interval*(1-(gint64)(span/sched->interval));
+  if(span>=0)
+    g_timeout_add(span, (GSourceFunc)action_schedule_cb, sched);
+  else
+  {
+    g_free(sched->trigger);
+    g_free(sched);
+  }
+}
+
+static gboolean action_schedule_cb ( schedule_t *sched )
+{
+  trigger_emit(sched->trigger);
+  action_schedule_schedule(sched);
+
+  return G_SOURCE_REMOVE;
+}
+
+static value_t action_schedule ( vm_t *vm, value_t p[], gint np )
+{
+  schedule_t *sched;
+  GTimeZone *tz;
+  GDateTime *dt;
+
+  vm_param_check_np(vm, np, 3, "Schedule");
+  vm_param_check_string(vm, p, 0, "Schedule");
+  vm_param_check_numeric(vm, p, 1, "Schedule");
+  vm_param_check_string(vm, p, 2, "Schedule");
+
+  tz = g_time_zone_new_local();
+  dt = g_date_time_new_from_iso8601(value_get_string(p[0]), tz);
+  g_time_zone_unref(tz);
+
+  if(!dt)
+  {
+    g_warning("Schedule: invalid time string '%s'", value_get_string(p[0]));
+    return value_na;
+  }
+
+  sched = g_malloc0(sizeof(schedule_t));
+  sched->trigger = g_strdup(value_get_string(p[2]));
+  sched->interval = value_get_numeric(p[1]);
+  sched->time = g_date_time_to_unix(dt) * 1000;
+  g_date_time_unref(dt);
+  action_schedule_schedule(sched);
+
+  return value_na;
+}
+
 static value_t action_set_layout ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np(vm, np, 1, "SetLayout");
@@ -807,6 +870,7 @@ void action_lib_init ( void )
   vm_func_add("Print", action_print, TRUE, TRUE);
   vm_func_add("uSleep", action_usleep, TRUE, TRUE);
   vm_func_add("SetLayout", action_set_layout, TRUE, TRUE);
+  vm_func_add("Schedule", action_schedule, TRUE, TRUE);
   vm_func_add("WidgetSetData", action_widget_set_data, TRUE, FALSE);
   config_parse_data("config string",
       "#Api2\n function function(x,y) { WidgetPush(x); Call(y); WidgetPop();}",
