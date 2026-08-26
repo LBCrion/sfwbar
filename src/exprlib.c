@@ -10,10 +10,12 @@
 #include "module.h"
 #include "wintree.h"
 #include "scanner.h"
+#include "trigger.h"
 #include "gui/basewidget.h"
 #include "gui/taskbaritem.h"
 #include "gui/bar.h"
 #include "util/file.h"
+#include "util/json.h"
 #include "util/string.h"
 #include "vm/expr.h"
 #include "vm/vm.h"
@@ -193,6 +195,23 @@ static value_t expr_lib_extract( vm_t *vm, value_t p[], gint np )
     g_regex_unref(regex);
 
   return res;
+}
+
+static value_t expr_lib_extract_json( vm_t *vm, value_t p[], gint np )
+{
+  struct json_object *obj;
+  value_t result;
+
+  vm_param_check_np(vm, np, 2, "extractjson");
+  vm_param_check_string(vm, p, 0, "extractjson");
+  vm_param_check_string(vm, p, 1, "extractjson");
+
+  if( !(obj = json_tokener_parse(value_get_string(p[0]))) )
+    return value_na;
+  result = value_from_json(jpath_parse(value_get_string(p[1]), obj));
+  json_object_put(obj);
+
+  return result;
 }
 
 static value_t expr_lib_pad ( vm_t *vm, value_t p[], gint np )
@@ -535,6 +554,41 @@ static value_t expr_lib_window_info ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
+static void expr_lib_read_uri_cb ( GFile *file, GAsyncResult *res, gchar *tr )
+{
+  GBytes *bytes;
+  GError *err = NULL;
+  gconstpointer data;
+  gsize len;
+
+  if( (bytes = g_file_load_bytes_finish(file, res, NULL, &err)) )
+  {
+    data = g_bytes_get_data(bytes, &len);
+    trigger_emit_with_string(tr, "result", g_strndup(data, len));
+    g_bytes_unref(bytes);
+  }
+  else
+  {
+    g_warning("ReadURI failed. Error: %s", err? err->message : "none");
+    g_error_free(err);
+  }
+
+  g_object_unref(file);
+}
+
+static value_t expr_lib_read_uri ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 2, "ReadURI");
+  vm_param_check_string(vm, p, 0, "ReadURI");
+  vm_param_check_string(vm, p, 1, "ReadURI");
+
+  g_file_load_bytes_async(g_file_new_for_uri(value_get_string(p[0])),
+      NULL, (GAsyncReadyCallback)expr_lib_read_uri_cb,
+      g_strdup(value_get_string(p[1])));
+
+  return value_na;
+}
+
 static value_t expr_lib_read ( vm_t *vm, value_t p[], gint np )
 {
   gchar *fname, *result;
@@ -817,6 +871,7 @@ void expr_lib_init ( void )
   vm_func_add("mid", expr_lib_mid, TRUE, TRUE);
   vm_func_add("pad", expr_lib_pad, TRUE, TRUE);
   vm_func_add("extract", expr_lib_extract, TRUE, TRUE);
+  vm_func_add("extractjson", expr_lib_extract_json, TRUE, TRUE);
   vm_func_add("ident", expr_ident, TRUE, TRUE);
   vm_func_add("replace", expr_lib_replace, TRUE, TRUE);
   vm_func_add("replaceall", expr_lib_replace_all, TRUE, TRUE);
@@ -843,6 +898,7 @@ void expr_lib_init ( void )
   vm_func_add("widgetstate", expr_lib_widget_state, FALSE, FALSE);
   vm_func_add("windowinfo", expr_lib_window_info, FALSE, FALSE);
   vm_func_add("read", expr_lib_read, FALSE, TRUE);
+  vm_func_add("readuri", expr_lib_read_uri, FALSE, TRUE);
   vm_func_add("interfaceprovider", expr_iface_provider, FALSE, TRUE);
   vm_func_add("gt", expr_gettext, TRUE, TRUE);
   vm_func_add("arraybuild", expr_array_build, FALSE, TRUE);

@@ -1246,6 +1246,10 @@ the array will be resized. This is equivalent to \fIarray[index] = value\fP\&.
 .B Read(<string>)
 Reads the contents of a file and returns them as a string. Returns <string>.
 .TP
+.B ReadURI(<uri:string>, <trigger:string>)
+Read text from \fIuri\fP\&. Upon completion sfwbar will emit \fItrigger\fP with
+variable \fIresult\fP containing the contents read from \fIuri\fP\&.
+.TP
 .B ls(<string>)
 Retrieves a list of files in a directory specified by the parameter.
 Returns <array>.

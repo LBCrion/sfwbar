@@ -1070,6 +1070,10 @@ ArrayAssign(<array>, <index:number>, <value>)
 Read(<string>)
   Reads the contents of a file and returns them as a string. Returns <string>.
 
+ReadURI(<uri:string>, <trigger:string>)
+  Read text from `uri`. Upon completion sfwbar will emit `trigger` with
+  variable `result` containing the contents read from `uri`.
+
 ls(<string>)
   Retrieves a list of files in a directory specified by the parameter.
   Returns <array>.
