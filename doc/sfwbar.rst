@@ -1072,7 +1072,9 @@ Read(<string>)
 
 ReadURI(<uri:string>, <trigger:string>)
   Read text from `uri`. Upon completion sfwbar will emit `trigger` with
-  variable `result` containing the contents read from `uri`.
+  variable `result` containing the contents read from `uri`. A VFS backend for
+  the relevant URI should be installed on the system or the operation will
+  fail.
 
 ls(<string>)
   Retrieves a list of files in a directory specified by the parameter.
@@ -1103,7 +1105,7 @@ Schedule(<start:string>, <interval:numeric>, <trigger:string>)
   every `interval` milliseconds. You can specify `start` in the past to serve
   as an anchor to `interval`. I.e. if you want to emit a `trigger` every hour
   on the hour, you can specify `start` as "1970-01-01 00:00:00" and `interval`
-  as 360000.
+  as 3600000.
 
 Disk(<fs:string>, <info:string>)
   queries disk information for a disk. `fs` specifies a mount point to query.

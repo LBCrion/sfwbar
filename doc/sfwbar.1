@@ -1248,7 +1248,9 @@ Reads the contents of a file and returns them as a string. Returns <string>.
 .TP
 .B ReadURI(<uri:string>, <trigger:string>)
 Read text from \fIuri\fP\&. Upon completion sfwbar will emit \fItrigger\fP with
-variable \fIresult\fP containing the contents read from \fIuri\fP\&.
+variable \fIresult\fP containing the contents read from \fIuri\fP\&. A VFS backend for
+the relevant URI should be installed on the system or the operation will
+fail.
 .TP
 .B ls(<string>)
 Retrieves a list of files in a directory specified by the parameter.
@@ -1279,7 +1281,7 @@ if \fIinterval\fP parameter is not zero, the \fItrigger\fP will be emitted repea
 every \fIinterval\fP milliseconds. You can specify \fIstart\fP in the past to serve
 as an anchor to \fIinterval\fP\&. I.e. if you want to emit a \fItrigger\fP every hour
 on the hour, you can specify \fIstart\fP as \(dq1970\-01\-01 00:00:00\(dq and \fIinterval\fP
-as 360000.
+as 3600000.
 .TP
 .B Disk(<fs:string>, <info:string>)
 queries disk information for a disk. \fIfs\fP specifies a mount point to query.
