@@ -26,6 +26,29 @@ static value_t idle_inhibit_state ( vm_t *vm, value_t p[], gint np )
             G_OBJECT(widget), "inhibitor"))? "on" : "off");
 }
 
+static void idle_inhibitor_map_event_cb ( GtkWidget *w, GdkEvent *e, void *d )
+{
+  struct zwp_idle_inhibitor_v1 *inhibitor;
+  struct wl_surface *surface;
+
+  if(!(surface = gdk_wayland_window_get_wl_surface(gtk_widget_get_window(w))))
+    return;
+  inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(
+      idle_inhibit_manager, surface);
+  g_object_set_data(G_OBJECT(w), "inhibitor", inhibitor);
+  trigger_emit("idleinhibitor");
+}
+
+static void idle_inhibitor_unmap_cb ( GtkWidget *w, gpointer d )
+{
+  struct zwp_idle_inhibitor_v1 *inhibitor;
+
+  if( (inhibitor = g_object_get_data(G_OBJECT(w), "inhibitor")) )
+    zwp_idle_inhibitor_v1_destroy(inhibitor);
+  g_object_set_data(G_OBJECT(w), "inhibitor", NULL);
+  trigger_emit("idleinhibitor");
+}
+
 static value_t idle_inhibitor_action ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *widget = vm_widget_get(vm, NULL);
@@ -58,6 +81,12 @@ static value_t idle_inhibitor_action ( vm_t *vm, value_t p[], gint np )
         gtk_widget_get_window(widget))) )
       return value_na;
 
+    gtk_widget_add_events(widget, GDK_STRUCTURE_MASK);
+    g_signal_connect(widget, "map-event",
+        G_CALLBACK(idle_inhibitor_map_event_cb), NULL);
+    g_signal_connect(widget, "unmap",
+        G_CALLBACK(idle_inhibitor_unmap_cb), NULL);
+
     inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(
         idle_inhibit_manager, surface );
     g_object_set_data(G_OBJECT(widget), "inhibitor", inhibitor);
@@ -65,6 +94,10 @@ static value_t idle_inhibitor_action ( vm_t *vm, value_t p[], gint np )
   }
   else if( !inhibit && inhibitor )
   {
+    g_signal_handlers_disconnect_by_func(widget,
+        idle_inhibitor_unmap_cb, NULL);
+    g_signal_handlers_disconnect_by_func(widget,
+        idle_inhibitor_map_event_cb, NULL);
     g_object_set_data(G_OBJECT(widget), "inhibitor", NULL);
     zwp_idle_inhibitor_v1_destroy(inhibitor);
     trigger_emit("idleinhibitor");
