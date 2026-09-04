@@ -152,7 +152,7 @@ static value_t dbus_variant2value_basic ( GVariant *variant )
 {
   const GVariantType *type = g_variant_get_type(variant);
 
-  if(!g_variant_type_is_basic(type))
+  if(!variant || !g_variant_type_is_basic(type))
     return value_na;
 
   if(g_variant_type_equal(type, G_VARIANT_TYPE_BOOLEAN))
@@ -240,7 +240,8 @@ static value_t dbus_action_call (vm_t *vm, value_t p[], gint np)
   }
 
   result = dbus_variant2value(variant);
-  g_variant_unref(variant);
+  if(variant)
+    g_variant_unref(variant);
 
   return result;
 }
