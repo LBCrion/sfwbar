@@ -224,3 +224,27 @@ value_t value_array_from_strv ( gchar **strv )
 
   return array;
 }
+
+value_t value_from_json ( struct json_object *obj )
+{
+  value_t v1;
+  gint i;
+
+  if(json_object_is_type(obj, json_type_string))
+    return value_new_string(json_object_get_string(obj));
+  if(json_object_is_type(obj, json_type_int))
+    return value_new_numeric(json_object_get_int64(obj));
+  if(json_object_is_type(obj, json_type_double))
+    return value_new_numeric(json_object_get_double(obj));
+  if(json_object_is_type(obj, json_type_boolean))
+    return value_new_numeric(json_object_get_boolean(obj));
+  if(json_object_is_type(obj, json_type_array))
+  {
+    v1 = value_array_create(json_object_array_length(obj));
+    for(i=0; i<json_object_array_length(obj); i++)
+      value_array_append(v1,
+          value_from_json(json_object_array_get_idx(obj, i)));
+    return v1;
+  }
+  return value_na;
+}

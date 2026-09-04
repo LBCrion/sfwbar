@@ -3,7 +3,7 @@ cc = meson.get_compiler('c')
 fs = import('fs')
 lbrt = cc.find_library('rt', required: false)
 gtk3 = dependency('gtk+-3.0')
-glib = dependency('glib-2.0')
+glib = dependency('glib-2.0', version: '>=2.68')
 ggio = dependency('gio-2.0')
 gio_unix = dependency('gio-unix-2.0')
 gmod = dependency('gmodule-2.0')
@@ -66,7 +66,6 @@ endforeach
 headers = [ 'src' ]
 
 libsrc = [
-    'src/actionlib.c',
     'src/appinfo.c',
     'src/client.c',
     'src/exec.c',
@@ -138,6 +137,15 @@ libsrc = [
     'src/ipc/niri.c',
     'src/ipc/sway.c',
     'src/ipc/wayfire.c',
+    'src/lib/builtin.c',
+    'src/lib/compositor.c',
+    'src/lib/config.c',
+    'src/lib/control.c',
+    'src/lib/io.c',
+    'src/lib/lib.c',
+    'src/lib/sys.c',
+    'src/lib/ui.c',
+    'src/lib/value.c',
     'src/util/datalist.c',
     'src/util/file.c',
     'src/util/hash.c',

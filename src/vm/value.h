@@ -2,6 +2,7 @@
 #define __VALUE_H__
 
 #include <glib.h>
+#include <json.h>
 
 enum expr_type_t {
   EXPR_TYPE_NA,
@@ -64,5 +65,6 @@ gchar *value_array_to_string ( value_t value );
 value_t value_from_string ( gchar *str, gint type );
 gchar *value_to_string ( value_t v1, gint prec );
 value_t value_array_from_strv ( gchar **strv );
+value_t value_from_json ( struct json_object *obj );
 
 #endif

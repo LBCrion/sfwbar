@@ -217,6 +217,17 @@ static gboolean parser_if ( GScanner *scanner, GByteArray *code )
   return !scanner->max_parse_errors;
 }
 
+static gboolean parser_index_parse( GScanner *scanner, GByteArray *code )
+{
+  if(!parser_expr_parse(scanner, code))
+    return FALSE;
+  if(!config_expect_token(scanner, ']', "Expect ']' after array index"))
+    return FALSE;
+
+  parser_emit_function(code, vm_func_lookup("arrayindex"), 2);
+  return TRUE;
+}
+
 static gboolean parser_function ( GScanner *scanner, GByteArray *code )
 {
   vm_function_t *ptr;
@@ -243,17 +254,11 @@ static gboolean parser_function ( GScanner *scanner, GByteArray *code )
   parser_emit_function(code, ptr, np);
   scanner->config->identifier_2_string = FALSE;
 
-  return scanner->token == ')';
-}
-
-static gboolean parser_index_parse( GScanner *scanner, GByteArray *code )
-{
-  if(!parser_expr_parse(scanner, code))
+  if(scanner->token != ')')
     return FALSE;
-  if(!config_expect_token(scanner, ']', "Expect ']' after array index"))
-    return FALSE;
-
-  parser_emit_function(code, vm_func_lookup("arrayindex"), 2);
+  while(config_check_and_consume(scanner, '['))
+    if(!parser_index_parse(scanner, code))
+      return FALSE;
   return TRUE;
 }
 
@@ -542,7 +547,7 @@ static gboolean parser_action_parse ( GScanner *scanner, GByteArray *code )
       (scanner->next_token == G_TOKEN_FLOAT ||
        scanner->next_token == G_TOKEN_STRING ||
        scanner->next_token == G_TOKEN_IDENTIFIER ||
-       strchr("+-!(", scanner->next_token)) )
+       strchr("+-!([", scanner->next_token)) )
   {
     do
     {
@@ -831,8 +836,8 @@ GBytes *parser_string_build ( gchar *str )
 {
   GByteArray *code;
 
-  if(!str)
-    return NULL;
+  g_return_val_if_fail(str, NULL);
+
   code = parser_new(TRUE);
   parser_emit_string(code, str);
   return parser_free(code);
