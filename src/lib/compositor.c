@@ -159,6 +159,16 @@ static value_t lib_compositor_set_layout ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
+static value_t lib_compositor_set_disown ( vm_t *vm, value_t p[], gint np )
+{
+  vm_param_check_np(vm, np, 1, "SetDisownMinimzied");
+  vm_param_check_string(vm, p, 0, "SetDisownMinimized");
+
+  wintree_set_disown(!!value_get_numeric(p[0]));
+
+  return value_na;
+}
+
 void lib_compositor_init ( void )
 {
   vm_func_add("focus", lib_compositor_focus, TRUE, FALSE);
@@ -174,4 +184,5 @@ void lib_compositor_init ( void )
   vm_func_add("layout", lib_compositor_layout, FALSE, TRUE);
   vm_func_add("layoutlist", lib_compositor_layout_list, FALSE, TRUE);
   vm_func_add("setlayout", lib_compositor_set_layout, TRUE, TRUE);
+  vm_func_add("setdisownminized", lib_compositor_set_disown, TRUE, TRUE);
 }

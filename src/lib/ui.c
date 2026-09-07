@@ -48,7 +48,7 @@ static value_t lib_ui_menu ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
-static value_t lib_ui_clear_widget ( vm_t *vm, value_t p[], gint np )
+static value_t lib_ui_widget_clear ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *w;
 
@@ -342,9 +342,9 @@ static value_t lib_ui_get_widget_state ( vm_t *vm, value_t p[], gint np )
   GtkWidget *widget;
   gint state;
 
-  vm_param_check_np_range(vm, np, 1, 2, "GetWidgetState");
+  vm_param_check_np_range(vm, np, 1, 2, "WidgetGetState");
   if(np==2)
-    vm_param_check_string(vm, p, 0, "GetWidgetState");
+    vm_param_check_string(vm, p, 0, "WidgetGetState");
 
   widget = vm_widget_get(vm, np==2? value_get_string(p[0]) : NULL);
   if(!IS_BASE_WIDGET(widget))
@@ -366,10 +366,10 @@ static value_t lib_ui_set_widget_state ( vm_t *vm, value_t p[], gint np )
   gchar *state, *value;
   guint16 mask;
 
-  vm_param_check_np_range(vm, np, 1, 2, "SetWidgetState");
-  vm_param_check_string(vm, p, 0, "SetWidgetState");
+  vm_param_check_np_range(vm, np, 1, 2, "WidgetSetState");
+  vm_param_check_string(vm, p, 0, "WidgetSetState");
   if(np==2)
-    vm_param_check_string(vm, p, 1, "SetWidgetState");
+    vm_param_check_string(vm, p, 1, "WidgetSetState");
 
   if( !(widget = vm_widget_get(vm, np==2? value_get_string(p[0]) : NULL)) )
     return value_na;
@@ -487,13 +487,13 @@ static value_t lib_ui_widget_set_data ( vm_t *vm, value_t p[], gint np )
   return value_na;
 }
 
-static value_t lib_ui_update_widget ( vm_t *vm, value_t p[], gint np )
+static value_t lib_ui_widget_update ( vm_t *vm, value_t p[], gint np )
 {
   GtkWidget *widget;
 
-  vm_param_check_np_range(vm, np, 0, 1, "UpdateWidget");
+  vm_param_check_np_range(vm, np, 0, 1, "WidgetUpdate");
   if(np==1)
-    vm_param_check_string(vm, p, 0, "UpdateWidget");
+    vm_param_check_string(vm, p, 0, "WidgetUpdate");
 
   if( (widget = vm_widget_get(vm, np? value_get_string(p[0]) : NULL)) )
     base_widget_update_expressions(widget);
@@ -563,7 +563,7 @@ void lib_ui_init ( void )
   vm_func_add("menuclear", lib_ui_menuclear, TRUE, FALSE);
   vm_func_add("menuitemclear", lib_ui_menuitemclear, TRUE, FALSE);
   vm_func_add("menu", lib_ui_menu, TRUE, FALSE);
-  vm_func_add("clearwidget", lib_ui_clear_widget, TRUE, FALSE);
+  vm_func_add("widget_clear", lib_ui_widget_clear, TRUE, FALSE);
   vm_func_add("popup", lib_ui_popup, TRUE, FALSE);
   vm_func_add("windowopen", lib_ui_window_open, TRUE, FALSE);
   vm_func_add("windowclose", lib_ui_window_close, TRUE, FALSE);
@@ -576,23 +576,26 @@ void lib_ui_init ( void )
   vm_func_add("setbarsensor", lib_ui_setbarsensor, TRUE, FALSE);
   vm_func_add("setbarvisibility", lib_ui_setbarvisibility, TRUE, FALSE);
   vm_func_add("setexclusivezone", lib_ui_setexclusivezone, TRUE, FALSE);
+  vm_func_add("setvalue", lib_ui_setvalue, TRUE, FALSE);
+  vm_func_add("setstyle", lib_ui_setstyle, TRUE, FALSE);
+  vm_func_add("settooltip", lib_ui_settooltip, TRUE, FALSE);
   vm_func_add("bardir", lib_ui_bardir, FALSE, FALSE);
   vm_func_add("gtkevent", lib_ui_gtkevent, FALSE, FALSE);
   vm_func_add("widgetid", lib_ui_widget_id, FALSE, FALSE);
   vm_func_add("checkstate", lib_ui_check_state, FALSE, FALSE);
-  vm_func_add("getwidgetstate", lib_ui_get_widget_state, FALSE, FALSE);
-  vm_func_add("setwidgetstate", lib_ui_set_widget_state, TRUE, FALSE);
+  vm_func_add("widgetgetstate", lib_ui_get_widget_state, FALSE, FALSE);
+  vm_func_add("widgetsetstate", lib_ui_set_widget_state, TRUE, FALSE);
   vm_func_add("widgetchildren", lib_ui_widget_children, FALSE, FALSE);
   vm_func_add("widgetgetdata", lib_ui_widget_get_data, FALSE, FALSE);
   vm_func_add("widgetsetdata", lib_ui_widget_set_data, TRUE, FALSE);
-  vm_func_add("updatewidget", lib_ui_update_widget, TRUE, FALSE);
+  vm_func_add("widgetupdate", lib_ui_widget_update, TRUE, FALSE);
   vm_func_add("widgetpush", lib_ui_widget_push, TRUE, FALSE);
   vm_func_add("widgetpop", lib_ui_widget_pop, TRUE, FALSE);
-  vm_func_add("setvalue", lib_ui_setvalue, TRUE, FALSE);
-  vm_func_add("setstyle", lib_ui_setstyle, TRUE, FALSE);
-  vm_func_add("settooltip", lib_ui_settooltip, TRUE, FALSE);
+  vm_func_add("widgetclear", lib_ui_widget_clear, TRUE, FALSE);
 
   /* deprecated aliases */
   vm_func_add("widgetstate", lib_ui_get_widget_state, FALSE, FALSE);
   vm_func_add("userstate", lib_ui_set_widget_state, TRUE, FALSE);
+  vm_func_add("updatewidget", lib_ui_widget_update, TRUE, FALSE);
+  vm_func_add("clearwidget", lib_ui_widget_clear, TRUE, FALSE);
 }

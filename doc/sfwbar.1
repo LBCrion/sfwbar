@@ -1052,11 +1052,11 @@ generated menu). Returns n/a.
 delete a menu item with a given id. The menu item must be declared with an id
 if you want to modify or clear it. Returns n/a.
 .TP
-.B ClearWidget(<string>)
+.B WidgetClear(<string>)
 delete a widget with a given id. A widget must be declared with id if you want
 to modify or delete it. Returns n/a.
 .TP
-.B UpdateWidget()
+.B WidgetUpdate()
 Triggers an update of a widget invoking the action. Returns n/a.
 .TP
 .B MapAppId(app_id:string>, <pattern:string>)
@@ -1079,7 +1079,7 @@ shown on the taskbar or switcher. Returns n/a.
 Any windows with titles matching a regular expression pattern will not be
 shown on the taskbar or switcher. Returns n/a.
 .TP
-.B DisownMinimized(<boolean>)
+.B SetDisownMinimized(<boolean>)
 Disassociate windows from their workplaces when they are minimized. If this
 option is set, selecting a minimized window will unminimize it on the active
 workplace. If set to False (default), the window will be unminimzied to it\(aqs
@@ -1102,11 +1102,6 @@ set style name for a widget
 .TP
 .B SetTooltip([<widget:string>,]<value:string>)
 set tooltip text for a widget
-.TP
-.B UserState([<widget:string>,]<string>)
-Set boolean user state on a widget. If widget parameter isn\(aqt specified, the
-state will be set for a widget invoking the action. Valid values are \(dqOn\(dq or
-\(dqOff\(dq. Returns n/a.
 .TP
 .B Focus()
 set window to focused. This action can only be invoked from a taskbar item
@@ -1323,11 +1318,17 @@ an id of a widget, if omitted, the operation will apply to the current widget.
 This function returns a value previously attached to property \fIname\fP of a
 widget.
 .TP
-.B WidgetState([<id:string>,] <stateid:number>)
+.B WidgetSetState([<widget:string>,]<string>)
+Set boolean user state on a widget. If widget parameter isn\(aqt specified, the
+state will be set for a widget invoking the action. Valid values are \(dqOn\(dq or
+\(dqOff\(dq. Returns n/a. (This function has an alias \fIUserState\fP ).
+.TP
+.B WidgetGetState([<id:string>,] <stateid:number>)
 Returns a value of one of two widget \fIstate\fP boolean. The optional parameter
 \fIid\fP specifies an id of a widget to query. If omitted, the state of a widget
 calling the expression will be returned. The \fIstateid\fP parameter specifies
 which state variable to query (valid values are 1 or 2). Returns <number>.
+(This function has an alias \fIWidgetState\fP).
 .TP
 .B WidgetChildren([<id:string>])
 Returns a list of child widgets within a widget. The optional parameter \fIid\fP

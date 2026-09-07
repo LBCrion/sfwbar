@@ -876,11 +876,11 @@ MenuItemClear(<string>)
   delete a menu item with a given id. The menu item must be declared with an id
   if you want to modify or clear it. Returns n/a.
 
-ClearWidget(<string>)
+WidgetClear(<string>)
   delete a widget with a given id. A widget must be declared with id if you want
   to modify or delete it. Returns n/a.
 
-UpdateWidget()
+WidgetUpdate()
   Triggers an update of a widget invoking the action. Returns n/a.
 
 MapAppId(app_id:string>, <pattern:string>)
@@ -903,7 +903,7 @@ FilterTitle(<pattern:string>)
   Any windows with titles matching a regular expression pattern will not be
   shown on the taskbar or switcher. Returns n/a.
 
-DisownMinimized(<boolean>)
+SetDisownMinimized(<boolean>)
   Disassociate windows from their workplaces when they are minimized. If this
   option is set, selecting a minimized window will unminimize it on the active
   workplace. If set to False (default), the window will be unminimzied to it's
@@ -926,11 +926,6 @@ SetStyle([<widget:string>,]<string>)
 
 SetTooltip([<widget:string>,]<value:string>)
   set tooltip text for a widget
-
-UserState([<widget:string>,]<string>)
-  Set boolean user state on a widget. If widget parameter isn't specified, the
-  state will be set for a widget invoking the action. Valid values are "On" or
-  "Off". Returns n/a.
 
 Focus()
   set window to focused. This action can only be invoked from a taskbar item
@@ -1147,11 +1142,17 @@ WidgetGetData([<id:string>], <name:string>)
   This function returns a value previously attached to property `name` of a
   widget.
 
-WidgetState([<id:string>,] <stateid:number>)
+WidgetSetState([<widget:string>,]<string>)
+  Set boolean user state on a widget. If widget parameter isn't specified, the
+  state will be set for a widget invoking the action. Valid values are "On" or
+  "Off". Returns n/a. (This function has an alias `UserState` ).
+
+WidgetGetState([<id:string>,] <stateid:number>)
   Returns a value of one of two widget `state` boolean. The optional parameter
   `id` specifies an id of a widget to query. If omitted, the state of a widget
   calling the expression will be returned. The `stateid` parameter specifies
   which state variable to query (valid values are 1 or 2). Returns <number>.
+  (This function has an alias `WidgetState`).
 
 WidgetChildren([<id:string>])
   Returns a list of child widgets within a widget. The optional parameter `id`
