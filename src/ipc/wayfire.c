@@ -244,7 +244,7 @@ static gboolean wayfire_ipc_workspace_check_monitor ( void *wsid, gchar *name )
 }
 
 static guint wayfire_ipc_get_geom ( gpointer wid, GdkRectangle *place,
-    gpointer wsid, GdkRectangle **wins, GdkRectangle *space, gint *focus )
+    gpointer wsid, GdkRectangle **wins, GdkRectangle *space, gsize *focus )
 {
   wayfire_ipc_wset_t *wset;
   wayfire_ipc_output_t *output;
@@ -708,7 +708,7 @@ void wayfire_ipc_init ( void )
   GIOChannel *chan;
   GdkDisplay *disp;
   const gchar *sock_file;
-  gint i;
+  gsize i;
 
   if( !(sock_file = sockname?sockname:g_getenv("WAYFIRE_SOCKET")) )
     return;

@@ -24,7 +24,7 @@ static gboolean chart_draw ( GtkWidget *self, cairo_t *cr )
 {
   ChartPrivate *priv;
   GtkStyleContext *context;
-  gint width,height;
+  gint width, height;
   GtkBorder border,margin,padding,extents;
   GtkStateFlags flags;
   GdkRGBA fg;
@@ -57,7 +57,7 @@ static gboolean chart_draw ( GtkWidget *self, cairo_t *cr )
   if( width<1 || height<1 )
     return FALSE;
 
-  while(g_queue_get_length(priv->data)>width)
+  while((gssize)g_queue_get_length(priv->data)>width)
     g_free(g_queue_pop_head(priv->data));
 
   len = g_queue_get_length(priv->data);

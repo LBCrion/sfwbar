@@ -158,7 +158,9 @@ subdir('po')
 
 cargs = ['-DGLIB_DISABLE_DEPRECATION_WARNINGS',
     '-DGDK_DISABLE_DEPRECATED',
-    '-DGTK_DISABLE_DEPRECATED']
+    '-DGTK_DISABLE_DEPRECATED',
+    '-Wall', '-Wextra', '-Wno-unused-parameter', '-Wno-cast-function-type',
+    '-Wno-missing-field-initializers']
 
 sfwbar = library ('sfwbar', sources: libsrc,
     c_args: cargs, install_dir: get_option('libdir') / 'sfwbar',
@@ -168,15 +170,15 @@ sfwbar = library ('sfwbar', sources: libsrc,
 deps = [deps, declare_dependency(link_with: sfwbar)]
 
 if get_option('network').enabled() or get_option('network').auto()
-  library('network', sources: 'modules/network.c', dependencies: deps,
-      include_directories: headers,
+  library('network', sources: 'modules/network.c', c_args: cargs,
+      dependencies: deps, include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   doc_list += 'sfwbar-network'
 endif
 
 if get_option('bluez').enabled() or get_option('bluez').auto()
-  library('bluez', sources: 'modules/bluez.c',
+  library('bluez', sources: 'modules/bluez.c', c_args: cargs,
       include_directories: headers,
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
@@ -184,7 +186,7 @@ if get_option('bluez').enabled() or get_option('bluez').auto()
 endif
 
 if get_option('dbus').enabled() or get_option('dbus').auto()
-  library('dbus', sources: 'modules/dbus.c',
+  library('dbus', sources: 'modules/dbus.c', c_args: cargs,
       include_directories: headers,
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
@@ -192,7 +194,7 @@ if get_option('dbus').enabled() or get_option('dbus').auto()
 endif
 
 if get_option('iwd').enabled() or get_option('iwd').auto()
-  library('wifi-iwd', sources: 'modules/wifi-iwd.c',
+  library('wifi-iwd', sources: 'modules/wifi-iwd.c', c_args: cargs,
       include_directories: headers,
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
@@ -200,7 +202,7 @@ if get_option('iwd').enabled() or get_option('iwd').auto()
 endif
 
 if get_option('nm').enabled() or get_option('nm').auto()
-  library('wifi-nm', sources: 'modules/wifi-nm.c',
+  library('wifi-nm', sources: 'modules/wifi-nm.c', c_args: cargs,
       include_directories: headers,
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
@@ -210,7 +212,7 @@ if get_option('nm').enabled() or get_option('nm').auto()
 endif
 
 if get_option('ncenter').enabled() or get_option('ncenter').auto()
-  library('ncenter', sources: 'modules/ncenter.c',
+  library('ncenter', sources: 'modules/ncenter.c', c_args: cargs,
       include_directories: headers,
       dependencies: deps, name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
@@ -218,7 +220,7 @@ if get_option('ncenter').enabled() or get_option('ncenter').auto()
 endif
 
 if puls.found() and pulg.found()
-  library('pulsectl', sources: 'modules/pulsectl.c',
+  library('pulsectl', sources: 'modules/pulsectl.c', c_args: cargs,
       include_directories: headers,
       dependencies: [deps, puls, pulg],name_prefix: '',
       install: true, install_dir: get_option('libdir') / 'sfwbar' )
@@ -226,7 +228,7 @@ if puls.found() and pulg.found()
 endif
 
 if pipe.found()
-  library('pipewire', sources: 'modules/pipewire.c',
+  library('pipewire', sources: 'modules/pipewire.c', c_args: cargs,
       include_directories: headers,
       dependencies: [deps, pipe],name_prefix: '',
       install: true, install_dir: get_option('libdir') / 'sfwbar' )
@@ -234,16 +236,16 @@ if pipe.found()
 endif
 
 if get_option('mpd').enabled() or get_option('mpd').auto()
-  library('mpd', sources: 'modules/mpd.c', dependencies: deps,
-      include_directories: headers,
+  library('mpd', sources: 'modules/mpd.c', c_args: cargs,
+      dependencies: deps, include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   doc_list += 'sfwbar-mpd'
 endif
 
 if alsa.found()
-  library('alsactl', sources: 'modules/alsactl.c', dependencies: [deps, alsa],
-      include_directories: headers,
+  library('alsactl', sources: 'modules/alsactl.c', c_args: cargs,
+      dependencies: [deps, alsa], include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   if 'sfwbar-volume' not in doc_list
@@ -252,24 +254,24 @@ if alsa.found()
 endif
 
 if xkbr.found()
-  library('xkbmap', sources: 'modules/xkbmap.c', dependencies: [deps, xkbr, xkbc],
-      include_directories: headers,
+  library('xkbmap', sources: 'modules/xkbmap.c', c_args: cargs,
+      dependencies: [deps, xkbr, xkbc], include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   doc_list += 'sfwbar-xkbmap'
 endif
 
 if get_option('appmenu').enabled() or get_option('appmenu').auto()
-  library('appmenu', sources: 'modules/appmenu.c', dependencies: deps,
-      include_directories: headers,
+  library('appmenu', sources: 'modules/appmenu.c', c_args: cargs,
+      dependencies: deps, include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   doc_list += 'sfwbar-appmenu'
 endif
 
 if get_option('bsdctl').enabled()
-  library('bsdctl', sources: 'modules/bsdctl.c', dependencies: deps,
-      include_directories: headers,
+  library('bsdctl', sources: 'modules/bsdctl.c', c_args: cargs,
+      dependencies: deps, include_directories: headers,
       name_prefix: '', install: true,
       install_dir: get_option('libdir') / 'sfwbar' )
   doc_list += 'sfwbar-bsdctl'

@@ -97,7 +97,7 @@ static gchar *sni_item_get_pixbuf ( GVariant *v )
   GVariant *img,*child;
   cairo_surface_t *cs;
   GdkPixbuf *res;
-  gint32 x,y;
+  gint32 x, y;
   guint32 *ptr;
   gsize len, i;
   gchar *name;
@@ -111,7 +111,7 @@ static gchar *sni_item_get_pixbuf ( GVariant *v )
   g_variant_get(child, "(ii@ay)", &x, &y, &img);
   ptr = (guint32 *)g_variant_get_fixed_array(img, &len, sizeof(guchar));
 
-  if(!len || !ptr || len != x*y*4)
+  if(!len || !ptr || len != (gsize)x*y*4)
   {
     g_variant_unref(img);
     g_variant_unref(child);
@@ -121,7 +121,7 @@ static gchar *sni_item_get_pixbuf ( GVariant *v )
   ptr = g_memdup2(ptr, len);
   g_variant_unref(img);
   g_variant_unref(child);
-  for(i=0; i<x*y; i++)
+  for(i=0; i<(gsize)x*y; i++)
     ptr[i] = g_ntohl(ptr[i]);
 
   cs = cairo_image_surface_create_for_data((guchar *)ptr, CAIRO_FORMAT_ARGB32,

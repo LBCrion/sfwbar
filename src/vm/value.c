@@ -94,7 +94,7 @@ value_t value_dup ( value_t v1 )
 
 gint value_array_find ( value_t needle, value_t haystack )
 {
-  gint i;
+  gsize i;
 
   if(!value_is_array(haystack))
     return -1;
@@ -123,7 +123,7 @@ value_t value_array_remove ( value_t array, value_t token )
 
 gboolean value_compare ( value_t v1, value_t v2 )
 {
-  gint i;
+  gsize i;
 
   if(v1.type != v2.type)
     return FALSE;
@@ -228,7 +228,7 @@ value_t value_array_from_strv ( gchar **strv )
 value_t value_from_json ( struct json_object *obj )
 {
   value_t v1;
-  gint i;
+  gsize i;
 
   if(json_object_is_type(obj, json_type_string))
     return value_new_string(json_object_get_string(obj));

@@ -60,7 +60,7 @@ app_menu_dir_t app_menu_map[] = {
   {"Office", "Office", "applications-office"},
   {"System", "System Tools", "applications-system"},
   {"Utility", "Accessories", "applications-accessories"},
-  {NULL, NULL}
+  {}
 };
 
 app_menu_map_entry_t app_menu_additional[] = {
@@ -176,7 +176,7 @@ app_menu_map_entry_t app_menu_additional[] = {
   {"Clock", "Utility", FALSE},
   {"TextEditor", "Utility", FALSE},
   {"Core", "Utility", TRUE},
-  {NULL, NULL, FALSE}
+  {}
 };
 
 static app_menu_dir_t *app_menu_main_lookup ( const gchar *cat, gssize len )

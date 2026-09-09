@@ -52,7 +52,7 @@ struct _BaseWidgetPrivate
   expr_cache_t *tooltip;
   gint64 interval;
   gint64 next_poll;
-  guint maxw, maxh;
+  gint maxw, maxh;
   const gchar *trigger;
   gint dir;
   gboolean local_state;

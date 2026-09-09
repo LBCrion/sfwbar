@@ -979,7 +979,7 @@ gboolean sfwbar_module_init ( void )
 {
   GDBusNodeInfo *node;
   static GDBusInterfaceVTable nm_secret_agent_vtable = {
-    (GDBusInterfaceMethodCallFunc)nm_secret_agent_method, NULL, NULL };
+    (GDBusInterfaceMethodCallFunc)nm_secret_agent_method, NULL, NULL, {} };
 
   if( !(nm_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
     return FALSE;

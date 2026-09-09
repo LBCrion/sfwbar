@@ -421,7 +421,8 @@ gboolean wintree_placer_calc ( gpointer wid, GdkRectangle *place )
   GdkRectangle *obs, output;
   GList *iter;
   gint *x, *y;
-  gint i, j, c, nobs, focus;
+  gsize c, nobs, focus;
+  gssize i, j;
 
   if(!placer || !place || !wid)
     return FALSE;

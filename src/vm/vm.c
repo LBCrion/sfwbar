@@ -25,7 +25,6 @@ static gint vm_op_length[] = {
   [EXPR_OP_RETURN] = 1,
 };
 
-
 static void vm_push ( vm_t *vm, value_t val )
 {
   g_array_append_val(vm->stack, val);
@@ -264,7 +263,7 @@ static gboolean vm_function ( vm_t *vm )
     result = value_na;
 
   expr_dep_add(g_quark_from_string(func.name), vm->expr);
-  if(np>1 && vm->pstack->len>np-1)
+  if(np>1 && vm->pstack->len+1>np)
     g_ptr_array_remove_range(vm->pstack, vm->pstack->len-np+1, np-1);
   else if(!np)
     g_ptr_array_add(vm->pstack, vm->ip);
@@ -390,7 +389,7 @@ value_t vm_run ( vm_t *vm )
     vm->pstack = g_ptr_array_sized_new(
         MAX(1, vm->expr? vm->expr->stack_depth : 1));
 
-  for(vm->ip = code+1; (vm->ip-code)<len; vm->ip++)
+  for(vm->ip = code+1; (vm->ip-code)<(gssize)len; vm->ip++)
   {
     //g_message("stack %d, op %d", vm->stack->len, *vm->ip);
     if(*vm->ip < EXPR_OP_LAST &&
@@ -446,8 +445,8 @@ value_t vm_run ( vm_t *vm )
     else if(!vm_op_binary(vm))
     {
       g_warning("invalid op %d at %ld (stack %u)", *vm->ip, vm->ip - code, vm->stack->len);
-      for(gint i=0; i<len; i++)
-        g_warning("%d: %d", i, code[i]);
+      for(gsize i=0; i<len; i++)
+        g_warning("%zu: %d", i, code[i]);
       break;
     }
   }
@@ -571,7 +570,7 @@ static gboolean vm_event_free ( void *event )
   return FALSE;
 }
 
-static void vm_run_action_thread ( vm_t *vm, gpointer d )
+static void vm_run_action_thread ( vm_t *vm, G_GNUC_UNUSED gpointer d )
 {
   value_free(vm_run(vm));
   if(vm->event)

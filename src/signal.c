@@ -55,7 +55,9 @@ static GSourceFuncs signal_source_funcs = {
   signal_source_prepare,
   signal_source_check,
   signal_source_dispatch,
-  signal_source_finalize
+  signal_source_finalize,
+  NULL,
+  NULL
 };
 
 void signal_subscribe ( void )

@@ -181,7 +181,7 @@ static void sway_traverse_tree ( struct json_object *obj, const gchar *parent,
 {
   struct json_object *arr, *iter;
   const gchar *type, *name;
-  gint i;
+  gsize i;
 
   if( (arr = json_array_by_name(obj, "floating_nodes")) )
     for(i=0; i<json_object_array_length(arr); i++)
@@ -290,7 +290,7 @@ static void sway_ipc_workspace_populate ( void )
 {
   struct json_object *robj;
   workspace_t *ws;
-  gint i;
+  gsize i;
 
   robj = sway_ipc_request("", 1);
 
@@ -527,11 +527,11 @@ static struct wintree_api sway_wintree_api = {
 /* workspace API */
 
 static guint sway_ipc_get_geom ( gpointer wid, GdkRectangle *place,
-    gpointer wsid, GdkRectangle **wins, GdkRectangle *space, gint *focus )
+    gpointer wsid, GdkRectangle **wins, GdkRectangle *space, gsize *focus )
 {
   struct json_object *obj = NULL;
   struct json_object *iter, *fiter, *arr;
-  gint i, j, c, n = 0;
+  gsize i, j, c, n = 0;
 
   obj = sway_ipc_request("", 1);
 
@@ -624,6 +624,7 @@ static value_t sway_ipc_wincmd_action ( vm_t *vm, value_t p[], gint np )
 void sway_ipc_init ( void )
 {
   struct json_object *obj;
+  gsize i;
   gint sock;
 
   if(wintree_api_check() || ((sock=sway_ipc_open(1000))==-1) )
@@ -646,7 +647,6 @@ void sway_ipc_init ( void )
   sway_ipc_send(sock, 100, "");
   if( (obj = sway_ipc_poll(sock, NULL)) )
   {
-    gint i;
     for(i=0; i<json_object_array_length(obj); i++)
       if(!g_strcmp0(json_string_by_name(json_object_array_get_idx(obj, i), "type"), "keyboard"))
       {

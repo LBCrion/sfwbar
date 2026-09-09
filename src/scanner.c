@@ -115,7 +115,7 @@ static void scanner_handler_json_init ( source_t *src, src_handler_t *hnd )
 void scanner_update_json1 ( scan_var_t *var, struct json_object *obj )
 {
   struct json_object *ptr;
-  gint i;
+  gsize i;
 
   ptr = jpath_parse(var->definition, obj);
   if(ptr && json_object_is_type(ptr, json_type_array))
@@ -150,7 +150,7 @@ static void scanner_handler_json_handle ( source_t *src, src_handler_t *hnd,
   }
   g_list_foreach(src->vars, (GFunc)scanner_update_json1, obj);
   json_object_put(obj);
-  if(tok->char_offset < str->len)
+  if((gsize)tok->char_offset < str->len)
   {
     remainder = g_string_new(str->str+tok->char_offset);
     scanner_handler_json_handle(src, hnd, remainder);

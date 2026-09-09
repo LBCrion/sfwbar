@@ -781,9 +781,9 @@ gboolean sfwbar_module_init ( void )
 {
   GDBusNodeInfo *node;
   static GDBusInterfaceVTable iw_agent_vtable = {
-    (GDBusInterfaceMethodCallFunc)iw_agent_method, NULL, NULL };
+    (GDBusInterfaceMethodCallFunc)iw_agent_method, NULL, NULL, {} };
   static GDBusInterfaceVTable iw_signal_level_agent_vtable = {
-    (GDBusInterfaceMethodCallFunc)iw_signal_level_agent_method, NULL, NULL };
+    (GDBusInterfaceMethodCallFunc)iw_signal_level_agent_method, NULL, NULL,{}};
 
   if( !(iw_con = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL)) )
     return FALSE;

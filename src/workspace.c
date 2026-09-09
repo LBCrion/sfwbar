@@ -142,7 +142,7 @@ void workspace_activate ( workspace_t *ws )
 }
 
 guint workspace_get_geometry ( gpointer wid, GdkRectangle *wloc, gpointer wsid,
-    GdkRectangle **wins, GdkRectangle *spc, gint *focus)
+    GdkRectangle **wins, GdkRectangle *spc, gsize *focus)
 {
   if(api->get_geom && wsid)
     return api->get_geom(wid, wloc, wsid, wins, spc, focus);
@@ -257,7 +257,7 @@ void workspace_mod_state ( gpointer id, gint32 mask, gboolean state )
 
   if( !(ws = workspace_from_id(id)) )
     return;
-  if((ws->state & WS_STATE_ALL) == state)
+  if(!!(ws->state & WS_STATE_ALL) == state)
     return;
 
   if(state)

@@ -289,7 +289,7 @@ static alsa_source_t *alsa_source_subscribe ( gchar *name )
   return src;
 }
 
-gboolean alsa_source_subscribe_all ( void )
+gboolean alsa_source_subscribe_all ( void *d )
 {
   gint i;
 
@@ -534,7 +534,7 @@ void alsa_activate ( void )
   vm_func_add("volume", alsa_func_volume, FALSE, FALSE);
   vm_func_add("volumeinfo", alsa_func_volume, FALSE, FALSE);
   vm_func_add("volumectl", alsa_action_volumectl, TRUE, FALSE);
-  module_idle_add((GSourceFunc)alsa_source_subscribe_all, NULL);
+  module_idle_add(alsa_source_subscribe_all, NULL);
 }
 
 void alsa_deactivate ( void )

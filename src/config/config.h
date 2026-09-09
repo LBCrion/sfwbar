@@ -43,12 +43,12 @@ void config_widget (GScanner *scanner, GtkWidget *widget);
 GtkWidget *config_widget_build ( GScanner *scanner, GtkWidget *container );
 gpointer config_lookup_ptr ( GScanner *scanner, GHashTable *table );
 gpointer config_lookup_next_ptr ( GScanner *scanner, GHashTable *table );
-gboolean config_check_and_consume ( GScanner *scanner, gint token );
+gboolean config_check_and_consume ( GScanner *scanner, guint token );
 gchar *config_value_string ( gchar *dest, gchar *string );
 GtkWidget *config_parse ( gchar *, GtkWidget *, vm_store_t * );
 GtkWidget *config_parse_data ( gchar *, gchar *, GtkWidget *, vm_store_t *,
     gboolean);
-gboolean config_expect_token ( GScanner *scan, gint token, gchar *fmt, ...);
+gboolean config_expect_token ( GScanner *scan, guint token, gchar *fmt, ...);
 gboolean config_is_section_end ( GScanner *scanner );
 void config_parse_sequence ( GScanner *scanner, ... );
 gboolean config_assign_boolean (GScanner *scanner, gboolean def,

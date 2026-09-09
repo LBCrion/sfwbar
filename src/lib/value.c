@@ -82,7 +82,7 @@ static value_t lib_value_map( vm_t *vm, value_t p[], gint np )
 
 static value_t lib_value_array_map( vm_t *vm, value_t p[], gint np )
 {
-  gint i;
+  gsize i;
 
   vm_param_check_np_range(vm, np, 3, 4, "arraymap");
   vm_param_check_array(vm, p, 1, "arraymap");
@@ -129,7 +129,7 @@ static value_t lib_value_lookup( vm_t *vm, value_t p[], gint np )
 
 static value_t lib_value_array_lookup( vm_t *vm, value_t p[], gint np )
 {
-  gint i;
+  gsize i;
 
   vm_param_check_np_range(vm, np, 3, 4, "arraylookup");
   vm_param_check_numeric(vm, p, 0, "arraylookup");
@@ -368,8 +368,8 @@ static value_t lib_value_arrayindex ( vm_t *vm, value_t p[], gint np )
   vm_param_check_array(vm, p, 0, "ArrayIndex");
   vm_param_check_numeric(vm, p, 1, "ArrayIndex");
 
-  if(!value_is_array(p[0]) || (gint)value_get_numeric(p[1])<0 ||
-      p[0].value.array->len <= ((gint)value_get_numeric(p[1])))
+  if(!value_is_array(p[0]) || (gssize)value_get_numeric(p[1])<0 ||
+      p[0].value.array->len <= ((gsize)value_get_numeric(p[1])))
   return value_na;
 
   return value_dup(g_array_index(p[0].value.array, value_t,
@@ -379,18 +379,18 @@ static value_t lib_value_arrayindex ( vm_t *vm, value_t p[], gint np )
 static value_t lib_value_arrayassign ( vm_t *vm, value_t p[], gint np )
 {
   value_t *v1, arr;
-  gint n;
+  gssize n;
 
   vm_param_check_np(vm, np, 3, "ArrayAssign");
   vm_param_check_array(vm, p, 0, "ArrayAssign");
   vm_param_check_numeric(vm, p, 1, "ArrayAssign");
 
-  n = (gint)value_get_numeric(p[1]);
+  n = (gssize)value_get_numeric(p[1]);
   if(!value_is_array(p[0]) || n<0)
     return value_na;
 
   arr = value_dup(p[0]);
-  if(n >= arr.value.array->len)
+  if((gsize)n >= arr.value.array->len)
     g_array_set_size(arr.value.array, n+1);
   v1 = &g_array_index(arr.value.array, value_t, n);
   value_free(*v1);

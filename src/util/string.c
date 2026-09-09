@@ -111,7 +111,7 @@ void *ptr_pass ( void *ptr )
 
 gint strv_index ( gchar **strv, gchar *key )
 {
-  gint i;
+  gsize i;
 
   if(strv)
     for(i=0; i<g_strv_length(strv); i++)

@@ -79,8 +79,8 @@ static void hypr_ipc_command ( gchar *cmd, ... )
 static gchar *hypr_ipc_workspace_data ( workspace_t *ws, gchar *field )
 {
   json_object *json, *ptr;
-  gint i;
   gchar *res = NULL;
+  gsize i;
 
   if(!ws || !hypr_ipc_request(ipc_sockaddr, "j/workspaces", &json) || !json)
     return NULL;
@@ -144,7 +144,7 @@ static gboolean hypr_ipc_get_clients ( gpointer *uid )
 {
   json_object *json, *ptr;
   gpointer id;
-  gint i;
+  gsize i;
 
   if(!hypr_ipc_request(ipc_sockaddr, "j/clients", &json) || !json)
     return FALSE;
@@ -223,9 +223,10 @@ static void hypr_ipc_track_workspace ( gchar *event )
 static GdkRectangle hypr_ipc_get_output_geom ( gpointer wsid )
 {
   json_object *json, *iter;
-  gint i, scale;
   gchar *monitor = NULL;
   GdkRectangle res;
+  gsize i;
+  gint scale;
 
   res.x = -1;
   res.y = -1;
@@ -277,10 +278,10 @@ static gboolean hypr_ipc_window_geom ( json_object *json, GdkRectangle *res )
 }
 
 static guint hypr_ipc_get_geom ( gpointer wid, GdkRectangle *place,
-    gpointer wsid, GdkRectangle **wins, GdkRectangle *space, gint *focus )
+    gpointer wsid, GdkRectangle **wins, GdkRectangle *space, gsize *focus )
 {
   json_object *json, *iter;
-  gint i, n=0;
+  gsize i, n=0;
 
   *space = hypr_ipc_get_output_geom(wsid);
   if(space->width<0)
@@ -323,7 +324,8 @@ static void hypr_ipc_window_place ( gpointer wid )
 static void hypr_ipc_pager_populate( void )
 {
   json_object *json, *ptr, *iter;
-  gint i, wid;
+  gsize i;
+  gint64 wid;
   workspace_t *ws;
 
   if(!hypr_ipc_request(ipc_sockaddr, "j/workspaces", &json) || !json)
@@ -364,7 +366,7 @@ static void hypr_ipc_layouts_get ( void )
 {
   json_object *json, *keyboards, *iter;
   const gchar *str;
-  gint i;
+  gsize i;
 
   if(!hypr_ipc_request(ipc_sockaddr, "j/devices", &json) || !json)
     return;

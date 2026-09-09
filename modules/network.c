@@ -326,7 +326,7 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
         net_timeout = g_timeout_add(100, net_rt_request_src, GINT_TO_POINTER(sock));
       }
     }
-    else if(hdr->nlmsg_pid == getpid())
+    else if((pid_t)hdr->nlmsg_pid == getpid())
     {
       if(hdr->nlmsg_type!=RTM_NEWROUTE)
         continue; /* ignore anything but NEWROUTE */

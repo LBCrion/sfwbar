@@ -183,7 +183,7 @@ static gchar *dn_parse_image_data ( GVariant *dict )
     return NULL;
 
   data = g_variant_get_fixed_array(vdata, &len, sizeof(guchar));
-  if(len != h*row_stride)
+  if((gssize)len != h*row_stride)
     return NULL;
   copy = g_memdup2(data, len);
 
@@ -373,7 +373,8 @@ static const GDBusInterfaceVTable dn_iface_vtable =
 {
   (GDBusInterfaceMethodCallFunc)dn_iface_method,
   NULL,
-  NULL
+  NULL,
+  {}
 };
 
 static void dn_bus_acquired_cb (GDBusConnection *con, const gchar *name,

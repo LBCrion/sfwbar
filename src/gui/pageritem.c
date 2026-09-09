@@ -137,20 +137,20 @@ static gboolean pager_item_draw_preview ( GtkWidget *widget, cairo_t *cr,
 {
   GtkStyleContext *style;
   GdkRGBA fg;
-  guint w,h,i,n;
-  gint focus;
+  gsize i, focus;
+  guint w, h ,n;
   GdkRectangle *wins, spc;
 
   w = gtk_widget_get_allocated_width (widget);
   h = gtk_widget_get_allocated_height (widget);
   style = gtk_widget_get_style_context(widget);
-  gtk_style_context_get_color (style,GTK_STATE_FLAG_NORMAL, &fg);
-  cairo_set_line_width(cr,1);
+  gtk_style_context_get_color (style, GTK_STATE_FLAG_NORMAL, &fg);
+  cairo_set_line_width(cr, 1);
 
   if( !(n = workspace_get_geometry(NULL, NULL, ws->id, &wins, &spc, &focus)) )
     return TRUE;
 
-  for(i=0;i<n;i++)
+  for(i=0; i<n; i++)
   {
     cairo_set_source_rgba(cr, fg.red, fg.blue, fg.green, (i==focus)?1:0.5);
     cairo_rectangle(cr,

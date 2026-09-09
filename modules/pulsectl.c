@@ -524,7 +524,7 @@ static void pulse_volume_adjust ( pulse_interface_t *iface, pulse_info *info,
   }
   else
     info->cvol.values[cidx-1] = CLAMP((gint)(info->cvol.values[cidx-1]) +
-        vdelta, 0, PA_VOLUME_UI_MAX);
+        vdelta, 0, (gint)PA_VOLUME_UI_MAX);
 
   pulse_operation(iface->set_volume(pctx, info->idx, &info->cvol, NULL, NULL),
       "volume adjust");

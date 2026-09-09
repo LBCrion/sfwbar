@@ -486,16 +486,16 @@ static void bar_get_property ( GObject *self, guint id, GValue *value,
       g_value_set_boxed(value, priv->mirror_targets);
       break;
     case BAR_EDGE:
-      g_value_set_enum(value,
-          (priv->overrides & BAR_OVERRIDE_EDGE)? priv->override_edge : -1);
+      g_value_set_enum(value, (priv->overrides & BAR_OVERRIDE_EDGE)?
+          (gint)priv->override_edge : -1);
       break;
     case BAR_HALIGN:
-      g_value_set_enum(value,
-          (priv->overrides & BAR_OVERRIDE_HALIGN)? priv->override_halign : -1);
+      g_value_set_enum(value, (priv->overrides & BAR_OVERRIDE_HALIGN)?
+          (gint)priv->override_halign : -1);
       break;
     case BAR_VALIGN:
-      g_value_set_enum(value,
-          (priv->overrides & BAR_OVERRIDE_VALIGN)? priv->override_valign : -1);
+      g_value_set_enum(value, (priv->overrides & BAR_OVERRIDE_VALIGN)?
+          (gint)priv->override_valign : -1);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID(self, id, spec);

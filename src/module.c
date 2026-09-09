@@ -278,6 +278,6 @@ guint module_channel_watch_add ( GIOChannel *chan, gint pri, GIOCondition cond,
   GSource *src = g_io_create_watch(chan, cond);
 
   g_source_set_priority(src, pri);
-  g_source_set_callback(src, (GSourceFunc)func, d, free_func);
+  g_source_set_callback(src, G_SOURCE_FUNC(func), d, free_func);
   return g_source_attach(src, g_main_context_get_thread_default());
 }

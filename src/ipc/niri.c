@@ -127,7 +127,7 @@ static struct wintree_api niri_wintree_api = {
 
 /* workspace API */
 static guint niri_ipc_get_geom ( gpointer wid, GdkRectangle *place,
-    gpointer wsid, GdkRectangle **wins, GdkRectangle *space, gint *focus )
+    gpointer wsid, GdkRectangle **wins, GdkRectangle *space, gsize *focus )
 {
   window_t *win;
   workspace_t *ws;

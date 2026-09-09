@@ -239,7 +239,7 @@ static void sni_menu_parse ( GtkWidget *menu, GVariantIter *viter )
     g_variant_get(object, "(i@a{sv}av)", &id, &dict, &niter);
     g_variant_unref(object);
     for(iter=children; iter; iter=g_list_next(iter))
-      if(menu_item_get_sort_index(iter->data)==id)
+      if(menu_item_get_sort_index(iter->data)==(gint)id)
         break;
     if(iter)
     {
@@ -313,7 +313,7 @@ static void sni_menu_about_to_show_cb ( GDBusConnection *con, GAsyncResult *res,
     {
       sni = sni_menu_item_get_sni_item(item);
       parent = gtk_menu_get_attach_widget(GTK_MENU(item));
-      id = parent?menu_item_get_sort_index(parent):0;
+      id = parent? menu_item_get_sort_index(parent) : 0;
       g_debug("sni: menu refresh: '%s', node: %d", sni->dest, id);
       g_dbus_connection_call(sni_get_connection(), sni->dest, sni->menu_path,
           sni_menu_iface, "GetLayout", g_variant_new("(iias)", id, -1, NULL),

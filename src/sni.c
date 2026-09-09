@@ -166,7 +166,8 @@ static const GDBusInterfaceVTable watcher_vtable =
 {
   (GDBusInterfaceMethodCallFunc)sni_watcher_method,
   (GDBusInterfaceGetPropertyFunc)sni_watcher_get_prop,
-  NULL
+  NULL,
+  {}
 };
 
 void sni_watcher_unregister_cb ( GDBusConnection *con, const gchar *name,

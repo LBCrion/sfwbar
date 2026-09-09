@@ -13,7 +13,7 @@ typedef struct _expr_cache {
   gboolean always_update;
   GtkWidget *widget;
   GdkEvent *event;
-  gint stack_depth;
+  gsize stack_depth;
   GQuark quark;
   void *store;
 } expr_cache_t;

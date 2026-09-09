@@ -7,7 +7,7 @@
 #include "util/string.h"
 #include "vm/vm.h"
 
-gboolean config_expect_token ( GScanner *scanner, gint token, gchar *fmt, ...)
+gboolean config_expect_token ( GScanner *scanner, guint token, gchar *fmt, ...)
 {
   gchar *errmsg;
   va_list args;
@@ -27,7 +27,7 @@ gboolean config_expect_token ( GScanner *scanner, gint token, gchar *fmt, ...)
   return FALSE;
 }
 
-gboolean config_check_and_consume ( GScanner *scanner, gint token )
+gboolean config_check_and_consume ( GScanner *scanner, guint token )
 {
   if(g_scanner_peek_next_token(scanner) != token)
     return FALSE;
@@ -76,7 +76,7 @@ void config_parse_sequence ( GScanner *scanner, ... )
     }
 
     if( (matched || req != SEQ_CON) && (type < 0 || type == G_TOKEN_VALUE ||
-          type == g_scanner_peek_next_token(scanner) ||
+          type == (gint)g_scanner_peek_next_token(scanner) ||
           (scanner->next_token == G_TOKEN_FLOAT && type == G_TOKEN_INT) ))
     {
       if(type != G_TOKEN_VALUE && type != -2)

@@ -39,7 +39,7 @@ gboolean recv_retry ( gint sock, gpointer buff, gsize len )
 json_object *recv_json ( gint sock, gssize len )
 {
   static gchar *buf;
-  const gsize bufsize = 1024;
+  const gssize bufsize = 1024;
   json_tokener *tok;
   json_object *json = NULL;
   gssize rlen;
@@ -53,7 +53,7 @@ json_object *recv_json ( gint sock, gssize len )
   {
     json = json_tokener_parse_ex(tok, buf, rlen);
     if(len>0)
-      len-=MIN(rlen, MIN(len, bufsize));
+      len -= MIN(rlen, MIN(len, bufsize));
   }
   json_tokener_free(tok);
 
@@ -145,7 +145,7 @@ struct json_object *json_node_by_name ( struct json_object *json, gchar *key )
 void json_foreach ( struct json_object *json,
     void (*func)(struct json_object *, gpointer data), gpointer data )
 {
-  gint i;
+  gsize i;
 
   if(!json || !func || !json_object_is_type(json, json_type_array))
     return;
@@ -158,7 +158,7 @@ gboolean json_array_to_strv ( struct json_object *json, gchar ***strv )
 {
   GStrvBuilder *builder;
   struct json_object *ptr;
-  gint i;
+  gsize i;
 
   if(!strv || !json || !json_object_is_type(json, json_type_array))
     return FALSE;
@@ -215,7 +215,7 @@ gboolean jpath_filter_test ( GScanner *scanner, gint idx, gchar *key,
       return TRUE;
       break;
     case G_TOKEN_INT:
-      if(idx==val.v_int)
+      if(idx==(gint64)val.v_int)
         return TRUE;
       break;
     case G_TOKEN_STRING:
@@ -227,7 +227,7 @@ gboolean jpath_filter_test ( GScanner *scanner, gint idx, gchar *key,
             !g_ascii_strcasecmp(val.v_string, json_object_get_string(tmp)))
           return TRUE;
         if(scanner->token == G_TOKEN_INT &&
-            val.v_int == json_object_get_int64(tmp))
+            (gint64)val.v_int == json_object_get_int64(tmp))
           return TRUE;
         if(scanner->token == G_TOKEN_FLOAT &&
             val.v_float == json_object_get_double(tmp))
@@ -243,7 +243,7 @@ gboolean jpath_filter_test ( GScanner *scanner, gint idx, gchar *key,
 struct json_object *jpath_filter (GScanner *scanner, struct json_object *obj )
 {
   struct json_object *next, *iter, *jiter;
-  gint i,j;
+  gsize i,j;
   gchar *key=NULL;
   GTokenType type;
   GTokenValue val;
@@ -304,7 +304,7 @@ struct json_object *jpath_key ( GScanner *scanner, struct json_object *obj,
    json_object *existing )
 {
   struct json_object *next, *iter, *tmp;
-  gint i;
+  gsize i;
 
   next = existing? existing : json_object_new_array();
 
@@ -323,7 +323,7 @@ struct json_object *jpath_key ( GScanner *scanner, struct json_object *obj,
 struct json_object *jpath_index ( GScanner *scanner, struct json_object *obj )
 {
   struct json_object *next, *iter;
-  gint i;
+  gsize i;
 
   next = json_object_new_array();
 
@@ -341,7 +341,8 @@ struct json_object *jpath_parse ( gchar *path, struct json_object *obj )
 {
   GScanner *scanner;
   struct json_object *cur,*next;
-  gint i, sep;
+  gsize i;
+  guchar sep;
 
   if(!path || !obj)
     return NULL;

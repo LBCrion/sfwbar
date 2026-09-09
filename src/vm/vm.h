@@ -59,7 +59,7 @@ typedef struct {
   gsize fp;
   GArray *stack;
   GPtrArray *pstack;
-  gint max_stack;
+  gsize max_stack;
   gboolean use_cached;
   gboolean vstate;
   GdkEvent *event;

@@ -153,7 +153,7 @@ static value_t lib_io_file_trigger ( vm_t *vm, value_t p[], gint np )
   if(np==3)
     g_timeout_add(value_get_numeric(p[2]), (GSourceFunc)lib_io_file_timeout_cb,
         (gpointer)trigger_name_intern(value_get_string(p[1])));
-  g_object_weak_ref(G_OBJECT(m), (GWeakNotify)g_object_unref, f);
+  g_object_unref(f);
   g_signal_connect(G_OBJECT(m), "changed", G_CALLBACK(lib_io_file_trigger_cb),
       (gpointer)trigger_name_intern(value_get_string(p[1])));
   g_debug("FileTrigger: subscribe to '%s', trigger '%s'",
