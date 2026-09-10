@@ -236,23 +236,6 @@ static value_t lib_value_pad ( vm_t *vm, value_t p[], gint np )
   return value_take_string(result);
 }
 
-static value_t lib_value_elapsed_str ( vm_t *vm, value_t p[], gint np )
-{
-  if(np!=1 || !value_like_numeric(p[0]))
-    return value_na;
-
-  if(value_get_numeric(p[0])>3600*24)
-    return value_take_string(g_strdup_printf("%d days ago",
-          (gint)(value_get_numeric(p[0])/(3600*24))));
-  if(value_get_numeric(p[0])>3600)
-    return value_take_string(g_strdup_printf("%d hours ago",
-        (gint)(value_get_numeric(p[0])/3600)));
-  if(value_get_numeric(p[0])>60)
-    return value_take_string(g_strdup_printf("%d minutes ago",
-        (gint)(value_get_numeric(p[0])/60)));
-  return value_take_string(g_strdup("Just now"));
-}
-
 static value_t lib_value_max ( vm_t *vm, value_t p[], gint np )
 {
   vm_param_check_np(vm, np, 2, "max");
@@ -446,7 +429,6 @@ void lib_value_init ( void )
   vm_func_add("lookup", lib_value_lookup, TRUE, TRUE);
   vm_func_add("arraylookup", lib_value_array_lookup, TRUE, TRUE);
   vm_func_add("max", lib_value_max, TRUE, TRUE);
-  vm_func_add("elapsedstr", lib_value_elapsed_str, TRUE, TRUE);
   vm_func_add("min", lib_value_min, TRUE, TRUE);
   vm_func_add("val", lib_value_val, TRUE, TRUE);
   vm_func_add("str", lib_value_str, TRUE, TRUE);
