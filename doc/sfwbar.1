@@ -1052,13 +1052,6 @@ generated menu). Returns n/a.
 delete a menu item with a given id. The menu item must be declared with an id
 if you want to modify or clear it. Returns n/a.
 .TP
-.B WidgetClear(<string>)
-delete a widget with a given id. A widget must be declared with id if you want
-to modify or delete it. Returns n/a.
-.TP
-.B WidgetUpdate()
-Triggers an update of a widget invoking the action. Returns n/a.
-.TP
 .B MapAppId(app_id:string>, <pattern:string>)
 add a fallback title to app_id mapping. If an application is missing an
 application id, SFWBar can assign one based on a title of an application,
@@ -1092,59 +1085,73 @@ argument can be either \(dqforward\(dq or \(dqback\(dq. If the argument is omitt
 focus will cycle forward.
 .TP
 .B SetValue([<widget:string>,]<string>)
-set the value of the widget. This action applies to the widget from which
-the action chain has been invoked. I.e. a widget may popup a menu, which
-in turn will call a function, which executed SetValue, the SetValue will
-still ac upon the widget that popped up the menu.
+Deprecated. Please use Config(\(dqWidget \(aqname\(aq { value = ... }\(dq);
 .TP
 .B SetStyle([<widget:string>,]<string>)
-set style name for a widget
+Deprecated. Please use Config(\(dqWidget \(aqname\(aq { style = ... }\(dq);
 .TP
 .B SetTooltip([<widget:string>,]<value:string>)
-set tooltip text for a widget
+Deprecated. Please use Config(\(dqWidget \(aqname\(aq { tooltip = ... }\(dq);
 .TP
-.B Focus()
+.B ActiveWin()
+Returns a tile of the currently focused window. Returns <string>.
+.TP
+.B WindowInfo([<id:string>,] <query:string>)
+Queries information about a window. Optional parameter \fIid\fP specifies the
+the widget id of a taskbar item corresponding to a window to query. If omitted
+the widget calling the function is used. \fIquery\fP parameter specifies the data
+to query. Valid values are:
+\(dqappid\(dq \- application id of a window. Returns <string>.
+\(dqtitle\(dq \- title of a window. Returns <string>.
+\(dqminimized\(dq \- minimized state of a window. Returns <number>.
+\(dqmaximized\(dq \- maximized state of a window. Returns <number>.
+\(dqfullscreen\(dq \- fullscreen state of a window. Returns <number>.
+\(dqfocused\(dq \- focused state of a window. Returns <number>.
+.TP
+.B Focus([<id:string>])
 set window to focused. This action can only be invoked from a taskbar item
-widget. Returns n/a.
+widget, which optionally can be specified by parameter \fIid\fP\&. Returns n/a.
 .TP
-.B Close()
+.B Close([<id:string>])
 close a window. This action can only be invoked from a taskbar item
-widget. Returns n/a.
+widget, which optionally can be specified by parameter \fIid\fP\&. Returns n/a.
 .TP
-.B Minimize()
+.B Minimize([<id:string>])
 minimize a window. This action can only be invoked from a taskbar item
-widget. Returns n/a.
+widget, which optionally can be specified by parameter \fIid\fP\&. Returns n/a.
 .TP
-.B UnMinimize()
+.B UnMinimize([<id:string>])
 unset a minimized state for the window. This action can only be invoked from
-a taskbar item widget. Returns n/a.
+a taskbar item widget, which optionally can be specified by parameter \fIid\fP\&.
+Returns n/a.
 .TP
-.B Maximize()
+.B Maximize([<id:string>])
 maximize a window. This action can only be invoked from a taskbar item
-widget. Returns n/a.
+widget, which optionally can be specified by parameter \fIid\fP\&. Returns n/a.
 .TP
-.B UnMaximize()
+.B UnMaximize([<id:string>])
 unset a maximized state for the window. This action can only be invoked from
-a taskbar item widget. Returns n/a.
+a taskbar item widget, which optionally can be specified by parameter \fIid\fP\&.
+Returns n/a.
 .TP
-.B SetLayout(<string>)
-Switches current keyboard layout. The string parameter can have values \(dqnext\(dq
-or \(dqprev\(dq for next or previous layout respectively. Returns n/a.
+.B WorkspaceActivate([<id:string>])
+Activate a workspace associated with a pager item. A pager item widget can
+be optionally specified by an \fIid\fP parameter. Returns n/a.
 .TP
 .B MpdCmd(<string>)
 send a command to Music Player Daemon client. Returns n/a.
 .TP
-.B SwayCmd <string>
+.B SwayCmd(<string>)
 Send a command over Sway IPC. Returns n/a.
 .TP
-.B SwayWinCmd <string>
+.B SwayWinCmd(<string>)
 Send a command over Sway IPC applicable to a current window, Returns n/a.
 .TP
-.B Str(<value>, <number>)
+.B Str(<value> [, <number>])
 Convert a value to string.If converting a number, the second parameter
 controls decimal precision. Returns <string>.
 .TP
-.B Val(<string)
+.B Val(<string>)
 Convert a string to a number. Returns <numeric>
 .TP
 .B Min(<number>, <number>)
@@ -1163,7 +1170,14 @@ Extract a substring using a regular expression. The function will return
 contents of the first capture buffer in the regular expression specified
 by <pattern>. Returns <string>.
 .TP
-.B Pad(<string>, <length:number>[, <string>])
+.B ExtractJson(<string>, <path:string>)
+Extract an element from a json string. An element is specified by a path.
+The path starts with a separator character, which is followed by a path with
+elements separated by the same character. The path can contain numbers to
+indicate array indices i.e. \fB\&.data.node.1.string\fP and key checks to filter
+arrays, i.e.  \fB\&.data.node.[key=\(dqblah\(dq].value\fP
+.TP
+.B Pad(<string>, <length:number> [, <string>])
 Pad the string to a desired length. The first parameter is the string to pad.
 The second is the desired length, the third optional parameter is a character
 to pad with (defaults to space). Returns <string>.
@@ -1198,7 +1212,7 @@ Looks for a \fIstring\fP in a list of \fImatch\fP strings and returns a correspo
 \fIresult\fP\&. If the string doesn\(aqt match any \fImatch\fP\(aqes, returns \fIdefault\fP\&.
 Returns <string>.
 .TP
-.B ArrayMap(<string>, <match:array>, <result:array> [, <default:string>)
+.B ArrayMap(<string>, <match:array>, <result:array> [, <default:string>])
 Looks up a \fIstring\fP in a \fImatch\fP array. If a match is found returns a
 corresponding element of a \fIresult\fP array. If no match is found and \fIresult\fP
 array is longer than a \fImatch\fP array, returns an extra (default) element of
@@ -1238,6 +1252,12 @@ is value dependent.
 Assigns a value to an index within the array, if the index is out of bounds,
 the array will be resized. This is equivalent to \fIarray[index] = value\fP\&.
 .TP
+.B ArrayFind(<array>, <value:any>)
+Checks whether an array contains a \fIvalue\fP\&. Returns <boolean>.
+.TP
+.B ArrayRemove(<array>, <value:any>)
+Removes a \fIvalue\fP from an array. Returns <array>.
+.TP
 .B Read(<string>)
 Reads the contents of a file and returns them as a string. Returns <string>.
 .TP
@@ -1261,6 +1281,13 @@ translation is not available, returns the string. Returns <string>.
 .TP
 .B Layout()
 Returns the current keyboard layout. Returns <string>.
+.TP
+.B LayoutList()
+Returns a list of available keyboard layouts. Returns <array>.
+.TP
+.B SetLayout(<string>)
+Switches current keyboard layout. The string parameter can have values \(dqnext\(dq
+or \(dqprev\(dq for next or previous layout respectively. Returns n/a.
 .TP
 .B GetLocale()
 Returns current locale. Returns <string>.
@@ -1288,23 +1315,24 @@ queries disk information for a disk. \fIfs\fP specifies a mount point to query.
 \fI%used\fP \- used fraction of space on disk.
 Returns <number>.
 .TP
-.B ActiveWin()
-Returns a tile of the currently focused window. Returns <string>.
-.TP
-.B WindowInfo([<id:string>,] <query:string>)
-Queries information about a window. Optional parameter \fIid\fP specifies the
-the widget id of a taskbar item corresponding to a window to query. If omitted
-the widget calling the function is used. \fIquery\fP parameter specifies the data
-to query. Valid values are:
-\(dqappid\(dq \- application id of a window. Returns <string>.
-\(dqtitle\(dq \- title of a window. Returns <string>.
-\(dqminimized\(dq \- minimized state of a window. Returns <number>.
-\(dqmaximized\(dq \- maximized state of a window. Returns <number>.
-\(dqfullscreen\(dq \- fullscreen state of a window. Returns <number>.
-\(dqfocused\(dq \- focused state of a window. Returns <number>.
-.TP
 .B WidgetId()
 Returns an ID of a widget invoking the action. Returns <string>.
+.TP
+.B WidgetClear(<id:string>)
+Delete a widget specified by \fIid\fP\&. A widget must be declared with an id if
+you want to modify or delete it. Returns n/a.
+.TP
+.B WidgetPush(<id:string>)
+Push a widget specified by \fIid\fP into a widget stack. All subsequent
+operations will apply to this new widget until \fIWidgetPop\fP is called.
+Returns n/a.
+.TP
+.B WidgetPop()
+Pop a widget from the widget stack. Call this function to undo effects of
+\fIWidgetPush\fP\&. Returns n/a.
+.TP
+.B WidgetUpdate()
+Triggers an update of a widget invoking the action. Returns n/a.
 .TP
 .B WidgetSetData([<id:string>], <name:string>, <value>)
 Attach a named value to a widget. The optional parameter \fIid\fP specifies an
@@ -1318,12 +1346,12 @@ an id of a widget, if omitted, the operation will apply to the current widget.
 This function returns a value previously attached to property \fIname\fP of a
 widget.
 .TP
-.B WidgetSetState([<widget:string>,]<string>)
+.B WidgetSetState([<widget:string>,] <string>)
 Set boolean user state on a widget. If widget parameter isn\(aqt specified, the
 state will be set for a widget invoking the action. Valid values are \(dqOn\(dq or
 \(dqOff\(dq. Returns n/a. (This function has an alias \fIUserState\fP ).
 .TP
-.B WidgetGetState([<id:string>,] <stateid:number>)
+.B WidgetGetState([<id:string>,] <stateid:numeric>)
 Returns a value of one of two widget \fIstate\fP boolean. The optional parameter
 \fIid\fP specifies an id of a widget to query. If omitted, the state of a widget
 calling the expression will be returned. The \fIstateid\fP parameter specifies
@@ -1888,8 +1916,8 @@ The \fIpreview\fP class is set when the compositor supports window previews and 
 taskbar or switcher is configured to display window previews instead of icons.
 .sp
 The \fIdrop_target\fP class is set for an item if it can accept the drop from the
-drag occuring over it. This is equivalent to :drop(active) pseudo\-class, but
-unlike the psudo\-class it doesn\(aqt have to apply to the last element of the CSS
+drag occurring over it. This is equivalent to :drop(active) pseudo\-class, but
+unlike the pseudo\-class it doesn\(aqt have to apply to the last element of the CSS
 node (i.e. you can theme children of .drop_target widget).
 .sp
 For example you can style top level grid using \fBgrid#layout { }\fP\&.
