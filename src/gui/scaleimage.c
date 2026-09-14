@@ -261,7 +261,7 @@ static gboolean scale_image_draw ( GtkWidget *self, cairo_t *cr )
   GtkStyleContext *style;
   GtkStateFlags flags;
   GtkBorder border, padding, margin;
-  gint width, height, scale;
+  gint width, height, scale, n, m;
   gdouble x_origin, y_origin;
 
   g_return_val_if_fail(IS_SCALE_IMAGE(self), -1);
@@ -275,6 +275,11 @@ static gboolean scale_image_draw ( GtkWidget *self, cairo_t *cr )
 
   width = gtk_widget_get_allocated_width(self);
   height = gtk_widget_get_allocated_height(self);
+
+  gtk_widget_get_preferred_width(self, &n, &m);
+  width = MIN(width, n);
+  gtk_widget_get_preferred_height(self, &n, &m);
+  height = MIN(height, n);
 
   gtk_render_background(style, cr, margin.left, margin.top, width -
       margin.left - margin.right, height - margin.top - margin.bottom);
@@ -297,7 +302,7 @@ static gboolean scale_image_draw ( GtkWidget *self, cairo_t *cr )
     return FALSE;
 
   if(priv->file)
-    g_debug("image: %s @ %d x %d",priv->ftype==SI_DATA? "svg" : priv->file,
+    g_debug("image: %s @ %d x %d", priv->ftype==SI_DATA? "svg" : priv->file,
         width, height );
 
   x_origin = margin.left + padding.left + border.left +
