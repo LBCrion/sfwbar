@@ -128,12 +128,13 @@ static void activate (GtkApplication* app, gpointer data )
   bind_textdomain_codeset("sfwbar", "UTF-8");
   textdomain("sfwbar");
 
+  expr_init();
+  scanner_init();
+
   g_thread_unref(g_thread_new("scanner",
         (GThreadFunc)base_widget_scanner_thread,
         g_main_context_get_thread_default()));
 
-  expr_init();
-  scanner_init();
   config_init();
   lib_init();
   action_lib_init();
