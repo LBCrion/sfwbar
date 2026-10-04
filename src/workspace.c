@@ -257,7 +257,7 @@ void workspace_mod_state ( gpointer id, gint32 mask, gboolean state )
 
   if( !(ws = workspace_from_id(id)) )
     return;
-  if(!!(ws->state & WS_STATE_ALL) == state)
+  if(!!(ws->state & mask) == state)
     return;
 
   if(state)
