@@ -405,7 +405,7 @@ gint menu_item_compare ( GtkWidget *i1, GtkWidget *i2 )
   if(!t1 || !t2)
     return 0;
 
-  return g_strcmp0(t1, t2);
+  return g_utf8_collate(t1, t2);
 }
 
 void menu_item_set_submenu ( GtkWidget *self, gchar *subname )
