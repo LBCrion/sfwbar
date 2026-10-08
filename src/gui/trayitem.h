@@ -28,6 +28,7 @@ typedef struct _TrayItemPrivate TrayItemPrivate;
 struct _TrayItemPrivate
 {
   sni_item_t *sni;
+  gchar *id;
   GtkWidget *button;
   GtkWidget *icon;
   GtkWidget *label;

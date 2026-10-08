@@ -11,6 +11,7 @@
 #include "gui/scaleimage.h"
 #include "gui/tray.h"
 #include "gui/trayitem.h"
+#include "util/string.h"
 
 G_DEFINE_TYPE_WITH_CODE (TrayItem, tray_item, FLOW_ITEM_TYPE,
     G_ADD_PRIVATE (TrayItem))
@@ -18,11 +19,20 @@ G_DEFINE_TYPE_WITH_CODE (TrayItem, tray_item, FLOW_ITEM_TYPE,
 void tray_item_update ( GtkWidget *self )
 {
   TrayItemPrivate *priv;
-  gchar *tooltip;
+  gchar *tooltip, *class;
 
   g_return_if_fail(IS_TRAY_ITEM(self));
   priv = tray_item_get_instance_private(TRAY_ITEM(self));
 
+  if(priv->sni->string[SNI_PROP_ID] && *priv->sni->string[SNI_PROP_ID] &&
+      g_strcmp0(priv->id, priv->sni->string[SNI_PROP_ID]))
+  {
+    str_assign(&priv->id, g_strdup(priv->sni->string[SNI_PROP_ID]));
+    class = g_strcanon(g_strdup(priv->sni->string[SNI_PROP_ID]),
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-", '-');
+    css_set_class(priv->button, class, TRUE);
+    g_free(class);
+  }
   if(!priv->invalid)
     return;
   priv->invalid = FALSE;
@@ -206,6 +216,16 @@ static void tray_item_invalidate ( GtkWidget *self )
   priv->invalid = TRUE;
 }
 
+static void tray_item_finalize ( GObject *self )
+{
+  TrayItemPrivate *priv;
+
+  g_return_if_fail(IS_TRAY_ITEM(self));
+  priv = tray_item_get_instance_private(TRAY_ITEM(self));
+
+  g_clear_pointer(&priv->id, g_free);
+}
+
 static void tray_item_class_init ( TrayItemClass *kclass )
 {
   BASE_WIDGET_CLASS(kclass)->action_exec = tray_item_action_exec;
@@ -214,6 +234,7 @@ static void tray_item_class_init ( TrayItemClass *kclass )
   FLOW_ITEM_CLASS(kclass)->invalidate = tray_item_invalidate;
   FLOW_ITEM_CLASS(kclass)->get_source =
     (void *(*)(GtkWidget *))tray_item_get_sni;
+  G_OBJECT_CLASS(kclass)->finalize = tray_item_finalize;
 }
 
 static void tray_item_init ( TrayItem *self )
