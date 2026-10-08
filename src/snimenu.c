@@ -124,6 +124,8 @@ static void sni_menu_item_update ( GtkWidget *item, GVariant *dict,
   const gchar *label, *icon, *sub;
   gboolean has_submenu, state;
 
+  g_object_set_data_full(G_OBJECT(item), "sni_props", g_variant_ref_sink(dict),
+      (GDestroyNotify)g_variant_unref);
   gtk_widget_set_name(item, "tray");
 
   if(!GTK_IS_SEPARATOR_MENU_ITEM(item))
@@ -162,7 +164,6 @@ static void sni_menu_item_update ( GtkWidget *item, GVariant *dict,
       sni_menu_parse(submenu, viter);
   }
 
-  gtk_widget_show_all(item);
   if(!g_variant_lookup(dict, "visible", "b", &state))
     state = TRUE;
   gtk_widget_set_visible(item, TRUE);
@@ -329,11 +330,78 @@ static void sni_menu_about_to_show_cb ( GDBusConnection *con, GAsyncResult *res,
     g_warning("sni error");
 }
 
+static GtkWidget *sni_menu_item_by_id ( GtkWidget *menu, gint32 id )
+{
+  GtkWidget *item = NULL, *submenu;
+  GList *children, *iter;
+
+  children = gtk_container_get_children(GTK_CONTAINER(menu));
+  for(iter=children; iter && !item; iter=g_list_next(iter))
+  {
+    if(menu_item_get_sort_index(iter->data)==id)
+      item = iter->data;
+    else if( (submenu = gtk_menu_item_get_submenu(GTK_MENU_ITEM(iter->data))) )
+      item = sni_menu_item_by_id(submenu, id);
+  }
+  g_list_free(children);
+
+  return item;
+}
+
+/* ItemsPropertiesUpdated carries only the changes, while
+ * sni_menu_item_update() expects all properties: apply the changes on top of
+ * the last known set */
+static void sni_menu_item_props_update ( GtkWidget *menu, gint32 id,
+    GVariant *set, const gchar **unset )
+{
+  GtkWidget *item;
+  GVariantDict dict;
+  GVariantIter iter;
+  GVariant *value;
+  const gchar *key;
+
+  if( !(item = sni_menu_item_by_id(menu, id)) )
+    return;
+
+  g_variant_dict_init(&dict, g_object_get_data(G_OBJECT(item), "sni_props"));
+  if(set)
+  {
+    g_variant_iter_init(&iter, set);
+    while(g_variant_iter_next(&iter, "{&sv}", &key, &value))
+    {
+      g_variant_dict_insert_value(&dict, key, value);
+      g_variant_unref(value);
+    }
+  }
+  while(unset && *unset)
+    g_variant_dict_remove(&dict, *unset++);
+
+  sni_menu_item_update(item, g_variant_dict_end(&dict), NULL);
+}
+
 static void sni_menu_items_properties_updated_cb (GDBusConnection *con,
     const gchar *sender, const gchar *path, const gchar *interface,
     const gchar *signal, GVariant *parameters, gpointer data)
 {
-  g_warning("sni: menu: unhandled ItemsPropertiesUpdated signal");
+  sni_item_t *sni = data;
+  GVariantIter *updated, *removed;
+  GVariant *props;
+  const gchar **keys;
+  gint32 id;
+
+  g_variant_get(parameters, "(a(ia{sv})a(ias))", &updated, &removed);
+  while(g_variant_iter_next(updated, "(i@a{sv})", &id, &props))
+  {
+    sni_menu_item_props_update(sni->menu_obj, id, props, NULL);
+    g_variant_unref(props);
+  }
+  while(g_variant_iter_next(removed, "(i^a&s)", &id, &keys))
+  {
+    sni_menu_item_props_update(sni->menu_obj, id, NULL, keys);
+    g_free(keys);
+  }
+  g_variant_iter_free(updated);
+  g_variant_iter_free(removed);
 }
 
 static void sni_menu_layout_updated_cb (GDBusConnection *con,
@@ -370,7 +438,7 @@ void sni_menu_init ( sni_item_t *sni )
       sni_menu_iface, "LayoutUpdated", sni->menu_path, NULL, 0,
       sni_menu_layout_updated_cb, sni, NULL);
   g_dbus_connection_signal_subscribe(sni_get_connection(), sni->dest,
-      sni_menu_iface, "ItemPropertiesUpdated", sni->menu_path, NULL, 0,
+      sni_menu_iface, "ItemsPropertiesUpdated", sni->menu_path, NULL, 0,
       sni_menu_items_properties_updated_cb, sni, NULL);
 
   g_dbus_connection_call(sni_get_connection(), sni->dest, sni->menu_path,
