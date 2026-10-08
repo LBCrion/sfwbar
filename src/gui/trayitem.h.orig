@@ -32,7 +32,6 @@ struct _TrayItemPrivate
   GtkWidget *button;
   GtkWidget *icon;
   GtkWidget *label;
-  GtkWidget *guide;
   GtkWidget *tray;
   gboolean invalid;
 };

@@ -61,17 +61,14 @@ void tray_item_update ( GtkWidget *self )
   {
     gtk_label_set_markup(GTK_LABEL(priv->label),
         priv->sni->string[SNI_PROP_LABEL]);
-    gtk_label_set_markup(GTK_LABEL(priv->guide),
-        priv->sni->string[SNI_PROP_LGUIDE]?
-        priv->sni->string[SNI_PROP_LGUIDE] : "");
+    if(priv->sni->string[SNI_PROP_LGUIDE] &&
+        *(priv->sni->string[SNI_PROP_LGUIDE]) )
+      gtk_label_set_width_chars(GTK_LABEL(priv->label),
+        strlen(priv->sni->string[SNI_PROP_LGUIDE]));
     css_set_class(priv->label, "hidden", FALSE);
-    css_set_class(priv->guide, "hidden", FALSE);
   }
   else
-  {
     css_set_class(priv->label, "hidden", TRUE);
-    css_set_class(priv->guide, "hidden", TRUE);
-  }
 }
 
 sni_item_t *tray_item_get_sni ( GtkWidget *self )
@@ -265,17 +262,12 @@ GtkWidget *tray_item_new( sni_item_t *sni, GtkWidget *tray )
 
   priv->icon = scale_image_new();
   priv->label = gtk_label_new("");
-  // the guide shares the cell of the label and is never drawn, so the cell
-  // keeps the width of the XAyatanaLabelGuide text in the label's own style
-  priv->guide = gtk_label_new("");
-  gtk_widget_set_opacity(priv->guide, 0.0);
   priv->sni = sni;
   priv->tray = tray;
   priv->invalid = TRUE;
 
   gtk_grid_attach_next_to(GTK_GRID(box), priv->icon, NULL, dir, 1, 1);
   gtk_grid_attach_next_to(GTK_GRID(box), priv->label, priv->icon, dir, 1, 1);
-  gtk_grid_attach_next_to(GTK_GRID(box), priv->guide, priv->icon, dir, 1, 1);
 
   g_object_ref_sink(self);
   flow_grid_add_child(tray, self);
