@@ -61,7 +61,7 @@ static GtkWidget *sni_menu_item_find ( GtkWidget *widget, gint32 id )
   if( !(submenu = gtk_menu_item_get_submenu(GTK_MENU_ITEM(widget))) )
     return NULL;
 
-  if(menu_item_get_sort_index(widget)==id)
+  if(GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "sni_id"))==id)
     return submenu;
 
   children = gtk_container_get_children(GTK_CONTAINER(submenu));
@@ -95,7 +95,8 @@ static void sni_menu_map_cb( GtkWidget *menu, sni_item_t *sni )
     return;
 
   parent = gtk_menu_get_attach_widget(GTK_MENU(menu));
-  id = parent && GTK_IS_MENU_ITEM(parent)? menu_item_get_sort_index(parent): 0;
+  id = parent && GTK_IS_MENU_ITEM(parent)?
+    GPOINTER_TO_INT(g_object_get_data(G_OBJECT(parent), "sni_id")): 0;
 
   g_dbus_connection_call(sni_get_connection(), sni->dest, sni->menu_path,
       sni_menu_iface, "AboutToShow", g_variant_new("(i)", id),
@@ -172,7 +173,7 @@ static void sni_menu_item_activate_cb ( GtkWidget *item, gpointer data )
   sni_item_t *sni;
   gint32 id;
 
-  if( !(id = menu_item_get_sort_index(item)) )
+  if( !(id = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(item), "sni_id"))) )
     return;
 
   if( !(sni = sni_menu_item_get_sni_item(item)) )
@@ -216,7 +217,7 @@ static GtkWidget *sni_menu_item_new ( guint32 id, GVariant *dict,
   else
     item = menu_item_new();
 
-  menu_item_set_sort_index(item, id);
+  g_object_set_data(G_OBJECT(item), "sni_id", GINT_TO_POINTER(id));
 
   g_signal_connect(G_OBJECT(item), "activate",
       G_CALLBACK(sni_menu_item_activate_cb), NULL);
@@ -231,6 +232,7 @@ static void sni_menu_parse ( GtkWidget *menu, GVariantIter *viter )
   GVariant *object, *dict;
   GList *remove, *iter, *children;
   guint32 id;
+  gint pos = 0;
 
   children = gtk_container_get_children(GTK_CONTAINER(menu));
   remove = g_list_copy(children);
@@ -252,6 +254,7 @@ static void sni_menu_parse ( GtkWidget *menu, GVariantIter *viter )
       children = g_list_prepend(children, item);
       menu_item_insert(menu, item);
     }
+    gtk_menu_reorder_child(GTK_MENU(menu), item, pos++);
 
     sni_menu_item_update(item, dict, niter);
 
