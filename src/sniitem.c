@@ -267,7 +267,10 @@ void sni_item_signal_cb (GDBusConnection *con, const gchar *sender,
     sni_item_get_prop(con, data, SNI_PROP_ATTNPIX);
   }
   else if(!g_strcmp0(signal, "XAyatanaNewLabel"))
+  {
     sni_item_get_prop(con, data, SNI_PROP_LABEL);
+    sni_item_get_prop(con, data, SNI_PROP_LGUIDE);
+  }
 }
 
 sni_item_t *sni_item_new (GDBusConnection *con, gchar *iface,
