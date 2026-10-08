@@ -138,7 +138,7 @@ static void sni_menu_item_update ( GtkWidget *item, GVariant *dict,
     if( !(g_variant_lookup(dict, "label", "&s", &label)) )
       label = "";
 
-    menu_item_set_label(item, label);
+    menu_item_set_label_text(item, label);
     if(icon)
       menu_item_set_icon(item, icon);
 

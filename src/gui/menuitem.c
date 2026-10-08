@@ -295,22 +295,31 @@ gchar *menu_item_get_id ( GtkWidget *self )
 
 void menu_item_set_label ( GtkWidget *self, const gchar *label )
 {
-  MenuItemPrivate *priv;
   const gchar *ptr;
   gchar *text;
+
+  if(GTK_IS_SEPARATOR_MENU_ITEM(self))
+    return;
+
+  ptr = strchr(label, '%');
+  if(ptr)
+    g_object_set(G_OBJECT(self), "icon", ptr+1, NULL);
+  text = ptr? g_strndup(label, ptr - label) : g_strdup(label);
+  menu_item_set_label_text(self, text);
+  g_free(text);
+}
+
+/* plain text, no %icon notation: dbusmenu labels come from other programs */
+void menu_item_set_label_text ( GtkWidget *self, const gchar *label )
+{
+  MenuItemPrivate *priv;
 
   if(GTK_IS_SEPARATOR_MENU_ITEM(self))
     return;
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv && priv->label);
 
-  ptr = strchr(label, '%');
-  if(ptr)
-    g_object_set(G_OBJECT(self), "icon", ptr+1, NULL);
-  text = ptr? g_strndup(label, ptr - label) : g_strdup(label);
-  gtk_label_set_text_with_mnemonic(GTK_LABEL(priv->label), text);
-  g_free(text);
-
+  gtk_label_set_text_with_mnemonic(GTK_LABEL(priv->label), label);
   priv->flags |= MI_LABEL;
 }
 
