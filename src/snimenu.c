@@ -16,6 +16,7 @@ const gchar *sni_menu_iface = "com.canonical.dbusmenu";
 static void sni_menu_parse ( GtkWidget *widget, GVariantIter *viter );
 static void sni_menu_about_to_show_cb ( GDBusConnection *, GAsyncResult *,
     gpointer);
+static void sni_menu_item_activate_cb ( GtkWidget *, gpointer);
 
 gchar *sni_menu_get_pixbuf ( GVariant *dict, gchar *key )
 {
@@ -117,12 +118,57 @@ static void sni_menu_pixbuf_free ( gchar *id )
   g_free(id);
 }
 
+static void sni_menu_item_set_toggle_state ( GtkWidget *item,
+    gint32 state )
+{
+  GSList single = { item, NULL };
+  GSList *group, *blocked, *iter;
+  GtkWidget *peer = NULL;
+  gboolean radio = GTK_IS_RADIO_MENU_ITEM(item);
+
+  if(state == -1)
+  {
+    gtk_check_menu_item_set_inconsistent(GTK_CHECK_MENU_ITEM(item), TRUE);
+    return;
+  }
+  if(state != 0 && state != 1)
+    return;
+
+  gtk_check_menu_item_set_inconsistent(GTK_CHECK_MENU_ITEM(item), FALSE);
+  group = radio?
+    gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item)) : &single;
+  blocked = g_slist_copy(group);
+  for(iter=blocked; iter; iter=g_slist_next(iter))
+    g_signal_handlers_block_by_func(iter->data,
+        G_CALLBACK(sni_menu_item_activate_cb), NULL);
+
+  if(radio && !state &&
+      gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(item)))
+  {
+    peer = group->data != item? group->data :
+      (group->next? group->next->data : NULL);
+    gtk_radio_menu_item_set_group(GTK_RADIO_MENU_ITEM(item), NULL);
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), FALSE);
+    if(peer)
+      gtk_radio_menu_item_set_group(GTK_RADIO_MENU_ITEM(item),
+          gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(peer)));
+  }
+  else
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), state);
+
+  for(iter=blocked; iter; iter=g_slist_next(iter))
+    g_signal_handlers_unblock_by_func(iter->data,
+        G_CALLBACK(sni_menu_item_activate_cb), NULL);
+  g_slist_free(blocked);
+}
+
 static void sni_menu_item_update ( GtkWidget *item, GVariant *dict,
     GVariantIter *viter )
 {
   GtkWidget *submenu;
   const gchar *label, *icon, *sub;
   gboolean has_submenu, state;
+  gint32 toggle_state;
 
   g_object_set_data_full(G_OBJECT(item), "sni_props", g_variant_ref_sink(dict),
       (GDestroyNotify)g_variant_unref);
@@ -141,8 +187,13 @@ static void sni_menu_item_update ( GtkWidget *item, GVariant *dict,
       label = "";
 
     menu_item_set_label_text(item, label);
-    if(icon)
-      menu_item_set_icon(item, icon);
+    menu_item_set_icon(item, icon);
+    if(GTK_IS_CHECK_MENU_ITEM(item))
+    {
+      if(!g_variant_lookup(dict, "toggle-state", "i", &toggle_state))
+        toggle_state = 0;
+      sni_menu_item_set_toggle_state(item, toggle_state);
+    }
 
     has_submenu = g_variant_lookup(dict, "children-display", "&s", &sub) &&
       !g_strcmp0(sub, "submenu");
@@ -151,7 +202,6 @@ static void sni_menu_item_update ( GtkWidget *item, GVariant *dict,
     if(submenu && !has_submenu)
     {
       gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), NULL);
-      gtk_widget_destroy(submenu);
     }
     if(!submenu && has_submenu)
     {
@@ -166,7 +216,10 @@ static void sni_menu_item_update ( GtkWidget *item, GVariant *dict,
 
   if(!g_variant_lookup(dict, "visible", "b", &state))
     state = TRUE;
-  gtk_widget_set_visible(item, TRUE);
+  gtk_widget_set_visible(item, state);
+  if(!g_variant_lookup(dict, "enabled", "b", &state))
+    state = TRUE;
+  gtk_widget_set_sensitive(item, state);
 }
 
 static void sni_menu_item_activate_cb ( GtkWidget *item, gpointer data )
