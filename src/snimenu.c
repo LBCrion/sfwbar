@@ -295,7 +295,8 @@ static void sni_menu_parse ( GtkWidget *menu, GVariantIter *viter )
     g_variant_get(object, "(i@a{sv}av)", &id, &dict, &niter);
     g_variant_unref(object);
     for(iter=children; iter; iter=g_list_next(iter))
-      if(menu_item_get_sort_index(iter->data)==(gint)id)
+      if(GPOINTER_TO_INT(g_object_get_data(G_OBJECT(iter->data), "sni_id")) ==
+          (gint)id)
         break;
     if(iter)
     {
@@ -370,7 +371,8 @@ static void sni_menu_about_to_show_cb ( GDBusConnection *con, GAsyncResult *res,
     {
       sni = sni_menu_item_get_sni_item(item);
       parent = gtk_menu_get_attach_widget(GTK_MENU(item));
-      id = parent? menu_item_get_sort_index(parent) : 0;
+      id = parent?
+        GPOINTER_TO_INT(g_object_get_data(G_OBJECT(parent), "sni_id")) : 0;
       g_debug("sni: menu refresh: '%s', node: %d", sni->dest, id);
       g_dbus_connection_call(sni_get_connection(), sni->dest, sni->menu_path,
           sni_menu_iface, "GetLayout", g_variant_new("(iias)", id, -1, NULL),
@@ -391,7 +393,7 @@ static GtkWidget *sni_menu_item_by_id ( GtkWidget *menu, gint32 id )
   children = gtk_container_get_children(GTK_CONTAINER(menu));
   for(iter=children; iter && !item; iter=g_list_next(iter))
   {
-    if(menu_item_get_sort_index(iter->data)==id)
+    if(GPOINTER_TO_INT(g_object_get_data(G_OBJECT(iter->data), "sni_id"))==id)
       item = iter->data;
     else if( (submenu = gtk_menu_item_get_submenu(GTK_MENU_ITEM(iter->data))) )
       item = sni_menu_item_by_id(submenu, id);
