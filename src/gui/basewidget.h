@@ -53,7 +53,7 @@ struct _BaseWidgetPrivate
   gint64 interval;
   gint64 next_poll;
   gint maxw, maxh;
-  const gchar *trigger;
+  GPtrArray *triggers;
   gint dir;
   gboolean local_state;
   gboolean is_drag_dest;
