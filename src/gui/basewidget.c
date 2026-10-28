@@ -178,6 +178,21 @@ gboolean base_widget_update_expressions ( GtkWidget *self )
   return base_widget_update(self);
 }
 
+static void base_widget_triggers_remove ( GtkWidget *self )
+{
+  BaseWidgetPrivate *priv;
+  gpointer *triggers;
+  gsize len, i;
+
+  g_return_if_fail(IS_BASE_WIDGET(self));
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+  triggers = g_ptr_array_steal(priv->triggers, &len);
+  for(i=0; i<len; i++)
+    trigger_remove(triggers[i], (trigger_func_t)base_widget_update_expressions,
+      self);
+  g_free(triggers);
+}
+
 static void base_widget_destroy ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv, *ppriv;
@@ -188,9 +203,9 @@ static void base_widget_destroy ( GtkWidget *self )
 
   g_debug("widget destroyed: '%s'", priv->id);
   g_ptr_array_remove(base_widgets, self);
-  trigger_remove((gchar *)(priv->trigger),
-      (trigger_func_t)base_widget_update_expressions, self);
-  priv->trigger = NULL;
+  if(priv->triggers)
+    base_widget_triggers_remove(self);
+  g_clear_pointer(&priv->triggers, g_ptr_array_unref);
   g_idle_remove_by_data(self);
   g_mutex_lock(&widget_mutex);
   widgets_scan = g_list_remove(widgets_scan, self);
@@ -214,7 +229,6 @@ static void base_widget_destroy ( GtkWidget *self )
   g_clear_pointer(&priv->style, expr_cache_unref);
   g_clear_pointer(&priv->tooltip, expr_cache_unref);
   g_clear_pointer(&priv->actions, g_ptr_array_unref);
-  priv->trigger = NULL;
 
   GTK_WIDGET_CLASS(base_widget_parent_class)->destroy(self);
 }
@@ -473,25 +487,33 @@ static void base_widget_update_list ( GtkWidget *self )
     g_cond_signal(&scanner_thread_cond);
 }
 
-static void base_widget_set_trigger ( GtkWidget *self, gchar *trigger )
+static void base_widget_trigger_add ( gchar *trigger, GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  trigger_remove((gchar *)(priv->trigger),
-      (trigger_func_t)base_widget_update_expressions, self);
-  priv->trigger = NULL;
+  g_ptr_array_add(priv->triggers, (gchar *)trigger_add(trigger,
+        (trigger_func_t)base_widget_update_expressions, self));
+}
+
+static void base_widget_set_trigger ( GtkWidget *self, GPtrArray *triggers )
+{
+  BaseWidgetPrivate *priv;
+
+  g_return_if_fail(IS_BASE_WIDGET(self));
+  priv = base_widget_get_instance_private(BASE_WIDGET(self));
+
+  base_widget_triggers_remove(self);
 
   if(priv->mirror_parent && !priv->local_state)
     return;
 
-  if(trigger)
+  if(triggers)
   {
     priv->interval = 0;
-    priv->trigger = trigger_add(trigger,
-        (trigger_func_t)base_widget_update_expressions, self);
+    g_ptr_array_foreach(triggers, (GFunc)base_widget_trigger_add, self);
     base_widget_update_list(self);
   }
 }
@@ -509,7 +531,7 @@ static void base_widget_set_local_state ( GtkWidget *self, gboolean state )
   ppriv = base_widget_get_instance_private(BASE_WIDGET(parent));
 
   if(state)
-    base_widget_set_trigger(self, (gchar *)ppriv->trigger);
+    base_widget_set_trigger(self, ppriv->triggers);
   else
     base_widget_set_trigger(self, NULL);
 }
@@ -729,7 +751,7 @@ static void base_widget_get_property ( GObject *self, guint id, GValue *value,
       g_value_set_boxed(value, &priv->rect);
       break;
     case BASE_WIDGET_TRIGGER:
-      g_value_set_string(value, priv->trigger);
+      g_value_set_boxed(value, priv->triggers);
       break;
     case BASE_WIDGET_INTERVAL:
       g_value_set_int64(value, priv->interval/1000);
@@ -845,7 +867,7 @@ static void base_widget_set_property ( GObject *self, guint id,
       base_widget_set_rect(GTK_WIDGET(self), g_value_get_boxed(value));
       break;
     case BASE_WIDGET_TRIGGER:
-      base_widget_set_trigger(GTK_WIDGET(self), (gchar *)g_value_get_string(value));
+      base_widget_set_trigger(GTK_WIDGET(self), g_value_get_boxed(value));
       break;
     case BASE_WIDGET_INTERVAL:
       priv->interval = g_value_get_int64(value)*1000;
@@ -961,7 +983,7 @@ static void base_widget_class_init ( BaseWidgetClass *kclass )
       g_param_spec_boxed("loc", "loc", "sfwbar_config", GDK_TYPE_RECTANGLE,
         G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_TRIGGER,
-      g_param_spec_string("trigger", "trigger", "sfwbar_config", NULL,
+      g_param_spec_boxed("trigger", "trigger", "sfwbar_config", G_TYPE_PTR_ARRAY,
         G_PARAM_READWRITE));
   g_object_class_install_property(G_OBJECT_CLASS(kclass), BASE_WIDGET_LOCAL,
       g_param_spec_boolean("local", "local", "sfwbar_config", FALSE,
@@ -1000,6 +1022,7 @@ static void base_widget_init ( BaseWidget *self )
   priv->tooltip = expr_cache_new();
   priv->actions = g_ptr_array_new_with_free_func(
       (GDestroyNotify)base_widget_attachment_free);
+  priv->triggers = g_ptr_array_new();
   priv->interval = 1000000;
   priv->dir = GTK_POS_RIGHT;
   priv->rect.x = -1;
