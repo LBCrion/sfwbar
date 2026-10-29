@@ -249,18 +249,19 @@ static gboolean scanner_exec_update ( source_t *src )
   if(!g_shell_parse_argv(src->fname, NULL, &argv, NULL))
     return FALSE;
 
-  if(!g_spawn_async_with_pipes(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL,
-        NULL, NULL, &out, NULL, NULL))
-    return FALSE;
-
-  if( (chan = g_io_channel_unix_new(out)) )
+  if(g_spawn_async_with_pipes(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL,
+        NULL, NULL, NULL, &out, NULL, NULL))
   {
-    g_debug("scanner: exec: '%s'", src->fname);
-    (void)scanner_source_update(chan, src, NULL);
-    g_io_channel_unref(chan);
-    src->invalid = FALSE;
+    if( (chan = g_io_channel_unix_new(out)) )
+    {
+      g_debug("scanner: exec: '%s'", src->fname);
+      (void)scanner_source_update(chan, src, NULL);
+      g_io_channel_unref(chan);
+      src->invalid = FALSE;
+    }
+    close(out);
   }
-  close(out);
+  g_strfreev(argv);
 
   return TRUE;
 }
