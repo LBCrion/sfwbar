@@ -191,7 +191,8 @@ static void sway_traverse_tree ( struct json_object *obj, const gchar *parent,
     for(i=0; i<json_object_array_length(arr); i++)
     {
       iter = json_object_array_get_idx(arr, i);
-      if(json_string_by_name(iter, "app_id"))
+      if(json_string_by_name(iter, "app_id") ||
+          json_object_object_get_ex(iter, "window_properties", NULL))
         sway_window_handle(iter, parent, output);
       else
       {
