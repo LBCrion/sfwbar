@@ -1,5 +1,5 @@
 .\" Man page generated from reStructuredText
-.\" by the Docutils 0.22.4 manpage writer.
+.\" by the Docutils 0.23 manpage writer.
 .
 .
 .nr rst2man-indent-level 0
@@ -41,8 +41,8 @@ The idle notifier module, provides support for idle triggers, i.e. triggers
 that are emitted if the user has been idle for a specified period of time.
 .SH Triggers
 .sp
-The idle module defines trigger \fIresumed\fP\&. This trigger is emitted on the first
-user interaction after a timeout. Timeout triggers are defined using the
+The idle module defines trigger \fIidle_resume\fP\&. This trigger is emitted on the
+first user interaction after a timeout. Timeout triggers are defined using the
 \fIIdleTimeout\fP action.
 .SH Functions
 .SS IdleTimeout(Trigger, Timeout)

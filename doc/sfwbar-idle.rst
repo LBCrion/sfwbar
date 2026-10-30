@@ -21,8 +21,8 @@ that are emitted if the user has been idle for a specified period of time.
 Triggers
 ========
 
-The idle module defines trigger `resumed`. This trigger is emitted on the first
-user interaction after a timeout. Timeout triggers are defined using the
+The idle module defines trigger `idle_resume`. This trigger is emitted on the
+first user interaction after a timeout. Timeout triggers are defined using the
 `IdleTimeout` action.
 
 Functions
