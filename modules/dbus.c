@@ -78,33 +78,34 @@ static GVariant *dbus_value2variant_array ( value_t v, const GVariantType *t )
 static GVariant *dbus_value2variant_tuple ( value_t v, const GVariantType *t )
 {
   const GVariantType *s;
-  GVariantBuilder *builder;
+  GVariantBuilder builder;
   GVariant *var;
   gsize i = 0;
 
   if(!value_is_array(v))
     return NULL;
 
-  builder = g_variant_builder_new(G_VARIANT_TYPE_TUPLE);
+  g_variant_builder_init(&builder, G_VARIANT_TYPE_TUPLE);
   for(s = g_variant_type_first(t); s; s = g_variant_type_next(s))
   {
     if(i>=v.value.array->len)
     {
       g_warning("dbus: variant string is longer than value array");
+      g_variant_builder_clear(&builder);
       return NULL;
     }
     if( (var = dbus_value2variant_handle(
             g_array_index(v.value.array, value_t, i++), &s)) )
-      g_variant_builder_add_value(builder, var);
+      g_variant_builder_add_value(&builder, var);
     else
     {
       g_warning("dbus: unable to convert value to variant");
-      g_variant_builder_unref(builder);
+      g_variant_builder_clear(&builder);
       return NULL;
     }
   }
 
-  return g_variant_builder_end(builder);
+  return g_variant_builder_end(&builder);
 }
 
 static GVariant *dbus_value2variant_handle ( value_t v, const GVariantType **t )
@@ -202,6 +203,7 @@ static value_t dbus_variant2value ( GVariant *variant )
   iter = g_variant_iter_new(variant);
   while((var = g_variant_iter_next_value(iter)))
     value_array_append(array, dbus_variant2value(var));
+  g_variant_iter_free(iter);
 
   return array;
 }
