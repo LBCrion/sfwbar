@@ -131,7 +131,7 @@ void pager_add_pins ( GtkWidget *self, GPtrArray *pins )
         workspace_pin_add(pins->pdata[i]);
       }
   }
-  g_ptr_array_unref(pins);
+//  g_ptr_array_unref(pins);
 }
 
 gboolean pager_check_pins ( GtkWidget *self, gchar *pin )

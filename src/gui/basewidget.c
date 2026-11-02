@@ -186,6 +186,8 @@ static void base_widget_triggers_remove ( GtkWidget *self )
 
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
+  if(!priv->triggers)
+    return;
   triggers = g_ptr_array_steal(priv->triggers, &len);
   for(i=0; i<len; i++)
     trigger_remove(triggers[i], (trigger_func_t)base_widget_update_expressions,
@@ -510,7 +512,7 @@ static void base_widget_set_trigger ( GtkWidget *self, GPtrArray *triggers )
   if(priv->mirror_parent && !priv->local_state)
     return;
 
-  if(triggers)
+  if(triggers && priv->triggers)
   {
     priv->interval = 0;
     g_ptr_array_foreach(triggers, (GFunc)base_widget_trigger_add, self);
@@ -751,7 +753,7 @@ static void base_widget_get_property ( GObject *self, guint id, GValue *value,
       g_value_set_boxed(value, &priv->rect);
       break;
     case BASE_WIDGET_TRIGGER:
-      g_value_set_boxed(value, priv->triggers);
+      g_value_set_boxed(value, g_ptr_array_ref(priv->triggers));
       break;
     case BASE_WIDGET_INTERVAL:
       g_value_set_int64(value, priv->interval/1000);

@@ -152,4 +152,3 @@ void menu_popup( GtkWidget *widget, GtkWidget *menu, GdkEvent *event,
         G_CALLBACK(menu_popdown_cb), menu);
   gtk_menu_popup_at_widget(GTK_MENU(menu), widget, wanchor, manchor, event);
 }
-

@@ -145,7 +145,7 @@ gboolean config_widget_set_property ( GScanner *scanner, gchar *prefix,
   else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_PTR_ARRAY && *blurb=='b')
     g_value_take_boxed(&value, config_action_attachment(scanner));
   else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_PTR_ARRAY)
-    g_value_set_boxed(&value, config_assign_string_list(scanner));
+    g_value_take_boxed(&value, config_assign_string_list(scanner));
   else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_BYTES && *blurb=='a')
     g_value_take_boxed(&value, config_assign_action(scanner, name));
   else if(G_PARAM_SPEC_VALUE_TYPE(spec) == G_TYPE_BYTES)
@@ -178,6 +178,7 @@ static gboolean config_widget_variable ( GScanner *scanner, GtkWidget *widget )
     return FALSE;
 
   g_mutex_lock(&var->mutex);
+  value_free(var->value);
   var->value = vm_code_eval(code, widget);
   g_mutex_unlock(&var->mutex);
   g_bytes_unref(code);

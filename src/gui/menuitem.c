@@ -491,13 +491,25 @@ void menu_item_set_store ( GtkWidget *self, vm_store_t *store )
   g_return_if_fail(priv);
 
   if(priv->label_expr && !priv->label_expr->store)
-    priv->label_expr->store = store;
+  {
+    if(priv->label_expr->store)
+      vm_store_unref(priv->label_expr->store);
+    priv->label_expr->store = vm_store_ref(store);
+  }
 
   if(priv->style_expr && !priv->style_expr->store)
-    priv->style_expr->store = store;
+  {
+    if(priv->style_expr->store)
+      vm_store_unref(priv->style_expr->store);
+    priv->style_expr->store = vm_store_ref(store);
+  }
 
   if(priv->tooltip_expr && !priv->tooltip_expr->store)
-    priv->tooltip_expr->store = store;
+  {
+    if(priv->tooltip_expr->store)
+      vm_store_unref(priv->tooltip_expr->store);
+    priv->tooltip_expr->store = vm_store_ref(store);
+  }
 }
 
 void menu_item_insert ( GtkWidget *menu, GtkWidget *item )

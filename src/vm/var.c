@@ -134,32 +134,24 @@ vm_var_t *vm_store_lookup_string ( vm_store_t *store, gchar *string )
   return vm_store_lookup(store, quark);
 }
 
-gboolean vm_store_insert ( vm_store_t *store, vm_var_t *var )
+void vm_store_insert ( vm_store_t *store, vm_var_t *var )
 {
-  gboolean found;
-
-  g_return_val_if_fail(store && var, FALSE);
+  g_return_if_fail(store && var);
 
   g_mutex_lock(&store->mutex);
-  if( (found = !!g_datalist_id_get_data(&store->vars->data, var->quark)) )
-    g_datalist_id_remove_data(&store->vars->data, var->quark);
 
   g_datalist_id_set_data_full(&(store->vars->data), var->quark, var,
       (GDestroyNotify)vm_var_free);
   g_mutex_unlock(&store->mutex);
   g_debug("var: new: '%s' in store %p", g_quark_to_string(var->quark), store);
-
-  return found;
 }
 
-gboolean vm_store_insert_full ( vm_store_t *store, gchar *name, value_t v )
+void vm_store_insert_full ( vm_store_t *store, gchar *name, value_t v )
 {
   vm_var_t *var;
 
   var = vm_var_new(name);
   var->value = v;
-
-  return vm_store_insert(store, var);
 }
 
 GtkWidget *vm_store_widget_lookup ( vm_store_t *store, gchar *id )
@@ -216,7 +208,7 @@ vm_closure_t *vm_closure_new ( GBytes *code, vm_store_t *store )
 
   closure = g_malloc0(sizeof(vm_closure_t));
   closure->code = code;
-  closure->store = store;
+  closure->store = vm_store_ref(store);
 
   return closure;
 }

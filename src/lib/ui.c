@@ -507,6 +507,7 @@ static value_t lib_ui_widget_push ( vm_t *vm, value_t p[], gint np )
   vm_param_check_string(vm, p, 0, "WidgetPush");
 
   vm_target_push(vm, value_get_string(p[0]), NULL, NULL, NULL);
+
   return value_na;
 }
 

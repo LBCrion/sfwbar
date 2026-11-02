@@ -21,8 +21,11 @@ static void taskbar_class_init ( TaskbarClass *kclass )
 
 static void taskbar_init ( Taskbar *self )
 {
-  g_object_set(G_OBJECT(self), "action", base_widget_attachment_new_array(
-        parser_function_call_build("taskbaritemdefault"), 1, 0), NULL);
+  GBytes *action = parser_function_call_build("taskbaritemdefault");
+  GPtrArray *actions =base_widget_attachment_new_array(action , 1, 0);
+  g_object_set(G_OBJECT(self), "action", actions, NULL);
+  g_ptr_array_unref(actions);
+  g_bytes_unref(action);
   flow_grid_invalidate(GTK_WIDGET(self));
 }
 

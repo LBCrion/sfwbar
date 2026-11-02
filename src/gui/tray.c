@@ -38,7 +38,7 @@ static void tray_set_property ( GObject *self, guint id, const GValue *value,
   {
     case TRAY_ORDER:
       g_clear_pointer(&priv->order, g_ptr_array_unref);
-      priv->order = g_value_dup_boxed(value);
+      priv->order = g_ptr_array_ref(g_value_get_boxed(value));
       flow_grid_invalidate(GTK_WIDGET(self));
       break;
     default:

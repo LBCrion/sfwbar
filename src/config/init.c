@@ -295,7 +295,8 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
   scanner->msg_handler = config_log_error;
   scanner->max_parse_errors = FALSE;
   scanner->user_data = g_malloc0(sizeof(scanner_data_t));
-  SCANNER_STORE(scanner) = globals? globals : vm_store_new(NULL, FALSE);
+  SCANNER_STORE(scanner) = globals? vm_store_ref(globals) :
+    vm_store_new(NULL, FALSE);
   SCANNER_DATA(scanner)->api2 = api2 | !g_ascii_strncasecmp(data, "#api2", 5);
 
   scanner->input_name = fname;
@@ -304,12 +305,13 @@ GtkWidget *config_parse_data ( gchar *fname, gchar *data, GtkWidget *container,
   if( (tmp = strstr(data, "\n#CSS")) )
     *tmp = 0;
   w = config_parse_toplevel(scanner, container);
+  vm_store_unref(SCANNER_STORE(scanner));
   g_free(scanner->user_data);
   g_scanner_destroy(scanner);
 
   if(tmp)
   {
-    tmp = css_legacy_preprocess(g_strdup(tmp + 5), fname);
+    tmp = css_legacy_preprocess(tmp + 5, fname);
     css_provider_add(tmp);
     g_free(tmp);
   }
