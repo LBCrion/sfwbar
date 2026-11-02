@@ -370,7 +370,7 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
   return TRUE;
 }
 
-#elif defined(__FreeBSD__) || defined(__OpenBSD__)
+#elif defined(__FreeBSD__) || defined (__DragonFly__) || defined(__OpenBSD__)
 
 #include <net/if_dl.h>
 #include <net/route.h>
@@ -410,8 +410,12 @@ static void net_update_traffic ( gchar *interface )
   freeifaddrs(addrs);
 }
 
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__DragonFly__)
+#if defined(__DragonFly__)
+#include <netproto/802_11/ieee80211_ioctl.h>
+#else
 #include <net80211/ieee80211_ioctl.h>
+#endif
 
 static void net_update_essid ( char *interface )
 {
@@ -536,8 +540,8 @@ static void net_update_essid ( gchar *interface )
   (void)net_get_signal(interface);
 }
 
-#endif /* OpenBSD */
-/* back to FreeBSD || OpenBSD */
+#endif /* OpenBSD || DragonFly */
+/* back to FreeBSD || DragonFly || OpenBSD */
 
 static gint net_rt_connect ( void )
 {
@@ -617,7 +621,7 @@ static gboolean net_rt_parse (GIOChannel *chan, GIOCondition cond, gpointer d)
 
 #else /* unknown platform, provide shims */
 
-static void net_update_traffic ( void )
+static void net_update_traffic ( gchar *interface )
 {
 }
 
@@ -645,7 +649,7 @@ static gboolean net_rt_request ( gint sock )
   return FALSE;
 }
 
-#endif /* Linux || FreeBSD || OpenBSD */
+#endif /* Linux || FreeBSD || DragonFly || OpenBSD */
 
 static value_t network_func_netstat ( vm_t *vm, value_t p[], gint np )
 {
