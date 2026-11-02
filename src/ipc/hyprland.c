@@ -370,19 +370,19 @@ static void hypr_ipc_layouts_get ( void )
 
   if(!hypr_ipc_request(ipc_sockaddr, "j/devices", &json) || !json)
     return;
-  if(!json_object_object_get_ex(json, "keyboards", &keyboards))
-    return;
-  for(i=0; i<json_object_array_length(keyboards); i++)
-    if( (iter = json_object_array_get_idx(keyboards, i)) )
-      if(json_bool_by_name(iter, "main", FALSE))
-        if( (str = json_string_by_name(iter, "layout")) )
-        if(g_strcmp0(hypr_layout_str, str))
-        {
-          str_assign(&hypr_layout_str, g_strdup(str));
-          g_clear_pointer(&hypr_layouts, g_strfreev);
-          hypr_layouts = g_strsplit(str, ", ", 0);
-          input_layout_list_set(hypr_layouts);
-        }
+  if(json_object_object_get_ex(json, "keyboards", &keyboards))
+    for(i=0; i<json_object_array_length(keyboards); i++)
+      if( (iter = json_object_array_get_idx(keyboards, i)) )
+        if(json_bool_by_name(iter, "main", FALSE))
+          if( (str = json_string_by_name(iter, "layout")) )
+          if(g_strcmp0(hypr_layout_str, str))
+          {
+            str_assign(&hypr_layout_str, g_strdup(str));
+            g_clear_pointer(&hypr_layouts, g_strfreev);
+            hypr_layouts = g_strsplit(str, ", ", 0);
+            input_layout_list_set(hypr_layouts);
+          }
+  json_object_put(json);
 }
 
 static void hypr_ipc_title_handle ( gchar *str )
