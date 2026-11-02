@@ -319,7 +319,7 @@ static gboolean app_menu_add ( gchar *id )
     if(!cat->widget && !app_menu_flat)
     {
       cat->widget = menu_item_get(NULL, TRUE);
-      menu_item_set_label(cat->widget,
+      menu_item_set_label_text(cat->widget,
           cat->local_title? cat->local_title : cat->title);
       menu_item_set_icon(cat->widget, cat->icon);
       menu_item_set_sort_index(cat->widget, 500);
@@ -330,11 +330,11 @@ static gboolean app_menu_add ( gchar *id )
       app_menu_item_insert(app_menu_main, cat->widget);
     }
 
+    g_debug("appmenu item: '%s', cat: %s'", item->id,
+        item->cat? item->cat->title : "null");
+
     app_menu_item_insert(app_menu_flat? app_menu_main :
         gtk_menu_item_get_submenu(GTK_MENU_ITEM(cat->widget)), item->widget);
-
-//    g_debug("appmenu item: '%s', title: '%s', icon: '%s', cat: %s'", item->id,
-//        item->name, item->icon, item->cat?item->cat->title:"null");
   }
   g_object_unref(app);
   g_free(id);
