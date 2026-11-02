@@ -152,6 +152,7 @@ void vm_store_insert_full ( vm_store_t *store, gchar *name, value_t v )
 
   var = vm_var_new(name);
   var->value = v;
+  vm_store_insert(store, var);
 }
 
 GtkWidget *vm_store_widget_lookup ( vm_store_t *store, gchar *id )
