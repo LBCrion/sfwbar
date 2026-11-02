@@ -33,6 +33,7 @@ void css_provider_add ( gchar *css )
 
   provider = gtk_css_provider_new();
   gtk_css_provider_load_from_data(provider, combined ,strlen(combined), NULL);
+  g_free(combined);
   gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
     GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
   gtk_style_context_reset_widgets(gdk_screen_get_default());
