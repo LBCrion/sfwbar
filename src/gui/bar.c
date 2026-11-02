@@ -556,6 +556,13 @@ static void bar_set_property ( GObject *self, guint id,
         break;
       priv->override_edge = g_value_get_enum(value);
       priv->overrides |= BAR_OVERRIDE_EDGE;
+      vm_store_t *store = vm_store_new(NULL, TRUE);
+      vm_store_insert_full(store, "id", value_new_string(priv->name));
+      vm_store_insert_full(store, "edge", value_take_string(
+            g_enum_to_string(g_type_from_name("direction"),
+              priv->override_edge)));
+      trigger_emit_with_data("bar-edge", store);
+      vm_store_unref(store);
       bar_resize(GTK_WIDGET(self));
       break;
     case BAR_HALIGN:
@@ -646,6 +653,7 @@ GtkWidget *bar_from_name ( gchar *name )
 GtkWidget *bar_grid_from_name ( gchar *addr )
 {
   GtkWidget *bar;
+  GBytes *style;
   BarPrivate *priv;
   GtkWidget *widget = NULL;
   gchar *grid, *ptr, *name;
@@ -695,7 +703,9 @@ GtkWidget *bar_grid_from_name ( gchar *addr )
 
   widget = grid_new();
 
-  g_object_set(G_OBJECT(widget), "style", parser_string_build("layout"), NULL);
+  style = parser_string_build("layout");
+  g_object_set(G_OBJECT(widget), "style", style, NULL);
+  g_bytes_unref(style);
 
   if(grid && !g_ascii_strcasecmp(grid, "center"))
   {
@@ -1010,8 +1020,7 @@ void bar_set_monitor ( GtkWidget *self, const gchar *monitor )
 
   if(!priv->output || g_ascii_strcasecmp(priv->output, mon_name))
   {
-    g_free(priv->output);
-    priv->output =  g_strdup(mon_name);
+    str_assign(&priv->output, g_strdup(mon_name));
     bar_update_monitor(self);
   }
 }
@@ -1191,7 +1200,7 @@ GtkWidget *bar_mirror ( GtkWidget *src, GdkMonitor *monitor )
   dpriv->hidden = spriv->hidden;
   dpriv->jump = spriv->jump;
   dpriv->current_monitor = monitor;
-  dpriv->output = g_strdup(monitor_get_name(monitor));
+  str_assign(&dpriv->output, g_strdup(monitor_get_name(monitor)));
 
   gtk_widget_set_name(self, gtk_widget_get_name(src));
   if(spriv->start)
