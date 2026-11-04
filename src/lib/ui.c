@@ -496,7 +496,7 @@ static value_t lib_ui_widget_update ( vm_t *vm, value_t p[], gint np )
     vm_param_check_string(vm, p, 0, "WidgetUpdate");
 
   if( (widget = vm_widget_get(vm, np? value_get_string(p[0]) : NULL)) )
-    base_widget_update_expressions(widget);
+    base_widget_trigger_cb(widget);
 
   return value_na;
 }

@@ -112,7 +112,7 @@ GdkModifierType base_widget_get_modifiers ( GtkWidget *self );
 gboolean base_widget_action_exec ( GtkWidget *, gint, GdkEvent *);
 gboolean base_widget_check_action_slot ( GtkWidget *self, gint slot );
 void base_widget_action_configure ( GtkWidget *self, gint slot );
-gboolean base_widget_update_expressions ( GtkWidget *self );
+gboolean base_widget_trigger_cb ( GtkWidget *self );
 GPtrArray *base_widget_attachment_new_array ( GBytes *code, gint ev,
     GdkModifierType mods );
 gboolean base_widget_configure ( GtkWidget *self );

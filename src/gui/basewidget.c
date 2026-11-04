@@ -42,8 +42,8 @@ GEnumValue tristate_defs[] = {
   { 0, NULL, NULL },
 };
 
-static GList *widgets_scan;
-static GMutex widget_mutex;
+static GList *widgets_scan, *widgets_add, *widgets_remove;
+static GMutex widget_scan_mutex, base_widget_live_mutex;
 static GCond scanner_thread_cond;
 static gint64 base_widget_default_id = 0;
 static gint64 next_poll = 0;
@@ -84,11 +84,22 @@ GPtrArray *base_widget_attachment_new_array ( GBytes *code, gint ev,
   return array;
 }
 
+static gboolean base_widget_is_alive ( GtkWidget *self )
+{
+  gboolean result;
+
+  g_mutex_lock(&base_widget_live_mutex);
+  result = g_ptr_array_find(base_widgets, self, NULL);
+  g_mutex_unlock(&base_widget_live_mutex);
+
+  return result;
+}
+
 static gboolean base_widget_update_value ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
 
-  if(!g_ptr_array_find(base_widgets, self, NULL))
+  if(!base_widget_is_alive(self))
     return FALSE;
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
@@ -110,7 +121,7 @@ static gboolean base_widget_style ( GtkWidget *self )
 {
   BaseWidgetPrivate *priv;
 
-  if(!g_ptr_array_find(base_widgets, self, NULL))
+  if(!base_widget_is_alive(self))
     return FALSE;
   priv = base_widget_get_instance_private(
       BASE_WIDGET(base_widget_get_mirror_parent(self)));
@@ -172,7 +183,7 @@ static gboolean base_widget_update ( GtkWidget *self )
   return FALSE;
 }
 
-gboolean base_widget_update_expressions ( GtkWidget *self )
+gboolean base_widget_trigger_cb ( GtkWidget *self )
 {
   scanner_invalidate();
   return base_widget_update(self);
@@ -190,7 +201,7 @@ static void base_widget_triggers_remove ( GtkWidget *self )
     return;
   triggers = g_ptr_array_steal(priv->triggers, &len);
   for(i=0; i<len; i++)
-    trigger_remove(triggers[i], (trigger_func_t)base_widget_update_expressions,
+    trigger_remove(triggers[i], (trigger_func_t)base_widget_trigger_cb,
       self);
   g_free(triggers);
 }
@@ -204,14 +215,16 @@ static void base_widget_destroy ( GtkWidget *self )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   g_debug("widget destroyed: '%s'", priv->id);
+  g_mutex_lock(&base_widget_live_mutex);
   g_ptr_array_remove(base_widgets, self);
+  g_mutex_unlock(&base_widget_live_mutex);
   if(priv->triggers)
     base_widget_triggers_remove(self);
   g_clear_pointer(&priv->triggers, g_ptr_array_unref);
   g_idle_remove_by_data(self);
-  g_mutex_lock(&widget_mutex);
-  widgets_scan = g_list_remove(widgets_scan, self);
-  g_mutex_unlock(&widget_mutex);
+  g_mutex_lock(&widget_scan_mutex);
+  widgets_remove = g_list_prepend(widgets_remove, self);
+  g_mutex_unlock(&widget_scan_mutex);
   g_source_remove_by_user_data(self);
 
   if(priv->mirror_parent)
@@ -475,16 +488,16 @@ static void base_widget_update_list ( GtkWidget *self )
   g_return_if_fail(IS_BASE_WIDGET(self));
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
-  g_mutex_lock(&widget_mutex);
+  g_mutex_lock(&widget_scan_mutex);
   if(!priv->interval || (!priv->value->code && !priv->style->code))
-    widgets_scan = g_list_remove(widgets_scan, self);
+    widgets_remove = g_list_prepend(widgets_remove, self);
   else if(!g_list_find(widgets_scan, self))
   {
-    widgets_scan = g_list_append(widgets_scan, self);
+    widgets_add = g_list_append(widgets_add, self);
     priv->next_poll = next_poll;
     signal = TRUE;
   }
-  g_mutex_unlock(&widget_mutex);
+  g_mutex_unlock(&widget_scan_mutex);
   if(signal)
     g_cond_signal(&scanner_thread_cond);
 }
@@ -497,7 +510,7 @@ static void base_widget_trigger_add ( gchar *trigger, GtkWidget *self )
   priv = base_widget_get_instance_private(BASE_WIDGET(self));
 
   g_ptr_array_add(priv->triggers, (gchar *)trigger_add(trigger,
-        (trigger_func_t)base_widget_update_expressions, self));
+        (trigger_func_t)base_widget_trigger_cb, self));
 }
 
 static void base_widget_set_trigger ( GtkWidget *self, GPtrArray *triggers )
@@ -1034,7 +1047,9 @@ static void base_widget_init ( BaseWidget *self )
   priv->hexpand = TRISTATE_UNINIT;
   priv->vexpand = TRISTATE_UNINIT;
   base_widget_set_id(GTK_WIDGET(self), NULL);
+  g_mutex_lock(&base_widget_live_mutex);
   g_ptr_array_add(base_widgets, self);
+  g_mutex_unlock(&base_widget_live_mutex);
 
   gtk_widget_add_events(GTK_WIDGET(self),
       GDK_BUTTON_RELEASE_MASK | GDK_SCROLL_MASK);
@@ -1246,10 +1261,19 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
 
   pool = g_thread_pool_new((GFunc)base_widget_eval_finish, NULL, 1, TRUE,
       NULL);
-  g_mutex_lock(&widget_mutex);
+
+  g_mutex_lock(&widget_scan_mutex);
 
   while ( TRUE )
   {
+    for(iter=widgets_remove; iter; iter=g_list_next(iter))
+      widgets_scan = g_list_remove(widgets_scan, iter->data);
+    for(iter=widgets_add; iter; iter=g_list_next(iter))
+      widgets_scan = g_list_append(widgets_scan, iter->data);
+    g_clear_pointer(&widgets_remove, g_list_free);
+    g_clear_pointer(&widgets_add, g_list_free);
+    g_mutex_unlock(&widget_scan_mutex);
+
     scanner_invalidate();
     module_invalidate_all();
     timer = G_MAXINT64;
@@ -1257,19 +1281,26 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
 
     for(iter=widgets_scan; iter; iter=g_list_next(iter))
     {
-      priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
-      if(priv->next_poll <= ctime)
+      g_mutex_lock(&base_widget_live_mutex);
+      if(g_ptr_array_find(base_widgets, iter->data, NULL))
       {
-        if(BASE_WIDGET_GET_CLASS(iter->data)->always_update ||
-            gtk_widget_is_visible(iter->data))
-          base_widget_update(iter->data);
-        priv->next_poll = ctime + priv->interval;
+        priv = base_widget_get_instance_private(BASE_WIDGET(iter->data));
+        if(priv->next_poll <= ctime)
+        {
+          if(BASE_WIDGET_GET_CLASS(iter->data)->always_update ||
+              gtk_widget_is_visible(iter->data))
+            base_widget_update(iter->data);
+          priv->next_poll = priv->interval>0? ctime + priv->interval :
+            G_MAXINT64;
+        }
+        timer = MIN(timer, priv->next_poll);
       }
-      timer = MIN(timer, priv->next_poll);
+      g_mutex_unlock(&base_widget_live_mutex);
     }
     if(timer != G_MAXINT64)
       next_poll = timer;
-    g_cond_wait_until(&scanner_thread_cond, &widget_mutex, timer);
+    g_mutex_lock(&widget_scan_mutex);
+    g_cond_wait_until(&scanner_thread_cond, &widget_scan_mutex, timer);
   }
 }
 
