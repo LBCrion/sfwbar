@@ -491,7 +491,7 @@ static void base_widget_update_list ( GtkWidget *self )
   g_mutex_lock(&widget_scan_mutex);
   if(!priv->interval || (!priv->value->code && !priv->style->code))
     widgets_remove = g_list_prepend(widgets_remove, self);
-  else if(!g_list_find(widgets_scan, self))
+  else
   {
     widgets_add = g_list_append(widgets_add, self);
     priv->next_poll = next_poll;
@@ -1269,7 +1269,8 @@ gpointer base_widget_scanner_thread ( GMainContext *gmc )
     for(iter=widgets_remove; iter; iter=g_list_next(iter))
       widgets_scan = g_list_remove(widgets_scan, iter->data);
     for(iter=widgets_add; iter; iter=g_list_next(iter))
-      widgets_scan = g_list_append(widgets_scan, iter->data);
+      if(!g_list_find(widgets_scan, iter->data))
+        widgets_scan = g_list_append(widgets_scan, iter->data);
     g_clear_pointer(&widgets_remove, g_list_free);
     g_clear_pointer(&widgets_add, g_list_free);
     g_mutex_unlock(&widget_scan_mutex);
