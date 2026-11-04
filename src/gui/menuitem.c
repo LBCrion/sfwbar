@@ -490,24 +490,21 @@ void menu_item_set_store ( GtkWidget *self, vm_store_t *store )
   priv = g_object_get_data(G_OBJECT(self), "menu_item_private");
   g_return_if_fail(priv);
 
-  if(priv->label_expr && !priv->label_expr->store)
+  if(priv->label_expr)
   {
-    if(priv->label_expr->store)
-      vm_store_unref(priv->label_expr->store);
+    g_clear_pointer(&priv->label_expr->store, vm_store_unref);
     priv->label_expr->store = vm_store_ref(store);
   }
 
-  if(priv->style_expr && !priv->style_expr->store)
+  if(priv->style_expr)
   {
-    if(priv->style_expr->store)
-      vm_store_unref(priv->style_expr->store);
+    g_clear_pointer(&priv->style_expr->store, vm_store_unref);
     priv->style_expr->store = vm_store_ref(store);
   }
 
-  if(priv->tooltip_expr && !priv->tooltip_expr->store)
+  if(priv->tooltip_expr)
   {
-    if(priv->tooltip_expr->store)
-      vm_store_unref(priv->tooltip_expr->store);
+    g_clear_pointer(&priv->tooltip_expr->store, vm_store_unref);
     priv->tooltip_expr->store = vm_store_ref(store);
   }
 }
