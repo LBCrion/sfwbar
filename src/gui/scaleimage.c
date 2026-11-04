@@ -302,8 +302,12 @@ static gboolean scale_image_draw ( GtkWidget *self, cairo_t *cr )
     return FALSE;
 
   if(priv->file)
-    g_debug("image: %s @ %d x %d", priv->ftype==SI_DATA? "svg" : priv->file,
-        width, height );
+    g_debug("image: %s (%s) @ %d x %d m(%d %d %d %d) b(%d %d %d %d) "
+        "p(%d %d %d %d)", priv->ftype==SI_DATA? "svg" : priv->file,
+        gtk_widget_get_name(self), width, height,
+        margin.left, margin.right, margin.top, margin.bottom,
+        border.left, border.right, border.top, border.bottom,
+        padding.left, padding.right, padding.top, padding.bottom);
 
   x_origin = margin.left + padding.left + border.left +
     (width - cairo_image_surface_get_width(priv->cs))/(2*scale);
