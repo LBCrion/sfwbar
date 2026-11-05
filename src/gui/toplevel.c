@@ -17,6 +17,13 @@ static GtkWidget *toplevel_from_name ( gchar *name )
   return g_hash_table_lookup(toplevel_list, name);
 }
 
+static gboolean toplevel_close_cb ( GtkWidget *self, gpointer d )
+{
+  gtk_widget_hide(self);
+
+  return TRUE;
+}
+
 GtkWidget *toplevel_new ( gchar *name )
 {
   GtkWidget *self, *grid;
@@ -24,8 +31,10 @@ GtkWidget *toplevel_new ( gchar *name )
   if( (self = toplevel_from_name(name)) )
     return self;
 
-  self = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  self = g_object_ref(gtk_window_new(GTK_WINDOW_TOPLEVEL));
   gtk_window_set_type_hint(GTK_WINDOW(self), GDK_WINDOW_TYPE_HINT_DIALOG);
+  gtk_window_set_deletable(GTK_WINDOW(self), FALSE);
+  g_signal_connect(G_OBJECT(self), "delete-event", G_CALLBACK(toplevel_close_cb), NULL);
   grid = grid_new();
   gtk_container_add(GTK_CONTAINER(self), grid);
   gtk_widget_set_name(self, name);
