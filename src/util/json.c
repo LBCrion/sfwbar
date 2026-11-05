@@ -5,6 +5,7 @@
 
 #include "util/json.h"
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 gint socket_connect ( const gchar *sockaddr, gint to )
