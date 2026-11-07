@@ -599,6 +599,18 @@ static void base_widget_mirror_impl ( GtkWidget *dest, GtkWidget *src )
       G_OBJECT(dest), "style", G_BINDING_SYNC_CREATE);
 }
 
+static gboolean base_widget_tooltip_query_trigger ( gpointer self )
+{
+  gtk_widget_trigger_tooltip_query(self);
+
+  return G_SOURCE_REMOVE;
+}
+
+static void base_widget_tooltip_update ( GtkWidget *self )
+{
+  g_main_context_invoke(NULL, base_widget_tooltip_query_trigger, self);
+}
+
 static gboolean base_widget_query_tooltip ( GtkWidget *self, gint x, gint y,
     gboolean kbmode, GtkTooltip *tooltip )
 {
@@ -609,13 +621,11 @@ static gboolean base_widget_query_tooltip ( GtkWidget *self, gint x, gint y,
     return FALSE;
   priv = base_widget_get_instance_private(
       BASE_WIDGET(base_widget_get_mirror_parent(self)));
+  gtk_tooltip_set_markup(tooltip, value_get_string(priv->tooltip->cache));
+  base_widget_eval_async(self, priv->tooltip,
+      (GSourceFunc)base_widget_tooltip_update);
 
-  (void)vm_expr_eval(priv->tooltip);
-  if(value_is_string(priv->tooltip->cache))
-    gtk_tooltip_set_markup(tooltip, value_get_string(priv->tooltip->cache));
-
-  return value_get_string(priv->tooltip->cache) &&
-    *(value_get_string(priv->tooltip->cache));
+  return !!priv->tooltip->code;
 }
 
 static void base_widget_set_tooltip ( GtkWidget *self, GBytes *code )
