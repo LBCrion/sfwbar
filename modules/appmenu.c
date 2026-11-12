@@ -366,7 +366,10 @@ static void app_menu_handle_delete ( const gchar *id )
           gtk_menu_item_get_submenu(GTK_MENU_ITEM(cat->widget))))) )
       g_list_free(list);
     else
+    {
+      menu_remove(cat->title);
       g_clear_pointer(&(cat->widget), gtk_widget_destroy);
+    }
   }
 
   g_debug("appmenu item removed: '%s'", id);
