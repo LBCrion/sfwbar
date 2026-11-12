@@ -30,6 +30,7 @@ void menu_remove ( gchar *name )
   menu = menu_from_name(name);
   if(!menu)
     return;
+  g_debug("menu: remove: '%s'", name);
   items = gtk_container_get_children(GTK_CONTAINER(menu));
   for(iter=items; iter; iter=g_list_next(iter))
     if(gtk_menu_item_get_submenu(iter->data))
@@ -46,7 +47,7 @@ void menu_clamp_size ( GtkMenu *menu )
   GdkWindow *gdk_win;
   GtkWindow *toplevel;
   GdkRectangle workarea;
-  gint w,h;
+  gint w, h;
 
   toplevel = GTK_WINDOW(gtk_widget_get_ancestor(GTK_WIDGET(menu),
         GTK_TYPE_WINDOW));
@@ -82,8 +83,9 @@ GtkWidget *menu_new ( gchar *name )
     g_object_ref_sink(G_OBJECT(menu));
     if(!menus)
       menus = g_hash_table_new_full((GHashFunc)str_nhash,
-          (GEqualFunc)str_nequal, g_free,g_object_unref);
+          (GEqualFunc)str_nequal, g_free, (GDestroyNotify)gtk_widget_destroy);
     g_hash_table_insert(menus, g_strdup(name), menu);
+    g_debug("menu: new: '%s'", name);
   }
   return menu;
 }
