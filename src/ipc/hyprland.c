@@ -14,6 +14,7 @@
 
 static gchar *ipc_sockaddr;
 static gchar **hypr_layouts, *hypr_layout_str;
+static gboolean hypr_ipc_lua;
 
 static gpointer hypr_ipc_window_id ( json_object *json )
 {
@@ -61,6 +62,7 @@ static gboolean hypr_ipc_request ( gchar *addr, gchar *command, json_object **js
 
 static void hypr_ipc_command ( gchar *cmd, ... )
 {
+  struct json_object *json;
   va_list args;
   gchar *buf;
   
@@ -70,7 +72,9 @@ static void hypr_ipc_command ( gchar *cmd, ... )
   va_start(args, cmd);
   buf = g_strdup_vprintf(cmd, args);
   g_debug("hypr command: %s", buf);
-  if(!hypr_ipc_request (ipc_sockaddr, buf, NULL))
+  if(hypr_ipc_request (ipc_sockaddr, buf, &json))
+    json_object_put(json);
+  else
     g_debug("hypr: unable to send command");
   g_free(buf);
   va_end(args);
@@ -122,6 +126,8 @@ static void hypr_ipc_handle_window ( json_object *obj )
   }
   else
     wintree_set_title(id, json_string_by_name(obj, "title"));
+
+  set_bit(win->state, WS_MAXIMIZED, json_int_by_name(obj, "fullscreen", 0));
 
   if(hypr_ipc_workspace_id(obj)==GINT_TO_POINTER(-99))
     win->state |= WS_MINIMIZED;
@@ -210,7 +216,8 @@ static void hypr_ipc_track_workspace ( gchar *event )
   if(!ws || *ws!=',' || !(win = wintree_from_id(id)))
     return;
 
-  if( (wsid = strtoll(ws+1, NULL, 10))<0 )
+  if( (wsid = strtoll(ws+1, NULL, 10))<0 ||
+      !strncmp(ws+1, "special:sfwbarminimize", 22) )
     win->state |= WS_MINIMIZED;
   else
   {
@@ -283,6 +290,7 @@ static guint hypr_ipc_get_geom ( gpointer wid, GdkRectangle *place,
   json_object *json, *iter;
   gsize i, n=0;
 
+  *wins = NULL;
   *space = hypr_ipc_get_output_geom(wsid);
   if(space->width<0)
     return 0;
@@ -316,12 +324,19 @@ static void hypr_ipc_window_place ( gpointer wid )
 {
   GdkRectangle window;
 
-  if(wintree_placer_calc(wid, &window))
+  if(!wintree_placer_calc(wid, &window))
+    return;
+
+  if(hypr_ipc_lua)
+    hypr_ipc_command("dispatch hl.dsp.window.move({ window = 'address:0x%lx', "
+        "x = %d, y = %d, relative = false })", GPOINTER_TO_SIZE(wid),
+        window.x, window.y);
+  else
     hypr_ipc_command("dispatch movewindowpixel exact %d %d,address:0x%lx",
       window.x, window.y, GPOINTER_TO_SIZE(wid));
 }
 
-static void hypr_ipc_pager_populate( void )
+static gboolean hypr_ipc_pager_populate( void )
 {
   json_object *json, *ptr, *iter;
   gsize i;
@@ -329,7 +344,7 @@ static void hypr_ipc_pager_populate( void )
   workspace_t *ws;
 
   if(!hypr_ipc_request(ipc_sockaddr, "j/workspaces", &json) || !json)
-    return;
+    return FALSE;
   if(json_object_is_type(json, json_type_array))
     for(i=0; i<json_object_array_length(json); i++)
     {
@@ -343,7 +358,7 @@ static void hypr_ipc_pager_populate( void )
     }
   json_object_put(json);
   if(!hypr_ipc_request(ipc_sockaddr, "j/monitors", &json) || !json)
-    return;
+    return TRUE;
   if(json_object_is_type(json, json_type_array))
     for(i=0; i<json_object_array_length(json); i++)
     {
@@ -360,6 +375,7 @@ static void hypr_ipc_pager_populate( void )
       }
     }
   json_object_put(json);
+  return TRUE;
 }
 
 static void hypr_ipc_layouts_get ( void )
@@ -448,11 +464,18 @@ static void hypr_ipc_maximize ( gpointer id )
   if(!win || win->state & WS_MAXIMIZED)
     return;
 
-  focus = wintree_get_focus();
-  wintree_set_focus(id);
-  hypr_ipc_command("dispatch fullscreen 0");
-  wintree_set_focus(focus);
-}
+  if(hypr_ipc_lua)
+    hypr_ipc_command("dispatch hl.dsp.window.fullscreen({ "
+        "window = 'address:0x%lx', mode = 'maximized', action = 'set'})",
+        win->uid);
+  else
+  {
+    focus = wintree_get_focus();
+    wintree_set_focus(id);
+    hypr_ipc_command("dispatch fullscreen 0");
+    wintree_set_focus(focus);
+  }
+  }
 
 static void hypr_ipc_unmaximize ( gpointer id )
 {
@@ -463,10 +486,17 @@ static void hypr_ipc_unmaximize ( gpointer id )
   if(!win || !(win->state & WS_MAXIMIZED))
     return;
 
-  focus = wintree_get_focus();
-  wintree_set_focus(id);
-  hypr_ipc_command("dispatch fullscreen 0");
-  wintree_set_focus(focus);
+  if(hypr_ipc_lua)
+    hypr_ipc_command("dispatch hl.dsp.window.fullscreen({ "
+        "window = 'address:0x%lx', mode = 'maximized', action = 'unset'})",
+        win->uid);
+  else
+  {
+    focus = wintree_get_focus();
+    wintree_set_focus(id);
+    hypr_ipc_command("dispatch fullscreen 0");
+    wintree_set_focus(focus);
+  }
 }
 
 static void hypr_ipc_minimize ( gpointer id )
@@ -485,15 +515,25 @@ static void hypr_ipc_minimize ( gpointer id )
     wintree_set_workspace(win->uid, hypr_ipc_workspace_id(json));
     json_object_put(json);
   }
-  hypr_ipc_command("dispatch movetoworkspacesilent special,address:0x%lx",
-      GPOINTER_TO_SIZE(id));
+  if(hypr_ipc_lua)
+    hypr_ipc_command("dispatch hl.dsp.window.move({ window = 'address:0x%lx',"
+        "workspace = 'special:sfwbarminimize', follow = false })", GPOINTER_TO_SIZE(id));
+  else
+    hypr_ipc_command("dispatch movetoworkspacesilent special,address:0x%lx",
+        GPOINTER_TO_SIZE(id));
 }
 
 static void hypr_ipc_unminimize ( gpointer id )
 {
   window_t *win;
 
-  if( (win = wintree_from_id(id)) && (win->state & WS_MINIMIZED))
+  if( !(win = wintree_from_id(id)) && (win->state & WS_MINIMIZED))
+    return;
+  if(hypr_ipc_lua)
+    hypr_ipc_command("dispatch hl.dsp.window.move({ window = 'address:0x%lx',"
+        "workspace = '%d' })", GPOINTER_TO_SIZE(id), GPOINTER_TO_INT(
+          win->workspace?  win->workspace->id : workspace_get_focused()));
+  else
     hypr_ipc_command("dispatch movetoworkspacesilent %d,address:0x%lx",
         GPOINTER_TO_INT(win->workspace? win->workspace->id :
           workspace_get_focused()), GPOINTER_TO_SIZE(id));
@@ -501,7 +541,12 @@ static void hypr_ipc_unminimize ( gpointer id )
 
 static void hypr_ipc_close ( gpointer id )
 {
-  hypr_ipc_command("dispatch closewindow address:0x%lx", GPOINTER_TO_SIZE(id));
+  if(hypr_ipc_lua)
+    hypr_ipc_command("dispatch hl.dsp.window.close({ window = 'address:0x%lx' })",
+        GPOINTER_TO_SIZE(id));
+  else
+    hypr_ipc_command("dispatch closewindow address:0x%lx",
+        GPOINTER_TO_SIZE(id));
 }
 
 static void hypr_ipc_focus ( gpointer id )
@@ -510,25 +555,35 @@ static void hypr_ipc_focus ( gpointer id )
 
   if( (win = wintree_from_id(id)) && win->state & WS_MINIMIZED )
     hypr_ipc_unminimize(id);
-  hypr_ipc_command("dispatch focuswindow address:0x%lx",
-      GPOINTER_TO_SIZE(id));
+  if(hypr_ipc_lua)
+    hypr_ipc_command("dispatch hl.dsp.focus({ window = 'address:0x%lx' })",
+        GPOINTER_TO_SIZE(id));
+  else
+    hypr_ipc_command("dispatch focuswindow address:0x%lx",
+        GPOINTER_TO_SIZE(id));
 }
 
 static void hypr_ipc_set_workspace ( workspace_t *ws )
 {
   gchar *name;
 
-  if( (name = hypr_ipc_workspace_data(ws, "name")) )
-    hypr_ipc_command("dispatch workspace name:%s", name);
+  if(hypr_ipc_lua)
+    hypr_ipc_command("dispatch hl.dsp.focus({ workspace = '%s' })",
+        (name = hypr_ipc_workspace_data(ws, "name"))?  name : ws->name);
   else
-    hypr_ipc_command("dispatch workspace name:%s", ws->name);
+    hypr_ipc_command("dispatch workspace name:%s",
+        (name = hypr_ipc_workspace_data(ws, "name"))?  name : ws->name);
   g_free(name);
 }
 
 static void hypr_ipc_move_to ( gpointer id, gpointer wsid )
 {
-  hypr_ipc_command("dispatch movetoworkspace %d,address:0x%lx",
-      wsid, GPOINTER_TO_SIZE(id));
+  if(hypr_ipc_lua)
+    hypr_ipc_command("dispatch hl.dsp.window.move({ window = 'address:0x%lx', "
+        "workspace = '%d' })", GPOINTER_TO_SIZE(id), wsid);
+  else
+    hypr_ipc_command("dispatch movetoworkspace %d,address:0x%lx",
+        wsid, GPOINTER_TO_SIZE(id));
 }
 
 static void hypr_ipc_layout_prev ( void )
@@ -549,7 +604,10 @@ static void hypr_ipc_layout_set ( gchar *layout )
 
 static void hypr_ipc_exec ( const gchar *cmd )
 {
-  hypr_ipc_command("dispatch exec %s", cmd);
+  if(hypr_ipc_lua)
+    hypr_ipc_command("dispatch hl.dsp.exec_cmd('%s')", cmd);
+  else
+    hypr_ipc_command("dispatch exec %s", cmd);
 }
 
 static struct wintree_api hypr_wintree_api = {
@@ -577,6 +635,8 @@ static struct input_api hypr_input_api = {
 static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
     gpointer data)
 {
+  static gboolean after_fullscreen = FALSE;
+  static gboolean fullscreen_state;
   gchar *event, *ptr;
 
   (void)g_io_channel_read_line(chan, &event, NULL, NULL, NULL);
@@ -586,7 +646,11 @@ static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
       *ptr=0;
     g_debug("hypr event: %s", event);
     if(!strncmp(event, "activewindowv2>>", 16))
+    {
       hypr_ipc_handle_focus(event+16);
+      if(after_fullscreen)
+        hypr_ipc_set_maximized(fullscreen_state);
+    }
     else if(!strncmp(event, "windowtitlev2>>", 15))
       hypr_ipc_title_handle(event+15);
     else if(!strncmp(event, "openwindow>>", 12))
@@ -597,7 +661,10 @@ static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
     else if(!strncmp(event, "closewindow>>", 13))
       wintree_window_delete(hypr_ipc_parse_id(event+13, NULL));
     else if(!strncmp(event, "fullscreen>>",12))
-      hypr_ipc_set_maximized(g_ascii_digit_value(*(event+12)));
+    {
+      after_fullscreen = TRUE;
+      fullscreen_state = g_ascii_digit_value(*(event+12));
+    }
     else if(!strncmp(event, "movewindowv2>>", 14))
       hypr_ipc_track_workspace(event+14);
     else if(!strncmp(event, "workspacev2>>", 13))
@@ -618,6 +685,8 @@ static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
     else if(!strncmp(event, "activelayout>>", 14))
       if( (ptr = g_strrstr(event, ",")) )
         input_layout_set(ptr+1);
+    if(strncmp(event, "activewindow", 12) && strncmp(event, "fullscreen", 10))
+      after_fullscreen = FALSE;
     g_free(event);
     (void)g_io_channel_read_line(chan, &event, NULL, NULL, NULL);
   }
@@ -627,6 +696,7 @@ static gboolean hypr_ipc_event ( GIOChannel *chan, GIOCondition cond,
 
 void hypr_ipc_init ( void )
 {
+  struct json_object *json;
   gchar *sockaddr;
   gint sock;
 
@@ -635,10 +705,18 @@ void hypr_ipc_init ( void )
 
   ipc_sockaddr = g_build_filename(g_get_user_runtime_dir(), "hypr",
       g_getenv("HYPRLAND_INSTANCE_SIGNATURE"), ".socket.sock", NULL);
-  if(!hypr_ipc_get_clients(NULL))
+  if(!hypr_ipc_pager_populate())
   {
     g_free(ipc_sockaddr);
     return;
+  }
+  hypr_ipc_get_clients(NULL);
+
+  if(hypr_ipc_request(ipc_sockaddr, "j/status", &json))
+  {
+    hypr_ipc_lua =
+      !g_strcmp0(json_string_by_name(json, "configProvider"), "lua");
+    json_object_put(json);
   }
 
   workspace_api_register(&hypr_workspace_api);
@@ -651,7 +729,8 @@ void hypr_ipc_init ( void )
   sock = socket_connect(sockaddr, 10);
   if(sock!=-1)
     g_io_add_watch(g_io_channel_unix_new(sock), G_IO_IN, hypr_ipc_event, NULL);
+  else
+    g_warning("hypr: unanble to connect to hyprland control ipc");
   g_free(sockaddr);
-  hypr_ipc_pager_populate();
   hypr_ipc_layouts_get();
 }
