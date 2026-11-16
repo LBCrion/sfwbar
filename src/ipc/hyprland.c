@@ -527,7 +527,7 @@ static void hypr_ipc_unminimize ( gpointer id )
 {
   window_t *win;
 
-  if( !(win = wintree_from_id(id)) && (win->state & WS_MINIMIZED))
+  if( !(win = wintree_from_id(id)) || !(win->state & WS_MINIMIZED))
     return;
   if(hypr_ipc_lua)
     hypr_ipc_command("dispatch hl.dsp.window.move({ window = 'address:0x%lx',"
