@@ -42,7 +42,9 @@ static void handle_keymap(void *data, struct wl_keyboard *wl_keyboard,
     xkb_state_unref(xkb_state);
     xkb_keymap_unref(xkb_keymap);
     xkb_context_unref(xkb_context);
+    munmap(xkb_string, size);
   }
+  close(fd);
 }
 
 static void handle_enter(void *data, struct wl_keyboard *wl_keyboard,
