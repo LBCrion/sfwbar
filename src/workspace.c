@@ -278,6 +278,7 @@ void workspace_change_focus ( gpointer id )
     workspace_commit(focus);
   }
   workspace_mod_state(id, WS_STATE_FOCUSED, TRUE);
+  workspace_commit(workspace_from_id(id));
 }
 
 void workspace_set_name ( workspace_t *ws, const gchar *name )
